@@ -1,0 +1,598 @@
+{
+  "schema": "OTERYN_INITIAL_TRADE_RETAKES/v1",
+  "global_npc_lists": "PARTIAL",
+  "retakes": [
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 107,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 114,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 129,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 181,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 193,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 196,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 202,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 204,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 233,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 234,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 273,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 289,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 290,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 291,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 301,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 309,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 310,
+      "panel": "Sell To",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 315,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 323,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 328,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 335,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 336,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 337,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 339,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 354,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 359,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 361,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 365,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 366,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 367,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 370,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 371,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 382,
+      "panel": "Sell To",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 413,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 431,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 432,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 433,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 450,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 459,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Decoration",
+      "physical_ui_ordinal": 462,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 4,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 13,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 19,
+      "panel": "Sell To",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 19,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 21,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 28,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 34,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 38,
+      "panel": "Sell To",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 38,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 40,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 50,
+      "panel": "Buy From",
+      "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 51,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 62,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 68,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 74,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 80,
+      "panel": "Sell To",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 80,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 96,
+      "panel": "Buy From",
+      "unknown_reason": "Last NPC price line visible at bottom; residence below viewport, more vertical content.",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 102,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 105,
+      "panel": "Sell To",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 105,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 106,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 115,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 119,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 124,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 126,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 128,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 130,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 137,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 139,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 149,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth visible entry residence clipped; additional lower rows unqualified",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 157,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth entry residence clipped; lower rows unknown",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 162,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth entry residence clipped; lower rows unknown",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    {
+      "category": "Food",
+      "physical_ui_ordinal": 165,
+      "panel": "Buy From",
+      "unknown_reason": "Fourth entry residence clipped; lower rows unknown",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    }
+  ]
+}

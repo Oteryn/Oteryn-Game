@@ -1,0 +1,296 @@
+{
+  "schema": "OTERYN_TRADE_NATIVE_CORRECTIONS/v1",
+  "operations": [
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 42,
+      "localrow": 1,
+      "field": "panel",
+      "old_literal": "Sell To",
+      "new_literal": "Buy From",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00042-basic-top.png",
+        "sha256": "37f6a5a4834100fcee01faab96f2936a2094c5f58a644a35ae55a3a6f47dcde1"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 76,
+      "localrow": 1,
+      "field": "npc_literal",
+      "old_literal": "Khamna",
+      "new_literal": "Khanna",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00076-basic-top.png",
+        "sha256": "92e1b8b4d253ab9ce82824160889cc72696003bd4c07bde16805fa6adc476ff9"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 255,
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "250 x Christmas Token",
+      "new_literal": "70 x Event Points",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00255-basic-top.png",
+        "sha256": "d622dd428763a7f54ba19b4bd0cf4062ff1fea732da7a9e3a9a34f06020787ea"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 255,
+      "localrow": 1,
+      "field": "npc_literal",
+      "old_literal": "Ruprecht",
+      "new_literal": "Proprietor Piers",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00255-basic-top.png",
+        "sha256": "d622dd428763a7f54ba19b4bd0cf4062ff1fea732da7a9e3a9a34f06020787ea"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 255,
+      "localrow": 1,
+      "field": "location_literal",
+      "old_literal": "Vega",
+      "new_literal": "Great Expedition Wharf",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00255-basic-top.png",
+        "sha256": "d622dd428763a7f54ba19b4bd0cf4062ff1fea732da7a9e3a9a34f06020787ea"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 280,
+      "localrow": 1,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00280-basic-top.png",
+        "sha256": "ba28259272c042c2543bd7f97378a852583d1cb41c8099acd74e6d2ad4271547"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 310,
+      "localrow": 3,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00310-basic-top.png",
+        "sha256": "4d830ec7dd0dda1d27500b359d270464aa0dc6b6007ed609790b8286a057b179"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 327,
+      "localrow": 1,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00327-basic-top.png",
+        "sha256": "4c12af0702d39ebb06d645cc6f4a032962043b55a38915a4d8e90e5493e87c17"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 346,
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "250 x Christmas Token",
+      "new_literal": "10 x Christmas Token",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00346-basic-top.png",
+        "sha256": "c1966c8c1ee2d235223b14f455784a34f03d524539f2d91dac1fba1cc93afd31"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 347,
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "500 x Christmas Token",
+      "new_literal": "50 x Christmas Token",
+      "panel": "Buy From",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00347-basic-top.png",
+        "sha256": "7961d5dbfc4f1dec87bbcd14407b5d8972c28756a8292eb343c06ea3a3f9a3c0"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 358,
+      "localrow": 2,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00358-basic-top.png",
+        "sha256": "38e7591897ae42ace86e26af39392a9b6b4548af2e6169ad1c7ba46cf87ed5ea"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 382,
+      "localrow": 1,
+      "field": "npc_literal",
+      "old_literal": "Shniel",
+      "new_literal": "Shirel",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00382-basic-top.png",
+        "sha256": "648f0d8961af7e7abcf43b70955a2ed16c306163bb884f9f35447ecf86a8083b"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 385,
+      "localrow": 2,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00385-basic-top.png",
+        "sha256": "b78cfebb6a06d18d5d7652f47f3156da06761a80307009545d162e40356bef3b"
+      }
+    },
+    {
+      "category": "Decoration",
+      "ui_entry_ordinal": 387,
+      "localrow": 2,
+      "field": "npc_literal",
+      "old_literal": "Tailla",
+      "new_literal": "Talila",
+      "panel": "Sell To",
+      "proof": {
+        "key": "items-sequence-decoration/cards/00387-basic-top.png",
+        "sha256": "6e20afad672693da5f37f40bd2bec24845e44d2747fa4b275aa202196e2c8bcc"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 8,
+      "panel": "Buy From",
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "2",
+      "new_literal": "2 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00008-basic-top.png",
+        "sha256": "e793a91c1231ce38c81d8022f1b398f761308519d31326239b47e7ac8bf40916"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 27,
+      "panel": "Buy From",
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "1",
+      "new_literal": "1 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00027-basic-top.png",
+        "sha256": "b06c911ffd3eafc4e413edafe30d4a30fb316611cf973425deca664e3cb89a47"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 46,
+      "panel": "Buy From",
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "2",
+      "new_literal": "2 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00046-basic-top.png",
+        "sha256": "bddaa3a5316150bb1b2c47815e0b7bb8b0ab17fd2ec7afb3776c4adb8215e590"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 46,
+      "panel": "Buy From",
+      "localrow": 2,
+      "field": "price_literal",
+      "old_literal": "2",
+      "new_literal": "2 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00046-basic-top.png",
+        "sha256": "bddaa3a5316150bb1b2c47815e0b7bb8b0ab17fd2ec7afb3776c4adb8215e590"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 46,
+      "panel": "Buy From",
+      "localrow": 3,
+      "field": "price_literal",
+      "old_literal": "2",
+      "new_literal": "2 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00046-basic-top.png",
+        "sha256": "bddaa3a5316150bb1b2c47815e0b7bb8b0ab17fd2ec7afb3776c4adb8215e590"
+      }
+    },
+    {
+      "category": "Food",
+      "ui_entry_ordinal": 49,
+      "panel": "Buy From",
+      "localrow": 1,
+      "field": "price_literal",
+      "old_literal": "2",
+      "new_literal": "2 gp",
+      "proof": {
+        "key": "items-sequence-food/cards/00049-basic-top.png",
+        "sha256": "9db89bfabcb220ced903468c108f50c62e7beb7d60c1cdc69f12377dff50c51c"
+      }
+    }
+  ],
+  "source_unions": [
+    {
+      "category": "Decoration",
+      "key": "items-reader-cloud-20261113/decoration-trade-initial-panels-1-462-combined-private.json",
+      "sha256": "9438aeca088547b3d56b1004e0bada19e6eefebdbb9dddce7b496a32c80c160e"
+    },
+    {
+      "category": "Food",
+      "key": "items-reader-cloud-20261113/food-trade-initial-panels-1-169-combined-private.json",
+      "sha256": "20b4a5e7258a5b98da670aedc9791e133d2dd596df7b4f1c84d6c06082454545"
+    }
+  ],
+  "qc_inputs": [
+    {
+      "key": "items-reader-cloud-20261113/decoration-trade-1-100-independent-native-qc-corrections.json",
+      "sha256": "5ac9c2e959e0e1e4918e81cbd0ee4287fa92fd2cc44d6efe0341ed3912dc11dd"
+    },
+    {
+      "key": "items-reader-cloud-20261113/decoration-trade-201-300-independent-native-qc-corrections.json",
+      "sha256": "b1ee3d570c1e488ccf41f803ffb83513c0c2d1dfc67dd4b18cf86005a32488ee"
+    },
+    {
+      "key": "items-reader-cloud-20261113/decoration-trade-301-400-independent-native-qc-corrections.json",
+      "sha256": "177d27495c57c91122e3c32357738b8ee47c21c82d517ef4c86025dceb3e06e0"
+    },
+    {
+      "key": "items-reader-cloud-20261113/food-price-currency-native-qc-receipt.json",
+      "sha256": "a80ed0e261130ef13558e4e92ca951d1a50e80bf97fa090643b57f86b7b46527"
+    }
+  ],
+  "semantic_qc": "PARTIAL"
+}

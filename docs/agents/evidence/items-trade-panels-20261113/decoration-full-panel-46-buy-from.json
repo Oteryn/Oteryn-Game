@@ -1,0 +1,896 @@
+{
+  "schema": "OTERYN_OBSERVED_FULL_TRADE_PANEL/v1",
+  "category": "Decoration",
+  "physical_ui_ordinal": 46,
+  "panel": "Buy From",
+  "source_receipt": {
+    "key": "items-reader-cloud-20261113/decoration-full-retake46-reviewed.json",
+    "sha256": "b3a640a66c1bf5bd4aec915c8cba81a0139da474100e976b6b30a4e894c54a22"
+  },
+  "coverage": {
+    "observed_panel_literals_complete": true,
+    "global_npc_lists": "PARTIAL",
+    "distinct_physical_rows": 18,
+    "viewports": 24,
+    "identity": "Measured contiguous pixel ancestry; no name deduplication"
+  },
+  "rows": [
+    {
+      "physical_panel_row_ordinal": 1,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Ukea",
+        "first_line_literal": "25 gp, Ukea",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Ab'Dendriel City",
+        "location_display_line_literal": "Residence: Ab'Dendriel City"
+      },
+      "content_first_line_y_pixels": 3,
+      "content_residence_line_y_pixels": 17,
+      "qualified_page_indices0": [
+        0
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00083-after.png",
+          "sha256": "e3981a9c1a1477b938ad1f49bb179bcf7c8d7dce68e149fa52573ce5c0167d46"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 2,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Feizuhl",
+        "first_line_literal": "25 gp, Feizuhl",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Ankrahmun City",
+        "location_display_line_literal": "Residence: Ankrahmun City"
+      },
+      "content_first_line_y_pixels": 31,
+      "content_residence_line_y_pixels": 45,
+      "qualified_page_indices0": [
+        0,
+        1
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00083-after.png",
+          "sha256": "e3981a9c1a1477b938ad1f49bb179bcf7c8d7dce68e149fa52573ce5c0167d46"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00088-after.png",
+          "sha256": "c9a19786f687bafa3258eacf10ffab51e4b77f089266b853d063f22ae03ca00d"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 3,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Nydala",
+        "first_line_literal": "25 gp, Nydala",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Carlin City",
+        "location_display_line_literal": "Residence: Carlin City"
+      },
+      "content_first_line_y_pixels": 59,
+      "content_residence_line_y_pixels": 73,
+      "qualified_page_indices0": [
+        0,
+        1,
+        2
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00083-after.png",
+          "sha256": "e3981a9c1a1477b938ad1f49bb179bcf7c8d7dce68e149fa52573ce5c0167d46"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00088-after.png",
+          "sha256": "c9a19786f687bafa3258eacf10ffab51e4b77f089266b853d063f22ae03ca00d"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00093-after.png",
+          "sha256": "57bf6be1ddf5d94e7eac100687ae900d702f26d9173ddb3c5d197470301b1f6d"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 4,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Yoem",
+        "first_line_literal": "25 gp, Yoem",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Cormaya",
+        "location_display_line_literal": "Residence: Cormaya"
+      },
+      "content_first_line_y_pixels": 87,
+      "content_residence_line_y_pixels": 101,
+      "qualified_page_indices0": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00088-after.png",
+          "sha256": "c9a19786f687bafa3258eacf10ffab51e4b77f089266b853d063f22ae03ca00d"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00093-after.png",
+          "sha256": "57bf6be1ddf5d94e7eac100687ae900d702f26d9173ddb3c5d197470301b1f6d"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00098-after.png",
+          "sha256": "7a5897cfe97388664af644e8a6ca5e44a26fe672d6c30f7b0dbeb49e6af9fc53"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00103-after.png",
+          "sha256": "76e8c6759e3bbff8405a1418163a779f02933a430c9d810678a9924981138ac1"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 5,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Hofech",
+        "first_line_literal": "25 gp, Hofech",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Darashia City",
+        "location_display_line_literal": "Residence: Darashia City"
+      },
+      "content_first_line_y_pixels": 115,
+      "content_residence_line_y_pixels": 129,
+      "qualified_page_indices0": [
+        3,
+        4,
+        5
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00098-after.png",
+          "sha256": "7a5897cfe97388664af644e8a6ca5e44a26fe672d6c30f7b0dbeb49e6af9fc53"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00103-after.png",
+          "sha256": "76e8c6759e3bbff8405a1418163a779f02933a430c9d810678a9924981138ac1"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00108-after.png",
+          "sha256": "f08636773817df5c30b26e88262fce5fd31495ee91421cbe3d88561697d515ed"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 6,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Edvard",
+        "first_line_literal": "25 gp, Edvard",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Edron Castle",
+        "location_display_line_literal": "Residence: Edron Castle"
+      },
+      "content_first_line_y_pixels": 143,
+      "content_residence_line_y_pixels": 157,
+      "qualified_page_indices0": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00103-after.png",
+          "sha256": "76e8c6759e3bbff8405a1418163a779f02933a430c9d810678a9924981138ac1"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00108-after.png",
+          "sha256": "f08636773817df5c30b26e88262fce5fd31495ee91421cbe3d88561697d515ed"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00113-after.png",
+          "sha256": "fc360d9566f2e1d79e4367c69065a9450ca426fdb9802e85adeb77aea227b5fb"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00118-after.png",
+          "sha256": "18b6953b4bc16e68aba51dcfeaa90b66b7b1f6a93f1251f53d3fa9f77a786c20"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 7,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Eddy",
+        "first_line_literal": "25 gp, Eddy",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Fibula",
+        "location_display_line_literal": "Residence: Fibula"
+      },
+      "content_first_line_y_pixels": 171,
+      "content_residence_line_y_pixels": 185,
+      "qualified_page_indices0": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00108-after.png",
+          "sha256": "f08636773817df5c30b26e88262fce5fd31495ee91421cbe3d88561697d515ed"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00113-after.png",
+          "sha256": "fc360d9566f2e1d79e4367c69065a9450ca426fdb9802e85adeb77aea227b5fb"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00118-after.png",
+          "sha256": "18b6953b4bc16e68aba51dcfeaa90b66b7b1f6a93f1251f53d3fa9f77a786c20"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00123-after.png",
+          "sha256": "42b798273252f61933e26179674aaeefd2a7dec123d06d6b19be25e786b0d9c7"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 8,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Inkaef",
+        "first_line_literal": "25 gp, Inkaef",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Issavi",
+        "location_display_line_literal": "Residence: Issavi"
+      },
+      "content_first_line_y_pixels": 199,
+      "content_residence_line_y_pixels": 213,
+      "qualified_page_indices0": [
+        7,
+        8,
+        9
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00118-after.png",
+          "sha256": "18b6953b4bc16e68aba51dcfeaa90b66b7b1f6a93f1251f53d3fa9f77a786c20"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00123-after.png",
+          "sha256": "42b798273252f61933e26179674aaeefd2a7dec123d06d6b19be25e786b0d9c7"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00128-after.png",
+          "sha256": "98237fd6b7703f29863b1936a55caa977c9a38474874c84bf4d06bb0cc621e91"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 9,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Iwar",
+        "first_line_literal": "25 gp, Iwar",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Kazordoon City",
+        "location_display_line_literal": "Residence: Kazordoon City"
+      },
+      "content_first_line_y_pixels": 227,
+      "content_residence_line_y_pixels": 241,
+      "qualified_page_indices0": [
+        8,
+        9,
+        10,
+        11
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00123-after.png",
+          "sha256": "42b798273252f61933e26179674aaeefd2a7dec123d06d6b19be25e786b0d9c7"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00128-after.png",
+          "sha256": "98237fd6b7703f29863b1936a55caa977c9a38474874c84bf4d06bb0cc621e91"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00133-after.png",
+          "sha256": "1c14cee46ea0fe15604cf027f3378389adacc3bc66e9fa4dd5591a50a73ddba3"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00138-after.png",
+          "sha256": "3d9637e6b0ff56d6294b2c86c870f5cb3fc6472462ab6e9ff2e396d90026a18b"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 10,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Peggy",
+        "first_line_literal": "25 gp, Peggy",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Liberty Bay City",
+        "location_display_line_literal": "Residence: Liberty Bay City"
+      },
+      "content_first_line_y_pixels": 255,
+      "content_residence_line_y_pixels": 269,
+      "qualified_page_indices0": [
+        10,
+        11,
+        12
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00133-after.png",
+          "sha256": "1c14cee46ea0fe15604cf027f3378389adacc3bc66e9fa4dd5591a50a73ddba3"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00138-after.png",
+          "sha256": "3d9637e6b0ff56d6294b2c86c870f5cb3fc6472462ab6e9ff2e396d90026a18b"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00143-after.png",
+          "sha256": "67f4b7c80a0172afcbae6fec6a616ada325724426320522d2ce068e46324a64f"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 11,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Haani",
+        "first_line_literal": "25 gp, Haani",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Moonfall",
+        "location_display_line_literal": "Residence: Moonfall"
+      },
+      "content_first_line_y_pixels": 283,
+      "content_residence_line_y_pixels": 297,
+      "qualified_page_indices0": [
+        11,
+        12,
+        13,
+        14
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00138-after.png",
+          "sha256": "3d9637e6b0ff56d6294b2c86c870f5cb3fc6472462ab6e9ff2e396d90026a18b"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00143-after.png",
+          "sha256": "67f4b7c80a0172afcbae6fec6a616ada325724426320522d2ce068e46324a64f"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00148-after.png",
+          "sha256": "b1840ff70597296d7e109c7e60f786b26086a3b964a78a22fb90b2a4472b7fd1"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00153-after.png",
+          "sha256": "bc11b9b9c4dd7a2165a66aad2b5656c15386923115d1d713c65d50f932dba97b"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 12,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Nicholas",
+        "first_line_literal": "25 gp, Nicholas",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Rathleton City",
+        "location_display_line_literal": "Residence: Rathleton City"
+      },
+      "content_first_line_y_pixels": 311,
+      "content_residence_line_y_pixels": 325,
+      "qualified_page_indices0": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00143-after.png",
+          "sha256": "67f4b7c80a0172afcbae6fec6a616ada325724426320522d2ce068e46324a64f"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00148-after.png",
+          "sha256": "b1840ff70597296d7e109c7e60f786b26086a3b964a78a22fb90b2a4472b7fd1"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00153-after.png",
+          "sha256": "bc11b9b9c4dd7a2165a66aad2b5656c15386923115d1d713c65d50f932dba97b"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00158-after.png",
+          "sha256": "6482313ce6faf5e6a7eddfc427bf952617f448ca5289d0fa47b250cbe5e1a692"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 13,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Hireling",
+        "first_line_literal": "25 gp, Hireling",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Secret Subarea",
+        "location_display_line_literal": "Residence: Secret Subarea"
+      },
+      "content_first_line_y_pixels": 339,
+      "content_residence_line_y_pixels": 353,
+      "qualified_page_indices0": [
+        14,
+        15,
+        16
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00153-after.png",
+          "sha256": "bc11b9b9c4dd7a2165a66aad2b5656c15386923115d1d713c65d50f932dba97b"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00158-after.png",
+          "sha256": "6482313ce6faf5e6a7eddfc427bf952617f448ca5289d0fa47b250cbe5e1a692"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00163-after.png",
+          "sha256": "362d408170549c2c1d8a456cd815fe8b51804500f20dd93380502800621d3fdb"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 14,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Vera",
+        "first_line_literal": "25 gp, Vera",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Senja",
+        "location_display_line_literal": "Residence: Senja"
+      },
+      "content_first_line_y_pixels": 367,
+      "content_residence_line_y_pixels": 381,
+      "qualified_page_indices0": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00158-after.png",
+          "sha256": "6482313ce6faf5e6a7eddfc427bf952617f448ca5289d0fa47b250cbe5e1a692"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00163-after.png",
+          "sha256": "362d408170549c2c1d8a456cd815fe8b51804500f20dd93380502800621d3fdb"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00168-after.png",
+          "sha256": "aea7cc24b4ad75c054a5ae8c6cf9d2b52b6bc603e98b79d5540001fe12795169"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00173-after.png",
+          "sha256": "ff4290bb2b70678131bede9ffc87e1362c1863924fa26f1aa47874b7a602ad66"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 15,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Janz",
+        "first_line_literal": "25 gp, Janz",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Svargrond City",
+        "location_display_line_literal": "Residence: Svargrond City"
+      },
+      "content_first_line_y_pixels": 395,
+      "content_residence_line_y_pixels": 409,
+      "qualified_page_indices0": [
+        17,
+        18,
+        19
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00168-after.png",
+          "sha256": "aea7cc24b4ad75c054a5ae8c6cf9d2b52b6bc603e98b79d5540001fe12795169"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00173-after.png",
+          "sha256": "ff4290bb2b70678131bede9ffc87e1362c1863924fa26f1aa47874b7a602ad66"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00178-after.png",
+          "sha256": "069963fdb009863af5546c73d904a572dc4add8945a8349d4e1d6fc0d4b761fe"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 16,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Gamon",
+        "first_line_literal": "25 gp, Gamon",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Thais City",
+        "location_display_line_literal": "Residence: Thais City"
+      },
+      "content_first_line_y_pixels": 423,
+      "content_residence_line_y_pixels": 437,
+      "qualified_page_indices0": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00173-after.png",
+          "sha256": "ff4290bb2b70678131bede9ffc87e1362c1863924fa26f1aa47874b7a602ad66"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00178-after.png",
+          "sha256": "069963fdb009863af5546c73d904a572dc4add8945a8349d4e1d6fc0d4b761fe"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00183-after.png",
+          "sha256": "842f2e48987de42e7df12817f15e83fba9d4064c072d9c876f30a298587e22fc"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00188-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00193-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00198-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 17,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Velvet",
+        "first_line_literal": "25 gp, Velvet",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Venore City",
+        "location_display_line_literal": "Residence: Venore City"
+      },
+      "content_first_line_y_pixels": 451,
+      "content_residence_line_y_pixels": 465,
+      "qualified_page_indices0": [
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00178-after.png",
+          "sha256": "069963fdb009863af5546c73d904a572dc4add8945a8349d4e1d6fc0d4b761fe"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00183-after.png",
+          "sha256": "842f2e48987de42e7df12817f15e83fba9d4064c072d9c876f30a298587e22fc"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00188-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00193-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00198-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        }
+      ]
+    },
+    {
+      "physical_panel_row_ordinal": 18,
+      "quote": {
+        "price_literal": "25 gp",
+        "npc_literal": "Dorbin",
+        "first_line_literal": "25 gp, Dorbin",
+        "currency_state": "OBSERVED_EXPLICIT",
+        "currency_literal": "gp",
+        "location_state": "OBSERVED_VALUE",
+        "location_literal": "Yalahar Centre",
+        "location_display_line_literal": "Residence: Yalahar Centre"
+      },
+      "content_first_line_y_pixels": 479,
+      "content_residence_line_y_pixels": 493,
+      "qualified_page_indices0": [
+        21,
+        22,
+        23
+      ],
+      "proofs": [
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00188-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00193-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        },
+        {
+          "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00198-after.png",
+          "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+        }
+      ]
+    }
+  ],
+  "viewports": [
+    {
+      "page_index0": 0,
+      "viewport_offset_pixels": 0,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00083-after.png",
+        "sha256": "e3981a9c1a1477b938ad1f49bb179bcf7c8d7dce68e149fa52573ce5c0167d46"
+      }
+    },
+    {
+      "page_index0": 1,
+      "viewport_offset_pixels": 20,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00088-after.png",
+        "sha256": "c9a19786f687bafa3258eacf10ffab51e4b77f089266b853d063f22ae03ca00d"
+      }
+    },
+    {
+      "page_index0": 2,
+      "viewport_offset_pixels": 40,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00093-after.png",
+        "sha256": "57bf6be1ddf5d94e7eac100687ae900d702f26d9173ddb3c5d197470301b1f6d"
+      }
+    },
+    {
+      "page_index0": 3,
+      "viewport_offset_pixels": 60,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00098-after.png",
+        "sha256": "7a5897cfe97388664af644e8a6ca5e44a26fe672d6c30f7b0dbeb49e6af9fc53"
+      }
+    },
+    {
+      "page_index0": 4,
+      "viewport_offset_pixels": 80,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00103-after.png",
+        "sha256": "76e8c6759e3bbff8405a1418163a779f02933a430c9d810678a9924981138ac1"
+      }
+    },
+    {
+      "page_index0": 5,
+      "viewport_offset_pixels": 100,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00108-after.png",
+        "sha256": "f08636773817df5c30b26e88262fce5fd31495ee91421cbe3d88561697d515ed"
+      }
+    },
+    {
+      "page_index0": 6,
+      "viewport_offset_pixels": 120,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00113-after.png",
+        "sha256": "fc360d9566f2e1d79e4367c69065a9450ca426fdb9802e85adeb77aea227b5fb"
+      }
+    },
+    {
+      "page_index0": 7,
+      "viewport_offset_pixels": 140,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00118-after.png",
+        "sha256": "18b6953b4bc16e68aba51dcfeaa90b66b7b1f6a93f1251f53d3fa9f77a786c20"
+      }
+    },
+    {
+      "page_index0": 8,
+      "viewport_offset_pixels": 160,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00123-after.png",
+        "sha256": "42b798273252f61933e26179674aaeefd2a7dec123d06d6b19be25e786b0d9c7"
+      }
+    },
+    {
+      "page_index0": 9,
+      "viewport_offset_pixels": 180,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00128-after.png",
+        "sha256": "98237fd6b7703f29863b1936a55caa977c9a38474874c84bf4d06bb0cc621e91"
+      }
+    },
+    {
+      "page_index0": 10,
+      "viewport_offset_pixels": 200,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00133-after.png",
+        "sha256": "1c14cee46ea0fe15604cf027f3378389adacc3bc66e9fa4dd5591a50a73ddba3"
+      }
+    },
+    {
+      "page_index0": 11,
+      "viewport_offset_pixels": 220,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00138-after.png",
+        "sha256": "3d9637e6b0ff56d6294b2c86c870f5cb3fc6472462ab6e9ff2e396d90026a18b"
+      }
+    },
+    {
+      "page_index0": 12,
+      "viewport_offset_pixels": 240,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00143-after.png",
+        "sha256": "67f4b7c80a0172afcbae6fec6a616ada325724426320522d2ce068e46324a64f"
+      }
+    },
+    {
+      "page_index0": 13,
+      "viewport_offset_pixels": 260,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00148-after.png",
+        "sha256": "b1840ff70597296d7e109c7e60f786b26086a3b964a78a22fb90b2a4472b7fd1"
+      }
+    },
+    {
+      "page_index0": 14,
+      "viewport_offset_pixels": 280,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00153-after.png",
+        "sha256": "bc11b9b9c4dd7a2165a66aad2b5656c15386923115d1d713c65d50f932dba97b"
+      }
+    },
+    {
+      "page_index0": 15,
+      "viewport_offset_pixels": 300,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00158-after.png",
+        "sha256": "6482313ce6faf5e6a7eddfc427bf952617f448ca5289d0fa47b250cbe5e1a692"
+      }
+    },
+    {
+      "page_index0": 16,
+      "viewport_offset_pixels": 320,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00163-after.png",
+        "sha256": "362d408170549c2c1d8a456cd815fe8b51804500f20dd93380502800621d3fdb"
+      }
+    },
+    {
+      "page_index0": 17,
+      "viewport_offset_pixels": 340,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00168-after.png",
+        "sha256": "aea7cc24b4ad75c054a5ae8c6cf9d2b52b6bc603e98b79d5540001fe12795169"
+      }
+    },
+    {
+      "page_index0": 18,
+      "viewport_offset_pixels": 360,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00173-after.png",
+        "sha256": "ff4290bb2b70678131bede9ffc87e1362c1863924fa26f1aa47874b7a602ad66"
+      }
+    },
+    {
+      "page_index0": 19,
+      "viewport_offset_pixels": 380,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00178-after.png",
+        "sha256": "069963fdb009863af5546c73d904a572dc4add8945a8349d4e1d6fc0d4b761fe"
+      }
+    },
+    {
+      "page_index0": 20,
+      "viewport_offset_pixels": 400,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00183-after.png",
+        "sha256": "842f2e48987de42e7df12817f15e83fba9d4064c072d9c876f30a298587e22fc"
+      }
+    },
+    {
+      "page_index0": 21,
+      "viewport_offset_pixels": 406,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00188-after.png",
+        "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+      }
+    },
+    {
+      "page_index0": 22,
+      "viewport_offset_pixels": 406,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00193-after.png",
+        "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+      }
+    },
+    {
+      "page_index0": 23,
+      "viewport_offset_pixels": 406,
+      "proof": {
+        "key": "items-sequence-decoration/trade-retake-1794551921135492892/panel-arrow-00198-after.png",
+        "sha256": "f5444baa1288b7c8f87544e07f1dd7b199eb741539f602a05b5612e9a212a84c"
+      }
+    }
+  ],
+  "initial_resolution": {
+    "resolved_pending_pair": {
+      "category": "Decoration",
+      "physical_ui_ordinal": 46,
+      "panel": "Buy From",
+      "unknown_reason": "VERTICAL_OVERFLOW_INITIAL_PANE",
+      "location_state": "UNKNOWN",
+      "additional_entries_state": "UNKNOWN"
+    },
+    "initial_quote_rows1": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "full_panel_rows1": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "initial_snapshot_preserved": true,
+    "new_disjoint_quotes_not_claimed": true,
+    "fourth_location_previous_state": "UNKNOWN",
+    "fourth_location_now_literal": "Cormaya"
+  }
+}
