@@ -385,3 +385,44 @@ reused only while all SQL hashes remain identical. All24 PG partitions, native
 journeys and full Clippy/compilation still require the repaired head in GitHub.
 Node boot remains explicitly waived; failed or skipped runtime checks are never
 reported as passes.
+
+
+### Grouped sourceguard follow-up after3799
+
+Exact3799 full Clippy, native entry, both integration leaves and canonical
+package/pin reproduction passed. The first unit shard passed4521/4521; the
+other two passed4424/4545 with three failures across two P2 classes. The new
+direct unused-field-pass-return rejection lacked its required closed operator
+evidence. It now emits one registered finite Warn event without identities or
+raw errors; all existing branch assertions remain and exact rejection/event
+counts both become11. Movement outcomes, pass settlement and budgets are intact.
+
+The actual whole-source scanner also found the new test-only Primal SourceScene
+constructor/wire gate and the removed old generic fixture constructors. The
+inventory records precisely the new child path/count and removes both stale
+identical old rows. The scanner, bundle World qualified=None assertion and
+source/current-owner gates stay exact. No broad test-path exemption is added.
+
+Tiny execution of the actual sourceguard and complete syn scanner reproduced
+all three failures then passed all three proposed repairs. This is bounded
+source/architecture evidence, not execution of PostgreSQL journeys. Future
+changes adding rejection branches or moving fixture constructors must run these
+light actual guards before candidate freeze, alongside module/lint/layout probes.
+The two older retained-USE P1 code threads were independently verified addressed
+by ancestor128f and resolved together; current runtime gates remain required.
+
+The3799 library archive hit its existing45-minute maximum and was cancelled;
+its decoded log was unavailable. The PG matrix was skipped and never executed.
+No codegen cause, larger budget or gameplay pass is inferred. The next material
+candidate receives a fresh runner build under unchanged limits. All543 SQL
+identities and their actual schema-only qualification remain unchanged; no local
+heavy build, runtime suite or generator is introduced. Node is owner-waived,
+not passed; full exact-head qualification and post-main gate remain outstanding.
+
+
+Newer accepted-main5efd push43335487672 now has24/24 PostgreSQL partitions
+and every applicable non-Node leaf PASS, including MAX501 and Server Seam.
+This is a newer execution receipt for the older3023 failure classes, not a
+causal source-fix attribution or a current QMECH runtime pass. Its formal
+aggregate is failure through the owner-waived Node; separate cancelled CodeQL
+is not reported as a security PASS.

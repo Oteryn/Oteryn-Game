@@ -256,6 +256,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .is_err()
             {
+                operator_event("event=step_rejected_field_pass_return");
                 return (StepOutcome::rejected(), None);
             }
             states.step_with_non_player_field_contact(
@@ -500,6 +501,7 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
         "stale_position",
         "pending_spell",
         "drome",
+        "field_pass_return",
         "movement",
     ] {
         assert!(
@@ -514,7 +516,7 @@ fn nbroute_step_rejections_have_closed_schema_operator_evidence() -> Result<(), 
             .count(),
         1
     );
-    assert_eq!(body.matches("StepOutcome::rejected()").count(), 10);
-    assert_eq!(body.matches("operator_event(").count(), 10);
+    assert_eq!(body.matches("StepOutcome::rejected()").count(), 11);
+    assert_eq!(body.matches("operator_event(").count(), 11);
     Ok(())
 }

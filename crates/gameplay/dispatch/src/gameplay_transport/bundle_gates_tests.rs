@@ -65,6 +65,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/native_cue_offer.rs", 2),
             ("gameplay_transport/native_activity.rs", 1),
             ("gameplay_transport/soulpit/scene.rs", 2),
+            (
+                "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+                1,
+            ),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
             (
                 "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
@@ -1019,6 +1023,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/atelier/wire_paid.rs", 1),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
+    // Primal's test-only source scene binds its actual pinned qualified/combat room.
+    (
+        "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+        1,
+    ),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
     // W05d's native Cake tile fixture supplies combat only, never qualification.
@@ -1090,15 +1099,6 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/soulpit/content.rs", 2),
     (
         "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
-        2,
-    ),
-    // SRVGAP2: the Primal chain PG proof binds its activated source combat room only.
-    (
-        "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
-        2,
-    ),
-    (
-        "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),

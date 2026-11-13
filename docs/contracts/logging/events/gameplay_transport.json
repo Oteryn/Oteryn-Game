@@ -301,6 +301,14 @@
       "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
     {
+      "event": "step_rejected_field_pass_return",
+      "level": "warn",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "NBROUTE: returning the unused field-step pass failed; reject movement without identities, payloads or raw errors."
+    },
+    {
       "event": "step_rejected_holder_busy",
       "level": "info",
       "span": false,
