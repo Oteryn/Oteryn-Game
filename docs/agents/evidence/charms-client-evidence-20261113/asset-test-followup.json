@@ -1,0 +1,193 @@
+{
+  "schema": "OTERYN_CHARMS_ASSET_TEST_FOLLOWUP/v1",
+  "observed_date": "2026-11-13",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "aa58be42064b69bb5800f95b221fb2cfd0730280",
+  "scope": "Bounded asset-first follow-up on both owner-authorized Global community servers; not exhaustive",
+  "queries": [
+    {
+      "server": "Kusnier",
+      "literal": "parry",
+      "contains": "link",
+      "count": 25,
+      "review": "All rendered non-trade asset matches read; Venice video followed. Trade advertisements excluded."
+    },
+    {
+      "server": "Kusnier",
+      "literal": "parry armor",
+      "count": 0,
+      "review": "Cleared field and literal verified before submission; scoped phrase outcome, not absence evidence."
+    },
+    {
+      "server": "Kusnier",
+      "literal": "parry armour",
+      "count": 0,
+      "review": "Cleared field and literal verified before submission; scoped phrase outcome, not absence evidence."
+    },
+    {
+      "server": "Kusnier",
+      "literal": "parry mana",
+      "count": 0,
+      "review": "Cleared field and literal verified before submission; scoped phrase outcome, not absence evidence."
+    },
+    {
+      "server": "Tibia Analysers",
+      "literal": "parry",
+      "contains": "link",
+      "count": 0,
+      "review": "UI filter applied after verified literal; does not cover attachments without matching text."
+    },
+    {
+      "server": "Tibia Analysers",
+      "literal": "charm",
+      "contains": "link",
+      "count": 22,
+      "review": "All rendered non-trade link matches read. Followed Kusnier test and Gabriel own-test conversation."
+    }
+  ],
+  "navigation": [
+    {
+      "url": "https://discord.com/channels/1431612466818977814/1431632652603232397",
+      "action": "Opened pinned messages",
+      "outcome": "Channel has no pinned messages; no server-wide inference."
+    }
+  ],
+  "venice": {
+    "url": "https://www.youtube.com/watch?v=x_EEmqNE1PE",
+    "title": "PARRY vs FREEZE - Werelions - Analise FRAME a FRAME",
+    "creator": "Venice",
+    "discord_link_message_id": "1163394259836219412",
+    "discord_link_date": "2023-10-16 10:33 (UI local time)",
+    "exact_video_publication_date_verified": false,
+    "observed_seconds": 460,
+    "observation": "Visible creator comparison scoreboard, paired with spoken side attribution",
+    "freeze": {
+      "sample_minutes": 15,
+      "activations": 56,
+      "damage": 10227,
+      "projected_minutes": 60,
+      "projected_activations": 224,
+      "projected_damage": 40908
+    },
+    "parry": {
+      "sample_minutes": 15,
+      "activations": 89,
+      "damage": 18238,
+      "projected_minutes": 60,
+      "projected_activations": 356,
+      "projected_damage": 72952
+    },
+    "caption_context": [
+      {
+        "seconds": 93,
+        "summary": "Creator is uncertain whether target HP is 3100 or 3500."
+      },
+      {
+        "seconds": 95,
+        "summary": "Creator reports Freeze hit of186."
+      },
+      {
+        "seconds": 451,
+        "summary": "Rough spoken Parry250-450 range; not a measured sample mean."
+      }
+    ],
+    "current_global_rule_verified": false,
+    "armor_or_mana_isolated": false,
+    "hour_rows_are_projection": true,
+    "limitations": [
+      "Historical creator sample, not independent combat replay.",
+      "Eligible incoming-hit denominator is absent; activation probability cannot be derived.",
+      "Incoming exposure, build, target armor and mana drain are not isolated.",
+      "No transfer of historical trigger rates to2026 stages."
+    ]
+  },
+  "kusnier": {
+    "url": "https://www.youtube.com/watch?v=rNSNdfQyadQ",
+    "title": "Monk Charm Guide | Elemental vs. Critical Charms Test Results | Tibia",
+    "discovery_message_id": "1476894607177416888",
+    "discovery_date": "2026-02-27 11:51 (UI local time)",
+    "observed_seconds": 129,
+    "observation": "Visible Hunt Analyser comparison tables with column labels",
+    "grim_reapers": {
+      "session_minutes": 29,
+      "elemental_supplies": 198102,
+      "low_blow_supplies": 156954,
+      "elemental_kills": 341,
+      "low_blow_kills": 340,
+      "elemental_damage": 1376909,
+      "low_blow_damage": 1381539
+    },
+    "draken_walls": {
+      "session_minutes": 30,
+      "elemental_supplies": 119904,
+      "crit_supplies": 60428,
+      "elemental_raw_xp_gain": 1207766,
+      "crit_raw_xp_gain": 1202340,
+      "elemental_damage": 2226410,
+      "crit_damage": 2197846
+    },
+    "caption_context": [
+      {
+        "seconds": 272,
+        "summary": "Creator qualifies tests as low-skill monk about90-95 fist."
+      },
+      {
+        "seconds": 315,
+        "summary": "Creator attributes easier hunting to extra leech; qualitative sustain explanation."
+      },
+      {
+        "seconds": 459,
+        "summary": "Parry/Dodge recommendation explicitly framed as opinion, not isolated mechanics test."
+      }
+    ],
+    "aoe_roll_or_rounding_verified": false,
+    "limitations": [
+      "Separate hunting sessions; supply prices, build and monster exposure are not fully controlled.",
+      "Supply savings are aggregate outcomes; they do not measure leech formula, AoE roll sharing or tie rounding.",
+      "Discovery date is not an asserted video publication date."
+    ]
+  },
+  "contexts": [
+    {
+      "url": "https://discord.com/channels/836592213327609957/1405864547620749342/1476915523882193051",
+      "date": "2026-02-27 13:05-13:15 (UI local time)",
+      "classification": "Question and effectiveness discussion linking creator Reddit",
+      "summary": "Zepnos asks whether incoming attacks can make Parry beat elementals; tom says potentially; Valdrin references Reddit20-30%; Zepnos links the Reddit test. Not an armor/mana experiment."
+    },
+    {
+      "url": "https://discord.com/channels/1431612466818977814/1431635129121505280/1500411983982497792",
+      "date": "2026-05-03 10:21, edited10:25 (UI local time)",
+      "classification": "Creator own-test report with two linked recordings; recordings not yet frame-audited in this batch",
+      "videos": [
+        "https://www.youtube.com/watch?v=vkxKYG6x42I",
+        "https://www.youtube.com/watch?v=EqqDrky6xKM"
+      ],
+      "summary": "Gabriel reports two Falcons hunts comparing Low Blow/Savage Blow with Divine Wrath; notes imperfect runs, potion choice and60vs110 ping. Replies at11:23 and11:32 discuss latency,14:38 raises bounty talisman, author14:46 says deliberate to avoid distorting results. These qualifications prevent treating hunt output as isolated RNG evidence.",
+      "read_window": "Rendered context17Apr-3May2026, including author follow-ups through14:55 on3May"
+    }
+  ],
+  "unresolved_after_batch": [
+    "Parry armor and mana-drain Global behavior",
+    "Dodge plus Minor processing order",
+    "Low Blow correlated AoE roll",
+    "Current leech AoE/overkill and half-tie rounding",
+    "Carnage chain, kill attribution and summons",
+    "Wound weapon physical pierce",
+    "Current Cleanse immunity replacement and reproc"
+  ],
+  "authority": "Derived research evidence only; no runtime or catalogue authority promotion",
+  "source_receipts": [
+    {
+      "path": "crates/gameplay/progression/src/charm_effects.rs",
+      "sha256": "b0ff811efcb4e3c68df626914f31f881d3864e1fd6bca9bf1027264c2f1bca0c"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+      "sha256": "51763f2e41469df8e85097f4328c775a3e7a50fd338c74b1cdb15d2d5248aae5"
+    },
+    {
+      "path": "crates/gameplay/combat-rules/src/resolution/equipped_offence.rs",
+      "sha256": "42c6832c817302f540044daac545b07ae844a6211c1ced57a3fc96128384c0d9"
+    }
+  ]
+}

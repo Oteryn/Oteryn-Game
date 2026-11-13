@@ -150,3 +150,8 @@ all-stage/runtime overclaims, reset-fee substitution, currency swaps and proof
 substitution, inconsistent reset/restore accounting, lost purchase actions,
 wrong restored assignments and unsupported first-free-reset claims. These
 checks do not execute the game.
+
+The [asset-first follow-up](asset-test-followup.md) retains six verified-query
+windows from both Discords, two visible numerical creator comparisons and
+qualified follow-up leads. Run `validate_asset_followup.py --repository .`
+and its `--test` mode. Hour projections are not separate hour experiments.

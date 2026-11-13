@@ -158,3 +158,17 @@ not qualify current Global rules, exact tie rounding, or a full timer trace.
 
 Filtered Wound follow-up is frozen after source-flag/hash and governance checks.
 Further filtered synonym research requires return to AUTHORING.
+
+AUTHORING resumed for the owner-authorized asset-first successor after fresh
+OPEN/draft3172 readback at `aa58be42064b69bb5800f95b221fb2cfd0730280`,
+unchanged main3e168ce6 and live open-PR overlap check. Sole writer allocation
+continues on the same two documentation paths. This batch records both-server
+query scope, Venice historical scoreboard and Kusnier sustain tables, with
+Gabriel recordings kept as explicit unreviewed-video leads. No runtime scope.
+
+Asset-first successor is frozen after two numeric creator comparisons, six
+query windows and three exact-main blob receipts were checked. Projection and
+modern-rule boundary tests2/2 PASS; original evidence16/16, private114 proofs,
+public/Discord/primary validators, governance and129 governance tests PASS.
+No independent review or current Global combat parity is claimed. Further
+publication changes require explicit return to AUTHORING.
