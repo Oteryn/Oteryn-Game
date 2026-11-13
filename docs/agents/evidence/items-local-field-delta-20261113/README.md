@@ -1,5 +1,16 @@
 # All-category local item field delta
 
+Valuables source inventory is separate: `../valuables-local-first-20261113/summary.json` and
+`routing415.csv/.json` retain415 source appearances/types,353 names,243 description
+presence flags and1518 raw NPC tuples across185 appearances.34 open PR heads and
+6926 changed-path occurrences were compared; both absent NPC-placement paths are
+verified PR deletions, not failed item-data reads. Main-name weight candidates:
+374 single,18 multiple,13 no main-name source,10 unknown weight. None is admitted
+as appearance-authoritative weight or complete GUI card. One root-verified abacus
+Basic copy weighs12.00oz; it remains unbound to an appearance. No source assets,
+description text or raw screenshot bytes are published. The2907 ledger below is
+unchanged by this separate415-source-cohort inventory.
+
 **Latest result:2416 complete,464 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch4.json`, `all-visible-after-offline-batch4.csv` and
 `remaining464-summary.json` close110 further records (206 visible quote occurrences).

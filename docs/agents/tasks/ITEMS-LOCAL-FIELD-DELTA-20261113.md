@@ -20,6 +20,7 @@ execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/items-local-field-delta-20261113/
   - docs/agents/tasks/ITEMS-LOCAL-FIELD-DELTA-20261113.md
+  - docs/agents/evidence/valuables-local-first-20261113/
 public_contracts: []
 depends_on: []
 blocks: []
@@ -69,6 +70,12 @@ types, with6102 identity-held, totaling6228; variant partition separately totals
 Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
+
+AUTHORING additive scope6866782804: derived Valuables415 source/candidate routing
+in owned evidence subdirectory.1518 raw tuples across185 appearances,243 description
+presence flags;374/18/13/10 main weight candidate states; no weight identity/GUI
+completion admission.34 pinned PR heads, two absent paths independently verified
+as removed. Abacus12oz root-confirmed Basic sample remains unbound. No UI/assets.
 
 AUTHORING continued6866296521: fourth offline batch closes110 records using exact
 price+gp controls from existing qualified public quotes, reviewed name/residence

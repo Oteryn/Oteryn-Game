@@ -488,6 +488,33 @@ def offline_batch4(source_path=None, packet=None):
     assert set(load(HERE,"remaining464-summary.json")["remaining_keys"]) == {r["observation_key"] for r in current if r["ALL_VISIBLE_state"] == "PARTIAL"}
 
 
+def valuables415(packet=None):
+    p = packet or load(HERE.parent,"valuables-local-first-20261113/routing415.json")
+    s = load(HERE.parent,"valuables-local-first-20261113/summary.json")
+    for member in load(HERE.parent,"valuables-local-first-20261113/publication-members.json")["members"]:
+        b = (HERE.parent/"valuables-local-first-20261113"/member["file"]).read_bytes()
+        assert len(b) == member["bytes"] and hashlib.sha256(b).hexdigest() == member["sha256"]
+    rows = p["rows"]
+    assert len(rows) == len({r["appearance_object_id"] for r in rows}) == len({r["cyclopedia_type"] for r in rows}) == 415
+    assert len({r["name"] for r in rows}) == 353
+    assert sum(r["source_description_present"] for r in rows) == 243
+    assert sum(r["source_NPC_tuple_count"] for r in rows) == s["raw_NPC_tuples"] == 1518
+    assert sum(r["source_NPC_tuple_count"]>0 for r in rows) == s["appearances_with_NPC_tuples"] == 185
+    expected = dict(ONE_MAIN_WEIGHT_CANDIDATE=374,MULTIPLE_MAIN_WEIGHT_CANDIDATES=18,NO_MAIN_NAME_CANDIDATE=13,WEIGHT_NOT_KNOWN_IN_MAIN_CANDIDATES=10)
+    assert s["candidate_weight_states"] == expected
+    assert {k:sum(r["weight_candidate_state"] == k for r in rows) for k in expected} == expected
+    assert len(s["source_heads"]) == s["open_PRs"] == 34 and sum(r["complete_path_count"] for r in s["source_heads"]) == 6926
+    assert len(s["deleted_PR_paths"]) == 2 and all(r["verified_PR_file_status"] == "removed" for r in s["deleted_PR_paths"])
+    assert not s["qualified_new_appearance_weight_bindings"] and not s["qualified_complete_UI_cards"]
+    assert not s["source_assets_or_description_text_published"]
+    assert len(list(csv.DictReader((HERE.parent/"valuables-local-first-20261113/routing415.csv").open(encoding="utf8",newline="")))) == 415
+    for r in rows:
+        assert r["source_market_category"] == 15 and not r["UI_complete"] and not r["weight_qualified_for_this_appearance"]
+        assert not r["name_match_is_identity_authority"] and not r["source_description_bytes_published"]
+        assert r["physical_GUI_category_membership"] == r["independent_NPC_panel_ends"] == "UNQUALIFIED"
+        if r["weight_candidate_state"] == "ONE_MAIN_WEIGHT_CANDIDATE":assert len(r["candidate_weight_centioz"]) == 1
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -512,6 +539,15 @@ def main():
     offline_batch2(args.npc_source)
     offline_batch3(args.npc_source)
     offline_batch4(args.npc_source)
+    valuables415()
+    badweight = copy.deepcopy(load(HERE.parent,"valuables-local-first-20261113/routing415.json"))
+    badweight["rows"][0]["weight_qualified_for_this_appearance"] = True
+    try:
+        valuables415(badweight)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Name-only Valuables weight promoted to appearance authority")
     badseed = copy.deepcopy(load(HERE,"offline408-batch4.json"))
     next(iter(badseed["published_price_seed_receipts"].values()))["value"] *= 10
     try:
@@ -583,7 +619,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;current ALL2416/464/27;offline200 native recoveries;12 negative controls"
+    print("PASS:6470 appearances/6228 types;ALL2416/464/27;offline200;Valuables415 candidate boundary;13 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 
