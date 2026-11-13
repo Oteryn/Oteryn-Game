@@ -9,6 +9,9 @@ use bevy::{
 };
 use oteryn_renderer::{AtlasImage, QuadInstance, lighting::QuadLayer};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Resource, Default)]
 pub(super) struct SceneCache {
     atlas: Option<AtlasImage>,
@@ -97,12 +100,18 @@ pub(super) fn project(
     let mut count = 0;
     for (index, (quad, tint, minimap)) in ordered.enumerate() {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
-        let (scale, size, offset) = if minimap {
-            (1., super::game_ui::minimap::SIZE.as_vec2(), Vec2::ZERO)
+        let (scale, size, offset, clip_size) = if minimap {
+            let size = super::game_ui::minimap::SIZE.as_vec2();
+            (1., size, Vec2::ZERO, size)
         } else {
-            (window.scale_factor(), size, offset)
+            (
+                window.scale_factor(),
+                size,
+                offset,
+                Vec2::new(scene_size.0 as f32, scene_size.1 as f32),
+            )
         };
-        let (sprite, transform) = project_quad(
+        let Some((sprite, transform)) = project_quad(
             quad,
             tint,
             index,
@@ -112,9 +121,12 @@ pub(super) fn project(
                 scale,
                 size,
                 offset,
+                clip_size,
             },
-        );
-        if let Some(entity) = cache.entities.get(index) {
+        ) else {
+            continue;
+        };
+        if let Some(entity) = cache.entities.get(count) {
             if let Ok((mut old_sprite, mut old_transform, mut old_layer)) = quads.get_mut(*entity) {
                 if *old_layer != layer {
                     *old_layer = layer.clone();
@@ -142,6 +154,7 @@ struct QuadViewport {
     scale: f32,
     size: Vec2,
     offset: Vec2,
+    clip_size: Vec2,
 }
 fn project_quad(
     quad: &QuadInstance,
@@ -150,23 +163,36 @@ fn project_quad(
     image: &Handle<Image>,
     atlas: &AtlasImage,
     viewport: QuadViewport,
-) -> (Sprite, Transform) {
+) -> Option<(Sprite, Transform)> {
     let QuadViewport {
         scale,
         size: viewport_size,
         offset,
+        clip_size,
     } = viewport;
     let [x, y] = quad.position;
     let [w, h] = quad.size;
     let [u0, v0, u1, v1] = quad.uv;
+    let start = Vec2::new(x, y).max(Vec2::ZERO);
+    let end = Vec2::new(x + w, y + h).min(clip_size);
+    let visible = end - start;
+    if !visible.cmpgt(Vec2::ZERO).all() {
+        return None;
+    }
+    // Crop atlas sampling with the geometry so edge artwork is not stretched.
+    let uv_start = Vec2::new(u0, v0)
+        + Vec2::new(u1 - u0, v1 - v0) * (start - Vec2::new(x, y)) / Vec2::new(w, h);
+    let uv_end =
+        Vec2::new(u0, v0) + Vec2::new(u1 - u0, v1 - v0) * (end - Vec2::new(x, y)) / Vec2::new(w, h);
+    let (x, y, w, h) = (start.x, start.y, visible.x, visible.y);
     let sprite = Sprite {
         image: image.clone(),
         color: Color::linear_rgba(tint[0], tint[1], tint[2], tint[3]),
         rect: Some(Rect::new(
-            u0 * atlas.width() as f32,
-            v0 * atlas.height() as f32,
-            u1 * atlas.width() as f32,
-            v1 * atlas.height() as f32,
+            uv_start.x * atlas.width() as f32,
+            uv_start.y * atlas.height() as f32,
+            uv_end.x * atlas.width() as f32,
+            uv_end.y * atlas.height() as f32,
         )),
         custom_size: Some(Vec2::new(w / scale, h / scale)),
         ..default()
@@ -176,5 +202,5 @@ fn project_quad(
         (viewport_size.y / 2. - (y + h / 2. + offset.y)) / scale,
         order as f32 * 0.001,
     );
-    (sprite, transform)
+    Some((sprite, transform))
 }
