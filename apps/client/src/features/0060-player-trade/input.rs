@@ -16,10 +16,15 @@ impl PlayLink {
         }
     }
     pub fn player_trade_choose_partner(&self, partner: oteryn_session::EntityRef) -> bool {
-        oteryn_client_ui::player_trade::picker::select_partner(
-            &mut lock(&self.mailbox).player_trade,
+        let mut mailbox = lock(&self.mailbox);
+        if !oteryn_client_ui::player_trade::picker::select_partner(
+            &mut mailbox.player_trade,
             partner,
-        )
+        ) {
+            return false;
+        }
+        mailbox.player_trade.open = true;
+        true
     }
     pub fn player_trade_choose_item(&self, row: usize) -> bool {
         oteryn_client_ui::player_trade::picker::select_item(
