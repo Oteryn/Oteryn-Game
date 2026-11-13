@@ -15,7 +15,7 @@ SHA256 = 'c0549a4c94e1706861252a6cd7db7a3545cdd2f96259f405c5481e45d02a3f85'
 SIZE = 53471153
 DECODER_SHA256 = 'c8c279d0ee93188cf2b10cdd9e299724f033f75d96f1beb17c577696b1436333'
 URL = f'https://raw.githubusercontent.com/zimbadev/crystalserver/{PIN}/{SOURCE_PATH}'
-AIDS = (24868, 9299, 14332, 14324, 14352, 14343)
+AIDS = (24868, 9299, 14332, 14324, 14352, 14343, 14348)
 POSITIONS = {
     (33718, 32047, 15): (1949, 22761),
     (32245, 31244, 14): None,
@@ -23,11 +23,32 @@ POSITIONS = {
     (32261, 31250, 14): (23482, 23483),
     (32281, 31348, 14): (23482, 23483),
     (32326, 31250, 14): (23482, 23483),
+    # Exact Eradicator onUse literals;14348 is the OUTPUT portal, not lever AID.
+    (32334, 31283, 14): None,
+    (32334, 31284, 14): None,
+    (32334, 31285, 14): None,
+    (32334, 31286, 14): None,
+    (32334, 31287, 14): None,
+    (32334, 31288, 14): None,
+    (32309, 31290, 14): None,
+    (32309, 31283, 14): None,
+    (32318, 31284, 14): None,
+    (32218, 31375, 11): None,
 }
 
 def extract(raw, otbm):
     rows = []
+    selected_tiles = {}
     def on_tile(x, y, z, flags, house, zones, items):
+        position = (x, y, z)
+        if position in POSITIONS:
+            if position in selected_tiles:
+                raise ValueError('duplicate selected source tile')
+            selected_tiles[position] = {
+                'source_position': list(position), 'present': True,
+                'item_count': len(items), 'tile_flags': flags,
+                'house_id': house, 'zones': list(zones),
+            }
         for ordinal, (item, depth, attrs) in enumerate(items):
             aid = attrs.get(4)
             position = (x, y, z)
@@ -44,6 +65,9 @@ def extract(raw, otbm):
                 raise ValueError('bounded output capacity exceeded (512 facts)')
     facts = otbm.read_tiles(raw, on_tile)
     return {'rows': sorted(rows, key=lambda r:(r['source_position'],r['source_preorder_ordinal'])),
+            'selected_tiles': [selected_tiles.get(position, {
+                'source_position': list(position), 'present': False,
+            }) for position in sorted(POSITIONS)],
             'tiles_scanned': facts.tiles,
             'unknown_item_attributes': dict(facts.unknown_item_attrs),
             'unknown_tile_attributes': dict(facts.unknown_tile_attrs),

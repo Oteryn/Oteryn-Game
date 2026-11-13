@@ -1,4 +1,4 @@
-name: Pinned W01 Constructor Census
+name: Pinned W01 Eradicator Source Facts
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pinned-w01-constructor-census-${{ github.ref }}
+  group: pinned-w01-eradicator-facts-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -24,12 +24,12 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-      - name: Extract derived constructor namespace facts only
-        run: python3 tools/diagnostics/extract_w01_constructor_census.py --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/w01-constructor-census.json"
+      - name: Extract bounded pinned map facts only
+        run: python3 tools/diagnostics/extract_w01_source_facts.py --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/w01-eradicator-facts.json"
       - name: Upload bounded derived facts only
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: w01-constructor-census-${{ github.sha }}
-          path: ${{ runner.temp }}/w01-constructor-census.json
+          name: w01-eradicator-facts-${{ github.sha }}
+          path: ${{ runner.temp }}/w01-eradicator-facts.json
           retention-days: 3
           if-no-files-found: error
