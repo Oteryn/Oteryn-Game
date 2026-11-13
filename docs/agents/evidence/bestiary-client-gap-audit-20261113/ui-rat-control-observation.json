@@ -1,0 +1,59 @@
+{
+  "scope": "ONE_CONTROL_CARD_NOT_ALL_BESTIARY",
+  "card": "Rat",
+  "client_source_id_candidate": 21,
+  "proof": "rat-detail.png",
+  "health": 20,
+  "experience": 5,
+  "speed": 67,
+  "armor": 1,
+  "mitigation_percent": "0.12",
+  "charm_points": 5,
+  "difficulty": "Trivial",
+  "occurrence": "Common",
+  "attack_mode_tooltip": "Creature attacks in melee range",
+  "kill_thresholds": [
+    10,
+    100,
+    250
+  ],
+  "dynamic_total_kills": 950,
+  "damage_taken_percent": {
+    "physical": 100,
+    "earth": 80,
+    "energy": 100,
+    "holy": 80
+  },
+  "damage_taken_semantics": "UI percentage received = 100 - resistance percent, for these compared fields",
+  "loot_visible": [
+    {
+      "tooltip": "a gold coin",
+      "count_literal": "1+",
+      "category": "Common"
+    },
+    {
+      "tooltip": "cheese",
+      "count_literal": "1",
+      "category": "Common"
+    }
+  ],
+  "loot_boundary": "UI rarity bucket/count does not establish exact probability_ppm; gold 1+ does not establish an upper limit",
+  "locations": {
+    "status": "SOURCE_TEXT_DIFFERENCE_CONFIRMED_FULL_LITERAL_TRANSCRIPTION_PENDING",
+    "verified_prefix": "Ab’Dendriel, Ab’Dendriel Underground, Adaean Landing, Blue Valley",
+    "verified_suffix": "Yalahar Centre, Yalahar Factory Quarter",
+    "repo_literal": "Rookgaard and Mainland, in most sewers and caves near towns. They can be found almost everywhere in Tibia.",
+    "proofs": [
+      "rat-detail.png",
+      "rat-locations-bottom.png",
+      "rat-locations-up1.png",
+      "rat-locations-up2.png",
+      "rat-locations-up3.png",
+      "rat-locations-up4.png",
+      "rat-locations-up5.png",
+      "rat-locations-up6.png",
+      "rat-locations-segment4.png"
+    ]
+  },
+  "no_claim": "No loot probability validation, complete animation parity or global stat parity"
+}

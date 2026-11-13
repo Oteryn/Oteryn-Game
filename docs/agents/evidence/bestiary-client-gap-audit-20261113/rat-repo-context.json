@@ -1,0 +1,69 @@
+{
+  "documents": {
+    "source_path": "content/documents/documents-01000-01499.json",
+    "record": {
+      "declaration": {
+        "author": "TibiaWiki BR contributors",
+        "content": [
+          "Combate corpo a corpo. Foge com a vida baixa.",
+          "Matar estas pequenas criaturas é o melhor caminho para jogadores recém-chegados e desequipados para conseguir algum dinheiro e experiência.",
+          "Dizem que os rats são servos de Urgith. Um jogador iniciante (level 10 ou menor) deve estar sempre atento, porque as vezes, estas criaturas se reproduzem tão rápido, que acabam ocorrendo invasões em Rookgaard e em Thais.",
+          "Aviso: O loot especial só dropa na invasão de thais, em rookgaard isso não acontece.",
+          "Você pode vender os corpos de ratos mortos para Baxter",
+          "Venda os corpos de rat para:",
+          "Tom (Rookgaard) 2 Gold Coins",
+          "Seymour (Rookgaard) 2 Gold Coins",
+          "Billy (Rookgaard) 2 Gold Coins (Área premium)",
+          "Baxter (Thais) 1 Gold Coins",
+          "Humgolf (Kazordoon) 2 Gold Coins",
+          "Os ratos vivem em cavernas, masmorras e nos esgotos de cada cidade. Crescendo em massas eles são uma verdadeira praga, e os governos pagam algumas moedas de ouro por cada rato morto. De modo geral os ratos são bastante fracos, mas quanto aparecem em bandos, podem ser perigosos para aventureiros despreparados."
+        ],
+        "document_type": "Report",
+        "fields": [],
+        "identity": {
+          "key": "oteryn:document/monster-encyclopedia/rat",
+          "revision": "definition-r1"
+        },
+        "kind": "Document",
+        "language": "pt-BR",
+        "title": "Rat"
+      }
+    }
+  },
+  "loot": {
+    "source_path": "content/loot/loot-00500-00999.json",
+    "record": {
+      "definition": {
+        "algorithm": "IndependentBernoulliPpm",
+        "entries": [
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3607",
+              "revision": "definition-r1"
+            },
+            "max_count": 1,
+            "min_count": 1,
+            "probability_ppm": 356433
+          },
+          {
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3031",
+              "revision": "definition-r1"
+            },
+            "max_count": 4,
+            "min_count": 1,
+            "probability_ppm": 903036
+          }
+        ],
+        "identity": {
+          "family": "Loot",
+          "key": "oteryn:loot.creature.rat",
+          "revision": "definition-r1"
+        },
+        "kind": "Loot"
+      }
+    }
+  }
+}

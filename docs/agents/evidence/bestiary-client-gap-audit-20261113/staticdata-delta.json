@@ -1,0 +1,169 @@
+{
+  "old_client": "15.30",
+  "new_client": "15.33.dd0955",
+  "old_count": 833,
+  "new_count": 845,
+  "classes": 21,
+  "common_ids": 833,
+  "byte_identical_common": 833,
+  "added": [
+    {
+      "source_id": 2883,
+      "source_index": 833,
+      "name": "omega bulwark",
+      "look": {
+        "hex": "08c40f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "4ac25a232cad90f34fa19844ea1198c12aab25fafb2abfe09266854f0ea550c7"
+    },
+    {
+      "source_id": 2884,
+      "source_index": 834,
+      "name": "omega bastion",
+      "look": {
+        "hex": "08c50f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "0fd02a186866d6023bef585129462ddfe4715d6b9e097835ebacb97ee847f644"
+    },
+    {
+      "source_id": 2885,
+      "source_index": 835,
+      "name": "omega battler",
+      "look": {
+        "hex": "08c60f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "34e43a0cbef272ebc15067e01d7fec6a783bb9a7abf09a88e6b5d7624eb1b00a"
+    },
+    {
+      "source_id": 2886,
+      "source_index": 836,
+      "name": "omega moonbreaker",
+      "look": {
+        "hex": "08c40f1208080a100a180a200a1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "da1d53a168080ef3163f91f81caa369dbe8bbdfd3960e9704e3b5d573107ba7f"
+    },
+    {
+      "source_id": 2887,
+      "source_index": 837,
+      "name": "omega cinderflayer",
+      "look": {
+        "hex": "08c50f1208084d104d184d204d1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "4a73bbf3676f46aade296dafaf769122c897085e2a0fe7586dfca5f1d33e0878"
+    },
+    {
+      "source_id": 2888,
+      "source_index": 838,
+      "name": "omega rampart",
+      "look": {
+        "hex": "08c60f12080856105b185b205b1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "2023d4f33bc2edc4bc73194586a0e73214e20e92443c38979762c08b4cb3a521"
+    },
+    {
+      "source_id": 2896,
+      "source_index": 839,
+      "name": "giant rat",
+      "look": {
+        "hex": "08c90f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "a4f08fadc8ae747140af620b357c36c28d67905d8e36d94a3146838363173de0"
+    },
+    {
+      "source_id": 2897,
+      "source_index": 840,
+      "name": "greedcarrier rat",
+      "look": {
+        "hex": "08ca0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "38fd555eb9a9e5b947041ab9cea1365aef0d54c997ff76ec6aebbf3fdf3a9f00"
+    },
+    {
+      "source_id": 2898,
+      "source_index": 841,
+      "name": "hoarder rat",
+      "look": {
+        "hex": "08cb0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "900f4a24426db88b734a2eacafa97680a7b0d78e739292ab1729a91fbd9b8842"
+    },
+    {
+      "source_id": 2899,
+      "source_index": 842,
+      "name": "greed elemental",
+      "look": {
+        "hex": "08ce0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "49176b9bc84618fa808f84d6572f915a786efb892458439e5f29e6ccb8f9d0bb"
+    },
+    {
+      "source_id": 2900,
+      "source_index": 843,
+      "name": "greedweaver",
+      "look": {
+        "hex": "08cf0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "6d09401ed01b8b49ac0db72cf16e1ffd4c84689cfe9296462b7df6d90731223c"
+    },
+    {
+      "source_id": 2901,
+      "source_index": 844,
+      "name": "greater greed",
+      "look": {
+        "hex": "08d00f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "b2b0102f91b34801e25d9cc65b4f9ceab7b26dd9ebb68ff0c66acb9578de1187"
+    }
+  ],
+  "removed": [],
+  "changed": []
+}
