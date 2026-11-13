@@ -29,7 +29,8 @@ Donor code does not establish current Global behavior.
 Derived evidence is retained in
 [client-and-planner.json](wheel-of-destiny-testserver-20261113/client-and-planner.json),
 [new-supreme-mods.json](wheel-of-destiny-testserver-20261113/new-supreme-mods.json),
-[existing-mod-grades.json](wheel-of-destiny-testserver-20261113/existing-mod-grades.json) and
+[existing-mod-grades.json](wheel-of-destiny-testserver-20261113/existing-mod-grades.json),
+[native-checks.json](wheel-of-destiny-testserver-20261113/native-checks.json) and
 [official-sources.json](wheel-of-destiny-testserver-20261113/official-sources.json).
 The modifier file records all four static grade values, hashes/table offsets and separate
 Grade IV planner checks. The official-source file includes dated forum observations and
@@ -40,11 +41,23 @@ Client executable SHA-256:
 Translation file SHA-256:
 `f627f7e51feaa25cc29f485efdcbe7d262206c3591c01bc980a8a6edd5016a62`.
 
-The native Wheel was observed before the remote host disconnected. Character selection
-then returned to an empty-password login form. The first source PNG was overwritten during
-later capture and could not be recovered; it is not retained reproducible image evidence.
-Login screenshots, credentials, binaries and graphics are excluded from Git. Obsolete
-translation templates remain in the client, so text presence alone does not prove reachability.
+The first native session disconnected and character selection returned to a login form.
+Its initial source PNG was overwritten. A fresh logged-in Wheel was later observed at
+20:18:40 UTC, with uniquely retained private captures. Workshop showed +3 promotion points
+and +75 HP/Mana/Capacity; actual maxima were HP8400, Mana8305 and total Capacity20595.
+The capacity figure comes from the native tooltip, separately from free Capacity10484.
+At20:29:48 UTC the host closed the connection again, before any planned upgrade, gem
+removal or temporary allocation was applied. All four controlled checks are explicitly
+NOT_EXECUTED in `native-checks.json`; no gold/fragments were spent or build changes made.
+Guest capture timestamps differ from tool UTC and are retained separately. Login images,
+credentials, client binaries and graphics are excluded from Git. Obsolete translation
+templates remain in the client, so text presence alone does not prove reachability.
+
+The same retained Wheel capture shows level757 and available points42/742; the Skills
+capture independently confirms the level. **DERIVED:** `742 - (757 - 50) - 3 = 32`
+points remain unattributed after level and observed Workshop points. The total-budget
+breakdown tooltip was not captured. No particular item, accomplishment or shop reward
+is inferred from this remainder, and the exported preset does not encode its sources.
 
 The preset carries allocation and gem IDs, not the character's Workshop grades. The
 planner comparison uses Grade IV: gem HP/Energy are 150/1.5%, whereas the initial native
@@ -159,17 +172,34 @@ Each row represents two modifiers, not one combined damage modifier. The cooldow
 modifier's Momentum is an additional effect. The JSON preserves Grades I–IV and labels
 their evidence. Planned Monday revisions must be checked again before admission.
 
-### W07 — Remaining donor overrides and Grade IV domain points
+### W07 — Further reference mismatches and unresolved domain progress
 
-**UNKNOWN:** current Global execution is not established for retained Monk Grade IV
-Capacity, Flurry damage/critical mapping, Divine Caldera critical value, Heal Friend
-cooldown and Combat Mastery thresholds. They are visible in `wheel_effects/gems.rs`;
-imported descriptions alone are insufficient to repair them.
+**FACT, open:** current official Grade IV menus agree with the imported catalogue, but
+six retained donor overrides in `wheel_effects/gems.rs` produce these differences:
+
+| Vocation / mod | Official current Grade IV label | Oteryn projection |
+| --- | --- | --- |
+| Monk basic48 | Capacity700 | Capacity750 |
+| Monk supreme82, Flurry of Blows | Base Damage9.75% | Critical Extra Damage9% |
+| Monk supreme83, Flurry of Blows | Critical Extra Damage12% | Base Damage12% |
+| Monk supreme86, Sweeping Takedown | Base Damage7.5% | Base Damage12% |
+| Paladin supreme29, Divine Caldera | Critical Extra Damage12% | Critical Extra Damage18% |
+| Druid supreme60, Nature's Embrace | Cooldown−10s, Momentum1% | Cooldown−5s, Momentum1% |
+
+These are verified reference value/type mismatches. They remain outside this PR's three
+numeric repairs pending combat/stat qualification; they are not declared accepted Oteryn
+differences. The current client table also corroborates the Flurry82/83 effect types and
+all four values. ID60 is **Nature's Embrace**, not Heal Friend; current ID71 is Heal Friend
+base healing7.5% at Grade IV. Combat Mastery thresholds and remaining integer-rounding
+rules still need current execution evidence.
 
 **UNKNOWN:** `contribute_gems` adds every fully upgraded modifier directly to each of four
 Revelation domains, while Grade IV modifiers also increase the spendable point budget.
-Existing tests intentionally assert this donor behavior. A controlled Global boundary
-comparison must distinguish spendable points from automatic domain points before changing it.
+The fresh native Workshop showed +3 promotion points. A legal temporary red249/250 fixture
+was verified offline (one-based16=50,10=75,4=100,5=24/25; no gems or new +125 Mastery
+Convictions), but the native connection closed before it was applied. Oteryn derives stageI
+at both thresholds with three Grade IV mods. A native0→I result would disprove that automatic
+addition; no such observation was completed. Existing donor-rule tests are not Global proof.
 
 ### W08 — Sorcerer elemental state / Lord of Destruction integration is missing
 
@@ -193,6 +223,7 @@ not inspected, so an actual live beam/wave refusal is **not** claimed.
 | Surface | Actual owners/consumers | Checked here / remaining work |
 | --- | --- | --- |
 | Eligibility, budget, connectivity, caps | `crates/gameplay/progression/src/wheel.rs` | Component tests executed; native level/Premium/promotion transitions remain |
+| Non-Workshop point budget | `character_wheel/presentation.rs::compose_budget/read_budget` | Durable Task Board points and completed Monk pilgrimage join level points; the shared reader feeds presentation and writer. Native32-point source breakdown and broader rare-item parity are unqualified |
 | Shared stats and gems | `wheel_effects.rs`, `wheel_effects/gems.rs` | Three repairs, failing regressions, all-grade tests and composed planner fixture executed |
 | Knight | `spell/cast/wheel.rs`, `spell/wheel_formula.rs`, `spell/magnitude_owner.rs` | Combat Mastery, Battle Instinct and Battle Healing consumers traced; live numeric qualification remains |
 | Paladin | `attack/ranged.rs`, `attack/drain.rs`, native delayed owners | Ballistic/Positional effects, Grenade and Empowerment consumers traced; delayed/PZ runtime tests not executed here |
@@ -260,7 +291,17 @@ It does not claim that a persisted twelve-slot build can safely use the new layo
 
 Four negative observations were reproduced: missing Workshop stats, doubled Mastery,
 missing Monk Mana and wrong Spiritual Outburst stage in the exact preset. The patched
-progression suite passes 174 tests. Formatter, Clippy and governance results are recorded
-in the task packet/PR for the candidate they actually checked. Independent review and
-exact-head CI are reported separately. No PostgreSQL integration run, deployed server
-acceptance or complete Global certification is claimed.
+progression suite passes 174 tests on source-qualified head
+`cec30251a3592eaf6b69c1bd28ae7c8c738b821a`. Subsequent consumer inspection found stale
+assertions in `gem_presentation/tests.rs` and the mounted
+`character_wheel_cast_postgres_cases.rs`; their corrected expectations retain the
+unresolved Grade IV automatic-domain-point fixture unchanged.
+
+Formatter, Clippy, governance, dispatch and PostgreSQL results are recorded in the task
+packet/PR for the candidate they actually checked. A PostgreSQL fixture returning early
+without `OTERYN_TEST_POSTGRES_ADMIN_URL` is not an executed database check. The isolated
+PostgreSQL18.6 run must emit `WHEEL_CAST_GEMS POSTGRES_CASE_COMPLETED` and pass its real
+migrations and assertions before being reported as qualified. Independent review was
+CLEAN for the exact source-qualified head above; later changes are evidence and test
+expectations only. Final exact-head CI is reported separately. Deployed server acceptance
+and complete Global certification remain open.

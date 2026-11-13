@@ -644,6 +644,91 @@
         "limitation": "The remaining eight vessels were not individually identified by export-byte delta in this observation."
       },
       "capacity_limit": "All eight affected slices were directly observed at 100/100 for all five vocations. A separate per-slice audit of every other capacity was not performed."
+    },
+    "retained_override_comparison_grade_iv": {
+      "qualification": "Direct current official Grade IV menu descriptions compared with executed Oteryn projection. These establish value/type differences, not independently measured authoritative server combat arithmetic.",
+      "rows": [
+        {
+          "vocation": "Monk",
+          "namespace": "basic",
+          "id": 48,
+          "reference": {
+            "capacity": 700
+          },
+          "oteryn": {
+            "capacity": 750
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 82,
+          "spell": "Flurry of Blows",
+          "reference": {
+            "base_damage_percent": 9.75
+          },
+          "oteryn": {
+            "critical_extra_damage_percent": 9
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 83,
+          "spell": "Flurry of Blows",
+          "reference": {
+            "critical_extra_damage_percent": 12
+          },
+          "oteryn": {
+            "base_damage_percent": 12
+          }
+        },
+        {
+          "vocation": "Monk",
+          "namespace": "supreme",
+          "id": 86,
+          "spell": "Sweeping Takedown",
+          "reference": {
+            "base_damage_percent": 7.5
+          },
+          "oteryn": {
+            "base_damage_percent": 12
+          }
+        },
+        {
+          "vocation": "Paladin",
+          "namespace": "supreme",
+          "id": 29,
+          "spell": "Divine Caldera",
+          "reference": {
+            "critical_extra_damage_percent": 12
+          },
+          "oteryn": {
+            "critical_extra_damage_percent": 18
+          }
+        },
+        {
+          "vocation": "Druid",
+          "namespace": "supreme",
+          "id": 60,
+          "spell": "Nature’s Embrace",
+          "reference": {
+            "cooldown_seconds": -10,
+            "momentum_percent": 1
+          },
+          "oteryn": {
+            "cooldown_seconds": -5,
+            "momentum_percent": 1
+          }
+        }
+      ],
+      "urls": [
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=P1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+        "https://www.test.tibia.com/community/?subtopic=wheelofdestinyplanner&code=D1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA"
+      ],
+      "identity_correction": "Supreme60 is Nature’s Embrace. Supreme71 is Heal Friend, Grade IV base healing7.5%; no Heal Friend cooldown modifier appeared in the current menu.",
+      "lower_grades": "Not separately qualified in this bounded menu check. Current installed-client crosschecks already retain all four values for82/83."
     }
   },
   "unresolved": [
