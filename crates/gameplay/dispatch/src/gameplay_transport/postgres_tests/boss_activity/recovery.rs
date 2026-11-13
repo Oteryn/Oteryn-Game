@@ -622,3 +622,30 @@ fn bytes(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
     out.push(n as u8);
     out.extend_from_slice(value);
 }
+
+
+pub(super) async fn assert_security_revocation(
+    h: &Harness, owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession, lost: bool,
+) -> TestResult {
+    use crate::durability::platform_streams::{PageCounts, PageOutcome, SecurityRevocation, StreamPage};
+    use crate::gameplay_transport::connection::GraceExpiryResult;
+    let now: i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?;
+    if lost {
+        assert_eq!(owner.lose_control(admitted,std::time::Duration::ZERO,None).await,ControlLossResult::Recorded);
+    }
+    let independent: i64=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_staff_disconnects)+(SELECT count(*) FROM game_staff_bans)").fetch_one(&h.pool).await?;
+    assert_eq!(independent,0,"revocation itself must prove forced termination");
+    let account=admitted.controller.ok_or("controller")?.account_id;
+    assert_eq!(h.root.apply_platform_stream_page(None,StreamPage::SecurityRevocations(vec![SecurityRevocation {
+        revocation_id:fixture::id(245),account_id:account,native_security_generation:if lost {1}else{2},cause:if lost {3}else{1},effective_at_ms:now*1000
+    }]),Some("v1:1".into())).await.map_err(debug)?,PageOutcome::Advanced(PageCounts{applied:1,..Default::default()}));
+    assert!(h.root.security_session_revoked(admitted.game_session_id).await.map_err(debug)?);
+    assert_eq!(owner.release_staff_session(admitted).await,GraceExpiryResult::Released,"captured security revocation must finish the real activity terminal path");
+    assert_eq!(FreshAdmissionStore::from_root(h.root.clone()).current_session(admitted.game_session_id).await?.session_state(),GameSessionState::Terminal);
+    let (reason,destination_state):(i16,i16)=sqlx::query_as("SELECT r.reason,d.session_state FROM game_activity_runtime_returns r JOIN game_durability_reconnect_sessions d ON d.game_session_id=r.destination_game_session_id WHERE r.source_game_session_id=encode($1,'hex')::uuid")
+        .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(reason,if lost {11}else{10});
+    assert_eq!(destination_state,3,"forced return must also terminalize its successor");
+    Ok(())
+}

@@ -57,6 +57,8 @@ mod state_effects;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
+    SecurityActive,
+    SecurityLost,
     Entry,
     Difficulty,
     AwardContinuity,
@@ -80,6 +82,15 @@ enum Case {
     SoulWarFinalDefeat,
     RottenBloodDefeat,
     PrimalDefeat,
+}
+
+#[test]
+fn revocation_activity_active_forced_termination_postgres() -> TestResult {
+    run_scenario(Case::SecurityActive)
+}
+#[test]
+fn revocation_activity_lost_forced_termination_postgres() -> TestResult {
+    run_scenario(Case::SecurityLost)
 }
 
 #[test]
@@ -330,7 +341,13 @@ fn scenario(case: Case) -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+        let security_now: Option<i64> = if matches!(case, Case::SecurityActive | Case::SecurityLost) {
+            Some(sqlx::query_scalar("SELECT ceil(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?)
+        } else { None };
+        let _security_clock = if let Some(now) = security_now {
+            Some(super::preadmission::FrozenAdmissionClock::install(&h, now).await?)
+        } else { None };
+        let evidence = super::house_transfer::RecoverySource::start_at(&h, security_now.map(u64::try_from).transpose()?).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
         let (controller, source_pin) = if with_live_progression {
@@ -972,6 +989,9 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::SecurityActive | Case::SecurityLost => {
+                recovery::assert_security_revocation(&h, &owner, admitted, case == Case::SecurityLost).await?
+            }
             Case::EndgameReceipts => {
                 endgame_receipts::assert_receipts(&h, &destination, admitted).await?
             }
