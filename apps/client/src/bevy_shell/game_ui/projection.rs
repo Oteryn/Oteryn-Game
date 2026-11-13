@@ -61,7 +61,13 @@ pub(super) fn project_regions(
         (regions.vip, "vip"),
     ] {
         if let Ok(mut node) = nodes.get_mut(entity) {
-            node.display = if owner.settings.preferences.panel_visible(id) {
+            let visible = owner.settings.preferences.panel_visible(id)
+                || id == "vip"
+                    && owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.vip_is_open());
+            node.display = if visible {
                 Display::Flex
             } else {
                 Display::None
