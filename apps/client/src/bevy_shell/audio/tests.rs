@@ -117,9 +117,9 @@ fn confirmed_queues_reach_output_once_with_accepted_settings_and_ui_filters() ->
     Ok(())
 }
 
-fn rendered(
-    log: &Rc<RefCell<Vec<Event>>>,
-) -> Result<(AudioSettings, Vec<SoundCue>, Vec<UiSound>), Box<dyn std::error::Error>> {
+type Rendered = (AudioSettings, Vec<SoundCue>, Vec<UiSound>);
+
+fn rendered(log: &Rc<RefCell<Vec<Event>>>) -> Result<Rendered, Box<dyn std::error::Error>> {
     log.borrow()
         .iter()
         .rev()
