@@ -130,6 +130,7 @@ use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
+pub use feature_0450_server_modal::protocol::ServerModalPanel;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
 pub use session_loop::Stepper;
 

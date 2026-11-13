@@ -154,6 +154,7 @@ pub(super) struct Mailbox {
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
+    pub(super) server_modal: super::feature_0450_server_modal::protocol::SharedModal,
     pub(super) activity_reset_commands: bool,
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
