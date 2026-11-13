@@ -960,7 +960,7 @@ fn global_spell_leech_uses_pre_overkill_damage_and_does_not_replay() {
         },
     ];
     proof
-        .stage_item_spell_leech(&staged, &inputs, &[])
+        .stage_item_spell_leech(&f.runtime, &staged, &inputs, &[])
         .expect("leech stage");
     let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
         .expect("joined commit");
@@ -1034,7 +1034,7 @@ fn global_spell_leech_retains_pre_prey_damage_and_caps_at_caster_vitals() {
         let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
             .expect("player stage");
         proof
-            .stage_item_spell_leech(&staged, &inputs, &[])
+            .stage_item_spell_leech(&f.runtime, &staged, &inputs, &[])
             .expect("leech stage");
         let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
             .expect("joined commit");
@@ -1079,7 +1079,7 @@ fn global_spell_leech_qualified_zero_damage_target_remains_in_denominator() {
     let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
         .expect("player stage");
     proof
-        .stage_item_spell_leech(&staged, &inputs, &[])
+        .stage_item_spell_leech(&f.runtime, &staged, &inputs, &[])
         .expect("leech stage");
     commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)).expect("joined commit");
     assert_eq!(
@@ -1115,7 +1115,7 @@ fn global_spell_leech_stale_player_aborts_damage_and_gain_together() {
     let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
         .expect("player stage");
     proof
-        .stage_item_spell_leech(&staged, &inputs, &[])
+        .stage_item_spell_leech(&f.runtime, &staged, &inputs, &[])
         .expect("leech stage");
     f.states
         .get_mut(&f.runtime, f.caster, f.session)
@@ -1287,7 +1287,7 @@ fn global_spell_leech_real_charm_owner_adds_only_the_assigned_race_bonus() {
     let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
         .expect("player stage");
     proof
-        .stage_item_spell_leech(&staged, &inputs, &[])
+        .stage_item_spell_leech(&f.runtime, &staged, &inputs, &[])
         .expect("leech stage");
     commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)).expect("joined commit");
     let after = f

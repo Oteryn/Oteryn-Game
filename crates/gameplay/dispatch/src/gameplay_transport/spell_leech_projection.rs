@@ -101,3 +101,29 @@ pub(in crate::gameplay_transport) fn capture(
     }
     Ok(targets)
 }
+
+/// Apply the same native health-change callback as the physical damage owner,
+/// but to the retained pre-Prey magnitude before HP clipping. A batch receipt's
+/// health_before includes earlier hits in that batch. DamageWithHealing restores
+/// capped HP before its damage callback; match that order without mutating a slot.
+/// This is called only beside an applied (or staged-to-apply) owner receipt.
+pub(in crate::gameplay_transport) fn owner_damage_basis(
+    runtime: &ChannelRuntimeV1,
+    target: ExactActorRef,
+    damage: u32,
+    health_before: i64,
+    healing: i64,
+) -> Result<u32, Error> {
+    if healing < 0 {
+        return Err(Error::InvalidMagnitude);
+    }
+    let Some(tag) = runtime.soulpit_variant(target) else {
+        return Ok(damage);
+    };
+    let maximum = runtime
+        .companion_snapshot_including_dead(target)?
+        .maximum_health;
+    let at_damage = health_before.saturating_add(healing).min(maximum);
+    let damage = tag.incoming_health_change(i64::from(damage), at_damage, maximum)?;
+    u32::try_from(damage).map_err(|_| Error::InvalidMagnitude)
+}

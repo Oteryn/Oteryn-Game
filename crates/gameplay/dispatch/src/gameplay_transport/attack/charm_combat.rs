@@ -202,26 +202,45 @@ pub(super) fn bonuses(
     outcomes: &[CharmOutcome],
 ) {
     for outcome in outcomes {
-        let (slot, percent) = match effect(outcome) {
+        let (slot, percent, requires_existing_skill) = match effect(outcome) {
             Some(CharmEffectOutcome::CriticalHitChanceBonus { percent }) => {
-                (&mut offence.critical_chance, percent)
+                (&mut offence.critical_chance, percent, false)
             }
             Some(CharmEffectOutcome::CriticalExtraDamageBonus { percent }) => {
-                (&mut offence.critical_damage, percent)
+                (&mut offence.critical_damage, percent, false)
             }
             Some(CharmEffectOutcome::LifeLeechBonus { percent }) => {
-                (&mut offence.life_leech, percent)
+                (&mut offence.life_leech, percent, true)
             }
             Some(CharmEffectOutcome::ManaLeechBonus { percent }) => {
-                (&mut offence.mana_leech, percent)
+                (&mut offence.mana_leech, percent, true)
             }
             _ => continue,
         };
-        // Charms augment the corresponding equipment skill; they do not grant it.
-        if *slot == 0 {
+        // CipSoft news 8421: critical chance and extra damage exist intrinsically
+        // (5% / 10%) even when their additional equipment fields are zero.
+        // Leech has no intrinsic amount, so its existing-skill rule is unchanged.
+        if requires_existing_skill && *slot == 0 {
             continue;
         }
         *slot = slot.saturating_add(u16::try_from(percent.hundredths()).unwrap_or(u16::MAX));
+    }
+}
+
+/// The committed hit's passive contributions. Secondary auto targets receive
+/// no ordinary equipment Leech, but retain the accepted D186 charm exceptions.
+pub(in crate::gameplay_transport) fn committed_hit_bonuses(
+    offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    outcomes: &[CharmOutcome],
+    off_target: bool,
+) {
+    let ordinary = (offence.life_leech, offence.mana_leech);
+    // Eligibility uses the original installed skill. Zeroing it first would
+    // also suppress the two D186 secondary-target charm exceptions.
+    bonuses(offence, outcomes);
+    if off_target {
+        offence.life_leech = offence.life_leech.saturating_sub(ordinary.0);
+        offence.mana_leech = offence.mana_leech.saturating_sub(ordinary.1);
     }
 }
 
@@ -540,7 +559,7 @@ mod tests {
     use crate::gameplay_transport::actor_spell::tests::runtime_with_player;
 
     #[test]
-    fn charm_bonuses_augment_only_existing_equipment_skills() {
+    fn charm_bonuses_augment_intrinsic_critical_but_require_existing_leech() {
         use oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence;
         use oteryn_gameplay_progression::charm_effects::{
             CharmHook, CharmMissingSystem, CharmPercent,
@@ -565,7 +584,17 @@ mod tests {
         .collect();
         let mut empty = EquippedOffence::default();
         bonuses(&mut empty, &outcomes);
-        assert_eq!(empty, EquippedOffence::default());
+        assert_eq!(
+            (
+                empty.critical_chance,
+                empty.critical_damage,
+                empty.life_leech,
+                empty.mana_leech
+            ),
+            (400, 400, 0, 0),
+            "CipSoft 8421: both critical bonuses augment innate skills without Strike; no free leech"
+        );
+        assert_eq!(empty.player_critical(), (900, 1400));
         let mut equipped = EquippedOffence::from_sums(100, 5000, 100, 200);
         bonuses(&mut equipped, &outcomes);
         assert_eq!(

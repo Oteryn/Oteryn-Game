@@ -2,20 +2,20 @@
 
 ```yaml
 task_id: OTV2-20261113-charms-leech-evidence
-title: Global-reference Leech and passive spell critical corrections
+title: All-25 charm effect audit and verified critical/leech corrections
 mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: fix/charms-leech-evidence-20261113
-pr: null
+pr: 3183
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone task writer
 created_at: 2026-11-13T20:38:46Z
-updated_at: 2026-11-13T20:38:46Z
+updated_at: 2026-11-13T22:36:09Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/combat-rules/src/resolution/equipped_offence.rs
@@ -41,6 +41,9 @@ owned_paths:
   - docs/agents/evidence/OTV2-20261113-charms-leech-implementation.md
   - docs/agents/tasks/OTV2-20261113-charms-leech-evidence.md
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/parameter_spell.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_contracts.rs
+  - docs/agents/evidence/OTV2-20261113-all-charms-audit.md
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -82,14 +85,47 @@ Applicable: numerical gains enter existing fenced player-vitals replacements.
 
 ## Validation and current gate
 
-Red failures were observed for fractional rounding, overkill and missing passive AoE criticals;
-those targeted tests subsequently passed. Full final unit/lint/CI/review qualification is ongoing.
-No PostgreSQL success is inferred from route-less tests. Required before merge: exact-head
-`game-gate`, all selected real PostgreSQL partitions and independent Codex review.
+The original published candidate is `a997547565218b9204752a73915f52b8537c5aa7`.
+AUTHORING is open for the expanded audit and three reproduced fixes. The new
+all-25 contract/owner tests passed (5 tests; all 75 catalogue stages and 512
+occurrences per stage), and the focused charm suites passed (104 tests).
+Final affected-package tests passed: 4130 passed, 0 failed, 16 pre-existing ignored.
+Strict Clippy, workspace/mounted-file formatting and diff checks passed.
+Exact successor SHA/results are recorded in the PR, not self-guessed here.
+
+Independent Codex round one: concurrency/persistence/protocol CLEAN; two P1
+findings reproduced and repaired (innate critical gating and Enrage Leech).
+The live-assignment regression also addresses the associated projection-coverage
+blind spot. A material successor still requires its applicable delta review.
+No duplicate review of unchanged `a997547565218b9204752a73915f52b8537c5aa7` is requested.
+
+Real PostgreSQL run `43508976394` on that predecessor: 22 partitions passed,
+2 failed. Relevant executed charm-consumer results and failure details are in the
+[all-charms audit](../evidence/OTV2-20261113-all-charms-audit.md).
+The exact Outburst expectation is aligned with the accepted ceiling rule; the
+501-item death-reset `Unavailable(CommitRejected)` cause remains unverified.
+Route-less local PostgreSQL returns are never counted as database qualification.
 
 ## Remaining work
 
-Finish exact-tree validation, publish the isolated branch/PR with this evidence, run independent
-review and record checks. Preserve the six-topic remaining-boundary table rather than claiming
-full parity: native Carnage spell kills, replay-safe zero-damage minor contact, ranged off-target
-execution and unproven Global edge conditions are not completed by this numerical slice.
+Complete successor publication/qualification without declaring full charm parity.
+The audit identifies outgoing player-spell hook gaps for 12 charms, an incomplete
+Dodge native-source attack boundary, unresolved blocked-contact/Parry edge cases,
+and unqualified delayed/secondary-target cases. Cleanse Hex stays with #3176.
+Required before merge: own-head game-gate, all selected real PostgreSQL partitions,
+independent delta review and no open material finding. No merge/deployment here.
+
+## Owner expansion: all charms
+
+AUTHORING resumed from a997547565218b9204752a73915f52b8537c5aa7 on the explicit request to check all 25 charms and their effects. Exact source rules, catalogue stages, current character/race assignments, real consumer reachability and the review P1 findings are checked separately. No full-parity or PostgreSQL claim follows from pure evaluation tests.
+
+## Local checks on final authoring tree
+
+- `cargo test --offline --locked -p oteryn-gameplay-dispatch --all-features --lib all25_`: pass (5 tests).
+- Affected four-library test command retained in the audit: pass (4130 / 0 failed).
+- Affected four-library strict Clippy command retained in the audit: pass.
+- `cargo fmt --all --check`: pass.
+- `rustfmt --edition 2024 --check crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_contracts.rs`: pass.
+- `git diff --check`: pass.
+- `python3 tools/agents/validate_governance.py`: pass.
+- `python3 -m unittest discover -s tools/agents/tests`: OK (129 tests).

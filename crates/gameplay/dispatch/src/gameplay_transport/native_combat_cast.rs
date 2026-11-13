@@ -665,7 +665,7 @@ impl PreparedNativeCombatCast {
             self.magnitude.as_deref(),
         )
         .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
-        player.stage_item_spell_leech(&physical, &self.leech_inputs, bounty_leech)?;
+        player.stage_item_spell_leech(runtime, &physical, &self.leech_inputs, bounty_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
         if let Some(original) = self.installation.as_ref() {

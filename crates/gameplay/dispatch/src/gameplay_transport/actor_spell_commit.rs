@@ -156,6 +156,7 @@ impl PlayerBatchPreflight {
     /// applied receipt permits the gain. Both gains join the existing atomic install.
     pub(in crate::gameplay_transport) fn stage_item_spell_leech(
         &mut self,
+        runtime: &ChannelRuntimeV1,
         physical: &StagedSpellBatch,
         inputs: &[crate::gameplay_transport::item_spell_augments::leech_projection::Target],
         bounty: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
@@ -203,15 +204,24 @@ impl PlayerBatchPreflight {
             if !receipt.applied {
                 continue;
             }
-            let damage = input.damage.unwrap_or_else(|| {
-                u32::try_from(
+            let damage = match input.damage {
+                Some(damage) => {
+                    let healing = match &effect.change {
+                        OwnerCombatChange::DamageWithHealing { healing, .. } => *healing,
+                        _ => 0,
+                    };
+                    crate::gameplay_transport::item_spell_augments::leech_projection::owner_damage_basis(
+                        runtime, effect.target, damage, receipt.health_before, healing,
+                    )?
+                }
+                None => u32::try_from(
                     receipt
                         .health_before
                         .saturating_sub(receipt.health_after.max(0))
                         .max(0),
                 )
-                .unwrap_or(u32::MAX)
-            });
+                .unwrap_or(u32::MAX),
+            };
             let amount = |rate: u32| {
                 leech_amount_for_targets(
                     damage,
