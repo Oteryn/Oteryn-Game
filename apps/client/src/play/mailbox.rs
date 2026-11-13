@@ -226,6 +226,8 @@ pub(super) struct Mailbox {
     #[cfg(windows)]
     pub(super) dialogue_window: bool,
     pub(super) dialogue_shutdown: bool,
+    /// Session-local shared NPC presentation dismissal; server reducers do not reopen it.
+    pub(super) npc_dialog_dismissed: bool,
     #[cfg(windows)]
     pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,

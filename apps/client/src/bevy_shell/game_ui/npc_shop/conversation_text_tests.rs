@@ -228,3 +228,5 @@ fn old_keyword_button_cannot_answer_a_new_server_reply_or_higher_modal() -> Resu
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+#[path = "conversation_dismissal_tests.rs"]
+mod dismissal_tests;

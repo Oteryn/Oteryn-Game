@@ -67,7 +67,6 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
     };
     if matches!(action.kind, Kind::Close) {
         let visible = play.link.npc_shop_is_open() || play.link.npc_dialogue_is_visible();
-        play.link.npc_shop_close();
         play.link.npc_dialogue_close();
         state.selection = None;
         state.conversation = conversation::Ui::default();

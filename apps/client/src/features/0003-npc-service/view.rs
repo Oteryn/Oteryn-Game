@@ -13,15 +13,10 @@ pub(in crate::play) use native::{context_menu, open_window};
 impl PlayLink {
     pub fn npc_dialogue_is_visible(&self) -> bool {
         let mailbox = lock(&self.mailbox);
-        mailbox.dialogue.selected && mailbox.dialogue.visible()
+        !mailbox.npc_dialog_dismissed && mailbox.dialogue.selected && mailbox.dialogue.visible()
     }
-    /// Dismisses presentation while preserving an in-flight request's pending gate.
+    /// Dismisses the shared presentation without changing canonical data or pending requests.
     pub fn npc_dialogue_close(&self) {
-        let mut mailbox = lock(&self.mailbox);
-        let dialogue = &mut mailbox.dialogue;
-        dialogue.open = false;
-        dialogue.target = None;
-        dialogue.lines.clear();
-        dialogue.feedback = None;
+        lock(&self.mailbox).npc_dialog_dismissed = true;
     }
 }

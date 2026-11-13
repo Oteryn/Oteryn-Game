@@ -39,7 +39,8 @@ impl PlayLink {
     fn npc_dialogue_enqueue(&self, npc: EntityRef, text: &str, context: Option<&[String]>) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if context.is_some_and(|lines| {
-            !mailbox.dialogue.open
+            mailbox.npc_dialog_dismissed
+                || !mailbox.dialogue.open
                 || mailbox.dialogue.target != Some(npc)
                 || mailbox.dialogue.lines.as_slice() != lines
         }) {
@@ -57,6 +58,9 @@ impl PlayLink {
         {
             mailbox.dialogue = Default::default();
             return false;
+        }
+        if context.is_none() {
+            mailbox.npc_dialog_dismissed = false;
         }
         true
     }
