@@ -79,6 +79,17 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         ui_audit: None,
     };
     let mut app = bevy_shell::build_app(options, owner);
+    // Exercise real letterboxing: at the minimum width the 15x11 map nearly fills
+    // its region, and a sample eight pixels inward belongs to unknown black tiles.
+    {
+        let mut windows = app
+            .world_mut()
+            .query_filtered::<&mut Window, With<bevy::window::PrimaryWindow>>();
+        windows
+            .single_mut(app.world_mut())?
+            .resolution
+            .set(1280., 720.);
+    }
     app.insert_resource(Capture {
         path: path.clone(),
         started: Instant::now(),
