@@ -1,6 +1,16 @@
 # All-category local item field delta
 
-**Latest result:2239 complete,641 partial,27 unreconciled =2907 scoped records.**
+**Latest result:2306 complete,574 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch3.json`, `all-visible-after-offline-batch3.csv` and
+`remaining574-summary.json` close67 further records:32 saved full native panes
+manually read and paired-source checked (45 visible quotes), then35 full panes
+recovered by exact independent price+gp/name/residence glyph controls (56 quotes).
+Eight representative exact-match panes were independently visually confirmed.
+No fuzzy OCR or new game input/capture.90 records have now closed offline after
+the seven live potions.318 literal-first,180 geometry and76 combined cases remain.
+These are retained collection records, not global unique items or runtime parity.
+
+**Previous result:2239 complete,641 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch2.json`, `all-visible-after-offline-batch2.csv` and
 `remaining641-summary.json` add seven more offline closures. Every full price+gp,
 NPC and residence glyph block exactly matches a unique independently reviewed

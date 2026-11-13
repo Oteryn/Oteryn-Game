@@ -390,6 +390,49 @@ def offline_batch2(source_path=None, packet=None):
     assert len(load(HERE,"remaining641-summary.json")["remaining_keys"]) == 641
 
 
+def offline_batch3(source_path=None, packet=None):
+    p = packet or load(HERE,"offline408-batch3.json")
+    assert p["current_counts"] == dict(COMPLETE=2306,PARTIAL=574,UNRECONCILED=27,total=2907)
+    assert len(p["manual_records"]) == 32 and len(p["exact_bitmap_records"]) == 35
+    assert not p["UI_inputs"] and not p["new_screenshots"] and not p["fuzzy_OCR_promotion"]
+    source = None
+    if source_path:
+        raw = json.loads(source_path.read_text(encoding="utf8"))
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        source = [dict(zip(raw["field_order"],v)) for v in zip(*cols)]
+    def quote(q,panel,locfield):
+        assert q["currency_literal"] == "gp" and q["paired_raw_tuple_indices0"]
+        if source:
+            for i in q["paired_raw_tuple_indices0"]:
+                s = source[i]
+                assert s["npc_name"] == q["NPC"] and s["buy_price_raw" if panel == "Sell To" else "sale_price_raw"] == q["price"]
+                assert q[locfield] == "Various Locations" or s["location"] == q[locfield]
+    seeds = {r["observation_key"]:{"values":r["closed_fields"],"sha256":r["source_bitmap"]["sha256"]} for r in load(HERE,"offline408-batch1.json")["records"]}
+    for r in p["manual_records"]:
+        assert r["geometry_evidence"] == "CALIBRATED_NO_OVERFLOW" and r["current_state"] == "COMPLETE" and not r["remaining_reasons"]
+        for q in r["native_read_all_visible_quotes"]:
+            quote(q,r["panel"],"UI_location_literal")
+            seeds[r["observation_key"]+":quote"+str(q["UI_quote_row1"])] = {"values":q,"sha256":r["source_bitmap"]["sha256"]}
+    for r in p["exact_bitmap_records"]:
+        assert r["current_state"] == "COMPLETE" and not r["remaining_reasons"]
+        for panel in r["panels"]:
+            assert panel["geometry_evidence"] == "CALIBRATED_NO_OVERFLOW"
+            for q in panel["quotes"]:
+                quote(q,panel["panel"],"location_literal")
+                for kind,field,outfield in [("price_gp_bitmap","price","price"),("NPC_bitmap","NPC","NPC"),("location_bitmap","UI_location_literal","location_literal")]:
+                    s = q["native_seed_receipts"][kind]
+                    assert s["seed_sha256"] == seeds[s["seed_key"]]["sha256"]
+                    assert s["value"] == seeds[s["seed_key"]]["values"][field] == q[outfield]
+                    assert len(q["native_bitmap_keys"][kind].split(":")[-1]) == 64
+    before = {r["observation_key"]:r for r in csv.DictReader((HERE/"all-visible-after-offline-batch2.csv").open(encoding="utf8",newline=""))}
+    current = list(csv.DictReader((HERE/"all-visible-after-offline-batch3.csv").open(encoding="utf8",newline="")))
+    keys = {r["observation_key"] for r in p["manual_records"]+p["exact_bitmap_records"]}
+    assert len(keys) == 67 and len(current) == len(before) == 2907
+    assert {r["observation_key"] for r in current if r != before[r["observation_key"]]} == keys
+    assert {k:sum(r["ALL_VISIBLE_state"] == k for r in current) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]} == dict(COMPLETE=2306,PARTIAL=574,UNRECONCILED=27)
+    assert set(load(HERE,"remaining574-summary.json")["remaining_keys"]) == {r["observation_key"] for r in current if r["ALL_VISIBLE_state"] == "PARTIAL"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -412,6 +455,15 @@ def main():
     routing664()
     offline_batch1(args.npc_source)
     offline_batch2(args.npc_source)
+    offline_batch3(args.npc_source)
+    badgeometry = copy.deepcopy(load(HERE,"offline408-batch3.json"))
+    badgeometry["exact_bitmap_records"][0]["panels"][0]["geometry_evidence"] = "OVERFLOW_OR_UNQUALIFIED"
+    try:
+        offline_batch3(args.npc_source,badgeometry)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Unqualified panel end accepted as complete")
     badprice = copy.deepcopy(load(HERE,"offline408-batch2.json"))
     badprice["records"][0]["panels"][0]["quotes"][0]["price"] *= 10
     try:
@@ -467,7 +519,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;current ALL2239/641/27;offline23 native recoveries;10 negative controls"
+    print("PASS:6470 appearances/6228 types;current ALL2306/574/27;offline90 native recoveries;11 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 
