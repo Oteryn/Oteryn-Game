@@ -226,6 +226,26 @@ matching lifecycle in this proposal; its scope remains unavailable rather
 than advertising ACTIVE. A later eligible root change queues replacement work;
 publication quarantine still requires an approved epoch/resync repair.
 
+
+## Review repairs
+
+Terminal lifecycle-4 roots remain immutable history but do not occupy portfolio
+slots or enter a new CloseAccount manifest. The existing account-wide closure
+fence still covers their account; lifecycle 4 independently denies admission.
+Bazaar capacity uses the same live-root view. Receipt replay checks the original
+binding, process and recovery fences before any account-security refresh.
+
+Resync rereads ownership under the portfolio and root locks and preserves
+same-epoch quarantine. Phase one pages by the existing CharacterId primary key,
+then locks the bounded batch in account order: no new roots index is built.
+Migration 2831 adds the widened lifecycle CHECK NOT VALID; migration 2832
+validates it in a separate migration transaction after the ACCESS EXCLUSIVE
+DDL lock is released. Validation uses SHARE UPDATE EXCLUSIVE and permits ordinary
+row writers. This follows the repository's NOT VALID convention without holding
+the addition lock throughout the validation scan. No concurrent-index operation
+is attempted inside the migration transaction.
+
+
 Deferred review items: the deletion finalizer currently selects the oldest
 candidate before checking session eligibility; oversized directly supplied
 intents remain transient; command polling shares backoff across v1/v2.

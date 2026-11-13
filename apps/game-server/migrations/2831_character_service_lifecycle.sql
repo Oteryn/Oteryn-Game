@@ -68,7 +68,7 @@ CREATE OR REPLACE VIEW game_bazaar_xp_revision_chain WITH(security_invoker=true)
  profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
  FROM game_character_xp_receipts UNION ALL SELECT * FROM game_bazaar_character_revision_chain UNION ALL SELECT * FROM game_character_service_revision_chain;
 ALTER TABLE game_character_roots DROP CONSTRAINT game_character_roots_lifecycle_check;
-ALTER TABLE game_character_roots ADD CONSTRAINT game_character_roots_lifecycle_check CHECK(lifecycle IN(1,2,3,4));
+ALTER TABLE game_character_roots ADD CONSTRAINT game_character_roots_lifecycle_check CHECK(lifecycle IN(1,2,3,4)) NOT VALID;
 DO $$ DECLARE body TEXT;BEGIN
  SELECT pg_get_functiondef('game_character_root_revision_guard()'::regprocedure) INTO STRICT body;
  body:=replace(body,E'BEGIN\n',E'BEGIN\n IF TG_OP=\'UPDATE\' AND (to_jsonb(NEW)-ARRAY[\'name\',\'name_key\',\'lifecycle\',\'character_revision\'])=(to_jsonb(OLD)-ARRAY[\'name\',\'name_key\',\'lifecycle\',\'character_revision\']) AND EXISTS(SELECT 1 FROM game_character_service_changes t WHERE t.character_id=OLD.character_id AND t.old_revision=OLD.character_revision AND t.new_revision=NEW.character_revision AND t.old_name=OLD.name AND t.new_name=NEW.name AND t.old_lifecycle=OLD.lifecycle AND t.new_lifecycle=NEW.lifecycle AND t.created_xact_id=pg_current_xact_id()) THEN RETURN NEW;END IF;\n IF OLD.lifecycle IN(3,4) THEN RAISE EXCEPTION \'character service lifecycle forbids mutation\' USING ERRCODE=\'23514\';END IF;\n');
@@ -101,3 +101,20 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON game_character_service_deletions TO oteryn_
 GRANT SELECT,INSERT ON game_character_service_changes TO oteryn_game_runtime;
 GRANT SELECT ON game_character_service_deletions,game_character_service_changes,game_character_service_revision_chain TO oteryn_game_control;
 GRANT SELECT ON game_character_service_revision_chain TO oteryn_game_runtime;
+
+-- Terminal tombstones are history, not occupied portfolio slots or closure members.
+CREATE VIEW game_character_live_roots WITH(security_invoker=true) AS SELECT * FROM game_character_roots WHERE lifecycle<>4;
+GRANT SELECT ON game_character_live_roots TO oteryn_game_runtime,oteryn_game_control;
+
+-- Runtime must lock the control-owned policy without gaining permission to edit it.
+CREATE FUNCTION game_character_service_bazaar_policy() RETURNS TABLE(enabled BOOLEAN,policy TEXT)
+ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ SELECT c.enabled,c.policy::text FROM public.game_bazaar_configuration c WHERE c.singleton FOR SHARE $$;
+REVOKE ALL ON FUNCTION game_character_service_bazaar_policy() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_character_service_bazaar_policy() TO oteryn_game_runtime,oteryn_game_control;
+
+CREATE FUNCTION game_character_service_has_house(c UUID) RETURNS BOOLEAN
+ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
+ SELECT EXISTS(SELECT 1 FROM public.game_house_ownership h WHERE h.owner_character_id=c LIMIT 1 FOR SHARE) $$;
+REVOKE ALL ON FUNCTION game_character_service_has_house(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION game_character_service_has_house(UUID) TO oteryn_game_runtime,oteryn_game_control;

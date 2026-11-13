@@ -13,7 +13,7 @@ CREATE TABLE game_character_service_outbox (
 );
 CREATE INDEX game_character_service_outbox_pending ON game_character_service_outbox(committed_at_ms,account_id,character_id) WHERE projection_revision>delivered_revision;
 CREATE INDEX game_character_service_outbox_character ON game_character_service_outbox(character_id);
-CREATE INDEX game_character_service_resync_roots ON game_character_roots(account_id,character_id);
+-- Reuse the existing CharacterId primary key; never build a roots index here.
 CREATE TABLE game_character_service_feed (
  singleton BOOLEAN PRIMARY KEY CHECK(singleton),capture_started BOOLEAN NOT NULL DEFAULT false,
  projection_epoch BIGINT NOT NULL,phase SMALLINT NOT NULL CHECK(phase BETWEEN 1 AND 3),
@@ -94,23 +94,23 @@ DECLARE f game_character_service_feed;item RECORD;counted INTEGER:=0;last_accoun
   RETURN;
  END IF;
  IF f.phase=1 THEN
-  FOR item IN SELECT character_id,account_id FROM game_character_roots WHERE (account_id,character_id)>(f.after_account,f.after_character) ORDER BY account_id,character_id LIMIT 16 LOOP
+  FOR item IN SELECT * FROM (SELECT character_id,account_id FROM game_character_roots WHERE character_id>f.after_character ORDER BY character_id LIMIT 16) roots ORDER BY account_id,character_id LOOP
    -- Resync and ordinary mutations use the same portfolio-before-root order.
    PERFORM 1 FROM game_character_account_guards WHERE account_id=item.account_id FOR UPDATE;
    SELECT account_id INTO current_owner FROM game_character_roots WHERE character_id=item.character_id FOR SHARE;
    IF current_owner=item.account_id THEN PERFORM game_character_service_touch(item.character_id,item.account_id);END IF;
-   last_account:=item.account_id;last_character:=item.character_id;
+   last_account:=item.account_id;last_character:=greatest(last_character,item.character_id);
    counted:=counted+1;
   END LOOP;
  ELSE
-  FOR item IN SELECT o.account_id,o.character_id,o.snapshot,r.account_id AS current_owner FROM game_character_service_outbox o JOIN game_character_roots r USING(character_id)
+  FOR item IN SELECT o.account_id,o.character_id,o.snapshot FROM game_character_service_outbox o
    WHERE (o.account_id,o.character_id)>(f.after_account,f.after_character)
    ORDER BY o.account_id,o.character_id LIMIT 16 LOOP
    PERFORM 1 FROM game_character_account_guards WHERE account_id=item.account_id FOR UPDATE;
-   IF item.account_id<>item.current_owner OR item.snapshot->>'lifecycle'='REMOVED_FROM_ACCOUNT' THEN
-   PERFORM game_character_service_touch(item.character_id,item.account_id,true,item.snapshot);
-   UPDATE game_character_service_outbox SET quarantined=false,delivered_revision=0 WHERE account_id=item.account_id AND character_id=item.character_id AND projection_epoch=f.projection_epoch;
-   END IF;
+   -- Neither a pre-lock owner nor a retained removal establishes current ownership.
+   SELECT account_id INTO current_owner FROM game_character_roots WHERE character_id=item.character_id FOR SHARE;
+   PERFORM game_character_service_touch(item.character_id,item.account_id,current_owner<>item.account_id,CASE WHEN current_owner<>item.account_id THEN item.snapshot END);
+   -- touch preserves quarantine in this epoch; only a higher epoch repairs it.
    last_account:=item.account_id;last_character:=item.character_id;
    counted:=counted+1;
   END LOOP;

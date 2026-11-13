@@ -1067,6 +1067,7 @@ impl Drop for RecoverySource {
     }
 }
 impl RecoverySource {
+    pub(super) fn stop_peer(&self) { self.task.abort(); }
     pub(super) async fn start(h: &Harness) -> TestResult<Self> {
         Self::start_at(h, None).await
     }

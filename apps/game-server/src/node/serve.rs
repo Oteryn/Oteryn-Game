@@ -1442,6 +1442,66 @@ struct CommandDecider<'a, 'r, 'c> {
     source_authority: String,
 }
 
+/// Native node service decision boundary, including immutable receipt recovery.
+pub async fn decide_character_service_for_node(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    proof: &NodeIncarnationProof,
+    evidence: &FreshEvidenceSource,
+    source_authority: &str,
+    entry: (&str, &str),
+    input: Input<'_>,
+) -> Decision {
+    let (command, operation_id) = entry;
+    let prior = match root
+        .replay_character_service(authority, proof, command, operation_id, input)
+        .await
+    {
+        Ok(prior) => prior,
+        Err(_) => return Decision::Transient,
+    };
+    if let Some(stored) = prior {
+        return stored;
+    }
+
+    let account = match input {
+        Input::Intent(raw) => {
+            crate::native_admission_source::character_services_v2::CharacterCommandIntentV2::decode(
+                raw,
+            )
+            .ok()
+            .and_then(|i| {
+                i.field("account_id")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+            })
+        }
+        Input::ReadConflict => return Decision::Conflict,
+        _ => None,
+    };
+    let held = if let Some(account) = account {
+        match evidence.refresh_account_held(root, proof, &account).await {
+            Ok(held) => Some(held),
+            Err(_) => return Decision::Transient,
+        }
+    } else {
+        None
+    };
+    let decision = root
+        .decide_character_service(
+            authority,
+            proof,
+            source_authority,
+            (command, operation_id),
+            input,
+        )
+        .await;
+    if let Some(held) = held {
+        let _ = held.release().await;
+    }
+    decision
+}
+
 impl Decider for CommandDecider<'_, '_, '_> {
     async fn stop_services_receipt(&mut self, operation: &str, receipt: &[u8]) {
         if self
@@ -1460,37 +1520,16 @@ impl Decider for CommandDecider<'_, '_, '_> {
         operation_id: &str,
         input: Input<'_>,
     ) -> Decision {
-        let account=match input {
-            Input::Intent(raw)=>crate::native_admission_source::character_services_v2::CharacterCommandIntentV2::decode(raw).ok().and_then(|i|i.field("account_id").and_then(serde_json::Value::as_str).map(str::to_owned)),
-            Input::ReadConflict=>return Decision::Conflict,
-            _=>None,
-        };
-        let held = if let Some(account) = account {
-            match self
-                .evidence
-                .refresh_account_held(self.root, self.proof, &account)
-                .await
-            {
-                Ok(held) => Some(held),
-                Err(_) => return Decision::Transient,
-            }
-        } else {
-            None
-        };
-        let decision = self
-            .root
-            .decide_character_service(
-                self.authority,
-                self.proof,
-                &self.source_authority,
-                (command, operation_id),
-                input,
-            )
-            .await;
-        if let Some(held) = held {
-            let _ = held.release().await;
-        }
-        decision
+        decide_character_service_for_node(
+            self.root,
+            self.authority,
+            self.proof,
+            self.evidence,
+            &self.source_authority,
+            (command, operation_id),
+            input,
+        )
+        .await
     }
     async fn maintain_services(&mut self) {
         if self

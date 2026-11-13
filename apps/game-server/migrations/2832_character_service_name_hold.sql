@@ -1,3 +1,5 @@
+-- Validate in a later migration transaction, after 2831 releases ACCESS EXCLUSIVE.
+ALTER TABLE game_character_roots VALIDATE CONSTRAINT game_character_roots_lifecycle_check;
 CREATE TABLE game_character_service_name_holds (
  name_key TEXT PRIMARY KEY, character_id UUID NOT NULL REFERENCES game_character_roots,
  account_id UUID NOT NULL, released_at BIGINT NOT NULL, available_at BIGINT NOT NULL CHECK(available_at=released_at+2592000)

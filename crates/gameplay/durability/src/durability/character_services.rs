@@ -78,6 +78,28 @@ impl DurabilityRoot {
         }
     }
 
+    /// Immutable outcome lookup before any fresh eligibility dependency. No new decision.
+    pub async fn replay_character_service(
+        &self,authority:&ReconciledCharacterAuthority<'_, '_>,proof:&NodeIncarnationProof,
+        command:&str,operation:&str,input:Input<'_>,
+    )->Result<Option<Decision>,DurabilityError> {
+        if !uuid_v7(operation) {return Err(DurabilityError::Unavailable);}
+        let raw=match input {
+            Input::Intent(raw) if raw.len()<=4096=>raw.to_vec(),
+            Input::Intent(_) | Input::Oversized=>super::character_command::oversized_binding(command),
+            Input::ReadConflict=>return Ok(Some(Decision::Conflict)),
+            Input::Unsupported=>return Ok(None),
+        };
+        let recovery=authority.record_for(self).map_err(|_|DurabilityError::Unavailable)?;
+        let proof=proof.clone();let command=command.to_owned();let operation=operation.to_owned();
+        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move{
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            assert_recovery_fence(&mut tx,&recovery).await?;
+            if !prove_current_incarnation(&mut tx,&proof).await? {return Err(DurabilityError::Unavailable);}
+            replay_receipt(&mut tx,&command,&operation,&raw,recovery.recovery_generation).await
+        })).await
+    }
+
     /// A refused publication stops this exact immutable receipt across restarts.
     pub async fn stop_character_service_receipt(
         &self,
@@ -181,6 +203,20 @@ fn text<'a>(intent: &'a CharacterCommandIntentV2, key: &str) -> Result<&'a str, 
         .and_then(Value::as_str)
         .ok_or(DurabilityError::Unavailable)
 }
+async fn replay_receipt(tx:&mut Tx<'_>,command:&str,operation:&str,raw:&[u8],recovery:u64)->Result<Option<Decision>,DurabilityError> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-operation:'||replace($1,'-',''),0))")
+        .bind(operation).execute(&mut **tx).await?;
+    if let Some(stored) = sqlx::query("SELECT command,intent,receipt,result_code FROM game_character_service_receipts WHERE operation_id=$1::uuid")
+        .bind(operation).fetch_optional(&mut **tx).await? {
+        let stopped:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_service_receipt_stops WHERE operation_id=$1::uuid AND recovery_generation>=$2::numeric)").bind(operation).bind(recovery.to_string()).fetch_one(&mut **tx).await?;
+        if stopped {return Ok(Some(Decision::Conflict));}
+        return Ok(Some(if stored.try_get::<String,_>("command")? == command && stored.try_get::<Vec<u8>,_>("intent")? == raw {
+            Decision::Publish { receipt: stored.try_get("receipt")?, result_code: stored.try_get("result_code")? }
+        } else { Decision::Conflict }));
+    }
+    Ok(None)
+}
+
 async fn decide(
     tx: &mut Tx<'_>,
     source: &str,
@@ -189,16 +225,7 @@ async fn decide(
     raw: &[u8],
     recovery: u64,
 ) -> Result<Decision, DurabilityError> {
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-operation:'||replace($1,'-',''),0))")
-        .bind(operation).execute(&mut **tx).await?;
-    if let Some(stored) = sqlx::query("SELECT command,intent,receipt,result_code FROM game_character_service_receipts WHERE operation_id=$1::uuid")
-        .bind(operation).fetch_optional(&mut **tx).await? {
-        let stopped:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_service_receipt_stops WHERE operation_id=$1::uuid AND recovery_generation>=$2::numeric)").bind(operation).bind(recovery.to_string()).fetch_one(&mut **tx).await?;
-        if stopped {return Ok(Decision::Conflict);}
-        return Ok(if stored.try_get::<String,_>("command")? == command && stored.try_get::<Vec<u8>,_>("intent")? == raw {
-            Decision::Publish { receipt: stored.try_get("receipt")?, result_code: stored.try_get("result_code")? }
-        } else { Decision::Conflict });
-    }
+    if let Some(stored)=replay_receipt(tx,command,operation,raw,recovery).await? {return Ok(stored);}
     let occupied: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_command_receipts WHERE operation_id=$1::uuid UNION ALL SELECT 1 FROM game_character_operation_receipts WHERE operation_id=$1::uuid UNION ALL SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=$1::uuid)")
         .bind(operation).fetch_one(&mut **tx).await?;
     if occupied

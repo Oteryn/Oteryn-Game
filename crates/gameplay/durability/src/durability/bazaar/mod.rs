@@ -278,21 +278,19 @@ async fn decide(tx: &mut Tx<'_>, r: &Request) -> Result<Option<Decision>, Durabi
             .fetch_one(&mut **tx)
             .await?;
     if r.issuer == CHARACTER_ISSUER {
-        let enabled: bool = sqlx::query_scalar(
-            "SELECT enabled FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-        )
-        .fetch_one(&mut **tx)
-        .await?;
+        let enabled: bool =
+            sqlx::query_scalar("SELECT enabled FROM game_character_service_bazaar_policy()")
+                .fetch_one(&mut **tx)
+                .await?;
         if !enabled {
             return Ok(None);
         }
         return transfer::decide(tx, r, now).await;
     }
-    let configuration = sqlx::query(
-        "SELECT enabled,policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE",
-    )
-    .fetch_one(&mut **tx)
-    .await?;
+    let configuration =
+        sqlx::query("SELECT enabled,policy FROM game_character_service_bazaar_policy()")
+            .fetch_one(&mut **tx)
+            .await?;
     // Rollback stops new work while existing immutable receipts remain replayable.
     if !configuration.try_get::<bool, _>("enabled")? {
         return Ok(None);
