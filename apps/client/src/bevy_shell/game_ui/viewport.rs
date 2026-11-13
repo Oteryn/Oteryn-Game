@@ -46,8 +46,8 @@ pub(in crate::bevy_shell) fn setup(
     ));
     commands.spawn((
         Sprite {
-            image: skins.inset.clone(),
-            rect: Some(Rect::new(1., 1., 95., 95.)),
+            image: skins.frame.clone(),
+            rect: Some(Rect::new(4., 17., 100., 113.)),
             image_mode: SpriteImageMode::Tiled {
                 tile_x: true,
                 tile_y: true,

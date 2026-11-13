@@ -125,6 +125,7 @@ fn capture(
     commands.spawn(Screenshot::primary_window()).observe(
         |event: On<ScreenshotCaptured>,
          mut capture: ResMut<Capture>,
+         viewport: Res<super::viewport::WorldViewport>,
          mut exit: MessageWriter<AppExit>| {
             let result = event
                 .image
@@ -142,7 +143,16 @@ fn capture(
                     health += usize::from(green > red + 50 && green > blue + 50);
                     mana += usize::from(blue > red + 50 && blue > green + 20);
                 }
-                if health < 100 || mana < 100 {
+                let backdrop = rgba
+                    .get_pixel_checked(viewport.origin.x + 8, viewport.origin.y + 8)
+                    .is_some_and(|pixel| {
+                        let [red, green, blue, alpha] = pixel.0;
+                        red > 20
+                            && red.abs_diff(green) < 3
+                            && green.abs_diff(blue) < 3
+                            && alpha == 255
+                    });
+                if health < 100 || mana < 100 || !backdrop {
                     capture.requested = false;
                     return;
                 }
