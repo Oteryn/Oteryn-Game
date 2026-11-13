@@ -4,11 +4,11 @@
 task_id: ITEMS-HELMETS-HATS-20261113
 title: Ordered Helmets and Hats Basic128 evidence
 mode: AUDIT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-helmets-hats-evidence-takeover-20261113
-pr: null
+pr: 3160
 base_sha: 5efd67da164ac9dc33c8c066434b228cebb86c2b
 owner: /root/compare_items
 created_at: 2026-11-13T08:00:00Z
@@ -32,8 +32,14 @@ Whole Items audit, NPC/trade/animation, runtime admission and qualified server i
 
 ## Validation
 
-Focused validator and source reproduction are run before publication. Required governance and governance tests are run on the final authoring tree. Final exact FREEZE_SHA is recorded externally after the final commit, never self-referentially here.
+- `python docs/agents/evidence/items-helmets-hats-20261113/validate.py`: pass,128 records/652 proofs/268 BasicPNG.
+- `python docs/agents/evidence/items-helmets-hats-20261113/compare_sources.py --check`: pass, exact source reproduction.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: OK,129 tests.
+- `git diff --check`: pass; staged blob bytes match every packet-integrity receipt.
+
+No game compilation or runtime/E2E test: evidence-only documentation. Final exact FREEZE_SHA is recorded externally after the final commit, never self-referentially here.
 
 ## Closeout
 
-Writer authoring in progress. Draft and formal independent review/integration remain with lead after freeze. This active task remains PARTIAL rather than terminally archived.
+Draft #3160 published. Formal independent review and exact-head CI qualification remain pending with lead after freeze; no review trigger, merge or deployment by this writer. This active task remains waiting/PARTIAL rather than terminally archived. Final writer freeze ends authoring of this candidate, not the complete Items audit.
