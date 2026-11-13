@@ -1,0 +1,6 @@
+{
+  "classification": "UNCOMPARED_OBSERVED_FIELDS",
+  "fields": [],
+  "private_narrative_receipts": 0,
+  "boundary": "Other non-narrative Basic fields were not displayed. Market and Description are ABSENT_FROM_OBSERVED_BASIC_FIELDS, not false, N/A or intrinsic UNKNOWN. No narrative receipts exist because no Description was observed. Separate client display facts remain literal and uncompared. No full semantic parity claim."
+}

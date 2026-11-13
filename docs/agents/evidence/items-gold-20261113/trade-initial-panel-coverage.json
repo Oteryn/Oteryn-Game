@@ -1,0 +1,63 @@
+{
+  "classification": "PROVEN_INITIAL_VISIBLE_PANELS_ONLY",
+  "source_receipt": {
+    "filename": "gold-trade-initial-panels-1-3-audit.json",
+    "bytes": 5333,
+    "sha256": "d523e5f4b7892be1c7ff0313d16e0eb7e4582979413e0b4904458fee3f94a537"
+  },
+  "category": "Gold",
+  "physical_ordinals": [
+    1,
+    2,
+    3
+  ],
+  "initial_panels": 6,
+  "observed_empty_panels": 6,
+  "observed_nonempty_panels": 0,
+  "original_Basic_proofs_freshly_verified": 3,
+  "items": [
+    {
+      "ui_entry_ordinal": 1,
+      "capture_id": 1,
+      "panels": {
+        "Sell To": "OBSERVED_EMPTY_PANEL",
+        "Buy From": "OBSERVED_EMPTY_PANEL"
+      },
+      "proof": {
+        "role": "basic_top_image",
+        "private_source_key": "items-sequence-gold/cards/00001-basic-top.png",
+        "sha256": "503c8573aa579ca18c7948e9716555da1666c51ded93f974ec04479576ddf1fa"
+      }
+    },
+    {
+      "ui_entry_ordinal": 2,
+      "capture_id": 2,
+      "panels": {
+        "Sell To": "OBSERVED_EMPTY_PANEL",
+        "Buy From": "OBSERVED_EMPTY_PANEL"
+      },
+      "proof": {
+        "role": "basic_top_image",
+        "private_source_key": "items-sequence-gold/cards/00002-basic-top.png",
+        "sha256": "808eaf98b4a08a2d48ec1f70762b7c339ea036bc0577b76ed31dcc656aaa41c8"
+      }
+    },
+    {
+      "ui_entry_ordinal": 3,
+      "capture_id": 3,
+      "panels": {
+        "Sell To": "OBSERVED_EMPTY_PANEL",
+        "Buy From": "OBSERVED_EMPTY_PANEL"
+      },
+      "proof": {
+        "role": "basic_top_image",
+        "private_source_key": "items-sequence-gold/cards/00003-basic-top.png",
+        "sha256": "398dd361cc9721bff0fcc5fb8ed93e85354787f2917b1abd42eb40f2ad728a10"
+      }
+    }
+  ],
+  "global_NPC_absence_qualified": false,
+  "transactions_or_conversations": 0,
+  "GUI_inputs_in_saved_image_audit": 0,
+  "boundary": "All six initial panes observed empty; not global NPC absence, executable offers or complete runtime trade semantics. These three Basic images are a subset of the twelve card proofs, not additional card proofs."
+}

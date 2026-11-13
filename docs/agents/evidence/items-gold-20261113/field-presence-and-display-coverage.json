@@ -1,0 +1,80 @@
+{
+  "classification": "OBSERVED_BASIC_FIELD_PRESENCE_AND_UNQUALIFIED_DISPLAY",
+  "Basic": {
+    "Weight": {
+      "state": "OBSERVED_VALUE",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "source_comparison": "UNQUALIFIED_NAME_CANDIDATE_VALUE_ONLY"
+    },
+    "Tradeable In Market": {
+      "state": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "source_comparison": "NOT_COMPARED_ABSENT_DISPLAY_IS_NOT_FALSE_UNKNOWN_OR_NA"
+    },
+    "Description": {
+      "state": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "source_comparison": "NOT_COMPARED"
+    }
+  },
+  "display_fields": [
+    {
+      "field": "average_market_price_display_number",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "comparison": "UNCOMPARED_CLIENT_DISPLAY_ONLY"
+    },
+    {
+      "field": "resulting_value_display_number",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "comparison": "UNCOMPARED_CLIENT_DISPLAY_ONLY"
+    },
+    {
+      "field": "display_suffix",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "comparison": "UNCOMPARED_CLIENT_DISPLAY_ONLY"
+    },
+    {
+      "field": "loot_value_source_selected",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "comparison": "UNCOMPARED_CLIENT_DISPLAY_ONLY"
+    },
+    {
+      "field": "skip_when_quick_looting_checked",
+      "physical_ordinals": [
+        1,
+        2,
+        3
+      ],
+      "comparison": "UNCOMPARED_CLIENT_DISPLAY_ONLY"
+    }
+  ],
+  "boundary": "Average Market Price zero display is not a marketable flag. Coin glyph is only observed appearance, not unit/currency ID. Resulting values and checkbox states are client display observations, not intrinsic item/source facts."
+}
