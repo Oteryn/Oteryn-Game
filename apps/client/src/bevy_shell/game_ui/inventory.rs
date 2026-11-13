@@ -6,6 +6,7 @@ use oteryn_client_ui::inventory::movement::DragItem;
 use oteryn_session::{ItemEntry, ItemMoveDestination, item_movement::EquipmentSlot};
 
 mod actions;
+mod amount;
 mod dialogs;
 #[cfg(test)]
 mod tests;
@@ -112,6 +113,10 @@ struct InventoryUi {
     selection: Option<Slot>,
     menu: Option<(Slot, Vec2)>,
     split_count: u32,
+    split_text: Option<String>,
+    split_feedback: String,
+    split_entry: Option<ItemEntry>,
+    pending_amount_confirm: Option<Prompt>,
     dragged: Option<Slot>,
     prompt: Option<Prompt>,
 }
@@ -130,6 +135,7 @@ enum Control {
         handle: oteryn_session::ItemHandle,
     },
     Count(Prompt, i32),
+    All(Prompt),
     Confirm(Prompt),
     Cancel {
         generation: u64,
@@ -140,11 +146,13 @@ enum Control {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<InventoryUi>()
         .add_systems(Update, (actions::escape, view::project).chain());
+    amount::install(app);
 }
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     controls: Query<&Control>,
+    fields: Query<(&amount::Field, &bevy::text::EditableText)>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
 ) {
@@ -152,6 +160,11 @@ fn activate(
         return;
     }
     if let Ok(control) = controls.get(event.entity) {
+        if let Control::Confirm(prompt) = *control
+            && amount::prepare_confirm(prompt, &fields, &owner, &mut ui)
+        {
+            return;
+        }
         actions::choose(*control, &owner, &mut ui);
     }
 }

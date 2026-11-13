@@ -375,3 +375,6 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
     );
     Ok(())
 }
+
+#[path = "tests/amount.rs"]
+mod amount;

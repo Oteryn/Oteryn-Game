@@ -1,5 +1,5 @@
 use super::super::{GameRegions, ItemIcon};
-use super::dialogs::{button, context, split};
+use super::dialogs::{button, context};
 use super::*;
 use bevy::ui_widgets::{Button, ScrollArea};
 use oteryn_client_ui_bevy as source;
@@ -13,7 +13,6 @@ struct Snapshot {
     movement: oteryn_client_ui::inventory::movement::Movement,
     selection: Option<Slot>,
     menu: Option<(Slot, Vec2)>,
-    split_count: u32,
     world_feedback: Option<String>,
 }
 #[derive(Component)]
@@ -66,6 +65,10 @@ pub(super) fn project(
     if ui.prompt != prompt {
         ui.prompt = prompt;
         ui.split_count = prompt.map_or(0, |prompt| prompt.item.count.min(100));
+        ui.split_text = prompt.map(|prompt| prompt.item.count.min(100).to_string());
+        ui.split_entry = prompt.and_then(|prompt| super::amount::source_entry(&owner, prompt));
+        ui.split_feedback.clear();
+        ui.pending_amount_confirm = None;
     }
     let snapshot = Snapshot {
         generation: owner.generation(),
@@ -75,7 +78,6 @@ pub(super) fn project(
         movement,
         selection: ui.selection,
         menu: ui.menu,
-        split_count: ui.split_count,
         world_feedback: play.link.world_context_feedback(),
     };
     if previous.0.as_ref() == Some(&snapshot) {
@@ -130,18 +132,6 @@ pub(super) fn project(
     }
     if let Some((slot, position)) = snapshot.menu {
         context(&mut commands, &skins, slot, position);
-    }
-    if let Some((item, destination)) = snapshot.movement.prompt {
-        split(
-            &mut commands,
-            &skins,
-            Prompt {
-                generation: snapshot.generation,
-                item,
-                destination,
-            },
-            snapshot.split_count,
-        );
     }
     previous.0 = Some(snapshot);
 }

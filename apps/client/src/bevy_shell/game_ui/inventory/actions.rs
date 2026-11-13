@@ -189,16 +189,12 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
             }
         }
         Control::Count(prompt, delta) if prompt_current(prompt, owner, ui) => {
-            ui.split_count = ui
-                .split_count
-                .saturating_add_signed(delta)
-                .clamp(1, prompt.item.count.clamp(1, 100));
+            super::amount::change_count(owner, ui, prompt, Some(delta));
         }
-        Control::Confirm(prompt) if prompt_current(prompt, owner, ui) => {
-            if let Some(play) = &owner.play {
-                play.link.item_move_confirm(Some(ui.split_count));
-            }
+        Control::All(prompt) if prompt_current(prompt, owner, ui) => {
+            super::amount::change_count(owner, ui, prompt, None);
         }
+        Control::Confirm(prompt) => super::amount::confirm(owner, ui, prompt),
         Control::Cancel { generation, prompt } if generation == owner.generation() => {
             if let Some(prompt) = prompt {
                 if prompt_current(prompt, owner, ui)
@@ -213,7 +209,7 @@ pub(super) fn choose(control: Control, owner: &HostOwner, ui: &mut InventoryUi) 
         _ => {}
     }
 }
-fn prompt_current(prompt: Prompt, owner: &HostOwner, ui: &InventoryUi) -> bool {
+pub(super) fn prompt_current(prompt: Prompt, owner: &HostOwner, ui: &InventoryUi) -> bool {
     prompt.generation == owner.generation()
         && ui.prompt == Some(prompt)
         && !owner.modal_active()
