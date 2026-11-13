@@ -9,8 +9,16 @@ Basic text was copied through the actual context menu; NPC panes were not copyab
 so full frames, local batch OCR, paired source literals and native review were used.
 The source-assisted full residences are distinguished from ellipsized UI spellings.
 No purchase, combat, other-card collection or server-identity admission occurred.
-The remaining664 cases are256 panel/geometry qualifications and408 literal/currency
+The remaining664 cases are180 geometry,76 combined tail/literal and408 literal/currency
 qualifications;27 historical/query cases remain separately unresolved.
+`remaining664-routing.csv/.json` gives each record's panel, unresolved candidate fields,
+known quotes, next action, original proof and hash-verified local bitmap. All664 local
+bitmaps are present and hash-correct. Among694 partial panels,413 match native no-overflow
+controls,105 match actual overflow controls, and176 have unclassified geometry. These
+are panel counts, not another item partition.408 primary literal cases are offline-first
+review candidates, not guaranteed recoveries. Neither256 nor664 is a confirmed live-read
+queue: zero cases have yet completed the saved-reference/source exhaustion needed for
+that conclusion. The routing changes no completeness count or item fact.
 
 The optimization benchmark starts at22:04:05.811Z after earlier collection work.
 It records77 saved full frames, nine orientation/end views and four local contact

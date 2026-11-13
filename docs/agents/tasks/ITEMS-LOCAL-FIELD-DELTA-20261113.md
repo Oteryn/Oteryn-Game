@@ -70,6 +70,13 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING extended under allocation6866204394 after verified seven-card head
+8d9c4a5960acfd636f7ce9c4b6e9fa3300c9eec7. Offline routing664 retains actual
+per-panel unresolved fields and all known values;664 private bitmaps hash-match.
+694 partial panels:413 calibrated no-overflow,105 calibrated overflow,176 geometry
+unclassified.408/180/76 primary groups remain separate. No automatic live queue
+or guaranteed recoverability claim. This routing changes no item data/count.
+
 AUTHORING resumed from08163265317dd4f02ffe488b5c78c134966aa697 under
 allocation6865748389 for exactly seven authorized live potion reads. Basic copied;
 both NPC pane ends checked;178 quotes reconciled with saved full frames, local

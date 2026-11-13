@@ -303,6 +303,28 @@ def seven_potions(source_path=None, packet=None):
     assert changed == {r["observation_key"] for r in records}
 
 
+def routing664(packet=None):
+    p = packet or load(HERE, "remaining664-routing.json")
+    s = load(HERE, "remaining664-summary.json")
+    rows = p["records"]
+    current = list(csv.DictReader((HERE/"all-visible-after-seven-potions.csv").open(encoding="utf8",newline="")))
+    keys = {r["observation_key"] for r in current if r["ALL_VISIBLE_state"] == "PARTIAL"}
+    assert len(rows) == len(keys) == 664 and {r["observation_key"] for r in rows} == keys
+    assert s["primary_groups_disjoint"] == dict(VISIBLE_LITERAL_OR_CURRENCY_408=408, OVERFLOW_OR_GEOMETRY_180=180, COMBINED_VENDOR_TAIL_OR_LITERAL_76=76)
+    assert s["panel_geometry_counts"] == dict(CALIBRATED_NO_OVERFLOW=413, CALIBRATED_OVERFLOW_VISIBLE=105, GEOMETRY_NOT_CLASSIFIED=176)
+    assert s["local_bitmap_integrity"] == dict(PRESENT_HASH_MATCH=664)
+    assert len(list(csv.DictReader((HERE/"remaining664-routing.csv").open(encoding="utf8",newline="")))) == 664
+    for r in rows:
+        assert r["route"] == "OFFLINE_REVIEW_PENDING" and not r["confirmed_live_needed"] and not r["offline_confirmed_recoverable"]
+        assert r["available_local_bitmap"]["state"] == "PRESENT_HASH_MATCH" and len(r["available_local_bitmap"]["sha256"]) == 64
+        assert r["original_source"]["prior_association_verified"]
+        assert r["panels_requiring_work"]
+        for panel in r["panels_requiring_work"]:
+            assert panel["panel"] in ["Sell To","Buy From"] and panel["missing_or_unqualified_fields"] and panel["next_action"]
+            assert not panel["confirmed_live_need"]
+            assert all(u["fields_to_qualify"] and u["absence_not_asserted"] for u in panel["missing_or_unqualified_fields"])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -322,6 +344,15 @@ def main():
     npc_recovery(args.npc_source)
     followup1260(args.npc_source)
     seven_potions(args.npc_source)
+    routing664()
+    badroute = copy.deepcopy(load(HERE, "remaining664-routing.json"))
+    badroute["records"][0]["confirmed_live_needed"] = True
+    try:
+        routing664(badroute)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Unqualified live-needed promotion was accepted")
     bad = copy.deepcopy(load(HERE, "seven-potions-live.json"))
     next(q for q in bad["records"][0]["NPC_quotes"] if q["NPC"] == "Minzy")["currency_literal"] = "gp"
     try:
@@ -353,7 +384,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;seven live potion reads;current ALL2216/664/27;178 quotes;7 negative controls"
+    print("PASS:6470 appearances/6228 types;current ALL2216/664/27;178 quotes;664 per-panel routes;8 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 
