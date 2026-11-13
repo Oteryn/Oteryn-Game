@@ -1,0 +1,1141 @@
+{
+  "schema": "OTERYN_ITEM_FIELD_CATALOGUE/v1",
+  "source_pin": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+  "status_legend": {
+    "KNOWN": "Known source value; not proof of15.33 freshness",
+    "UNKNOWN": "Explicitunknown",
+    "NOT_APPLICABLE": "ExplicitsourceNA, not a defect",
+    "MISSING": "No source node, applicability must still be judged",
+    "CONDITIONAL_UNRESOLVED": "Type/context applicability not yet established; do not call gap",
+    "UNVERIFIED_CLIENT": "No corresponding15.33evidence of this particular field/view",
+    "SOURCE_CONSUMER_VERIFIED": "Code path present atpin; no claim of actual running state"
+  },
+  "routes": {
+    "inspection": {
+      "source": "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs",
+      "consumer": "crates/client-ui/src/features/0132-inspection/mod.rs",
+      "wire": "crates/protocol-oteryn/src/inspection.rs",
+      "status": "source_verified_generic_attribute_projection; per-field gates apply;15.33 parity untested"
+    },
+    "look": {
+      "source": "crates/gameplay/items/src/look.rs",
+      "dispatch": "crates/gameplay/dispatch/src/gameplay_transport/item_look.rs",
+      "wire": "crates/protocol-oteryn/src/item_look.rs",
+      "status": "source_verified_generated_text; no actual15.33 Look captured"
+    },
+    "appearance": {
+      "source": "crates/gameplay/world/src/map/view.rs",
+      "resolver": "crates/client-assets/src/appearance_methods_1.rs",
+      "wire": "crates/protocol-oteryn/src/world_map.rs",
+      "status": "source_verified_mapping_and_resolver; no per-item sprite/pixel parity",
+      "boundary": "The verified map appearance mapping andgeneric resolver do not bythemselves prove the inventory/Cyclopedia iconconsumer or its sprite selection."
+    },
+    "trade": {
+      "source": "content/services/trade/trade-00000-00323.json",
+      "consumer": "crates/gameplay/npc/src/npc_command.rs",
+      "status": "declared offer projection; conditions and specialized exchanges separate"
+    }
+  },
+  "fields": [
+    {
+      "field_id": "basic.Armor",
+      "group": "ui_basic",
+      "label": "Armor",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Attack",
+      "group": "ui_basic",
+      "label": "Attack",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Augments",
+      "group": "ui_basic",
+      "label": "Augments",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Body Position",
+      "group": "ui_basic",
+      "label": "Body Position",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Capacity",
+      "group": "ui_basic",
+      "label": "Capacity",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Classification",
+      "group": "ui_basic",
+      "label": "Classification",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Defence",
+      "group": "ui_basic",
+      "label": "Defence",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Description",
+      "group": "ui_basic",
+      "label": "Description",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Hit Chance",
+      "group": "ui_basic",
+      "label": "Hit Chance",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Imbuement Slots",
+      "group": "ui_basic",
+      "label": "Imbuement Slots",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Mantra",
+      "group": "ui_basic",
+      "label": "Mantra",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Protection",
+      "group": "ui_basic",
+      "label": "Protection",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Range",
+      "group": "ui_basic",
+      "label": "Range",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Required Level",
+      "group": "ui_basic",
+      "label": "Required Level",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Required Magic Level",
+      "group": "ui_basic",
+      "label": "Required Magic Level",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Skill Boost",
+      "group": "ui_basic",
+      "label": "Skill Boost",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Tradeable In Market",
+      "group": "ui_basic",
+      "label": "Tradeable In Market",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Vocations",
+      "group": "ui_basic",
+      "label": "Vocations",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "basic.Weight",
+      "group": "ui_basic",
+      "label": "Weight",
+      "source_selector": "per-item queue canonical/manifest_merged/market nodes",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Use per-item applicability; conditional fields may legitimately be absent.",
+      "client_phase": "basic",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BasicDescription is a displayed static-description component, never the whole Look text."
+    },
+    {
+      "field_id": "static.description",
+      "group": "static_text",
+      "label": "Static definition description",
+      "source_selector": "semantics.presentation.description",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Applicable as a definition field; may be known-empty or unknown.",
+      "client_phase": "later_static_text",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Also appended by Look only near the item; retain exact text and source version."
+    },
+    {
+      "field_id": "look.text",
+      "group": "generated_look",
+      "label": "Generated Look text",
+      "source_selector": "look::item_text / item_text_inner",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "An assembled result, not stored BasicDescription. Requires known nonempty name and qualified item."
+    },
+    {
+      "field_id": "look.name_count",
+      "group": "generated_look",
+      "label": "Look header/name/count",
+      "source_selector": "presentation.name + stack.stackable + observed count",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "No article/plural fields inferred. Stack count only when known stackable andcount>1."
+    },
+    {
+      "field_id": "look.weapon_armor_capacity",
+      "group": "generated_look",
+      "label": "Look Atk/Def/Arm/Vol",
+      "source_selector": "weapon.attack/defense/extra_defense;protection.armor;container.capacity",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Only explicitly handled known nonzero values are emitted; this formatter does not consume every Basic stat."
+    },
+    {
+      "field_id": "look.requirements",
+      "group": "generated_look",
+      "label": "Look equipment/use requirements",
+      "source_selector": "equipment.patterns;use_requirements",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Equipment patterns must agree; unknown requirements are not invented."
+    },
+    {
+      "field_id": "look.near_weight_description",
+      "group": "generated_look",
+      "label": "Near-only weight and description",
+      "source_selector": "physical.weight,pickupable;presentation.description;look_distance",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Weight/description appended atdistance<=1; stack weight uses actual count."
+    },
+    {
+      "field_id": "look.definition_charges_duration",
+      "group": "generated_look",
+      "label": "Look definition maxima/full duration",
+      "source_selector": "semantics.charges.count;temporal.duration",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Maximum charges/full duration are definition facts, not remaining instance state."
+    },
+    {
+      "field_id": "look.reading",
+      "group": "generated_look",
+      "label": "Look written-instance text",
+      "source_selector": "item_text_with_reading;readable_writeable.distance_read",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "World-object reading has distinct distance/range/raw-ID branches; carried Look lacks this instance-text input."
+    },
+    {
+      "field_id": "look.article_plural",
+      "group": "generated_look",
+      "label": "Article/plural grammar",
+      "source_selector": "ReferenceItemPresentation has no article/plural field",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Schema/formatter does not infer these; not established15.33 parity."
+    },
+    {
+      "field_id": "look.remaining_instance_state",
+      "group": "generated_look",
+      "label": "Remaining charges/tier/imbuements/decay inside Look",
+      "source_selector": "Not provided to item_text(semantics,count,distance)",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Conditional generated component; compare using a future actual Look capture.",
+      "client_phase": "later_generated_look",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "This formatter explicitly does not invent timed/occupied instance state; separate inspection metadata route exists."
+    },
+    {
+      "field_id": "instance.count",
+      "group": "dynamic_instance",
+      "label": "Instance stack count",
+      "source_selector": "ObservedLookItem.count / inspection metadata.quantity",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Any concrete instance; no type view count inference.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Inspection hascount;Look uses it only for known stacks."
+    },
+    {
+      "field_id": "instance.tier",
+      "group": "dynamic_instance",
+      "label": "Instance Forge tier",
+      "source_selector": "metadata.tier;authoring.forge",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Only Forge-capable items; absence of forge record can be unresolved, nottier0.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "InspectionItem(handle) uses metadata;Catalogue(type) metadata=None is different."
+    },
+    {
+      "field_id": "instance.imbuements",
+      "group": "dynamic_instance",
+      "label": "Occupied imbuement slots and remaining time",
+      "source_selector": "metadata.imbuements[].category/tier/remaining_ms",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Only known slots>0 or explicitly eligible item.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Empty occupied slot and absent source facts must remain distinct."
+    },
+    {
+      "field_id": "instance.charges",
+      "group": "dynamic_instance",
+      "label": "Remaining instance charges",
+      "source_selector": "metadata.charges with definition fallback",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Only charges-capable item; explicit sourceNA isNA.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Inspection currently formatscurrent/current;do not interpret as proven separate maximum."
+    },
+    {
+      "field_id": "instance.decay",
+      "group": "dynamic_instance",
+      "label": "Remaining lifetime/expiry",
+      "source_selector": "metadata.remaining_ms",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Only temporal/decay-capable item; explicitNA isNA.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Type full duration is notremaining instance duration."
+    },
+    {
+      "field_id": "instance.contents_weight",
+      "group": "dynamic_instance",
+      "label": "Container contents/total weight",
+      "source_selector": "metadata.contents;qualified item weights",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Container or actual stack; otherwise context-dependent.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Total contents weight differs from one type weight."
+    },
+    {
+      "field_id": "instance.written_text",
+      "group": "dynamic_instance",
+      "label": "Written instance text",
+      "source_selector": "item_text_with_reading;readable/writeable owner",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "Only eligible written/readable object.",
+      "client_phase": "later_dynamic_instance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Not a static description and not part of Basic type evidence."
+    },
+    {
+      "field_id": "identity.source_key",
+      "group": "identity",
+      "label": "Canonical identity/revision",
+      "source_selector": "definition.identity / production_definition",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "All records, with explicitnamespace/binding qualification.",
+      "client_phase": "later_identity",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Canonical key does not itself prove materialization or active generation."
+    },
+    {
+      "field_id": "identity.legacy_alias",
+      "group": "identity",
+      "label": "Legacy aliases",
+      "source_selector": "content/items/aliases.json",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "All records, with explicitnamespace/binding qualification.",
+      "client_phase": "later_identity",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "An alias is not a visible display name."
+    },
+    {
+      "field_id": "identity.source_id",
+      "group": "identity",
+      "label": "External source ID/namespace",
+      "source_selector": "production_binding / source_bindings",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "All records, with explicitnamespace/binding qualification.",
+      "client_phase": "later_identity",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "ots/item_server_id, mediawiki/page_id andappearance_id are distinct namespaces."
+    },
+    {
+      "field_id": "identity.definition_ref",
+      "group": "identity",
+      "label": "Session native definition_ref",
+      "source_selector": "ItemDefinitionIndex;InspectedItem.definition_ref",
+      "source_to_consumer_route": "inspection",
+      "applicability_rule": "All records, with explicitnamespace/binding qualification.",
+      "client_phase": "later_identity",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "A transient/native index is not the Tibia numeric ID."
+    },
+    {
+      "field_id": "trade.gold_offers",
+      "group": "trade",
+      "label": "Gold price/direction/count",
+      "source_selector": "Service.Trade offers",
+      "source_to_consumer_route": "trade",
+      "applicability_rule": "Only offers relevant to the particular item; lack of offer is notzero price.",
+      "client_phase": "later_trade",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "BuyFromPlayer=NPC buys;SellToPlayer=player buys."
+    },
+    {
+      "field_id": "trade.held",
+      "group": "trade",
+      "label": "Held source facts/conditions",
+      "source_selector": "held_* fields",
+      "source_to_consumer_route": "trade",
+      "applicability_rule": "Only offers relevant to the particular item; lack of offer is notzero price.",
+      "client_phase": "later_trade",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Retained facts are not executable offers."
+    },
+    {
+      "field_id": "trade.barter",
+      "group": "trade",
+      "label": "Token/barter offers and currency",
+      "source_selector": "Specialized service/exchange catalogues",
+      "source_to_consumer_route": "trade",
+      "applicability_rule": "Only offers relevant to the particular item; lack of offer is notzero price.",
+      "client_phase": "later_trade",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Do not compare100Silver Token to100gp."
+    },
+    {
+      "field_id": "trade.residence",
+      "group": "trade",
+      "label": "NPC residence/location",
+      "source_selector": "NPC/world/presentation source, notnumeric price tuple",
+      "source_to_consumer_route": "trade",
+      "applicability_rule": "Only offers relevant to the particular item; lack of offer is notzero price.",
+      "client_phase": "later_trade",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Residence is a separate fact and may vary byNPC variant."
+    },
+    {
+      "field_id": "appearance.id",
+      "group": "appearance",
+      "label": "Appearance numeric identity",
+      "source_selector": "map::view::appearance_id",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Source mapping exists;not ID observed in capturedUI."
+    },
+    {
+      "field_id": "appearance.membership",
+      "group": "appearance",
+      "label": "Admitted appearance membership",
+      "source_selector": "client15.30 membership identity_projection_sha256/record_sha256",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Membership/identity hash does not prove sprite pixels."
+    },
+    {
+      "field_id": "appearance.sprite_sheet",
+      "group": "appearance",
+      "label": "Spritesheet/catalogue binding and digest",
+      "source_selector": "AppearanceFile::read_verified;SpriteSheets",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Specific frame-to-sheet asset binding not yet compared with15.33."
+    },
+    {
+      "field_id": "appearance.frames",
+      "group": "appearance",
+      "label": "Frame layout/layers/patterns",
+      "source_selector": "appearance resolver placement/layers",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Frame count differs from unique animation phases."
+    },
+    {
+      "field_id": "appearance.timing",
+      "group": "appearance",
+      "label": "Animation phases/timing/loop",
+      "source_selector": "appearance/animation metadata;clientpreviewtimestamps",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "A3-second preview is not proof of a complete cycle."
+    },
+    {
+      "field_id": "appearance.alpha",
+      "group": "appearance",
+      "label": "Transparency/alpha channel",
+      "source_selector": "sprite asset pixel data",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "No per-item asset alpha comparison done."
+    },
+    {
+      "field_id": "appearance.scale",
+      "group": "appearance",
+      "label": "Scale/placement/cropping",
+      "source_selector": "render placement andactualUI scale",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Native lossless screenshot quality does not establish identical renderer scaling."
+    },
+    {
+      "field_id": "appearance.pixels",
+      "group": "appearance",
+      "label": "Pixel-level icon/animation equivalence",
+      "source_selector": "paired decoded assets + captured15.33 pixels",
+      "source_to_consumer_route": "appearance",
+      "applicability_rule": "When an item has a visual representation; all per-item asset comparisons deferred.",
+      "client_phase": "later_appearance",
+      "parity_status": "unverified_against15.33_except_explicit_linked_evidence",
+      "note": "Deferred until basic fields; no image similarity claim frommatching IDs."
+    },
+    {
+      "field_id": "look.richer_stats_not_consumed_here",
+      "group": "generated_look",
+      "label": "Richer Basic stats not emitted bythisformatter",
+      "source_selector": "Protection resistances,skillmodifiers,Mantra,augments,elemental weaponstats",
+      "source_to_consumer_route": "look",
+      "applicability_rule": "Only sourceformatter limitation;type fields may beNA",
+      "client_phase": "later_generated_look",
+      "parity_status": "not_emitted_by_the_reviewed_item_text_formatter;actual15.33Lookunverified",
+      "note": "Do not assume inspection stats automatically appear in generatedLook."
+    }
+  ],
+  "source_schema_paths": [
+    "attributes.always_on_top",
+    "attributes.always_on_top_order",
+    "attributes.blocks_movement",
+    "attributes.blocks_projectile",
+    "attributes.field_condition",
+    "attributes.field_condition.condition",
+    "attributes.field_condition.condition.element",
+    "attributes.field_condition.condition.entries",
+    "attributes.field_condition.condition.entries[]",
+    "attributes.field_condition.condition.entries[].amount",
+    "attributes.field_condition.condition.entries[].interval_ms",
+    "attributes.field_condition.condition.entries[].repetitions",
+    "attributes.field_condition.condition.kind",
+    "attributes.field_condition.source",
+    "attributes.field_condition.source.condition_sha256",
+    "attributes.field_condition.source.creature_sha256",
+    "attributes.field_condition.source.items_xml_sha256",
+    "attributes.field_condition.source.parser_sha256",
+    "attributes.field_condition.source.revision",
+    "attributes.field_condition.source.server",
+    "attributes.field_condition.source.server_item_id",
+    "attributes.field_replaceable",
+    "attributes.has_height",
+    "attributes.immovable_block_solid",
+    "attributes.rune_consumption",
+    "attributes.speed_bonus",
+    "attributes.spell_augments",
+    "attributes.spell_augments[]",
+    "attributes.spell_augments[].kind",
+    "attributes.spell_augments[].spell",
+    "attributes.spell_augments[].value",
+    "authoring.forge",
+    "authoring.forge.classification",
+    "authoring.forge.max_tier",
+    "authoring.item",
+    "authoring.item.family",
+    "authoring.item.key",
+    "authoring.item.revision",
+    "authoring.lifecycle",
+    "authoring.lifecycle.enchantable",
+    "authoring.ranged",
+    "authoring.ranged.ammunition",
+    "authoring.ranged.attack",
+    "authoring.ranged.damage_max",
+    "authoring.ranged.damage_min",
+    "authoring.ranged.element",
+    "authoring.ranged.elemental_attack",
+    "authoring.ranged.hit_chance",
+    "authoring.ranged.kind",
+    "authoring.ranged.mana_per_shot",
+    "authoring.ranged.max_hit_chance",
+    "authoring.ranged.range_cells",
+    "authoring.required_magic_level",
+    "authoring.source_lifecycle",
+    "authoring.source_lifecycle.implemented",
+    "authoring.source_lifecycle.removed",
+    "authoring.taxonomy",
+    "authoring.taxonomy.primary",
+    "authoring.taxonomy.secondary",
+    "authoring.use_observation",
+    "authoring.use_observation.damage",
+    "authoring.use_observation.damage.kind",
+    "authoring.use_observation.damage.value",
+    "authoring.use_observation.damage.value.max",
+    "authoring.use_observation.damage.value.min",
+    "authoring.use_observation.damage_type",
+    "authoring.use_observation.mana_cost",
+    "authoring.weapon_absolute_hit_chance_percent",
+    "authoring.weapon_absolute_hit_chance_percent.denominator",
+    "authoring.weapon_absolute_hit_chance_percent.numerator",
+    "authoring.weapon_attack_modifier_points",
+    "semantics.bed",
+    "semantics.bed.occupied_female",
+    "semantics.bed.occupied_female.key",
+    "semantics.bed.occupied_female.revision",
+    "semantics.bed.occupied_male",
+    "semantics.bed.occupied_male.key",
+    "semantics.bed.occupied_male.revision",
+    "semantics.bed.part",
+    "semantics.bed.partner_direction",
+    "semantics.charges",
+    "semantics.charges.count",
+    "semantics.classification",
+    "semantics.classification.capabilities",
+    "semantics.classification.item_type",
+    "semantics.consumption",
+    "semantics.consumption.kind",
+    "semantics.consumption.value",
+    "semantics.consumption.value.empty_flask",
+    "semantics.consumption.value.empty_flask.key",
+    "semantics.consumption.value.empty_flask.revision",
+    "semantics.consumption.value.regeneration_seconds",
+    "semantics.consumption.value.restores",
+    "semantics.consumption.value.restores[]",
+    "semantics.consumption.value.restores[].max",
+    "semantics.consumption.value.restores[].min",
+    "semantics.consumption.value.restores[].resource",
+    "semantics.container",
+    "semantics.container.capacity",
+    "semantics.equipment",
+    "semantics.equipment.patterns",
+    "semantics.equipment.patterns[]",
+    "semantics.equipment.patterns[].additional_reserved_slots",
+    "semantics.equipment.patterns[].additional_reserved_slots[]",
+    "semantics.equipment.patterns[].compatibility_rule",
+    "semantics.equipment.patterns[].level",
+    "semantics.equipment.patterns[].mutually_exclusive_groups",
+    "semantics.equipment.patterns[].mutually_exclusive_groups[]",
+    "semantics.equipment.patterns[].pattern_id",
+    "semantics.equipment.patterns[].primary_slot",
+    "semantics.equipment.patterns[].vocations",
+    "semantics.equipment.patterns[].vocations[]",
+    "semantics.fluid",
+    "semantics.fluid.fluid_type",
+    "semantics.imbuement",
+    "semantics.imbuement.allowed_family_tiers",
+    "semantics.imbuement.allowed_family_tiers[]",
+    "semantics.imbuement.allowed_family_tiers[].family",
+    "semantics.imbuement.allowed_family_tiers[].tier",
+    "semantics.imbuement.excluded_families",
+    "semantics.imbuement.slot_count",
+    "semantics.physical",
+    "semantics.physical.movable",
+    "semantics.physical.pickupable",
+    "semantics.physical.weight",
+    "semantics.presentation",
+    "semantics.presentation.description",
+    "semantics.presentation.name",
+    "semantics.protection",
+    "semantics.protection.armor",
+    "semantics.protection.resistances",
+    "semantics.protection.resistances[]",
+    "semantics.protection.resistances[].kind",
+    "semantics.protection.resistances[].percent",
+    "semantics.protection.resistances[].percent.denominator",
+    "semantics.protection.resistances[].percent.numerator",
+    "semantics.readable_writeable",
+    "semantics.readable_writeable.distance_read",
+    "semantics.readable_writeable.max_text_length",
+    "semantics.readable_writeable.readable",
+    "semantics.readable_writeable.write_once_target",
+    "semantics.readable_writeable.write_once_target.key",
+    "semantics.readable_writeable.write_once_target.revision",
+    "semantics.readable_writeable.writeable",
+    "semantics.skill_modifiers",
+    "semantics.skill_modifiers.modifiers",
+    "semantics.skill_modifiers.modifiers[]",
+    "semantics.skill_modifiers.modifiers[].evaluation_phase",
+    "semantics.skill_modifiers.modifiers[].kind",
+    "semantics.skill_modifiers.modifiers[].parameter",
+    "semantics.skill_modifiers.modifiers[].parameter.kind",
+    "semantics.skill_modifiers.modifiers[].parameter.value",
+    "semantics.skill_modifiers.modifiers[].parameter.value.denominator",
+    "semantics.skill_modifiers.modifiers[].parameter.value.numerator",
+    "semantics.skill_modifiers.modifiers[].priority",
+    "semantics.skill_modifiers.modifiers[].target_domain",
+    "semantics.stack",
+    "semantics.stack.stack_max",
+    "semantics.stack.stackable",
+    "semantics.temporal",
+    "semantics.temporal.consumption_mode",
+    "semantics.temporal.decay_target",
+    "semantics.temporal.decay_target.key",
+    "semantics.temporal.decay_target.revision",
+    "semantics.temporal.duration",
+    "semantics.temporal.stop_duration",
+    "semantics.trade_restrictions",
+    "semantics.trade_restrictions.account_binding_policy",
+    "semantics.trade_restrictions.character_binding_policy",
+    "semantics.trade_restrictions.marketable",
+    "semantics.trade_restrictions.tradeable",
+    "semantics.trade_restrictions.vocations",
+    "semantics.use_requirements",
+    "semantics.use_requirements.enforcement_mode",
+    "semantics.use_requirements.min_level",
+    "semantics.use_requirements.min_magic_level",
+    "semantics.use_requirements.vocations",
+    "semantics.use_requirements.vocations[]",
+    "semantics.use_transform",
+    "semantics.use_transform.targets",
+    "semantics.use_transform.targets[]",
+    "semantics.use_transform.targets[].kind",
+    "semantics.use_transform.targets[].target",
+    "semantics.use_transform.targets[].target.key",
+    "semantics.use_transform.targets[].target.revision",
+    "semantics.weapon",
+    "semantics.weapon.ammunition",
+    "semantics.weapon.attack",
+    "semantics.weapon.defense",
+    "semantics.weapon.elemental",
+    "semantics.weapon.elemental[]",
+    "semantics.weapon.elemental[].element",
+    "semantics.weapon.elemental[].points",
+    "semantics.weapon.extra_defense",
+    "semantics.weapon.hit_chance",
+    "semantics.weapon.hit_chance.denominator",
+    "semantics.weapon.hit_chance.numerator",
+    "semantics.weapon.max_hit_chance",
+    "semantics.weapon.max_hit_chance.denominator",
+    "semantics.weapon.max_hit_chance.numerator",
+    "semantics.weapon.range",
+    "semantics.weapon.weapon_type"
+  ],
+  "typed_modifier_kinds": [
+    {
+      "kind": "CLEAVE_PERCENT",
+      "source_occurrences": {
+        "canonical": 6
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "CRITICAL_HIT_CHANCE",
+      "source_occurrences": {
+        "canonical": 32
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "CRITICAL_HIT_DAMAGE",
+      "source_occurrences": {
+        "canonical": 33
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "DEATH_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 4,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "EARTH_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 6
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "ELEMENTAL_BOND",
+      "source_occurrences": {
+        "canonical": 16,
+        "manifest_merged": 5
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "ENERGY_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 6,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "FIRE_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 7,
+        "manifest_merged": 3
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "HEALING_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 8,
+        "manifest_merged": 4
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "HOLY_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 6,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "ICE_MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 5,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "LIFE_LEECH_AMOUNT",
+      "source_occurrences": {
+        "canonical": 43
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "LIFE_LEECH_CHANCE",
+      "source_occurrences": {
+        "canonical": 33
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MAGIC_LEVEL_POINTS",
+      "source_occurrences": {
+        "canonical": 151,
+        "manifest_merged": 35
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MAGIC_SHIELD_CAPACITY_FLAT",
+      "source_occurrences": {
+        "canonical": 4,
+        "manifest_merged": 2
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MAGIC_SHIELD_CAPACITY_PERCENT",
+      "source_occurrences": {
+        "canonical": 4,
+        "manifest_merged": 2
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MANA_LEECH_AMOUNT",
+      "source_occurrences": {
+        "canonical": 41
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MANA_LEECH_CHANCE",
+      "source_occurrences": {
+        "canonical": 30
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MANA_SHIELD",
+      "source_occurrences": {
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "MANTRA",
+      "source_occurrences": {
+        "canonical": 35,
+        "manifest_merged": 4
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "PERFECT_SHOT_DAMAGE",
+      "source_occurrences": {
+        "canonical": 2,
+        "manifest_merged": 2
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "PERFECT_SHOT_RANGE",
+      "source_occurrences": {
+        "canonical": 2,
+        "manifest_merged": 2
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "REFLECT_DAMAGE",
+      "source_occurrences": {
+        "canonical": 5
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_AXE",
+      "source_occurrences": {
+        "canonical": 68,
+        "manifest_merged": 4
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_CLUB",
+      "source_occurrences": {
+        "canonical": 67,
+        "manifest_merged": 4
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_DISTANCE",
+      "source_occurrences": {
+        "canonical": 77,
+        "manifest_merged": 7
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_FIST",
+      "source_occurrences": {
+        "canonical": 62,
+        "manifest_merged": 12
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_SHIELD",
+      "source_occurrences": {
+        "canonical": 14,
+        "manifest_merged": 3
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SKILL_SWORD",
+      "source_occurrences": {
+        "canonical": 70,
+        "manifest_merged": 4
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SPEED",
+      "source_occurrences": {
+        "canonical": 35,
+        "manifest_merged": 19
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SUPPRESS_DROWN",
+      "source_occurrences": {
+        "canonical": 3,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    },
+    {
+      "kind": "SUPPRESS_DRUNK",
+      "source_occurrences": {
+        "canonical": 1,
+        "manifest_merged": 1
+      },
+      "parameter_unit": "Read exactparameter.kind andvalue from source record;not inferredfromlabel",
+      "consumer_status": "source_kind_present;per-kind dispatch/render wiring notfullyqualifiedinthisstage",
+      "client15_33_status": "onlyparticular capturedBasiclines checked"
+    }
+  ],
+  "look_boundary": "Static description != generated Look. Type Catalogue inspection != concrete instance inspection. Look codec carriesUTF8Text, while Inspection carriesname/count/tier/stringattributes."
+}

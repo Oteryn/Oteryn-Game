@@ -1,0 +1,74 @@
+{
+  "source_census": {
+    "passed": true,
+    "source_only": true,
+    "scope": "Full structural census of20 enumerated corpora, not manual retail parity",
+    "utc": "2026-11-12T22:13:08.544885+00:00",
+    "main_sha_refreshed": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+    "matches_audit_pin": true,
+    "whole_corpora": 20,
+    "field_paths": 1770,
+    "all_source_sha256_and_git_blobs_verified": 137,
+    "independent_top_level_semantics_cross_checks": 19,
+    "manifest_input_pins": 4,
+    "all_report_local_links_exist": true,
+    "all_coverage_csv_rows_match_json": true,
+    "report_sha256": "7c4f5483ea41477dbfdbd84140a76750218144e189e31a489395d439e1a85845"
+  },
+  "source_dataflow": {
+    "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+    "scope": "immutable repository source and offline composition only",
+    "source_files_checked": 30,
+    "stages_checked": 11,
+    "pin_checks": [
+      {
+        "manifest_field": "item_profiles",
+        "repository_path": "content/items/definitions/spell-native-profiles.json",
+        "local_evidence": "outputs/items-source-current/spell-native-profiles.json",
+        "expected_sha256": "6bbd223173fde1229dfa367ff11d254d1382dd5b124c8307bb131f17ef8d1553",
+        "actual_sha256": "6bbd223173fde1229dfa367ff11d254d1382dd5b124c8307bb131f17ef8d1553",
+        "bytes": 13487858,
+        "matches": true
+      },
+      {
+        "manifest_field": "item_profile_updates",
+        "repository_path": "content/items/definitions/srx1-item-updates.json",
+        "local_evidence": "outputs/items-runtime-audit/sources/content/items/definitions/srx1-item-updates.json",
+        "expected_sha256": "d465b8848c7304177835a63b0a722c5fe7de062577a9a088e9bdb91eecdd8e2d",
+        "actual_sha256": "d465b8848c7304177835a63b0a722c5fe7de062577a9a088e9bdb91eecdd8e2d",
+        "bytes": 171254,
+        "matches": true
+      },
+      {
+        "manifest_field": "starting_loadout_item_profiles",
+        "repository_path": "content/items/definitions/starting-loadout-profiles.json",
+        "local_evidence": "outputs/items-source-current/content/items/definitions/starting-loadout-profiles.json",
+        "expected_sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a",
+        "actual_sha256": "4d2bf471ff0992dcc19ffd11e6ad42f691421a4521158dd9f7897473c39f566a",
+        "bytes": 25356,
+        "matches": true
+      }
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "basic_snapshot": {
+    "records": 87,
+    "new_manual": 77,
+    "reused": 10,
+    "last_basic_id": 110,
+    "comparison_proof_hash_checks": 516,
+    "subset_sha256": "32f2c0c2c53087af4ba56874438921766b5246c2c7f91dd8a52d1ba1b1260755"
+  },
+  "publication_boundary": "LocalreceiptsarenotCI/review/mergeproof;runvalidate.pyandgovernanceonactualcandidate.",
+  "structural_census_repair": {
+    "source_commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+    "superseded_frozen_head": "99738f5d262251241ac5c7803f12c4422adf547e",
+    "legacy_paths": 1770,
+    "corrected_paths": 1878,
+    "legacy_csv_sha256": "f5b3948b5506408cc8e99d45b67e657a99241488bc03f0ffe0d298f3181d962d",
+    "boundary": "Structural counts only; no runtime admission or client semantic parity claim.",
+    "reproduce": "python docs/agents/evidence/items-15-33/census.py",
+    "changed_rows": 186
+  }
+}
