@@ -313,7 +313,7 @@ impl ActivityHandoffOwner {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.return_inner(authority, node, request, false).await
+        self.return_inner(authority, node, request, false, None).await
     }
 
     pub async fn recover(
@@ -325,7 +325,26 @@ impl ActivityHandoffOwner {
         request.reason = ActivityReturnReason::OwnerLost;
         request.command_id = None;
         request.destination_transport = None;
-        self.return_inner(authority, node, request, true).await
+        self.return_inner(authority, node, request, true, None).await
+    }
+
+    /// Retain the independently proven terminal trigger when native settlement converts it to Death.
+    pub async fn return_forced_death(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityReturnRequest,
+        trigger: ActivityReturnReason,
+    ) -> Result<ActivityReturnOutcome> {
+        if !matches!(request.reason, ActivityReturnReason::Death { .. })
+            || !matches!(trigger, ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. })
+            || request.command_id.is_some()
+            || matches!(trigger, ActivityReturnReason::StaffKick { .. } if request.destination_transport.is_none())
+            || matches!(trigger, ActivityReturnReason::StaffKickLost { .. } if request.destination_transport.is_some())
+        {
+            return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::InvalidInput));
+        }
+        self.return_inner(authority, node, request, false, Some(trigger)).await
     }
 
     async fn return_inner(
@@ -334,6 +353,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityReturnRequest,
         recovering: bool,
+        terminal_trigger: Option<ActivityReturnReason>,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
             || matches!(request.reason, ActivityReturnReason::Abandoned { .. } | ActivityReturnReason::StaffKick { .. }
@@ -374,7 +394,7 @@ impl ActivityHandoffOwner {
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let result = returning::return_in_transaction(
-                        &mut tx, &root, &node, &request, recovering,
+                        &mut tx, &root, &node, &request, recovering, terminal_trigger,
                     )
                     .await?;
                     if !matches!(result, ActivityReturnOutcome::Refused(_)) {
