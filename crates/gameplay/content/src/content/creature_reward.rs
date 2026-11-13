@@ -729,6 +729,18 @@ fn source_soul_war_corpse_pair(
         })
 }
 
+fn source_questpc7_corpse_capacity(creature: &str, corpse: &SectionRef) -> Option<u32> {
+    if corpse.family != "Item" || corpse.revision != "definition-r1" {
+        return None;
+    }
+    match (creature, corpse.key.as_str()) {
+        ("oteryn:creature.hydra", "oteryn:item.tibia.i6048") => Some(36),
+        ("oteryn:creature.glooth_golem", "oteryn:item.tibia.i20972") => Some(38),
+        ("oteryn:creature.werehyaena", "oteryn:item.tibia.i33821") => Some(48),
+        _ => None,
+    }
+}
+
 fn source_plain_corpse_pair(creature: &str, corpse: &SectionRef) -> bool {
     corpse.family == "Item"
         && corpse.revision == "definition-r1"
@@ -787,7 +799,19 @@ fn verified_soul_war_corpses(
             | "oteryn:item.tibia.i33891" | "oteryn:item.tibia.i33949" | "oteryn:item.tibia.i33984")
             && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::NotApplicable)
             && record.semantics.container == F::NotApplicable;
-        source_48 || source_plain
+        let questpc7_capacity = match definition.production_key.as_str() {
+            "oteryn:item.tibia.i6048" => Some(36),
+            "oteryn:item.tibia.i20972" => Some(38),
+            "oteryn:item.tibia.i33821" => Some(48),
+            _ => None,
+        };
+        let source_questpc7 = questpc7_capacity.is_some_and(|capacity|
+            record.admission.legal_destinations == [NativeItemDestination::Ground]
+            && matches!(&record.semantics.classification, F::Known(value) if value.item_type == F::Known(ReferenceItemType::Container))
+            && matches!(&record.semantics.physical, F::Known(value)
+                if value.weight == F::Known(0) && value.movable == F::Known(false) && value.pickupable == F::Known(false))
+            && matches!(&record.semantics.container, F::Known(value) if value.capacity == F::Known(capacity)));
+        source_48 || source_plain || source_questpc7
     }).map(|record| record.production_definition.production_key.clone()).collect()
 }
 
@@ -877,6 +901,8 @@ fn row(
                     || (*capacity == 48
                         && verified_source_corpses.contains(&corpse.key)
                         && source_soul_war_corpse_pair(creature, profile, &corpse))
+                    || (verified_source_corpses.contains(&corpse.key)
+                        && source_questpc7_corpse_capacity(creature, &corpse) == Some(*capacity))
             })
             .ok_or(NoSettlementReason::CorpseItemInadmissible)?;
     }

@@ -2,8 +2,10 @@ name: Content Tree Migration Equivalence
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
+      - claude/happy-davinci-ijz3wy-qmech
     paths:
       - content/items/**
       - content/starter/**
@@ -171,3 +173,52 @@ jobs:
         env:
           SEAL_BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
         run: python tools/content-schema/starter-kit-authoring/starter_kit_authoring.py content --check --seal-base "$SEAL_BASE"
+
+  generate-native-provider-candidate:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'content-candidate')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact source candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify checked-out source SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Install pinned formatter without compiling a workspace crate
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
+      - name: Install pinned native authoring dependencies
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/native-provider-venv"
+          "$RUNNER_TEMP/native-provider-venv/bin/python" -m pip install -r tools/content-schema/item-authoring/requirements.txt
+          echo "$RUNNER_TEMP/native-provider-venv/bin" >> "$GITHUB_PATH"
+      - name: Regenerate native providers through their established owners
+        run: python3 tools/content-migration/regenerate_content.py --native-only
+      - name: Export exact generated provider patch
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          output="$RUNNER_TEMP/native-provider-candidate"
+          mkdir -p "$output"
+          git add --all
+          git rev-parse HEAD > "$output/base-sha.txt"
+          git write-tree > "$output/staged-input-tree.txt"
+          git diff --binary --full-index --output="$output/candidate.patch" HEAD
+          sha256sum "$output/candidate.patch" > "$output/candidate.sha256"
+          git status --porcelain=v1 > "$output/status.txt"
+          printf '%s\n' 'regenerate_content.py --native-only; no World pin-refresh; no qualification or runtime claim; no commit/ref publication' > "$output/operation.txt"
+      - name: Upload native provider outputs for independent review
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: native-provider-candidate-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/native-provider-candidate/
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 7

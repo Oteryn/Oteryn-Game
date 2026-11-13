@@ -594,6 +594,18 @@ def native_corpse_capacity(ref: dict, profile: dict, *, reward_boss: bool = Fals
     if (type(capacity) is int and capacity == 48 and ref['key'] in source_48
             and profile['admission']['legal_destinations'] == ['Ground']):
         return capacity
+    # Exact QuestPC7 source physical capacities are independent of the retained
+    # 30-entry corpse MINT/work/view limits. No general container policy changes.
+    questpc7_capacity = {'oteryn:item.tibia.i6048': 36,
+                        'oteryn:item.tibia.i20972': 38,
+                        'oteryn:item.tibia.i33821': 48}
+    physical = known_native(semantics['physical'])
+    if (type(capacity) is int and capacity == questpc7_capacity.get(ref['key'])
+            and profile['admission']['legal_destinations'] == ['Ground']
+            and known_native(physical['weight']) == 0
+            and known_native(physical['movable']) is False
+            and known_native(physical['pickupable']) is False):
+        return capacity
     # Reward-boss loot stays in personal entitlements; the physical corpse retains
     # its source capacity. Ordinary corpse contents keep GAMEITEM01's 30-entry cap,
     # matching CreatureRewardTable's existing per-creature admission rule.
