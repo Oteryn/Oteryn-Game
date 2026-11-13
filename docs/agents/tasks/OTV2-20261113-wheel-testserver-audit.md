@@ -5,22 +5,23 @@ task_id: OTV2-20261113-wheel-testserver-audit
 title: Wheel and Gem Atelier audit against the Winter Update test server
 type: mechanic
 mode: AUDIT
-status: investigating
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/wheel-testserver-audit-20261113
-pr: null
+pr: 3181
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: chatgpt-wheel-audit-root
 created_at: 2026-11-13T19:31:16Z
-updated_at: 2026-11-13T19:31:16Z
+updated_at: 2026-11-13T19:55:59Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/OTV2-20261113-wheel-testserver-audit.md
   - docs/reference/wheel-of-destiny-testserver-20261113.md
+  - docs/reference/wheel-of-destiny-testserver-20261113/
   - crates/gameplay/progression/src/wheel_effects.rs
   - crates/gameplay/progression/src/wheel_effects/
 public_contracts: []
@@ -32,62 +33,94 @@ external_repositories: []
 
 ## Outcome
 
-Compare the current executed Wheel and Gem Atelier with the Winter Update test server,
-preserve accepted Oteryn differences, repair proven defects, and retain exact unknowns.
-The owner explicitly authorized native client interaction and repository branch/PR/push.
-This work does not declare protected integration or full Global parity complete.
+Compare current Wheel/Gem execution with the Winter Update test server, preserve accepted
+Oteryn differences, repair source-confirmed defects and retain exact gaps. The owner
+explicitly authorized native client actions and branch/PR/push. This task does not declare
+full Global parity, protected integration or production deployment complete.
+
+The [audit](../../reference/wheel-of-destiny-testserver-20261113.md) records current sources,
+producer/consumer coverage, remaining blockers and a bounded durable/protocol repair plan.
+Three numeric defects are repaired in the common progression projector. Eight-slot
+migration, new Mastery Convictions, 20 new mods and Sorcerer elemental-state integration
+remain open; this PR is a draft.
 
 ## Architecture and source of truth
 
-- PROVEN: baseline `ce45063507c22a11e0db7e9c0ff86dacbe6ff834`; bound META policy
-  `Oteryn/Oteryn@1bfb5ff98c8aa156e73669a14e083a1d464c29fb`, version 3.1.0.
-- PROVEN: existing Wheel/Gem contracts and producers remain the implementation owners.
-- UNKNOWN: complete latest Global behavior; see the [audit](../../reference/wheel-of-destiny-testserver-20261113.md).
-- One branch publisher: root. Workers return source evidence and owned-path patches;
-  they do not commit, push, trigger paid review or merge.
+- Baseline: `ce45063507c22a11e0db7e9c0ff86dacbe6ff834`.
+- Bound META: `Oteryn/Oteryn@1bfb5ff98c8aa156e73669a14e083a1d464c29fb`, version 3.1.0.
+- Existing Wheel/Gem producers, consumers and fenced writers remain their owners.
+- Root is the only branch publisher. Workers did not commit, push, merge or trigger review.
+- Initial documentation candidate: `b8239a172cc2cb4c906fe914c7653d807f7a3c21`.
+  Exact subsequent candidate/check/review SHAs are recorded in the PR; no self-referential
+  commit hash is invented in this file.
 
 ## High-risk authority/recovery qualification
 
-NOT_APPLICABLE to the initial read-only audit and documentation delta. Reclassify before
-changing any durable mutation, session/lease gate, receipt or protocol boundary.
+No durable mutation, migration, session/lease gate, receipt or wire boundary is changed.
+The production delta changes only shared stat/gem arithmetic. Existing caller eligibility,
+current-revision checks and paid Workshop transitions are preserved. The three arithmetic
+changes have negative regressions and composed projection coverage.
+
+The unimplemented twelve-to-eight transition is high risk and has explicit migration,
+historical replay, paid-inventory and negotiated-client gates in the audit. It is not
+represented as a constant-only fix.
 
 ## Acceptance criteria
 
-- [ ] Dated official/client evidence covers latest Wheel/Atelier changes.
-- [ ] Complete source-to-consumer map and explicit uncovered behaviors retained.
-- [ ] Every accepted defect has a failing regression and a verified minimal repair.
-- [ ] Required changed-path validation and independent review are recorded accurately.
-- [ ] Dedicated PR contains the complete coherent delta; no unverified full-parity claim.
+- [x] Dated official/client evidence identifies current Winter Update changes.
+- [x] Source-to-consumer map and exact uncovered behaviors are retained.
+- [x] Every defect repaired here has a reproduced negative case and passing repair.
+- [x] Required local progression checks pass; source provenance is retained.
+- [ ] Stable published implementation candidate has independent review and CI readback.
+- [ ] Native combat/paid operations/save/relog acceptance is completed after session login.
 
-## Reference parity
+## Implementation and reference parity
 
-| Behavior | Reference | Oteryn | Check |
+| Finding | Reference | Original behavior | Result |
 | --- | --- | --- | --- |
-| Workshop stat bonus | Fresh Global observation pending | UI advertises +5 per grade; shared producer absent | Regression pending source confirmation |
-| Revelation Mastery | Catalogue 150/165/180/225; fresh threshold observation pending | Donor-specific double application | Table-driven and composed projection checks pending |
-| Vessel quality order | Current test-client panel pending | Lesser/Regular/Greater repeated four times | Existing slot tests establish implementation, not reference parity |
-| Removal permission | Owner decision 2026-11-05 | Combat-lock based permission retained | No change requested to accepted difference |
-
-## Implementation / findings
-
-See the linked audit. Historical task/ledger entries were consulted only to locate existing
-implementations. Current code and live GitHub state decide current implementation facts.
-No implementation fix or complete test pass is claimed in this initial audit checkpoint.
+| Workshop stats | +5 HP/Mana/Capacity per upgrade, without gems | No shared stat contribution | Added once under current grade revision; all five vocations tested |
+| Gem Revelation Mastery | 150/165/180/225, official composed preset has Outburst I | Values doubled; preset had Outburst II | Single contribution; all 16 IDs/all grades and exact preset tested |
+| Monk mixed Mana | 100/110/120/150; official mod 33 Grade IV shows150 | Zero for IDs33–36 | Catalogue values restored with resistance retained |
+| Vessel layout | Eight, L/R/G/L/G/R/G/G, four +125 Convictions | Twelve, L/R/G repeated; old Convictions | Confirmed open implementation/migration gap |
+| New supreme mods | IDs94–113, all five vocations | Catalogue ends at93 | Qualified derived table retained; not admitted to runtime |
+| Sorcerer elemental state | Required by Lord of Destruction-related behavior | Elemental spells CONTRACT_GAP; access producer absent | Open integration gap, no claim of observed live refusal |
+| Removal permission | Owner decision2026-11-05 | Combat-lock/PZ rule | Preserved intentional difference |
 
 ## Validation
 
-- `git diff --check`: pass for the initial audit documentation.
-- `python3 tools/agents/validate_governance.py`: pass (22 documents, 9 lanes).
-- `python3 -m unittest discover -s tools/agents/tests`: pass (129 tests).
-- Rust focused/component checks: pending; pinned Rust 1.99.1 provisioned for this task.
-- Live client: initial Wheel panel observed; subsequent disconnect prevents controlled changes.
-- Exact-head CI: no candidate published yet.
+Executed before publication of the implementation batch:
+
+- Workshop RED: actual `(0,0,0)`, expected `(5,5,5)` after a paid grade upgrade.
+- Gem RED: Grade I Mastery300000 vs150000; Monk Mana0 vs100000.
+- Composed preset RED: Spiritual Outburst stageII vs official stageI when only the original
+  Mastery multiplier was temporarily restored; the repair was restored before all gates.
+- `/home/agent/.cargo/bin/cargo test --locked -p oteryn-gameplay-progression --quiet`:
+  **174 passed, 0 failed**, plus0 doctests.
+- `/home/agent/.cargo/bin/cargo clippy --locked -p oteryn-gameplay-progression --all-targets -- -D warnings`:
+  pass. Existing vendor Tokio warnings do not fail the command.
+- Formatter and `git diff --check`: pass for the numeric patch; full final delta rechecked
+  at the publication boundary.
+- `python3 tools/agents/validate_governance.py`: pass,22 documents/9 lanes for the
+  updated audit/task/evidence batch.
+- `python3 -m unittest discover -s tools/agents/tests`:129 tests pass for the updated
+  documentation batch.
+- No PostgreSQL integration tests, complete game-server/client build or deployed gameplay
+  acceptance were run. Existing non-progression consumer tests were inspected only.
+
+The native client disconnected after the first Wheel observation. The official public
+test planner accepted the exported preset and independently confirmed the compared
+values. Planner grades are explicit Grade IV and are not the native character's full
+Workshop state. Screenshot retention and source limitations are recorded in the audit.
 
 ## Self-review / independent review
 
-Root self-review and required Codex review pending a published reviewable candidate.
+Root inspected the numeric diff and current vitals/spell/capacity callers. Source research
+and native evidence were independently collected. A separate authorized read-only Codex
+review is pending a stable published implementation head; it is not replaced by tests.
+Review dispatch requires a fresh PR comments/reviews/provider-status deduplication check.
 
 ## Context checkpoint
 
-Next action: publish the scoped audit PR, then verify and repair source-confirmed findings.
-Known blocker: test-client session expired; further live Wheel actions need owner login.
+Publish the coherent numeric/evidence batch, verify its exact tree/head, run the bounded
+checks and required review, then update PR validation. Full current Winter parity remains
+blocked by the specifically documented implementation gaps and native-session limitation.
