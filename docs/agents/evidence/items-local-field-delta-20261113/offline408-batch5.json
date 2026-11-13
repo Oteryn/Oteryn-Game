@@ -1,0 +1,3861 @@
+{
+  "classification": "DERIVED_OFFLINE_NATIVE_AND_EXACT_PUBLISHED_FIELD_RECOVERY",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6866296521",
+  "publication_predecessor": "9bce70f3fe2a00929836c1d8986f541c6094f638",
+  "manual_records": [
+    {
+      "observation_key": "ui2623:1699",
+      "name": "mystic turban",
+      "category": "Helmets and Hats",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/helmets-hats-86.png",
+        "bytes": 12082,
+        "sha256": "06b5756bc5fc504c4abc129de4291d4143618309cee963679f495b3b2476e340",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-helmets-hats",
+        "image": "cards/00086-basic-top.png",
+        "image_sha256": "eae499d1ee36d436ca738485f735b3a97dc60f981197b92f1d49ccc442654e03",
+        "index_sha256": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Alesar",
+        "UI_location_literal": "Mal'ouquah",
+        "price": 150,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          4831,
+          6775
+        ],
+        "paired_raw_tuple_sha256": [
+          "11d2c092ecd40539762654b4f9bee4df4292d52480e20440188ceb203c3e56b1",
+          "11d2c092ecd40539762654b4f9bee4df4292d52480e20440188ceb203c3e56b1"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1711",
+      "name": "royal helmet",
+      "category": "Helmets and Hats",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/helmets-hats-98.png",
+        "bytes": 12184,
+        "sha256": "d01da033c151e1dafb698e5fc874bb94bf7acfc20f2d343b804070eee32af44b",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-helmets-hats",
+        "image": "cards/00098-basic-top.png",
+        "image_sha256": "8166cc74728c5add1b81a4e3df589ffacd900c600afa8374e27fe2b87c4b196a",
+        "index_sha256": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Nah'bob",
+        "UI_location_literal": "Ashta'daramai",
+        "price": 30000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          3267,
+          5707
+        ],
+        "paired_raw_tuple_sha256": [
+          "ca488151ea196034a7d87adc5bf4a72d8ffcd211433ecb14cb608f08736ac943",
+          "ca488151ea196034a7d87adc5bf4a72d8ffcd211433ecb14cb608f08736ac943"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1717",
+      "name": "shamanic mask",
+      "category": "Helmets and Hats",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/helmets-hats-104.png",
+        "bytes": 12116,
+        "sha256": "59cb2665dd7717853635a4c7c48472cf55eb8b51bdb93fad69c6f825a767adbe",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-helmets-hats",
+        "image": "cards/00104-basic-top.png",
+        "image_sha256": "bf3fb2be4df7482de19a7bffc5b1b1c02906243f73f5906caa65401c10a097e1",
+        "index_sha256": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Mugruu",
+        "UI_location_literal": "Ogre Village",
+        "price": 2000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          10818
+        ],
+        "paired_raw_tuple_sha256": [
+          "4566de05d54a22db439b357dc917fad34aab40d64f1789001e6d657ac437a8d7"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1727",
+      "name": "strange helmet",
+      "category": "Helmets and Hats",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/helmets-hats-114.png",
+        "bytes": 12685,
+        "sha256": "b0b9ecff5ca323753f00f8cc8c00f86a3d7a810872badcde416a3909f1f4e1ff",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-helmets-hats",
+        "image": "cards/00114-basic-top.png",
+        "image_sha256": "f4764fcc693f28cf9a41a4a6d8cf7d1b33cc70ff8c2185b8be5d90b3d6c41709",
+        "index_sha256": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Alesar",
+        "UI_location_literal": "Mal'ouquah",
+        "price": 500,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          5518
+        ],
+        "paired_raw_tuple_sha256": [
+          "4001098b773edd5fa356053ceac83fa0e5d8c8561a1415de3f4d4a6a5fe9689a"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1751",
+      "name": "crown legs",
+      "category": "Legs",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/legs-10.png",
+        "bytes": 12804,
+        "sha256": "aef4377b835abd9afbdb45ab325741e840d589fd63557ce2baca9242f0addeb2",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-legs",
+        "image": "cards/00010-basic-top.png",
+        "image_sha256": "95656a6cb086bdc1f99ef456f173fc3ff43f0f4c081ae75018c1984d26d9d08c",
+        "index_sha256": "22b7c02d984e962f868e6228e0a28cd50a874bdb5dbd25d3a1e01b0b0e5c35cb",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Nah'bob",
+        "UI_location_literal": "Ashta'daramai",
+        "price": 12000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          5684,
+          5686
+        ],
+        "paired_raw_tuple_sha256": [
+          "280b8d450c491a5aa87b02ec19cbf8296b8e63b284d8346e55b76831d943a879",
+          "280b8d450c491a5aa87b02ec19cbf8296b8e63b284d8346e55b76831d943a879"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1754",
+      "name": "depth ocrea",
+      "category": "Legs",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/legs-13.png",
+        "bytes": 12306,
+        "sha256": "73e5b9075380881c486794236722cf6e6467c1c6ea765c2fcb6800f5ad889a74",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-legs",
+        "image": "cards/00013-basic-top.png",
+        "image_sha256": "5a591fe84c1243234b51f84996c667a421d4cb9210c1adea28bde35c0a04fbba",
+        "index_sha256": "22b7c02d984e962f868e6228e0a28cd50a874bdb5dbd25d3a1e01b0b0e5c35cb",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Rock in a Hard Place",
+        "UI_location_literal": "Gray Beach",
+        "price": 16000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9774
+        ],
+        "paired_raw_tuple_sha256": [
+          "903711cef6bd8147a0f6f0cd659c88e69dfaf64567397d5c7bea00636f73416a"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1811",
+      "name": "animal cure",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-4.png",
+        "bytes": 12002,
+        "sha256": "14408f3be6851e0f213604c0f7c8da1ac044a323f53594fc088e85bdbbca847b",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00004-basic-top.png",
+        "image_sha256": "8e1c91102c23bf16c636dbe4a0acd35dc8703590f155559b101979dbd230662e",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Siflind",
+        "UI_location_literal": "Nibelor",
+        "price": 400,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8690
+        ],
+        "paired_raw_tuple_sha256": [
+          "93af2ff2a81dace702635e5da040e4c9f51d4b130736f3d09ec78f3baa99653b"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1814",
+      "name": "atlas",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-7.png",
+        "bytes": 12174,
+        "sha256": "1d4ed0934676e20de0a55fee15068f6192f9b2a7b7e9cc0937da180dc98efdc4",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00007-basic-top.png",
+        "image_sha256": "5932163107c994f8fb979a745196e40ca5eeec0f653fab7d30e0e41bc8c08fc5",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Berenice",
+        "UI_location_literal": "Liberty Bay City",
+        "price": 150,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          7560
+        ],
+        "paired_raw_tuple_sha256": [
+          "ce3b68db250a982ddaad08504fcc2e1cb55af90f10ba65f13cceb65b8bb31d4d"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1817",
+      "name": "bait",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-10.png",
+        "bytes": 12179,
+        "sha256": "7fcda5d02c948fb07ec77c6107f07ecf1ae0c8a3d4477e2704c36920181dc0c0",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00010-basic-top.png",
+        "image_sha256": "88ab367fe76f42ce2c1e9a35d2be183d336221638fdf193500b91e64913b6ebf",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Captain Haba",
+        "UI_location_literal": "Secret Subarea",
+        "price": 50,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          733
+        ],
+        "paired_raw_tuple_sha256": [
+          "800c6ba5c8e4ae48a9099158209ef504451673b91996bc5fc980935718e16beb"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1855",
+      "name": "blank imbuement scroll",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-48.png",
+        "bytes": 12219,
+        "sha256": "28ac46e58956ea8c33265c2b75d994abddad6eaef5c3a1915a68c8fc3a86cf29",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00048-basic-top.png",
+        "image_sha256": "36017d047b0bb5d6909218686ddb189ac4c5639ec21c03f8ca827f4f1bf086c8",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Albinius",
+        "UI_location_literal": "Thais Surroundings",
+        "price": 25000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          14787
+        ],
+        "paired_raw_tuple_sha256": [
+          "651b32851f22e626a8042e07d46fc7f1ed4f56d288a7ae5fa6ad5c8b32136597"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1872",
+      "name": "bottle of bug milk",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-65.png",
+        "bytes": 12152,
+        "sha256": "9e66f496f4b9600d64c9451b3d4671c0df3b3a3fbdaecd32907b08e7a059e2d8",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00065-basic-top.png",
+        "image_sha256": "4ad5086b2e42bfd025216032a9c13597a947a883d7634bc3695c273111d34491",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Brasith",
+        "UI_location_literal": "Ab'Dendriel City",
+        "price": 200,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8679
+        ],
+        "paired_raw_tuple_sha256": [
+          "9120852f94d71f7e4f6937e93f92293efd567726c04d8849e47aa359a1f27886"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1889",
+      "name": "bunch of reed",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-82.png",
+        "bytes": 12045,
+        "sha256": "e8c5ae81ac68a2231ae0d042595ddf6f189a44f3e0be9930b19319761d490c7a",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00082-basic-top.png",
+        "image_sha256": "762366a511d5bc56b4adbb3d2faae38799b7d9f4df3877d653678f80ba73c621",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "The Librarian",
+        "UI_location_literal": "Issavi",
+        "price": 25,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          11966
+        ],
+        "paired_raw_tuple_sha256": [
+          "28f98a33c544beea7e80e0a47ef990673cab1d3f90ac19b5acf8b5cde3cf90e9"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:190",
+      "name": "cowbell",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-191.png",
+        "bytes": 12164,
+        "sha256": "bdb379830a69a14e0567b3bdab438c22e935173a6520e0650af0af375466d5df",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00191-basic-top.png",
+        "image_sha256": "f6f42316934af27fb235de05c3aa3c5b2251590804e6d8ebca10a6e1db865dcc",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Alaistar",
+        "UI_location_literal": "Rathleton City",
+        "price": 210,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          10642
+        ],
+        "paired_raw_tuple_sha256": [
+          "cb09cc30d6f50c9847dcb7afd27909174ed73dd54df879229185b19bc23b39b4"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1962",
+      "name": "etcher",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-155.png",
+        "bytes": 12217,
+        "sha256": "268871185f13c2d67fab9a277c857247c60a110ddf774027c306e174beca7f74",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00155-basic-top.png",
+        "image_sha256": "fffe84dd596784c216c2869a706b3789156e975728f3bd308cea6b93eebad026",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Albinius",
+        "UI_location_literal": "Thais Surroundings",
+        "price": 30000,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          14788
+        ],
+        "paired_raw_tuple_sha256": [
+          "e91c2d9065160dae5c31495680e9767e1436c590d073adb116b1c5717125d2e4"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1964",
+      "name": "exploding cookie",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-157.png",
+        "bytes": 12102,
+        "sha256": "5446588e1f509ba024d986223169040464ec8a1cbdcba216170b3badddc4b889",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00157-basic-top.png",
+        "image_sha256": "6722463a3f9854ec4467fa6c233cd196839f91598112cba6b9fda50112f2b7ff",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 100,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          4
+        ],
+        "paired_raw_tuple_sha256": [
+          "74533fba949dfd9b7edaf84ad22aaa3a0c3ca4cdd56156fa5b9a6d5cbc683b89"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1986",
+      "name": "flask of chitin dissolver",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-179.png",
+        "bytes": 12107,
+        "sha256": "d27d8587baa9a0a36f8269ddb66487d98ce225dcadf09345aa37a26368f0921a",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00179-basic-top.png",
+        "image_sha256": "64e2d551517a3fe48eebcbc9bada82dc522f628192564f6c7f750911a79a3081",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Orockle",
+        "UI_location_literal": "Gray Beach",
+        "price": 150,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9766,
+          9767,
+          9828,
+          9829
+        ],
+        "paired_raw_tuple_sha256": [
+          "f0a211e3674f02c90fc8a5ac089fc161b562b306a7cd035dcc04ff0c2af2cd74",
+          "f0a211e3674f02c90fc8a5ac089fc161b562b306a7cd035dcc04ff0c2af2cd74",
+          "f0a211e3674f02c90fc8a5ac089fc161b562b306a7cd035dcc04ff0c2af2cd74",
+          "f0a211e3674f02c90fc8a5ac089fc161b562b306a7cd035dcc04ff0c2af2cd74"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1988",
+      "name": "flask of crown polisher",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-181.png",
+        "bytes": 12106,
+        "sha256": "bae42d822592fd404820fb74b611830413f3e6a9b5504bdac8674e85a9114d53",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00181-basic-top.png",
+        "image_sha256": "91da660785e79814213963df58e96463c2ebee6400d7a6722ad35ec1582448cd",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 700,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9054
+        ],
+        "paired_raw_tuple_sha256": [
+          "f763620d7beba084fe2d792d62bd827707d8c30440a1d1e6388dbd8829aacc60"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1993",
+      "name": "flask of rust remover",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-186.png",
+        "bytes": 12015,
+        "sha256": "3237a7e243446fa887eafdff3bff8ee0e9ef9011af86f47b108792346dcdd026",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00186-basic-top.png",
+        "image_sha256": "e535b5d52708797fa64ef358754b1187559228dc7fc043ed4dbc0f6ac2700963",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Harog",
+        "UI_location_literal": "Beregar",
+        "price": 50,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8717
+        ],
+        "paired_raw_tuple_sha256": [
+          "7e358a40ba43f3e38ee8dbbf941d0b867c080e2229f4ee54de57501063431166"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:1994",
+      "name": "flask with beaver bait",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-187.png",
+        "bytes": 12233,
+        "sha256": "7f58c7e95259e9b59802a72c3338722750272cedc48829a8a89179e1e46165f5",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00187-basic-top.png",
+        "image_sha256": "074ce31b81be72ef6de0a5bc9f74c171eabf77f1dff6a8118fbfff0d4d43b4ea",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Melfar",
+        "UI_location_literal": "Kazordoon Surroundings",
+        "price": 100,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9053
+        ],
+        "paired_raw_tuple_sha256": [
+          "4c48997e9d80ec2fe370c7bba630ef7b5bce832cb2cd2464ed53df20d04ea11a"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2047",
+      "name": "heavy old tome",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-240.png",
+        "bytes": 12164,
+        "sha256": "f4c10c95684de2fadde550bd5b36cf87cb123a026242865c65f68db1e2f54afa",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00240-basic-top.png",
+        "image_sha256": "e63e180a3db99b8a28341b69e934ed49737de5efd4d1f8fdaa35fd5becc2bb1d",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Albinius",
+        "UI_location_literal": "Thais Surroundings",
+        "price": 30,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          11112
+        ],
+        "paired_raw_tuple_sha256": [
+          "33a6d5d6aa3e913de480d01754993c74ceb4e7563edf7ab30289db721596f7a9"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2091",
+      "name": "jug of embalming fluid",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-284.png",
+        "bytes": 12165,
+        "sha256": "290427e2e5230eb9768db6dfa013268ee84b78af7a6d86c1206898b26bac7c57",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00284-basic-top.png",
+        "image_sha256": "634c9c8ea90d93d18d6bbcd4e6cf4d07a982bed1874fd68390690ec982b15ca8",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Mehkesh",
+        "UI_location_literal": "Ankrahmun City",
+        "price": 200,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8683
+        ],
+        "paired_raw_tuple_sha256": [
+          "4dceec0c5add53a763d34084b9e21a8b9a11696b6720ebe65823ead35252d58a"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2125",
+      "name": "memory crystal",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-318.png",
+        "bytes": 12100,
+        "sha256": "20e816bae78c2cf266790c45f1ebc024d8298f1296f2cabc3f2bebd8b48c99a4",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00318-basic-top.png",
+        "image_sha256": "71257bc55cea197237d465c95c5b9f854b80e6987ae8cc23a509ed9e64a97ca9",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 500,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          7177,
+          7178,
+          7923
+        ],
+        "paired_raw_tuple_sha256": [
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2230",
+      "name": "reagent flask",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-423.png",
+        "bytes": 12121,
+        "sha256": "7dcbca15e72f907d8b8f15998f12934fa14f4699dc9149feaa69fa17cd13b157",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00423-basic-top.png",
+        "image_sha256": "83e52d5886db3a02c9874f4bc180cdfec50409afc54ca369140d38e3c5b30a6b",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Orockle",
+        "UI_location_literal": "Gray Beach",
+        "price": 200,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9830,
+          9932
+        ],
+        "paired_raw_tuple_sha256": [
+          "94708b44b201b36679841a2cc931c67ecb580db545f476fb48347bcacfd02454",
+          "94708b44b201b36679841a2cc931c67ecb580db545f476fb48347bcacfd02454"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2262",
+      "name": "sample of sand wasp honey",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-455.png",
+        "bytes": 12085,
+        "sha256": "395dbb398b7335f05b5b62d2c5e80677a0bddc9f1acfc79b10b7a85c81895434",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00455-basic-top.png",
+        "image_sha256": "2be601e5d9fe7b5eb0e19b76e710cd94049e70b883a7f424c66470fdf64fab10",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Omur",
+        "UI_location_literal": "Darashia City",
+        "price": 200,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8682
+        ],
+        "paired_raw_tuple_sha256": [
+          "f4bfe726ec28359071972509739114470ac158988fb5b369a397c4025bf47f6d"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2263",
+      "name": "sample of venorean spice",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-456.png",
+        "bytes": 12788,
+        "sha256": "42bbabd51291fff388a7476ba5e294c2b56e7edb4c592ebd8f26a0920cabced7",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00456-basic-top.png",
+        "image_sha256": "46e259b20ab9c0f9e941123b4c35c801c318751bff15946c5c671b10d6dc3f37",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Rodney",
+        "UI_location_literal": "Venore City",
+        "price": 200,
+        "currency_literal": "gp",
+        "UI_quote_row1": 2,
+        "paired_raw_tuple_indices0": [
+          8681
+        ],
+        "paired_raw_tuple_sha256": [
+          "d3bedc9e0b4b8508236fd7cca69864ba62c266475a71bae855e5c4185189d07e"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2276",
+      "name": "scum bag",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-469.png",
+        "bytes": 12193,
+        "sha256": "b62d5c728552116e42b53217e5dfd696a143a6cbf306b837a0e39555ed12772a",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00469-basic-top.png",
+        "image_sha256": "0ed8364ef62356db063e2b435146297c2199ead55ae8e64e1448f0c5e26890c0",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Smaralda",
+        "UI_location_literal": "Thais Surroundings",
+        "price": 500,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9712
+        ],
+        "paired_raw_tuple_sha256": [
+          "5face18246a24d616970181219f330af03af8ae8f77551178985feb965913d4f"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2277",
+      "name": "seacrest pearl",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-470.png",
+        "bytes": 12153,
+        "sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00470-basic-top.png",
+        "image_sha256": "f5b75390cb8555b3744989966f0cf1a4f670313713eec157a2321e9757ac35fb",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Sell To",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Sell To",
+        "NPC": "Alaistar",
+        "UI_location_literal": "Rathleton City",
+        "price": 400,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          10721
+        ],
+        "paired_raw_tuple_sha256": [
+          "83e9ea6ca62aa787f8d87864505b189b7033de0ebf4ce801c0761c17e55166d3"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT",
+        "Buy From": "COMPLETE_OBSERVED_EMPTY"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2285",
+      "name": "sheet of tracing paper",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-478.png",
+        "bytes": 12100,
+        "sha256": "20e816bae78c2cf266790c45f1ebc024d8298f1296f2cabc3f2bebd8b48c99a4",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00478-basic-top.png",
+        "image_sha256": "1440e0b08d06b50a76aaa6cc396a30e358d9d85eee17cc4fc1962aaa3c0fc3b3",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 500,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          7177,
+          7178,
+          7923
+        ],
+        "paired_raw_tuple_sha256": [
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2286",
+      "name": "sheet of tracing paper",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-479.png",
+        "bytes": 12100,
+        "sha256": "20e816bae78c2cf266790c45f1ebc024d8298f1296f2cabc3f2bebd8b48c99a4",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00479-basic-top.png",
+        "image_sha256": "41067cb34f9f59410fe888ee7a376f1213972f56cea44d0ff7efbdcb7d9b748b",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 500,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          7177,
+          7178,
+          7923
+        ],
+        "paired_raw_tuple_sha256": [
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6",
+          "2e344ca368310bbd59b6b2eb3c42947b682a9790adc901e330ed65734044d9e6"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2341",
+      "name": "teleport crystal",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-534.png",
+        "bytes": 13563,
+        "sha256": "0c0cf1879e458f0f3ee1536195585f36162f53c08b4b7a20f006c6a4fb9bd064",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00534-basic-top.png",
+        "image_sha256": "3af304eab707cd942e33b9daf5905db245987056d5d3ff78b0d93224a106c7a8",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Xelvar",
+        "UI_location_literal": "Kazordoon City",
+        "price": 150,
+        "currency_literal": "gp",
+        "UI_quote_row1": 3,
+        "paired_raw_tuple_indices0": [
+          10225
+        ],
+        "paired_raw_tuple_sha256": [
+          "d8fcac2ee781409e707070d75524c0333b12949a6c1afbbb7b7223ee3a5836eb"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2375",
+      "name": "universal tool",
+      "category": "Others",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/others-568.png",
+        "bytes": 12105,
+        "sha256": "0755ee84f518e2c3b3dff4ab7e1a5ba6f7d1960aee2f5fc6753dad0291057b10",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-others",
+        "image": "cards/00568-basic-top.png",
+        "image_sha256": "2a443ef5f6612809527c934a24a6cd73dce760acdb3a36cfe1321766bb42328d",
+        "index_sha256": "8bb5d9f4a34e13521be073b7232a7185ea4a88e1b3b733e8a41ae83bae5171fa",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Black Bert",
+        "UI_location_literal": "Thais City",
+        "price": 550,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          9058
+        ],
+        "paired_raw_tuple_sha256": [
+          "ac5d36e3467bb30a79c24764d36e088f6470485ae0771a09fa7bb39540036d0c"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    },
+    {
+      "observation_key": "ui2623:2411",
+      "name": "antidote potion",
+      "category": "Potions",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/potions-1.png",
+        "bytes": 12792,
+        "sha256": "b0733481896065b53b821cb7cc73e7dd443735d16cc0a5e67a344b0b296c3689",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-potions",
+        "image": "cards/00001-basic-top.png",
+        "image_sha256": "bfb4f9288f33fdeaf4a89b83d50d9742ea6e45d9b89203db2b9b88226f4976f1",
+        "index_sha256": "71b75d38c6461985ef9d353f783d3b44f72bb690120b153eb4c9195612e5764f",
+        "prior_association_verified": true
+      },
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "panel": "Buy From",
+      "geometry_evidence": "CALIBRATED_NO_OVERFLOW",
+      "newly_qualified_quote": {
+        "panel": "Buy From",
+        "NPC": "Lily",
+        "UI_location_literal": "Rookgaard",
+        "price": 50,
+        "currency_literal": "gp",
+        "UI_quote_row1": 1,
+        "paired_raw_tuple_indices0": [
+          8396
+        ],
+        "paired_raw_tuple_sha256": [
+          "b4e9251fb5c9a1af30c60b6bb368392e02df6d6c8535cc4b8270d39f6503c3f3"
+        ]
+      },
+      "preserved_other_qualified_quote_states": {
+        "Sell To": "COMPLETE_OBSERVED_EMPTY",
+        "Buy From": "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT"
+      },
+      "remaining_reasons": [],
+      "qualification": "Existing saved native pane independently read, exact gp/name/residence/amount; source/card and no-overflow proven. Paired raw literals corroborate; all previously qualified other rows and Basic/panels retained. Only unresolved quote corrected, not unreviewed extra NPC inferred."
+    }
+  ],
+  "exact_bitmap_records": [
+    {
+      "observation_key": "items-basic:81",
+      "name": "leopard armor",
+      "category": "Armors",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-followup-private/crops/items-basic-81.png",
+        "bytes": 12926,
+        "sha256": "7d216d5f544e1396ed3f57ceacdde1ab664d8d2d7f9f2758b0bea174281c8513",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-basic",
+        "image": "cards/00081-basic-top.png",
+        "image_sha256": "c91c09ad90413e50d6200f0e2637babc1048c2fb4b366bbf2cfe189c45a233ea",
+        "index_sha256": "7afe39671100df273ae8631d144ed20630add0ce3486107df788bf1510257f4f",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Rashid",
+              "location_literal": "Various Locations",
+              "price": 1000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 43):33bcaa29ce312eeb2ecb911a7172d785cdd9652c95bc5e79786175e308af74c3",
+                "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 1000,
+                  "seed_key": "published-npc1992:quoteFact:478:UIrow:2377",
+                  "seed_sha256": "1701703123a5514df2a979a5184121cda178347cdc538fc62b2425c01e7636ec"
+                },
+                "NPC_bitmap": {
+                  "value": "Rashid",
+                  "seed_key": "published-npc1992:quoteFact:5:UIrow:1669",
+                  "seed_sha256": "85f6afe63eb53b9ee1bb472e35a021396240ae0a38d08a76f8e88542b23acdba"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                2577,
+                2578,
+                2579,
+                2580,
+                2581,
+                2582,
+                2583,
+                4935,
+                4936,
+                4937,
+                4938,
+                4939,
+                4940,
+                4941,
+                5290,
+                5291,
+                5292,
+                5293,
+                5294,
+                5295,
+                5296,
+                5718,
+                5719,
+                5720,
+                5721,
+                5722,
+                5723,
+                5724,
+                6636,
+                6637,
+                6638,
+                6639,
+                6640,
+                6641,
+                6642,
+                7550,
+                7551,
+                7552,
+                7553,
+                7554,
+                7555,
+                7556,
+                7612,
+                7613,
+                7614,
+                7615,
+                7616,
+                7617,
+                7618,
+                8224,
+                8225,
+                8226,
+                8227,
+                8228,
+                8229,
+                8230,
+                8710,
+                8711,
+                8712,
+                8713,
+                8714,
+                8715,
+                8716,
+                9727,
+                9728,
+                9729,
+                9730,
+                9731,
+                9732,
+                9733
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Brengus",
+              "location_literal": "Port Hope City",
+              "price": 300,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):8258483de3ca3dbf042401ced8c22dbf7670845235b62b932885bf6d36369d82",
+                "NPC_bitmap": "(11, 44):65c3efb128fc4b4d3592e204cfd8df4ffe25bd7f283fa5783a68583757ac36d2",
+                "location_bitmap": "(11, 139):b3d8866aa20ca9321c89a461f28838a3c7b0bbf682ec492a6473bcde25561c79"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 300,
+                  "seed_key": "published-npc1992:quoteFact:192:UIrow:924",
+                  "seed_sha256": "3c75ecd96d021afc047479078d06a5b1d8c97afc4790fd64652205bb58c3b649"
+                },
+                "NPC_bitmap": {
+                  "value": "Brengus",
+                  "seed_key": "published-npc1992:quoteFact:455:UIrow:1744",
+                  "seed_sha256": "fa9ddaa3218d811443b45db9a6ca35b6a152071558d7f311ff9d3916d034998a"
+                },
+                "location_bitmap": {
+                  "value": "Port Hope City",
+                  "seed_key": "published-npc1992:quoteFact:455:UIrow:1744",
+                  "seed_sha256": "fa9ddaa3218d811443b45db9a6ca35b6a152071558d7f311ff9d3916d034998a"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                5717
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:167",
+      "name": "cliff strider claw",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-168.png",
+        "bytes": 12923,
+        "sha256": "5ce2243c69f0efee45d4fd8e4b3a44ae6708778544691c5bd2b58bd712336a8e",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00168-basic-top.png",
+        "image_sha256": "7dfe51f72f1a147b8246e019ae01d70401d43c77cf9966c8e15fead37dcef5ce",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 800,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5ba681fd8cf209f0e11687de43b7a447f5e75d062afad73d11314db630fb6b4c",
+                "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 800,
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:103:UIrow:979",
+                  "seed_sha256": "4e5f4bb8144c1be1823f66477e6f54a5a95971ac8ece2f1649a217fad692ab64"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9011,
+                9012,
+                9013,
+                9218,
+                9219,
+                9220,
+                10137,
+                10138,
+                10139,
+                11532,
+                11533,
+                11534,
+                13431,
+                13432,
+                13433,
+                14545,
+                14546,
+                14547,
+                14744,
+                14745,
+                14746,
+                15318,
+                15319,
+                15320
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Malunga",
+              "location_literal": "Liberty Bay City",
+              "price": 800,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5ba681fd8cf209f0e11687de43b7a447f5e75d062afad73d11314db630fb6b4c",
+                "NPC_bitmap": "(11, 47):68b887b80d57a419136be5199e8108b94cc35096dcf14212359e5ad954195559",
+                "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 800,
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                },
+                "NPC_bitmap": {
+                  "value": "Malunga",
+                  "seed_key": "published-npc1992:quoteFact:414:UIrow:974",
+                  "seed_sha256": "a8f53ec78b48a09a183ed7be3bca67c6dcca9ab7fab46ab39eac9b5558ef452a"
+                },
+                "location_bitmap": {
+                  "value": "Liberty Bay City",
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9217,
+                10136
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:361",
+      "name": "geomancer's robe",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-362.png",
+        "bytes": 12798,
+        "sha256": "831df41ef3e613ad422a687e4efac0a3581323b9ffea691d4a3356eba2586093",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00362-basic-top.png",
+        "image_sha256": "74408bfef321b32924f591ea0792d09a6f5e4934ab861dd42e78b29494446248",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(8, 27):32c14c27c5820bd9c26aaf8c1a3c5728d7e6532057ff216059a0fec94114ba8d",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:415:UIrow:977",
+                  "seed_sha256": "1ed5de88504c25745e478bcfda9e14f7192929bcc0fd3d1462e0e8c69b1d63a2"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                7331,
+                7332,
+                7333,
+                7406,
+                7407,
+                7408,
+                8912,
+                8913,
+                8914,
+                9110,
+                9111,
+                9112,
+                9370,
+                9371,
+                9372,
+                9449,
+                9450,
+                9451,
+                9479,
+                9480,
+                9481,
+                9532,
+                9533,
+                9534,
+                9812,
+                9813,
+                9814,
+                10387,
+                10388,
+                10389,
+                11495,
+                11496,
+                11497
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Irmana",
+              "location_literal": "Venore City",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(8, 40):c240926547a24099dc474c6348c447cd62d3ac0fa7a3a6b6eafa7f071cc5d397",
+                "location_bitmap": "(11, 123):cc7389eb13109168036d3237124aa049fe22f07e825681dd9b7a58c69f094fd4"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Irmana",
+                  "seed_key": "published-npc1992:quoteFact:363:UIrow:847",
+                  "seed_sha256": "b247b5c5f15b32210b3d7f11f5053e3c7ca622036fdd084776770a3e4d842db8"
+                },
+                "location_bitmap": {
+                  "value": "Venore City",
+                  "seed_key": "published-npc1992:quoteFact:363:UIrow:847",
+                  "seed_sha256": "b247b5c5f15b32210b3d7f11f5053e3c7ca622036fdd084776770a3e4d842db8"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                7328,
+                9448
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:459",
+      "name": "hunter's quiver",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-460.png",
+        "bytes": 12797,
+        "sha256": "2ac8b0c52e52d33921006606b6f326b71fa62512d0a5f5944090d8ede416ddfe",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00460-basic-top.png",
+        "image_sha256": "484f649a28f19738ad2a6effcafbe48ff56f4220e903f58dc655d9f4e02fd9c0",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(8, 27):32c14c27c5820bd9c26aaf8c1a3c5728d7e6532057ff216059a0fec94114ba8d",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:415:UIrow:977",
+                  "seed_sha256": "1ed5de88504c25745e478bcfda9e14f7192929bcc0fd3d1462e0e8c69b1d63a2"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                7331,
+                7332,
+                7333,
+                7406,
+                7407,
+                7408,
+                8912,
+                8913,
+                8914,
+                9110,
+                9111,
+                9112,
+                9370,
+                9371,
+                9372,
+                9449,
+                9450,
+                9451,
+                9479,
+                9480,
+                9481,
+                9532,
+                9533,
+                9534,
+                9812,
+                9813,
+                9814,
+                10387,
+                10388,
+                10389,
+                11495,
+                11496,
+                11497
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Legola",
+              "location_literal": "Carlin City",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(11, 35):d35883228d5ccdca8bc1b7f5753f33ff7a33fdda2667319294788f12cada25b1",
+                "location_bitmap": "(11, 116):59eec5a29069b46347bd2da5744bb745553c88ce84351860af2883c6a5592163"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Legola",
+                  "seed_key": "published-npc1992:quoteFact:340:UIrow:685",
+                  "seed_sha256": "9b33ed23471f9ed064841509748bc26f1480ff5211365a7a3f8cbc589bedb41f"
+                },
+                "location_bitmap": {
+                  "value": "Carlin City",
+                  "seed_key": "published-npc1992:quoteFact:340:UIrow:685",
+                  "seed_sha256": "9b33ed23471f9ed064841509748bc26f1480ff5211365a7a3f8cbc589bedb41f"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9478
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:498",
+      "name": "lancer beetle shell",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-499.png",
+        "bytes": 12951,
+        "sha256": "fe4cdd793883f4d05c06937c6893a2fb79249d092fd70faf0aa996f889cc413c",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00499-basic-top.png",
+        "image_sha256": "c3d08d9eb113e9002883fcefedfd7bbe506bd00f81bb3b3e6956c7ace8bfdc3f",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(8, 27):32c14c27c5820bd9c26aaf8c1a3c5728d7e6532057ff216059a0fec94114ba8d",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:415:UIrow:977",
+                  "seed_sha256": "1ed5de88504c25745e478bcfda9e14f7192929bcc0fd3d1462e0e8c69b1d63a2"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                7331,
+                7332,
+                7333,
+                7406,
+                7407,
+                7408,
+                8912,
+                8913,
+                8914,
+                9110,
+                9111,
+                9112,
+                9370,
+                9371,
+                9372,
+                9449,
+                9450,
+                9451,
+                9479,
+                9480,
+                9481,
+                9532,
+                9533,
+                9534,
+                9812,
+                9813,
+                9814,
+                10387,
+                10388,
+                10389,
+                11495,
+                11496,
+                11497
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Grizzly Adams",
+              "location_literal": "Port Hope City",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(11, 75):151adc0228215d11dd68367ca8161f721222f10b48102aa49bc28be034a50d11",
+                "location_bitmap": "(11, 139):b3d8866aa20ca9321c89a461f28838a3c7b0bbf682ec492a6473bcde25561c79"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Grizzly Adams",
+                  "seed_key": "published-npc1992:quoteFact:386:UIrow:870",
+                  "seed_sha256": "3ba9dc12132b76ffd97e298aa1abaebee882aa17af1a379dd0e183ddc6b71a3e"
+                },
+                "location_bitmap": {
+                  "value": "Port Hope City",
+                  "seed_key": "published-npc1992:quoteFact:455:UIrow:1744",
+                  "seed_sha256": "fa9ddaa3218d811443b45db9a6ca35b6a152071558d7f311ff9d3916d034998a"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9369
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:859",
+      "name": "tarantula egg",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-860.png",
+        "bytes": 12898,
+        "sha256": "e2e067486daa65bb2b1b0d8685df13c8e52d241a8b8fcba0326289c5987f94aa",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00860-basic-top.png",
+        "image_sha256": "f51cc1f4b0b87073da3133024149263aac7a945d0a86feebdf0eb98e04fabc6c",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(8, 27):32c14c27c5820bd9c26aaf8c1a3c5728d7e6532057ff216059a0fec94114ba8d",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:415:UIrow:977",
+                  "seed_sha256": "1ed5de88504c25745e478bcfda9e14f7192929bcc0fd3d1462e0e8c69b1d63a2"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                7331,
+                7332,
+                7333,
+                7406,
+                7407,
+                7408,
+                8912,
+                8913,
+                8914,
+                9110,
+                9111,
+                9112,
+                9370,
+                9371,
+                9372,
+                9449,
+                9450,
+                9451,
+                9479,
+                9480,
+                9481,
+                9532,
+                9533,
+                9534,
+                9812,
+                9813,
+                9814,
+                10387,
+                10388,
+                10389,
+                11495,
+                11496,
+                11497
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Malunga",
+              "location_literal": "Liberty Bay City",
+              "price": 80,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+                "NPC_bitmap": "(11, 47):ade7ef85afd44913c6059e060b63123fea235cef3ba3c82cb25d4c0a234704da",
+                "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 80,
+                  "seed_key": "published-npc1992:quoteFact:460:UIrow:1747",
+                  "seed_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d"
+                },
+                "NPC_bitmap": {
+                  "value": "Malunga",
+                  "seed_key": "published-npc1992:quoteFact:261:UIrow:917",
+                  "seed_sha256": "6e8bce37472cb137aed1b38eec9f9bcce52fed0df403a59b82631a33df425807"
+                },
+                "location_bitmap": {
+                  "value": "Liberty Bay City",
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9109,
+                9810
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:956",
+      "name": "winged tail",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-957.png",
+        "bytes": 12923,
+        "sha256": "5ce2243c69f0efee45d4fd8e4b3a44ae6708778544691c5bd2b58bd712336a8e",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00957-basic-top.png",
+        "image_sha256": "577b5196dab8c9e4d6df394043315f896340bdff35d5297758efc6a49716665b",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Yasir",
+              "location_literal": "Various Locations",
+              "price": 800,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5ba681fd8cf209f0e11687de43b7a447f5e75d062afad73d11314db630fb6b4c",
+                "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+                "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 800,
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                },
+                "NPC_bitmap": {
+                  "value": "Yasir",
+                  "seed_key": "published-npc1992:quoteFact:103:UIrow:979",
+                  "seed_sha256": "4e5f4bb8144c1be1823f66477e6f54a5a95971ac8ece2f1649a217fad692ab64"
+                },
+                "location_bitmap": {
+                  "value": "Various Locations",
+                  "seed_key": "published-npc1992:quoteFact:161:UIrow:1938",
+                  "seed_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9011,
+                9012,
+                9013,
+                9218,
+                9219,
+                9220,
+                10137,
+                10138,
+                10139,
+                11532,
+                11533,
+                11534,
+                13431,
+                13432,
+                13433,
+                14545,
+                14546,
+                14547,
+                14744,
+                14745,
+                14746,
+                15318,
+                15319,
+                15320
+              ],
+              "UI_line_y": 25
+            },
+            {
+              "NPC": "Malunga",
+              "location_literal": "Liberty Bay City",
+              "price": 800,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5ba681fd8cf209f0e11687de43b7a447f5e75d062afad73d11314db630fb6b4c",
+                "NPC_bitmap": "(11, 47):68b887b80d57a419136be5199e8108b94cc35096dcf14212359e5ad954195559",
+                "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 800,
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                },
+                "NPC_bitmap": {
+                  "value": "Malunga",
+                  "seed_key": "published-npc1992:quoteFact:414:UIrow:974",
+                  "seed_sha256": "a8f53ec78b48a09a183ed7be3bca67c6dcca9ab7fab46ab39eac9b5558ef452a"
+                },
+                "location_bitmap": {
+                  "value": "Liberty Bay City",
+                  "seed_key": "published-npc1992:quoteFact:492:UIrow:2142",
+                  "seed_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                9217,
+                10136
+              ],
+              "UI_line_y": 53
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:2450",
+      "name": "boots of haste",
+      "category": "Boots",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/boots-4.png",
+        "bytes": 12184,
+        "sha256": "d01da033c151e1dafb698e5fc874bb94bf7acfc20f2d343b804070eee32af44b",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-boots",
+        "image": "cards/00003-basic-top.png",
+        "image_sha256": "24ca70f1c3ef35d45dbd968ff4ef4f667df4caf4b8e91cb18070280eff34eb00",
+        "index_sha256": "dbd77dac9becb75c6beb8ad0a169db1d4e518d779eda0354f1fb3d4ee8c6d9a5",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Nah'bob",
+              "location_literal": "Ashta'daramai",
+              "price": 30000,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 50):b794d749fe255b611a6f60078fd641e3ea722f6a9bcacf62d60aeff5035123da",
+                "NPC_bitmap": "(8, 44):993017321dc472f6401e1d4ca7db05ea495f850b6cf558c518a2dcc18bb427c0",
+                "location_bitmap": "(8, 139):d9f78d8500d7650b9cd07187329b2571d1cd86b23ee9b4ef91303cbc805aef33"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 30000,
+                  "seed_key": "published-npc1992:quoteFact:10:UIrow:1765",
+                  "seed_sha256": "8f9b822b619e813a0b1d1e19a5a4485bb08b8b26efa683a0a62261aa36f538e2"
+                },
+                "NPC_bitmap": {
+                  "value": "Nah'bob",
+                  "seed_key": "ui2623:1751:quote1",
+                  "seed_sha256": "aef4377b835abd9afbdb45ab325741e840d589fd63557ce2baca9242f0addeb2"
+                },
+                "location_bitmap": {
+                  "value": "Ashta'daramai",
+                  "seed_key": "ui2623:1751:quote1",
+                  "seed_sha256": "aef4377b835abd9afbdb45ab325741e840d589fd63557ce2baca9242f0addeb2"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                3267,
+                5707
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:2573",
+      "name": "golden backpack",
+      "category": "Containers",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/containers-60.png",
+        "bytes": 12115,
+        "sha256": "439628abf0305de23919641aea7cc15c953350a593d92870decd99a36355f6cd",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-containers",
+        "image": "cards/00060-basic-top.png",
+        "image_sha256": "3fae92e697d8e49eb19a142345b26e0d086b80c41cfb03fd11cbb64cb3397cf3",
+        "index_sha256": "c09127d791858b7f605349e7479694191c28bc3b7263c36aff813c6765c71894",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Buy From",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Ahmet",
+              "location_literal": "Ankrahmun City",
+              "price": 10,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 27):9e44d951979cc2d1c997b9b66b77009985dfd1a096bf5ad5b48948d7e4c1fa1d",
+                "NPC_bitmap": "(14, 170):b31728e0e94c4025674eb8b704e4a82f56c47733a52171a83d712ef21b28a07f",
+                "location_bitmap": "(81, 211):07fd34a9ad2c36ab6278368567da80f4e265d9957bd13bf39c0b3c0bd8aaa6af"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 10,
+                  "seed_key": "published-npc1992:quoteFact:493:UIrow:2147",
+                  "seed_sha256": "aa3f7980845265edbb243ef29ffda740700475aeef02f5734c7be4cc1ce234a3"
+                },
+                "NPC_bitmap": {
+                  "value": "Ahmet",
+                  "seed_key": "published-npc1992:quoteFact:38:UIrow:2616",
+                  "seed_sha256": "309982e1155b5d8f8190dba09662b6b49fb46c2276f104983c0821c447771c4c"
+                },
+                "location_bitmap": {
+                  "value": "Ankrahmun City",
+                  "seed_key": "ui2623:2091:quote1",
+                  "seed_sha256": "290427e2e5230eb9768db6dfa013268ee84b78af7a6d86c1206898b26bac7c57"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                1902,
+                1942
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:302",
+      "name": "executioner mask",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-303.png",
+        "bytes": 12159,
+        "sha256": "2d79511ffb719f71273c0660901d6b4eec5f7c70e6611e75fcd56d92102d070c",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00303-basic-top.png",
+        "image_sha256": "f0f96dbb56721af32554b429154b4ff0e423fc3667bb6c3485057199b23bed9d",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 240,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):ad46b679e34f730e34f3ad76f7d9ba705daebc20afa9f1ac2589201adcf93cfb",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 240,
+                  "seed_key": "published-npc1992:quoteFact:156:UIrow:971",
+                  "seed_sha256": "69e54299476937d576fba71a1b17b111b6ae08c7112031c6c825e158a9359dbe"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10640
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:368",
+      "name": "giant pacifier",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-369.png",
+        "bytes": 12148,
+        "sha256": "921aa107097b9e6e00145fbe976f15c7d3cdebaf713334bd4bce8b44e682f2b5",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00369-basic-top.png",
+        "image_sha256": "de361dbf3027223428f2a9efad129282db64e30e4c64ace5a371b1a4004e05ea",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 170,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):a9ff1e4f84fdea7347da552b848f3fa9af819379a1279981e66a5e82e9aa7bce",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 170,
+                  "seed_key": "published-npc1992:quoteFact:362:UIrow:869",
+                  "seed_sha256": "55ba8833070c969596bec4221452f1ec8c21cf5c440a8d84bafeba991fa245d8"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10638
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:382",
+      "name": "glooth injection tube",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-383.png",
+        "bytes": 12161,
+        "sha256": "8a15bc4ab0a06a65237ff5d5d6ed85c2b53bdb4c78c56cab9ff371a41355d6fe",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00383-basic-top.png",
+        "image_sha256": "26191d6ba9e2815b1d91583ee81c241057702f7b006a0924689bf58f7f1b185f",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 350,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):ac0a8b6adf32d33e1108d9f5de16a3b3ef722260081b0b0338b7eddb9e10ad2a",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 350,
+                  "seed_key": "published-npc1992:quoteFact:74:UIrow:944",
+                  "seed_sha256": "7289d697aba7b8b2e0ad039fd8cbcf701152ad6e8ff2f2e6e023b95f79eba936"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10607
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:552",
+      "name": "metal jaw",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-553.png",
+        "bytes": 12161,
+        "sha256": "8e023a731797a582258f47280ebdc89b129e1b43c9d86b74ac5b72e8f4c4a977",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00553-basic-top.png",
+        "image_sha256": "080acde4ad2bb2b70f724f38e91bc27f6f80f8ce08cf72fb4cef0fce375c3678",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 260,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5e8c7e7b2be79faaf91f05fcec3916039325ab7bd151203d0fc8429b7995ec96",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 260,
+                  "seed_key": "published-npc1992:quoteFact:53:UIrow:688",
+                  "seed_sha256": "67eec4d798ad813fc20ccae5bbdff611efa0e40a2772a4e2871e144711c903ce"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10632,
+                10723
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:554",
+      "name": "metal toe",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-555.png",
+        "bytes": 12166,
+        "sha256": "2672d62b1129f6a9cbc3255a9e570cc6662ca896dd41e520427c89f3cca57511",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00555-basic-top.png",
+        "image_sha256": "d59cea44cb159c5e0c1aba5366188899808efbe41e70e7546e5cacf3d927f5e7",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 430,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):7aeb408faf4769e5fbf471fec88d3fdcbba25225fb8accc048bb9f37e5bc3162",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 430,
+                  "seed_key": "published-npc1992:quoteFact:311:UIrow:602",
+                  "seed_sha256": "f8f5bdf1defb31eb66b6b229f4db1a85b13aab6f4a71e459c7bd31c769c86687"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10637
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:562",
+      "name": "moohtah shell",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-563.png",
+        "bytes": 12153,
+        "sha256": "f9ebb943f885a41eca44fe6a26cbc76d29090d6b3b1a14e3dae4d4d02257bb31",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00563-basic-top.png",
+        "image_sha256": "995c551ff4be34f74f1ddc01a419333e2684550c55d96d3f5ff27e4df911507d",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 110,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):0b3a0e6ea9aa7b4c18ed163b0240ded658547e3a441bbeddc4a7642f5f0fa1d6",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 110,
+                  "seed_key": "published-npc1992:quoteFact:99:UIrow:953",
+                  "seed_sha256": "3f2107fd9226cf6057f012e3d0a7bc570089155e5ef26811287677b64b398b33"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10641
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:563",
+      "name": "moohtah thorn",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-564.png",
+        "bytes": 12159,
+        "sha256": "b08cbfeda852ee5e864b8aa9e4657150478d5cd22f24f03985725c0cad05cfd0",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00564-basic-top.png",
+        "image_sha256": "a9602f8001a30f3ccc579aa9e9208dd9b640f58e342b1da2b39e80e85aad3765",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 140,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):b03fb7bdc12e0a1b7c450e84bcc884c385b9c751813ddbf3a75835c64916ce14",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 140,
+                  "seed_key": "published-npc1992:quoteFact:281:UIrow:696",
+                  "seed_sha256": "8a0a7add54c7cfc38218ff04155e05d9daac402f7320f4b02cf1c48a416a6356"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10639
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:591",
+      "name": "necromantic rust",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-592.png",
+        "bytes": 12167,
+        "sha256": "6e0b149e0004f0640c165b8bab6c1d4c4accdfcf9c5bfaad595e3c775f3fac87",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00592-basic-top.png",
+        "image_sha256": "8f9f9b723ff61d39d3270a14ec132d902002577d90659d4358aad2945744821b",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 390,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):f9fb95de8b41bdefc677fbc2f5e1933550b7eaf0bbe00481e7e77edce9882152",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 390,
+                  "seed_key": "published-npc1992:quoteFact:431:UIrow:1675",
+                  "seed_sha256": "c879e9bd180c857c7cae23ecb01c37afd64d8fdd3e7ddc951f96e91be207e783"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10635
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:668",
+      "name": "poisoned fang",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-669.png",
+        "bytes": 12163,
+        "sha256": "1932860547b7b66f1ed578742389fd766fc1b355786cb7630cdc578b1effd07d",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00669-basic-top.png",
+        "image_sha256": "d90b307f32b671fe93897460e1c8ac042a6d1b9b5fa6f30adffb570f17469067",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 130,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):9c244d823d9add44729a9431a9025338fa1455816e6bab11cbeff0408424fdf8",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 130,
+                  "seed_key": "published-npc1992:quoteFact:135:UIrow:854",
+                  "seed_sha256": "4f1ad02c985c47e588b8555da93fff984b6eeee6983d7b1ec722a46a046f35fe"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10634
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:755",
+      "name": "seacrest hair",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-756.png",
+        "bytes": 12161,
+        "sha256": "8e023a731797a582258f47280ebdc89b129e1b43c9d86b74ac5b72e8f4c4a977",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00756-basic-top.png",
+        "image_sha256": "a3a5a15e099ea3fc2bb0d41bc86fe316d7b2486f99ee073b145c79b192ea358b",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 260,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):5e8c7e7b2be79faaf91f05fcec3916039325ab7bd151203d0fc8429b7995ec96",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 260,
+                  "seed_key": "published-npc1992:quoteFact:53:UIrow:688",
+                  "seed_sha256": "67eec4d798ad813fc20ccae5bbdff611efa0e40a2772a4e2871e144711c903ce"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10632,
+                10723
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:756",
+      "name": "seacrest scale",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-757.png",
+        "bytes": 12154,
+        "sha256": "07442c3b16dd1e82e0ab553ed8dc393233e94590a6e9235406b1e68deaf41097",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00757-basic-top.png",
+        "image_sha256": "3917f330a84ad3a013cc65dee2e5b69f435761f7d0aebc44f0f152411026092a",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 150,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):ae5ea6ed8a00c2dc4d7956981ac6066a751a08721b236e33dc40088add4fc4b2",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 150,
+                  "seed_key": "published-npc1992:quoteFact:499:UIrow:2341",
+                  "seed_sha256": "0c0cf1879e458f0f3ee1536195585f36162f53c08b4b7a20f006c6a4fb9bd064"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10722
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:788",
+      "name": "slime heart",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-789.png",
+        "bytes": 12157,
+        "sha256": "32fa927b4e6c39a44e2ccb824093a775523e8bc0e871c6efc3302c20f41cb567",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00789-basic-top.png",
+        "image_sha256": "e84817c18a3d91548d429fd11f04a8fed48de6a9e3a002336981b621d4089ff6",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 160,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 33):b6a2e8cb94c07321563bb0995e403f63d3c6e564fcabb1a2f39afb05f8314c6b",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 160,
+                  "seed_key": "published-npc1992:quoteFact:72:UIrow:935",
+                  "seed_sha256": "89f570b60d372c3322b368b6a16f3c2a7728c514e77bdccb76e31337ac28f797"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10633
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    },
+    {
+      "observation_key": "ui2623:790",
+      "name": "slimy leaf tentacle",
+      "category": "Creature Products",
+      "source_bitmap": {
+        "path": "outputs/items-all-local-first-20261113/npc-recovery-private/crops/creature-products-791.png",
+        "bytes": 12166,
+        "sha256": "eedd695c32fc4efbfa22d5b407eacf81fa16104f84cb902d31a7d1032360f798",
+        "state": "PRESENT_HASH_MATCH"
+      },
+      "original_source": {
+        "collection": "items-sequence-creature-products",
+        "image": "cards/00791-basic-top.png",
+        "image_sha256": "bc8430d3191f8d7b0eba13a3337967ae42f05994373c026c95a724d773fdce40",
+        "index_sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+        "prior_association_verified": true
+      },
+      "panels": [
+        {
+          "panel": "Sell To",
+          "state": "COMPLETE_EXACT_NATIVE_BITMAP_AND_PAIRED_SOURCE",
+          "quotes": [
+            {
+              "NPC": "Alaistar",
+              "location_literal": "Rathleton City",
+              "price": 320,
+              "currency_literal": "gp",
+              "native_bitmap_keys": {
+                "price_gp_bitmap": "(11, 34):b0d35a617ce3d9fdf07dee9484ff03479aeafa6e22edf93a9273e4037a5a3aa5",
+                "NPC_bitmap": "(8, 43):f4289fc06e9038f64c42805295b7690329b832b68c54e1b2f2a28c184c974b59",
+                "location_bitmap": "(11, 138):3a07bff7cc7ce1fd590ee59f3a4c2c05ee6fac99e7713aef431f3ee84fb89841"
+              },
+              "native_seed_receipts": {
+                "price_gp_bitmap": {
+                  "value": 320,
+                  "seed_key": "published-npc1992:quoteFact:93:UIrow:932",
+                  "seed_sha256": "355d6afe192db39fcf49144b7526ca045bf3287c06ad57f58dad633636a3cebf"
+                },
+                "NPC_bitmap": {
+                  "value": "Alaistar",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                },
+                "location_bitmap": {
+                  "value": "Rathleton City",
+                  "seed_key": "ui2623:2277:quote1",
+                  "seed_sha256": "51f1844f8c26ec4e0cdcfd105e4dc17493f134e1d698fe36663161b826be2caa"
+                }
+              },
+              "paired_raw_tuple_indices0": [
+                10636
+              ],
+              "UI_line_y": 25
+            }
+          ],
+          "geometry_evidence": "CALIBRATED_NO_OVERFLOW"
+        }
+      ],
+      "previous_state": "PARTIAL",
+      "current_state": "COMPLETE",
+      "remaining_reasons": [],
+      "qualification": "Exact full price+gp, NPC and residence binary glyph blocks equal independently native-read batch1 seeds; no fuzzy matching or OCR confidence. All visible gp rows accounted, no-overflow proof retained, paired literal source corroborates; other Basic/panel fields retained."
+    }
+  ],
+  "current_counts": {
+    "COMPLETE": 2470,
+    "PARTIAL": 410,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "previous_counts": {
+    "COMPLETE": 2416,
+    "PARTIAL": 464,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "published_field_seed_receipts": {
+    "published-npc1992:quoteFact:38:UIrow:2616": {
+      "public_quote_fact_index": 38,
+      "UI_row_index0": 2616,
+      "panel": "Buy From",
+      "values": {
+        "price_gp_bitmap": 20,
+        "NPC_bitmap": "Ahmet",
+        "location_bitmap": "Ankrahmun City"
+      },
+      "private_bitmap_sha256": "309982e1155b5d8f8190dba09662b6b49fb46c2276f104983c0821c447771c4c",
+      "original_png_sha256": "00a750767580930d8e7e2f77862dad48e65002ada686b279286e889e6de81896",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 28):f6d9cfa28007836acfdb9fc1c8efd771395b59f9c73a0bc84019245b54224a97",
+        "NPC_bitmap": "(14, 170):b31728e0e94c4025674eb8b704e4a82f56c47733a52171a83d712ef21b28a07f",
+        "location_bitmap": "(13, 204):78019692bb315a27f400ce9e4bb8ffe387f0bd6cfbd1685ead5bccb293d68d44"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:311:UIrow:602": {
+      "public_quote_fact_index": 311,
+      "UI_row_index0": 602,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 430,
+        "NPC_bitmap": "Irmana",
+        "location_bitmap": "Venore City"
+      },
+      "private_bitmap_sha256": "f8f5bdf1defb31eb66b6b229f4db1a85b13aab6f4a71e459c7bd31c769c86687",
+      "original_png_sha256": "556ed388878647e5f249378eadc2fcf250208a7bf87d9563c78b7acc1ae0a626",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):7aeb408faf4769e5fbf471fec88d3fdcbba25225fb8accc048bb9f37e5bc3162",
+        "NPC_bitmap": "(8, 40):c240926547a24099dc474c6348c447cd62d3ac0fa7a3a6b6eafa7f071cc5d397",
+        "location_bitmap": "(11, 123):cc7389eb13109168036d3237124aa049fe22f07e825681dd9b7a58c69f094fd4"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:340:UIrow:685": {
+      "public_quote_fact_index": 340,
+      "UI_row_index0": 685,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 60,
+        "NPC_bitmap": "Legola",
+        "location_bitmap": "Carlin City"
+      },
+      "private_bitmap_sha256": "9b33ed23471f9ed064841509748bc26f1480ff5211365a7a3f8cbc589bedb41f",
+      "original_png_sha256": "70fc7ab964f78e99db4a4135d889c75b8bf97f535ec8573b2e8421df05981f34",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 28):d16e3b458ef8ea9566061fad06c805ec01eb5dd27e650df4bfb1374b588f15eb",
+        "NPC_bitmap": "(11, 35):d35883228d5ccdca8bc1b7f5753f33ff7a33fdda2667319294788f12cada25b1",
+        "location_bitmap": "(11, 116):59eec5a29069b46347bd2da5744bb745553c88ce84351860af2883c6a5592163"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:53:UIrow:688": {
+      "public_quote_fact_index": 53,
+      "UI_row_index0": 688,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 260,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "67eec4d798ad813fc20ccae5bbdff611efa0e40a2772a4e2871e144711c903ce",
+      "original_png_sha256": "67db6a75d49d5478452d883648b4016518fcecb97212bf140024001bddae9410",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):5e8c7e7b2be79faaf91f05fcec3916039325ab7bd151203d0fc8429b7995ec96",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:281:UIrow:696": {
+      "public_quote_fact_index": 281,
+      "UI_row_index0": 696,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 140,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "8a0a7add54c7cfc38218ff04155e05d9daac402f7320f4b02cf1c48a416a6356",
+      "original_png_sha256": "e5c0922078c12f611ddacb2eba72b8ea59ce52759490902009190fe9a087b3ef",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):b03fb7bdc12e0a1b7c450e84bcc884c385b9c751813ddbf3a75835c64916ce14",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:363:UIrow:847": {
+      "public_quote_fact_index": 363,
+      "UI_row_index0": 847,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 50,
+        "NPC_bitmap": "Irmana",
+        "location_bitmap": "Venore City"
+      },
+      "private_bitmap_sha256": "b247b5c5f15b32210b3d7f11f5053e3c7ca622036fdd084776770a3e4d842db8",
+      "original_png_sha256": "205c39c90975b619e89c9435329ac1e4c37170886ce3bbad38fab6675a173ddb",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 27):959c8aadc49314049d9deb80062e746fff90c484a169d67ed6d45bbf70f0dc01",
+        "NPC_bitmap": "(8, 40):c240926547a24099dc474c6348c447cd62d3ac0fa7a3a6b6eafa7f071cc5d397",
+        "location_bitmap": "(11, 123):cc7389eb13109168036d3237124aa049fe22f07e825681dd9b7a58c69f094fd4"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:135:UIrow:854": {
+      "public_quote_fact_index": 135,
+      "UI_row_index0": 854,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 130,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "4f1ad02c985c47e588b8555da93fff984b6eeee6983d7b1ec722a46a046f35fe",
+      "original_png_sha256": "72344e8dfff74f0151bcc083e89b775479acff6c21ba061c6ba9ce6232606f32",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):9c244d823d9add44729a9431a9025338fa1455816e6bab11cbeff0408424fdf8",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:362:UIrow:869": {
+      "public_quote_fact_index": 362,
+      "UI_row_index0": 869,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 170,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "55ba8833070c969596bec4221452f1ec8c21cf5c440a8d84bafeba991fa245d8",
+      "original_png_sha256": "a33466566622909b199f47237ea623c0fe624c4daca1ce404366d0ff5e2dc0d4",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):a9ff1e4f84fdea7347da552b848f3fa9af819379a1279981e66a5e82e9aa7bce",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:386:UIrow:870": {
+      "public_quote_fact_index": 386,
+      "UI_row_index0": 870,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 95,
+        "NPC_bitmap": "Grizzly Adams",
+        "location_bitmap": "Port Hope City"
+      },
+      "private_bitmap_sha256": "3ba9dc12132b76ffd97e298aa1abaebee882aa17af1a379dd0e183ddc6b71a3e",
+      "original_png_sha256": "831cf86d84996cae9a1b11dafa56fe8f7adffdd28717985ee5037186388b7b4f",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 28):3c8e17a507df15db67021525f9b809d2a74c7fe984eaaf9fc44ffc758adf8e87",
+        "NPC_bitmap": "(11, 75):151adc0228215d11dd68367ca8161f721222f10b48102aa49bc28be034a50d11",
+        "location_bitmap": "(11, 139):b3d8866aa20ca9321c89a461f28838a3c7b0bbf682ec492a6473bcde25561c79"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:261:UIrow:917": {
+      "public_quote_fact_index": 261,
+      "UI_row_index0": 917,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 55,
+        "NPC_bitmap": "Malunga",
+        "location_bitmap": "Liberty Bay City"
+      },
+      "private_bitmap_sha256": "6e8bce37472cb137aed1b38eec9f9bcce52fed0df403a59b82631a33df425807",
+      "original_png_sha256": "bd125db7b178ce74da775b85c330b84127f3bfed24f5cdd2caf77ee7f465fcf6",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 27):a5977f3d798c6215e344132106e88348a5d4b2df98776769b7fd1a9577a32d1a",
+        "NPC_bitmap": "(11, 47):ade7ef85afd44913c6059e060b63123fea235cef3ba3c82cb25d4c0a234704da",
+        "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:192:UIrow:924": {
+      "public_quote_fact_index": 192,
+      "UI_row_index0": 924,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 300,
+        "NPC_bitmap": "Fadil",
+        "location_bitmap": "Darashia City"
+      },
+      "private_bitmap_sha256": "3c75ecd96d021afc047479078d06a5b1d8c97afc4790fd64652205bb58c3b649",
+      "original_png_sha256": "07b91b086a4944ad87bcd0ba909b0d5fe59a5ff1e77f05df4108991993928262",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):8258483de3ca3dbf042401ced8c22dbf7670845235b62b932885bf6d36369d82",
+        "NPC_bitmap": "(8, 25):dc03725b63770fb1fd66e351d46134f9b0b5515a9981917c266b5024fc5ae351",
+        "location_bitmap": "(11, 133):51a51b6f8041eb3fc76b98d28f2119418293d6b061cf5af773ba1b26d4061ab9"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:93:UIrow:932": {
+      "public_quote_fact_index": 93,
+      "UI_row_index0": 932,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 320,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "355d6afe192db39fcf49144b7526ca045bf3287c06ad57f58dad633636a3cebf",
+      "original_png_sha256": "3903a1b40a4666fa261b103f26d6e46c642c235ddb727146c0836fd6ae09001c",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):b0d35a617ce3d9fdf07dee9484ff03479aeafa6e22edf93a9273e4037a5a3aa5",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:72:UIrow:935": {
+      "public_quote_fact_index": 72,
+      "UI_row_index0": 935,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 160,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "89f570b60d372c3322b368b6a16f3c2a7728c514e77bdccb76e31337ac28f797",
+      "original_png_sha256": "6aa335a887b7507e8eab22cc81beaf81ba09d61b6e83b3d492202a6a9f4c950f",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):b6a2e8cb94c07321563bb0995e403f63d3c6e564fcabb1a2f39afb05f8314c6b",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:74:UIrow:944": {
+      "public_quote_fact_index": 74,
+      "UI_row_index0": 944,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 350,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "7289d697aba7b8b2e0ad039fd8cbcf701152ad6e8ff2f2e6e023b95f79eba936",
+      "original_png_sha256": "217cb8f37628f601a9aade4e27078c90404a7807160cf97d10f38abcfb7e54a4",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):ac0a8b6adf32d33e1108d9f5de16a3b3ef722260081b0b0338b7eddb9e10ad2a",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:99:UIrow:953": {
+      "public_quote_fact_index": 99,
+      "UI_row_index0": 953,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 110,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "3f2107fd9226cf6057f012e3d0a7bc570089155e5ef26811287677b64b398b33",
+      "original_png_sha256": "e8c39fa994f44b5f839c1169d21c4dc025d1ae56accaad22776dd54892eca3ec",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):0b3a0e6ea9aa7b4c18ed163b0240ded658547e3a441bbeddc4a7642f5f0fa1d6",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:156:UIrow:971": {
+      "public_quote_fact_index": 156,
+      "UI_row_index0": 971,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 240,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "69e54299476937d576fba71a1b17b111b6ae08c7112031c6c825e158a9359dbe",
+      "original_png_sha256": "3155525fe96c1647265d32801b9319401024fc2db5dccdc0edde7b2673133bee",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):ad46b679e34f730e34f3ad76f7d9ba705daebc20afa9f1ac2589201adcf93cfb",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:414:UIrow:974": {
+      "public_quote_fact_index": 414,
+      "UI_row_index0": 974,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 600,
+        "NPC_bitmap": "Malunga",
+        "location_bitmap": "Liberty Bay City"
+      },
+      "private_bitmap_sha256": "a8f53ec78b48a09a183ed7be3bca67c6dcca9ab7fab46ab39eac9b5558ef452a",
+      "original_png_sha256": "f2ca1505e1efa19aae035f5ee22c5f1bfdd510c3e6a97b692216dccf76f86139",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):0a4d078559ca5ddaf585b0e4fe94c046161f223ab6230951f15652739f1ead44",
+        "NPC_bitmap": "(11, 47):68b887b80d57a419136be5199e8108b94cc35096dcf14212359e5ad954195559",
+        "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:415:UIrow:977": {
+      "public_quote_fact_index": 415,
+      "UI_row_index0": 977,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 25000,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "1ed5de88504c25745e478bcfda9e14f7192929bcc0fd3d1462e0e8c69b1d63a2",
+      "original_png_sha256": "8dbb6aa6ab7b443a611a31431150bfdf1daed69d97d05a65283c3747fd7fbf37",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 50):1da70a0f0273922bd316e2745974826ee5dfb246944896921d98b4c6599749dc",
+        "NPC_bitmap": "(8, 27):32c14c27c5820bd9c26aaf8c1a3c5728d7e6532057ff216059a0fec94114ba8d",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:103:UIrow:979": {
+      "public_quote_fact_index": 103,
+      "UI_row_index0": 979,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 150,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "4e5f4bb8144c1be1823f66477e6f54a5a95971ac8ece2f1649a217fad692ab64",
+      "original_png_sha256": "44714925fbb29e42470f99db8b97b64fd476a39d8828460237b1e9c809140d14",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):ae5ea6ed8a00c2dc4d7956981ac6066a751a08721b236e33dc40088add4fc4b2",
+        "NPC_bitmap": "(8, 27):83b49edebff36c45f91c9372836524be26735b0d6edccd8f0911145769092315",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:5:UIrow:1669": {
+      "public_quote_fact_index": 5,
+      "UI_row_index0": 1669,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 2000,
+        "NPC_bitmap": "Rashid",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "85f6afe63eb53b9ee1bb472e35a021396240ae0a38d08a76f8e88542b23acdba",
+      "original_png_sha256": "99bd6941b7317b3762e8a061dd28c45be253e8680e3b42456f8a9241e9272798",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 44):237848f0c5a9389934e89f038a49dd8445609fc7653a59c9f526beaf99a59e21",
+        "NPC_bitmap": "(8, 34):8a0b4c362a266154c6b7c9fdce4c859741972ff5f920a351b0942282289a9d4e",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:431:UIrow:1675": {
+      "public_quote_fact_index": 431,
+      "UI_row_index0": 1675,
+      "panel": "Buy From",
+      "values": {
+        "price_gp_bitmap": 390,
+        "NPC_bitmap": "Wes the Blacksmith",
+        "location_bitmap": "Bounac"
+      },
+      "private_bitmap_sha256": "c879e9bd180c857c7cae23ecb01c37afd64d8fdd3e7ddc951f96e91be207e783",
+      "original_png_sha256": "217d518d87fa14babf3828c79a46fc95d861520c9580444990861c424be486e1",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):f9fb95de8b41bdefc677fbc2f5e1933550b7eaf0bbe00481e7e77edce9882152",
+        "NPC_bitmap": "(8, 107):a85f1cbb2e369a2d58a7dee3a28e8a92a303caa8bae485faa2c958946523c055",
+        "location_bitmap": "(25, 212):82d3b45b8a7a84e7d38f94511426b79f986d6eb82cd803511d1d61c5503c9211"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:455:UIrow:1744": {
+      "public_quote_fact_index": 455,
+      "UI_row_index0": 1744,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 750,
+        "NPC_bitmap": "Brengus",
+        "location_bitmap": "Port Hope City"
+      },
+      "private_bitmap_sha256": "fa9ddaa3218d811443b45db9a6ca35b6a152071558d7f311ff9d3916d034998a",
+      "original_png_sha256": "f9e4bbc82dd55a57472d05e392fab042e2d4a4eb732e8b546b3a0c9c7bb9d9a1",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):1303d654ce1147c93e1fcff923df428611da03b9bddc2eac72b7cd7c1e6f0ea1",
+        "NPC_bitmap": "(11, 44):65c3efb128fc4b4d3592e204cfd8df4ffe25bd7f283fa5783a68583757ac36d2",
+        "location_bitmap": "(11, 139):b3d8866aa20ca9321c89a461f28838a3c7b0bbf682ec492a6473bcde25561c79"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:460:UIrow:1747": {
+      "public_quote_fact_index": 460,
+      "UI_row_index0": 1747,
+      "panel": "Buy From",
+      "values": {
+        "price_gp_bitmap": 80,
+        "NPC_bitmap": "Memech",
+        "location_bitmap": "Ankrahmun City"
+      },
+      "private_bitmap_sha256": "04a433ad0f1a6ba68295adc135da25b439f3fcba5f551d6f0969f266357bae2d",
+      "original_png_sha256": "77efe532466aa8ba039bf1c18c5ee941a72867f40ddb9ee6707fc683b723d85e",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 28):bd6049b32a237bba9b1a6783c23944b43bbd08f6051b10fc1e31bcdfa00f03fc",
+        "NPC_bitmap": "(8, 45):524cf66ca1a3e9fb956a05c62add02138ec1447377d0968b19a5ad64a6e3473e",
+        "location_bitmap": "(11, 149):f98a814f1374e0c2d1ca994ced70b6fdd8a3e235a4f5313c7aca97c9976536cc"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:10:UIrow:1765": {
+      "public_quote_fact_index": 10,
+      "UI_row_index0": 1765,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 30000,
+        "NPC_bitmap": "Rashid",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "8f9b822b619e813a0b1d1e19a5a4485bb08b8b26efa683a0a62261aa36f538e2",
+      "original_png_sha256": "d1f8232852506e4bed9fa0f809f729e497a5c552aab5ef71a6d6ba3210ef1f85",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 50):b794d749fe255b611a6f60078fd641e3ea722f6a9bcacf62d60aeff5035123da",
+        "NPC_bitmap": "(8, 35):64e55a8cb112746982aebb3eabcd3c50a0dcd978eb495420823422973b25d1a6",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:161:UIrow:1938": {
+      "public_quote_fact_index": 161,
+      "UI_row_index0": 1938,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 5000,
+        "NPC_bitmap": "Yasir",
+        "location_bitmap": "Various Locations"
+      },
+      "private_bitmap_sha256": "c4fdb142a57430e29fcde2b8e8ff37a79c2d2263ce5248f94c18524c4f4866ce",
+      "original_png_sha256": "bd2cf74cf58b252344b2faded8e7eae7e688387f20a91cb86a8b1a6a90ea6416",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 43):c79ca7f68a78694cdc8f65e56d7f5cb2801f9eb40e2c47548841e502bd0332ed",
+        "NPC_bitmap": "(8, 26):b3d5874dfa0fe0a8c24546f65c4f22d4ee17fddd555ae4dbe493ac9de7cd5dcd",
+        "location_bitmap": "(8, 156):9d08a5f6136037f903a7aff7ff9bde0947538b95a63e5a815d828d3a72997c3d"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:492:UIrow:2142": {
+      "public_quote_fact_index": 492,
+      "UI_row_index0": 2142,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 800,
+        "NPC_bitmap": "Berenice",
+        "location_bitmap": "Liberty Bay City"
+      },
+      "private_bitmap_sha256": "5bb5a33e5a3fb0501acaa678376da398689a1ced56e153de739672dcfa79732a",
+      "original_png_sha256": "e21bc7e664031dc2f19fa7eca01da2f92a225810ffd6bcb1d3e9fdf9ec29b331",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 34):5ba681fd8cf209f0e11687de43b7a447f5e75d062afad73d11314db630fb6b4c",
+        "NPC_bitmap": "(8, 46):4e0d66a2c9810a00ceb1cf7e9779e7b54222c059ab64105fc36677ebcdad5ef3",
+        "location_bitmap": "(11, 146):d1067811df76fea0cfe0b3a0ebe0c135268506bd8bd8e201eea34aaf4ba35e2c"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:493:UIrow:2147": {
+      "public_quote_fact_index": 493,
+      "UI_row_index0": 2147,
+      "panel": "Sell To",
+      "values": {
+        "price_gp_bitmap": 10,
+        "NPC_bitmap": "Harog",
+        "location_bitmap": "Beregar"
+      },
+      "private_bitmap_sha256": "aa3f7980845265edbb243ef29ffda740700475aeef02f5734c7be4cc1ce234a3",
+      "original_png_sha256": "eb6f801ceab3ae530aa18faf6fd163de19177f96d86eb3222729fbfde2c5a321",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 27):9e44d951979cc2d1c997b9b66b77009985dfd1a096bf5ad5b48948d7e4c1fa1d",
+        "NPC_bitmap": "(11, 31):1071a54a2218f854b8dd27158ae8cd11c12dd90439407cc3e1f9c4430040cbe5",
+        "location_bitmap": "(11, 104):d45fc297f4ed5d331f18f6eee373cbdcc816f87efc62605a25461cc06c9549a3"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:499:UIrow:2341": {
+      "public_quote_fact_index": 499,
+      "UI_row_index0": 2341,
+      "panel": "Buy From",
+      "values": {
+        "price_gp_bitmap": 150,
+        "NPC_bitmap": "Gnomette",
+        "location_bitmap": "Kazordoon"
+      },
+      "private_bitmap_sha256": "0c0cf1879e458f0f3ee1536195585f36162f53c08b4b7a20f006c6a4fb9bd064",
+      "original_png_sha256": "3af304eab707cd942e33b9daf5905db245987056d5d3ff78b0d93224a106c7a8",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 33):ae5ea6ed8a00c2dc4d7956981ac6066a751a08721b236e33dc40088add4fc4b2",
+        "NPC_bitmap": "(14, 163):ed08af4ffa6f874a0498d0b3794fd215c21b8272401e736e28e15ec405162d43",
+        "location_bitmap": "(14, 204):bcdaa56a64a6f55e223892bfe47f60298328cb45095e7e7d11aeb816c75043fe"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    "published-npc1992:quoteFact:478:UIrow:2377": {
+      "public_quote_fact_index": 478,
+      "UI_row_index0": 2377,
+      "panel": "Buy From",
+      "values": {
+        "price_gp_bitmap": 1000,
+        "NPC_bitmap": "Black Bert",
+        "location_bitmap": "Thais City"
+      },
+      "private_bitmap_sha256": "1701703123a5514df2a979a5184121cda178347cdc538fc62b2425c01e7636ec",
+      "original_png_sha256": "d641febf061675df4a9fff88b36b911e8abc369ad8b47dd319768e1ab6992bbf",
+      "native_bitmap_keys": {
+        "price_gp_bitmap": "(11, 43):33bcaa29ce312eeb2ecb911a7172d785cdd9652c95bc5e79786175e308af74c3",
+        "NPC_bitmap": "(14, 153):df2290eff4a7cdb010cc002cca25e905a6c2969bb931a46e1425c534c30b3345",
+        "location_bitmap": "(81, 211):90c89b1d0fb2cc10c517afd010b3a7934d528e1292e971a3f8d0072d8600e4b4"
+      },
+      "seed_packet": "npc1992-recovery.json",
+      "seed_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    }
+  },
+  "source_packet_sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68",
+  "new_manual_quotes": 32,
+  "exact_visible_quotes": 29,
+  "native_QC": {
+    "manual_panels": 32,
+    "exact_panels_independently_viewed": 22,
+    "private_contacts": [
+      {
+        "file": "exact-native-0.png",
+        "sha256": "4129a98898a0c85e11852514e3e57ce17c5b16ebbe99b2997950d0a2ca7ba5ab"
+      },
+      {
+        "file": "exact-native-1.png",
+        "sha256": "343affe1ebab93aa018a8d057f0453c16efd82a2b2499c97b405cd41fe129f14"
+      },
+      {
+        "file": "manual-native-0.png",
+        "sha256": "9079e0c0ed5fedc0c18e69a8339b24da1cbb1c779953c1613f724498de53a5d2"
+      },
+      {
+        "file": "manual-native-1.png",
+        "sha256": "636ce969f445bcacd0e6cb27432370e14add6d9a2678c38ef17e1c7c768d4c0c"
+      },
+      {
+        "file": "scumbag-native-qc.png",
+        "sha256": "755c0b2904b426beec3403acf1fa6d380ba3f29593c4fccf50b6b942bea6bbd4"
+      },
+      {
+        "file": "teleport-native-qc.png",
+        "sha256": "d7b1eab82757169f582afa9898bb41edde86414bcc2248990ad473e1a5fde5ec"
+      }
+    ],
+    "authoring_glyph_corrections": [
+      "Smaralda, not initial Smarakda/OCR candidate",
+      "Xelvar, not initial Xevar/OCR candidate"
+    ],
+    "media_published": false
+  },
+  "method": "Manually read saved native32 panes and corroborate exact unresolved quote against paired raw literals; retain all known other rows.22 additional full panes require exact price+gp/name/residence glyph blocks from reviewed controls or already-qualified public quote facts at exact row/line/proof selectors, no leading unaccounted text, all visible gp rows, no-overflow and paired corroboration. Every one of22 exact proposals also independently viewed in native contact sheets. No fuzzy OCR values.",
+  "recipe_receipts": [
+    {
+      "path": "work/tools-local-first/offline408_exact_bitmap_batch5.py",
+      "sha256": "71f1d51495c99eb51a878909e8b35f225f4a51a4fb7e3b6dcbfaa84367469d16"
+    },
+    {
+      "path": "work/tools-local-first/offline408_exact_bitmap_batch5_propagation.py",
+      "sha256": "470fc5c77923232b313296c3ceb4d1e544161ac49b3049fd87bdd942b887a4f5"
+    },
+    {
+      "path": "work/tools-local-first/offline408_manual_batch5.py",
+      "sha256": "c7c44b72457c0f0ba8650e5886418e93e154b8723b9f87d8eec8e421414cdc2f"
+    }
+  ],
+  "UI_inputs": 0,
+  "new_screenshots": 0,
+  "fuzzy_OCR_promotion": false
+}

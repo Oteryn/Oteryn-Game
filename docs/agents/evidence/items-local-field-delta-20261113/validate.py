@@ -539,6 +539,8 @@ def main():
     offline_batch2(args.npc_source)
     offline_batch3(args.npc_source)
     offline_batch4(args.npc_source)
+    from validate_batch5 import validate_batch5
+    validate_batch5(HERE,args.npc_source)
     valuables415()
     badweight = copy.deepcopy(load(HERE.parent,"valuables-local-first-20261113/routing415.json"))
     badweight["rows"][0]["weight_qualified_for_this_appearance"] = True
@@ -619,7 +621,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;ALL2416/464/27;offline200;Valuables415 candidate boundary;13 negative controls"
+    print("PASS:6470 appearances/6228 types;ALL2470/410/27;offline254;Valuables415 candidate boundary;14 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

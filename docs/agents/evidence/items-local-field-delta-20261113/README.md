@@ -11,7 +11,17 @@ Basic copy weighs12.00oz; it remains unbound to an appearance. No source assets,
 description text or raw screenshot bytes are published. The2907 ledger below is
 unchanged by this separate415-source-cohort inventory.
 
-**Latest result:2416 complete,464 partial,27 unreconciled =2907 scoped records.**
+**Latest result:2470 complete,410 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch5.json`, `all-visible-after-offline-batch5.csv` and
+`remaining410-summary.json` close54 further records:32 saved native panes manually
+read and source checked, plus22 exact-control full panes (29 visible quotes), all22
+independently visually confirmed. Qualified public quote facts may supply exact
+name/residence controls as well as price+gp, retaining exact row/line/proof selectors.
+Smaralda/Xelvar glyph corrections were enlarged and qualified before publication.
+No fuzzy OCR or new GUI/capture.254 offline records have closed;154 literal-first,
+180 geometry and76 combined cases remain pending.
+
+**Previous result:2416 complete,464 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch4.json`, `all-visible-after-offline-batch4.csv` and
 `remaining464-summary.json` close110 further records (206 visible quote occurrences).
 Exact numeric price+gp controls now reuse existing qualified public quote facts,

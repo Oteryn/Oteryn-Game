@@ -71,6 +71,11 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued6866296521: fifth offline batch closes54 records (32 manual
+native/source,22 exact-control full panes also independently viewed). Current
+2470/410/27;254 offline closures;154 literal-first+180 geometry+76 combined remain.
+Smaralda/Xelvar native corrections qualified before publication. No GUI/fuzzyOCR.
+
 AUTHORING additive scope6866782804: derived Valuables415 source/candidate routing
 in owned evidence subdirectory.1518 raw tuples across185 appearances,243 description
 presence flags;374/18/13/10 main weight candidate states; no weight identity/GUI
