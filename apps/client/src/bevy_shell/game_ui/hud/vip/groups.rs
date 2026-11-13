@@ -206,16 +206,16 @@ pub(super) fn activate(action: Action, owner: &HostOwner, state: &mut State) {
                 feedback: String::new(),
             });
         }
-        Action::GroupRemove(id) => {
+        Action::GroupRemove(id)
             if state.draft.as_ref().is_some_and(|draft| {
                 super::current(owner, draft)
                     && matches!(&draft.group,Some(Draft::Rename(group))if group.group==id)
-            }) {
-                play.link.vip_request(Intent::GroupRemove(u64::from(id)));
-                if play.link.vip_panel().pending {
-                    state.draft = None;
-                    state.pending = None;
-                }
+            }) =>
+        {
+            play.link.vip_request(Intent::GroupRemove(u64::from(id)));
+            if play.link.vip_panel().pending {
+                state.draft = None;
+                state.pending = None;
             }
         }
         _ => {}

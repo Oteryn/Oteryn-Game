@@ -134,13 +134,12 @@ fn project(
             && panel.details.items.is_empty()
             && panel.details.pending.is_none()
             && panel.details.feedback.is_none()
+            && let Some(play) = &owner.play
         {
-            if let Some(play) = &owner.play {
-                play.link.market_query(MarketQuery::Catalogue {
-                    filter: panel.details.filter.clone(),
-                    page: panel.details.page,
-                });
-            }
+            play.link.market_query(MarketQuery::Catalogue {
+                filter: panel.details.filter.clone(),
+                page: panel.details.page,
+            });
         }
     }
     let key = Key {
