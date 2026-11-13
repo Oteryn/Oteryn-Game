@@ -68,6 +68,7 @@ pub(super) fn setup(
             },
         ))
         .id();
+    groups::setup(&mut commands, &skins, list);
     let message = commands
         .spawn((
             Message,

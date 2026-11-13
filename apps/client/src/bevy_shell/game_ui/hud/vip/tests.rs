@@ -3,8 +3,13 @@ use crate::combat_input::PlayCommand;
 use oteryn_client_runtime::vip::vip as wire;
 use oteryn_session::{VipPresenceBatch, VipPresenceEntry, VipPresenceStatus};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const CONTACTS: &str = r#"{"entries":[{"entry":73,"name":"Alice","description":"Friend","icon":2,"notify":true,"groups":[1]},{"entry":91,"name":"Bob","description":"","icon":0,"notify":false,"groups":[]}],"groups":[{"group":1,"name":"Friends"}],"next_entry":0}"#;
-fn publish(outbox: &crate::play::Outbox, raw: &str, revision: u64, status: VipPresenceStatus) {
+pub(super) const CONTACTS: &str = r#"{"entries":[{"entry":73,"name":"Alice","description":"Friend","icon":2,"notify":true,"groups":[1]},{"entry":91,"name":"Bob","description":"","icon":0,"notify":false,"groups":[]}],"groups":[{"group":1,"name":"Friends"}],"next_entry":0}"#;
+pub(super) fn publish(
+    outbox: &crate::play::Outbox,
+    raw: &str,
+    revision: u64,
+    status: VipPresenceStatus,
+) {
     outbox.bevy_vip_fixture(
         raw,
         revision,
@@ -19,7 +24,7 @@ fn publish(outbox: &crate::play::Outbox, raw: &str, revision: u64, status: VipPr
         },
     );
 }
-fn control(
+pub(super) fn control(
     app: &mut App,
     predicate: impl Fn(Action) -> bool,
 ) -> Result<Entity, Box<dyn std::error::Error>> {
@@ -29,26 +34,26 @@ fn control(
         .find_map(|(entity, control)| predicate(control.command).then_some(entity))
         .ok_or_else(|| "control".into())
 }
-fn click(app: &mut App, predicate: impl Fn(Action) -> bool) -> TestResult {
+pub(super) fn click(app: &mut App, predicate: impl Fn(Action) -> bool) -> TestResult {
     let entity = control(app, predicate)?;
     app.world_mut().trigger(Activate { entity });
     app.update();
     Ok(())
 }
-fn field(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
+pub(super) fn field(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
     app.world_mut()
         .query_filtered::<Entity, With<Field>>()
         .single(app.world())
         .map_err(Into::into)
 }
-fn set_text(app: &mut App, value: &str) -> TestResult {
+pub(super) fn set_text(app: &mut App, value: &str) -> TestResult {
     let field = field(app)?;
     *app.world_mut()
         .get_mut::<EditableText>(field)
         .ok_or("editor")? = EditableText::new(value);
     Ok(())
 }
-fn request(
+pub(super) fn request(
     commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
 ) -> Result<wire::Request, Box<dyn std::error::Error>> {
     match commands.try_recv()? {
@@ -205,7 +210,7 @@ type NativeFixture = (
     tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     crate::play::Outbox,
 );
-fn native_app() -> Result<NativeFixture, Box<dyn std::error::Error>> {
+pub(super) fn native_app() -> Result<NativeFixture, Box<dyn std::error::Error>> {
     let (mut app, commands, outbox) = super::super::tests::app()?;
     app.add_plugins((
         bevy::input::InputPlugin,

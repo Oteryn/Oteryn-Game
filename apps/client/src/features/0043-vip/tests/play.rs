@@ -249,3 +249,20 @@ fn shared_vip_visibility_uses_the_canonical_shortcut_and_close_preserves_pending
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_vip_refusal_fixture(&self, code: u8) {
+        let revision = crate::play::mailbox::lock(&self.0).vip.revision;
+        self.vip_result(&oteryn_client_runtime::vip::VipResponse {
+            status: oteryn_session::CommandStatus::Rejected,
+            result: oteryn_client_runtime::vip::vip::ResultView {
+                code,
+                revision,
+                number: 0,
+                wait: 0,
+                view: String::new(),
+            },
+        });
+    }
+}

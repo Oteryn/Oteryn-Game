@@ -41,6 +41,9 @@ pub(super) fn activate(
     }
     let Some(play) = &owner.play else { return };
     match control.command {
+        Action::GroupAdd | Action::GroupRename(_) | Action::GroupRemove(_) => {
+            groups::activate(control.command, &owner, &mut state)
+        }
         Action::Close => {}
         Action::Refresh => play.link.vip_request(Intent::Query(0)),
         Action::Next(cursor) => {
@@ -81,6 +84,7 @@ pub(super) fn activate(
                 notify: contact.as_ref().and_then(|entry| entry.notify),
                 groups: contact.as_ref().and_then(|entry| entry.groups.clone()),
                 contact,
+                group: None,
                 catalog: snapshot.groups,
                 feedback: String::new(),
             });
@@ -235,11 +239,17 @@ pub(super) fn finish(
         return;
     }
     draft.text = editor.value().to_string();
-    if draft.text.chars().count() > 128 {
-        draft.feedback = "The maximum length is 128 characters.".into();
+    let maximum = if draft.group.is_some() { 25 } else { 128 };
+    if draft.text.chars().count() > maximum {
+        draft.feedback = format!("The maximum length is {maximum} characters.");
         return;
     }
-    let intent = if let Some(contact) = &draft.contact {
+    let intent = if draft.group.is_some() {
+        let Some(intent) = groups::intent(draft) else {
+            return;
+        };
+        intent
+    } else if let Some(contact) = &draft.contact {
         if !contact.editable() {
             return;
         }

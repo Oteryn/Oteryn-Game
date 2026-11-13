@@ -47,17 +47,22 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, draft: &Draft) -> (E
     source::dialog_caption(
         commands,
         panel,
-        if draft.contact.is_some() {
-            "Edit VIP"
-        } else {
-            "Add VIP"
+        match &draft.group {
+            Some(groups::Draft::Add) => "Add VIP Group",
+            Some(groups::Draft::Rename(_)) => "Rename VIP Group",
+            None if draft.contact.is_some() => "Edit VIP",
+            None => "Add VIP",
         },
         skins.font.clone(),
     );
-    let caption = draft
-        .contact
-        .as_ref()
-        .map_or("Character name", |entry| entry.name.as_str());
+    let caption = if draft.group.is_some() {
+        "Group name"
+    } else {
+        draft
+            .contact
+            .as_ref()
+            .map_or("Character name", |entry| entry.name.as_str())
+    };
     let title = commands
         .spawn(source::text(
             caption,
@@ -88,7 +93,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, draft: &Draft) -> (E
             Field(draft.serial),
             TextInput,
             EditableText {
-                max_characters: Some(128),
+                max_characters: Some(if draft.group.is_some() { 25 } else { 128 }),
                 ..EditableText::new(&draft.text)
             },
             source::font(skins.font.clone(), false),
@@ -195,6 +200,17 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, draft: &Draft) -> (E
             "Remove",
             60.,
             "vip.remove",
+        );
+        commands.entity(footer).add_child(remove);
+    }
+    if let Some(groups::Draft::Rename(group)) = &draft.group {
+        let remove = button(
+            commands,
+            skins,
+            control(Action::GroupRemove(group.group)),
+            "Delete",
+            60.,
+            "vip.groups.delete",
         );
         commands.entity(footer).add_child(remove);
     }

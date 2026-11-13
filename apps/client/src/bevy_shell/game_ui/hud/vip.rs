@@ -12,6 +12,11 @@ use model::{Contact, Snapshot};
 use oteryn_client_ui::vip::Intent;
 #[path = "vip/dialog.rs"]
 mod dialog;
+#[path = "vip/groups.rs"]
+mod groups;
+#[cfg(test)]
+#[path = "vip/groups_tests.rs"]
+mod groups_tests;
 #[path = "vip/input.rs"]
 mod input;
 #[path = "vip/model.rs"]
@@ -34,6 +39,7 @@ struct Draft {
     revision: u64,
     serial: u64,
     contact: Option<Contact>,
+    group: Option<groups::Draft>,
     text: String,
     icon: Option<u8>,
     notify: Option<bool>,
@@ -58,6 +64,9 @@ struct Control {
 enum Action {
     Close,
     Add,
+    GroupAdd,
+    GroupRename(u8),
+    GroupRemove(u8),
     Refresh,
     Next(u64),
     Edit(u64),
@@ -107,7 +116,13 @@ pub(super) fn install(app: &mut App) {
         )
         .add_systems(
             Update,
-            (view::project, view::dialog, input::keyboard).chain(),
+            (
+                view::project,
+                groups::project,
+                view::dialog,
+                input::keyboard,
+            )
+                .chain(),
         )
         .add_systems(
             PostUpdate,
@@ -131,6 +146,7 @@ fn current(owner: &HostOwner, draft: &Draft) -> bool {
     panel.selected
         && !panel.pending
         && panel.revision == draft.revision
+        && groups::current(&panel, draft.group.as_ref())
         && draft.contact.as_ref().is_none_or(|contact| {
             Snapshot::read(&panel)
                 .ok()
