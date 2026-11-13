@@ -1,7 +1,7 @@
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "layout.rs"]
 mod layout;
-pub use layout::{SkillsLayout, SkillsLayoutState, SkillsWidget};
+pub use layout::{SkillsLayout, SkillsLayoutState, SkillsNumbers, SkillsWidget};
 
 impl PlayLink {
     pub fn skills_widget(&self) -> SkillsWidget {
