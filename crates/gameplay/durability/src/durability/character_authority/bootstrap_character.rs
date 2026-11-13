@@ -107,7 +107,8 @@ impl DurabilityRoot {
             // concurrent same-name bootstrap sees the committed reservation.
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-name:' || $1, 0))")
                 .bind(&name_key).execute(&mut *tx).await?;
-            if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
+            sqlx::query("SELECT game_character_service_release_name($1)").bind(&name_key).execute(&mut *tx).await?;
+    if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
                 .bind(&name_key).fetch_optional(&mut *tx).await?.is_some() {
                 return Ok(Err(CharacterAuthorityError::NameUnavailable));
             }

@@ -1036,6 +1036,7 @@ pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
 }
 
 pub(super) struct RecoverySource {
+    pub(super) clock: std::sync::Arc<std::sync::atomic::AtomicU64>,
     pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
 }
@@ -1089,6 +1090,8 @@ impl RecoverySource {
         h.root
             .initialize_native_admission_source(&h.node, provenance, registration)
             .await?;
+        let clock = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(fixed_now.unwrap_or(0)));
+        let peer_clock = clock.clone();
         let task = tokio::spawn(async move {
             let mut revision = 1_u64;
             loop {
@@ -1124,12 +1127,13 @@ impl RecoverySource {
                 let Ok(input) = serde_json::from_slice::<serde_json::Value>(&body) else {
                     return;
                 };
-                let now = fixed_now.unwrap_or_else(|| {
+                let fixed = peer_clock.load(std::sync::atomic::Ordering::SeqCst);
+                let now = if fixed != 0 { fixed } else {
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|v| v.as_secs())
                         .unwrap_or(0)
-                });
+                };
                 revision += 1;
                 let recovery = input["operation"]
                     .as_str()
@@ -1198,6 +1202,7 @@ impl RecoverySource {
             }
         });
         Ok(Self {
+            clock,
             evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource::new(
                 descriptor,
             ),

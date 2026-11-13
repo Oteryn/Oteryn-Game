@@ -38,7 +38,7 @@ SELECT h.account_id::text AS account_id, e.projection_epoch, p.projection_revisi
   JOIN game_character_account_projections p USING (account_id) \
  CROSS JOIN game_character_account_projection_epoch e \
   LEFT JOIN LATERAL (SELECT character_id, world_id, name, lifecycle FROM game_character_roots \
-                      WHERE account_id = h.account_id AND NOT game_account_closure_detached(character_id) ORDER BY character_id LIMIT $1) r ON true \
+                      WHERE account_id = h.account_id AND lifecycle<>4 AND NOT game_account_closure_detached(character_id) ORDER BY character_id LIMIT $1) r ON true \
  ORDER BY r.character_id";
 
 /// `AVAILABLE` for the only admissible lifecycle; any other lifecycle is not

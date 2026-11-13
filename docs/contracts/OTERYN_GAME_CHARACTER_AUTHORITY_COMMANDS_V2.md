@@ -1,8 +1,8 @@
 # Character Authority services v2 (G-3)
 
 Status: **wire implemented against Platform PROPOSED revision 2 @a85b5da;
-activation pending**. Decisions, storage, consumers and delivery remain blocked
-on the projection contract conflict below. This is not service activation.
+activation pending**. Decisions, storage, consumers and delivery are being implemented under the
+resolved interpretation below. This is not service activation.
 
 Owner implementation authorization: 2026-11-13. Source:
 [Platform proposal at the pinned revision](https://github.com/Oteryn/oteryn-platform/blob/a85b5da4de23f3e8633cfb25a2db1ad7f6133acd/docs/contracts/OTERYN_V2_CHARACTER_SERVICES_COMMAND_CONTRACT_PROPOSAL.md).
@@ -37,30 +37,46 @@ intentionally invalid. Other canonical request/response examples are tested
 inline. V1 codecs and decisions are unchanged; their fixture assertions are
 not modified.
 
-## Planned decisions and storage — not implemented
+## Decisions and storage
 
-The approved Game policies are a 60-day deletion period and a 30-day
-released-comparison-key hold, including the former owner. Cancellation must be
-offline and strictly before the deadline; unsafe time prevents cancellation
-and delays finalization. These decision policies are not executable in this
-wire-only slice.
+Migrations 2830–2833 prepare repeatable receipts, lifecycle/deletion state,
+released-name holds, and the independent service-state outbox, respectively.
+0087 remains unchanged. Storage for the companion is installed with decisions
+so mutations cannot commit without their services work; its publisher is a
+separate delivery part. Full original intent and receipt bytes are immutable.
+The existing issuer-wide operation advisory lock serializes all receipt writers.
 
-No migration is used here. 0087 is unchanged. The assigned future slots remain
-2830 for repeatable receipts, 2831 for deletion/lifecycle, 2832 for name holds,
-and 2833 for an independently acknowledged service-state outbox. Both command
-versions must share issuer-wide operation identity and one deciding writer.
-Full canonical intent bytes, not a fingerprint alone, must bind replay.
+`DELETION_GRACE_SECONDS` is 60 days; `RELEASED_NAME_HOLD_SECONDS` is 30 days.
+The portfolio lock precedes the root/CharacterLease locks. Cancel and finalizer
+recheck the same durable deletion under those locks. Pending and deleted roots
+cannot acquire a fresh session or ordinary gameplay revision. Finalization
+retains the CharacterId and gameplay references, emits a DELETED snapshot and
+omits the character from LCFA; it does not physically erase gameplay history.
+The old comparison key remains reserved for everyone until its hold expires.
 
-The wire validator implements the closed §5 refusal set and command-specific
-applicability. `CHAR_CMD_OK` is committed-only. REJECTED has no result facts.
-Reserved sex/world shapes decode, but no execution is implemented; their
-future decision is `CHAR_CMD_UNSUPPORTED`. The in-slice decisions must select
-§5 codes under the owning transaction; this codec makes no eligibility decision.
+Service changes carry immutable revision-chain and audit evidence, preserving
+all existing progression metadata. A missing initialized progression state is
+an unavailable dependency, never fabricated progression. Account security,
+current node incarnation, restore fence, ownership, revision and offline state
+are checked in the deciding transaction. Unsafe/unavailable or backward-moving
+service time commits nothing; finalization waits. The service clock uses the
+existing trusted server clock, refusing a statement delayed more than one second;
+production clock assurance remains a deployment prerequisite.
 
-No v2 puller, publisher, flag activation, retention job or migration is present.
-No payload or identifier is logged. No production enablement is authorized.
+Refusals use the closed §5 codes. A same-comparison-key rename uses
+`CHAR_CMD_NAME_UNAVAILABLE`: the closed vocabulary has no separate no-op code.
+A mismatched deletion generation uses `CHAR_CMD_STALE_PRECONDITION`. A second
+schedule uses `CHAR_CMD_LIFECYCLE_CONFLICT`. Reserved sex/world commands are
+`CHAR_CMD_UNSUPPORTED` and cannot mutate state. Definite refusals store only
+REJECTED facts; dependencies and ambiguous database outcomes store no refusal.
+Exact replay publishes the original bytes; contradictory binding cannot overwrite it.
 
-## Blocking contract conflict
+Detailed bindings are retained while financial/restore resolution is unknown;
+no automatic premature GC is introduced. As required by §8, the configured
+backup retention/restore horizon must be pinned before activation. No production
+activation or certificate allocation is authorized.
+
+## Resolved interpretation, pending Platform wording confirmation
 
 The proposal §6 says, verbatim:
 
@@ -78,14 +94,14 @@ It also says:
 
 > Terminally deleted, retired or finalized Characters are omitted.
 
-The current snapshot query reads `name` and `lifecycle` directly from current
-Character roots. Therefore a rename or finalization changes LCFA content. Not
-advancing its revision permits equal-key/different-content publication; hiding
-that change in a historical LCFA snapshot instead changes the accepted current
-snapshot and completeness semantics. The proposal does not specify which LCFA
-requirement is amended. No such amendment is inferred here.
-
-Before parts B–D, the owner must specify the LCFA disposition for these mutations
-and the corresponding completeness/resync rules. Decisions cannot safely be
-wired to either projection until that conflict is resolved. The independent
-services revision/ack requirement itself is clear and is retained.
+Coordinator decision, 2026-11-13: the accepted LCFA v1 contract wins because
+this proposal says "LCFA v1 is unchanged". Only changes exclusively to services
+facts (deletion operation/deadline, sex, CharacterRevision, unlisted lifecycle
+detail) leave LCFA revisions unchanged. Every change to an LCFA-listed field
+or its character set advances LCFA in the same transaction through the existing
+outbox path. Rename advances both feeds; schedule/cancel/finalize change LCFA
+availability or membership and also advance both. Services revisions remain an
+independent per-account namespace under the shared epoch. Receipt
+`projection_revision` always means the services revision. Each feed has its own
+acknowledgement. A services-only change queues only services work. Platform is
+asked to confirm this wording; implementation does not wait for confirmation.
