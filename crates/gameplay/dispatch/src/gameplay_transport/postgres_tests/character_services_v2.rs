@@ -19,6 +19,10 @@ fn character_services_v2_postgres_independent_service_and_lcfa_acknowledgements(
     scenario(false, "char_services_projection", true)
 }
 #[test]
+fn character_services_v2_review_oversize_is_terminal() -> TestResult {
+    scenario(false,"char_services_review_oversize",false)
+}
+#[test]
 fn character_services_v2_review_resync_uses_current_owner() -> TestResult {
     scenario(false,"char_services_review_owner",false)
 }
@@ -33,6 +37,10 @@ fn character_services_v2_review_migration_has_no_root_index_build() -> TestResul
 #[test]
 fn character_services_v2_review_receipt_replays_with_security_peer_down() -> TestResult {
     scenario(false,"char_services_review_replay",false)
+}
+#[test]
+fn character_services_v2_review_finalizer_skips_busy_oldest() -> TestResult {
+    scenario(false,"char_services_review_finalizer",false)
 }
 #[test]
 fn character_services_v2_review_tombstones_do_not_occupy_portfolio() -> TestResult {
@@ -82,6 +90,14 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
             let character: String = root.try_get("character_id")?;
             let original_name: String = root.try_get("name")?;
             let mut revision: u64 = root.try_get::<String,_>("character_revision")?.parse()?;
+            if tag.ends_with("oversize") {
+                let oversized=vec![b' ';4097];
+                let first=h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(20)),Input::Intent(&oversized)).await;
+                rejected(first.clone(),"CHAR_CMD_INTENT_INVALID")?;
+                assert_eq!(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("RenameCharacter",&operation(20)),Input::Oversized).await,first);
+                assert_eq!(sqlx::query_scalar::<_,String>("SELECT character_revision::text FROM game_character_roots WHERE character_id=$1::uuid").bind(&character).fetch_one(&h.pool).await?,revision.to_string());
+                return Ok(());
+            }
             let raw = intent("rename",1,revision,now,&account,&character,None)?;
             let original_intent=raw.clone();
             stage.set("rename and immutable replay");
@@ -233,10 +249,34 @@ fn scenario(race: bool, tag: &'static str, projection_only: bool) -> TestResult 
                 sqlx::query("CREATE OR REPLACE FUNCTION game_character_service_projection_now() RETURNS BIGINT LANGUAGE sql VOLATILE SET search_path=pg_catalog,public AS 'SELECT value FROM service_test_clock'").execute(&h.pool).await?;
                 sqlx::query("UPDATE game_character_service_revisions SET revised_at=$1").bind(now).execute(&h.pool).await?;
             }
+            if tag.ends_with("finalizer") {
+                // Seed the retained terminal session before scheduling, under the real admission guard.
+                sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) VALUES($1::uuid,$2::uuid,$3::uuid,$4::uuid,1,$4::uuid,encode($5,'hex')::uuid,1,999999,1,1,1,1,$6,3)").bind(operation(24)).bind(&account).bind(&character).bind(&world).bind(id(43).as_slice()).bind([29_u8;16].as_slice()).execute(&h.pool).await?;
+            }
             stage.set("schedule and offline cancel");
             let raw = intent("schedule",6,revision+2,now,&account,&character,None)?;
             committed(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("ScheduleCharacterDeletion",&operation(6)),Input::Intent(&raw)).await)?;
             assert!(matches!(crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone()).commit(&admission.request()?).await.map_err(debug)?,crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority));
+            if tag.ends_with("finalizer") {
+                stage.set("busy oldest deletion cannot block a later offline deadline");
+                let create=create_intent(140,now,&account,&world,"Finalizer Later")?;
+                let created=committed(h.root.decide_character_command(&authority,&h.node,"oteryn:character-authority:primary","CreateCharacter",&operation(140),Input::Intent(&create)).await)?;
+                let created:Value=serde_json::from_slice(&created)?;let second=created["character_id"].as_str().ok_or("second root")?;
+                sqlx::query("INSERT INTO game_character_progression_state SELECT $1::uuid,1,level,total_experience,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision FROM game_character_progression_state WHERE character_id=$2::uuid").bind(second).bind(&character).execute(&h.pool).await?;
+                sqlx::query("UPDATE service_test_clock SET value=value+1").execute(&h.pool).await?;
+                let schedule=intent("schedule",22,1,now+1,&account,second,None)?;
+                committed(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("ScheduleCharacterDeletion",&operation(22)),Input::Intent(&schedule)).await)?;
+                // A retained terminal session can still have a presence holder awaiting release.
+                sqlx::query("UPDATE game_durability_admission_account_guards SET presence_character_id=$2::uuid,holder_game_session_id=$3::uuid WHERE account_id=$1::uuid").bind(&account).bind(&character).bind(operation(24)).execute(&h.pool).await?;
+                let deadline:i64=sqlx::query_scalar("SELECT max(effective_at) FROM game_character_service_deletions").fetch_one(&h.pool).await?;
+                sqlx::query("UPDATE service_test_clock SET value=$1").bind(deadline).execute(&h.pool).await?;
+                sqlx::query("UPDATE preadm_clock.instant SET value=$1").bind(deadline).execute(&h.pool).await?;
+                super::HOST_NOW.replace(Some(deadline));
+                assert!(h.root.finalize_character_service_deletion(&authority,&h.node).await.map_err(debug)?);
+                assert_eq!(sqlx::query_scalar::<_,i16>("SELECT lifecycle FROM game_character_roots WHERE character_id=$1::uuid").bind(second).fetch_one(&h.pool).await?,4);
+                assert_eq!(sqlx::query_scalar::<_,i16>("SELECT lifecycle FROM game_character_roots WHERE character_id=$1::uuid").bind(&character).fetch_one(&h.pool).await?,3);
+                return Ok(());
+            }
             let pending: i16 = sqlx::query_scalar("SELECT lifecycle FROM game_character_roots WHERE character_id=$1::uuid").bind(&character).fetch_one(&h.pool).await?; assert_eq!(pending,3);
             let raw = intent("schedule",7,revision+3,now,&account,&character,None)?;
             rejected(h.root.decide_character_service(&authority,&h.node,"oteryn:character-authority:primary",("ScheduleCharacterDeletion",&operation(7)),Input::Intent(&raw)).await,"CHAR_CMD_LIFECYCLE_CONFLICT")?;

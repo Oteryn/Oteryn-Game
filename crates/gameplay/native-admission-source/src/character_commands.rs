@@ -760,9 +760,19 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
 
     /// Runs until the source authority is outside the contract grammar.
     pub async fn run(mut self) {
-        let mut backoff = POLL;
+        let mut backoff = [POLL; 2];
+        let mut due = [self.clock.elapsed(); 2];
         loop {
             self.next_wire();
+            let wire = usize::from(self.services_wire);
+            let now = self.clock.elapsed();
+            if self.services_enabled && now < due[wire] {
+                let next = due[0].min(due[1]);
+                if now < next {
+                    self.clock.sleep(next.saturating_sub(now)).await;
+                }
+                continue;
+            }
             if self.services_wire {
                 self.decider.maintain_services().await;
             }
@@ -789,12 +799,16 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                         failure.label(),
                         started,
                     );
-                    backoff = if failure.backs_off() {
-                        backoff.saturating_mul(2).clamp(POLL, MAX_BACKOFF)
+                    backoff[wire] = if failure.backs_off() {
+                        backoff[wire].saturating_mul(2).clamp(POLL, MAX_BACKOFF)
                     } else {
                         POLL
                     };
-                    self.clock.sleep(backoff).await;
+                    if self.services_enabled {
+                        due[wire] = self.clock.elapsed().saturating_add(backoff[wire]);
+                    } else {
+                        self.clock.sleep(backoff[wire]).await;
+                    }
                     continue;
                 }
             };
@@ -818,14 +832,23 @@ impl<C: ReportClock, S: CommandSource, D: Decider> Consumer<C, S, D> {
                 }
             }
             if throttled {
-                backoff = backoff.saturating_mul(2).clamp(POLL, MAX_BACKOFF);
-                self.clock.sleep(backoff).await;
+                backoff[wire] = backoff[wire].saturating_mul(2).clamp(POLL, MAX_BACKOFF);
+                if self.services_enabled {
+                    due[wire] = self.clock.elapsed().saturating_add(backoff[wire]);
+                } else {
+                    self.clock.sleep(backoff[wire]).await;
+                }
                 continue;
             }
-            backoff = POLL;
+            backoff[wire] = POLL;
             let short = entries.len() < MAX_ENTRIES;
             self.cursor.advance(&entries);
-            if short && (!self.services_enabled || self.services_wire) {
+            if self.services_enabled {
+                due[wire] =
+                    self.clock
+                        .elapsed()
+                        .saturating_add(if short { POLL } else { Duration::ZERO });
+            } else if short {
                 self.clock.sleep(POLL).await;
             }
         }

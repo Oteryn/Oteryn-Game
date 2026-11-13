@@ -39,6 +39,7 @@ impl DurabilityRoot {
         };
         let raw = match input {
             Input::Intent(raw) if raw.len() <= 4096 => raw.to_vec(),
+            Input::Intent(_) | Input::Oversized => super::character_command::oversized_binding(command),
             _ => return Decision::Transient,
         };
         let source = source.to_owned();
@@ -139,7 +140,7 @@ impl DurabilityRoot {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             if !prove_current_incarnation(&mut tx, &proof).await? { return Err(DurabilityError::Unavailable); }
-            let candidate = sqlx::query("SELECT character_id::text,account_id::text FROM game_character_service_deletions WHERE finalized_at IS NULL AND effective_at<=game_character_service_now() ORDER BY effective_at,character_id LIMIT 1")
+            let candidate = sqlx::query("SELECT character_id::text,account_id::text FROM game_character_service_deletions d WHERE finalized_at IS NULL AND effective_at<=game_character_service_now() AND NOT game_account_closure_closed(d.account_id) AND NOT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.character_id=d.character_id AND s.session_state IN(1,2)) AND NOT EXISTS(SELECT 1 FROM game_durability_admission_character_guards g WHERE g.character_id=d.character_id AND g.holder_game_session_id IS NOT NULL) AND NOT EXISTS(SELECT 1 FROM game_durability_admission_account_guards g WHERE g.account_id=d.account_id AND g.presence_character_id=d.character_id) ORDER BY effective_at,character_id LIMIT 1")
                 .fetch_optional(&mut *tx).await?;
             let Some(candidate) = candidate else { return Ok(false); };
             let character: String = candidate.try_get("character_id")?; let account: String = candidate.try_get("account_id")?;
@@ -151,7 +152,8 @@ impl DurabilityRoot {
             let deadline_row = sqlx::query("SELECT effective_at FROM game_character_service_deletions WHERE character_id=$1::uuid AND finalized_at IS NULL FOR UPDATE")
                 .bind(&character).fetch_optional(&mut *tx).await?;
             if root.try_get::<i16,_>("lifecycle")? != 3 || deadline_row.is_none_or(|d| d.get::<i64,_>("effective_at") > now) { return Ok(false); }
-            if in_session(&mut tx, &character, &account).await? { return Err(DurabilityError::Unavailable); }
+            let closing:bool=sqlx::query_scalar("SELECT game_account_closure_closed($1::uuid)").bind(&account).fetch_one(&mut *tx).await?;
+            if closing || in_session(&mut tx, &character, &account).await? { return Ok(false); }
             sqlx::query("UPDATE game_character_service_deletions SET finalized_at=$2 WHERE character_id=$1::uuid")
                 .bind(&character).bind(now).execute(&mut *tx).await?;
             change(&mut tx, Change { character: &character, operation: None, purpose: "FINALIZE", revision: &root.try_get::<String,_>("character_revision")?, old_name: &root.try_get::<String,_>("name")?, new_name: &root.try_get::<String,_>("name")?, old_lifecycle: 3, new_lifecycle: 4, now }).await?;

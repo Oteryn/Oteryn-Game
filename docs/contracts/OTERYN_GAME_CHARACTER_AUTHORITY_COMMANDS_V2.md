@@ -234,6 +234,8 @@ slots or enter a new CloseAccount manifest. The existing account-wide closure
 fence still covers their account; lifecycle 4 independently denies admission.
 Bazaar capacity uses the same live-root view. Receipt replay checks the original
 binding, process and recovery fences before any account-security refresh.
+Oversized reads reuse v1's bounded oversized-command binding and store a terminal
+invalid-intent receipt; a corrected intent cannot reuse that operation.
 
 Resync rereads ownership under the portfolio and root locks and preserves
 same-epoch quarantine. Phase one pages by the existing CharacterId primary key,
@@ -245,8 +247,7 @@ row writers. This follows the repository's NOT VALID convention without holding
 the addition lock throughout the validation scan. No concurrent-index operation
 is attempted inside the migration transaction.
 
-
-Deferred review items: the deletion finalizer currently selects the oldest
-candidate before checking session eligibility; oversized directly supplied
-intents remain transient; command polling shares backoff across v1/v2.
-These require further focused changes and are not claimed as resolved here.
+Finalization skips candidates with a session/presence/lease holder and rechecks
+that state under its deciding locks. V1 and v2 retain one exchange in flight,
+with separate retry counters and next-poll deadlines; a v2 backoff never sleeps
+past a due v1 poll.

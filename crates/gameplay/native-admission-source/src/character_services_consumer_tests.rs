@@ -189,3 +189,78 @@ fn character_services_v2_consumer_off_keeps_v1_requests_unchanged()
 -> Result<(), Box<dyn std::error::Error>> {
     scenario(false)
 }
+
+#[test]
+fn character_services_v2_backoff_never_delays_v1_and_grows_independently()
+-> Result<(), Box<dyn std::error::Error>> {
+    struct ThrottledPeer {
+        clock: Clock,
+        seen: Arc<Mutex<Vec<(Operation, Duration)>>>,
+        done: Arc<Notify>,
+    }
+    impl CommandSource for ThrottledPeer {
+        async fn exchange(&mut self, op: Operation, _: &str) -> Result<Vec<u8>, Failure> {
+            self.seen
+                .lock()
+                .map_err(|_| Failure::Unavailable)?
+                .push((op, self.clock.elapsed()));
+            tokio::task::yield_now().await;
+            if op == Operation::ListPendingCharacterCommandsV2 {
+                return Err(Failure::RateLimited);
+            }
+            if self.clock.elapsed() >= Duration::from_secs(8) {
+                self.done.notify_one();
+            }
+            Ok(br#"{"contract_version":1,"pending":[]}"#.to_vec())
+        }
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let clock = Clock::default();
+            let seen = Arc::new(Mutex::new(Vec::new()));
+            let done = Arc::new(Notify::new());
+            let consumer = Consumer::new(
+                clock.clone(),
+                ThrottledPeer {
+                    clock,
+                    seen: seen.clone(),
+                    done: done.clone(),
+                },
+                FixedDecider,
+                "oteryn:character-authority:primary".into(),
+                |_| {},
+            )
+            .with_services(true);
+            let mut running = std::pin::pin!(consumer.run());
+            let mut completed = std::pin::pin!(done.notified());
+            std::future::poll_fn(|cx| {
+                if completed.as_mut().poll(cx).is_ready() {
+                    return std::task::Poll::Ready(Ok::<(), Box<dyn std::error::Error>>(()));
+                }
+                if running.as_mut().poll(cx).is_ready() {
+                    return std::task::Poll::Ready(Err("consumer ended".into()));
+                }
+                std::task::Poll::Pending
+            })
+            .await?;
+            let seen = seen.lock().map_err(|_| "seen")?;
+            let v1: Vec<_> = seen
+                .iter()
+                .filter(|(op, _)| *op == Operation::ListPendingCharacterCommandsV1)
+                .map(|(_, t)| *t)
+                .collect();
+            let v2: Vec<_> = seen
+                .iter()
+                .filter(|(op, _)| *op == Operation::ListPendingCharacterCommandsV2)
+                .map(|(_, t)| *t)
+                .collect();
+            assert!(v1.len() >= 8);
+            assert!(v1.windows(2).all(|w| w[1] - w[0] <= POLL));
+            assert!(v2.len() >= 3);
+            assert!(v2[1] - v2[0] >= Duration::from_secs(2));
+            assert!(v2[2] - v2[1] >= Duration::from_secs(4));
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
