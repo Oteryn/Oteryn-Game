@@ -53,11 +53,24 @@ fn fixture(delay: u16) -> Result<App, Box<dyn std::error::Error>> {
     .insert_non_send(owner)
     .add_systems(Startup, crate::bevy_shell::ui::setup);
     let world = app.world_mut().spawn(Node::default()).id();
-    app.insert_resource(GameRegions { world })
-        .insert_resource(WorldViewport {
-            origin: UVec2::new(80, 40),
-            size: UVec2::new(width + 40, height + 20),
-        });
+    // Only the map anchor is observed by this isolated bridge.
+    app.insert_resource(GameRegions {
+        vitals: world,
+        minimap: world,
+        equipment: world,
+        containers: world,
+        battle: world,
+        skills: world,
+        vip: world,
+        analyzers: world,
+        chat: world,
+        bars: world,
+        world,
+    })
+    .insert_resource(WorldViewport {
+        origin: UVec2::new(80, 40),
+        size: UVec2::new(width + 40, height + 20),
+    });
     let mut window = Window {
         resolution: (1024, 720).into(),
         focused: true,
@@ -102,13 +115,7 @@ fn cursor(app: &mut App) -> Result<SystemCursorIcon, Box<dyn std::error::Error>>
     app.world_mut()
         .query_filtered::<&CursorIcon, With<PrimaryWindow>>()
         .iter(app.world())
-        .find_map(|icon| {
-            if let CursorIcon::System(icon) = icon {
-                Some(*icon)
-            } else {
-                None
-            }
-        })
+        .find_map(|icon| icon.as_system().copied())
         .ok_or_else(|| "cursor".into())
 }
 
