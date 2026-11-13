@@ -164,6 +164,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .before(ui::project),
     );
     gameplay_dialogs::install(&mut app);
+    login::install(&mut app);
     game_ui::install(&mut app);
     audio::install(&mut app);
     hints::install(&mut app);
