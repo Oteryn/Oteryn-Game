@@ -145,3 +145,70 @@ fn loaded_hotkey_profile_preserves_manual_routes_in_live_chat_context()
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn docked_chat_mode_controls_the_real_wasd_route() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{MovementKeys, SettingsState};
+    use oteryn_client_ui::chat::{ComposerMode, Mode};
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, _outbox) = play_channel();
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.chat.open = true;
+        mailbox.chat.selected = true;
+    }
+    let mut settings = SettingsState::new(None);
+    let mut p = settings.preferences.clone();
+    p.controls.movement = MovementKeys::ArrowsAndWasd;
+    settings.apply(p);
+    let code = KeyCode::new(26)?;
+    let gesture =
+        [ButtonState::Pressed, ButtonState::Released].map(|state| NormalizedInputEvent::Key {
+            code,
+            state,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        });
+    let first = |settings: &mut SettingsState| {
+        settings.sync_chat_context(&link);
+        settings
+            .control_events_at(
+                &gesture,
+                link.preference_chat_open(),
+                std::time::Duration::ZERO,
+            )
+            .first()
+            .and_then(|event| match event {
+                NormalizedInputEvent::Key { code, .. } => Some(*code),
+                _ => None,
+            })
+    };
+    assert_eq!(
+        first(&mut settings),
+        Some(code),
+        "chat On preserves typed W"
+    );
+    link.chat_console_mode();
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::Off);
+    assert!(
+        !link.preference_chat_open(),
+        "an open docked pane with chat Off is not a text-input context"
+    );
+    assert_eq!(first(&mut settings), Some(KeyCode::ARROW_UP));
+    link.chat_console_mode();
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::Temporary);
+    assert_eq!(first(&mut settings), Some(code));
+    link.chat_text("one temporary message".into());
+    link.chat_request(Mode::Say, "");
+    assert!(
+        std::iter::from_fn(|| commands.try_recv().ok())
+            .any(|command| matches!(command, crate::combat_input::PlayCommand::ChatPublic(_)))
+    );
+    assert_eq!(link.chat_panel().console.mode, ComposerMode::Off);
+    assert_eq!(
+        first(&mut settings),
+        Some(KeyCode::ARROW_UP),
+        "sending ends temporary chat and restores movement"
+    );
+    Ok(())
+}
