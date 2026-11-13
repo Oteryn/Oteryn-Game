@@ -1,0 +1,98 @@
+{
+  "source_receipt": {
+    "filename": "journal.json",
+    "sha256": "ee521acb68e5e969367b6bd75fca5fb3f243dbcc393d18059d47d2acb2389dc2"
+  },
+  "receipt": {
+    "capture_attempts": 1,
+    "capture_receipt": {
+      "capture_id": 128,
+      "post_selection_offset": 4484,
+      "proof_receipts": [
+        {
+          "path": "cards/00128-name.png",
+          "sha256": "f4835c16dff1644fae855d17fbd3e9787451c359ec23b049f6f590e9136603fc"
+        },
+        {
+          "path": "cards/00128-name-hover.png",
+          "sha256": "a8c96057f690b72ec4d447a0306e8ccff93302fa557bb3f4f74e612743324abf"
+        },
+        {
+          "path": "cards/00128-basic-top.png",
+          "sha256": "9298ec45e3673570f136943e70697f81d2ada27fe47d35fffb19de267df3e3fa"
+        },
+        {
+          "path": "cards/00128-icon.png",
+          "sha256": "d7aeda3994251088a583c5aa3f44cf6e6d61389b013c190d81685dff08bb9633"
+        },
+        {
+          "path": "cards/00128-basic-001.png",
+          "sha256": "a00f4523aae67c6518d646176d48acc44aa9c61be474f8b6b381f43d05675e42"
+        }
+      ],
+      "source_index_sha_after": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+      "ui_entry_ordinal": 128
+    },
+    "category": "Helmets and Hats",
+    "end_proof_receipts": [
+      {
+        "bytes": 156128,
+        "path": "tail-audit-1794553270938417414/end-before-2.png",
+        "sha256": "76633026f3e01dfefd42e1544f3d30f918f0afd0690125277c7d25d4057174aa"
+      },
+      {
+        "bytes": 161335,
+        "path": "tail-audit-1794553270938417414/end-after-2.png",
+        "sha256": "5c69205f83dcfa544ecf79834b7071b5f666ddd684f4517eff9dd322e2441947"
+      }
+    ],
+    "expected_next": 128,
+    "native_observed_frame_sha256": "bf39fb95e19853e524da303132c81522b3f63246e6ab2aa37704504ddd484ba1",
+    "restored_scope_proof": {
+      "actual_fresh_frame_sha256": "76633026f3e01dfefd42e1544f3d30f918f0afd0690125277c7d25d4057174aa",
+      "category_filters_sha256": "d627aa60845276bfbbe8f36b5760693cdc223c1d73ac54a0db3056ca00d5dbe5",
+      "comparison_ranges": {
+        "basis": "Exact category/filter pixels and exact text mask plus measured physical offset, thumb and two stable end checks. Selected Basic/cursor/fullraw pixels are not identity proof.",
+        "category_filters": [
+          15,
+          90,
+          199,
+          226
+        ],
+        "geometry": [
+          698,
+          536
+        ],
+        "list_text_mask": [
+          50,
+          255,
+          199,
+          376
+        ],
+        "raw_pane_receipt_only": [
+          50,
+          255,
+          199,
+          376
+        ]
+      },
+      "freshness_basis": "ItemsClient.fresh frame timestamp after last accepted input plus150ms",
+      "geometry": [
+        698,
+        536
+      ],
+      "list_text_sha256": "b6fb7a30bac7fd34f6770261b5ddf4b366605072850f25bf2b8125214719b343",
+      "native_source_sha256": "bf39fb95e19853e524da303132c81522b3f63246e6ab2aa37704504ddd484ba1",
+      "physical_offset_pixels": 4484,
+      "raw_full_frame_equal_not_required": true,
+      "raw_pane_sha256": "029a99645ba828eb6818fbd063b116ff0cd9c57a38c5f4b16cde979ea21098e4",
+      "stable_end_checks": 2,
+      "state": "QUALIFIED_RESTORED_SCOPE",
+      "thumb_top": 335
+    },
+    "schema": "OTERYN_PRIVATE_DYNAMIC_TAIL_JOURNAL/v1",
+    "source_index_sha_after": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff",
+    "source_index_sha_before": "c1816ce444ea0dde0070a1f7091c8bfdaf61de9b651bc682bc10c57c512b8102",
+    "stage": "POST_END_CONFIRMED"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schema": "OTERYN_CYCLOPEDIA_BASIC_READER_COVERAGE_UNION/v2",
+  "category": "Helmets and Hats",
+  "physical_ui_ordinals": {
+    "first": 1,
+    "last": 128,
+    "records": 128,
+    "gaps": [],
+    "duplicates": []
+  },
+  "distinct_original_basic_png": 268,
+  "original_proof_hashes_freshly_verified": 652,
+  "index_Basic_pathset_equals_reader_Basic_proofset": true,
+  "private_Description_values": 28,
+  "private_display_layouts": 10,
+  "immutable_inputs": [
+    {
+      "filename": "helmets-hats-basic-1-20-reviewed-private.json",
+      "bytes": 69349,
+      "sha256": "44ca71916f27a36509fa8cc61793e70565bc1f5361530fb7e8f54ab66eea2185"
+    },
+    {
+      "filename": "helmets-hats-basic-21-50-reviewed-private.json",
+      "bytes": 104825,
+      "sha256": "f7eebac111974580c7b08505d7a68a7e50260bb6e7feaffb231660860fb12bf3"
+    },
+    {
+      "filename": "helmets-hats-basic-51-80-structured-reviewed-private.json",
+      "bytes": 77220,
+      "sha256": "1cb25d5695361de4ee507deb8ee781836ce430c49a92b47bbd778ba032e7779a"
+    },
+    {
+      "filename": "helmets-hats-basic-81-110-structured-reviewed-private.json",
+      "bytes": 89083,
+      "sha256": "2a0bc5a2759175e4b770ef4b2966050754f2f87c1bac2137666e7098be174053"
+    },
+    {
+      "filename": "helmets-hats-basic-111-127-structured-reviewed-private.json",
+      "bytes": 46483,
+      "sha256": "5ab1408ffdd9edfdede8b36d0876a5242aa3943a42d07e2a220651185b6d3fb7"
+    },
+    {
+      "filename": "helmets-hats-basic-128-reviewed-private.json",
+      "bytes": 2025,
+      "sha256": "79bebe747287c335dd71d788a9c92da7d3abad72fcdbddca0e04b86b19ebf748"
+    }
+  ],
+  "source_receipt": {
+    "filename": "helmets-hats-union-1-128-corrected-private.json",
+    "bytes": 408686,
+    "sha256": "4e0ebece746ce49d91908a13af83087306f179073d8c11fb12b93bc2698eded2"
+  },
+  "index_receipt": {
+    "filename": "capture-index.json",
+    "bytes": 146249,
+    "sha256": "f89f0b8c1c363a9d13cd5ab454a06a4dc11eadf97082834872c4efaefd2c79ff"
+  },
+  "correction_receipt": {
+    "filename": "helmets-hats-ordinal10-armor-correction-private.json",
+    "bytes": 1822,
+    "sha256": "f10548cee67cdd8d42f6828b1743de97970f62b0344af230f94d924c375e9487"
+  },
+  "manual_current_scope": [
+    51,
+    128
+  ],
+  "reused_without_manual_reread_scope": [
+    1,
+    50
+  ],
+  "native_reread_exception": [
+    10
+  ],
+  "trade_or_animation_complete": false,
+  "overall_static_audit_complete": false
+}

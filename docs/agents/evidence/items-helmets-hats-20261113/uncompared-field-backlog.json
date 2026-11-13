@@ -1,0 +1,38 @@
+{
+  "classification": "UNCOMPARED_OBSERVED_FIELDS",
+  "fields": [
+    {
+      "field": "Augments",
+      "observations": 16,
+      "physical_ordinals": [
+        17,
+        27,
+        28,
+        32,
+        52,
+        77,
+        81,
+        82,
+        83,
+        84,
+        85,
+        87,
+        88,
+        110,
+        112,
+        113
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    },
+    {
+      "field": "Total Expire Time",
+      "observations": 1,
+      "physical_ordinals": [
+        118
+      ],
+      "source_route_status": "NOT_YET_QUALIFIED_FOR_COMPARISON"
+    }
+  ],
+  "private_narrative_receipts": 28,
+  "boundary": "These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim. Raw source semantics and renderer projection are separate."
+}
