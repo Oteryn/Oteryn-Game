@@ -35,7 +35,6 @@ pub(super) fn missing_item_appearances(
                     top: px(7.),
                     ..default()
                 },
-                Pickable::IGNORE,
             ))
             .id();
         commands
@@ -75,5 +74,54 @@ pub(super) fn project_regions(
         } else {
             Display::None
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unavailable_item_appearance_builds_one_visible_source_label()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        })
+        .add_systems(Update, missing_item_appearances);
+        let icon = app
+            .world_mut()
+            .spawn((
+                ItemIcon(oteryn_session::ItemEntry {
+                    handle: 7.try_into()?,
+                    item_definition_ref: std::num::NonZeroU32::MIN,
+                    count: 3.try_into()?,
+                    sub_type: 0,
+                }),
+                ImageNode::default(),
+            ))
+            .id();
+        app.update();
+        let icon = app.world().entity(icon);
+        assert_eq!(
+            icon.get::<ImageNode>().ok_or("icon image")?.color,
+            Color::NONE
+        );
+        assert_eq!(icon.get::<Children>().ok_or("label child")?.len(), 1);
+        assert_eq!(
+            icon.get::<Name>().ok_or("appearance diagnostic")?.as_str(),
+            "Appearance unavailable, 3 items"
+        );
+        let mut labels = app.world_mut().query::<&Text>();
+        assert_eq!(labels.single(app.world())?.0, "?");
+        Ok(())
     }
 }
