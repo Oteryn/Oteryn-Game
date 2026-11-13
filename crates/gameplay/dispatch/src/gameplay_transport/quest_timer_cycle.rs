@@ -4,6 +4,12 @@ use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTr
 use crate::foundation::{ExactActorRef, GameSessionId};
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn drain_quest_timers(&self, actor: ExactActorRef, session: GameSessionId) {
+        self.root
+            .with_background_operation(self.drain_quest_timers_inner(actor, session))
+            .await;
+    }
+
+    async fn drain_quest_timers_inner(&self, actor: ExactActorRef, session: GameSessionId) {
         let Some(catalogue) = self.quest_catalogue.as_ref() else {
             return;
         };
@@ -41,7 +47,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return;
             }
         };
-        for timer in due {
+        for timer in due.into_iter().take(1) {
             if timer.actor_placement != actor.placement_identity() {
                 continue;
             }

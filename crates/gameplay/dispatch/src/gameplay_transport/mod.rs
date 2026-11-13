@@ -21,6 +21,7 @@ mod analyser;
 pub mod atelier;
 mod attack;
 mod automatic_spell_progression;
+mod background_sweep;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
@@ -1440,7 +1441,7 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: RECONCILE_BACKOFF,
             stale_rounds: FRESH_ADMISSION_ROUNDS,
             root: Some(root),
-            _foreground: None,
+            _foreground: root.foreground_demand().ok(),
             waiter: std::sync::OnceLock::new(),
         }
     }

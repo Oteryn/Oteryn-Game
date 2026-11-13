@@ -465,7 +465,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let mut pause = std::time::Duration::from_millis(25);
         while pending.abandoned() {
-            let result = self.reconcile_activity_recovery_once(&pending).await;
+            let result = self
+                .root
+                .with_background_operation(self.reconcile_activity_recovery_once(&pending))
+                .await;
             if result.is_ok() {
                 return;
             }

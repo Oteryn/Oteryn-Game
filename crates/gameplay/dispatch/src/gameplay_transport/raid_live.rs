@@ -447,14 +447,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         now_ms: i64,
         progress: &mut RaidEffectProgress,
     ) -> Result<(), ()> {
-        progress.begin(firing, key)?;
-        let result = self
-            .drive_retained_raid_firing(firing, key, catalogue, seed, now_ms, progress)
-            .await;
-        if result.is_ok() {
-            progress.retries.remove(&firing);
-        }
-        result
+        self.root
+            .with_background_operation(async {
+                progress.begin(firing, key)?;
+                let result = self
+                    .drive_retained_raid_firing(firing, key, catalogue, seed, now_ms, progress)
+                    .await;
+                if result.is_ok() {
+                    progress.retries.remove(&firing);
+                }
+                result
+            })
+            .await
     }
 
     async fn drive_retained_raid_firing(
@@ -612,69 +616,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let now = crate::world_clock::now_utc_ms().and_then(|now| i64::try_from(now).ok());
             if let Some(now_ms) = now {
-                if self.publish_raid_activity(now_ms).await.is_err() {
-                    super::operator_event("raid_activity_projection_retry");
-                }
                 let mut attempted = BTreeSet::new();
-                for (firing, key) in progress.retry_work() {
-                    attempted.insert(firing);
-                    let result = super::world_respawns::stopping_first(
-                        self.drive_raid_firing(
-                            firing,
-                            &key,
-                            &catalogue,
-                            seed,
-                            now_ms,
-                            &mut progress,
-                        ),
-                        shutdown,
-                    )
-                    .await;
-                    let Some(result) = result else {
-                        return RespawnExit::Shutdown;
-                    };
-                    if result.is_err() {
-                        super::operator_event(&format!("raid_effect_retry key={}", key.as_str()));
-                    }
-                }
-                if attempted.len() < MAX_CANDIDATES
-                    && pending_page.is_empty()
-                    && progress.retries.len() < MAX_CANDIDATES
-                {
-                    match self.root.page_raid_firings(self.channel_id, cursor).await {
-                        Ok(page) => {
-                            cursor = page.next;
-                            pending_page.extend(page.firings);
-                        }
-                        Err(error) => {
-                            super::operator_event(&format!("raid_effect_read_retry reason={error}"))
-                        }
-                    }
-                }
-                while attempted.len() < MAX_CANDIDATES {
-                    let Some((firing, key)) =
-                        next_page_firing(&mut pending_page, &attempted, &progress)
-                    else {
-                        break;
-                    };
-                    attempted.insert(firing);
-                    let result = super::world_respawns::stopping_first(
-                        self.drive_raid_firing(
-                            firing,
-                            &key,
-                            &catalogue,
-                            seed,
-                            now_ms,
-                            &mut progress,
-                        ),
-                        shutdown,
-                    )
-                    .await;
-                    let Some(result) = result else {
-                        return RespawnExit::Shutdown;
-                    };
-                    if result.is_err() {
-                        super::operator_event(&format!("raid_effect_retry key={}", key.as_str()));
+                let mut retries = VecDeque::from(progress.retry_work());
+                for unit in 0..MAX_CANDIDATES {
+                    // Publication, discovery of one page and its first firing share
+                    // one bounded grant. Later firings arbitrate independently.
+                    let worked = self
+                        .root
+                        .with_background_operation(async {
+                            if unit == 0 {
+                                if self.publish_raid_activity(now_ms).await.is_err() {
+                                    super::operator_event("raid_activity_projection_retry");
+                                }
+                                if pending_page.is_empty()
+                                    && progress.retries.len() < MAX_CANDIDATES
+                                {
+                                    match self.root.page_raid_firings(self.channel_id, cursor).await
+                                    {
+                                        Ok(page) => {
+                                            cursor = page.next;
+                                            pending_page.extend(page.firings);
+                                        }
+                                        Err(error) => super::operator_event(&format!(
+                                            "raid_effect_read_retry reason={error}"
+                                        )),
+                                    }
+                                }
+                            }
+                            let work = retries.pop_front().or_else(|| {
+                                next_page_firing(&mut pending_page, &attempted, &progress)
+                            });
+                            let Some((firing, key)) = work else {
+                                return Ok(false);
+                            };
+                            if !attempted.insert(firing) {
+                                return Ok(true);
+                            }
+                            let Some(result) = super::world_respawns::stopping_first(
+                                self.drive_raid_firing(
+                                    firing,
+                                    &key,
+                                    &catalogue,
+                                    seed,
+                                    now_ms,
+                                    &mut progress,
+                                ),
+                                shutdown,
+                            )
+                            .await
+                            else {
+                                return Err(RespawnExit::Shutdown);
+                            };
+                            if result.is_err() {
+                                super::operator_event(&format!(
+                                    "raid_effect_retry key={}",
+                                    key.as_str()
+                                ));
+                            }
+                            Ok(true)
+                        })
+                        .await;
+                    match worked {
+                        Ok(true) => {}
+                        Ok(false) => break,
+                        Err(exit) => return exit,
                     }
                 }
             }

@@ -1,11 +1,28 @@
 #!/usr/bin/env bash
 # Sourced only by node_boot's fixed-path lifecycle hook. No Platform boot copy.
 set +x
-readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
+readonly GAME_PLATFORM_SHA=a85b5da4de23f3e8633cfb25a2db1ad7f6133acd
 GP_HARNESS_PID=''
 GP_PG_CONTAINER=''
+game_platform_retain_test_logs() {
+  [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" && -n "${WORK:-}" ]] || return 0
+  local log value
+  local -a evidence_args=()
+  for value in "$GAME_PLATFORM_SHA" "$(git -C "$GAME_SOURCE" rev-parse HEAD)" "${WORLD_DIGEST:-}"; do
+    [[ -z "$value" ]] || evidence_args+=(--evidence "$value")
+  done
+  if [[ -n "${NODE_BOOT_SPELL_MANIFEST:-}" && -f "$NODE_BOOT_SPELL_MANIFEST" ]]; then
+    value="$(sha256sum "$NODE_BOOT_SPELL_MANIFEST")"
+    evidence_args+=(--evidence "${value%% *}")
+  fi
+  for log in identity-build.log identity.log native_ticket_and_gateway_fail_closed.log native_device_rotation_replay.log native_ticket_gateway_admits.log; do
+    [[ -f "$WORK/$log" ]] || continue
+    python3 "$GAME_SOURCE/tools/qualification/game_platform/redact.py" \
+      "$WORK/$log" "$NODE_BOOT_FAILURE_LOG_DIR/$log" "${evidence_args[@]}" || return 1
+  done
+}
 game_platform_fail() {
-  if [[ -f "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then exit 1; fi
+  game_platform_retain_test_logs || set -- "$1" diagnostic_redaction_failed
   if [[ -n "${GAME_PLATFORM_RESULT_FILE:-}" ]]; then
     printf 'GAME_PLATFORM_RESULT=FAIL flow=%s reason=%s\n' "$1" "$2" > "$GAME_PLATFORM_RESULT_FILE"
   else
@@ -28,6 +45,8 @@ game_platform_cleanup() {
     kill -KILL -- "-$GP_HARNESS_PID" 2>/dev/null || true
     wait "$GP_HARNESS_PID" 2>/dev/null || true
   fi
+  # Also covers unexpected exits/timeouts before an explicit fail call.
+  game_platform_retain_test_logs || true
   # Preserve private logs before node_boot removes its work directory.
   if [[ -n "${NODE_BOOT_FAILURE_LOG_DIR:-}" ]]; then
     [[ ! -f "$node_log" ]] || cp "$node_log" "$NODE_BOOT_FAILURE_LOG_DIR/node.log"
@@ -97,23 +116,21 @@ game_platform_start() {
   evidence "platform_roles=migrate,serve,worker,gateway platform_pg=18.6 game_pg=18.6 separate_database_roles=1 clients=16"
 }
 game_platform_config() {
-  python3 - "$1" <<'PY'
-import pathlib, sys
-p = pathlib.Path(sys.argv[1])
-s = p.read_text().replace('peer_name = "source.test"', 'peer_name = "localhost"')
-s = s.replace('source_authority = "platform"', 'source_authority = "oteryn-platform-e2e"')
-p.write_text(s)
-PY
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" configure "$WORK" "$1" "$BASE" "$SERVICE_UID"
+
 }
 game_platform_identity() {
   result=NODE_BOOT_IDENTITY_ONLY
   ACTIVE_STAGE=web_identity
   # Compile before the node's bounded assignment wait and journey budget begin.
-  cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation --no-run \
+  cargo test --locked -p oteryn-security-auth-tests --test web_identity_pkce_isolation \
+    --test native_ticket_and_gateway_fail_closed --test native_device_rotation_replay --no-run \
     > "$WORK/identity-build.log" 2>&1 || game_platform_fail web_identity driver_build_failed
   stage operator_setup -- operator_setup
   [[ ${STATUS[operator_setup]} == PASS ]] || game_platform_fail game operator_setup_failed
+  local boot_started=$SECONDS
   start_node
+  remember NODE_PID "$NODE_PID"
   await_log awaiting_assignment 120
   evidence "game_platform_provenance game=$(git rev-parse HEAD) platform=$GAME_PLATFORM_SHA game_pg=18.6 platform_pg=18.6 bundle=$WORLD_DIGEST"
   GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
@@ -124,10 +141,56 @@ game_platform_identity() {
   kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_identity
   grep -Fx 'NODE_BOOT_EVIDENCE flow=web_identity result=pass account_isolation=1' "$WORK/identity.log" \
     || game_platform_fail web_identity evidence_missing
-  evidence "blocker=portal-rs/crates/gameauth/src/admission/grant.rs:24 pending=encrypted_signing_custody"
-  # Assignment requires control-owned scope grants. The default node_boot stage
-  # inserts them directly; this lane must not invent those authority records.
-  printf 'GAME_PLATFORM_EVIDENCE blocker=tools/qualification/node_boot/run.sh:999 pending=control_scope_grant_issuer\n'
-  printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Game what=tools/qualification/node_boot/run.sh:999\n' > "$GAME_PLATFORM_RESULT_FILE"
-  exit 2
+  local target budget
+  for target in native_ticket_and_gateway_fail_closed native_device_rotation_replay; do
+    ACTIVE_STAGE="$target"
+    budget=60
+    [[ "$target" != native_device_rotation_replay ]] || budget=120
+    GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
+      GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" LOCALAPPDATA="$WORK/native-client" \
+      timeout --kill-after=1s "${budget}s" cargo test --locked -p oteryn-security-auth-tests --test "$target" \
+        "$target" -- --exact --nocapture > "$WORK/$target.log" 2>&1 \
+      || game_platform_fail "$target" journey_assertion_failed
+    kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_native
+    if [[ "$target" == native_ticket_and_gateway_fail_closed ]]; then
+      grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=fail_closed game_admissions=0' "$WORK/$target.log" \
+        || game_platform_fail "$target" evidence_missing
+    else
+      grep -E '^NODE_BOOT_EVIDENCE flow=native_device_rotation result=pass rotations=[1-9][0-9]* replay_refused=1 signout_offline=1$' "$WORK/$target.log" \
+        || game_platform_fail "$target" evidence_missing
+    fi
+  done
+  # Real owner-issued deployment grants follow every zero-admission negative.
+  ACTIVE_STAGE=deployment_administration
+  stage node_assigned_ready operator_setup -- node_complete_assignment "$boot_started"
+  [[ ${STATUS[node_assigned_ready]} == PASS ]] || game_platform_fail game assignment_or_readiness_failed
+  # stage runs in a subshell; recover the actual registered process, never start a substitute.
+  # shellcheck source=/dev/null
+  NODE_PID="$(source "$VARS"; printf '%s' "$NODE_PID")"
+  ACTIVE_STAGE=character_bootstrap
+  python3 "$GAME_SOURCE/tools/qualification/game_platform/composition.py" bootstrap "$WORK" "$SECOND_ACCOUNT_ID" "$WORLD_ID" "${INTENT_OPERATIONS[1]}" "${INTERPRETATION[@]}" \
+    || game_platform_fail character_bootstrap intent_issue_failed
+  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
+    || game_platform_fail character_bootstrap operator_refused
+  ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "${INTENT_OPERATIONS[1]}" \
+    || game_platform_fail character_bootstrap replay_refused
+  local character
+  character="$(echo "SELECT character_id FROM game_character_operation_receipts WHERE operation_id='${INTENT_OPERATIONS[1]}' AND account_id='$SECOND_ACCOUNT_ID'" | psql_admin oteryn_node_boot)"
+  [[ "$character" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]] \
+    || game_platform_fail character_bootstrap owner_binding_missing
+  ACTIVE_STAGE=native_ticket_gateway_admits
+  GAME_PLATFORM_INPUT="$WORK/identity.json" GAME_PLATFORM_REPORT="$WORK/portal-report.json" \
+    GAME_PLATFORM_GAME_DATABASE_URL="$ADMIN_URL" GAME_PLATFORM_CHARACTER_ID="$character" \
+    GAME_PLATFORM_GAMEPLAY_CERT="$WP5_PKI/gameplay.crt" \
+    timeout --kill-after=1s 60s cargo test --locked -p oteryn-security-auth-tests --test native_ticket_and_gateway_fail_closed \
+      native_ticket_gateway_admits -- --exact --nocapture > "$WORK/native_ticket_gateway_admits.log" 2>&1 \
+    || game_platform_fail native_ticket_gateway_admits journey_assertion_failed
+  kill -0 "$NODE_PID" 2>/dev/null || game_platform_fail game node_exited_during_admission
+  grep -Fx 'NODE_BOOT_EVIDENCE flow=native_ticket_gateway result=pass game_admissions=1 identity_character_scope=exact' "$WORK/native_ticket_gateway_admits.log" \
+    || game_platform_fail native_ticket_gateway_admits evidence_missing
+  stage graceful_shutdown node_assigned_ready -- graceful_shutdown
+  [[ ${STATUS[graceful_shutdown]} == PASS ]] || game_platform_fail game shutdown_failed
+  printf 'GAME_PLATFORM_RESULT=PASS\n' > "$GAME_PLATFORM_RESULT_FILE"
+  result=NODE_BOOT_PASS
+  exit 0
 }

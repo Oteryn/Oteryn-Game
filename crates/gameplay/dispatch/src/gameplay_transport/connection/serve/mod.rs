@@ -328,7 +328,8 @@ where
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             let inbound_phase = next.phase();
-            let input = match inbound::receive(stream, authority, &mut session, next).await {
+            let received = inbound::receive(stream, authority, &mut session, next).await;
+            let input = match received {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
                 Err(end) => {

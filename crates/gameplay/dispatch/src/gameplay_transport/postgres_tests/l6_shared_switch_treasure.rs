@@ -101,7 +101,17 @@ pub(super) async fn exercise(
     if owner.root.has_ready_demand() {
         owner.root.maintain_ready_once().await?;
     }
-    owner.tick_timed_items().await;
+    if name.contains("-background-") {
+        let _foreground = owner.root.foreground_demand()?;
+        let _waiter = owner.root.holder_waiter().ok_or("foreground waiter")?;
+        tokio::time::sleep(crate::durability::ROOT_RECOVERY_WINDOW).await;
+        crate::durability::DurabilityRoot::with_background_holder(
+            owner.drain_quest_timers(actor, admitted.game_session_id),
+        ).await;
+        eprintln!("POSTGRES_CASE_EXECUTED background_expired_quest_timer");
+    } else {
+        owner.tick_timed_items().await;
+    }
     let no_progress =
         name.contains("-fresh-") || name.contains("-offline-") || name.ends_with("12123");
     if no_progress {

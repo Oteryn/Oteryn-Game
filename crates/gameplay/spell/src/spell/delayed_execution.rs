@@ -1343,6 +1343,7 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
             runtime,
             clock,
             Some(fence),
@@ -1375,6 +1376,7 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
             runtime,
             clock,
             None,
@@ -1411,6 +1413,35 @@ impl SpellTimerOwner {
         ) -> Result<OwnerCombatBatch, Error>,
     ) -> Result<FireReport, Error> {
         self.fire_due_impl(
+            MAX_DUE_PER_CYCLE,
+            runtime,
+            clock,
+            None,
+            stamp,
+            context,
+            build,
+            |runtime, context, payload, batch| context.commit_due_combat(runtime, payload, batch),
+        )
+    }
+
+    /// Fire one callback so a background grant never covers another timer.
+    pub fn fire_one_due_current_with_context<C: DueCombatCommit>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        clock: &impl OwnerClock,
+        stamp: RuntimeWorkStamp,
+        context: &mut C,
+        build: impl FnMut(
+            &ChannelRuntimeV1,
+            &C,
+            &TimerPayload,
+            SpellTimerOccurrence,
+            SemanticTimeMicros,
+            RuntimeWorkStamp,
+        ) -> Result<OwnerCombatBatch, Error>,
+    ) -> Result<FireReport, Error> {
+        self.fire_due_impl(
+            1,
             runtime,
             clock,
             None,
@@ -1424,6 +1455,7 @@ impl SpellTimerOwner {
     #[allow(clippy::too_many_arguments)]
     fn fire_due_impl<C>(
         &mut self,
+        max_events: usize,
         runtime: &mut ChannelRuntimeV1,
         clock: &impl OwnerClock,
         fence: Option<&ScopeRuntimeFence>,
@@ -1515,7 +1547,7 @@ impl SpellTimerOwner {
             .familiar_receipts
             .try_reserve(MAX_DUE_PER_CYCLE)
             .map_err(|_| Error::Allocation)?;
-        for event_index in 0..MAX_DUE_PER_CYCLE {
+        for event_index in 0..max_events {
             let Some(fired) = self.ready.front().copied() else {
                 break;
             };

@@ -116,6 +116,8 @@ oteryn-gameplay-characters = ["oteryn-gameplay-content","oteryn-gameplay-domain"
 oteryn-gameplay-content-promotion = ["oteryn-gameplay-content"]
 
 [dev_edges]
+# GPE2E-3 native device rotation/replay tests drive the production client session over TCP.
+oteryn-security-auth-tests = ["oteryn-client","oteryn-session","oteryn-session-tcp"]
 # NX-5 native play tests decode the authoritative item-effect wire codec.
 oteryn-client = ["oteryn-protocol-oteryn"]
 # C07 synthetic scenario drives the production native-client mailbox and projection.

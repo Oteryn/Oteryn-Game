@@ -922,6 +922,12 @@ async fn read_priority_case(
 ) -> TestResult {
     use crate::gameplay_transport::session_ingress::SessionCommandStream;
     for session in admitted {
+        let expected = crate::gameplay_transport::character_gameplay_fence::current(
+            owner, session.game_session_id, true,
+        ).await.ok_or("separate canonical fence reads")?;
+        let batched = owner.current_quest_fence_durable(session.game_session_id).await?
+            .ok_or("batched canonical fence")?;
+        assert_eq!(batched, expected, "batch preserves every current generation and revision");
         owner.trade_open(*session).await.ok_or("open trade owner")?;
     }
     let mut streams = [
@@ -1084,6 +1090,18 @@ async fn trade_command_handoff(
             Err(crate::durability::DurabilityError::RootUnavailable)
         ));
     }
+    crate::durability::DurabilityRoot::with_background_holder(async {
+        // Tick consumers use the ordinary journal/Character checkout, including
+        // spawned root work, rather than the explicit monster background API.
+        let _observation = root.foreground_demand()?;
+        let background = root.clone();
+        root.spawn_task(async move {
+            assert!(matches!(background.try_issue_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)));
+            Ok::<(), crate::durability::DurabilityError>(())
+        }).await.map_err(debug)??;
+        Ok::<(), Box<dyn std::error::Error>>(())
+    }).await?;
     let result = command.await?;
     root.try_issue_background_semantic_pass()?
         .run(|_, _| Box::pin(async { Ok(()) }))

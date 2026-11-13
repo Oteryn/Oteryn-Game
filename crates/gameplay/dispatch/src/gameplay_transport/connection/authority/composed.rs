@@ -5,6 +5,10 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn background_operation<F: Future>(&self, future: F) -> F::Output {
+        self.root.with_background_operation(future).await
+    }
+
     async fn client_bulletin(&self) -> Option<String> {
         self.states.bulletin_source.as_ref()?.load().await
     }
@@ -617,19 +621,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             item_view::ViewItem,
         )>,
     > {
-        // Named-House custody retains the Channel carrier's ExactActorRef.
-        // Select the reader from the actual resident, not that carrier namespace.
-        let in_house = self
-            .runtime
-            .lock()
+        self.root
+            .with_background_operation(async {
+                // Named-House custody retains the Channel carrier's ExactActorRef.
+                // Select the reader from the actual resident, not that carrier namespace.
+                let in_house = self
+                    .runtime
+                    .lock()
+                    .await
+                    .house_actor_state(actor, game_session_id)
+                    .is_ok();
+                if in_house {
+                    equipment_move::observe_house_character_equipment(self, actor, game_session_id)
+                        .await
+                } else {
+                    equipment_move::observe_character_equipment(self, game_session_id).await
+                }
+            })
             .await
-            .house_actor_state(actor, game_session_id)
-            .is_ok();
-        if in_house {
-            equipment_move::observe_house_character_equipment(self, actor, game_session_id).await
-        } else {
-            equipment_move::observe_character_equipment(self, game_session_id).await
-        }
     }
 
     async fn committed_equipment_move(

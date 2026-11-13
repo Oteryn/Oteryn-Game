@@ -992,24 +992,13 @@ configuration_negatives() { # exit before binding, no secret in output
   evidence "configuration group_writable=exit10 symlink=exit10 missing_key=exit10 over_maximum=exit10 secrets_in_output=0"
 }
 
-node_assigned_ready() { # §4.2–§4.4
-  local boot_started=$SECONDS
-  start_node
-  remember NODE_PID "$NODE_PID"
-  await_log awaiting_assignment 120
-  local node revision
-  node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
-  remember node_a "$node"
-  if ops assignment assign --request assign-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"; then
-    fail "assignment without an exact-scope grant"
-  fi
-  # #935: the node activates the scope's current native entry Content issuance before its
-  # Channel runtime exists. Issuance requires an exact-scope operation-4 grant.
-  local code=0
-  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
-  [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
+# Deployment administration: only the database owner writes these grant tables.
+node_deployment_grants() {
+  [[ "$(echo "SELECT current_user = pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()" | psql_admin oteryn_node_boot)" == t ]] || fail "deployment issuer is not the database owner"
+  local operations=1,2,3,4
+  [[ "${NODE_BOOT_LIFECYCLE:-}" != game_platform ]] || operations=1,4
   psql_admin oteryn_node_boot <<SQL
-INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
+INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM unnest(ARRAY[$operations]::smallint[]) op;
 INSERT INTO game_control_field_policy_grants VALUES ('nb_control', '$WORLD_ID', 'policy-s3b-1');
 SQL
   # Match the readiness revision with explicit control-owned non-PvP facts.
@@ -1019,9 +1008,42 @@ SQL
 INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
 VALUES ('$WORLD_ID', 'policy-s3b-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'node-boot-qualification');
 SQL
+  [[ "$(echo "SELECT has_table_privilege('nb_control','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE') OR has_table_privilege('nb_runtime','game_control_scope_grants','INSERT,UPDATE,DELETE,TRUNCATE')" | psql_admin oteryn_node_boot)" == f ]] || fail "Game role can issue control-scope grants"
+  [[ "$(echo "SELECT string_agg(operation::text, ',' ORDER BY operation) FROM game_control_scope_grants WHERE control_role='nb_control' AND world_id='$WORLD_ID' AND channel_id='$CHANNEL_ID'" | psql_admin oteryn_node_boot)" == "$operations" ]] || fail "deployment grant scope or operations mismatch"
+  evidence "flow=deployment_administration issuer=database_owner scope=seeded_world_channel operations=$operations game_roles_can_issue=0"
+}
+
+node_assigned_ready() { # §4.2–§4.4
+  local boot_started=$SECONDS
+  start_node
+  remember NODE_PID "$NODE_PID"
+  await_log awaiting_assignment 120
+  node_complete_assignment "$boot_started"
+}
+
+# Shared continuation: the lane keeps this node alive during ungranted proofs.
+node_complete_assignment() {
+  local boot_started=$1
+  local node revision
+  node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
+  remember node_a "$node"
+  local code=0
+  ops assignment assign --request assign-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" || code=$?
+  [[ $code == 6 ]] || fail "assignment without an exact-scope grant exit=$code"
+  # #935: the node activates the scope's current native entry Content issuance before its
+  # Channel runtime exists. Issuance requires an exact-scope operation-4 grant.
+  code=0
+  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
+  [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
+  node_deployment_grants
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
-  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  local -a report_args=()
+  if [[ "${NODE_BOOT_LIFECYCLE:-}" == game_platform ]]; then
+    report_args=(--report-config "$BASE/ops/assignment-report.toml" --node-config "$BASE/node/node.toml"
+      --node-identity "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["clients"]["runtime-status"]["san"])' "$WORK/portal-report.json")")
+  fi
+  ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" "${report_args[@]}"
   await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
   await_log "event=readiness .*ready=true" 60
   # The canonical manifest makes each validation substantial. Prove the same

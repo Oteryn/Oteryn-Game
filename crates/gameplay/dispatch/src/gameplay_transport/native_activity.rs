@@ -169,18 +169,35 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
     /// has gone. Only retained attempts are retried; no fresh identities or new
     /// semantic decisions are issued by the retry pass.
     pub(super) async fn drain_native_activity_attempts(&self) -> Result<(), ()> {
-        let attempts: Vec<_> = self
+        let mut attempts: Vec<_> = self
             .activity_runtimes
             .attempts
             .lock()
             .map_err(|_| ())?
-            .values()
-            .cloned()
+            .iter()
+            .map(|(key, pending)| (*key, Arc::clone(pending)))
             .collect();
+        attempts.sort_by_key(|(key, _)| {
+            (
+                *key.session.as_bytes(),
+                key.connection_generation,
+                key.command,
+            )
+        });
         let mut available = true;
-        for pending in attempts {
+        let start = self.background_start("activity-entries", attempts.len());
+        let count = attempts.len();
+        for index in (start..count).chain(0..start) {
+            let pending = Arc::clone(&attempts[index].1);
             let _transition = self.activity_runtimes.transitions.lock().await;
-            match self.finish_native_activity(pending).await {
+            match self
+                .background_unit(
+                    "activity-entries",
+                    index + 1,
+                    self.finish_native_activity(pending),
+                )
+                .await
+            {
                 Ok(NativeActivityOutcome::Committed(commit)) => {
                     self.publish_activity_commit(&commit)?
                 }
