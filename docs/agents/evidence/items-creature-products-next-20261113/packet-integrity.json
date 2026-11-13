@@ -1,0 +1,16 @@
+{
+  "files": {
+    "observations-135-247.json": {
+      "bytes": 149464,
+      "sha256": "fec73502d676d7c14ed19052efea5c54b2837c026442e2b243e46d19b9576820"
+    },
+    "gap-correction.json": {
+      "bytes": 1322,
+      "sha256": "03552afa3d8b6736a84cd465c5a786be941969298d1450b1792826b793bebba8"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 270646,
+      "sha256": "422eefec207da57ebc329f55e8bf77f56257424524b267ddaa83c887db8af4a0"
+    }
+  }
+}
