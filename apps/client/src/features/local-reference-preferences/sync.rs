@@ -49,6 +49,8 @@ pub struct SettingsState {
     last_key: std::collections::BTreeMap<oteryn_input_actions::KeyCode, std::time::Instant>,
 }
 
+#[path = "session_options.rs"]
+mod session_options;
 #[path = "settings_actions.rs"]
 mod settings_actions;
 

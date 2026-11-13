@@ -27,16 +27,22 @@ impl SettingsState {
         );
         let missing = !path.exists();
         let mut selected = Self::new(Some(path));
+        // Session choices remain under the original local base across actor namespaces.
+        selected.base_path = Some(base.clone());
+        selected.preferences.miscellaneous = self.preferences.miscellaneous;
         if character.is_some() && missing {
             match PreferenceStore::load(base.clone()) {
-                Ok(template) => selected.apply(template.preferences().clone()),
+                Ok(template) => {
+                    let mut inherited = template.preferences().clone();
+                    inherited.miscellaneous = self.preferences.miscellaneous;
+                    selected.apply(inherited);
+                }
                 Err(error) => {
                     selected.feedback =
                         format!("Character defaults loaded; could not read local template: {error}")
                 }
             }
         }
-        selected.preferences.miscellaneous = self.preferences.miscellaneous;
         self.help_report_pending = false;
         self.store = selected.store;
         self.preferences = selected.preferences;
