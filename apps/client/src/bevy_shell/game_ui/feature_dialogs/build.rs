@@ -1,4 +1,5 @@
 use super::*;
+use crate::bevy_shell::window_drag::DraggableDialog;
 use bevy::{
     asset::RenderAssetUsages,
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -19,6 +20,7 @@ pub(super) fn panel(
 ) -> (Entity, Option<Entity>) {
     let panel = commands
         .spawn((
+            DraggableDialog,
             TabGroup {
                 order: 4,
                 modal: true,

@@ -1,5 +1,6 @@
 //! Notifications retain the core expiry/preferences; death follows authoritative vitals.
 use super::*;
+use crate::bevy_shell::window_drag::DraggableDialog;
 use bevy::{input_focus::tab_navigation::TabGroup, ui_widgets::ScrollArea};
 use oteryn_client_ui_bevy as source;
 
@@ -89,6 +90,7 @@ fn overlay<C: Component>(commands: &mut Commands, z: i32, marker: C) -> Entity {
 fn notice_panel(commands: &mut Commands, skins: &Skins, overlay: Entity, title: &str) -> Entity {
     let panel = commands
         .spawn((
+            DraggableDialog,
             TabGroup {
                 order: 3,
                 modal: true,

@@ -1,4 +1,5 @@
 use super::*;
+use crate::bevy_shell::window_drag::DraggableDialog;
 use crate::play::feature_0287_actor_spell_catalog::view::SpellbookState;
 use bevy::{
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -26,6 +27,7 @@ pub(super) fn build(
 ) -> Widgets {
     let root = commands
         .spawn((
+            DraggableDialog,
             TabGroup {
                 order: 2,
                 modal: true,
