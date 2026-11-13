@@ -37,6 +37,11 @@
       "sha256": "e02ea19b89cc92b774e220d512e8292e59091754277878cee4de0853de817463"
     },
     {
+      "file": "all-visible-after-offline-batch6.csv",
+      "bytes": 304046,
+      "sha256": "48738c9676a5860af00b9307893f65aa4a190d728b286803e1dc7166e70d2bb7"
+    },
+    {
       "file": "all-visible-after-seven-potions.csv",
       "bytes": 325711,
       "sha256": "6e647a0368568f652c18ec7cc104bc0beb3178d045494a7805d1cc249c100e72"
@@ -162,9 +167,19 @@
       "sha256": "39f117aea2416ba4fa78b0ec57d153d34e6978d1fb899830369ce81b169753c2"
     },
     {
+      "file": "offline408-batch6.json",
+      "bytes": 506214,
+      "sha256": "a789225d67ab69a297f229a7b0f48712c916d2a03d3b8ded52380b36903ed1a1"
+    },
+    {
       "file": "physical-card-completeness.json",
       "bytes": 137505,
       "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"
+    },
+    {
+      "file": "remaining343-summary.json",
+      "bytes": 8628,
+      "sha256": "9885430ac2623c2fb6ac2f83d37b1ebb2a925b11593c34cebd5a5e555bf6ecf7"
     },
     {
       "file": "remaining410-summary.json",
@@ -240,6 +255,11 @@
       "file": "validate_batch5.py",
       "bytes": 5474,
       "sha256": "a76a915f7e73c8720b58aac7e9443168702f1a46d660a6435bb2115fff6952e5"
+    },
+    {
+      "file": "validate_batch6.py",
+      "bytes": 4135,
+      "sha256": "1f0ca4167d55edaadbbf133411092fca8d84be6185537545b6a3788bdfcaffbf"
     }
   ]
 }

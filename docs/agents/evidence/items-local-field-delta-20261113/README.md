@@ -11,7 +11,18 @@ Basic copy weighs12.00oz; it remains unbound to an appearance. No source assets,
 description text or raw screenshot bytes are published. The2907 ledger below is
 unchanged by this separate415-source-cohort inventory.
 
-**Latest result:2470 complete,410 partial,27 unreconciled =2907 scoped records.**
+**Latest result:2537 complete,343 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch6.json`, `all-visible-after-offline-batch6.csv` and
+`remaining343-summary.json` close67 saved panes whose parser primarily lacked
+alternative currency syntax. Every pane was independently natively read:7 trust
+points,1 Milk Chocolate Coin,2 explicit gp,21 Silver Token,4 Christmas Token,
+13 Event Points,6 Blood Cinder and13 Theons quotes. Quest labels match exact source
+UTF8 hashes; coin/token names corroborate same-client raw references without server
+identity admission. No token-to-gp conversion or raw-absence default. Gingerbread
+recipe quantity10 was enlarged/rechecked before publication.321 records have closed
+offline;87 literal-first,180 geometry and76 combined cases remain. No new GUI/capture.
+
+**Previous result:2470 complete,410 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch5.json`, `all-visible-after-offline-batch5.csv` and
 `remaining410-summary.json` close54 further records:32 saved native panes manually
 read and source checked, plus22 exact-control full panes (29 visible quotes), all22

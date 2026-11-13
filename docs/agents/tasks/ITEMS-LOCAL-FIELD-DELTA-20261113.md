@@ -71,6 +71,12 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued6866296521: sixth offline batch closes67 independently read
+native panes with explicit alternative units or two GP parse repairs. Exact quest
+label hashes and same-client currency-reference/name compatibility corroborate
+units; no server binding/defaultGP. Current2537/343/27;321 offline closures;
+87 literal-first+180 geometry+76 combined remain. No new GUI/capture.
+
 AUTHORING continued6866296521: fifth offline batch closes54 records (32 manual
 native/source,22 exact-control full panes also independently viewed). Current
 2470/410/27;254 offline closures;154 literal-first+180 geometry+76 combined remain.
