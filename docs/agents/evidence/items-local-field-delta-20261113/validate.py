@@ -91,6 +91,9 @@ def sources(root, a, q):
         if r[1] == 2354 or u["category_dictionary"][old[0]] == "Gold":
             closed = True
         assert (r[5] == 0) == closed
+    recovery = load(HERE,"npc1992-recovery.json")
+    for p in recovery["proofs"]:
+        assert p[3] in {u["proof_dictionary"][x[1]][1] for x in u["rows"][p[0]][7]}
 
 
 def reconcile(r):
@@ -170,9 +173,68 @@ def night_collection():
     assert s["UI_actions"] == s["runtime_changes"] == 0
 
 
+def check_npc_recovery(d):
+    states = {"RECOVERED_COMPLETE":0,"RECOVERED_PARTIAL":0,"UNRESOLVED":0}
+    assert len(d["rows"]) == len({r[0] for r in d["rows"]}) == 1992
+    for r in d["rows"]:
+        assert d["proofs"][r[4]][0] == r[0] and d["proofs"][r[4]][6]
+        panels = [d["panels"][r[5]],d["panels"][r[6]]]
+        for name,p in zip(["Sell To","Buy From"],panels):
+            controls = d["controls"][name]
+            if p[0] == "COMPLETE_OBSERVED_EMPTY":
+                assert p[3] in controls["empty_hashes"] and not p[1]
+            if p[0] == "COMPLETE_NONEMPTY_NO_OVERFLOW":
+                assert p[4] in controls["full_scrollbar_hashes"] and p[1]
+                assert not d["unresolved_reason_sets"][p[2]]
+            for qi,y in p[1]:
+                q = d["quote_facts"][qi]
+                assert q["panel"] == name and q["currency_literal"] == "gp" and q["native_gp_bitmap_proved"]
+                assert isinstance(q["price"],int) and q["price"] >= 0
+                if q["location_display"] == "Various Locations":
+                    assert q["native_Various_Locations_control_match"]
+        expected = "RECOVERED_COMPLETE" if all(p[0].startswith("COMPLETE_") for p in panels) else ("RECOVERED_PARTIAL" if any(p[1] or p[0] == "COMPLETE_OBSERVED_EMPTY" for p in panels) else "UNRESOLVED")
+        assert r[3] == expected
+        states[r[3]] += 1
+    assert states == {"RECOVERED_COMPLETE":1307,"RECOVERED_PARTIAL":678,"UNRESOLVED":7}
+    return states
+
+
+def npc_recovery(source_path=None):
+    d = load(HERE,"npc1992-recovery.json")
+    check_npc_recovery(d)
+    s = load(HERE,"npc1992-recovery-summary.json")
+    assert s["current_ALL_counts"] == {"COMPLETE":1647,"PARTIAL":1226,"UNRECONCILED":34,"total":2907}
+    assert s["qualified_visible_quote_occurrences"] == sum(len(p[1]) for p in d["panels"]) == 1120
+    for mutation in ["empty_pixels","overflow"]:
+        bad = copy.deepcopy(d)
+        if mutation == "empty_pixels":
+            next(p for p in bad["panels"] if p[0] == "COMPLETE_OBSERVED_EMPTY")[3] = "0"*64
+        else:
+            next(p for p in bad["panels"] if p[0] == "COMPLETE_NONEMPTY_NO_OVERFLOW")[4] = "0"*64
+        try:
+            check_npc_recovery(bad)
+        except AssertionError:
+            pass
+        else:
+            raise AssertionError("NPC proof negative control accepted: "+mutation)
+    if source_path:
+        b = source_path.read_bytes()
+        assert hashlib.sha256(b).hexdigest() == d["raw_fact_source"]["sha256"]
+        raw = json.loads(b)
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        norm = lambda s:"".join(c for c in s.lower() if c.isalnum())
+        for q in d["quote_facts"]:
+            i = q["paired_raw_example_index0"]
+            assert cols[5][i] == q["NPC_name"]
+            assert cols[7 if q["panel"] == "Buy From" else 8][i] == q["price"]
+            if not q["native_Various_Locations_control_match"]:
+                assert norm(cols[6][i]) == norm(q["location_display"])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
+    ap.add_argument("--npc-source", type=Path)
     args = ap.parse_args()
     for r in load(HERE, "publication-members.json")["members"]:
         b = (HERE / r["file"]).read_bytes()
@@ -185,6 +247,7 @@ def main():
     reconcile(rec)
     completeness()
     night_collection()
+    npc_recovery(args.npc_source)
     stale = copy.deepcopy(rec)
     stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
     try:
@@ -208,7 +271,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types,1288 market-absent;2623 UI+314 legacy;2 profile deltas;89 saved proofs;4 negative controls"
+    print("PASS:6470 appearances/6228 types;1992 NPC recovery1307/678/7;ALL1647/1226/34;1120 quotes;6 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

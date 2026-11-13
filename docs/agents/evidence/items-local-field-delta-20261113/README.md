@@ -1,6 +1,34 @@
 # All-category local item field delta
 
-**Current owner question: ALL static data shown by Cyclopedia item cards.**
+**Latest:1992 saved NPC-pane records recovered from the now-online laptop.**
+Current ALL-visible count: **1647 complete,1226 partial,34 unreconciled =2907
+retained scoped observation records**. This remains an observation-record
+population, not6470 globally unique appearances or6228 complete item types.
+See `npc1992-recovery-summary.json` and `current-all-visible-items.csv`.
+
+All1992 original Basic PNG hashes match their exact existing public scoped
+card proof sets. The batch recovers1307 complete cards,678 partial and7
+unresolved; it is disjoint from the prior340 complete records.796 cards have
+both NPC panes exactly equal to calibrated native empty controls. Another511
+have qualified nonempty quotes and no-overflow scrollbar controls.1120 visible
+quote occurrences are retained; overflow and unsupported text/currency stay held.
+
+The nonempty qualification combines native gp bitmap proof, exact paired raw
+literal corroboration and native geometry.214 manually reviewed gp quotes
+corroborate the direction mapping: BuyFrom→rawsale_price, SellTo→rawbuy_price.
+Raw zero never supplies an empty-pane conclusion. The literal UI display
+Various Locations and common Yasir OCR corrections require native bitmap
+controls; all raw towns remain in the pinned source export. No town is chosen
+as a substitute and no canonical item identity is inferred. Reason occurrence
+counts overlap and must not be added as disjoint item totals.
+
+`npc1992-recovery.json/.csv` contains each recovered card, panel, ordered quote
+and exact remaining reason. `npc1992-source-receipts.json` records source/transfer
+custody; original images/crops/OCR intermediates remain private. The temporary
+transfer used the existing authenticated, source-IP-restricted TLS route with
+two derived files and300-second expiry. No game input, new screenshot or login.
+
+**Historical overnight snapshot before the1992 recovery:**
 The overnight reconciliation gives **340 complete,2540 partial and27
 unreconciled records =2907** after proven capture-source merges. This is not
 2907 globally unique items or a subtraction from6228 types. The older701/1931

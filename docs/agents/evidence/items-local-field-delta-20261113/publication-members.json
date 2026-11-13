@@ -77,6 +77,21 @@
       "sha256": "9f051f0fc7502d2c1490861bae3062d1daec7e656bcbb9d42cf3d2fad5b2ff93"
     },
     {
+      "file": "npc1992-recovery-summary.json",
+      "bytes": 3261,
+      "sha256": "f90c4c8497a919afc9ea2cd36f9a7c83eb5c8ff354fad6a80086ddcf7cb5420e"
+    },
+    {
+      "file": "npc1992-recovery.json",
+      "bytes": 1967952,
+      "sha256": "f8f43ef2fe2d856f48e2357e559b20b9b13de1a28c784405815f93c211628a68"
+    },
+    {
+      "file": "npc1992-source-receipts.json",
+      "bytes": 2613,
+      "sha256": "2a2d538f8ff4df1ee2f4510ed0237e8806c52010eba225236f15f9f8a2ca7832"
+    },
+    {
       "file": "physical-card-completeness.json",
       "bytes": 137505,
       "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"

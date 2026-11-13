@@ -70,6 +70,14 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued under allocation6864189998 from faf65853bd. Laptop freshly
+ONLINE; actual1992 original Basic PNGs read and hashes matched to public scoped
+proofs. NPC recovery1307complete/678partial/7unresolved; resulting ALL-visible
+1647/1226/34=2907 observation records.1120 quote occurrences preserved. Native
+empty/gp/Various Locations/Yasir and scrollbar controls plus paired raw literals;
+no OCR-only promotion, zero-to-absence inference, game input or new capture.
+Historical offline/340 snapshots remain labeled historical, not current state.
+
 AUTHORING scope corrected by allocation6863611510: reconcile actual overnight
 collections, not Basic bookkeeping. Current ALL-visible collection result:
 340 complete+2540 partial+27 unreconciled=2907 retained scoped records.
