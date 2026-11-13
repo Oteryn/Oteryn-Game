@@ -32,12 +32,26 @@ fn fixture() -> TestResult<(Callback, QuestStateCatalogue)> {
     let source: serde_json::Value = serde_json::from_str(include_str!(
         "../../../../../../content/quests/world-change-journals.json"
     ))?;
-    let p = source["programs"]
+    let mut p = source["programs"]
         .as_array()
         .ok_or("programmes")?
         .iter()
         .find(|p| p["key"] == "lumberjack")
-        .ok_or("lumberjack")?;
+        .ok_or("lumberjack")?
+        .clone();
+    // This case proves the generic exchange engine, not an unavailable donor mission.
+    // Keep the production availability policy intact and use an isolated fixture identity.
+    let engine_quest = "oteryn:quest.fixture.guarded_wood_exchange";
+    assert!(
+        oteryn_gameplay_quests::quest::authored_bindings::personal_event_profile(engine_quest)
+            .is_none()
+    );
+    p["quest"] = engine_quest.into();
+    for group in ["world_callbacks", "npc_callbacks"] {
+        for callback in p[group].as_array_mut().ok_or("fixture callbacks")? {
+            callback["quest"] = engine_quest.into();
+        }
+    }
     let entry = p["world_callbacks"][0].clone();
     let work = p["npc_callbacks"][0].clone();
     let mut barter = work.clone();

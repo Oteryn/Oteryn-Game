@@ -1165,6 +1165,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && intent.use_with_position.is_none()
+        {
+            return self
+                .use_carried_item_disguise(actor, command, &intent, source)
+                .await;
+        }
         let corpse = match target {
             Some(item_view::ItemKey::Instance(id)) if intent.use_with_map_item.is_some() => {
                 Some(id)
@@ -1226,6 +1234,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Some(outcome) = self
             .use_reward_bag_intent(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(outcome));
+        }
+        if let Some(outcome) = self
+            .use_carried_item_disguise(actor, command, &intent, source)
             .await?
         {
             return Ok(Some(outcome));

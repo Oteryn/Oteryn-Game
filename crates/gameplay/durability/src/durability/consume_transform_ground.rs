@@ -33,6 +33,7 @@ impl GroundActionSource {
         crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
             item: self.item,
             ground: crate::durability::spell_items_abi::SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: self.target.spatial_position.clone(),
                 map_revision: self.target.map_revision.clone(),
                 content_revision: self.target.content_revision.clone(),

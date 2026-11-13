@@ -84,6 +84,28 @@ fn accepts_source_overlay(
             .is_some_and(|source| source.accepts_ability(ability))
 }
 
+#[cfg(test)]
+pub(super) fn native_owner_turn(
+    room: &QualifiedNativeEntryRoom,
+    phase: &'static str,
+    class: &'static str,
+) {
+    use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+    if matches!(
+        room.pinned_activity_source_room(),
+        Some(PinnedActivitySourceRoom::Primal | PinnedActivitySourceRoom::Bakragore)
+    ) {
+        let line = oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Info,
+            "gameplay_transport",
+            "native_owner_turn",
+        )
+        .field("phase", oteryn_error_codes::FieldValue::Token(phase))
+        .field("class", oteryn_error_codes::FieldValue::Token(class));
+        oteryn_error_codes::emit("oteryn-game-server", &line);
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn drive_monster_profiles(
@@ -102,10 +124,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
+        #[cfg(test)]
+        native_owner_turn(room, "profile_start", "entered");
         let execution_now = now;
         let native_pending = states.native_profile_pass.pending();
         let primal_pending = states.primal_callbacks.normal_pending();
-        let _ = states.native_profile_pass.next_due(runtime)?;
+        let _ = states
+            .native_profile_pass
+            .next_due(runtime)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                native_owner_turn(room, "profile_start", "pending_due_refused");
+            })?;
         let now = native_pending.as_ref().map_or_else(
             || {
                 primal_pending
@@ -115,32 +145,95 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             |pending| pending.batch().observed_at_us(),
         );
         if now > execution_now {
+            #[cfg(test)]
+            native_owner_turn(room, "profile_time", "future_original");
             return Err(());
         }
         if primal_pending
             .as_ref()
             .is_some_and(|pending| !pending.source_ready() || !pending.batch().current_for(runtime))
         {
+            #[cfg(test)]
+            native_owner_turn(room, "profile_start", "primal_pending_refused");
             return Err(());
         }
         runtime
             .note_rotten_movement_time(execution_now)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                native_owner_turn(room, "profile_time", "movement_monotonic");
+            })
             .map_err(|_| ())?;
-        let resume_profile =
-            self.source_profile_pass_can_resume(runtime, states, native, execution_now)?;
-        let has_due_source = super::source_death::next_source_work(runtime, states, native)?
+        let resume_profile = self
+            .source_profile_pass_can_resume(runtime, states, native, execution_now)
+            .inspect(|_resume| {
+                #[cfg(test)]
+                native_owner_turn(
+                    room,
+                    "profile_source",
+                    if *_resume { "resume" } else { "fresh" },
+                );
+            })
+            .inspect_err(|_| {
+                #[cfg(test)]
+                native_owner_turn(room, "profile_source", "resume_refused");
+            })?;
+        let has_due_source = super::source_death::next_source_work(runtime, states, native)
+            .inspect(|_work| {
+                #[cfg(test)]
+                native_owner_turn(
+                    room,
+                    "profile_source",
+                    if _work.is_some() {
+                        "work_present"
+                    } else {
+                        "work_absent"
+                    },
+                );
+            })
+            .inspect_err(|_| {
+                #[cfg(test)]
+                native_owner_turn(room, "profile_source", "work_refused");
+            })?
             .is_some_and(|(_, due)| due <= execution_now);
         if native_pending.is_none()
-            && self.source_death_can_begin_without_timer_read(runtime, states, execution_now)?
+            && self
+                .source_death_can_begin_without_timer_read(runtime, states, execution_now)
+                .inspect(|_selected| {
+                    #[cfg(test)]
+                    native_owner_turn(
+                        room,
+                        "profile_source",
+                        if *_selected {
+                            "death_selected"
+                        } else {
+                            "death_absent"
+                        },
+                    );
+                })
+                .inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_source", "death_selection_refused");
+                })?
         {
-            return if self.prepare_source_death_head(
-                runtime,
-                states,
-                attack,
-                room,
-                native,
-                execution_now,
-            )? {
+            return if self
+                .prepare_source_death_head(runtime, states, attack, room, native, execution_now)
+                .inspect(|_prepared| {
+                    #[cfg(test)]
+                    native_owner_turn(
+                        room,
+                        "profile_source",
+                        if *_prepared {
+                            "death_prepared"
+                        } else {
+                            "death_retained"
+                        },
+                    );
+                })
+                .inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_source", "death_prepare_refused");
+                })? {
                 Ok((Some(execution_now), Vec::new(), false))
             } else {
                 // The outer native loop drops its guards before executing the
@@ -153,7 +246,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pass = self
             .root
             .try_issue_background_semantic_pass()
+            .inspect_err(|_| {
+                #[cfg(test)]
+                native_owner_turn(room, "profile_checkout", "refused");
+            })
             .map_err(|_| ())?;
+        #[cfg(test)]
+        native_owner_turn(room, "profile_checkout", "acquired");
         let (next_due, proposals, native_actors, ran_profile) = {
             let mut context = (
                 self,
@@ -173,7 +272,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates, primal_pending, native_pending, native_health_names) =
                     context;
-                let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
+                let mut tx = begin_spell_owner_transaction(holder, deadline).await.inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_transaction", "begin_refused");
+                })?;
                 let binding = runtime.binding();
                 let scope = binding.runtime_scope();
                 let authority = assert_spell_item_scope_in_transaction(
@@ -186,6 +288,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     binding.scope_generation().get(),
                 )
                 .await
+                .inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_transaction", "scope_refused");
+                })
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 // Deferred source tasks precede fresh movement/thinks. Read the
                 // same current party basis only when their retained older casts
@@ -206,16 +312,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && states.rotten_waves.observe_source_attempt(runtime);
                 let wave_taints = if wave_enabled && wave_boss_present {
                     let sessions = runtime.positioned_actor_census()
+                        .inspect_err(|_| {
+                            #[cfg(test)]
+                            native_owner_turn(room, "profile_transaction", "census_refused");
+                        })
                         .map_err(|_| crate::durability::DurabilityError::Unavailable)?
                         .into_iter().filter_map(|(_, _, session)| session).collect::<Vec<_>>();
                     crate::durability::quest_state::rotten_blood::room_taints::read_in_transaction(
                         &mut tx, &authority, owner.holder, &sessions, native.source_digest(),
-                    ).await.map_err(|_| crate::durability::DurabilityError::Unavailable)?
+                    ).await.inspect_err(|_| {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_transaction", "taints_refused");
+                    }).map_err(|_| crate::durability::DurabilityError::Unavailable)?
                 } else { Vec::new() };
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 map.bind_source_ground_steps(Arc::clone(&states.spite_steps.creatures), owner.reset_epoch)
+                    .inspect_err(|_| {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_transaction", "ground_bind_refused");
+                    })
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 // An older real timer also precedes the first movement of a
                 // fresh turn. No invented Think reservation is needed to drain it.
@@ -223,25 +340,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || native_pending.is_some() || states.spite_steps.creatures.is_pending()) {
                     let complete = owner.drive_one_source_creature_death(runtime, states, attack,
                         room, native, &mut map, &source_parties, execution_now, native_health_names).await
+                        .inspect_err(|_| {
+                            #[cfg(test)]
+                            native_owner_turn(room, "profile_source", "work_drive_refused");
+                        })
                         .map_err(|()|crate::durability::DurabilityError::Unavailable)?;
                     if !complete || !map.validate_transaction(runtime).await {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_source", if complete { "work_map_refused" } else { "work_unfinished" });
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
                     drop(map);
-                    tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    tx.rollback().await.inspect_err(|_| {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_transaction", "work_rollback_refused");
+                    }).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
                     // Immediate continuation names actual remaining source/AI
                     // work; it does not replace a source timer deadline.
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_source", "work_completed");
                     return Ok((Some(now), Vec::new(), Vec::new(), false));
                 }
                 if states.spite_steps.creatures.is_pending() {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_guard", "spite_pending");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 // A raw STEP must not hide an older selected timer. Check it
                 // only after the due-only branch, immediately before Think.
                 // Later movement still waits behind this retained original pass.
                 if runtime.pending_rotten_movement(1)
+                    .inspect_err(|_| {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_guard", "movement_read_refused");
+                    })
                     .map_err(|_|crate::durability::DurabilityError::Unavailable)?
                     .first().is_some_and(|event| native_pending.is_none() || event.observed_us() <= now) {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_guard", "movement_before_think");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 let root = GameplayDecisionRoot::from_bytes(native.source_digest());
@@ -276,6 +412,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .await;
                 if states.spite_steps.creatures.is_pending() {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_guard", "spite_after_movement");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 attack.drain_chase_searches(
@@ -286,6 +424,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
                 let player_waiting_now = attack.players_waiting(now);
                 if runtime.rotten_movement_pending() {
+                    #[cfg(test)]
+                    native_owner_turn(room, "profile_guard", "movement_pending");
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
                 if player_waiting && !player_waiting_now {
@@ -304,6 +444,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await;
                     if states.spite_steps.creatures.is_pending() {
+                        #[cfg(test)]
+                        native_owner_turn(room, "profile_guard", "spite_after_chase");
                         return Err(crate::durability::DurabilityError::Unavailable);
                     }
                 }
@@ -313,26 +455,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Reserve the existing bounded occurrences, release the table borrow,
                 // then re-read physical type/HP before their native schedules run.
                 let pending = match native_pending.as_ref() {
-                    Some(pending) => Arc::clone(pending),
+                    Some(pending) => {
+                        #[cfg(test)]
+                        native_owner_turn(room, "native_reservation", "retained");
+                        Arc::clone(pending)
+                    },
                     None => {
                         let batch = match primal_pending.as_ref() {
-                            Some(pending) => pending.shared_batch(),
-                            None => Arc::new(table.reserve_current_thinks(runtime,now)
-                                .ok_or(crate::durability::DurabilityError::Unavailable)?),
+                            Some(pending) => {
+                                #[cfg(test)]
+                                native_owner_turn(room, "native_reservation", "retained");
+                                pending.shared_batch()
+                            },
+                            None => {
+                                #[cfg(test)]
+                                native_owner_turn(room, "native_reservation", "begin");
+                                Arc::new(table.reserve_current_thinks(runtime,now)
+                                    .inspect(|_batch| {
+                                        #[cfg(test)]
+                                        native_owner_turn(room, "native_reservation", if _batch.occurrences().is_empty() { "empty" } else { "nonempty" });
+                                    })
+                                    .ok_or(crate::durability::DurabilityError::Unavailable)
+                                    .inspect_err(|_| {
+                                        #[cfg(test)]
+                                        native_owner_turn(room, "native_reservation", "refused");
+                                    })?)
+                            },
                         };
                         // Retain the SAME bounded reservation before the first
                         // source/Map await; AI reports will append synchronously.
                         states.native_profile_pass.prepare(batch)
+                            .inspect_err(|_| {
+                                #[cfg(test)]
+                                native_owner_turn(room, "native_reservation", "retain_refused");
+                            })
                             .map_err(|_|crate::durability::DurabilityError::Unavailable)?
                     }
                 };
                 map.link_source_ground_steps_to_pass(&pending)
+                    .inspect_err(|_| {
+                        #[cfg(test)]
+                        native_owner_turn(room, "native_reservation", "link_refused");
+                    })
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let batch = pending.batch();
                 if !pending.source_known() {
                 if let Some(claim) = super::rotten_blood_callbacks::prepare_bak_first_think(
                     runtime, states, room, native, batch.occurrences(), now,
-                ).map_err(|()|crate::durability::DurabilityError::Unavailable)? {
+                ).inspect(|_claim| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "bak_prepare", if _claim.is_some() { "claim" } else { "none" });
+                }).inspect_err(|_| {
+                    #[cfg(test)]
+                    native_owner_turn(room, "bak_prepare", "refused");
+                }).map_err(|()|crate::durability::DurabilityError::Unavailable)? {
                     // Decide the source GLOBAL phase in this exact first-think
                     // transaction. Commit it BEFORE any HP/AI source consumer;
                     // the retained original occurrence resumes after publication.
@@ -597,6 +773,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
         })
         .await
+        .inspect_err(|_| {
+            #[cfg(test)]
+            native_owner_turn(room, "profile_transaction", "pass_refused");
+        })
         .map_err(|_| ())?
         };
         // A due-only turn can finish while an older cancelled pass already owns

@@ -31,10 +31,16 @@ pub(super) fn accepts(callback: &RewardCallback, intent: &UseIntent) -> bool {
 /// Receipt-first probe for carried quest subjects at the connection ingress.
 pub(crate) fn probes(intent: &UseIntent) -> bool {
     intent.use_with_position.is_none()
-        && matches!(
+        && (matches!(
             (intent.use_with.is_some(), intent.use_with_map_item.as_ref()),
             (true, None) | (false, Some(MapUseTarget::Item(_)))
-        )
+        ) || (intent.use_with.is_none()
+            && intent.use_with_map_item.is_none()
+            && matches!(
+                intent.target,
+                oteryn_protocol_oteryn::world_object::UseTarget::Item(_)
+                    | oteryn_protocol_oteryn::world_object::UseTarget::ItemByDefinition(_)
+            )))
 }
 
 #[cfg(test)]
@@ -165,8 +171,8 @@ mod tests {
         assert!(probes(&intent));
         intent.use_with_map_item = None;
         assert!(
-            !probes(&intent),
-            "ordinary self-use keeps its existing owner"
+            probes(&intent),
+            "ordinary self-use reaches only the registered disguise entry"
         );
     }
 }

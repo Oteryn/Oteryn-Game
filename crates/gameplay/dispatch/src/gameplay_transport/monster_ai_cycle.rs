@@ -21,20 +21,55 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+struct NativeAiLastPhase<'a> {
+    room: Option<&'a QualifiedNativeEntryRoom>,
+    phase: std::cell::Cell<&'static str>,
+}
+#[cfg(test)]
+impl NativeAiLastPhase<'_> {
+    fn set(&self, phase: &'static str) {
+        self.phase.set(phase);
+    }
+}
+#[cfg(test)]
+impl Drop for NativeAiLastPhase<'_> {
+    fn drop(&mut self) {
+        if let Some(room) = self.room {
+            super::monster_profile_cycle::native_owner_turn(room, self.phase.get(), "return");
+        }
+    }
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
+        #[cfg(test)]
+        let trace = NativeAiLastPhase {
+            room: self.rooms().gate_monster_ai(),
+            phase: std::cell::Cell::new("ai_cloak"),
+        };
         if !self.drain_cloak_blood_events().await {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_arena");
         self.drain_arena_matches(self.owner_now().get()).await;
+        #[cfg(test)]
+        trace.set("ai_bak_claims");
         self.drain_bak_first_think_claims().await;
+        #[cfg(test)]
+        trace.set("ai_permit");
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
+        #[cfg(test)]
+        trace.set("ai_inner");
         self.drain_monster_melee_with_permit(permit, self.owner_now())
             .await;
+        #[cfg(test)]
+        trace.set("ai_complete");
     }
 
     #[cfg(test)]
@@ -42,15 +77,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        #[cfg(test)]
+        let trace = NativeAiLastPhase {
+            room: self.rooms().gate_monster_ai(),
+            phase: std::cell::Cell::new("ai_cloak"),
+        };
         if !self.drain_cloak_blood_events().await {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_arena");
         self.drain_arena_matches(now.get()).await;
+        #[cfg(test)]
+        trace.set("ai_bak_claims");
         self.drain_bak_first_think_claims().await;
+        #[cfg(test)]
+        trace.set("ai_permit");
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
+        #[cfg(test)]
+        trace.set("ai_inner");
         self.drain_monster_melee_with_permit(permit, now).await;
+        #[cfg(test)]
+        trace.set("ai_complete");
     }
 
     async fn drain_monster_melee_with_permit(
@@ -58,17 +108,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: crate::durability::spell_owner_commit::SpellLanePermit,
         now: oteryn_simulation_determinism::SemanticTimeMicros,
     ) {
+        #[cfg(test)]
+        let trace = NativeAiLastPhase {
+            room: self.rooms().gate_monster_ai(),
+            phase: std::cell::Cell::new("ai_cloak"),
+        };
+        #[cfg(test)]
+        trace.set("ai_retained_uses");
         if self.drain_retained_soul_war_uses(&permit).await.is_err() {
             return;
         }
         // Another owner turn may have retained a health callback between the
         // map-bootstrap preflight and acquisition of this physical lane.
+        #[cfg(test)]
+        trace.set("ai_cloak_permit");
         if !self.drain_cloak_blood_with_permit(&permit).await {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_uncredited");
         if self.drain_uncredited_source_corpse(&permit).await {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_step_due");
         match self
             .drain_selected_creature_source_step(&permit, now.get())
             .await
@@ -76,6 +139,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) | Err(()) => return,
             Ok(false) => {}
         }
+        #[cfg(test)]
+        trace.set("ai_spite_due");
         if !self
             .drive_spite_global_due(&permit, now.get())
             .await
@@ -83,11 +148,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_item_expiry");
         if !self.drain_w01_death_item_expiry(&permit, now.get()).await {
             return;
         }
         self.activity_runtimes
             .gc_rotten_area_caches(*self.world_id.as_bytes(), now.get());
+        #[cfg(test)]
+        trace.set("ai_malice_due");
         match self
             .drain_detached_malice_before_source_death(&permit, now.get())
             .await
@@ -102,6 +171,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) | Err(()) => return,
             Ok(false) => {}
         }
+        #[cfg(test)]
+        trace.set("ai_primal_core");
         // Snapshot the real core prefix before native owners. While present,
         // only its detached retained Primal work runs; no fresh Think/expiry sweep.
         if self.rooms().gate_monster_ai().is_some_and(|room| {
@@ -120,6 +191,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(Some((_, _, None))) | Err(()) => return,
             }
         }
+        #[cfg(test)]
+        trace.set("ai_primal_prefix");
         let primal_source_pending = self
             .states
             .spell_states
@@ -131,6 +204,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if primal_source_pending && self.finish_primal_normal_source(&permit).await.is_err() {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_primal_due");
         match self
             .drain_selected_primal_source_work(&permit, now.get())
             .await
@@ -138,10 +213,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(true) | Err(()) => return,
             Ok(false) => {}
         }
+        #[cfg(test)]
+        trace.set("ai_health_names");
         let health_names = match self.read_native_health_names(&permit).await {
             Ok(names) => names,
             Err(()) => return,
         };
+        #[cfg(test)]
+        trace.set("ai_content");
         let Some(content) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -150,6 +229,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         // Qualification binds these immutable cells to the compiled artifact.
         // Compare that retained generation without bulk hashing under the runtime lock.
+        #[cfg(test)]
+        trace.set("ai_arbiter");
         let mut runtime = self.runtime.lock().await;
         let (retained_work, source_due) = {
             let Ok(states) = self.states.spell_states.try_lock() else {
@@ -176,11 +257,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // BUNDLE-MONSTER-AI-1: the pass reads the combat room, the entry room on the fixture
         // World and its bundle view (bundle cells and map revision) on a bundle World.
+        #[cfg(test)]
+        trace.set("ai_room");
         let Some(room) = self.rooms().gate_monster_ai() else {
             return;
         };
         // Qualification binds these immutable cells to the compiled artifact.
         // Compare that retained generation without bulk hashing under the runtime lock.
+        #[cfg(test)]
+        trace.set("ai_fences");
         if runtime.owner_fence().is_err()
             || content.source_digest() != runtime.content_pin().server_artifact_digest()
             || room.movement_cells().scope().generation_digest
@@ -188,10 +273,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_health_seal");
         let native_health_names = match self.seal_native_health_names(&runtime, health_names) {
             Ok(observations) => observations,
             Err(()) => return,
         };
+        #[cfg(test)]
+        trace.set("ai_states");
         let Ok(mut states) = self.states.spell_states.try_lock() else {
             return;
         };
@@ -208,12 +297,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
 
+        #[cfg(test)]
+        trace.set("ai_prepared_death");
         if states.source_death_action_ready {
             drop(states);
             drop(runtime);
             self.finish_prepared_source_death_action(&permit).await;
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_rotten");
         if states.rotten_area.pending()
             && (!retained_work
                 || self
@@ -233,6 +326,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             super::primal_menace::tick(self, &mut runtime, room, content, now.get() / 1_000);
         }
+        #[cfg(test)]
+        trace.set("ai_periodic_due");
         let periodic_pass = !retained_work && now.get() >= states.next_monster_ai_pass_us;
         if periodic_pass {
             super::encounter_phases::tick(&mut runtime, &states);
@@ -254,6 +349,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_clock_sequence");
         let (due, sequence) = if periodic_pass {
             let Some(due) = now
                 .get()
@@ -275,6 +372,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // admits, forgets and wakes creatures. A pass between them only runs thinks left due by
         // `CREATUREAI0-RL-05`, against the last swing pass's players at their current positions,
         // so a think backlog costs each window its thinks, not a census of every actor.
+        #[cfg(test)]
+        trace.set("ai_census");
         let swing_pass = periodic_pass && now.get() >= states.monster_melee.next_swing_pass_us;
         let census = if swing_pass {
             let Ok(census) = runtime.positioned_melee_census() else {
@@ -285,12 +384,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             think_player_census(&runtime, &states.monster_melee.think_players)
         };
         // ATTACK-1b: lock order runtime, spell states, attack.
+        #[cfg(test)]
+        trace.set("ai_attack");
         let Ok(mut attack) = self.states.attack.try_lock() else {
             return;
         };
         let semantic_now =
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get());
         let targets = melee_targets(room, &runtime, &states, &attack, &census, now.get());
+        #[cfg(test)]
+        trace.set("ai_monsters");
         let monsters = census
             .iter()
             .filter(|(_, _, session)| session.is_none())
@@ -386,6 +489,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Crystal monster.cpp searchTarget reads current player health. The admitted content
         // describes the strategy; the held player-state owner supplies its live input.
         let candidates = think_candidates(&runtime, &states, &targets);
+        #[cfg(test)]
+        trace.set("ai_profile_gate");
         let (next_think, thought_actors, ran_profile) = if periodic_pass
             || source_due
             || states.primal_callbacks.has_native_due(now.get())
@@ -397,6 +502,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || states.rotten_area.pending()
             || runtime.has_pending_source_creature_deaths()
         {
+            #[cfg(test)]
+            trace.set("ai_profile_call");
             match self
                 .drive_monster_profiles(
                     &mut runtime,
@@ -442,6 +549,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         }
+        #[cfg(test)]
+        trace.set("ai_rotten");
         if states.rotten_area.pending()
             && self
                 .source_profile_pass_can_resume(&runtime, &states, content, now.get())
@@ -888,7 +997,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(states);
         drop(runtime);
         drop(permit);
+        #[cfg(test)]
+        trace.set("ai_save");
         self.save_trained_levels(trained).await;
+        #[cfg(test)]
+        trace.set("ai_complete");
     }
 }
 

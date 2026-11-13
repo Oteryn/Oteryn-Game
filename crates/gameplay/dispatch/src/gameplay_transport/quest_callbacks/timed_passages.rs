@@ -5,6 +5,115 @@ use crate::map::{
     view::EntryFacts,
 };
 
+// Crystal 201189f8 actions_lions_rock.lua:13-79 handles an already-lit
+// pagoda without consuming its offering or advancing personal state.
+fn lion_busy_source(callback: &Callback) -> Option<Position> {
+    let (source, ordinal, appearance, pagoda, item) = match callback.key.as_str() {
+        "oteryn:quest-callback/m07/lion-strength" => (
+            (33137, 32291),
+            1,
+            21390,
+            (33134, 32289),
+            "oteryn:item.tibia.i9634",
+        ),
+        "oteryn:quest-callback/m07/lion-beauty" => (
+            (33138, 32369),
+            3,
+            2110,
+            (33136, 32369),
+            "oteryn:item.tibia.i21389",
+        ),
+        "oteryn:quest-callback/m07/lion-tears" => (
+            (33154, 32279),
+            2,
+            21391,
+            (33156, 32279),
+            "oteryn:item.tibia.i21466",
+        ),
+        _ => return None,
+    };
+    let source = Position {
+        x: source.0,
+        y: source.1,
+        floor: -8,
+    };
+    let pagoda = Position {
+        x: pagoda.0,
+        y: pagoda.1,
+        floor: -8,
+    };
+    let [requirement] = callback.world_requirements.as_slice() else {
+        return None;
+    };
+    let [passage] = callback.passages.as_slice() else {
+        return None;
+    };
+    let tool = callback.item_on_target.as_ref()?;
+    let native = callback.selector.native.as_ref()?;
+    (callback.trigger == Trigger::Use
+        && callback.actor_kind == world_callbacks::ActorKind::Player
+        && callback.requires_world_admission
+        && callback.lever.is_none()
+        && !callback.reversible
+        && callback.selector.position == Some(source)
+        && callback.selector.appearance == Some(appearance)
+        && callback.selector.unique.is_none()
+        && callback.selector.action.is_none()
+        && native.position == source
+        && native.ordinal == ordinal
+        && native.appearance == appearance
+        && requirement.position == pagoda
+        && requirement.appearance == 2074
+        && requirement.ground.is_none()
+        && requirement.ground_stack.is_none()
+        && passage.position == pagoda
+        && passage.appearance == 2074
+        && passage.replacement == Some(2075)
+        && !passage.if_present
+        && passage.replacement_passable.is_none()
+        && passage.create_on_close.is_none()
+        && !passage.require_state
+        && callback.effects.passages_reset_after_ms == Some(15_000)
+        && tool.item == item
+        && tool.count == 1
+        && tool.alternatives.is_empty()
+        && tool.replacement.is_none()
+        && tool.target_replacement.is_none()
+        && !tool.target_remove
+        && !tool.reusable
+        && !tool.on_step
+        && !tool.selected_instance
+        && tool.ingredients.is_empty())
+    .then_some(pagoda)
+}
+
+/// Prove the one exact source-supported busy variant. Unknown/missing/hidden,
+/// House or pickupable remote entries never authorize this no-effect result.
+pub(super) fn lion_is_busy(map: &BundleMap, callback: &Callback) -> bool {
+    let Some(position) = lion_busy_source(callback) else {
+        return false;
+    };
+    let position = tile(position);
+    let Some(key) = placement_key(position, 1) else {
+        return false;
+    };
+    !map.facts.house_tile(position)
+        && !map.facts.base_hidden(key)
+        && map
+            .overlay
+            .base()
+            .tile(position.x, position.y, position.floor)
+            .and_then(|base| {
+                base.ids()
+                    .iter()
+                    .zip(base.depths())
+                    .filter(|(_, depth)| **depth == 0)
+                    .nth(1)
+                    .and_then(|(id, _)| map.facts.base_entry(position, 1, *id))
+            })
+            .is_some_and(|entry| !entry.pickupable && entry.appearance_id == 2075)
+}
+
 pub(super) fn prepare(
     map: &BundleMap,
     callback: &Callback,

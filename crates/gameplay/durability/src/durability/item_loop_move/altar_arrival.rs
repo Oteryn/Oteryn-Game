@@ -121,7 +121,7 @@ impl DurabilityRoot {
                 let revision:String=sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                     .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
                 let revision=revision.parse().map_err(|_|DurabilityError::InvalidStoredState)?;
-                let at=SpellGroundTarget {spatial_position:ground.spatial_position.clone(),map_revision:ground.map_revision.clone(),content_revision:ground.content_revision.clone(),placement_context:ground.placement_context.clone()};
+                let at=SpellGroundTarget {item_profile_source:None,spatial_position:ground.spatial_position.clone(),map_revision:ground.map_revision.clone(),content_revision:ground.content_revision.clone(),placement_context:ground.placement_context.clone()};
                 let corpse=prepare_moved_arrival_corpse_in_transaction(&mut tx,&authority,&at,qualified,(request.item,revision),&moved).await.map_err(spell_error)?;
                 let mut inputs=Vec::with_capacity(corpse.contents.len()+1);
                 inputs.push(snapshot(&mut tx,corpse.item_instance_id,"ground").await?);

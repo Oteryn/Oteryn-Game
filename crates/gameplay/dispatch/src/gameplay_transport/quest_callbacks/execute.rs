@@ -199,6 +199,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || !self.ground_requirements_match(runtime, map, callback)
                 || !super::clear_area::area_is_clear(runtime, callback))
         {
+            if !world_requirements_match(map, callback)
+                && self.ground_requirements_match(runtime, map, callback)
+                && super::clear_area::area_is_clear(runtime, callback)
+                && super::timed_passages::lion_is_busy(map, callback)
+            {
+                return UseDisposition::NothingToUse;
+            }
             return UseDisposition::Rejected;
         }
         if close && callback.lever.is_some() && !callback.reversible {
@@ -1412,16 +1419,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 *due = deadline;
             }
-            let read_only_gift = callback.item_reward().is_some()
-                && callback.lever.is_none()
-                && callback.effects.transform.is_none()
-                && callback
-                    .item_on_target
-                    .as_ref()
-                    .is_none_or(|item| item.target_replacement.is_none())
-                && passages.is_empty()
-                && replacements.is_empty()
-                && projection.is_none();
             let apply_scene = || {
                 map.facts.apply_quest_callback(
                     key,
@@ -1468,7 +1465,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         );
                     }
                 }
-            } else if !callback.is_read_only() && !read_only_gift && !apply_scene() {
+            } else if !callback.is_read_only() && !apply_scene() {
                 return UseDisposition::Rejected;
             }
         }

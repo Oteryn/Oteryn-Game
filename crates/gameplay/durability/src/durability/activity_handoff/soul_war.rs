@@ -27,6 +27,11 @@ impl ActivityHandoffOwner {
         let recovery = authority
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;
+        // Publication is append-only and checks exact policy equality on replay.
+        // The following pass independently re-proves the Character, Node,
+        // runtime and current activation before accepting this interpretation.
+        self.publish_qualified_boss_rooms(node, std::slice::from_ref(template))
+            .await?;
         let root = self.root.clone();
         let node = node.clone();
         let fact = node.fact();

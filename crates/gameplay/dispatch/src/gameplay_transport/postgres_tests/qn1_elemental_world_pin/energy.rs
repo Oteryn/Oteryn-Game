@@ -167,6 +167,7 @@ pub(super) async fn exercise(
             &mut tx,
             &authority,
             &crate::durability::native_world_items::SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: field.item.ground.spatial_position.clone(),
                 map_revision: field.item.ground.map_revision.clone(),
                 content_revision: field.item.ground.content_revision.clone(),

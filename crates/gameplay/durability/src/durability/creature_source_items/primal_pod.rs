@@ -380,12 +380,13 @@ pub async fn drain_primal_pod_expiry_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
 ) -> Result<Option<PrimalPodExpiry>> {
-    drain_primal_pod_expiry_selected_in_transaction(tx, authority, None).await
+    drain_primal_pod_expiry_selected_in_transaction(tx, authority, None, None).await
 }
 async fn drain_primal_pod_expiry_selected_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     source: Option<[u8; 16]>,
+    profiles: Option<&crate::content::native_gameplay::NativeItemProfileSource>,
 ) -> Result<Option<PrimalPodExpiry>> {
     check_scope_transaction(tx, authority).await?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = authority.runtime_scope() else {
@@ -416,6 +417,7 @@ async fn drain_primal_pod_expiry_selected_in_transaction(
     }
     let cause = expired_cause(tx, authority, source).await?;
     let target = SpellGroundTarget {
+        item_profile_source: profiles.cloned(),
         spatial_position: spatial,
         map_revision: format!(
             "sha256:{}",
@@ -514,7 +516,7 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
     ) -> Result<Option<PrimalPodExpiry>> {
-        self.drain_primal_pod_expiry_selected(permit, recovery, node, scope, generation, None)
+        self.drain_primal_pod_expiry_selected(permit, recovery, node, scope, generation, None, None)
             .await
     }
     /// Exact retained source callback only. SQL's original receipt clock and
@@ -531,6 +533,7 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
         source: [u8; 16],
+        profiles: crate::content::native_gameplay::NativeItemProfileSource,
     ) -> Result<Option<PrimalPodExpiry>> {
         self.drain_primal_pod_expiry_selected(
             permit,
@@ -539,6 +542,7 @@ impl DurabilityRoot {
             scope,
             generation,
             Some(source),
+            Some(profiles),
         )
         .await
     }
@@ -554,6 +558,7 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
         source: Option<[u8; 16]>,
+        profiles: Option<crate::content::native_gameplay::NativeItemProfileSource>,
     ) -> Result<Option<PrimalPodExpiry>> {
         let record = creature_item_recovery_record(recovery, self)?;
         let node = node.clone();
@@ -568,7 +573,10 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let expired = drain_primal_pod_expiry_selected_in_transaction(
-                            &mut tx, &authority, source,
+                            &mut tx,
+                            &authority,
+                            source,
+                            profiles.as_ref(),
                         )
                         .await?;
                         Ok(expired)

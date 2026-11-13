@@ -458,6 +458,7 @@ async fn mint_corpse(
         crate::durability::reward_claim_mint::quest_creature::QuestCorpseOperand {
             item,
             ground: crate::durability::spell_items_abi::SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: spatial,
                 map_revision: "map-1".into(),
                 content_revision: "content-1".into(),

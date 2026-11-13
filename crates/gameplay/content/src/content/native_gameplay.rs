@@ -455,7 +455,7 @@ pub struct NativeGameplayState {
     creatures: CreatureProfilesDocument,
     creature_profile_fingerprints: BTreeMap<String, [u8; 32]>,
     presentations: PresentationProfilesDocument,
-    items: Option<ItemProfilesDocument>,
+    items: Option<Arc<ItemProfilesDocument>>,
     market_catalogue: Option<market_catalogue::MarketCatalogue>,
     appearances: Option<super::native_spell_appearances::CompiledSpellAppearances>,
     training: Option<crate::content::training_formula::CompiledTrainingFormula>,
@@ -468,6 +468,53 @@ pub struct NativeGameplayState {
     item_index: Option<Arc<super::item_ref::ItemDefinitionIndex>>,
     reward_table: Arc<super::creature_reward::CreatureRewardTable>,
 }
+/// Immutable loader-qualified Item DATA from one exact outer artifact. It grants
+/// no scope, custody, eligibility or mutation authority; readers prove those afresh.
+#[derive(Clone)]
+pub struct NativeItemProfileSource {
+    digest: [u8; 32],
+    items: Arc<ItemProfilesDocument>,
+}
+impl std::fmt::Debug for NativeItemProfileSource {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("NativeItemProfileSource")
+            .field("digest", &self.digest)
+            .field("item_count", &self.items.records.len())
+            .finish()
+    }
+}
+impl PartialEq for NativeItemProfileSource {
+    fn eq(&self, other: &Self) -> bool {
+        self.digest == other.digest
+    }
+}
+impl Eq for NativeItemProfileSource {}
+impl NativeItemProfileSource {
+    pub fn source_digest(&self) -> [u8; 32] {
+        self.digest
+    }
+    pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
+        qualified_item_policy(&self.items, self.digest, key, revision)
+    }
+}
+
+// One existing qualified-record factory serves active and retained immutable DATA.
+// Only loader-validated ItemProfilesDocument storage reaches either caller.
+fn qualified_item_policy<'a>(
+    items: &'a ItemProfilesDocument,
+    digest: [u8; 32],
+    key: &str,
+    revision: &str,
+) -> Option<QualifiedItemPolicy<'a>> {
+    let record = items.records.iter().find(|p| {
+        (p.authoring.item.key == key && p.authoring.item.revision == revision)
+            || (p.production_definition.production_key == key
+                && p.production_definition.revision_ref == revision)
+    })?;
+    Some(QualifiedItemPolicy { digest, record })
+}
+
 impl PartialEq for NativeGameplayState {
     fn eq(&self, other: &Self) -> bool {
         self.source_digest == other.source_digest && self.encoded == other.encoded
@@ -554,6 +601,13 @@ impl NativeGameplayState {
         &actual == expected
     }
     /// Immutable public-template metadata of the active native generation.
+    /// Share the actual validated records, never deserialize caller profiles.
+    pub fn item_profile_source(&self) -> Option<NativeItemProfileSource> {
+        Some(NativeItemProfileSource {
+            digest: self.source_digest,
+            items: self.items.as_ref()?.clone(),
+        })
+    }
     pub fn item_profiles(&self) -> impl Iterator<Item = &ItemProfileRecord> {
         self.items.iter().flat_map(|items| &items.records)
     }
@@ -602,15 +656,7 @@ impl NativeGameplayState {
     }
 
     pub fn item_policy(&self, key: &str, revision: &str) -> Option<QualifiedItemPolicy<'_>> {
-        let record = self.items.as_ref()?.records.iter().find(|p| {
-            (p.authoring.item.key == key && p.authoring.item.revision == revision)
-                || (p.production_definition.production_key == key
-                    && p.production_definition.revision_ref == revision)
-        })?;
-        Some(QualifiedItemPolicy {
-            digest: self.source_digest,
-            record,
-        })
+        qualified_item_policy(self.items.as_ref()?, self.source_digest, key, revision)
     }
     pub fn item_policy_for_source_id(&self, id: u32) -> Option<QualifiedItemPolicy<'_>> {
         let external = id.to_string();
@@ -1726,7 +1772,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             creatures,
             creature_profile_fingerprints,
             presentations,
-            items,
+            items: items.map(Arc::new),
             market_catalogue,
             appearances,
             training,

@@ -358,6 +358,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    /// Ordinary self-use may reach only the registered item-disguise arm.
+    /// Other carried actions keep their existing target and receipt owners.
+    pub(super) async fn use_carried_item_disguise(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with.is_some()
+            || intent.use_with_map_item.is_some()
+            || intent.use_with_position.is_some()
+        {
+            return Ok(None);
+        }
+        self.use_carried_quest_item_selected(actor, command, intent, source, None, true)
+            .await
+    }
+
     pub(super) async fn use_carried_quest_item_targeted(
         &self,
         actor: ExactActorRef,
@@ -365,6 +384,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: &UseIntent,
         source: Option<ItemKey>,
         target: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.use_carried_quest_item_selected(actor, command, intent, source, target, false)
+            .await
+    }
+
+    async fn use_carried_quest_item_selected(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+        disguise_only: bool,
     ) -> Result<Option<UseOutcome>, ()> {
         use crate::durability::quest_state::{
             QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
@@ -670,6 +702,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             map.facts.emit_movement_effect(position, rule.use_effect);
             states.owner_wake.notify_one();
             return Ok(Some(outcome(UseDisposition::Committed)));
+        }
+        if disguise_only {
+            return Ok(None);
         }
         let recipe_target = match target {
             Some(ItemKey::Instance(id))

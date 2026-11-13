@@ -61,7 +61,7 @@ mod guarded_routes;
 mod ice_islands_tests;
 mod imported_explore;
 mod legacy_world_claims;
-pub use legacy_world_claims::legacy_world_claim;
+pub use legacy_world_claims::{legacy_world_claim, legacy_world_source_unique};
 mod live_admission;
 mod native_trials;
 #[cfg(test)]

@@ -72,6 +72,7 @@ pub(super) async fn read(
     let mut proof = Vec::with_capacity(operands.len());
     for observed in operands {
         let at = SpellGroundTarget {
+            item_profile_source: None,
             spatial_position: observed.spatial_position.clone(),
             map_revision: ground.map_revision.clone(),
             content_revision: ground.content_revision.clone(),

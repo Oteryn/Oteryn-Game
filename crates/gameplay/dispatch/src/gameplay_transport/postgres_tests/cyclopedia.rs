@@ -109,6 +109,10 @@ fn scenario(canonical: bool) -> TestResult {
             tx.commit().await?;
         }
 
+        let combat_room = activation_pin.qualified_room().bundle_view(
+            cells.clone(), activation_pin.frame_binding().digest(), world.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 1, y: 0, floor: 7 },
+        ).ok_or("Cyclopedia combat room")?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -166,6 +170,7 @@ fn scenario(canonical: bool) -> TestResult {
             );
         let mut owner = deps.owner(&h, &authority);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         deps.initialize(&owner).await;
@@ -492,6 +497,7 @@ fn scenario(canonical: bool) -> TestResult {
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         let (status, replay) =
@@ -650,6 +656,7 @@ fn scenario(canonical: bool) -> TestResult {
             .expect("W02: isolated fixture state")
             .command_ingress = commands;
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         assert_eq!(

@@ -1028,7 +1028,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                 assert_eq!(
                     fluids,
                     if reverse || index == 1 {
-                        vec![(1, 1, true, true)]
+                        vec![(1, 9, true, true)]
                     } else {
                         Vec::new()
                     }
@@ -1270,7 +1270,7 @@ fn scenario(reverse: bool, case: Case) -> TestResult {
                      JOIN game_item_fluid_reward_mints m ON m.item_instance_id=i.item_instance_id \
                      WHERE i.definition_production_key='oteryn:item.tibia.i2874' LIMIT 2")
                     .fetch_all(&h.pool).await?;
-                assert_eq!(fluids, vec![(1, 1, true, true)]);
+                assert_eq!(fluids, vec![(1, 2, true, true)]);
                 let children: i64 =
                     sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries")
                         .fetch_one(&h.pool)

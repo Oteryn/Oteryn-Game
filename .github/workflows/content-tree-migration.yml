@@ -216,10 +216,13 @@ jobs:
             rust-linux-v2-1.99.1-
       - name: Normalize restored Cargo source mtimes
         run: python3 tools/repository/normalize_cargo_mtimes.py
-      - name: Refresh the exact dependent Prey model using its established owner
-        run: python3 tools/content-migration/prey_difficulty.py --simulate
-      - name: Regenerate native providers through their established owners
-        run: python3 tools/content-migration/regenerate_content.py --native-only
+      - name: Verify imported native providers through their established owner
+        run: python3 tools/content-migration/register_spell_families.py --check
+      - name: Refresh World pins from the exact staged runtime candidate
+        run: |
+          set -euo pipefail
+          git add --all
+          cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .
       - name: Export exact generated provider patch
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -234,7 +237,7 @@ jobs:
           git diff --binary --full-index --output="$output/candidate.patch" HEAD
           sha256sum "$output/candidate.patch" > "$output/candidate.sha256"
           git status --porcelain=v1 > "$output/status.txt"
-          printf '%s\n' 'prey_difficulty.py --simulate; regenerate_content.py --native-only; no World pin-refresh; no gameplay qualification or commit/ref publication' > "$output/operation.txt"
+          printf '%s\n' 'register_spell_families.py --check; existing world-bundle-compiler pin-refresh; no gameplay qualification or commit/ref publication' > "$output/operation.txt"
       - name: Upload native provider outputs for independent review
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

@@ -69,6 +69,7 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/boss_activity/primal.rs",
                 1,
             ),
+            ("gameplay_transport/postgres_tests/endgame_entry.rs", 1),
             ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
             (
                 "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
@@ -178,7 +179,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
             ("gameplay_transport/primal_callbacks.rs", 3),
             ("gameplay_transport/soul_war_cloak_blood.rs", 1),
-            ("gameplay_transport/monster_ai_cycle.rs", 2),
+            ("gameplay_transport/monster_ai_cycle.rs", 5),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
             (
@@ -1028,6 +1029,15 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/boss_activity/primal.rs",
         1,
     ),
+    // Movement fixtures bind only their actual pinned Bundle combat view.
+    ("gameplay_transport/postgres_tests/echo_warden.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/browse_field/fixture.rs",
+        2,
+    ),
+    ("gameplay_transport/postgres_tests/creature_push.rs", 1),
+    ("gameplay_transport/postgres_tests/cyclopedia.rs", 3),
+    ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
     // W05d's native Cake tile fixture supplies combat only, never qualification.
