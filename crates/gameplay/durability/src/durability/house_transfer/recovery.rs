@@ -13,6 +13,7 @@ use crate::foundation::fnd04_verifier::{
 
 #[derive(Clone)]
 pub struct HouseTransferRecovery {
+    security_revocation_freshness_required: bool,
     pub ack: HouseTransferAck,
     pub command: u64,
     pub current: RecoveryCurrentEvidence,
@@ -25,6 +26,14 @@ pub struct HouseTransferRecovery {
     pub house_position: Option<super::super::character_last_position::HouseLastPosition>,
     /// True only for the closed native fresh-admission restore source (command 0).
     pub admission_restore: bool,
+}
+
+impl HouseTransferRecovery {
+    /// Apply the current consumer policy again inside the deciding transaction.
+    pub fn with_security_revocation_freshness(mut self, required: bool) -> Self {
+        self.security_revocation_freshness_required = required;
+        self
+    }
 }
 
 impl DurabilityRoot {
@@ -197,6 +206,12 @@ impl DurabilityRoot {
                             return Err(DurabilityError::Unavailable);
                         }
                         current.ack.connection_generation = generation;
+
+                        if candidate.security_revocation_freshness_required
+                            && !super::super::platform_streams::revocation_fresh_in_transaction(&mut tx).await?
+                        {
+                            return Err(DurabilityError::Unavailable);
+                        }
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(current);
                     }
@@ -213,6 +228,12 @@ impl DurabilityRoot {
                     let consumed = sqlx::query("INSERT INTO game_durability_recovery_grant_consumptions(recovery_grant_nonce,game_session_id,reconnect_attempt_ref) VALUES($1,encode($2,'hex')::uuid,$3) ON CONFLICT DO NOTHING")
                         .bind(audit.grant_nonce.as_slice()).bind(session.as_bytes().as_slice()).bind(attempt.as_slice()).execute(&mut *tx).await?;
                     if reserved.rows_affected() != 1 || consumed.rows_affected() != 1 {
+                        return Err(DurabilityError::Unavailable);
+                    }
+
+                    if candidate.security_revocation_freshness_required
+                        && !super::super::platform_streams::revocation_fresh_in_transaction(&mut tx).await?
+                    {
                         return Err(DurabilityError::Unavailable);
                     }
                     sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=$2::text::numeric,predecessor_generation=$3::text::numeric,current_transport_ref=$4,session_state=2,attempt_count=attempt_count+1 WHERE game_session_id=encode($1,'hex')::uuid")
@@ -283,6 +304,7 @@ async fn load(
     .await?
     .ok_or(DurabilityError::Unavailable)?;
     Ok(Some(HouseTransferRecovery {
+        security_revocation_freshness_required: false,
         started,
         placement: placement.position,
         house_position: placement.house,

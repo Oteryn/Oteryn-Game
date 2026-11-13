@@ -745,6 +745,22 @@ async fn case(h: &Harness) -> TestResult {
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(rows, 2);
+    // A fresh entry check cannot authorize a controller after a lock wait.
+    let candidate = h.root.house_transfer_recovery(source.game_session_id).await.map_err(debug)?.ok_or("current house-exit recovery")?;
+    assert!(candidate.ack.house.is_none());
+    let credential = RecoverySource::token(250)?;
+    let kid = crate::foundation::fnd04_verifier::fresh_grant_signing_key_id(&credential).ok_or("recovery key")?;
+    recovery_source.evidence.refresh_recovery(&h.root,&h.node,&candidate.current.account_id,&kid).await.map_err(debug)?;
+    let subject = crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject::new(&candidate.current.account_id,&kid).map_err(debug)?;
+    let facts=h.root.verify_registered_recovery(&h.node,&subject,&credential,&candidate.current).await.map_err(debug)?.map_err(debug)?;
+    let before: i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_recovery_grant_consumptions").fetch_one(&h.pool).await?;
+    let clock=super::security_revocation::RecoveryExpiryClock::install(h,facts.verified_at()).await?;
+    let expired=h.root.recover_house_transfer(&authority,&h.node,candidate.with_security_revocation_freshness(true),facts,
+        crate::foundation::AuthenticatedTransportRefV1::decode(&[250;16]).map_err(debug)?,clock.check.clone()).await;
+    clock.finish(h).await?;
+    assert!(matches!(expired,Err(crate::durability::DurabilityError::Unavailable)),"expired house recovery must not issue control");
+    let after: i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_recovery_grant_consumptions").fetch_one(&h.pool).await?;
+    assert_eq!(after,before,"expired recovery must not consume its grant");
     let pending = lose_ack(&owner, outside, false).await?;
     assert_ne!(pending.game_session_id, outside.game_session_id);
     assert_eq!(
