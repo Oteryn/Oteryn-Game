@@ -141,8 +141,7 @@ def validate_document(doc):
         require(first["npc_literal"] == "Yasir" and
                 first["first_line_literal"] == "10 gp, Yasir", "Yasir overlay missing")
     else:
-        require({v[0] for v in unknown_currency} == {8, 27, 46, 49}
-                and len(unknown_currency) == 6, "bare-price currency policy drift")
+        require(not unknown_currency, "native gp correction missing")
         require(any(q["npc_literal"] == "Ramina"
                     for p in doc["items"][20]["panels"].values()
                     for q in p["visible_entries"]), "Ramina overlay missing")
@@ -150,9 +149,146 @@ def validate_document(doc):
             "visible_quotes": quoted, "currency_unknown_quotes": len(unknown_currency)}
 
 
+def validate_material(root, receipts, documents, pairs, private_root=None):
+    correction = receipts["material_corrections"]
+    keys(correction, ("file", "sha256", "private_overlay_key", "private_overlay_sha256"))
+    require(correction["file"] == "material-corrections.json", "material filename")
+    require(digest(root / correction["file"]) == correction["sha256"], "material hash")
+    data = json.loads((root / correction["file"]).read_text())
+    keys(data, ("schema", "operations", "source_unions", "qc_inputs", "semantic_qc"))
+    require(data["schema"] == "OTERYN_TRADE_NATIVE_CORRECTIONS/v1"
+            and data["semantic_qc"] == "PARTIAL", "semantic QC remains partial")
+    require(len(data["operations"]) == 20 and len(data["qc_inputs"]) == 4,
+            "material operation/input census")
+    for op in data["operations"]:
+        keys(op, ("category", "ui_entry_ordinal", "localrow", "field", "old_literal",
+                  "new_literal", "panel", "proof"))
+        item = documents[op["category"]]["items"][op["ui_entry_ordinal"] - 1]
+        require(op["proof"] == item["proof"], "correction source proof")
+        if op["field"] == "panel":
+            require(op["ui_entry_ordinal"] == 42 and op["old_literal"] == "Sell To"
+                    and op["new_literal"] == "Buy From"
+                    and not item["panels"]["Sell To"]["visible_entries"]
+                    and item["panels"]["Buy From"]["visible_entries"][0]["npc_literal"]
+                    == "Black Bert", "panel correction missing")
+        else:
+            quote = item["panels"][op["panel"]]["visible_entries"][op["localrow"] - 1]
+            require(op["field"] in {"price_literal", "npc_literal", "location_literal"}
+                    and quote[op["field"]] == op["new_literal"], "native correction missing")
+            require(quote["first_line_literal"] == quote["price_literal"] + ", "
+                    + quote["npc_literal"], "corrected composite literal")
+    for ref in data["source_unions"] + data["qc_inputs"]:
+        keys(ref, ("key", "sha256"), ("category",))
+        safe_key(ref["key"])
+        if private_root is not None:
+            require(digest(private_root / ref["key"]) == ref["sha256"], "QC source hash")
+    safe_key(correction["private_overlay_key"])
+    if private_root is not None:
+        require(digest(private_root / correction["private_overlay_key"])
+                == correction["private_overlay_sha256"], "private material overlay hash")
+    group = receipts["full_panel_retakes"]
+    keys(group, ("panels", "pending_pairs_before", "pending_pairs_after"))
+    require(group["pending_pairs_before"] == 77 and group["pending_pairs_after"] == 74
+            and len(group["panels"]) == 3, "resolved retake census")
+    for receipt, ordinal, rows, pages, price, location in zip(
+            group["panels"], (46, 52, 59), (18, 18, 19), (24, 24, 25),
+            ("25 gp", "25 gp", "5,000 gp"), ("Cormaya", "Cormaya", "Darashia City")):
+        validate_full_panel(root, receipt, documents, pairs, private_root,
+                            ordinal, rows, pages, price, location)
+
+
+def validate_full_panel(root, receipt, documents, pairs, private_root,
+                        ordinal, row_count, page_count, expected_price, fourth_location):
+    keys(receipt, ("file", "sha256", "initial_quotes_not_added_to_full_quote_count"))
+    require(receipt["file"] == f"decoration-full-panel-{ordinal}-buy-from.json"
+            and receipt["initial_quotes_not_added_to_full_quote_count"] is True,
+            "retake scope")
+    require(digest(root / receipt["file"]) == receipt["sha256"], "full-panel hash")
+    full = json.loads((root / receipt["file"]).read_text())
+    keys(full, ("schema", "category", "physical_ui_ordinal", "panel", "source_receipt",
+                "coverage", "rows", "viewports", "initial_resolution"))
+    require(full["schema"] == "OTERYN_OBSERVED_FULL_TRADE_PANEL/v1"
+            and (full["category"], full["physical_ui_ordinal"], full["panel"])
+            == ("Decoration", ordinal, "Buy From"), "full-panel identity")
+    require(full["coverage"] == {
+        "observed_panel_literals_complete": True, "global_npc_lists": "PARTIAL",
+        "distinct_physical_rows": row_count, "viewports": page_count,
+        "identity": "Measured contiguous pixel ancestry; no name deduplication"},
+        "full-panel coverage")
+    require(len(full["rows"]) == row_count and len(full["viewports"]) == page_count, "full-panel census")
+    offsets = list(range(0, 401, 20)) + [406, 406, 406] if ordinal != 59 else list(range(0, 421, 20)) + [434, 434, 434]
+    for index, page in enumerate(full["viewports"]):
+        keys(page, ("page_index0", "viewport_offset_pixels", "proof"))
+        require(page["page_index0"] == index and page["viewport_offset_pixels"] == offsets[index],
+                "contiguous viewport offsets")
+    def check_proof(proof):
+        keys(proof, ("key", "sha256")); safe_key(proof["key"])
+        require(proof["key"].startswith("items-sequence-decoration/trade-retake-"),
+                "retake proof namespace")
+        if private_root is not None:
+            require(digest(private_root / proof["key"]) == proof["sha256"], "retake proof hash")
+    for page in full["viewports"]:
+        check_proof(page["proof"])
+    for index, row in enumerate(full["rows"]):
+        keys(row, ("physical_panel_row_ordinal", "quote", "content_first_line_y_pixels",
+                   "content_residence_line_y_pixels", "qualified_page_indices0", "proofs"))
+        require(row["physical_panel_row_ordinal"] == index + 1
+                and row["content_first_line_y_pixels"] == 3 + 28 * index
+                and row["content_residence_line_y_pixels"] == 17 + 28 * index,
+                "physical row ancestry")
+        quote = row["quote"]
+        keys(quote, ("price_literal", "npc_literal", "first_line_literal", "currency_state",
+                     "currency_literal", "location_state", "location_literal",
+                     "location_display_line_literal"))
+        require(quote["price_literal"] == expected_price and quote["currency_state"] == "OBSERVED_EXPLICIT"
+                and quote["currency_literal"] == "gp" and quote["location_state"] == "OBSERVED_VALUE",
+                "retake literals")
+        require(row["qualified_page_indices0"] and
+                row["proofs"] == [full["viewports"][i]["proof"]
+                                  for i in row["qualified_page_indices0"]], "row page ancestry")
+        for proof in row["proofs"]:
+            check_proof(proof)
+    resolution = full["initial_resolution"]
+    keys(resolution, ("resolved_pending_pair", "initial_quote_rows1", "full_panel_rows1",
+                      "initial_snapshot_preserved", "new_disjoint_quotes_not_claimed",
+                      "fourth_location_previous_state", "fourth_location_now_literal"))
+    require(resolution["initial_quote_rows1"] == [1, 2, 3, 4]
+            and resolution["full_panel_rows1"] == [1, 2, 3, 4]
+            and resolution["initial_snapshot_preserved"] is True
+            and resolution["new_disjoint_quotes_not_claimed"] is True
+            and resolution["fourth_location_previous_state"] ==
+            ("UNKNOWN" if ordinal == 46 else "UNKNOWN_CLIPPED_BELOW_PANEL")
+            and resolution["fourth_location_now_literal"] == fourth_location, "initial overlap boundary")
+    initial = documents["Decoration"]["items"][ordinal - 1]["panels"]["Buy From"]["visible_entries"]
+    # Initial packets use two observed-state vocabularies; compare literal fields
+    # without rewriting either snapshot's original state labels.
+    literal_keys = ("price_literal", "npc_literal", "first_line_literal",
+                    "location_literal", "location_display_line_literal")
+    require(len(initial) == 4 and all(
+        all(initial[i][k] == full["rows"][i]["quote"][k] for k in literal_keys)
+        for i in range(3))
+            and initial[3]["location_state"] == resolution["fourth_location_previous_state"]
+            and full["rows"][3]["quote"]["location_literal"] == fourth_location, "initial history lost")
+    require(("Decoration", ordinal, "Buy From") not in pairs, "resolved retake still pending")
+    ref = full["source_receipt"]; keys(ref, ("key", "sha256")); safe_key(ref["key"])
+    if private_root is not None:
+        require(digest(private_root / ref["key"]) == ref["sha256"], "full-panel source hash")
+        source = json.loads((private_root / ref["key"]).read_text())
+        require(len(source["rows"]) == len(full["rows"]), "private full-row count")
+        for raw, row in zip(source["rows"], full["rows"]):
+            quote = row["quote"]
+            require(all(quote[k] == raw[k] for k in
+                        ("price_literal", "npc_literal", "first_line_literal"))
+                    and quote["location_state"] == raw["location"]["state"]
+                    and quote["location_literal"] == raw["location"]["literal"]
+                    and quote["location_display_line_literal"] ==
+                    raw["location"]["display_line_literal"], "private full-row projection")
+
+
 def validate(root=HERE, private_root=None):
     receipts = json.loads((root / "source-receipts.json").read_text())
-    keys(receipts, ("schema", "base_sha", "categories", "correction_overlays", "adapter"))
+    keys(receipts, ("schema", "base_sha", "categories", "correction_overlays", "adapter",
+                    "material_corrections", "full_panel_retakes"))
     require(receipts["schema"] == "OTERYN_INITIAL_TRADE_SOURCE_RECEIPTS/v1",
             "receipt schema")
     require(receipts["base_sha"] == "5efd67da164ac9dc33c8c066434b228cebb86c2b",
@@ -200,7 +336,7 @@ def validate(root=HERE, private_root=None):
         item = documents[row["category"]]["items"][row["physical_ui_ordinal"] - 1]
         require(item["panels"][row["panel"]]["state"] == "OBSERVED_NONEMPTY_INITIAL_PANEL",
                 "retake references empty panel")
-    require(collections.Counter(p[0] for p in pairs) == {"Decoration": 43, "Food": 34},
+    require(collections.Counter(p[0] for p in pairs) == {"Decoration": 40, "Food": 34},
             "retake census")
     require({p[1] for p in pairs if p[0] == "Decoration" and p[2] == "Sell To"} ==
             {310, 382}, "Decoration Sell To retakes lost")
@@ -224,8 +360,10 @@ def validate(root=HERE, private_root=None):
         if private_root is not None:
             require(digest(private_root / correction["key"]) == correction["sha256"],
                     "private overlay receipt mismatch")
+    validate_material(root, receipts, documents, pairs, private_root)
     return {"categories": results, "cards": 631, "initial_panels": 1262,
             "source_proofs": 631, "retake_pairs": len(pairs),
+            "full_panels": 3, "full_panel_rows": 55, "full_panel_viewports": 73,
             "private_sources_and_proofs_checked": private_root is not None,
             "full_npc_lists": "PARTIAL"}
 

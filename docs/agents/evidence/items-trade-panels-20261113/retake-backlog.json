@@ -4,30 +4,6 @@
   "retakes": [
     {
       "category": "Decoration",
-      "physical_ui_ordinal": 46,
-      "panel": "Buy From",
-      "unknown_reason": "VERTICAL_OVERFLOW_INITIAL_PANE",
-      "location_state": "UNKNOWN",
-      "additional_entries_state": "UNKNOWN"
-    },
-    {
-      "category": "Decoration",
-      "physical_ui_ordinal": 52,
-      "panel": "Buy From",
-      "unknown_reason": "Last visible NPC price line at bottom; residence below viewport. Scrollbar indicates more vertical content.",
-      "location_state": "UNKNOWN",
-      "additional_entries_state": "UNKNOWN"
-    },
-    {
-      "category": "Decoration",
-      "physical_ui_ordinal": 59,
-      "panel": "Buy From",
-      "unknown_reason": "Last visible NPC price line at bottom; residence below viewport. Scrollbar indicates more vertical content.",
-      "location_state": "UNKNOWN",
-      "additional_entries_state": "UNKNOWN"
-    },
-    {
-      "category": "Decoration",
       "physical_ui_ordinal": 107,
       "panel": "Buy From",
       "unknown_reason": "Saved initial panel shows clipped fourth entry and scrollbar overflow; location not visible; additional lower rows UNKNOWN",

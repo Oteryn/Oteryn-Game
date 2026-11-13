@@ -19,10 +19,41 @@ class EvidenceBoundaries(unittest.TestCase):
     def test_bare_price_cannot_gain_currency(self):
         quote = next(q for panel in self.food["items"][7]["panels"].values()
                      for q in panel["visible_entries"])
-        self.assertEqual("UNKNOWN", quote["currency_state"])
+        self.assertEqual("OBSERVED_EXPLICIT", quote["currency_state"])
+        quote["price_literal"] = "2"
         quote.update(currency_state="OBSERVED_EXPLICIT", currency_literal="gp")
         with self.assertRaisesRegex(ValueError, "currency inferred"):
             validator.validate_document(self.food)
+
+    def test_genuine_unknown_is_supported_without_inventing_currency(self):
+        self.assertEqual(("UNKNOWN", None), validator.currency("2"))
+        self.assertEqual(("OBSERVED_EXPLICIT", "Event Points"),
+                         validator.currency("70 x Event Points"))
+
+    def test_material_native_corrections_are_required(self):
+        receipts = json.loads((HERE / "source-receipts.json").read_text())
+        backlog = json.loads((HERE / "retake-backlog.json").read_text())
+        pairs = {(r["category"], r["physical_ui_ordinal"], r["panel"])
+                 for r in backlog["retakes"]}
+        for ordinal, panel, row, field, stale in [
+            (76, "Buy From", 1, "npc_literal", "Khamna"),
+            (255, "Buy From", 1, "price_literal", "250 x Christmas Token"),
+            (382, "Sell To", 1, "npc_literal", "Shniel"),
+        ]:
+            with self.subTest(ordinal=ordinal):
+                doc = copy.deepcopy(self.decoration)
+                doc["items"][ordinal - 1]["panels"][panel]["visible_entries"][row - 1][field] = stale
+                with self.assertRaisesRegex(ValueError, "native correction missing"):
+                    validator.validate_material(HERE, receipts,
+                                                {"Decoration": doc, "Food": self.food}, pairs)
+
+    def test_initial_fourth_location_stays_unknown_after_full_retake(self):
+        initial = self.decoration["items"][45]["panels"]["Buy From"]["visible_entries"]
+        full = json.loads((HERE / "decoration-full-panel-46-buy-from.json").read_text())
+        self.assertEqual("UNKNOWN", initial[3]["location_state"])
+        self.assertEqual("Cormaya", full["rows"][3]["quote"]["location_literal"])
+        self.assertEqual(18, len(full["rows"]))
+        self.assertEqual(initial[:3], [r["quote"] for r in full["rows"][:3]])
 
     def test_private_narrative_injection_is_rejected(self):
         self.food["items"][0]["Description"] = "Private text must stay outside this export"

@@ -7,7 +7,7 @@ quotes. Decoration has 669 observed empty panels and 255 nonempty panels;
 Food has 245 observed empty panels and 93 nonempty panels.
 
 **Only initial-view coverage is complete. Full NPC lists remain PARTIAL.**
-The backlog contains 43 Decoration and 34 Food panel retakes. Decoration
+The backlog contains 40 Decoration and 34 Food panel retakes (74 pending). Decoration
 Sell To retakes are 310 and 382; the other Decoration retakes are Buy From.
 Food retains panel-specific pairs, including four entries needing both panels.
 An observed empty initial panel does not prove global NPC absence.
@@ -21,13 +21,16 @@ literally. Missing location keys remain missing; clipped locations retain their
 source UNKNOWN state/reason. No missing text is reconstructed.
 
 Currency is derived only from an explicit displayed gp suffix or x currency
-suffix. Food ordinals 8, 27, 46 and 49 contain six bare-number prices; their
-currency stays UNKNOWN. No implicit gp, currency conversion, executable trade
-offer or runtime admission is asserted.
+suffix. Independent native enlarged-source QC found explicit gp on all six
+previously misread Food prices (ordinals8/27/46/49). These are observed gp,
+not inferred currency. No implicit currency, conversion, executable trade offer
+or runtime admission is asserted. The schema still supports genuine UNKNOWN.
 
 The explicit immutable-input overlays correct Decoration310 first Sell To NPC
 to Yasir and Food21 NPC to Ramina. The original private packets remain unchanged.
-Their hashes and the two corrected private unions are recorded in
+A further20-operation native-QC overlay repairs six Food prices, Decoration42
+panel placement, names/spellings,255 whole quote and346/347 token quantities.
+The corrected private unions and original-input/QC hashes are recorded in
 source-receipts.json. The client reference uses the GLOBAL_BLACKBOX observation
 route; these literal observations do not change game content or runtime behavior.
 
@@ -47,8 +50,9 @@ Run from this directory:
 
 For an authorized private custody check on the source laptop, run
 python3 validate.py --private-root <private outputs directory>.
-This checks the two pinned private unions, both correction sidecars, all631 PNG
-hashes and exact whitelist projection without printing private records.
+This checks the two corrected private unions, immutable original unions/QC inputs,
+correction sidecars, all631 Basic PNG hashes, exact initial whitelist projection,
+and55 full-panel rows across73 viewport proofs without printing private records.
 A missing private root is explicitly reported as not checked; repository-only
 validation does not claim fresh access to private screenshots.
 
@@ -59,3 +63,16 @@ until those proofs exist. No NPC conversation or transaction is needed.
 
 Companion Basic evidence: draft PR3155 (Decoration) and draft PR3156 (Food).
 These drafts remain separate; this evidence does not mutate their frozen heads.
+
+## Qualified full-panel retakes
+
+Decoration Buy From46/52/59 now have separate full-panel datasets:18/18/19
+position-distinct rows from24/24/25 saved viewports. Measured contiguous pixel
+offsets and28px row origins establish overlap; names/prices never deduplicate
+cards or rows. Initial snapshots stay unchanged: their fourth residence remains
+in its original UNKNOWN state, resolved separately as Cormaya/Cormaya/Darashia
+City. First3 initial quote literals overlap full rows1..3; initial fourth quote
+links row4. These55 full rows are not55 new disjoint additions to637 initial
+quotes. Only these3 pending pairs resolve (77→74). Observed full panels do not
+prove global NPC lists complete. No GUI input or NPC interaction was performed
+by this evidence writer.

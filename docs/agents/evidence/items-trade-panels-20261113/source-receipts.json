@@ -4,10 +4,10 @@
   "categories": [
     {
       "category": "Decoration",
-      "source_union_key": "items-reader-cloud-20261113/decoration-trade-initial-panels-1-462-combined-private.json",
-      "source_union_sha256": "9438aeca088547b3d56b1004e0bada19e6eefebdbb9dddce7b496a32c80c160e",
+      "source_union_key": "items-reader-cloud-20261113/decoration-trade-initial-panels-corrected-native-qc-20261113.json",
+      "source_union_sha256": "48cddab62ae6ccdbc2d5e4130856ce2fbe240f8d432da92aeab7d4dff29aee2b",
       "export_file": "decoration-initial-panels.json",
-      "export_sha256": "a81aa660fee779165160ef484499d849c62432442aeef98a5cad85ef7ddac0bb",
+      "export_sha256": "720af7c955dc6005352175f888109483bc3e551142acb11495ab957c13c24080",
       "cards": 462,
       "panels": 924,
       "source_Basic_proofs_freshly_verified": 462,
@@ -20,10 +20,10 @@
     },
     {
       "category": "Food",
-      "source_union_key": "items-reader-cloud-20261113/food-trade-initial-panels-1-169-combined-private.json",
-      "source_union_sha256": "20b4a5e7258a5b98da670aedc9791e133d2dd596df7b4f1c84d6c06082454545",
+      "source_union_key": "items-reader-cloud-20261113/food-trade-initial-panels-corrected-native-qc-20261113.json",
+      "source_union_sha256": "5449690b292c89606886117644064144567d472ec4ef08cf5058dfb72a93505d",
       "export_file": "food-initial-panels.json",
-      "export_sha256": "a1d80487323f4ced3612ec8bea87d67ddf9ef73360219d5b3be997adea7fab39",
+      "export_sha256": "5c0dc50b30eb0cda2b2e72bf28a5ca7b7687e4a50a766639c4831d6c1dcacbc2",
       "cards": 169,
       "panels": 338,
       "source_Basic_proofs_freshly_verified": 169,
@@ -32,38 +32,7 @@
         "OBSERVED_NONEMPTY_INITIAL_PANEL": 93
       },
       "visible_quotes": 227,
-      "currency_UNKNOWN": [
-        {
-          "physical_ui_ordinal": 8,
-          "panel": "Buy From",
-          "price_literal": "2"
-        },
-        {
-          "physical_ui_ordinal": 27,
-          "panel": "Buy From",
-          "price_literal": "1"
-        },
-        {
-          "physical_ui_ordinal": 46,
-          "panel": "Buy From",
-          "price_literal": "2"
-        },
-        {
-          "physical_ui_ordinal": 46,
-          "panel": "Buy From",
-          "price_literal": "2"
-        },
-        {
-          "physical_ui_ordinal": 46,
-          "panel": "Buy From",
-          "price_literal": "2"
-        },
-        {
-          "physical_ui_ordinal": 49,
-          "panel": "Buy From",
-          "price_literal": "2"
-        }
-      ]
+      "currency_UNKNOWN": []
     }
   ],
   "correction_overlays": [
@@ -87,5 +56,32 @@
       "npc_literal": "Ramina"
     }
   ],
-  "adapter": "Explicit whitelist only; preserve source item/panel/quote order and literal strings. physical_ui_ordinal <- ui_entry_ordinal; capture_key <- category/source capture_id. Location keys copied only when present; missing keys not invented. Currency derived only from explicit gp or x currency suffix. No other normalization."
+  "adapter": "Explicit whitelist only; preserve source item/panel/quote order and literal strings. physical_ui_ordinal <- ui_entry_ordinal; capture_key <- category/source capture_id. Location keys copied only when present; missing keys not invented. Currency derived only from explicit gp or x currency suffix. No other normalization.",
+  "material_corrections": {
+    "file": "material-corrections.json",
+    "sha256": "b7dc19c1edced7c319086a2bce18082506a6d8ae3104d02b26c01e6274e07806",
+    "private_overlay_key": "items-reader-cloud-20261113/trade-material-native-correction-overlay-20261113.json",
+    "private_overlay_sha256": "be74e8e09019c0e1212f7224f728538e54ad46774269c334477db67487bb92da"
+  },
+  "full_panel_retakes": {
+    "panels": [
+      {
+        "file": "decoration-full-panel-46-buy-from.json",
+        "sha256": "486871c057bc6b56e0ebd15cd710382857f3e73f37ae0704f608725485b53cc4",
+        "initial_quotes_not_added_to_full_quote_count": true
+      },
+      {
+        "file": "decoration-full-panel-52-buy-from.json",
+        "sha256": "a44d0b1280d8130237bdd8ffc10647748c598e03d5ee2463577ccddd7812f8e1",
+        "initial_quotes_not_added_to_full_quote_count": true
+      },
+      {
+        "file": "decoration-full-panel-59-buy-from.json",
+        "sha256": "6bdfe59d970211c312aba717a306674e8e5162e691cff1a81a6b8585992e81ed",
+        "initial_quotes_not_added_to_full_quote_count": true
+      }
+    ],
+    "pending_pairs_before": 77,
+    "pending_pairs_after": 74
+  }
 }

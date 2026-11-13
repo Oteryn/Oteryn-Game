@@ -57,7 +57,7 @@ no runtime authority, persistence, controller or session mutation.
 - [x] Preserve source literals, UNKNOWN/missing states and same-name rows separately.
 - [x] Explicit immutable-input Yasir310 and Ramina21 correction overlays.
 - [x] Whitelist export excludes PNG/raw private JSON/narratives/configuration.
-- [x]77 panel-specific retake pairs retained; Decoration Sell To310/382 preserved.
+- [x]74 pending panel-specific pairs retained after full Buy From46/52/59; Sell To310/382 preserved.
 - [ ] Complete overflow retakes and qualify full NPC lists.
 - [ ] Exact-head CI and independent review.
 
@@ -82,12 +82,13 @@ inputs remain unchanged; source receipts pin both unions and correction sidecars
 ## Validation
 
 - python3 docs/agents/evidence/items-trade-panels-20261113/validate.py: PASS631cards,
-  1,262panels,77retakes; repository-only run explicitly does not recheck private files.
+  1,262panels,74retakes;3 full panels/55rows/73viewports; repository-only run explicitly does not recheck private files.
 - Same validator on Ubuntu with private-root: PASS631fresh Basic proof hashes,
-  both private union hashes, both overlay hashes and exact whitelist projection;
+  corrected and original union/QC hashes, overlays and exact whitelist projection,
+  plus3 full-panel source receipts/55rows/73viewport hashes;
   actual terminal exit0, no private records printed.
 - python3 -m unittest discover -s docs/agents/evidence/items-trade-panels-20261113 -p test_validate.py:
-  PASS5tests/0fail.
+  PASS8tests/0fail.
 - python3 tools/agents/validate_governance.py: PASS22documents/9lanes.
 - python3 -m unittest discover -s tools/agents/tests: PASS129tests/0fail. Initial read-only sandbox run had35temp-directory errors; same unchanged tests passed with writable fixtures.
 - git diff --check: PASS; staged exact owned delta rechecked before commit.
@@ -96,7 +97,7 @@ inputs remain unchanged; source receipts pin both unions and correction sidecars
 
 ## Self-review and independent review
 
-TASK diff/provenance/privacy inspection completed over all8owned files; strict whitelist and private projection checks pass. This is not formal
+TASK diff/provenance/privacy inspection over owned evidence files; strict whitelist and private projection checks pass. This is not formal
 independent review. REVIEW_PENDING; coordinator owns required review dispatch.
 No paid trigger or readiness claim by this Codex lane.
 
@@ -104,3 +105,18 @@ No paid trigger or readiness claim by this Codex lane.
 
 PARTIAL, waiting on overflow retakes/CI/review. Keep active record; do not archive.
 No merge/deploy authorized. Draft remains AUTHORING until coordinator qualification.
+
+## Material authoring update
+
+Independent native QC corrections are explicit20-operation overlays against
+immutable original unions:6 observed Food gp markers; Decoration42 panel swap,
+76 Khanna,255 complete quote70 x Event Points/Proprietor Piers/Great Expedition
+Wharf,280/310/327/358/385/387 Talila,382 Shirel and346/347 token quantities10/50.
+No other literal or clipped UNKNOWN is normalized. Currency UNKNOWN is now0 for
+these initial observations; future genuine unknown remains supported.
+Full Buy From46/52/59 are separate card identities,55 physical rows/73 viewports.
+Initial fourth-residence unknown history is preserved; explicit resolution links
+overlapping rows without adding initial quotes as disjoint full rows.
+Ubuntu actual private validator terminal exit0 confirms631 Basic proofs plus
+full viewport/source projections. Independent semantic QC and remaining74 retakes
+remain PARTIAL. REVIEW_PENDING, no freeze/readiness/merge claim.
