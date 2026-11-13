@@ -29,7 +29,7 @@ set -Eeuo pipefail
 umask 077
 
 # Platform main carrying U1 (>= 71bbe6c) and the native-only gateway config (Oteryn-Platform #1472).
-readonly PLATFORM_SHA=b18d32d30c4c4e496330077d12b37db3f0f29011
+readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=login-local-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-0000000000a1
 readonly ACCOUNT_EMAIL=login-local@example.invalid
@@ -451,6 +451,14 @@ CREATE ROLE ll_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_co
 CREATE ROLE ll_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
 GRANT CONNECT ON DATABASE oteryn_login_local TO ll_control, ll_runtime;
 INSERT INTO game_control_scope_grants SELECT 'll_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
+INSERT INTO game_control_field_policy_grants VALUES ('ll_control', '$WORLD_ID', 'policy-ll-1');
+SQL
+# Match the readiness world_policy_revision with explicit control-owned non-PvP facts, as node_boot does.
+# Authenticate as the granted login: SET ROLE cannot satisfy the insert guard.
+docker exec -i -e PGPASSWORD="$CONTROL_PASSWORD" "$PG_CONTAINER" \
+  psql -v ON_ERROR_STOP=1 -qAt -h 127.0.0.1 -U ll_control -d oteryn_login_local <<SQL
+INSERT INTO game_spell_field_world_policies (world_id, world_policy_revision, world_type, protection_level, in_fight_ms, source_pin, control_role, decision_identity)
+VALUES ('$WORLD_ID', 'policy-ll-1', 1, 8, 60000, '99902524e052f37574194466c2949c576e4ab269', session_user, 'login-local-qualification');
 SQL
 printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
@@ -636,14 +644,14 @@ else
 fi
 NODE_PID=$!
 await_log awaiting_assignment 120
-node="$(sed -n 's/.*awaiting_assignment.*node_id=\([^ ]*\).*/\1/p' "$node_log" | tail -n 1)"
-revision="$(sed -n 's/.*awaiting_assignment.*registration_revision=\([^ ]*\).*/\1/p' "$node_log" | tail -n 1)"
+node="$(sed -n 's/.*awaiting_assignment.*node_id=\([^ "]*\).*/\1/p' "$node_log" | tail -n 1)"
+revision="$(sed -n 's/.*awaiting_assignment.*registration_revision=\([^ "]*\).*/\1/p' "$node_log" | tail -n 1)"
 ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
 # `assignment assign` reports ReportScopeAssignmentV1 to Platform when both configs are given.
 ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" \
-  --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" | tee "$WORK/assign.out"
+  --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" --node-identity "$RUNTIME_IDENTITY" | tee "$WORK/assign.out"
 grep -q 'report=ReportScopeAssignmentV1' "$WORK/assign.out" || { echo "assignment was not reported to Platform"; exit 1; }
-await_log "readiness ready=true" 60
+await_log "event=readiness .*ready=true" 60
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   await_log "event=world_bundle state=booted map_revision=sha256:$WB_DIGEST" 5
   evidence "world_bundle=booted digest=$WB_DIGEST"
