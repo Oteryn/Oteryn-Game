@@ -1,269 +1,35 @@
-name: Content Tree Migration Equivalence
+name: Pinned W01 Source Facts
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, labeled]
-    branches:
-      - main
-      - claude/happy-davinci-ijz3wy-qmech
-    paths:
-      - content/items/**
-      - content/starter/**
-      - content/cosmetics/**
-      - content/project.json
-      - content/manifest.json
-      - content/content.lock.json
-      - content/world/definitions/reference.json
-      - content/world/definitions/declarations.json
-      - content/world/editor/author.json
-      - content/world/provenance/sources.json
-      - imports/tibiawiki/bindings/**
-      - imports/tibiawiki/facts/items-family-fallback*.json
-      - imports/tibiawiki/facts/items-family-alias26-20261001.json
-      - imports/tibiawiki/facts/items-external-family18-20261001.json
-      - tools/content-migration/**
-      - tools/merge-driver/**
-      # Pinned by tools/content-migration/source_relocations.py.
-      - crates/gameplay/content-promotion/src/content/item_identity.rs
-      - tools/content-schema/starter-kit-authoring/**
-      - tools/content-schema/imbuement-authoring/**
-      - imports/tibiawiki/facts/items-stats.json
-      - content/assets/files/appearances-*.dat
-      - tools/content-census/stage_proficiencies.py
-      - rulesets/items/imbuements/**
-      # validate_presentation_bindings.py scans every content JSON file for presentation keys.
-      - content/**
-      - crates/protocol-oteryn/src/presentation.rs
-      - tools/content-schema/native-gameplay/*presentation*.py
-      - tools/content-schema/native-gameplay/build_creature_races.py
-      - tools/content-schema/native-gameplay/build_spell_cues.py
-      - tools/content-schema/item-authoring/requirements.txt
-      - .github/workflows/content-tree-migration.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: content-tree-migration-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: pinned-w01-source-facts-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Content tree / Item+Mount equivalence
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - name: Check out exact candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Verify exact head
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.12'
-          check-latest: false
-
-      - name: Install pinned authoring dependencies
-        run: python -m pip install -r tools/content-schema/item-authoring/requirements.txt
-
-      - name: Install imbuement authoring validator
-        run: python -m pip install -r tools/content-schema/imbuement-authoring/requirements.txt
-
-      - name: Validate imported imbuement data and negative cases
-        run: |
-          python tools/content-schema/imbuement-authoring/imbuement_content.py content --check
-          python -m unittest discover -s tools/content-schema/imbuement-authoring -p 'test_*.py' -q
-
-      - name: Validate SPELL-PRESENT-0 presentation bindings
-        working-directory: tools/content-schema/native-gameplay
-        run: python -m unittest test_presentation_bindings -q
-
-      - name: Read the presentation binding source pins
-        id: presentation-pins
-        working-directory: tools/content-schema/native-gameplay
-        run: |
-          set -euo pipefail
-          python - >> "$GITHUB_OUTPUT" <<'PY'
-          import build_creature_races as races
-          import build_presentation_bindings as bindings
-          print('canary_cues=' + bindings.PIN)
-          print('canary_monsters=' + races.SOURCES['canary/monster-file'][1])
-          print('crystal=' + bindings.CRYSTAL_PIN)
-          assert races.SOURCES['crystalserver/monster-file'][1] == bindings.CRYSTAL_PIN
-          PY
-
-      - name: Check out the pinned Canary cue source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: opentibiabr/canary
-          ref: ${{ steps.presentation-pins.outputs.canary_cues }}
-          path: _sources/canary-cues
-          fetch-depth: 1
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            src
-
-      - name: Check out the pinned Canary monster source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: opentibiabr/canary
-          ref: ${{ steps.presentation-pins.outputs.canary_monsters }}
-          path: _sources/canary-monsters
-          fetch-depth: 1
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            data-otservbr-global/monster
-
-      - name: Check out the pinned Crystal source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: zimbadev/crystalserver
-          ref: ${{ steps.presentation-pins.outputs.crystal }}
-          path: _sources/crystal
-          fetch-depth: 1
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            src
-            data-crystal/monster
-            data-global/monster
-
-      - name: Rebuild the presentation bindings and creature races from the pinned sources
-        working-directory: tools/content-schema/native-gameplay
-        run: |
-          set -euo pipefail
-          SRC="$GITHUB_WORKSPACE/_sources"
-          python build_presentation_bindings.py --check \
-            --reference-engine "$SRC/canary-cues" --crystal-engine "$SRC/crystal"
-          python build_creature_races.py --check \
-            --canary "$SRC/canary-monsters" --crystal "$SRC/crystal"
-          # Later steps read the candidate tree only.
-          rm -rf "$SRC"
-
-      - name: Validate successor Item/Mount tree against legacy WorldProject
-        run: |
-          set -euo pipefail
-          python -m py_compile \
-            tools/content-migration/test_world_project_v2_to_tree.py \
-            tools/content-migration/validate_world_project_v2_to_tree.py
-          python tools/content-migration/test_source_relocations.py
-          python tools/content-migration/test_regenerate_content.py
-          python tools/merge-driver/test_oteryn_additive_driver.py
-          python tools/content-migration/test_world_project_v2_to_tree.py
-          python tools/content-migration/test_npc_presence_stage.py
-          python tools/content-migration/test_item_taxonomy.py
-          python tools/content-migration/test_item_navigation_source_supplement.py
-          python tools/content-migration/test_item_engine_navigation.py
-          python tools/content-migration/test_item_external_family_refinement.py
-          python tools/content-migration/test_item_bounded7_navigation.py
-          python tools/content-migration/validate_world_project_v2_to_tree.py
-
-      - name: Check StarterKit seals against the base revision
-        env:
-          SEAL_BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
-        run: python tools/content-schema/starter-kit-authoring/starter_kit_authoring.py content --check --seal-base "$SEAL_BASE"
-
-  generate-native-provider-candidate:
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'content-candidate')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - name: Check out exact source candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Verify checked-out source SHA
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-      - name: Install pinned formatter without compiling a workspace crate
-        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt
-      - name: Install pinned native authoring dependencies
-        run: |
-          set -euo pipefail
-          python3 -m venv "$RUNNER_TEMP/native-provider-venv"
-          "$RUNNER_TEMP/native-provider-venv/bin/python" -m pip install -r tools/content-schema/item-authoring/requirements.txt
-          echo "$RUNNER_TEMP/native-provider-venv/bin" >> "$GITHUB_PATH"
-      - name: Free disposable runner SDK space before cache restoration
-        run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          df -h /
-      - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
-          restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
-            rust-linux-v2-1.99.1-
-      - name: Normalize restored Cargo source mtimes
-        run: python3 tools/repository/normalize_cargo_mtimes.py
-      - name: Refresh the exact dependent Prey model using its established owner
-        run: python3 tools/content-migration/prey_difficulty.py --simulate
-      - name: Regenerate native providers through their established owners
-        run: python3 tools/content-migration/regenerate_content.py --native-only
-      - name: Export exact generated provider patch
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-          output="$RUNNER_TEMP/native-provider-candidate"
-          mkdir -p "$output"
-          git add --all
-          git rev-parse HEAD > "$output/base-sha.txt"
-          git write-tree > "$output/staged-input-tree.txt"
-          git diff --binary --full-index --output="$output/candidate.patch" HEAD
-          sha256sum "$output/candidate.patch" > "$output/candidate.sha256"
-          git status --porcelain=v1 > "$output/status.txt"
-          printf '%s\n' 'prey_difficulty.py --simulate; regenerate_content.py --native-only; no World pin-refresh; no gameplay qualification or commit/ref publication' > "$output/operation.txt"
-      - name: Upload native provider outputs for independent review
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: native-provider-candidate-${{ github.event.pull_request.head.sha }}
-          path: ${{ runner.temp }}/native-provider-candidate/
-          if-no-files-found: error
-          compression-level: 9
-          retention-days: 7
-
-  extract-pinned-maxxen-source-facts:
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'content-candidate')
+  extract:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Check out exact extraction candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Verify checked-out source SHA
         env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_SHA: ${{ github.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-      - name: Extract bounded pinned source facts without persisting the raw asset
-        run: python3 tools/diagnostics/extract_maxxen_source.py --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/maxxen-source-facts.json"
+      - name: Extract bounded pinned facts without persisting source asset
+        run: python3 tools/diagnostics/extract_w01_source_facts.py --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/w01-source-facts.json"
       - name: Upload bounded source facts only
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: maxxen-source-facts-${{ github.event.pull_request.head.sha }}
-          path: ${{ runner.temp }}/maxxen-source-facts.json
+          name: w01-source-facts-${{ github.sha }}
+          path: ${{ runner.temp }}/w01-source-facts.json
           retention-days: 3
           if-no-files-found: error
