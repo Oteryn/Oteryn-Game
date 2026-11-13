@@ -78,7 +78,6 @@ struct ChannelResumeSource {
     current: Mutex<CompleteReconnectCurrentV1>,
     signing: RecoverySigningTrustObservationV2,
     security: RecoveryAccountSecurityObservationV2,
-    revocation_last_read_ms: Option<i64>,
 }
 impl recovery_source_sealed::Sealed for ChannelResumeSource {}
 impl RecoveryDurabilityEvidenceSourceV2 for ChannelResumeSource {
@@ -107,17 +106,8 @@ impl CompleteReconnectSourceV1 for ChannelResumeSource {
     fn resolve_reconnect(
         &self,
         _identity: &ReconnectIdentityV1,
-        now: i64,
+        _now: i64,
     ) -> Result<CompleteReconnectCurrentV1, ReconnectDurabilityErrorV1> {
-        if let Some(last) = self.revocation_last_read_ms
-            && !crate::durability::platform_streams::security_revocation_read_fresh(
-                true,
-                Some(last),
-                now.saturating_mul(1000),
-            )
-        {
-            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
-        }
         self.current
             .lock()
             .map(|current| current.clone())
@@ -569,19 +559,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .map_err(|_| Unavailable)?;
         let audit = verified.audit();
         let grace_deadline = loss.observation.original_grace_deadline;
-        let revocation_last_read_ms = if self.states.security_revocation_stream_enabled {
-            Some(
-                self.root
-                    .security_revocation_last_read_ms()
-                    .await
-                    .map_err(|_| Unavailable)?
-                    .ok_or(Rejected)?,
-            )
-        } else {
-            None
-        };
         let source = Arc::new(ChannelResumeSource {
-            revocation_last_read_ms,
             current: Mutex::new(CompleteReconnectCurrentV1 {
                 snapshot: CompleteReconnectSnapshotV1 {
                     replacement_anchor: None,
@@ -884,6 +862,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<CompleteReconnectOutcomeV1, AdmissionRefusal> {
         loop {
             let unissued = match store
+                .clone()
+                .with_security_revocation_freshness(self.states.security_revocation_stream_enabled)
                 .apply_registered_complete_reconnect(
                     self.holder,
                     request.clone(),

@@ -129,6 +129,13 @@ fn revocation_generation_cause_replay_and_terminal_reconnect_postgres() -> TestR
 
 #[test]
 fn revocation_freshness_real_resume_postgres() -> TestResult {
+    revocation_freshness_case(false)
+}
+#[test]
+fn revocation_flag_off_without_records_matches_main_postgres() -> TestResult {
+    revocation_freshness_case(true)
+}
+fn revocation_freshness_case(only_flag_off: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -137,7 +144,7 @@ fn revocation_freshness_real_resume_postgres() -> TestResult {
         .name("revocation-freshness".into())
         .stack_size(64 << 20)
         .spawn(move || {
-            let result = run(async |admin| {
+            let result = run(async move |admin| {
                 let h =
                     Harness::create_with_admission_seed(admin, "revocation_freshness", true, false)
                         .await?;
@@ -201,6 +208,17 @@ fn revocation_freshness_real_resume_postgres() -> TestResult {
                             .map_err(debug)?,
                         None
                     );
+                    let records: i64 =
+                        sqlx::query_scalar("SELECT count(*) FROM game_security_revocations")
+                            .fetch_one(&h.pool)
+                            .await?;
+                    assert_eq!(
+                        records, 0,
+                        "flag-off parity has no captured revocation state"
+                    );
+                    if only_flag_off {
+                        return Ok(());
+                    }
                     let credential = fixed_recovery_token(now, 99)?;
                     let attempt = || -> TestResult<ResumeAttempt<'_>> {
                         Ok(ResumeAttempt {
@@ -337,4 +355,28 @@ fn fixed_recovery_token(now: i64, nonce: u8) -> TestResult<String> {
     let input = format!("{header}.{}", codec.encode(serde_json::to_vec(&claims)?));
     let signature = ed25519_dalek::SigningKey::from_bytes(&[23; 32]).sign(input.as_bytes());
     Ok(format!("{input}.{}", codec.encode(signature.to_bytes())))
+}
+
+#[test]
+fn revocation_millisecond_read_timestamp_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(64<<20).spawn(|| run(async |admin| {
+  let h=Harness::create_with_admission_seed(admin,"revocation_milliseconds",true,false).await?;
+  let result:TestResult=async {
+   sqlx::query("UPDATE game_platform_stream_cursors SET advanced_at=to_timestamp(100.777) WHERE stream=3").execute(&h.pool).await?;
+   assert_eq!(h.root.security_revocation_last_read_ms().await.map_err(debug)?,Some(100777));
+   let _clock=super::preadmission::FrozenAdmissionClock::install(&h,130).await?;
+   sqlx::query("ALTER TABLE preadm_clock.instant ALTER COLUMN value TYPE NUMERIC").execute(&h.pool).await?;
+   sqlx::query("UPDATE game_platform_stream_cursors SET advanced_at=to_timestamp(100.000) WHERE stream=3").execute(&h.pool).await?;
+   assert!(h.root.security_revocation_read_fresh_now().await.map_err(debug)?);
+   sqlx::query("UPDATE preadm_clock.instant SET value=130.001").execute(&h.pool).await?;
+   assert!(!h.root.security_revocation_read_fresh_now().await.map_err(debug)?);
+   assert!(security_revocation_read_fresh(true,Some(100000),130000));
+   assert!(!security_revocation_read_fresh(true,Some(100000),130001));
+   Ok(())
+  }.await;let cleanup=h.cleanup().await;result?;cleanup
+ }).map_err(|e|e.to_string()))?.join().map_err(|_|"millisecond case panicked")??;
+    Ok(())
 }

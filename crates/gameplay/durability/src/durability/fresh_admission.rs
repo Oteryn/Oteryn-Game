@@ -321,6 +321,7 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
+    security_revocation_freshness_required: bool,
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
     // Rare Activity release proofs must not enlarge every ordinary admission
     // and reconnect future. Clones retain the same immutable, revalidated proof.
@@ -356,6 +357,11 @@ pub trait TerminalReleaseParticipant: Send + Sync {
         'c: 'a;
 }
 impl FreshAdmissionStore {
+    /// Require a current stream read at PREPARE and COMMIT, independently of entry checks.
+    pub fn with_security_revocation_freshness(mut self,required:bool)->Self {
+        self.security_revocation_freshness_required=required;self
+    }
+
     /// One ADMIT0 predicate at both deciding owners. The caller holds the admission
     /// relation locks; read the current guard through its full mirror/history validator.
     /// Neither the prepared operation nor a callback can supply current runtime facts.
@@ -504,6 +510,7 @@ impl FreshAdmissionStore {
             retired_holder: None,
             departed_activity: None,
             staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -2148,6 +2155,7 @@ impl FreshAdmissionStore {
             retired_holder: None,
             departed_activity: None,
             staff_loss: None,
+            security_revocation_freshness_required: false,
             offline_activity_mismatch: None,
         }
     }
@@ -2851,6 +2859,10 @@ impl FreshAdmissionStore {
             }
             (None, None) if cfg!(any(test, feature = "test-support")) => {}
             _ => return Ok(CompleteReconnectOutcomeV1::Rejected),
+        }
+        if store.security_revocation_freshness_required
+            && !super::platform_streams::revocation_fresh_in_transaction(&mut tx).await? {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
         if commit {
             if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {

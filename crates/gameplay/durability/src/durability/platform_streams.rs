@@ -141,7 +141,29 @@ async fn known(
         .await
 }
 
+/// Evaluate against the database clock after the deciding transaction has acquired its locks.
+pub(crate) async fn revocation_fresh_in_transaction(
+    tx: &mut sqlx::PgConnection,
+) -> Result<bool, DurabilityError> {
+    let (last,now):(Option<i64>,i64)=sqlx::query_as("SELECT floor(extract(epoch FROM advanced_at)*1000)::bigint,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_platform_stream_cursors WHERE stream=3")
+        .fetch_one(tx).await?;
+    Ok(security_revocation_read_fresh(true, last, now))
+}
+
 impl DurabilityRoot {
+    /// Freshness uses the same millisecond database clock as the locked controller decision.
+    pub async fn security_revocation_read_fresh_now(&self) -> Result<bool, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let fresh = revocation_fresh_in_transaction(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(fresh)
+                })
+            })
+            .await
+    }
     /// A captured revocation survives stream outages and disabling the puller.
     pub async fn security_session_revoked(
         &self,
@@ -167,7 +189,7 @@ impl DurabilityRoot {
     pub async fn security_revocation_last_read_ms(&self) -> Result<Option<i64>, DurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
-            let last=sqlx::query_scalar("SELECT floor(extract(epoch FROM advanced_at))::bigint*1000 FROM game_platform_stream_cursors WHERE stream=3")
+            let last=sqlx::query_scalar("SELECT floor(extract(epoch FROM advanced_at)*1000)::bigint FROM game_platform_stream_cursors WHERE stream=3")
                 .fetch_one(&mut *tx).await?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(last)
