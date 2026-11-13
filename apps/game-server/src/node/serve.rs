@@ -829,6 +829,11 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 public.source_authority.clone(),
                 public.epoch_fence_file.clone(),
                 public_projections::v2::Activation {
+                    character_skills: public.character_skills_enabled,
+                    character_achievements: public.character_achievements_enabled,
+                    character_equipment: public.character_equipment_enabled,
+                    character_outfit: public.character_outfit_enabled,
+
                     character_online_sessions: public.character_online_sessions_enabled,
                     world_daily_kills: public.world_daily_kills_enabled,
                 },

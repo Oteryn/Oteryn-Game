@@ -245,6 +245,15 @@ const fn bazaar_enabled() -> bool {
 #[serde(deny_unknown_fields)]
 pub struct PublicProjectionsConfig {
     #[serde(default)]
+    pub character_skills_enabled: bool,
+    #[serde(default)]
+    pub character_achievements_enabled: bool,
+    #[serde(default)]
+    pub character_equipment_enabled: bool,
+    #[serde(default)]
+    pub character_outfit_enabled: bool,
+
+    #[serde(default)]
     pub character_online_sessions_enabled: bool,
     #[serde(default)]
     pub world_daily_kills_enabled: bool,
@@ -875,6 +884,10 @@ impl NodeConfig {
                 platform,
                 &PublicProjectionsConfig {
                     enabled: league.enabled,
+                    character_skills_enabled: false,
+                    character_achievements_enabled: false,
+                    character_equipment_enabled: false,
+                    character_outfit_enabled: false,
                     character_online_sessions_enabled: false,
                     world_daily_kills_enabled: false,
                     client_certificate_file: league.client_certificate_file.clone(),
@@ -1618,6 +1631,49 @@ epoch_fence_file = "/var/lib/oteryn/public-projection/epoch-fence"
                 "[platform.public_projections]",
                 &format!("[platform.public_projections]\n{flag}=\"true\""),
             );
+            assert!(NodeConfig::parse(bad.as_bytes()).is_err());
+        }
+    }
+
+    #[test]
+    fn public_projections_v2_new_family_flags_default_off() {
+        let base = NODE.replace("\n[launch]", PUBLIC);
+        let parsed = NodeConfig::parse(base.as_bytes()).expect("valid config");
+        let flags = parsed.platform.public_projections.expect("section");
+        assert!(
+            !flags.character_skills_enabled
+                && !flags.character_achievements_enabled
+                && !flags.character_equipment_enabled
+                && !flags.character_outfit_enabled
+        );
+        for (index, flag) in [
+            "character_skills_enabled",
+            "character_achievements_enabled",
+            "character_equipment_enabled",
+            "character_outfit_enabled",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let on = base.replace(
+                "[platform.public_projections]",
+                &format!("[platform.public_projections]\n{flag}=true"),
+            );
+            let parsed = NodeConfig::parse(on.as_bytes()).expect("independent opt-in");
+            let flags = parsed.platform.public_projections.expect("section");
+            assert!(!flags.enabled);
+            for (other, enabled) in [
+                flags.character_skills_enabled,
+                flags.character_achievements_enabled,
+                flags.character_equipment_enabled,
+                flags.character_outfit_enabled,
+            ]
+            .iter()
+            .enumerate()
+            {
+                assert_eq!(*enabled, index == other);
+            }
+            let bad = on.replace(&format!("{flag}=true"), &format!("{flag}=\"true\""));
             assert!(NodeConfig::parse(bad.as_bytes()).is_err());
         }
     }

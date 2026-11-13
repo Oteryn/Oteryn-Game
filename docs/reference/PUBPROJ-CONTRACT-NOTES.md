@@ -347,3 +347,43 @@ This includes forced/original trade, inspection, account deletion, VIP,
 field runes and all fourteen selected authority cases. The broad unit run
 remains pending under the owner's PREPUSH-2 cadence exception; content and
 game-server unit libraries are green. No new PUBPROJ numbers were allocated.
+
+## P3 Part A — accepted G-4 revision 3 wire
+
+Base: `ce45063507c22a11e0db7e9c0ff86dacbe6ff834`. Authority: Platform
+`f5f91a6e81bc8b89b51cbb77517253cf549dc4fa`, accepted revision 3 (#1854).
+Adds skills (public), achievements/equipment/outfit (owner-only) wire records,
+canonical encoders and independent default-off activation fields. Missing
+activation fields deserialize as false. No environment variable is invented.
+The shared watermark vocabulary has exactly ten values. Main has five snapshot
+families and no G-12 world_daily payload; its watermark value is represented
+without inventing a snapshot, operation, route, source or producer loop.
+
+The fixture generator preserves the in-scope revision 3 examples. New fixture
+files have one terminal LF as requested; tests strip that file delimiter before
+comparing to the transmitted encoder bytes, which have no terminal LF. Existing
+fixtures and v1 bytes are unchanged. Resource ordinals 10094–10097 follow main's
+maximum 10093; generated entries register the four exact request byte bounds.
+The numbering helper was run; its reported clashes belong to unrelated open PR
+migration allocations, and it does not enumerate resource-limit ordinals.
+
+Part A proves structural bounds, ordered encoding and golden bytes. Catalogue
+resolution (including synthetic fixture catalogue evidence), current ownership
+and its revision floor, committed custody/DisplayedLook and suppression on
+unknown source evidence remain Part B/C source-reader responsibilities. Merely
+constructing a wire record does not prove those facts or authorize disclosure.
+There is no inbound snapshot decoder in the existing Game v2 producer. Invalid
+raw request fixtures are retained for Platform conformance; typed record
+validation is exercised here. The equal-key changed-equipment example is valid
+wire and is a sequence conflict, never a malformed schema; deciding 409 remains
+the Platform ingest responsibility.
+
+The supervisor authorized only mechanical integration compatibility edits:
+config parses four independent default-false flags without new environment
+variables; serve copies them into Activation. Wire-only families are excluded
+from publisher selection even if enabled, and durability returns no snapshot
+and refuses completeness facts for them until Part B provides the sources.
+
+The pasted death example's `"killers":["Beren","Mira"]` differs from main's
+stable-identity records. Per supervisor decision, deaths are outside P3: neither
+the existing encoder nor death fixtures change; Platform receives the gap.

@@ -10,8 +10,11 @@ This profile reconciles Platform main's
 `docs/contracts/OTERYN_V2_PUBLIC_GAME_FAMILIES_EXTENSION_CONTRACT_PROPOSAL.md`
 revision 2 with Game V1 §§2–8. It replaces only V1's three candidate families;
 accepted V1 routes and its closed watermark enum retain their schemas.
-Skills, achievements, equipment, outfit, journal, atlas and catalogue adapters
-are outside this acceptance.
+The P3 wire extension for skills, achievements, equipment and outfit is accepted
+against Platform revision 3 at `f5f91a6e81bc8b89b51cbb77517253cf549dc4fa`
+(#1854), owner 2026-11-13. Part A supplies wire only: source capture and publisher
+activation remain separate. Journal, atlas and catalogue adapters stay outside
+this acceptance. The existing Game death amendment below remains unchanged.
 
 ## Common wire
 
@@ -30,6 +33,10 @@ body. Observation is revision assignment time and remains identical on retry.
 | character_deaths | PublishCharacterDeathsV2 | /internal/v2/game-public/character-deaths | 32768 | character_id | deaths |
 | guild | PublishGuildV2 | /internal/v2/game-public/guild | 393216 | guild_id | guild |
 | house | PublishHouseV2 | /internal/v2/game-public/house | 2048 | world_id, house_key | house |
+| character_skills | PublishCharacterSkillsV2 | /internal/v2/game-public/character-skills | 4096 | character_id | skills |
+| character_achievements | PublishCharacterAchievementsV2 | /internal/v2/game-public/character-achievements | 262144 | character_id | achievements |
+| character_equipment | PublishCharacterEquipmentV2 | /internal/v2/game-public/character-equipment | 8192 | character_id | equipment |
+| character_outfit | PublishCharacterOutfitV2 | /internal/v2/game-public/character-outfit | 2048 | character_id | outfit |
 
 The purpose-bound public-projection mTLS identity and external epoch fence are
 shared with V1. One publication per family is in flight. Connect ≤1s, handshake
@@ -84,6 +91,48 @@ publish `house: []`. Unknown/hidden owner or disposition publishes UNAVAILABLE.
 Owner name is display only. Preserve the V1 §7.3 name handoff barrier before a
 new holder can be joined by name. No bids, maxima, accounts, owner IDs or ACL.
 
+## P3 character views (revision 3, wire only)
+
+Each body is 0..1 records: an empty outer list suppresses earlier data.
+All records start with `world_id, character_revision`. Skills are public;
+achievements, equipment and outfit are owner-only despite the ingest prefix.
+Current-owner authorization and Character Authority's ownership-transition
+revision floor are prerequisites for the owner-only views; watermark freshness
+alone cannot establish them.
+
+Skills appends, in order: `level, total_experience, magic_level, fist_level,
+club_level, sword_level, axe_level, distance_level, shielding_level, fishing_level`.
+Level is positive decimal-string uint32; XP is decimal-string 0..i64::MAX.
+Magic is integer 0..1000; the seven other skills are integers 10..1000.
+Values exclude temporary modifiers; level and XP may decrease.
+
+Achievements appends `catalogue_revision, earned`. Revision keys match
+`[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`. Earned rows contain exactly `key, earned_at`,
+strictly ascending unique key, positive Unix seconds up to i64::MAX.
+Achievement keys are `oteryn:achievement/` plus 1..141 lowercase letters,
+digits or underscores (total at most 160 bytes), resolved against that exact
+catalogue. More than 1024 rows refuses the whole snapshot, never truncates.
+These are the current owner's account facts viewed through the Character;
+no previous owner's facts may survive an ownership transition.
+
+Equipment appends `slots` (0..10). Rows contain `slot, item_key, item_revision`,
+strictly ordered and unique: Head, Necklace, Container, Armor, RightHand,
+LeftHand, Legs, Feet, Ring, Ammo. Only occupied primary slots from committed
+custody qualify; a reserved two-handed slot is not a second item.
+
+Outfit appends `content_revision, outfit_key, colours, addons, mount`.
+Colours are exactly four integers 0..65535 in head/body/legs/feet order;
+addons is integer 0..255. Mount is 0..1 records with only `mount_key`.
+The source must export compatible DisplayedLook, not selection/unlocks;
+deferred mount display emits no mount. Keys use the common key grammar.
+
+Four independent `[platform.public_projections]` flags default false, missing
+means false: `character_skills_enabled`, `character_achievements_enabled`,
+`character_equipment_enabled`, `character_outfit_enabled`. The existing global
+`enabled` prerequisite remains unchanged. Part A excludes these four families
+from producible publisher work even when flags are true, until Part B supplies
+the authoritative source. No new environment variable is defined.
+
 ## Persistence, watermark and recovery
 
 Source changes, per-subject revision and outbox are one transaction under their
@@ -94,8 +143,9 @@ through its acknowledged pair, retaining concurrent successors.
 V2 watermark operation `PublishPublicProjectionWatermarkV2`, POST
 `/internal/v2/game-public/watermark`, at most 512 bytes. Exact ordered fields:
 `contract_version, operation, source_authority, family, projection_epoch,
-complete_through, observed_at`. The V2 family enum includes character_deaths,
-guild, house, world_daily, character_online_sessions and world_daily_kills.
+complete_through, observed_at`. The V2 watermark family enum is closed: character_deaths,
+guild, house, character_skills, character_achievements, character_equipment,
+character_outfit, character_online_sessions, world_daily_kills, world_daily.
 Do not send these via the V1 watermark. Completeness cannot pass unresolved
 source facts, pending outbox rows, resync work or privacy withdrawals.
 

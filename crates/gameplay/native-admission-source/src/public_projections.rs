@@ -715,6 +715,10 @@ impl PublicSink for MtlsPublicSink {
                 operation,
                 Operation::PublishCharacterDeathsV2
                     | Operation::PublishGuildV2
+                    | Operation::PublishCharacterSkillsV2
+                    | Operation::PublishCharacterAchievementsV2
+                    | Operation::PublishCharacterEquipmentV2
+                    | Operation::PublishCharacterOutfitV2
                     | Operation::PublishHouseV2
                     | Operation::PublishCharacterOnlineSessionV2
                     | Operation::PublishWorldDailyKillsV2

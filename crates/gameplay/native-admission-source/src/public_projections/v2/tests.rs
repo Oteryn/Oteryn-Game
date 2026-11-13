@@ -232,3 +232,345 @@ fn creature_wire_identity_cannot_use_reserved_analytics_buckets() {
         assert!(encode(AUTHORITY, &snapshot).is_err());
     }
 }
+
+#[test]
+fn public_projections_v2_new_family_flags_default_off() {
+    assert_eq!(
+        serde_json::from_str::<Activation>("{}").unwrap(),
+        Activation::default()
+    );
+    let partial: Activation = serde_json::from_str(r#"{"character_equipment":true}"#).unwrap();
+    assert!(partial.character_equipment);
+    assert!(
+        !partial.character_achievements && !partial.character_outfit && !partial.character_skills
+    );
+    let families = [
+        Family::CharacterSkills,
+        Family::CharacterAchievements,
+        Family::CharacterEquipment,
+        Family::CharacterOutfit,
+    ];
+    for (i, family) in families.iter().enumerate() {
+        assert!(!family.enabled(Activation::default()));
+        let mut activation = Activation::default();
+        match family {
+            Family::CharacterSkills => activation.character_skills = true,
+            Family::CharacterAchievements => activation.character_achievements = true,
+            Family::CharacterEquipment => activation.character_equipment = true,
+            Family::CharacterOutfit => activation.character_outfit = true,
+            _ => unreachable!(),
+        }
+        for (j, other) in families.iter().enumerate() {
+            assert_eq!(other.enabled(activation), i == j);
+        }
+    }
+}
+
+fn character_view_fixture(name: &str) -> (String, Snapshot) {
+    let file = std::fs::read_to_string(format!("{FIXTURES}{name}_v2.json")).unwrap();
+    assert!(file.ends_with('\n') && !file.ends_with("\n\n"));
+    let wire = file.strip_suffix('\n').unwrap().to_owned();
+    let v: serde_json::Value = serde_json::from_str(&wire).unwrap();
+    let body = match v["operation"].as_str().unwrap() {
+        "PublishCharacterSkillsV2" => {
+            Body::Skills(serde_json::from_value(v["skills"].clone()).unwrap())
+        }
+        "PublishCharacterAchievementsV2" => {
+            Body::Achievements(serde_json::from_value(v["achievements"].clone()).unwrap())
+        }
+        "PublishCharacterEquipmentV2" => {
+            Body::Equipment(serde_json::from_value(v["equipment"].clone()).unwrap())
+        }
+        "PublishCharacterOutfitV2" => {
+            Body::Outfit(serde_json::from_value(v["outfit"].clone()).unwrap())
+        }
+        _ => panic!("unexpected fixture operation"),
+    };
+    (
+        wire,
+        Snapshot {
+            subject: v["character_id"].as_str().unwrap().into(),
+            world_id: String::new(),
+            projection_epoch: v["projection_epoch"].as_str().unwrap().parse().unwrap(),
+            projection_revision: v["projection_revision"].as_str().unwrap().parse().unwrap(),
+            source_observed_at: v["source_observed_at"].as_str().unwrap().parse().unwrap(),
+            body,
+        },
+    )
+}
+fn character_view_golden(name: &str, operation: Operation, bytes: usize) {
+    let (wire, s) = character_view_fixture(name);
+    assert_eq!(encode(AUTHORITY, &s).unwrap(), wire);
+    assert_eq!(s.family().operation(), operation);
+    assert_eq!(operation.request_bytes_max(), bytes);
+    assert_eq!(
+        operation.path(),
+        format!("/internal/v2/game-public/{}", name.replace('_', "-"))
+    );
+}
+#[test]
+fn public_projections_v2_skills_golden_bytes() {
+    character_view_golden(
+        "character_skills",
+        Operation::PublishCharacterSkillsV2,
+        4096,
+    );
+}
+#[test]
+fn public_projections_v2_achievements_golden_bytes() {
+    character_view_golden(
+        "character_achievements",
+        Operation::PublishCharacterAchievementsV2,
+        262144,
+    );
+}
+#[test]
+fn public_projections_v2_equipment_golden_bytes() {
+    character_view_golden(
+        "character_equipment",
+        Operation::PublishCharacterEquipmentV2,
+        8192,
+    );
+}
+#[test]
+fn public_projections_v2_outfit_golden_bytes() {
+    character_view_golden(
+        "character_outfit",
+        Operation::PublishCharacterOutfitV2,
+        2048,
+    );
+}
+#[test]
+fn public_projections_v2_skills_suppression_golden_bytes() {
+    let (wire, s) = character_view_fixture("character_skills_suppression");
+    assert_eq!(encode(AUTHORITY, &s).unwrap(), wire);
+    let Body::Skills(rows) = &s.body else {
+        panic!("skills")
+    };
+    assert!(rows.is_empty());
+}
+#[test]
+fn public_projections_v2_watermark_v2_family_enum_closed() {
+    for family in [
+        "character_deaths",
+        "guild",
+        "house",
+        "character_skills",
+        "character_achievements",
+        "character_equipment",
+        "character_outfit",
+        "character_online_sessions",
+        "world_daily_kills",
+        "world_daily",
+    ] {
+        let json = format!("\"{family}\"");
+        let parsed: WatermarkFamily = serde_json::from_str(&json).unwrap();
+        assert_eq!(serde_json::to_string(&parsed).unwrap(), json);
+        assert!(
+            encode_watermark(
+                AUTHORITY,
+                parsed,
+                Facts {
+                    projection_epoch: 1,
+                    oldest_undelivered_ms: None,
+                    now_ms: 1790000003000
+                },
+                Duration::from_secs(3)
+            )
+            .is_ok()
+        );
+    }
+    for unknown in [
+        "character_activity",
+        "world_online",
+        "unknown",
+        "CharacterSkills",
+    ] {
+        assert!(serde_json::from_str::<WatermarkFamily>(&format!("\"{unknown}\"")).is_err());
+    }
+    let wire =
+        std::fs::read_to_string(format!("{FIXTURES}character_skills_watermark_v2.json")).unwrap();
+    assert_eq!(
+        encode_watermark(
+            AUTHORITY,
+            Family::CharacterSkills,
+            Facts {
+                projection_epoch: 1,
+                oldest_undelivered_ms: None,
+                now_ms: 1790000003000
+            },
+            Duration::from_secs(3)
+        )
+        .unwrap(),
+        wire.strip_suffix('\n').unwrap()
+    );
+}
+#[test]
+fn public_projections_v2_achievements_over_1024_refused_not_truncated() {
+    let (_, mut s) = character_view_fixture("character_achievements");
+    let Body::Achievements(rows) = &mut s.body else {
+        panic!("achievements")
+    };
+    rows[0].earned = (0..1024)
+        .map(|n| character_views::Earned {
+            key: format!("oteryn:achievement/fixture_{n:04}"),
+            earned_at: "1789990000".into(),
+        })
+        .collect();
+    assert!(encode(AUTHORITY, &s).is_ok());
+    let Body::Achievements(rows) = &mut s.body else {
+        panic!("achievements")
+    };
+    rows[0].earned.push(character_views::Earned {
+        key: "oteryn:achievement/fixture_1024".into(),
+        earned_at: "1789990000".into(),
+    });
+    assert!(encode(AUTHORITY, &s).is_err());
+    let Body::Achievements(rows) = &s.body else {
+        panic!("achievements")
+    };
+    assert_eq!(rows[0].earned.len(), 1025);
+}
+#[test]
+fn public_projections_v2_equipment_slot_order_and_uniqueness() {
+    use character_views::{Equipped, Slot};
+    let (_, mut s) = character_view_fixture("character_equipment");
+    let Body::Equipment(rows) = &mut s.body else {
+        panic!("equipment")
+    };
+    rows[0].slots = [
+        Slot::Head,
+        Slot::Necklace,
+        Slot::Container,
+        Slot::Armor,
+        Slot::RightHand,
+        Slot::LeftHand,
+        Slot::Legs,
+        Slot::Feet,
+        Slot::Ring,
+        Slot::Ammo,
+    ]
+    .into_iter()
+    .map(|slot| Equipped {
+        slot,
+        item_key: "oteryn:item.fixture-helmet".into(),
+        item_revision: "fixture-v1".into(),
+    })
+    .collect();
+    assert!(encode(AUTHORITY, &s).is_ok());
+    let Body::Equipment(rows) = &mut s.body else {
+        panic!("equipment")
+    };
+    rows[0].slots.swap(0, 1);
+    assert!(encode(AUTHORITY, &s).is_err());
+    let Body::Equipment(rows) = &mut s.body else {
+        panic!("equipment")
+    };
+    rows[0].slots.swap(0, 1);
+    rows[0].slots[1].slot = Slot::Head;
+    assert!(encode(AUTHORITY, &s).is_err());
+    assert!(serde_json::from_str::<Slot>("\"head\"").is_err());
+}
+#[test]
+fn public_projections_v2_character_view_bounds_and_exact_members() {
+    let (_, mut s) = character_view_fixture("character_skills");
+    let Body::Skills(rows) = &mut s.body else {
+        panic!("skills")
+    };
+    rows[0].level = "4294967296".into();
+    assert!(encode(AUTHORITY, &s).is_err());
+    let Body::Skills(rows) = &mut s.body else {
+        panic!("skills")
+    };
+    rows[0].level = "412".into();
+    rows[0].fist_level = 9;
+    assert!(encode(AUTHORITY, &s).is_err());
+    let (_, mut s) = character_view_fixture("character_outfit");
+    let Body::Outfit(rows) = &mut s.body else {
+        panic!("outfit")
+    };
+    let mut raw = serde_json::to_value(&rows[0]).unwrap();
+    raw["colours"] = serde_json::json!([1, 2, 3, 65536]);
+    assert!(serde_json::from_value::<character_views::Outfit>(raw.clone()).is_err());
+    raw["colours"] = serde_json::json!([1, 2, 3, 4]);
+    raw["account_id"] = serde_json::json!("private");
+    assert!(serde_json::from_value::<character_views::Outfit>(raw).is_err());
+    rows[0].mount = vec![
+        character_views::Mount {
+            mount_key: "mount.fixture".into()
+        };
+        2
+    ];
+    assert!(encode(AUTHORITY, &s).is_err());
+    for bad in ["", "01", "0", "18446744073709551616"] {
+        let (_, mut s) = character_view_fixture("character_skills");
+        let Body::Skills(rows) = &mut s.body else {
+            panic!("skills")
+        };
+        rows[0].character_revision = bad.into();
+        assert!(encode(AUTHORITY, &s).is_err());
+    }
+    let (_, mut s) = character_view_fixture("character_achievements");
+    let Body::Achievements(rows) = &mut s.body else {
+        panic!("achievements")
+    };
+    rows[0].earned[0].earned_at = "0".into();
+    assert!(encode(AUTHORITY, &s).is_err());
+    let (_, mut s) = character_view_fixture("character_equipment");
+    s.subject = "01934f10-7c04-4001-805b-3b1122334401".into();
+    assert!(encode(AUTHORITY, &s).is_err());
+}
+
+#[test]
+fn public_projections_v2_new_families_never_published_before_source_support() {
+    let activation = Activation {
+        character_skills: true,
+        character_achievements: true,
+        character_equipment: true,
+        character_outfit: true,
+        ..Activation::default()
+    };
+    let selected: Vec<_> = Family::ALL
+        .into_iter()
+        .filter(|family| family.publishable(activation))
+        .collect();
+    for family in [
+        Family::CharacterSkills,
+        Family::CharacterAchievements,
+        Family::CharacterEquipment,
+        Family::CharacterOutfit,
+    ] {
+        assert!(family.enabled(activation));
+        assert!(!family.produced());
+        assert!(!selected.contains(&family));
+    }
+    assert_eq!(
+        selected,
+        [Family::CharacterDeaths, Family::Guild, Family::House]
+    );
+}
+
+#[test]
+fn public_projections_v2_existing_family_rev3_golden_bytes() {
+    for (name, revision) in [("guild_rev3_example", 5), ("house_shop_rev3_example", 12)] {
+        let (file, mut snapshot) = fixture(name);
+        snapshot.projection_revision = revision;
+        assert_eq!(
+            encode(AUTHORITY, &snapshot).unwrap(),
+            file.strip_suffix('\n').unwrap()
+        );
+    }
+}
+
+#[test]
+fn public_projections_v2_equipment_conflict_fixture_is_schema_valid() {
+    let (original, first) = character_view_fixture("character_equipment");
+    let (conflict, changed) = character_view_fixture("character_equipment_invalid_conflict");
+    assert_eq!(first.subject, changed.subject);
+    assert_eq!(first.family(), changed.family());
+    assert_eq!(first.projection_epoch, changed.projection_epoch);
+    assert_eq!(first.projection_revision, changed.projection_revision);
+    assert_ne!(first.body, changed.body);
+    assert_eq!(encode(AUTHORITY, &changed).unwrap(), conflict);
+    assert_ne!(original, conflict);
+}
