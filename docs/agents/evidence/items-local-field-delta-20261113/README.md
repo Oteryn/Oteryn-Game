@@ -25,6 +25,7 @@ source comparisons, including their candidate-only limitations.
 | `ui-field-reuse-and-queue.json` |Already-observed properties on2623 scoped physical UI rows and314 overlapping legacy observations; ordered work queue that reuses89 private PNGs and one clipboard capture before recapture |
 | `current-proficiency-delta.json` |443/444 profiles unchanged;3678/3680 perks unchanged; only profile499 level2/perk1 and level4/perk1 changed |
 | `source-receipts.json` |Exact dependencies, hashes, source comparison scope and private custody receipts |
+| `saved1853-proof-reconciliation.json` |All89 saved PNGs classified; eight new potion cards, rat claws Basic fields, existing compass reuse and historical copy evidence |
 
 The source package is15.33.dd0955. The live executable SHA is
 7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34 and
@@ -49,9 +50,32 @@ bindings are added. Existing legacy314 records have unknown global ordinals
 and cannot be subtracted as314 distinct items. Missing relations do not mean
 an item was never observed.
 
-The next queue begins with associating the already-saved1853 capture material
-to cards and transcribing any genuine additional fields, including potion-tail
-material. It then resolves ambiguous/held identities. Only a verified physical
+The1853 reconciliation now classifies every saved image. It recovers eight new
+Potions cards after the strong-health anchor: strong mana, superior mana,
+supreme health, transcendence, ultimate health, ultimate mana, ultimate spirit
+and wealth duplex. Their continued ordinals37–44 are conditional on the old
+strong-health36 anchor, not a new independent top-to-bottom census. New rat
+claws Basic observations include Attack40, Defence16, two imbuement slots and
+Weight64.00oz, plus level/vocation/type/body/classification. These are scoped UI
+observations and name candidates, not installed canonical stats.
+Nineteen complete first-panel NPC quote rows are retained with their visible
+Buy From/Sell To direction and explicit gp label. Clipped fourth rows and
+independently scrolling vendor tails remain outside that coverage.
+
+Forty-three images (indices22–64) have byte-identical Basic-pane pixels for
+wealth duplex while other names scroll past. Image84 similarly retains rat
+claws details while the list already shows mariner search results. Neither
+sequence supplies stats for the newly visible list names. Two proficiency
+tooltips supply UI-only corroboration (2.50% Undead bonus and5.00% highest
+combat-skill extra autoattack damage); no runtime formula is established.
+
+The compass numeric fields match existing row2354; its literal clipboard
+Description is represented by exact custody hash/length, not republished prose.
+Login/disconnection/world/list-only images are explicitly excluded from card
+field evidence. No new screen capture or game input occurred.
+
+The next queue reuses those recovered fields and resolves ambiguous/held
+identities. Only a verified physical
 card/field not covered by those sources becomes eligible for a new GUI read.
 The previous clipboard capture proves a historical successful text copy, not
 current copy support on every field or session. This publication sends no game
@@ -97,8 +121,9 @@ git diff --check
 
 The optional source check verifies pinned file hashes, all6470 field/tag
 projections and candidate property unions against existing published data.
-Negative controls reject loss of market-absent rows, a promoted binding and
-a substituted profile delta. This is not independent review or runtime parity.
+Negative controls reject loss of market-absent rows, a promoted binding,
+a substituted profile delta and assigning stale wealth-duplex details to a
+different visible list name. This is not independent review or runtime parity.
 No game build applies to these evidence-only paths. Draft publication does not
 authorize merge or deployment.
 

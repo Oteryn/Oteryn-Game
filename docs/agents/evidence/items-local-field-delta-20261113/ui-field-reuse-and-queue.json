@@ -27086,11 +27086,12 @@
   "next_work_in_order": [
     {
       "priority": 1,
-      "task": "RECONCILE_ALREADY_CAPTURED_1853_MATERIAL",
+      "task": "REUSE_RECONCILED_1853_FIELDS",
       "private_directory": "/home/lab/oteryn-item-cyclopedia-fill-20261113-1853",
       "files": 90,
       "manifest_sha256": "8475efbdd4940e956da9bc406db60f8ba84ec9d9e70458a3059980b7fa270f92",
-      "description": "89 private PNGs and one clipboard capture; identify screenshot-to-card links and potion tail before any recapture. Collector notes are not independent per-item verification."
+      "description": "All89 images classified with receipts. Eight new potion cards and rat claws Basic recovered; compass numeric values reuse row2354. Wealth-duplex stale selection spans43 images. See supplement before planning any fresh reads.",
+      "reconciliation_complete_for_all89_images": true
     },
     {
       "priority": 2,
@@ -27121,5 +27122,6 @@
   },
   "not_a_count_of_remaining_physical_items": true,
   "no_6470_minus_2623_subtraction": true,
-  "GUI_complete": false
+  "GUI_complete": false,
+  "saved1853_reconciliation": "saved1853-proof-reconciliation.json"
 }

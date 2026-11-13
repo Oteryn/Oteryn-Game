@@ -75,6 +75,25 @@ def sources(root, a, q):
     assert any(v == 0 and not isinstance(v, bool) for pairs in f["known_flag_sets"] for k,v in pairs)
 
 
+def reconcile(r):
+    proofs = r["image_receipts"]
+    assert len(proofs) == 89 and [p["private_image_index0"] for p in proofs] == list(range(89))
+    assert len({p["sha256"] for p in proofs}) == 89
+    assert sum(p["disposition"] == "SELECTED_BASIC_CARD" for p in proofs) == 66
+    assert r["summary"]["new_potion_cards_beyond_pinned36"] == 8
+    assert r["summary"]["new_ID_bindings"] == 0 and not r["summary"]["all_UI_complete"]
+    assert len(r["new_potion_observations"]) == 8
+    assert sum(len(x["visible_complete_quote_rows"]) for x in r["new_potion_observations"]) == 19
+    assert [x["continuation_ordinal_if_existing_strong_health_anchor36"] for x in r["new_potion_observations"]] == list(range(37,45))
+    assert all(x["physical_ordinal_independently_verified"] is None and x["ID_binding"] == "CANDIDATE_ONLY" for x in r["new_potion_observations"])
+    assert r["new_scoped_basic_observation"]["observed_properties"]["Weight"] == "64.00 oz"
+    assert r["existing_card_reuse"]["unchanged_properties"]["Weight"] == "30.00 oz"
+    assert r["existing_card_reuse"]["existing_UI_row_index0"] == 2354
+    assert r["retained_selection_proof"]["all43_regions_identical"]
+    assert all(proofs[i]["selected_card_name"] == "wealth duplex" for i in range(22,65))
+    assert proofs[84]["selected_card_name"] == "rat claws"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -86,6 +105,16 @@ def main():
              "ui-field-reuse-and-queue.json", "current-proficiency-delta.json", "compiled-enum-delta.json"]
     data = [load(HERE,n) for n in names]
     validate(*data)
+    rec = load(HERE, "saved1853-proof-reconciliation.json")
+    reconcile(rec)
+    stale = copy.deepcopy(rec)
+    stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
+    try:
+        reconcile(stale)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Stale-selection substitution was accepted")
     controls = []
     bad = copy.deepcopy(data); bad[0]["rows"] = [r for r in bad[0]["rows"] if r[1] is not None]
     controls.append(bad)
@@ -101,7 +130,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types,1288 market-absent;2623 UI+314 legacy;2 profile deltas;3 negative controls"
+    print("PASS:6470 appearances/6228 types,1288 market-absent;2623 UI+314 legacy;2 profile deltas;89 saved proofs;4 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

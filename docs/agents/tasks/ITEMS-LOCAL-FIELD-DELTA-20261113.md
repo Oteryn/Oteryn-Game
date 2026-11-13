@@ -8,7 +8,7 @@ status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-local-field-delta-20261113
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/3180
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
@@ -51,6 +51,14 @@ and field collection. See packet README and queue for explicit remaining work.
 Original1853 media must be associated/transcribed before requesting repeat GUI
 reads; GUI copy capability and shared reader coordination must be current.
 No total remaining GUI item count or all-category parity claim.
+
+AUTHORING resumed from freshly read3180 head
+9312da8eede49cd91519547bddd6618eaf969b9f for the authorized saved-proof
+reconciliation. All89 original PNG hashes and one clipboard hash verified;
+eight new Potions cards and rat claws Basic recovered, compass numeric fields
+reused. Forty-three wealth-duplex Basic panes are pixel-identical despite list
+scrolling; do not promote other visible names to selected-card observations.
+No GUI input or new screenshots. Current session/copy capability remains held.
 
 ## Validation
 
