@@ -55,6 +55,52 @@ def download(url, bound):
     return raw
 
 
+def factory_arguments(tokens, opening):
+    """Return complete top-level argument expressions; never drop variant/alias."""
+    arguments = []
+    current = []
+    depth = 0
+    for token in tokens[opening+1:]:
+        if token.kind != 'string' and token.value == ')' and depth == 0:
+            if current:
+                arguments.append(current)
+            elif arguments:
+                arguments.append([])
+            return [{'literal': expression[0].value} if len(expression) == 1 and expression[0].kind == 'string'
+                    else {'dynamic_tokens': [t.value for t in expression]}
+                    for expression in arguments]
+        if token.kind != 'string' and token.value == ',' and depth == 0:
+            arguments.append(current)
+            current = []
+            continue
+        if token.value in {'(', '{', '['} and token.kind != 'string':
+            depth += 1
+        elif token.value in {')', '}', ']'} and token.kind != 'string':
+            depth -= 1
+        current.append(token)
+        if len(current) > 128 or len(arguments) > 8:
+            raise ValueError('factory expression exceeds bound')
+    raise ValueError('unclosed factory argument list')
+
+
+def registry_keys(arguments):
+    # Exact pinned luaGameCreateMonsterType semantics. Dynamic names/variants/
+    # alternates stay unresolved; first-argument presence alone is insufficient.
+    if not arguments or any('literal' not in a for a in arguments[:3]):
+        return None
+    name = arguments[0]['literal']
+    variant = arguments[1]['literal'] if len(arguments) > 1 else ''
+    alternate = arguments[2]['literal'] if len(arguments) > 2 else ''
+    keys = set()
+    if variant.startswith('!'):
+        keys.add(name)
+        variant = variant[1:]
+    keys.add(variant + '|' + name if variant else name)
+    if alternate:
+        keys.add(alternate)
+    return sorted(key.lower() for key in keys)
+
+
 def scan_lua(text, tokenize):
     tokens = tokenize(text)
     rows = {'constructors': [], 'factory_other_references': [], 'births': [],
@@ -71,6 +117,9 @@ def scan_lua(text, tokenize):
         row = {'line': token.line, 'direct_Game_call': direct}
         if literal:
             row['name'] = tokens[i+2].value
+        if token.value == 'createMonsterType' and direct and call:
+            row['arguments'] = factory_arguments(tokens, i+1)
+            row['derived_registry_keys'] = registry_keys(row['arguments'])
         if token.value == 'createMonsterType':
             rows['constructors' if direct and literal else 'factory_other_references'].append(row)
         elif direct and literal:
@@ -114,6 +163,7 @@ def extract(repository, output):
     total = 0
     facts = []
     registrations = {}
+    all_factories = []
     references = []
     dynamic = []
     literals = []
@@ -148,6 +198,7 @@ def extract(repository, output):
                 if path.endswith('.lua'):
                     parsed = scan_lua(raw.decode('utf-8-sig'), module.tokens)
                     for row in parsed['constructors']:
+                        all_factories.append({**record, **row})
                         registrations.setdefault(row['name'].lower(), []).append({**record, **row,
                             'disabled_filename': Path(path).name.startswith('#')})
                     for kind, destination in [('factory_other_references', references),
@@ -182,6 +233,11 @@ def extract(repository, output):
         'reachability_note': 'Additional literal names discovered in audit scripts may belong to parent branches outside the admitted W01 cohort; namespace presence is not callback admission.',
         'literal_birth_calls': literals, 'dynamic_birth_calls': dynamic_births,
         'all_literal_constructor_names': sorted(registrations),
+        'all_literal_factory_argument_facts': all_factories,
+        'all_derived_registry_keys': sorted({key for row in all_factories
+                                            for key in (row.get('derived_registry_keys') or [])}),
+        'unresolved_factory_argument_facts': [row for row in all_factories
+                                               if row.get('derived_registry_keys') is None],
         'factory_alias_or_dynamic_references': references, 'dynamic_execution_sites': dynamic,
         'engine_loader_and_registry_facts': engine_facts,
         'source_files': sorted(facts, key=lambda x:x['path']),
