@@ -1,12 +1,13 @@
 use super::PinnedActivitySourceRoom;
 
 pub(super) fn callbacks_available(source: PinnedActivitySourceRoom) -> bool {
-    // Greed remains source-only until the Sphere health conflict is settled:
-    // compiled15, both pinned donors10000, retained wiki15.000 (15000).
-    // This gate changes no HP and does not qualify an invented balance rule.
+    // Owner ANSWER6839182665 selects effective Sphere15000 from retained Wiki
+    // evidence. The decoder still requires the exact raw witness and the
+    // template independently requires its qualified effective health policy.
     matches!(
         source,
         PinnedActivitySourceRoom::GoshnarsMalice
+            | PinnedActivitySourceRoom::GoshnarsGreed
             | PinnedActivitySourceRoom::GoshnarsSpite
             | PinnedActivitySourceRoom::GoshnarsHatred
             | PinnedActivitySourceRoom::GoshnarsCruelty

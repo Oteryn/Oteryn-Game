@@ -880,6 +880,7 @@ pub(super) async fn npc_bank_talk(
         &intent,
         &runtime,
         inventory.as_ref(),
+        reward_callbacks::Phase::Rewards,
     ) {
         drop(runtime);
         drop(_trade_permit);
@@ -965,6 +966,19 @@ pub(super) async fn npc_bank_talk(
         drop(runtime);
         drop(_trade_permit);
         return catalogue::apply(admission, actor, command, intent, step).await;
+    }
+    if let Some(step) = reward_callbacks::prepare(
+        admission,
+        actor,
+        command,
+        &intent,
+        &runtime,
+        inventory.as_ref(),
+        reward_callbacks::Phase::Offers,
+    ) {
+        drop(runtime);
+        drop(_trade_permit);
+        return quest_dialogue::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = viola::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

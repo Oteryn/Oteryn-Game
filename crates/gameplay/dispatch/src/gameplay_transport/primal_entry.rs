@@ -17,19 +17,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     fn primal_template(&self) -> Result<QualifiedActivityRoomTemplate, ActivityRefusal> {
         let active = self
             .active_generation
-            .ok_or(ActivityRefusal::ContentUnavailable)?;
+            .ok_or(ActivityRefusal::ContentUnavailable)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                eprintln!("PR3056_PRIMAL_ENTRY stage=active_generation refusal=ContentUnavailable");
+            })?;
         let room = self
             .activity_runtimes
             .source_room(PinnedActivitySourceRoom::Primal)
-            .ok_or(ActivityRefusal::ContentUnavailable)?;
+            .ok_or(ActivityRefusal::ContentUnavailable)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                eprintln!(
+                    "PR3056_PRIMAL_ENTRY stage=registered_source_room refusal=ContentUnavailable"
+                );
+            })?;
         let revision = active
             .native_gameplay()
             .and_then(|native| native.training_formula())
             .map(|formula| formula.content_revision())
-            .ok_or(ActivityRefusal::ContentUnavailable)?;
+            .ok_or(ActivityRefusal::ContentUnavailable)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                eprintln!("PR3056_PRIMAL_ENTRY stage=training_revision refusal=ContentUnavailable");
+            })?;
         active
             .qualify_primal_activity_template(room, revision)
-            .map_err(|_| ActivityRefusal::ContentUnavailable)
+            .map_err(|_error| {
+                #[cfg(test)]
+                {
+                    let native = active.native_gameplay();
+                    eprintln!(
+                        "PR3056_PRIMAL_ENTRY stage=qualified_template refusal={_error:?} closure={} callbacks={} pod_present={} corpse_present={}",
+                        native.is_some_and(|native| crate::content::bosses::primal_closure::qualify(native).is_some()),
+                        native.is_some_and(|native| native.qualifies_primal_callbacks(active.identity().server_artifact_digest())),
+                        native.is_some_and(|native| native.item_policy("oteryn:item.tibia.i39176", "definition-r1").is_some()),
+                        native.is_some_and(|native| native.reward_table().row(CREATURE).ok().is_some_and(|reward| reward.corpse_item.is_some())),
+                    );
+                }
+                ActivityRefusal::ContentUnavailable
+            })
     }
     pub(super) async fn prepare_primal_catalogue(
         &self,
@@ -42,8 +69,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let origin = self
             .effective_rooms()
             .gate_field_step_ingress()
-            .ok_or(ActivityRefusal::ContentUnavailable)?;
+            .ok_or(ActivityRefusal::ContentUnavailable)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                eprintln!("PR3056_PRIMAL_ENTRY stage=source_lobby_room refusal=ContentUnavailable");
+            })?;
         if !active.qualifies_primal_source_lobby(origin) {
+            #[cfg(test)]
+            eprintln!(
+                "PR3056_PRIMAL_ENTRY stage=source_lobby_qualification refusal=ContentUnavailable"
+            );
             return Err(ActivityRefusal::ContentUnavailable);
         }
         let fence = admitted
@@ -52,10 +87,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !ActivityHandoffOwner::new(self.root.clone())
             .activate_primal_boss_catalogue(self.character, self.holder, fence, active, &template)
             .await
-            .map_err(|_| ActivityRefusal::AuthorityRejected)?
+            .map_err(|_error| {
+                #[cfg(test)]
+                eprintln!("PR3056_PRIMAL_ENTRY stage=catalogue_activation refusal={_error:?}");
+                ActivityRefusal::AuthorityRejected
+            })?
         {
+            #[cfg(test)]
+            eprintln!("PR3056_PRIMAL_ENTRY stage=catalogue_activation refusal=ContentChanged");
             return Err(ActivityRefusal::ContentChanged);
         }
+        #[cfg(test)]
+        eprintln!("PR3056_PRIMAL_ENTRY stage=catalogue_activation accepted");
         Ok(())
     }
     pub(super) async fn ensure_primal_definition_runtime(
@@ -116,7 +159,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )),
             768,
         )
-        .await?;
+        .await
+        .inspect_err(|_error| {
+            #[cfg(test)]
+            eprintln!("PR3056_PRIMAL_ENTRY stage=pinned_runtime refusal={_error:?}");
+        })?;
+        #[cfg(test)]
+        eprintln!("PR3056_PRIMAL_ENTRY stage=pinned_runtime accepted");
         Ok(())
     }
 }

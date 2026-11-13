@@ -115,10 +115,17 @@ async fn carry(
     .await
 }
 
+pub(super) async fn item_storage_snapshot(
+    h: &super::fixture::Harness,
+) -> TestResult<serde_json::Value> {
+    Ok(sqlx::query_scalar("SELECT jsonb_build_object('instances', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_instances r), 'ground', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_ground_locations r), 'backpacks', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_container_slots r), 'entries', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_container_entries r), 'equipment', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_character_equipment_slots r), 'fees', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_fee_burns r), 'mints', (SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY to_jsonb(r)::text),'[]'::jsonb) FROM game_item_mint_receipts r))").fetch_one(&h.pool).await?)
+}
+
 pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    h: &super::fixture::Harness,
 ) -> TestResult {
     // Legal fixture-only historical progress uses the real transition owner and
     // catalogue hashing. Source NPC programs and their binding markers remain intact.
@@ -301,25 +308,89 @@ pub(super) async fn exercise(
     );
     assert_ne!(topic(owner, admitted), Some(20));
     assert_eq!(progress(owner, admitted, authority, DEMERON).await?, 1);
-    carry(owner, admitted, "oteryn:item.tibia.i52635", 29, 5301).await?;
-    carry(owner, admitted, "oteryn:item.tibia.i52758", 20, 5302).await?;
-    carry(owner, admitted, "oteryn:item.tibia.i52743", 10, 5303).await?;
-    let partial = talk(owner, admitted, demeron, 53116, "spares").await?;
+    // These exact Source identities have no current native physical profile.
+    // Prove that boundary without minting substitutes or claiming live completion.
+    for (item, count, occurrence) in [
+        ("oteryn:item.tibia.i52635", 29, 5301),
+        ("oteryn:item.tibia.i52758", 20, 5302),
+        ("oteryn:item.tibia.i52743", 10, 5303),
+    ] {
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        let before = owner
+            .root
+            .read_character_quest_state(authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let native = owner
+            .active_generation
+            .and_then(|g| g.native_gameplay())
+            .ok_or("native")?;
+        let definition = crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: item.into(),
+            revision_ref: "definition-r1".into(),
+        };
+        assert_eq!(
+            crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &definition
+            ),
+            Err(oteryn_gameplay_items::pickup::PickupContentError::DefinitionNotFound),
+        );
+        let item_rows_before = item_storage_snapshot(h).await?;
+        let error = carry(owner, admitted, item, count, occurrence)
+            .await
+            .err()
+            .ok_or("closed source input unexpectedly admitted")?;
+        let message = error.to_string();
+        let prefix = format!("input item n={occurrence} at line ");
+        let source_line = message
+            .strip_prefix(&prefix)
+            .and_then(|tail| tail.strip_suffix(": DefinitionNotFound"))
+            .ok_or("wrong closed-input refusal")?;
+        assert!(
+            source_line.parse::<u32>().is_ok(),
+            "actual input helper source line"
+        );
+        assert_eq!(
+            item_storage_snapshot(h).await?,
+            item_rows_before,
+            "closed input changes no item/storage/fee/mint row"
+        );
+        let after_fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(|()| "fence")?
+            .ok_or("fence")?;
+        assert_eq!(
+            after_fence, fence,
+            "failed admission preserves authority and the character revision"
+        );
+        assert_eq!(
+            owner
+                .root
+                .read_character_quest_state(authority, fence.character_id)
+                .await
+                .map_err(debug)?,
+            before,
+            "unadmitted input cannot advance quest authority"
+        );
+    }
+    let missing = talk(owner, admitted, demeron, 53116, "spares").await?;
     assert!(
-        !partial
+        !missing
             .iter()
             .any(|line| line.contains("Are those salvaged parts"))
     );
     assert_ne!(topic(owner, admitted), Some(20));
     assert_eq!(progress(owner, admitted, authority, DEMERON).await?, 1);
-    carry(owner, admitted, "oteryn:item.tibia.i52635", 1, 5304).await?;
-    let present = talk(owner, admitted, demeron, 53117, "spares").await?;
-    assert!(
-        present
-            .iter()
-            .any(|line| line.contains("Are those salvaged parts"))
+    eprintln!(
+        "NPC_INVENTORY_COVERAGE unsupported_source_profiles=52635,52758,52743 demeron_live_partial_complete=false pure_selection_separate=true harlan_supported_live=true"
     );
-    assert_eq!(topic(owner, admitted), Some(20));
 
     talk(owner, admitted, harlan, 53120, "hi").await?;
     let missing = talk(owner, admitted, harlan, 53121, "help").await?;
@@ -346,5 +417,89 @@ pub(super) async fn exercise(
             .any(|line| line.contains("Is that tender venison?"))
     );
     assert_eq!(topic(owner, admitted), Some(3));
+    Ok(())
+}
+
+#[test]
+fn npc_inventory_raw_demeron_partial_and_complete_selection_is_not_live_custody() -> TestResult {
+    use oteryn_gameplay_quests::quest::npc_rules::{
+        NpcInventorySnapshot, NpcItemKey, NpcRuleCatalog, NpcRuleInput, NpcRuleTrigger,
+    };
+    use std::collections::BTreeMap;
+    let source = NpcRuleCatalog::from_json_documents(&[include_str!(
+        "../../../../../../content/dialogues/quest-rules/quest-batch3-c-the_order_of_the_stag.json"
+    )])
+    .map_err(debug)?;
+    let tracks = BTreeMap::from([(STAG.into(), 4), (DEMERON.into(), 1)]);
+    let outfits = BTreeMap::new();
+    for count in [0, 29, 30] {
+        // Typed pure planner inputs only: these counts are never live item evidence.
+        let inventory = NpcInventorySnapshot {
+            items: BTreeMap::from([
+                (
+                    NpcItemKey {
+                        item: "oteryn:item.tibia.i52635".into(),
+                        subtype: None,
+                    },
+                    count,
+                ),
+                (
+                    NpcItemKey {
+                        item: "oteryn:item.tibia.i52758".into(),
+                        subtype: None,
+                    },
+                    20,
+                ),
+                (
+                    NpcItemKey {
+                        item: "oteryn:item.tibia.i52743".into(),
+                        subtype: None,
+                    },
+                    10,
+                ),
+            ]),
+            ..Default::default()
+        };
+        let plan = source
+            .plan_item_exchange(&NpcRuleInput {
+                npc: "oteryn:npc.second_in_command_demeron",
+                trigger: NpcRuleTrigger::Say,
+                message: "spares",
+                topic: 0,
+                tracks: &tracks,
+                inventory: &inventory,
+                player_name: None,
+                now_epoch_seconds: 0,
+                calendar_month: 1,
+                premium_current: false,
+                level: 1,
+                vocation: "oteryn:vocation.none",
+                sex: 0,
+                outfits: &outfits,
+            })
+            .map_err(debug)?
+            .ok_or("Demeron source branch")?;
+        if count < 30 {
+            assert!(
+                !plan
+                    .reply
+                    .iter()
+                    .any(|line| line.contains("Are those salvaged parts"))
+            );
+            assert_ne!(plan.next_topic, 20);
+        } else {
+            assert!(
+                plan.reply
+                    .iter()
+                    .any(|line| line.contains("Are those salvaged parts"))
+            );
+            assert_eq!(plan.next_topic, 20);
+        }
+        assert!(
+            plan.track_changes
+                .iter()
+                .all(|change| change.before == change.after)
+        );
+    }
     Ok(())
 }

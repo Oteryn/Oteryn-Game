@@ -921,7 +921,10 @@ fn scenario_case(
         let h = if shared_rewards
             || qengine_reward
             || outfit_world
-            || matches!(name, "catalogue-npc" | "catalogue-npc-inventory")
+            || matches!(
+                name,
+                "catalogue-npc" | "catalogue-npc-inventory" | "catalogue-npc-scoped"
+            )
             || name == "srv7-reliable-ram"
             || name.starts_with("m09-treasure-")
             || name.starts_with("engoutfit-")
@@ -1351,6 +1354,7 @@ fn scenario_case(
         };
 
         let initial_level: Option<u32> = match name {
+            "catalogue-npc-calendar" | "catalogue-npc-scoped" => Some(35),
             "questpc7-eligibility-high" => Some(1000),
             "qengine-rewards-feaster-prefix" | "qengine-rewards-feaster-thaian" => Some(250),
             "questpc7-ferumbras" | "qengine-rewards-heart-story" => Some(150),
@@ -1560,6 +1564,10 @@ fn scenario_case(
             );
         let eligibility_premium = if feaster
             || name == "catalogue-npc-inventory"
+            || matches!(
+                name,
+                "catalogue-npc-end" | "catalogue-npc-calendar" | "catalogue-npc-scoped"
+            )
             || name == "qengine-rewards-forgotten-story"
             || name == "qengine-rewards-heart-story"
             || name == "qengine-rewards-grimvale-story"
@@ -2405,6 +2413,7 @@ fn scenario_case(
                 &mut owner,
                 &mut admitted,
                 &authority,
+                &h,
             ))
             .await?;
         } else if name == "catalogue-npc" {

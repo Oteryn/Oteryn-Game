@@ -179,6 +179,77 @@ pub(super) async fn exercise(
         assert_eq!(count(h, "oteryn:item.tibia.i3274").await?, 1);
         assert!(cues(owner, admitted, cursor).await?.1.is_empty());
         item(owner, admitted, "oteryn:item.tibia.i3035", 20, 61001).await?;
+        // A selected Source question supersedes an older, still-eligible axe quote.
+        let oldrak = {
+            let runtime = owner.runtime.lock().await;
+            runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .find_map(|entry| {
+                    (runtime.npc_key(entry.actor) == Some("oteryn:npc.oldrak")).then_some(
+                        oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                            identity: entry.actor.placement_identity(),
+                            generation: entry.generation,
+                        },
+                    )
+                })
+                .ok_or("current Oldrak")?
+        };
+        let item_rows_before = super::npc_program_inventory::item_storage_snapshot(h).await?;
+        for (command, text) in [(62000, "hi"), (62001, "axe")] {
+            super::classic_quests::talk(owner, admitted, oldrak, command, text).await?;
+        }
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            2
+        );
+        let question =
+            super::classic_quests::talk(owner, admitted, oldrak, 62002, "demon oak").await?;
+        assert_eq!(
+            question,
+            vec!["How do you know? Did you go into the infested area?"]
+        );
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .fixture_quest_topic(admitted.game_session_id)?,
+            0
+        );
+        assert_eq!(
+            owner
+                .states
+                .npc_conversations
+                .catalogue_topic_for_test(admitted.game_session_id),
+            Some(1)
+        );
+        let confirmation =
+            super::classic_quests::talk(owner, admitted, oldrak, 62003, "yes").await?;
+        assert_eq!(
+            confirmation,
+            vec![
+                "A demon oak?!? <mumbles some blessings> May the gods be on our side. You'll need a {hallowed axe} to harm that tree. Bring me a simple {axe} and I'll prepare it for you."
+            ]
+        );
+        assert_eq!(
+            super::classic_quests::progress(
+                owner,
+                admitted,
+                authority,
+                "oteryn:quest-progress/quest/u8_2/the_demon_oak/progress"
+            )
+            .await?,
+            2
+        );
+        assert_eq!(
+            super::npc_program_inventory::item_storage_snapshot(h).await?,
+            item_rows_before,
+            "Source confirmation must not consume the old axe quote, fee or mint authority"
+        );
         for turn in 0..2 {
             if turn == 1 {
                 item(owner, admitted, "oteryn:item.tibia.i3274", 1, 61002).await?;
@@ -226,9 +297,38 @@ pub(super) async fn exercise(
             wire(owner, admitted, callback(&all, "inquisition-start")?).await?,
             NpcIntentDisposition::Ok
         );
+        let fence = owner
+            .current_quest_fence(admitted.game_session_id)
+            .await
+            .map_err(debug)?
+            .ok_or("inquisition fence")?;
+        let before = owner
+            .root
+            .read_character_quest_state(authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let receipts_before: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        // The current Source owner accepts the dialogue and explains missing
+        // interviews; acceptance is not a successful quest/reward transaction.
         assert_eq!(
             wire(owner, admitted, callback(&all, "inquisition-report")?).await?,
-            NpcIntentDisposition::Rejected
+            NpcIntentDisposition::Ok
+        );
+        assert_eq!(
+            owner
+                .root
+                .read_character_quest_state(authority, fence.character_id)
+                .await
+                .map_err(debug)?,
+            before,
+            "missing interviews cannot advance any quest track"
+        );
+        let receipts_after: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE character_id=encode($1,'hex')::uuid")
+            .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(
+            receipts_after, receipts_before,
+            "missing interviews cannot create a receipt"
         );
         assert!(cues(owner, admitted, cursor).await?.1.is_empty());
         for (i, guard) in ["kulag", "grof", "tim", "walter", "miles"]

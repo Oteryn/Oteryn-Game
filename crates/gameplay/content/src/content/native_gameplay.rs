@@ -1695,6 +1695,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
             loot.as_ref(),
             items.as_ref(),
         )
+        .with_qualified_creature_health(&records)?
         .with_daily_boss_equipment(items.as_ref())
         .with_encounter_items(items.as_ref()),
     );
@@ -1883,6 +1884,11 @@ fn creature_policies(
             .and_then(|v| i64::try_from(v).ok())
             .filter(|v| *v > 0)
             .ok_or(invalid("native gameplay creature health"))?;
+        let maximum_health = super::native_soul_war_callbacks::effective_creature_health(
+            creatures,
+            record,
+            maximum_health,
+        )?;
         let base_speed = value
             .speed
             .and_then(|v| i32::try_from(v).ok())

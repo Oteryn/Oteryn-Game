@@ -19,6 +19,7 @@ mod outburst;
 mod rotten_blood;
 #[path = "activity_template/soul_war.rs"]
 mod soul_war;
+pub use soul_war::SOUL_WAR_FINAL_RETRY_SECONDS;
 mod soul_war_entry_gate;
 #[path = "activity_template/soul_war_spawns.rs"]
 mod soul_war_spawns;

@@ -1,5 +1,10 @@
 //! Fixed Soul War source-entry recipe facts; callback completion remains separate.
 use super::*;
+
+/// Accepted main #3042 (f01f18582443) selects Wiki revision 1134584 over the
+/// donor's 72h final retry. Raw source recipes retain their literal donor values.
+pub const SOUL_WAR_FINAL_RETRY_SECONDS: u32 = 68 * 60 * 60;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Recipe {
@@ -56,6 +61,16 @@ impl ActiveGeneration {
             .native_gameplay()
             .ok_or(R::CreatureClosureUnavailable)?;
         if !native.qualifies_soul_war_callbacks(self.identity().server_artifact_digest()) {
+            return Err(R::SourceHookUnavailable);
+        }
+        if source == PinnedActivitySourceRoom::GoshnarsGreed
+            && !native.policies().policies().iter().any(|policy| {
+                policy.definition_key == "oteryn:creature.soul_sphere"
+                    && policy.definition_revision == "definition-r1"
+                    && policy.maximum_health
+                        == crate::content::native_soul_war_callbacks::SOUL_SPHERE_MAXIMUM_HEALTH
+            })
+        {
             return Err(R::SourceHookUnavailable);
         }
         let recipes: Vec<Recipe> = serde_json::from_slice(include_bytes!(concat!(
@@ -130,7 +145,11 @@ impl ActiveGeneration {
             exit_teleporter: None,
             minimum_players: recipe.minimum_players,
             minimum_level: recipe.minimum_level,
-            cooldown_seconds: recipe.cooldown_seconds,
+            cooldown_seconds: if source == PinnedActivitySourceRoom::GoshnarsMegalomania {
+                SOUL_WAR_FINAL_RETRY_SECONDS
+            } else {
+                recipe.cooldown_seconds
+            },
             time_limit_seconds: recipe.time_limit_seconds,
             after_kill_seconds: recipe.after_kill_seconds,
             activation_sequence: self.activation_sequence(),

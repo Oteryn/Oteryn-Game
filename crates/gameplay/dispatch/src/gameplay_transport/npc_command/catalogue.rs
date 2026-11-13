@@ -31,6 +31,7 @@ pub(super) enum Pending {
         next: Conversation,
         fallback_lines: Vec<String>,
         teleport: bool,
+        supersedes_topic: bool,
     },
 }
 pub(super) enum Step {
@@ -38,7 +39,9 @@ pub(super) enum Step {
         lines: Vec<String>,
         end: bool,
         end_delay_ms: u64,
-        npc_actor: ExactActorRef,
+        previous: Option<Conversation>,
+        next: Conversation,
+        supersedes_topic: bool,
     },
     Refused,
     Held,
@@ -52,6 +55,7 @@ pub(super) struct CommitStep {
     fallback_lines: Vec<String>,
     teleport: Option<oteryn_gameplay_quests::quest::npc_rules::NpcRulePosition>,
     magic: usize,
+    supersedes_topic: bool,
 }
 
 pub(super) async fn inventory(
@@ -224,7 +228,9 @@ pub(super) fn prepare(
     }
     let mut sessions = admission.states.npc_conversations.sessions.lock().ok()?;
     let state = sessions.get_mut(&command.game_session_id)?;
-    if matches!(state.catalogue, Some(Pending::Commit { .. })) {
+    if state.quest_dialogue.has_pending_value()
+        || matches!(state.catalogue, Some(Pending::Commit { .. }))
+    {
         return Some(Step::Held);
     }
     let previous = match &state.catalogue {
@@ -405,6 +411,12 @@ pub(super) fn prepare(
     {
         return Some(Step::Refused);
     }
+    let supersedes_topic = plan.effects.iter().any(|effect| {
+        matches!(
+            effect,
+            NpcRuleEffect::SetTopic { .. } | NpcRuleEffect::EndConversation { .. }
+        )
+    });
     if teleport.is_none()
         && !has_track_mutation
         && !plan.completes
@@ -424,18 +436,20 @@ pub(super) fn prepare(
             })
             .min()
             .unwrap_or(0);
-        let npc_actor = next.npc_actor;
-        state.catalogue = (!end).then_some(Pending::Topic(next));
-        return if plan.reply.is_empty() && !end {
-            None
-        } else {
-            Some(Step::Reply {
-                lines: plan.reply,
-                end,
-                end_delay_ms,
-                npc_actor,
-            })
-        };
+        if plan.reply.is_empty() && !end && !supersedes_topic {
+            // An unhandled silent plan keeps the existing fallback; selected topic
+            // changes still publish through the owner-transfer critical section.
+            state.catalogue = Some(Pending::Topic(next));
+            return None;
+        }
+        return Some(Step::Reply {
+            lines: plan.reply,
+            end,
+            end_delay_ms,
+            previous,
+            next,
+            supersedes_topic,
+        });
     }
     request.transition_key = plan.selected_rule_keys.first()?.clone();
     let fallback_lines = if greeting && plan.reply.is_empty() {
@@ -453,6 +467,7 @@ pub(super) fn prepare(
         next,
         request,
         fallback_lines,
+        supersedes_topic,
         magic: teleport.as_ref().map_or(0, |p| p.magic.len()),
         teleport: teleport.map(|p| p.destination),
     })))
@@ -527,6 +542,33 @@ fn install(
     }
 }
 
+fn install_success(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    command: UseCommand,
+    context: &Context,
+    next: Option<Conversation>,
+    supersedes_topic: bool,
+) -> bool {
+    let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+        return false;
+    };
+    let Some(state) = sessions.get_mut(&command.game_session_id) else {
+        return false;
+    };
+    let matches = matches!(&state.catalogue, Some(Pending::Commit { request, next, .. })
+        if request.command.game_session_id() == command.game_session_id
+            && request.command.command_id().get() == command.command_id
+            && &next.context == context);
+    if !matches || state.quest_dialogue.has_pending_value() {
+        return false;
+    }
+    if supersedes_topic && !state.quest_dialogue.retire_for_source(context) {
+        return false;
+    }
+    state.catalogue = next.map(Pending::Topic);
+    true
+}
+
 pub(super) async fn apply(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -547,19 +589,60 @@ pub(super) async fn apply(
         fallback_lines,
         teleport,
         magic,
+        supersedes_topic,
     } = match step {
         Step::Reply {
             lines,
             end,
             end_delay_ms,
-            npc_actor,
+            previous,
+            next,
+            supersedes_topic,
         } => {
+            {
+                let runtime = admission.runtime.lock().await;
+                if next.actor != actor
+                    || next.npc != intent.npc_actor
+                    || admission.states.npc_conversations.current_npc(
+                        &admission.states.chat,
+                        &runtime,
+                        actor,
+                        command.game_session_id,
+                        &intent,
+                    ) != Some(next.context.clone())
+                {
+                    return rejected();
+                }
+                let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() else {
+                    return rejected();
+                };
+                let Some(state) = sessions.get_mut(&command.game_session_id) else {
+                    return rejected();
+                };
+                if state.quest_dialogue.has_pending_value()
+                    || matches!(state.catalogue, Some(Pending::Commit { .. }))
+                {
+                    return unknown();
+                }
+                let current = match &state.catalogue {
+                    Some(Pending::Topic(p)) => Some(p),
+                    _ => None,
+                };
+                if current != previous.as_ref() {
+                    return rejected();
+                }
+                if supersedes_topic && !state.quest_dialogue.retire_for_source(&next.context) {
+                    return unknown();
+                }
+                // Retire and publish under the same current-NPC/session critical section.
+                state.catalogue = (!end).then_some(Pending::Topic(next.clone()));
+            }
             let mut response = response(admission, command.game_session_id, &intent, lines);
             if end {
                 end_response(
                     admission,
                     command.game_session_id,
-                    npc_actor,
+                    next.npc_actor,
                     end_delay_ms,
                     &mut response,
                 );
@@ -620,7 +703,9 @@ pub(super) async fn apply(
         let Some(state) = sessions.get_mut(&command.game_session_id) else {
             return rejected();
         };
-        if matches!(state.catalogue, Some(Pending::Commit { .. })) {
+        if state.quest_dialogue.has_pending_value()
+            || matches!(state.catalogue, Some(Pending::Commit { .. }))
+        {
             return unknown();
         }
         let current = match &state.catalogue {
@@ -637,6 +722,7 @@ pub(super) async fn apply(
             next: next.clone(),
             fallback_lines: fallback_lines.clone(),
             teleport: teleport.is_some(),
+            supersedes_topic,
         });
     }
     if let Some(destination) = teleport {
@@ -729,14 +815,18 @@ pub(super) async fn apply(
                     }
                 }
             }
-            install(
+            if !install_success(
                 admission,
-                command.game_session_id,
+                command,
+                &next.context,
                 (!commit.end_conversation).then_some(Conversation {
                     topic: commit.next_topic,
                     ..next.clone()
                 }),
-            );
+                supersedes_topic,
+            ) {
+                return unknown();
+            }
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
@@ -793,6 +883,7 @@ pub(in crate::gameplay_transport) async fn resume(
         next,
         fallback_lines,
         teleport,
+        supersedes_topic,
     } = pending
     else {
         return None;
@@ -846,14 +937,21 @@ pub(in crate::gameplay_transport) async fn resume(
                 let engaged = !teleport
                     || admission.states.chat.engaged(command.game_session_id)
                         == Some(next.npc_actor);
-                install(
+                if !install_success(
                     admission,
-                    command.game_session_id,
+                    command,
+                    &next.context,
                     (!commit.end_conversation && engaged).then_some(Conversation {
                         topic: commit.next_topic,
                         ..next.clone()
                     }),
-                );
+                    supersedes_topic,
+                ) {
+                    return Some(NpcTalkOutcome {
+                        unknown: true,
+                        ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
+                    });
+                }
                 admission
                     .refresh_quest_session(command.game_session_id, false)
                     .await;

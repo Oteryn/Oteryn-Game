@@ -650,7 +650,7 @@ mod tests {
                 "oteryn:boss.goshnar_s_megalomania",
                 "oteryn:creature.goshnar_s_megalomania_purple",
                 [33710, 31634, 14],
-                259_200,
+                crate::content::bosses::activity_template::SOUL_WAR_FINAL_RETRY_SECONDS,
             ),
         ] {
             let captured = active
@@ -704,16 +704,53 @@ mod tests {
             .map_err(debug)?;
         let greed_room = qualify(&greed_source, Room::GoshnarsGreed, active, world, channel)
             .map_err(|_| "actual Greed source bundle")?;
+        let greed_template = active
+            .qualify_soul_war_activity_template(&greed_room, revision, Room::GoshnarsGreed)
+            .map_err(|error| format!("accepted Greed source recipe: {error:?}"))?;
+        assert_eq!(greed_template.boss_key(), "oteryn:boss.goshnar_s_greed");
+        let native = active
+            .native_gameplay()
+            .ok_or("actual decoded native generation")?;
+        let raw = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.soul_sphere")
+            .ok_or("actual raw Sphere record")?;
+        let crate::content::ProjectV2AuthoringProfileData::Creature(raw_profile) =
+            &raw.profile.data
+        else {
+            return Err("actual raw Sphere Creature profile".into());
+        };
+        assert_eq!(
+            raw_profile.health,
+            Some(15),
+            "immutable compiled source evidence"
+        );
         assert!(
-            matches!(
-                active.qualify_soul_war_activity_template(
-                    &greed_room,
-                    revision,
-                    Room::GoshnarsGreed
-                ),
-                Err(ActivityTemplateRefusal::SourceHookUnavailable)
-            ),
-            "actual Greed recipe must retain the unresolved Sphere15/10000/15000 health hold"
+            crate::content::native_soul_war_callbacks::qualifies_document(
+                native.creature_profiles()
+            )
+        );
+        let policy = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|policy| policy.definition_key == "oteryn:creature.soul_sphere")
+            .ok_or("actual decoded effective Sphere policy")?;
+        let facts = native
+            .reward_table()
+            .encounter_facts("oteryn:creature.soul_sphere")
+            .ok_or("actual decoded effective Sphere encounter facts")?;
+        assert_eq!(
+            facts.maximum_health,
+            Some(15_000),
+            "reward encounter facts share the qualified birth policy; raw source remains15"
+        );
+        assert_eq!(policy.definition_revision, "definition-r1");
+        assert_eq!(
+            policy.maximum_health, 15_000,
+            "owner-selected effective health"
         );
         Ok(())
     }

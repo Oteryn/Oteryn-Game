@@ -294,3 +294,67 @@ deadline or proof budget changes are made.
 - Generated artifact: original metadata/hash, six preimages/postimages, World
   package/Rust inventory identities PASS. All workflow bytes equal accepted3ce.
 - Exact-head successor qualification and final adapter review remain pending.
+
+## Grouped a34 follow-up
+
+The later canonical source is a34e31f2573dcd3254ac111c5571b6514651f7a3.
+PR3023 was actually merged as83be72ad403ebc221dadba4b161c85fa1d47219a;
+the earlier proposed close-as-delivered disposition is superseded. The current
+owner explicitly requests grouped discovery, grouped fixes and Codex reviews.
+Node boot is waived, not passed. All remaining required gates still apply.
+
+The complete a34 intake covers24 PostgreSQL partitions and224 observed failing
+test names, including failures before cancellation in two partitions. Those
+names are grouped investigation inputs, not224 independently established bugs.
+Both native-shard failures are obsolete UI refusal strings, repaired together
+in the retained local4990 predecessor; the recorded light UI suite passed616.
+No current successor runtime PASS is inferred from that predecessor evidence.
+
+This authoring generation repairs shared causes:
+
+- Successful movement explicitly returns its unused field holder through the
+  observed-return path before subsequent quest/callback authority reads. The
+  three successful bypasses are covered together. Team Finder validates the
+  command before checkout and settles a stale-actor unused pass before return.
+- The accepted68h final Soul War policy is shared by template projection,
+  encounter entry and pending migration1423. Raw donor72h remains unchanged.
+  Pending1357 uses Ichgahal's qualified composed exit while raw source exit
+  evidence remains unchanged. Neither migration exists on accepted main.
+- Native boss fixtures use actual source retry policies and accepted aliases.
+  Both old generic positive Primal entry callers use actual SourceScene/source
+  registration, distinct activation/runtime pins and their existing death,
+  reward, replay and return assertions; no generic template bypass is added.
+- Owner decision6839182665 selects effective Sphere15000 from the retained
+  Wiki evidence. Exact definition-r1/raw15 and full bounded source-witness
+  checks precede that projection. Raw compiled15 and donor10000 are retained.
+  Greed's gate checks the qualified effective policy; original positive Greed
+  journeys and ports remain. Actual decode, birth and effective encounter-fact
+  assertions cover the selected value rather than rewriting captured data.
+- NPC offers add only the two admitted Koshei/M10 feeds,16 rows. Dawnport's
+  excluded feed stays excluded. Source prompts and confirmations keep one topic
+  owner; selected Source topic changes retire settled legacy quotes only at
+  successful publication. Pending/unknown value writers remain retained and
+  block another value owner. A routed Oldrak regression checks that a newer
+  Source confirmation cannot consume an older axe/fee quote.
+- NPC fixture prerequisites and Harlan's Source-defined request stage are
+  corrected while retaining XP/receipt checks. Decision6839163918 retains
+  Harlan52636 live missing/partial/full proof. Profiles52635/52758/52743 remain
+  closed: exact admission refusal and unchanged item/storage/fee/mint, fence
+  and quest state are checked; separate typed planner tests do not claim live
+  physical completion. Their source-evidenced admission is partial scope.
+- The Stag test rejects both forbidden generic Lion-track writes with unchanged
+  state/revision/receipts, then installs only historical prerequisite Lion5.
+  This uses the existing srv6 fixture pattern in an isolated test transaction;
+  its local replica setting is reset and checked before the unchanged live
+  Stag acceptance/replay/authority proofs. No production guard or grant changes.
+
+Copied-death finish/ACK and Primal/Soul War entry diagnostics are test-only.
+They retain outcomes, retries and deadlines and distinguish still-unlocalized
+runtime failures; adding diagnostics is not a claim those failures are fixed.
+No source value, profile, accepted migration, timeout or test result is invented.
+
+The SQL set now has543 files, including accepted T72 migrations2812–2814.
+All453 accepted migration bytes must remain exact. The old540 proof is only
+historical subset evidence; the final543 fresh/current-main upgrade proof,
+independent whole-batch review and exact-head GitHub qualification are required
+before integration. Heavy generation/builds/runtime tests remain on GitHub.

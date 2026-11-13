@@ -16,6 +16,16 @@ mod uncredited;
 pub(super) use soul_war::SoulWarAction;
 pub(super) use uncredited::PendingSourceCorpse;
 
+// Static diagnostic tokens only; never include identities, payloads or raw errors.
+fn source_death_pending(phase: &'static str, class: &'static str) {
+    #[cfg(test)]
+    super::operator_event(&format!(
+        "event=source_death_pending phase={phase} class={class}"
+    ));
+    #[cfg(not(test))]
+    let _ = (phase, class);
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum SourceWorkFamily {
     Native,
@@ -363,6 +373,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (action, callbacks) = {
             let runtime = self.runtime.lock().await;
             let Ok(states) = self.states.spell_states.try_lock() else {
+                source_death_pending("prepare", "state_busy");
                 return false;
             };
             let Some(action) = states.source_death_action.as_ref() else {
@@ -379,6 +390,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .is_err()
                     })
             {
+                source_death_pending("prepare", "not_ready_or_current");
                 return false;
             }
             (action.clone(), states.native_callbacks.clone())
@@ -400,42 +412,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         if !completed {
+            let class = if action.heart.is_some() {
+                "heart"
+            } else if action.soul_war.is_some() {
+                "soul_war"
+            } else if action.megalomania.is_some() {
+                "megalomania"
+            } else if action.rotten.is_some() {
+                "rotten"
+            } else {
+                "native"
+            };
+            source_death_pending("execute", class);
             return false;
         }
         let mut runtime = self.runtime.lock().await;
         let Ok(mut states) = self.states.spell_states.try_lock() else {
+            source_death_pending("ack_lock", "state_busy");
             return false;
         };
         if states.source_death_action.as_ref() != Some(&action) || !action.current_for(&runtime) {
+            source_death_pending("ack_current", "mismatch");
             return false;
         }
         let Some(reservation) = states.source_death_action_reservation.as_ref().cloned() else {
+            source_death_pending("ack_reservation", "absent");
             return false;
         };
         if runtime
             .validate_source_death_action_reservation(&reservation)
             .is_err()
-            || if let Some(heart) = &action.heart {
-                heart.publish_vortex(self).is_err()
-            } else if let Some(soul_war) = &action.soul_war {
-                !soul_war.current_for(&runtime)
-            } else if let Some(megalomania) = &action.megalomania {
-                !megalomania.completed(&states, &runtime, &action)
-            } else if let Some(rotten) = &action.rotten {
-                rotten.publish(&runtime, &mut states).is_err()
-            } else {
-                !matches!(
-                    callbacks.publish_source_death_action(&mut runtime, &action),
-                    Ok(true)
-                )
-            }
         {
+            source_death_pending("ack_reservation", "mismatch");
+            return false;
+        }
+        let publication_refused = if let Some(heart) = &action.heart {
+            heart.publish_vortex(self).is_err()
+        } else if let Some(soul_war) = &action.soul_war {
+            !soul_war.current_for(&runtime)
+        } else if let Some(megalomania) = &action.megalomania {
+            !megalomania.completed(&states, &runtime, &action)
+        } else if let Some(rotten) = &action.rotten {
+            rotten.publish(&runtime, &mut states).is_err()
+        } else {
+            !matches!(
+                callbacks.publish_source_death_action(&mut runtime, &action),
+                Ok(true)
+            )
+        };
+        if publication_refused {
+            source_death_pending("ack_publish", "refused");
             return false;
         }
         if runtime
             .release_source_death_action_reservation(reservation)
             .is_err()
         {
+            source_death_pending("ack_release", "refused");
             return false;
         }
         states.source_death_action_reservation = None;
@@ -444,6 +477,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .acknowledge_source_creature_death_event(action.begin(), action.event())
             .is_err()
         {
+            source_death_pending("ack_cursor", "refused");
             return false;
         }
         states.source_death_action = None;

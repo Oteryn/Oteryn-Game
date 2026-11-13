@@ -84,7 +84,7 @@ fn srx3_megalomania_actual_source_entry_and_initial_aspect_postgres() -> TestRes
             let (_, reply, barrier) = super::boss_activity::exchange_capture(
                 &owner,
                 &mut admitted,
-                "oteryn:creature.goshnar_s_megalomania",
+                "oteryn:boss.goshnar_s_megalomania",
                 true,
                 &mut frames,
             )

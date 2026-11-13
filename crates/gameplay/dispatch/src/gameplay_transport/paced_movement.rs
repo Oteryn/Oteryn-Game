@@ -252,6 +252,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .binary_search(&30)
                 .is_err()
         {
+            if Self::return_unused_field_step_pass(field_pass)
+                .await
+                .is_err()
+            {
+                return (StepOutcome::rejected(), None);
+            }
             states.step_with_non_player_field_contact(
                 &mut runtime,
                 self.movement_cells(),

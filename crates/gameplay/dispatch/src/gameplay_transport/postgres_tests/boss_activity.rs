@@ -47,6 +47,8 @@ mod instance_corpse;
 mod nonreward;
 #[path = "boss_activity/offline_death.rs"]
 mod offline_death;
+#[path = "boss_activity/primal.rs"]
+mod primal;
 #[path = "boss_activity/recovery.rs"]
 mod recovery;
 #[path = "boss_activity/rewards.rs"]
@@ -299,6 +301,9 @@ fn endgame_progression_generation(
 }
 
 fn scenario(case: Case) -> TestResult {
+    if case == Case::PrimalDefeat {
+        return run(async |admin| primal::scenario(admin).await);
+    }
     let difficulty = case == Case::Difficulty;
     let case = if difficulty {
         Case::NonRewardDefeat
@@ -626,10 +631,19 @@ fn scenario(case: Case) -> TestResult {
         runtime
             .realize_native_qualification_spawn(pin, &policy.definition_key, boss_cell)
             .map_err(debug)?;
-        sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,20,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
+        // Native endgame identities retain the same retry policy as production admission.
+        // Other isolated fixture bosses keep their short fixture cooldown.
+        let cooldown_seconds = i64::try_from(
+            oteryn_gameplay_encounters::bosses::endgame_entry::Encounter::from_boss_key(
+                &policy.definition_key,
+            )
+            .and_then(oteryn_gameplay_encounters::bosses::endgame_entry::source_entry_policy)
+            .map_or(20, |source| source.retry_seconds),
+        )?;
+        sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,$9,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
             .bind(&boss_key).bind(&policy.definition_key).bind(serde_json::json!([cell_json(source_cell)]))
             .bind(TEMPLATE).bind(serde_json::json!([cell_json(entry)]))
-            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
+            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).bind(cooldown_seconds).execute(&h.pool).await?;
 
         if !difficulty {
             let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;

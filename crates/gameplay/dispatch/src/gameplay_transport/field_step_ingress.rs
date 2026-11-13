@@ -347,6 +347,22 @@ pub(super) fn destination(
     })
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// A bypassed field read still returns its checked-out holder observably
+    /// before a subsequent movement callback acquires current authority.
+    pub(super) async fn return_unused_field_step_pass(
+        pass: Result<
+            crate::durability::IssuedSemanticPass,
+            crate::gameplay_transport::connection::AdmissionRefusal,
+        >,
+    ) -> Result<(), MovementError> {
+        if let Ok(pass) = pass {
+            pass.run(|_, _| Box::pin(async { Ok(()) }))
+                .await
+                .map_err(|_| MovementError::NotQualified)?;
+        }
+        Ok(())
+    }
+
     /// Acquire before taking either Channel guard; only checkout is retryable.
     pub(in crate::gameplay_transport) async fn acquire_field_step_pass(
         &self,
@@ -396,6 +412,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .active_generation
             .and_then(|active| active.native_gameplay())
         else {
+            Self::return_unused_field_step_pass(pass).await?;
             return step_in_channel(
                 runtime,
                 states,
@@ -429,6 +446,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(crate::content::SpellTileLookupError::Unknown)
             )
         {
+            Self::return_unused_field_step_pass(pass).await?;
             return step_in_channel(
                 runtime,
                 states,

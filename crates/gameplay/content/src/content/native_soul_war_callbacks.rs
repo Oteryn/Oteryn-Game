@@ -66,6 +66,83 @@ pub fn qualifies_document(
     })
 }
 
+/// Owner ANSWER6839182665 selects retained Fandom page94059/revision1002465,
+/// SHA0a78bf485aeef1dd4eeeec5f487ae513e14ce2203a45b1173e0280eba6cfc79b,
+/// line6 raw `15.000`, as15000. Raw compiled15 and donor10000 remain evidence.
+pub const SOUL_SPHERE_MAXIMUM_HEALTH: i64 = 15_000;
+
+pub(super) fn effective_creature_health(
+    document: &crate::content::native_gameplay::CreatureProfilesDocument,
+    record: &crate::content::native_gameplay::CreatureProfileRecord,
+    raw_health: i64,
+) -> Result<i64, crate::content::ContentError> {
+    if record.profile.target.key != "oteryn:creature.soul_sphere" {
+        return Ok(raw_health);
+    }
+    // Full witness equality binds the exact canonical source definition hash,
+    // source revision, Creature/Behavior/attacks and their immutable raw values.
+    // A new source/revision/raw health needs a new explicit qualification.
+    if record.profile.target.revision != "definition-r1"
+        || raw_health != 15
+        || !qualifies_document(document)
+    {
+        return Err(crate::content::ContentError::InvalidArtifact(
+            "Soul Sphere accepted source health projection",
+        ));
+    }
+    Ok(SOUL_SPHERE_MAXIMUM_HEALTH)
+}
+
+#[cfg(test)]
+mod accepted_sphere_health_tests {
+    use super::*;
+
+    fn document() -> crate::content::native_gameplay::CreatureProfilesDocument {
+        let witness = source_witness().expect("actual pinned witness");
+        crate::content::native_gameplay::CreatureProfilesDocument {
+            schema: "OTERYN_NATIVE_CREATURE_PROFILES/v1".into(),
+            records: witness.records.clone(),
+            source_definitions_sha256: Some(witness.source_definitions_sha256.clone()),
+            prey_rules: None,
+        }
+    }
+
+    #[test]
+    fn selected_sphere_health_requires_exact_raw_source_record() {
+        let original = document();
+        let index = original
+            .records
+            .iter()
+            .position(|record| record.profile.target.key == "oteryn:creature.soul_sphere")
+            .unwrap();
+        assert_eq!(
+            effective_creature_health(&original, &original.records[index], 15).unwrap(),
+            15_000
+        );
+        for raw in [0, 14, 16, 10_000, 15_000] {
+            assert!(effective_creature_health(&original, &original.records[index], raw).is_err());
+        }
+        let mut changed = original.clone();
+        changed.records[index].profile.target.revision = "definition-r2".into();
+        assert!(effective_creature_health(&changed, &changed.records[index], 15).is_err());
+        let mut changed = original.clone();
+        changed.source_definitions_sha256 = Some("00".repeat(32));
+        assert!(effective_creature_health(&changed, &changed.records[index], 15).is_err());
+        let mut changed = original.clone();
+        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) =
+            &mut changed.records[index].profile.data
+        else {
+            panic!("actual Creature");
+        };
+        profile.health = Some(10_000);
+        assert!(effective_creature_health(&changed, &changed.records[index], 15).is_err());
+        assert_eq!(
+            effective_creature_health(&original, &original.records[0], 550_000).unwrap(),
+            550_000
+        );
+    }
+}
+
 impl crate::content::native_gameplay::NativeGameplayState {
     /// Review-engine DATA only. These declarations are not production event
     /// attachments; only an explicit test fixture may install this sealed tag.

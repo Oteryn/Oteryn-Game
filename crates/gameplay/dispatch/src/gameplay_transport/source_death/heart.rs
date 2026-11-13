@@ -15,6 +15,33 @@ use oteryn_gameplay_entities::carrier::native_source_death::SourceCreatureDeathS
 
 const TRANSITION: &str = "oteryn:quest-transition/heart-destruction/outburst-room-death";
 
+fn progression_error_class(
+    error: &crate::durability::character_progression::CharacterProgressionError,
+) -> &'static str {
+    use crate::durability::character_progression::CharacterProgressionError as E;
+    use crate::durability::{DurabilityError as D, SqlxFailureClass};
+    match error {
+        E::InvalidInput => "invalid_input",
+        E::AuthorityRejected => "authority_rejected",
+        E::MissingProgressionState => "missing_progression",
+        E::CharacterRevisionMismatch => "character_revision",
+        E::ProgressionContextMismatch => "progression_context",
+        E::ConflictingOccurrence => "conflicting_occurrence",
+        E::RespawnPending => "respawn_pending",
+        E::HeldBlessingsMismatch => "held_blessings",
+        E::BuildStateMismatch => "build_state",
+        E::StanceStateMismatch => "stance_state",
+        E::FamiliarStateMismatch => "familiar_state",
+        E::Calculation(_) => "calculation",
+        E::Unavailable(D::RootUnavailable) => "root_unavailable",
+        E::Unavailable(D::RootPassDeadlineExceeded) => "pass_deadline",
+        E::Unavailable(D::CommitOutcomeUnknown) => "commit_unknown",
+        E::Unavailable(D::Database(SqlxFailureClass::RetryableStatement)) => "database_retryable",
+        E::Unavailable(D::Database(_)) => "database",
+        E::Unavailable(_) => "durability_other",
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Player {
     recipient: super::super::quest_kills::Recipient,
@@ -221,8 +248,14 @@ impl HeartAction {
             let recipient = &player.recipient;
             let fence = match owner.current_quest_fence(recipient.session).await {
                 Ok(Some(fence)) => fence,
-                Ok(None) => continue,
-                Err(()) => return Err(()),
+                Ok(None) => {
+                    super::source_death_pending("heart_fence", "absent");
+                    continue;
+                }
+                Err(()) => {
+                    super::source_death_pending("heart_fence", "lookup_failed");
+                    return Err(());
+                }
             };
             if fence.runtime_scope != action.begin().death_key().runtime_scope()
                 || fence.scope_ownership_generation
@@ -268,7 +301,10 @@ impl HeartAction {
                     | QuestTransitionOutcome::Refused(_)
                     | QuestTransitionOutcome::ObligationClosed,
                 ) => {}
-                Err(_) => return Err(()),
+                Err(error) => {
+                    super::source_death_pending("heart_commit", progression_error_class(&error));
+                    return Err(());
+                }
             }
         }
         Ok(())

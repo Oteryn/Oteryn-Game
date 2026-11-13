@@ -258,6 +258,17 @@
       "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
     },
     {
+      "event": "source_death_pending",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase",
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3056 test-only diagnostic output: retained copied-death execution or ACK boundary; phase/class are closed source tokens. heart_fence absent records the existing recipient skip, not a new failure. No identifiers, payloads, SQL or raw errors. Diagnostic only; all outcomes and retained retries unchanged."
+    },
+    {
       "event": "spell_cast_condition_gated",
       "level": "info",
       "span": false,

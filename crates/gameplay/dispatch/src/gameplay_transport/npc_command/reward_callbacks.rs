@@ -53,6 +53,12 @@ impl NpcConversations {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Phase {
+    Rewards,
+    Offers,
+}
+
 pub(super) fn prepare(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -60,6 +66,7 @@ pub(super) fn prepare(
     intent: &NpcTalkIntent,
     runtime: &ChannelRuntimeV1,
     inventory: Option<&super::reward_facts::RewardFacts>,
+    phase: Phase,
 ) -> Option<Step> {
     let catalogue = admission.quest_catalogue.as_deref()?;
     let callbacks = reward_callbacks::offered_for(catalogue).ok()?;
@@ -80,7 +87,8 @@ pub(super) fn prepare(
     )?;
     let text = intent.text.trim().to_ascii_lowercase();
     if text == "no"
-        || (!matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
+        || (phase == Phase::Offers
+            && !matches!(text.as_str(), "yes" | "hi" | "hello" | "bye" | "farewell")
             && offers
                 .offers
                 .iter()
@@ -123,55 +131,58 @@ pub(super) fn prepare(
                         .is_some_and(|value| (s.minimum..=s.maximum).contains(&value))
                 })
             };
-            let matching_stage = callbacks.iter().filter(|c| {
-                c.carried_item.is_none()
-                    && c.npc == context.2
-                    && c.topic == topic.number
-                    && c.keywords.contains(&text)
-                    && eligible(&c.storage)
-                    && c.state_ops
+            if phase == Phase::Rewards {
+                let matching_stage = callbacks.iter().filter(|c| {
+                    c.carried_item.is_none()
+                        && c.npc == context.2
+                        && c.topic == topic.number
+                        && c.keywords.contains(&text)
+                        && eligible(&c.storage)
+                        && c.state_ops
+                            .iter()
+                            .all(|op| op.advisory_holds(catalogue, tracks))
+                        && c.participants.iter().all(|p| {
+                            eligible(&p.storage)
+                                && p.state_ops
+                                    .iter()
+                                    .all(|op| op.advisory_holds(catalogue, tracks))
+                        })
+                        && c.requires.iter().all(|r| r.holds(catalogue, tracks))
+                });
+                let mut selected = matching_stage.clone().filter(|c| {
+                    c.inventory
                         .iter()
-                        .all(|op| op.advisory_holds(catalogue, tracks))
-                    && c.participants.iter().all(|p| {
-                        eligible(&p.storage)
-                            && p.state_ops
-                                .iter()
-                                .all(|op| op.advisory_holds(catalogue, tracks))
-                    })
-                    && c.requires.iter().all(|r| r.holds(catalogue, tracks))
-            });
-            let mut selected = matching_stage.clone().filter(|c| {
-                c.inventory
-                    .iter()
-                    .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
-            });
-            if let Some(callback) = selected.next() {
-                if selected.next().is_some() {
-                    return None;
+                        .all(|rule| inventory.is_some_and(|facts| rule.holds(&facts.quantities)))
+                });
+                if let Some(callback) = selected.next() {
+                    if selected.next().is_some() {
+                        return None;
+                    }
+                    if !meets_level(callback.minimum_level)
+                        && let Some(choice) = refusal(&callback.failure_reply)
+                    {
+                        return Some(choice);
+                    }
+                    // Without a source refusal line, keep the exact selected
+                    // transition: its locked owner must reject the level gate.
+                    // Falling through would return the ordinary dialogue's Ok.
+                    failure_reply = callback.failure_reply.clone();
+                    return Some(Choice {
+                        transition: Some(callback.key.clone()),
+                        next_topic: Some(Topic::from(callback.next_topic)),
+                        reply: callback.reply.clone(),
+                    });
                 }
-                if !meets_level(callback.minimum_level)
+                // A later stage with the same keyword cannot hide this stage's
+                // explicit inventory refusal. Successful branches retain priority.
+                let mut blocked = matching_stage;
+                if let Some(callback) = blocked.next()
+                    && blocked.next().is_none()
                     && let Some(choice) = refusal(&callback.failure_reply)
                 {
                     return Some(choice);
                 }
-                // Without a source refusal line, keep the exact selected
-                // transition: its locked owner must reject the level gate.
-                // Falling through would return the ordinary dialogue's Ok.
-                failure_reply = callback.failure_reply.clone();
-                return Some(Choice {
-                    transition: Some(callback.key.clone()),
-                    next_topic: Some(Topic::from(callback.next_topic)),
-                    reply: callback.reply.clone(),
-                });
-            }
-            // A later stage with the same keyword cannot hide this stage's
-            // explicit inventory refusal. Successful branches retain priority.
-            let mut blocked = matching_stage;
-            if let Some(callback) = blocked.next()
-                && blocked.next().is_none()
-                && let Some(choice) = refusal(&callback.failure_reply)
-            {
-                return Some(choice);
+                return None;
             }
             if let Some(offer) = offers
                 .offers

@@ -63,7 +63,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         active
             .qualify_soul_war_activity_template(room, revision, kind)
-            .map_err(|_| ActivityRefusal::ContentUnavailable)
+            .map_err(|_error| {
+                #[cfg(test)]
+                eprintln!("PR3056_SOUL_WAR_ENTRY stage=qualified_template refusal={_error:?}");
+                ActivityRefusal::ContentUnavailable
+            })
     }
     pub(super) async fn prepare_soul_war_catalogue(
         &self,
@@ -90,12 +94,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let fence = admitted
             .item_fence
-            .ok_or(ActivityRefusal::AuthorityRejected)?;
+            .ok_or(ActivityRefusal::AuthorityRejected)
+            .inspect_err(|_| {
+                #[cfg(test)]
+                eprintln!("PR3056_SOUL_WAR_ENTRY stage=source_fence refusal=AuthorityRejected");
+            })?;
         if !ActivityHandoffOwner::new(self.root.clone())
             .activate_soul_war_boss_catalogue(self.character, self.holder, fence, active, &template)
             .await
-            .map_err(|_| ActivityRefusal::AuthorityRejected)?
+            .map_err(|_error| {
+                #[cfg(test)]
+                eprintln!("PR3056_SOUL_WAR_ENTRY stage=catalogue_activation refusal={_error:?}");
+                ActivityRefusal::AuthorityRejected
+            })?
         {
+            #[cfg(test)]
+            eprintln!("PR3056_SOUL_WAR_ENTRY stage=catalogue_activation refusal=ContentChanged");
             return Err(ActivityRefusal::ContentChanged);
         }
         Ok(())
@@ -140,6 +154,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || definition.boss_position != cell(template.boss_position())
             || definition.exit_position != cell(template.exit_position())
         {
+            #[cfg(test)]
+            eprintln!("PR3056_SOUL_WAR_ENTRY stage=definition_policy refusal=ContentChanged");
             return Err(ActivityRefusal::ContentChanged);
         }
         let boss = definition.boss_position;
@@ -155,7 +171,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )),
             1024,
         )
-        .await?;
+        .await
+        .inspect_err(|_error| {
+            #[cfg(test)]
+            eprintln!("PR3056_SOUL_WAR_ENTRY stage=pinned_runtime refusal={_error:?}");
+        })?;
         Ok(())
     }
 }

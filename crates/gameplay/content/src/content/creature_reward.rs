@@ -99,6 +99,34 @@ pub struct CreatureRewardTable {
 }
 
 impl CreatureRewardTable {
+    /// Active native decode supplies the same validated effective policies used
+    /// for physical births. Keep raw authoring in CreatureProfilesDocument.
+    pub(crate) fn with_qualified_creature_health(
+        mut self,
+        policies: &[super::creature_policy::CompiledCreaturePolicy],
+    ) -> Result<Self, ContentError> {
+        let policies: HashMap<_, _> = policies
+            .iter()
+            .map(|policy| (policy.definition_key.as_str(), policy))
+            .collect();
+        for (key, facts) in &mut self.encounter_facts {
+            let policy = policies
+                .get(key.as_str())
+                .ok_or(ContentError::InvalidArtifact(
+                    "native encounter facts missing effective creature policy",
+                ))?;
+            facts.maximum_health = Some(
+                u64::try_from(policy.maximum_health)
+                    .ok()
+                    .filter(|health| *health > 0)
+                    .ok_or(ContentError::InvalidArtifact(
+                        "native encounter facts effective health",
+                    ))?,
+            );
+        }
+        Ok(self)
+    }
+
     /// Native encounter facts, independent of ordinary corpse loot admission.
     pub fn encounter_facts(&self, creature: &str) -> Option<&CreatureEncounterFacts> {
         self.encounter_facts.get(creature)

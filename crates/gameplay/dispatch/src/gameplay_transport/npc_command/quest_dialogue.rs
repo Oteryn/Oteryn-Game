@@ -74,6 +74,21 @@ impl NpcConversations {
 }
 
 impl State {
+    pub(super) fn has_pending_value(&self) -> bool {
+        self.pending.is_some()
+    }
+
+    pub(super) fn retire_for_source(&mut self, context: &Context) -> bool {
+        if self.has_pending_value() {
+            return false;
+        }
+        // Retire this conversation's quote, never another NPC/generation's.
+        if self.context.as_ref() == Some(context) || self.reward_request.as_ref() == Some(context) {
+            self.restart_topic();
+        }
+        true
+    }
+
     pub(super) fn restart_topic(&mut self) {
         // An unresolved writer retains its confirmation until reconciliation.
         if self.pending.is_none() {

@@ -634,6 +634,34 @@ mod tests {
     }
 
     #[test]
+    fn owner_selected_sphere_health_reaches_actual_native_birth() -> TestResult {
+        let (mut runtime, boss) = runtime()?;
+        const SPHERE: &str = "oteryn:creature.soul_sphere";
+        assert_eq!(runtime.companion_policy(SPHERE)?.maximum_health, 15_000);
+        let source = runtime.qualify_soul_war_spawn_source(boss)?;
+        let center = runtime.read_actor_position(boss)?.position();
+        let sphere = runtime
+            .spawn_soul_war_child_from_source(
+                &source,
+                SPHERE,
+                MovementLocalPosition {
+                    x: center.x + 1,
+                    ..center
+                },
+                |_, _| Some(true),
+            )
+            .map_err(|error| format!("{error:?}"))?;
+        let current = runtime.companion_snapshot(sphere)?;
+        assert_eq!((current.health, current.maximum_health), (15_000, 15_000));
+        assert_eq!(current.state.policy.maximum_health, 15_000);
+        assert!(Arc::ptr_eq(
+            &current.state.policy,
+            &runtime.companion_policy(SPHERE)?
+        ));
+        Ok(())
+    }
+
+    #[test]
     fn srx3_greed_forced_sphere_stacks_but_normal_minion_requires_a_free_cell() -> TestResult {
         let (mut runtime, boss) = runtime()?;
         let occupied = runtime.read_actor_position(boss)?.position();

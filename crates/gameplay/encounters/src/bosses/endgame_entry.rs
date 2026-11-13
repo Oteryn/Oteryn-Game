@@ -139,7 +139,12 @@ pub fn source_entry_policy(encounter: Encounter) -> Option<SourceEntryPolicy> {
         "oteryn:creature.goshnar_s_greed" => ((33775, 31665, 14), 72_000),
         "oteryn:creature.goshnar_s_hatred" => ((33772, 31601, 14), 72_000),
         "oteryn:creature.goshnar_s_cruelty" => ((33853, 31854, 6), 72_000),
-        "oteryn:creature.goshnar_s_megalomania_purple" => ((33675, 31634, 14), 244_800),
+        "oteryn:creature.goshnar_s_megalomania_purple" => (
+            (33675, 31634, 14),
+            u64::from(
+                oteryn_gameplay_content::content::bosses::activity_template::SOUL_WAR_FINAL_RETRY_SECONDS,
+            ),
+        ),
         "oteryn:creature.ichgahal" => ((32979, 32333, 15), 72_000),
         "oteryn:creature.murcion" => ((32979, 32365, 15), 72_000),
         "oteryn:creature.vemiath" => ((33079, 32333, 15), 72_000),
