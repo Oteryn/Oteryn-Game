@@ -27,6 +27,11 @@
       "sha256": "b159d7e8acc87ffe8b06ce6e32da9fe2717fbcbe3baa5b720fb086ef4a71ce44"
     },
     {
+      "file": "all-visible-after-offline-batch4.csv",
+      "bytes": 312087,
+      "sha256": "76d59d22454c1c9519b8676c3cb40d2cec183ff6ec23db4f00b4c484f0a6721e"
+    },
+    {
       "file": "all-visible-after-seven-potions.csv",
       "bytes": 325711,
       "sha256": "6e647a0368568f652c18ec7cc104bc0beb3178d045494a7805d1cc249c100e72"
@@ -142,9 +147,19 @@
       "sha256": "e6255854a0912d6fb0a517bf1374aa0f7e4804275ce73927903f0f2b86b7b5c9"
     },
     {
+      "file": "offline408-batch4.json",
+      "bytes": 554661,
+      "sha256": "1c8e197e0b505f7df67adc2b861996e47c8daf8eab3c43735bcdec367282763f"
+    },
+    {
       "file": "physical-card-completeness.json",
       "bytes": 137505,
       "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"
+    },
+    {
+      "file": "remaining464-summary.json",
+      "bytes": 11605,
+      "sha256": "ffe0a5741d4ba0e86fe056bb786f4ed6aa54bab33a424998d9b7ba13a331e8bd"
     },
     {
       "file": "remaining574-summary.json",

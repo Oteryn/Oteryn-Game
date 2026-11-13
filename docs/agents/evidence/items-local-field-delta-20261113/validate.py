@@ -433,6 +433,61 @@ def offline_batch3(source_path=None, packet=None):
     assert set(load(HERE,"remaining574-summary.json")["remaining_keys"]) == {r["observation_key"] for r in current if r["ALL_VISIBLE_state"] == "PARTIAL"}
 
 
+def offline_batch4(source_path=None, packet=None):
+    p = packet or load(HERE,"offline408-batch4.json")
+    assert p["current_counts"] == dict(COMPLETE=2416,PARTIAL=464,UNRECONCILED=27,total=2907)
+    assert len(p["records"]) == 110 and p["visible_quotes"] == 206
+    assert not p["UI_inputs"] and not p["new_screenshots"] and not p["fuzzy_OCR_promotion"]
+    published = load(HERE,"npc1992-recovery.json")
+    assert p["source_price_packet_sha256"] == hashlib.sha256((HERE/"npc1992-recovery.json").read_bytes()).hexdigest()
+    pubrows = {r[0]:r for r in published["rows"]}
+    seeds = {r["observation_key"]:{"values":r["closed_fields"],"sha256":r["source_bitmap"]["sha256"]} for r in load(HERE,"offline408-batch1.json")["records"]}
+    for r in load(HERE,"offline408-batch3.json")["manual_records"]:
+        for q in r["native_read_all_visible_quotes"]:
+            seeds[r["observation_key"]+":quote"+str(q["UI_quote_row1"])] = {"values":q,"sha256":r["source_bitmap"]["sha256"]}
+    source = None
+    if source_path:
+        raw = json.loads(source_path.read_text(encoding="utf8"))
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        source = [dict(zip(raw["field_order"],v)) for v in zip(*cols)]
+    for r in p["records"]:
+        assert r["current_state"] == "COMPLETE" and not r["remaining_reasons"]
+        for panel in r["panels"]:
+            assert panel["geometry_evidence"] == "CALIBRATED_NO_OVERFLOW"
+            for q in panel["quotes"]:
+                assert q["currency_literal"] == "gp" and q["paired_raw_tuple_indices0"]
+                for kind,field,outfield in [("price_gp_bitmap","price","price"),("NPC_bitmap","NPC","NPC"),("location_bitmap","UI_location_literal","location_literal")]:
+                    s = q["native_seed_receipts"][kind]
+                    if s["seed_key"].startswith("published-npc1992:"):
+                        assert kind == "price_gp_bitmap"
+                        receipt = p["published_price_seed_receipts"][s["seed_key"]]
+                        qi = receipt["public_quote_fact_index"]
+                        fact = published["quote_facts"][qi]
+                        row = pubrows[receipt["UI_row_index0"]]
+                        pi = row[5] if receipt["panel"] == "Sell To" else row[6]
+                        assert qi in [x[0] for x in published["panels"][pi][1]]
+                        assert fact["native_gp_bitmap_proved"] and fact["currency_literal"] == "gp"
+                        assert receipt["value"] == fact["price"] == s["value"] == q["price"]
+                        assert receipt["private_bitmap_sha256"] == s["seed_sha256"]
+                        assert receipt["original_png_sha256"] == published["proofs"][row[4]][3]
+                        assert receipt["native_bitmap_key"] == q["native_bitmap_keys"][kind]
+                    else:
+                        assert s["seed_sha256"] == seeds[s["seed_key"]]["sha256"]
+                        assert s["value"] == seeds[s["seed_key"]]["values"][field] == q[outfield]
+                if source:
+                    for i in q["paired_raw_tuple_indices0"]:
+                        t = source[i]
+                        assert t["npc_name"] == q["NPC"] and t["buy_price_raw" if panel["panel"] == "Sell To" else "sale_price_raw"] == q["price"]
+                        assert q["location_literal"] == "Various Locations" or t["location"] == q["location_literal"]
+    before = {r["observation_key"]:r for r in csv.DictReader((HERE/"all-visible-after-offline-batch3.csv").open(encoding="utf8",newline=""))}
+    current = list(csv.DictReader((HERE/"all-visible-after-offline-batch4.csv").open(encoding="utf8",newline="")))
+    keys = {r["observation_key"] for r in p["records"]}
+    assert len(keys) == 110 and len(current) == len(before) == 2907
+    assert {r["observation_key"] for r in current if r != before[r["observation_key"]]} == keys
+    assert {k:sum(r["ALL_VISIBLE_state"] == k for r in current) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]} == dict(COMPLETE=2416,PARTIAL=464,UNRECONCILED=27)
+    assert set(load(HERE,"remaining464-summary.json")["remaining_keys"]) == {r["observation_key"] for r in current if r["ALL_VISIBLE_state"] == "PARTIAL"}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -456,6 +511,15 @@ def main():
     offline_batch1(args.npc_source)
     offline_batch2(args.npc_source)
     offline_batch3(args.npc_source)
+    offline_batch4(args.npc_source)
+    badseed = copy.deepcopy(load(HERE,"offline408-batch4.json"))
+    next(iter(badseed["published_price_seed_receipts"].values()))["value"] *= 10
+    try:
+        offline_batch4(args.npc_source,badseed)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Price seed disagreeing with qualified public source was accepted")
     badgeometry = copy.deepcopy(load(HERE,"offline408-batch3.json"))
     badgeometry["exact_bitmap_records"][0]["panels"][0]["geometry_evidence"] = "OVERFLOW_OR_UNQUALIFIED"
     try:
@@ -519,7 +583,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;current ALL2306/574/27;offline90 native recoveries;11 negative controls"
+    print("PASS:6470 appearances/6228 types;current ALL2416/464/27;offline200 native recoveries;12 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

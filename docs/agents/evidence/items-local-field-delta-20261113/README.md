@@ -1,6 +1,16 @@
 # All-category local item field delta
 
-**Latest result:2306 complete,574 partial,27 unreconciled =2907 scoped records.**
+**Latest result:2416 complete,464 partial,27 unreconciled =2907 scoped records.**
+`offline408-batch4.json`, `all-visible-after-offline-batch4.csv` and
+`remaining464-summary.json` close110 further records (206 visible quote occurrences).
+Exact numeric price+gp controls now reuse existing qualified public quote facts,
+with exact source row/line and bitmap/original hash receipts; names/residences use
+independently native-read controls. No fuzzy OCR, guessed daily town or overflow
+promotion. Twelve varied native panes were independently visually confirmed.
+200 records have now closed offline after the seven live potions.208 literal-first,
+180 geometry and76 combined cases remain. No new game input/capture occurred.
+
+**Previous result:2306 complete,574 partial,27 unreconciled =2907 scoped records.**
 `offline408-batch3.json`, `all-visible-after-offline-batch3.csv` and
 `remaining574-summary.json` close67 further records:32 saved full native panes
 manually read and paired-source checked (45 visible quotes), then35 full panes

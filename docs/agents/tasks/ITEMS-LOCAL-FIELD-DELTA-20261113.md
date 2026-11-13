@@ -70,6 +70,12 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued6866296521: fourth offline batch closes110 records using exact
+price+gp controls from existing qualified public quotes, reviewed name/residence
+controls, no-overflow and paired literals.206 quote occurrences;66 used public
+price-seed receipts preserve exact source selections/hashes. Current2416/464/27;
+200 offline closures.208 literal-first,180 geometry,76 combined remain. No GUI.
+
 AUTHORING continued6866296521: third offline batch closes67 additional panes
 (32 manually native-read/source corroborated,35 exact native glyph/source matches).
 Current2306/574/27;90 offline closures after seven live potions.318 literal-first,
