@@ -1,0 +1,112 @@
+{
+  "scope": "PRE_ACTIVE_TEST_BASELINE",
+  "available_major": 114,
+  "total_major": 6914,
+  "available_minor": 50,
+  "total_minor": 900,
+  "gold_before_tests": 72262029,
+  "reset_all_confirmation_cost": 5495250,
+  "reset_all_executed": false,
+  "major": [
+    {
+      "name": "Freeze",
+      "stage": 2,
+      "assigned_name_candidate": "Norcferatu Nightweaver"
+    },
+    {
+      "name": "Low Blow",
+      "stage": 2,
+      "assigned_name_candidate": "Norcferatu Heartless"
+    },
+    {
+      "name": "Parry",
+      "stage": 2,
+      "assigned_name_candidate": "Cobra Scout"
+    },
+    {
+      "name": "Poison",
+      "stage": 2,
+      "assigned_name_candidate": "Gloom Maw"
+    },
+    {
+      "name": "Savage Blow",
+      "stage": 2,
+      "assigned_name_candidate": "Varg"
+    },
+    {
+      "name": "Enflame",
+      "stage": 1,
+      "assigned_name_candidate": "Orclops Bloodbreaker"
+    }
+  ],
+  "minor": [
+    {
+      "name": "Vampiric Embrace",
+      "stage": 2,
+      "assigned_name_candidate": "Norcferatu Heartless"
+    },
+    {
+      "name": "Void Inversion",
+      "stage": 2,
+      "assigned_name_candidate": "Gloom Maw"
+    },
+    {
+      "name": "Voids Call",
+      "stage": 2,
+      "assigned_name_candidate": "Norcferatu Nightweaver"
+    },
+    {
+      "name": "Fatal Hold",
+      "stage": 1,
+      "assigned_name_candidate": null
+    }
+  ],
+  "baseline_assignment_names": "VISUALLY_QUALIFIED_FROM_LABELS_AND_FREEZE_TOOLTIP",
+  "authorization": "Owner explicitly permits active testing on test server; no real money transactions",
+  "proofs": [
+    {
+      "file": "active-baseline-assignment-enflame.png",
+      "sha256": "179e1db251e44d0a446ab2e8a4f1fc8c2822f209efb12f03121e8c128247302d"
+    },
+    {
+      "file": "active-baseline-assignment-fatal-hold.png",
+      "sha256": "f66fe5bbc83ec4cd8f7da9c274249688b7fbbf7f854333667042d51278456526"
+    },
+    {
+      "file": "active-baseline-assignment-freeze.png",
+      "sha256": "a38fad485f6965ec42254d5f20c7676a95868b73953ecacec24f78f234cbbd81"
+    },
+    {
+      "file": "active-baseline-assignment-low-blow.png",
+      "sha256": "ac59827b5fd1be1929dd01dd88a5c76438fea45b85b8a6c0540039808f58ae57"
+    },
+    {
+      "file": "active-baseline-assignment-parry.png",
+      "sha256": "3feb3214638935b26a5f0e275bb8bd19a7d658448d2d8afc8864294512f69788"
+    },
+    {
+      "file": "active-baseline-assignment-poison.png",
+      "sha256": "e09a9003d8a1ea6fb8eb39fa077a51fabb963746fc71fcbd9973da6a14c7c15c"
+    },
+    {
+      "file": "active-baseline-assignment-savage-blow.png",
+      "sha256": "69b74877c6f4461cd4d9f5e7a41e69c6dbbc6a0375f220acac2c7fe214731ad1"
+    },
+    {
+      "file": "active-baseline-assignment-vampiric-embrace.png",
+      "sha256": "cd51b586874130cc8d8877cff0714931c3b0a5ac464fe327fc5b90be26dc75db"
+    },
+    {
+      "file": "active-baseline-assignment-void-inversion.png",
+      "sha256": "57fb9c59212e65f026ddb5ab82091184a889f401fd6b863f64be8a8c8eb610ea"
+    },
+    {
+      "file": "active-baseline-assignment-voids-call.png",
+      "sha256": "bc9a00b79e532e3a860f09b6559dc957d09a7fb62f316281156b2414cf0ae383"
+    }
+  ],
+  "stage_cost_sums": {
+    "major_spent": 6800,
+    "minor_spent": 850
+  }
+}

@@ -61,11 +61,46 @@
   "minor": 11,
   "private_image_count": 39,
   "private_image_bytes": 9328668,
-  "scope": "25_VISIBLE_CURRENT_OR_LOCKED_PREVIEW_DESCRIPTIONS_AND_ONE_COST_EACH",
+  "scope": "25_STATIC_CARDS_PLUS_ONE_PAID_RESET_AND_ORIGINAL_LEVEL_ASSIGNMENT_RESTORE",
   "all_three_stages_ui_verified": false,
   "combat_or_proc_runtime_verified": false,
   "runtime_fix_included": false,
   "icon_pixel_or_animation_parity_verified": false,
   "original_assets_published": false,
-  "publication_worker_game_input": false
+  "publication_worker_game_input": false,
+  "active_extension": {
+    "schema": "CHARMS_BOUNDED_ACTIVE_TEST_EXTENSION/v1",
+    "authorization": "Owner authorized active test-server actions; publisher only reads saved files",
+    "private_snapshot": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-active-publication-snapshot-20261113",
+    "files": [
+      {
+        "file": "active-pass-qualified.json",
+        "sha256": "a3f5562f997f31ea0f5a3f1cfeec4559c8bd57afb12b2405d53341cee6c56720",
+        "bytes": 15928
+      },
+      {
+        "file": "active-private-image-manifest.json",
+        "sha256": "5db5f3016f443cf73818a10f3b9a75c5611da63adacacf1e0a53d67358eea2c8",
+        "bytes": 22706
+      },
+      {
+        "file": "baseline-qualified.json",
+        "sha256": "2312665a98964aaf51da85239cba046d3fbbf97daab4d3b864156715a8c6eede",
+        "bytes": 3296
+      },
+      {
+        "file": "reset-qualified.json",
+        "sha256": "99bd3e66e76d1f5d1e76bf451e0de584f91a2cb13abd9d33b9e3dad64b635c01",
+        "bytes": 721
+      }
+    ],
+    "private_images": 75,
+    "paid_resets": 1,
+    "recorded_level_purchase_actions": 18,
+    "recorded_assignment_actions": 9,
+    "first_static_head": "2f91f9c906b9f87c8f1f1fa487bfafe03ff9f308",
+    "phase": "FINAL_AUTHORING_BEFORE_REMOTE_FREEZE",
+    "independent_review_status": "NOT_REVIEWED; root reviewer terminal capability unavailable; zero files reviewed"
+  },
+  "retained_static_scope": "25_VISIBLE_CURRENT_OR_LOCKED_PREVIEW_DESCRIPTIONS_AND_ONE_COST_EACH"
 }

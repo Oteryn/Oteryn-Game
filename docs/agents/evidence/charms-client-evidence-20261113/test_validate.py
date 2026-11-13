@@ -60,6 +60,41 @@ class BoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'CARD_PROOF'):
             V.validate(self.data)
 
+    def test_paid_reset_must_match_observed_gold_delta(self):
+        self.data['active-pass-qualified.json']['reset']['paid_gold'] = 6320250
+        with self.assertRaisesRegex(ValueError, 'RESET_GOLD_ACCOUNTING'):
+            V.validate(self.data)
+
+    def test_initial_freeze_purchase_is_not_lost_from_action_count(self):
+        self.data['active-pass-qualified.json']['restore']['initial_pilot'] = []
+        with self.assertRaisesRegex(ValueError, 'ACTIVE_LEVEL_COUNT'):
+            V.validate(self.data)
+
+    def test_minor_balance_must_be_restored(self):
+        self.data['active-pass-qualified.json']['restore']['minor_available_final'] = 51
+        with self.assertRaisesRegex(ValueError, 'RESTORE_FINAL_BALANCES'):
+            V.validate(self.data)
+
+    def test_same_assignment_count_does_not_prove_same_creatures(self):
+        self.data['active-pass-qualified.json']['restore']['assignment_transactions'][0]['creature'] = 'Wrong creature'
+        with self.assertRaisesRegex(ValueError, 'RESTORE_ASSIGNMENT_NAMES'):
+            V.validate(self.data)
+
+    def test_official_examples_are_not_replaced_by_old_full_level_math(self):
+        self.data['official-reset-fee-source.json']['examples_without_discount']['500'] = 5600000
+        with self.assertRaisesRegex(ValueError, 'OFFICIAL_FEE_EXAMPLE'):
+            V.validate(self.data)
+
+    def test_one_paid_reset_does_not_test_first_free_reset(self):
+        self.data['reset-fee-comparison.json']['first_free_reset_tested'] = True
+        with self.assertRaisesRegex(ValueError, 'FEE_SCOPE_BOUNDARY'):
+            V.validate(self.data)
+
+    def test_missing_active_proof_does_not_count_as_restoration(self):
+        self.data['active-private-image-manifest.json'].pop()
+        with self.assertRaisesRegex(ValueError, 'ACTIVE_PRIVATE_PROOFS'):
+            V.validate(self.data)
+
 
 if __name__ == '__main__':
     unittest.main()

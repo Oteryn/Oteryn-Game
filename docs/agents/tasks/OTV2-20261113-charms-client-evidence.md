@@ -2,20 +2,20 @@
 
 ```yaml
 task_id: OTV2-20261113-charms-client-evidence
-title: Retain 25 static charm descriptions and qualified source comparisons
+title: Retain static charm descriptions and bounded reset/restore evidence
 mode: AUDIT
 status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/charms-client-evidence-20261113
-pr: null
+pr: https://github.com/Oteryn/Oteryn-Game/pull/3172
 base_sha: 3e168ce6afe374485da20ee0ac13d3749558e2f8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: codex-charms-evidence-publication
 created_at: 2026-11-13T10:44:41Z
-updated_at: 2026-11-13T10:44:41Z
+updated_at: 2026-11-13T11:13:17Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/charms-client-evidence-20261113/
@@ -29,11 +29,12 @@ external_repositories: []
 
 ## Outcome
 
-Preserve the completed first static pass, source comparisons and private proof
-receipts. All 25 names have a visible current/locked-preview description and
-one unlock/next-upgrade cost. This is not all-stage or combat qualification.
+Preserve the first25-card static pass and the bounded active reset/restore
+batch with source comparisons and private proof receipts. This is not all-stage
+or combat qualification.
 The lead alone operates the test client; the publication worker only analyzes
-saved files. Later active tests have separate evidence and are outside this PR.
+saved files. The authorized active pass adds one reset,18 level purchases and
+nine restored assignments, without changing runtime code.
 
 ## Architecture and source of truth
 
@@ -43,8 +44,13 @@ saved files. Later active tests have separate evidence and are outside this PR.
 - PROVEN: four simplified description projections omit UI details already
   retained in fuller source mechanics. No runtime defect is inferred.
 - DERIVED: key-derived Void's Call name loses the apostrophe in Card.name.
-- UNKNOWN: other stages, combat/procs, area geometry, exact leech/Gut
-  arithmetic, reset/clear formulas and icon/animation parity.
+- UNKNOWN: other stages, combat/procs, exact area shape, exact leech/Gut
+  arithmetic, first-free-reset/discount paths, clear fees and icon/animation parity.
+- PROVEN: one paid reset5,495,250 and restoration of original6 Major/4 Minor
+  levels and9 assignments; final balances114/6914,50/900.
+- DERIVED: official reset-fee examples support the excess-over100 base rule;
+  current full-level Game calculation is825,000 higher at757 with25% reduction.
+  First-free-reset and actual entitlement identity remain untested.
 
 ## High-risk authority/recovery qualification
 
@@ -66,7 +72,7 @@ comparison table; no mechanic ledger row moves to DONE.
 
 ## Excluded scope
 
-Game input by the worker, active test mutations, assignments/purchases,
+Game input or further active test mutations/assignments/purchases by the worker,
 anti-logout, runtime or UI fixes, Bestiary PR #3171, Items/Cloud branches,
 original image/asset redistribution, deployment and merge.
 
@@ -74,14 +80,23 @@ original image/asset redistribution, deployment and merge.
 
 The publication branch starts at fresh main and has one writer. The prior
 Bestiary head remains unchanged. The final immutable static reader checkpoint
-was consumed before publication; later active-test results are excluded.
+was consumed before first publication. The active successor consumes a separate
+qualified batch and retains the initial head as its predecessor.
+
+AUTHORING resumed by the lead's explicit allocation after fresh live PR/head
+readback at `2f91f9c906b9f87c8f1f1fa487bfafe03ff9f308`. This successor adds the
+bounded active-test/restore evidence and official fee-source comparison in one
+forward update. No runtime fix or independent review trigger is authorized
+for this worker.
 
 ## Validation
 
 - Focused validator with private-image and source-blob verification: PASS.
-- Nine evidence control/negative tests: PASS.
+- Sixteen evidence control/negative tests: PASS on successor authoring tree.
 - `python tools/agents/validate_governance.py`: PASS.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
 - `git diff --check`: PASS.
 - Component/integration/E2E: NOT_APPLICABLE, no game/runtime/content input change.
-- Exact-head CI: pending first publication; no green/mergeability claim.
+- Exact-head CI: predecessor2f91f9c9 passed; successor checks pending. Independent
+  review was not completed because the dispatched reviewer could not execute
+  terminal reads (zero files reviewed). No review/mergeability claim.

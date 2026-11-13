@@ -23,5 +23,25 @@
     "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
     "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
     "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+  },
+  {
+    "path": "crates/gameplay/domain/src/domain/charm.rs",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "3dc21a439d631c4cb4c6bc576cc25bfacd9c8ccc3222361110bf894a39fafc89"
+  },
+  {
+    "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "459e6baf44045694a98c27f03db3f51308bbf78fa93349e84d6f84ab00104767"
+  },
+  {
+    "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "ed3255a3419ebbed4deb8bae3820e7a1662dc5a49d0d4c57ec173a1893992775"
+  },
+  {
+    "path": "crates/gameplay/durability/src/durability/charm_state.rs",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "982440ca6d2b3960283b33e5fda95018019b7e2ec0649310f08975f50db6669e"
   }
 ]

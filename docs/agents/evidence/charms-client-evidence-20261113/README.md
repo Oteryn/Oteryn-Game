@@ -5,7 +5,8 @@ All 25 visible current or locked-preview values and all 25 displayed unlock or
 next-upgrade costs match the pinned source catalogue. Ten visible next-value
 upgrade labels also match. The packet retains descriptions, source pointers
 and private image receipts so later tests can target unqualified behavior.
-No runtime or presentation fix is included.
+The successor packet adds one authorized paid reset and restoration of the
+original levels/assignments. No runtime or presentation fix is included.
 
 Comparison source: `3e168ce6afe374485da20ee0ac13d3749558e2f8`.
 The catalogue, mechanics, progression rules and description projection each
@@ -46,19 +47,66 @@ each finding. Simplified catalogue effects are not the complete mechanics
 source; omissions in a short effect object do not establish missing runtime
 implementation. No runtime defect is asserted by this packet.
 
-The remaining unqualified work includes other stages, combat/proc execution,
+The remaining unqualified work includes unexercised stages, combat/proc execution,
 Carnage area geometry behind “small radius”, leech arithmetic, Gut behavior,
 reset/clear fee rules, hidden prerequisites, icon pixel parity and animations.
-Later owner-authorized active tests are a separate batch; their results must
-not be inferred from these static descriptions.
+Active results below are a distinct retained batch; they are not inferred from
+the static descriptions.
+
+## Bounded active reset and restoration
+
+The lead performed one owner-authorized reset on the test client. Gold changed
+from 72,262,029 to 66,766,779: a paid fee of 5,495,250. Major points changed
+from 114/6914 to 6914/6914, and Minor echoes from 50/900 to 100/100.
+Freeze stage1 then cost320 points and raised Minor capacity100→150 (+50);
+stage2 cost480 and raised it150→250 (+100).
+
+Eighteen recorded level purchases (the initial Freeze pilot plus17 restore
+purchases) spent6800 Major points and850 Minor echoes, rebuilding the original
+six Major and four Minor levels. Nine named assignments were restored; Fatal
+Hold remained unassigned. Final balances114/6914 and50/900 and final gold
+66,766,779 match the baseline configuration with only the paid reset fee spent.
+These are UI state/balance readbacks, not combat or full75-stage tests.
+`active-pass-qualified.json`, baseline/reset records, source stage values and
+75 additional private image receipts retain the evidence.
+
+## Reset fee source discrepancy and calculator boundary
+
+The official [21 November2024 update article](https://www.tibia.com/news/?subtopic=newsarchive&id=8140)
+provides undiscounted examples100→100000,500→4500000,1000→10000000 and
+2000→21000000. They support the derived base expression
+`100000 +11000*max(level-100,0)`. Its level757 base7,327,000, multiplied by75%,
+matches the observed5,495,250 fee. The source was available as indexed
+official-domain text; direct retrieval returned403.
+
+Current Game `charm.rs:846` instead uses full `level*11000` when level>100,
+giving6,320,250 with the same discount:825,000 more. The fee is traced from
+dispatch through the native port to durability calculation and fee burn.
+`reset-fee-comparison.json` retains exact paths/head; no deployed Oteryn
+execution or runtime correction is claimed. First-free-reset state and every
+discount/entitlement branch remain untested. The observation shows an effective
+25% reduction for this event; actual entitlement identity was not captured.
+
+The inspected Platform calculator router at its recorded default head supports
+experience, stamina, training and loot, with no charm-reset arm. Targeted Atlas
+search did not find a reset calculator. This is bounded source inspection,
+not a claim about every historical/external calculator or a fabricated reset
+calculator output.
+
+Further test priorities are unresolved Parry/armor/mana-drain behavior, Cleanse
+edge cases and Dodge/minor ordering. Existing geometry footage should be
+qualified before repeating Carnage basics; Gut/Scavenge require statistical
+design rather than a few kills. Community reports are leads, not live Global
+runtime proof. These priorities are not new runtime findings.
 
 ## Private evidence and validation
 
-Original screenshots/assets remain private. The 25 card proofs total
+Original screenshots/assets remain private. The original25 card proofs total
 5,724,422 bytes; the complete private manifest has 39 PNGs including navigation
 and supporting views. `qualified-card-index.json` identifies the 25 card
 proofs, while `private-image-receipts.json` retains all 39 hashes and locators.
-The private archive hash is recorded in `provenance.json`. No PNG, DAT,
+The active batch adds75 private image receipts (114 total across both batches).
+The original private archive hash is recorded in `provenance.json`. No PNG, DAT,
 APNG or archive bytes are committed.
 
 ```sh
@@ -66,9 +114,11 @@ python docs/agents/evidence/charms-client-evidence-20261113/validate.py
 python docs/agents/evidence/charms-client-evidence-20261113/test_validate.py
 ```
 
-Optional `--repository .` rehashes the five source blobs and re-derives observed
-source stage values. Optional `--private-root <directory>` rehashes all 39
-private proofs. Nine control/negative tests reject missing Vampiric evidence,
+Optional `--repository .` rehashes nine source blobs and re-derives observed
+source stage values. Optional `--private-root <directory>` rehashes all114
+private proofs. Sixteen control/negative tests reject missing Vampiric evidence,
 duplicate keepalive entries, owned-stage promotion of locked previews,
 all-stage/runtime overclaims, reset-fee substitution, currency swaps and proof
-substitution. These checks do not execute the game.
+substitution, inconsistent reset/restore accounting, lost purchase actions,
+wrong restored assignments and unsupported first-free-reset claims. These
+checks do not execute the game.

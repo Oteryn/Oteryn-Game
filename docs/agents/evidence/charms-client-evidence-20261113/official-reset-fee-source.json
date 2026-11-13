@@ -1,0 +1,24 @@
+{
+  "classification": "CIPSOFT_OFFICIAL_INDEXED_SOURCE_WITH_DERIVED_FORMULA",
+  "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8140",
+  "title": "Winter Update Changes during Test Server",
+  "published_date": "2024-11-21",
+  "retrieved_utc": "2026-11-13T11:18:08.462387+00:00",
+  "access": "Direct page returned403; relevant text retrieved from indexed official-domain search result, not a third-party article",
+  "examples_without_discount": {
+    "100": 100000,
+    "500": 4500000,
+    "1000": 10000000,
+    "2000": 21000000
+  },
+  "base_rule_derived_from_examples": "100000 + 11000 * max(level - 100, 0)",
+  "major_unlock_echoes": 50,
+  "major_stage2_echoes": 100,
+  "major_stage3_echoes": 200,
+  "minor_stage_costs": [
+    100,
+    150,
+    225
+  ],
+  "boundary": "Official examples corroborate the base rule. A full calculator still needs first-free-reset state and actual entitlements/discounts. Stage3 echo grant is source evidence, not exercised in this active pass."
+}

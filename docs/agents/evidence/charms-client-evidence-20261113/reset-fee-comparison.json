@@ -1,0 +1,55 @@
+{
+  "classification": "SOURCE_TRACED_NUMERIC_DIFFERENCE_NOT_DEPLOYED_OTERYN_TEST",
+  "game_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "game_source": {
+    "path": "crates/gameplay/domain/src/domain/charm.rs",
+    "line": 846,
+    "formula": "100000 + (level > 100 ? level * 11000 : 0), then floor(75% * base) for CharmExpansion",
+    "callers": [
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression.rs",
+        "line": 319
+      },
+      {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_native.rs",
+        "line": 392
+      },
+      {
+        "path": "crates/gameplay/durability/src/durability/charm_state.rs",
+        "line": 727
+      },
+      {
+        "path": "crates/gameplay/durability/src/durability/charm_state.rs",
+        "line": 944
+      }
+    ]
+  },
+  "tested_level": 757,
+  "official_example_derived_base": 7327000,
+  "effective_25_percent_discount_fee": 5495250,
+  "observed_paid_fee": 5495250,
+  "current_game_full_level_fee_with_same_discount": 6320250,
+  "difference": 825000,
+  "first_free_reset_tested": false,
+  "all_discount_entitlements_tested": false,
+  "actual_entitlement_identity_verified": false,
+  "discount_interpretation": "Observed fee equals75% of the official-example-derived base for this character/event; not every eligibility path was tested",
+  "runtime_fix_included": false,
+  "calculator_audit": {
+    "platform_head": "c5780e2cfc445a134cdb0ae0f9587837856c6769",
+    "platform_source": "portal-rs/crates/wiki/src/calculators/web.rs",
+    "platform_line": 101,
+    "platform_router_git_blob": "6296f7529e1a18b3d7c40b858babcddfd9054a86",
+    "platform_supported_calculators": [
+      "experience",
+      "stamina",
+      "training",
+      "loot"
+    ],
+    "platform_reset_arm_found": false,
+    "atlas_head": "0bbd188e8ba3e59290f4d9da754cda9e2418919c",
+    "atlas_reset_calculator_found_in_targeted_search": false,
+    "scope": "Current default-head targeted code search and exact Platform router inspection; not all historical branches/external sites"
+  },
+  "no_claim": "No independent charm-reset calculator output or live Oteryn execution was obtained"
+}
