@@ -1,0 +1,44 @@
+{
+  "classification": "PROVEN_ORDERED_BASIC_READER_COVERAGE",
+  "category": "Food",
+  "source_receipt": {
+    "filename": "food-basic-1-169-combined-private.json",
+    "bytes": 338396,
+    "sha256": "64f29437dbbac3c95f9e22b6137c066ba27bb567f920b9453e224726bfc902c6"
+  },
+  "physical_ui_ordinals": {
+    "first": 1,
+    "last": 169,
+    "records": 169,
+    "gaps": [],
+    "duplicates": []
+  },
+  "distinct_original_basic_png": 169,
+  "original_proof_hashes_freshly_verified": 676,
+  "private_Description_values": 39,
+  "private_display_layouts": 39,
+  "immutable_inputs": [
+    {
+      "filename": "food-basic-1-168-combined-private.json",
+      "bytes": 336483,
+      "sha256": "e8e24edeae44069bb0be83eba7e797557801962043eeb772c46e1c3ed8998e9e",
+      "records": 168
+    },
+    {
+      "filename": "food-basic-169-final-reviewed-private.json",
+      "bytes": 3873,
+      "sha256": "e92c600ef78fadd6ebefda8386cbc2ac98e12c362be1a595cf5ec135776d7ae9",
+      "records": 1
+    }
+  ],
+  "original_index_receipt": {
+    "filename": "capture-index.json",
+    "bytes": 184246,
+    "sha256": "8d1fbe04399a87f7d6ad072e430843fdebad5415efe4d39e54518e8f3ddf4de5"
+  },
+  "index_Basic_pathset_equals_reader_Basic_proofset": true,
+  "historical_pending_reader_receipts_preserved": true,
+  "current_reader_qualification": "ALL_169_NATIVE_BASIC_CARDS_QUALIFIED",
+  "trade_or_animation_complete": false,
+  "overall_static_audit_complete": false
+}

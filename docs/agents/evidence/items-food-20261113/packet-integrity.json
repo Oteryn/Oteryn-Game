@@ -1,0 +1,24 @@
+{
+  "files": {
+    "observations-1-169.json": {
+      "bytes": 235348,
+      "sha256": "c95cd9aba173031f413af55b120a9e74c59bff86e7e40c06e1abf62bd3d07e73"
+    },
+    "uncompared-field-backlog.json": {
+      "bytes": 334,
+      "sha256": "36313877047b059c5dbd335b18c0d516dbd5dd309629278739882a87d38d2dc5"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 536423,
+      "sha256": "d73eb334ab82b68ca02484931a5668c8bd6bb1be122b5886e3f1eb85c19fd631"
+    },
+    "category-end-receipt.json": {
+      "bytes": 4507,
+      "sha256": "b1f7ef1d62a9e12329f70acbfb75af17b6dbc09aed0b4e764118045b890e4435"
+    },
+    "reader-coverage-union.json": {
+      "bytes": 1428,
+      "sha256": "316b5f84a4c8735cd5f3466280be179b55c05f7a13e954f8d4899bf738c5020b"
+    }
+  }
+}

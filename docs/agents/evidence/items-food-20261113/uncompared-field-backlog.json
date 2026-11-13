@@ -1,0 +1,6 @@
+{
+  "classification": "UNCOMPARED_OBSERVED_FIELDS",
+  "fields": [],
+  "private_narrative_receipts": 39,
+  "boundary": "These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim."
+}
