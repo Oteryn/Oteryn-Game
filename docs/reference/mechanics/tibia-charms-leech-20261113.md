@@ -1,6 +1,6 @@
 # Tibia Global: Parry, Dodge, Low Blow, Carnage, leech i Cleanse
 
-> **Najnowszy pełny rejestr dowodów (13.11.2026):** [trzy uzupełnienia, źródła, sprostowania i siedem niewiadomych Leech](tibia-charms-leech-20261113-evidence-rounds.md). Poniższy tekst jest pierwotną wersją; późniejsze korekty w rejestrze mają pierwszeństwo. Oficjalny wyjątek Cleanse dotyczy **Player Summon**.
+> **Najnowszy pełny rejestr dowodów (13.11.2026):** [cztery uzupełnienia, źródła, sprostowania i siedem niewiadomych Leech](tibia-charms-leech-20261113-evidence-rounds.md). Poniższy tekst jest pierwotną wersją; późniejsze korekty w rejestrze mają pierwszeństwo. Oficjalny wyjątek Cleanse dotyczy **Player Summon**.
 
 Stan badania: **2026-11-13**. Typ dokumentu: **materiał badawczy do przeglądu**.
 

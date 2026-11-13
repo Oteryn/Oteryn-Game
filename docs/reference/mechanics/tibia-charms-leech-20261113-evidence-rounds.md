@@ -1,5 +1,7 @@
 # Tibia Global — pełny dziennik badania charmów i Leech, 13 listopada 2026
 
+> **Runda 4 — 13.11.2026:** odnaleziony i otwarty log czterech Falconów z 24.01.2026, opis wzoru AoE z obu Discordów oraz historyczny test addytywności minor charms. [Pełne źródła i rozbieżności](#runda-4--dokładne-opisy-leech-na-obu-discordach-i-nowy-log-life-leech-z-2026). Model zwykłego AoE jest **dobrze wsparty**; pozostałe siedem pozycji jest listą szczegółowych testów, a nie siedmioma brakującymi mechanikami.
+
 > **Status: EVIDENCE, nie kontrakt implementacji.** [Raport pierwotny](tibia-charms-leech-20261113.md) oraz trzy uzupełnienia w tym pliku tworzą **całość** pracy badawczej. Zachowano pełne oryginalne treści komentarzy w kolejności ich powstania. **Późniejsze sprostowania są ważniejsze od wcześniejszych przypuszczeń.** Datą odniesienia programu Oteryn pozostaje **2026-09-27**; późniejsze wypowiedzi i testy nie dowodzą automatycznie ciągłości zachowania na ten dzień.
 
 ## Sześć tematów: co wiemy, czego nie wiemy
@@ -262,3 +264,86 @@ W `Formulae` faktycznie zapisano osobne obliczanie i zaokrąglanie w górę dla 
 | Cleanse: refresh i timery | Momentów uzyskania i wygaśnięcia dwóch odporności oraz ponownego zdarzenia tego samego typu. Relacja o współistnieniu odporności nie dowodzi niezależności timerów. |
 
 **Weryfikacja tej rundy:** rachunki przeliczono dokładną arytmetyką wymierną; odczytano źródłowe logi/obrazy i kontekst ich autorów; błędne uogólnienie Player Summon zostało jawnie skorygowane. Nie podniesiono całej mechaniki do `PROVEN` na podstawie wiki, kalkulatora, modelu OTS lub pojedynczego filmu. Zebrany materiał nie zmienia samodzielnie daty odniesienia Oteryn 2026-09-27.
+
+
+---
+
+## Runda 4 — dokładne opisy Leech na obu Discordach i nowy log Life Leech z 2026
+
+Badanie wykonane 2026-11-13: ponownie przeszukano **Tibia Analysers** i **Kusnier's server**, otwarto kontekst wiadomości oraz załączniki, porównano materiały publiczne i oryginalny film Alytrety. **Nie wykonano własnego eksperymentu w grze.** Ten komentarz uzupełnia wersjonowane materiały z HEAD `e46c9f8bb9e525a363ed774646d6739a71469096`; nie zmienia commita, kodu ani daty odniesienia.
+
+### R4-L1 — główny wzór jest dobrze opisany, nie ogólnie nieznany
+
+[Wojtek Agresja, Tibia Analysers, 2026-01-17 13:25](https://discord.com/channels/1431612466818977814/1431633212995670078/1462060286453485578) podaje wprost:
+
+```text
+AoEL_i = D_i × L_i × [1 + 0.1 × (N−1)] / N
+```
+
+`D_i` to damage konkretnego potwora, `L_i` to właściwy dla niego procent leech, `N` to liczebność odpowiedniej grupy trafień. Ten sam czynnik występuje w [TibiaWiki Formulae, przypięta rewizja](https://tibia.fandom.com/index.php?title=Formulae&oldid=1205374) oraz [kalkulatorze TibiaPal](https://tibiapal.com/leech). TibiaPal prezentuje skrót „100% + 10% za kolejne cele”; nie oznacza on uprzywilejowania pierwszego celu po uwzględnieniu dzielenia przez N.
+
+**Wniosek / rekomendacja:** zwykły model AoE z `f(N)=(0.1N+0.9)/N` jest mocno wsparty. Nie należy przedstawiać go jako całkowicie nieustalonego tylko dlatego, że istnieje starszy rozbieżny opis lub nie rozstrzygnięto wszystkich etapów zaokrąglenia. To nadal nie oficjalnie ujawniony algorytm CipSoft.
+
+**Błąd we wcześniejszym przykładzie autora:** [2026-01-17 13:33](https://discord.com/channels/1431612466818977814/1431633212995670078/1462062217913434176) dodaje jeden pełny wkład 636 HP do siedmiu zredukowanych po 135. Jest to sprzeczne z jego własnym wzorem, bo czynnik AoE już rozdziela wkłady. Przy `D=1200`, `L=52.75%`, `N=8` kandydat z ceil per cel daje `8×135=1080`, nie 1581. Autor dodatkowo zaokrąglił L do 53%, więc jego pośrednie rachunki nie są specyfikacją precyzji. Późniejszy test poniżej stosuje już równy wkład wszystkich czterech celów.
+
+### R4-L2 — NOWY materiał: cztery falcony, Life Leech i Mana Leech, 24 stycznia 2026
+
+[Opis próby](https://discord.com/channels/1431612466818977814/1431633212995670078/1464603554927870087), [załącznik z obliczeniem](https://discord.com/channels/1431612466818977814/1431633212995670078/1464603415429644308), [załącznik z rzeczywistym server logiem](https://discord.com/channels/1431612466818977814/1431633212995670078/1464603474837635124). **Oba obrazy zostały otwarte i przeczytane**, nie tylko opis autora.
+
+Zrzut pokazuje o 12:36:11:
+
+| Cel | Damage | HP z wpisu leech | MP z wpisu leech |
+|---|---:|---:|---:|
+| Falcon Knight | 679 | 117 | 37 |
+| Falcon Paladin | 679 | 117 | 37 |
+| Falcon Knight | 679 | 117 | 37 |
+| Falcon Knight | 679 | 117 | 37 |
+
+Po tych czterech trafieniach widnieje **oddzielny wpis samoleczenia 145 HP**. Suma: **468 HP leech + 145 osobnego leczenia = 613 HP**, a z many **148 MP**. Autor określa 145 HP jako pasyw Monka. Nie wolno wszystkich 613 HP dopasowywać do Life Leech.
+
+W obrazku rachunkowym autor używa `L=0.53` i współczynnika `1.3/4`. Dokładnie: `ceil(679×0.53×0.325)=117`. Wcześniej deklarowane `L=0.5275` także daje 117, ponieważ surowy wynik to 116.4060625. **Pełnej konfiguracji tej konkretnej próby nie odczytano**, więc nie rozstrzygam między dokładnym 53% a zaokrągleniem wcześniejszych 52.75%; nie odtwarzam także niewskazanego procentu many z samego wyniku 37.
+
+Klasyfikacja: **PROVEN dla odczytanych wartości obrazu**, **DERIVED dla zgodności z modelem**. To nowe względem wcześniejszego raportu liczbowe wsparcie zwykłego Life Leech w 2026, choć nie próba po czerwcowej przebudowie profesji ani replikacja na 13 listopada. Sam zestaw nie identyfikuje wszystkich etapów zaokrągleń.
+
+### R4-L3 — Kusnier: dokładny opis per cel, minor charm i rzeczywista rozbieżność zaokrągleń
+
+Ponownie odczytano [Toma, 2025-07-03](https://discord.com/channels/836592213327609957/836593610811768833/1390345009844457595), z korektą N−1 [b0ni](https://discord.com/channels/836592213327609957/836593610811768833/1390346223080177836) i [akceptacją autora](https://discord.com/channels/836592213327609957/836593610811768833/1390346272866828359). Autor jasno opisuje obliczenie osobno dla każdego stworzenia oraz dodanie bonusu charma tylko do właściwego gatunku, nie całego AoE.
+
+Jego log `1202/1076/1103 damage`, `245/219/224 HP`, `78/70/71 MP` przy deklarowanych 50.75% HP i 16% MP, N=3, pozostawia małą ale rzeczywistą różnicę: pojedynczy ceil daje MP `77/69/71`. Hipoteza `ceil(ceil(D×L)×f(N))` daje `78/70/71`, ale **nie jest jednoznacznie udowodniona**. Dokładne składowe obrażeń/konfiguracja nadal mogłyby wyjaśniać różnicę. To ograniczona luka arytmetyczna, nie brak wiedzy o całym mechanizmie.
+
+[Verilo, 2025-10-16](https://discord.com/channels/836592213327609957/1336272311661236286/1428411221836828793) wprost zaznacza, że nie testował sam addytywności — nie należy liczyć wcześniejszego „I think it's all additive” jako niezależnego testu.
+
+### R4-L4 — opis autora analizatora: nie mylić leech z innym leczeniem ani niewłaściwą podstawą damage
+
+Odnaleziono pełny [opis Porfza z 2026-06-25](https://discord.com/channels/836592213327609957/1503475059732517095/1519639479231447201). Długi wpis odczytano również przez elementy tekstowe, ponieważ podgląd wyszukiwarki ucinał końcówkę.
+
+Opisuje on **własny analizator logów**, nie kod serwera CipSoft:
+- liczenie właściwego bonusu minor charma dla danego potwora; ten sam potwór nie ma jednocześnie obu minorów, co nie oznacza zakazu zwykłego HP+MP leech z wyposażenia;
+- osobne uwzględnienie bonusów czaru: w tamtym zestawieniu Ethereal Barrage +10% Life Leech, Terra Wave +10%, Shield Slam +15%; wartości są przypisane do daty i konfiguracji opisu;
+- rozpoznawanie przypadków ograniczenia przyrostu przez pełne HP/manę zamiast uznawania ich za błąd wzoru;
+- odtwarzanie trafień z zerowym widocznym damage i rozdzielanie autoataku od spella;
+- zdejmowanie mnożnika **utevo grav san / Divine Empowerment** z damage przed dopasowaniem leech.
+
+Ostatni punkt jest dodatkową **DERIVED hipotezą analityka o podstawie leech**, nie kwalifikowaną oficjalną regułą. Wymaga osobnej próby, zanim obejmie wszystkie konfiguracje. Opis wyjaśnia, dlaczego „całe leczenie w turze / cały widoczny damage” nie jest wiarygodnym testem pojedynczego procentu leech.
+
+### R4-L5 — oryginalne nagranie testów charmów zamiast samego streszczenia na Reddicie
+
+Otworzono film **Alytreta, „[TIBIA] - REGEN, VOID'S CALL E VAMPIRIC EMBRACE - ANÁLISE COMPLETA E ENFADONHAMENTE DETALHADA”**, data publikacji odczytana na YouTube: **2022-06-28**. [Film](https://www.youtube.com/watch?v=MxiCFl3OT_8), [dyskusja z linkiem do filmu](https://www.reddit.com/r/TibiaMMO/comments/vtilgh/finally_someone_properly_tested_vampirics_embrace/).
+
+Odczytano transkrypcję oraz wybrane klatki. Wykres ok. **14:40** porównuje Life Leech 50% z historycznym 54% po dodaniu Vampiric Embrace; dla dwóch celów podaje 0.275 i 0.297 na cel, zgodne z mnożnikiem 0.55. To silniejsze historyczne wsparcie dodawania punktów procentowych **przed redukcją AoE** niż nieprzetestowana opinia.
+
+Autor ok. **18:11** uczciwie mówi, że nie odtworzył kompletnej funkcji dla wszystkich mieszanych sytuacji; film nie jest pełną oficjalną specyfikacją. Część demonstracji overkill ok. 23 minuty pochodzi z test servera, co sam zaznacza — nie promuję jej do nowej próby produkcyjnej.
+
+Nie kopiować starych bonusów 4%/2% jako aktualnych: [oficjalny rework 2024, news 8140](https://www.tibia.com/news/?id=8140&subtopic=newsarchive) podaje Vampiric Embrace **1.6/2.4/3.2%**, Void's Call **0.8/1.2/1.6%**. Dla kandydata addytywnego 16% + Void T3 daje 17.6% na przypisanym gatunku, nie 16% × 1.016.
+
+### R4-L6 — kontrola tropu „cele z zerem damage”
+
+[Tom, 2025-06-11](https://discord.com/channels/836592213327609957/1336272311661236286/1382254702162481245) rozważa udział Cosmic Energy Prisms przy Lloydzie w N. Jednak [następny surowy log](https://discord.com/channels/836592213327609957/1336272311661236286/1382255878517948496) pokazuje, że pryzmaty faktycznie dostały 110 i 104 damage, a dopiero potem się uleczyły; dały odpowiednio 22/21 HP i 8/7 MP. To **nie jest izolowany dowód immune/zero-damage**. Inne wcześniej zapisane relacje o odpornych pająkach i filarach pozostają kandydatami, ale tego logu nie należy błędnie doliczać jako testu zerowych obrażeń.
+
+### Ocena po tej rundzie
+
+**Podstawa zwykłego AoE oraz addytywne procenty mają wystarczająco dobry opis do przyjęcia modelu roboczego.** Poprzednia ogólna lista siedmiu niewiadomych przeceniała brak wiedzy, jeśli czytać ją jako brak jakiegokolwiek wzoru. Otwarte pozostają węższe warunki: dokładne pośrednie zaokrąglenia, kwalifikacja granicznych celów/typów summonów, grupowanie złożonych czarów i kontrola nowych modyfikatorów. Zgodność obecnego runtime Oteryn nadal wymaga osobnego audytu.
+
+Wszystkie podane wyżej rachunki sprawdzono na dokładnych ułamkach wymiernych w Pythonie (`fractions.Fraction`, `math.ceil`). Nie jest to test gry ani test kodu Oteryn. Zmiana wyłącznie w komentarzu badawczym; bez merge i bez deklaracji wyników CI/review.
+
+[Oryginalny komentarz R4 w PR #3177](https://github.com/Oteryn/Oteryn-Game/pull/3177#issuecomment-6861878705).
