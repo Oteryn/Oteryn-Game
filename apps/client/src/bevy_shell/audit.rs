@@ -9,6 +9,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use serde::Serialize;
 use std::path::PathBuf;
 
+mod named;
+
 /// In the explicit UI audit mode, F12 captures the rendered window through Bevy.
 /// GPU capture also works on native test displays without a desktop compositor.
 pub(super) fn capture_on_key(
@@ -111,7 +113,7 @@ pub(super) fn write(
         &UiGlobalTransform,
         Has<bevy::ui::InteractionDisabled>,
     )>,
-    focus: Option<Res<bevy::input_focus::InputFocus>>,
+    named: named::NamedControls,
 ) {
     // Native drivers wait for picking/layout updates. Disabled without --ui-audit.
     if output.path.is_some() {
@@ -123,7 +125,7 @@ pub(super) fn write(
     let Ok(window) = window.single() else {
         return;
     };
-    let mut bounds = Vec::new();
+    let mut bounds = named.bounds(window.scale_factor());
     for (control, node, transform, disabled) in &controls {
         let dialog_control = matches!(
             control,
@@ -134,6 +136,9 @@ pub(super) fn write(
                 | Control::Ok
                 | Control::Cancel
         );
+        if dialog_control && named.full_options() {
+            continue;
+        }
         if dialog_control != owner.draft().is_some() || node.size().min_element() <= 0. {
             continue;
         }
@@ -166,7 +171,7 @@ pub(super) fn write(
                     enabled: !disabled,
                     // Public connection fields only: expose counts, never field contents.
                     text_metrics: editable.map(|text| TextMetrics {
-                        focused: focus.as_ref().and_then(|focus| focus.get()) == Some(entity),
+                        focused: named.focus() == Some(entity),
                         characters: text.value().chars().count(),
                         glyphs: layout.map_or(0, |layout| layout.glyphs.len()),
                         visible: visibility.is_some_and(|visibility| visibility.get()),
@@ -190,7 +195,9 @@ pub(super) fn write(
             }
         }
     }
+    // Stable sorting keeps source-named controls ahead of any legacy duplicate.
     bounds.sort_by(|a, b| a.id.cmp(&b.id));
+    bounds.dedup_by(|a, b| a.id == b.id);
     let snapshot = Snapshot {
         schema: "oteryn.bevy-ui-audit.v1",
         update: output.update,
@@ -237,3 +244,6 @@ pub(super) fn write(
         Err(_) => {}
     }
 }
+
+#[cfg(test)]
+mod tests;

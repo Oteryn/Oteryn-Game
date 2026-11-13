@@ -3,6 +3,7 @@ use bevy::input_focus::FocusCause;
 pub(super) fn setup(mut commands: Commands) {
     commands.spawn((
         Overlay,
+        Name::new("exit.dialog"),
         GameModal,
         GlobalZIndex(220),
         Node {
@@ -55,6 +56,7 @@ pub(super) fn project(
                 order: 220,
                 modal: true,
             },
+            Name::new("exit.panel"),
             Node {
                 width: px(340.),
                 height: px(140.),
@@ -100,6 +102,7 @@ pub(super) fn project(
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 80.),
+                Name::new(if confirm { "exit.yes" } else { "exit.no" }),
                 Reply { id, confirm },
             ))
             .observe(activate)
