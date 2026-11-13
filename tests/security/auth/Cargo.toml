@@ -22,11 +22,17 @@ tokio.workspace = true
 [dev-dependencies]
 base64 = "=0.22.1"
 futures = "=0.3.32"
+oteryn-client = { version = "=0.1.0", path = "../../../apps/client" }
+oteryn-session = { version = "=0.1.0", path = "../../../crates/session" }
+oteryn-session-tcp = { version = "=0.1.0", path = "../../../crates/session-tcp" }
+rcgen.workspace = true
 reqwest.workspace = true
+rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
+tokio-rustls.workspace = true
 
 [lints]
 workspace = true

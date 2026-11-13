@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 set +x
 umask 077
-readonly GAME_PLATFORM_SHA=ed9b33729865a77051566182a17aaf8577abf347
+readonly GAME_PLATFORM_SHA=a85b5da4de23f3e8633cfb25a2db1ad7f6133acd
 readonly GAME_SOURCE="$(git rev-parse --show-toplevel)"
 fail() { printf 'GAME_PLATFORM_RESULT=FAIL flow=preflight reason=%s\n' "$1" > "$GAME_PLATFORM_RESULT_FILE"; exit 1; }
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/game-platform.XXXXXX")"
@@ -32,10 +32,11 @@ trap cleanup EXIT
 [[ -n "${PLATFORM_SOURCE:-}" ]] || fail platform_source_missing
 [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" == "$GAME_PLATFORM_SHA" ]] || fail wrong_platform_sha
 for file in portal-rs/e2e/start.sh portal-rs/e2e/harness.mjs \
-  portal-rs/crates/identity/src/login_http.rs portal-rs/crates/gameauth/src/oauth/oauth_http.rs; do
+  portal-rs/crates/identity/src/login_http.rs portal-rs/crates/gameauth/src/oauth/oauth_http.rs \
+  portal-rs/crates/player-api/src/lib.rs portal-rs/crates/gateway/src/lib.rs \
+  portal-rs/crates/gameauth/src/devices_http.rs portal-rs/crates/gameauth/src/devices_tls.rs; do
   if [[ ! -f "$PLATFORM_SOURCE/$file" ]]; then
-    printf 'GAME_PLATFORM_RESULT=BLOCKED owner=Platform what=%s:1\n' "$file" > "$GAME_PLATFORM_RESULT_FILE"
-    exit 2
+    fail required_platform_handler_missing
   fi
 done
 [[ -z "$(git -C "$PLATFORM_SOURCE" status --porcelain --untracked-files=no)" ]] || fail modified_platform_source
@@ -45,8 +46,8 @@ for program in docker python3 node openssl cargo sudo psql setsid timeout; do
 done
 docker info >/dev/null 2>&1 || fail docker_unavailable
 # node_boot uses the same shipping binaries, Game TLS PostgreSQL and World bundle.
-# Route seeds use the real Platform CLI. Control-scope grants remain a separate
-# authority boundary; never replace their issuer with manual grant records.
+# Route seeds use the real Platform CLI. The database owner provisions the
+# exact-scope control grants as the accepted deployment-administration step.
 export NODE_BOOT_LIFECYCLE=game_platform NODE_BOOT_SKIP_BASIC=1 NODE_BOOT_WORLD=1
 export NODE_BOOT_KEEP_STACK=0 NODE_BOOT_REUSE_STACK=0 OTERYN_NODE_BOOT_REAL_CLOCK=1
 export NODE_BOOT_PROJECT="gameplatform${BASHPID}" NODE_BOOT_SERVICE_USER="oteryn-node-boot-gpe2e"

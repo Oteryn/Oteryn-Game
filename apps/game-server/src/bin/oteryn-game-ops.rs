@@ -960,7 +960,7 @@ fn reporter(
             .is_some_and(|leaf| scope_assignment::certificate_has_node_identity(leaf, identity))
         {
             return Err(Failure::Input(
-                "node_certificate_files: a certificate subject differs from its node identity"
+                "node_certificate_files: a certificate DNS SAN differs from its node identity"
                     .into(),
             ));
         }

@@ -3590,16 +3590,22 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "futures",
+ "oteryn-client",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-platform-client",
+ "oteryn-session",
+ "oteryn-session-tcp",
+ "rcgen",
  "reqwest",
+ "rustls",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

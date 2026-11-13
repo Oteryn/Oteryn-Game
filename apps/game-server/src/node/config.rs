@@ -127,6 +127,8 @@ pub struct PlatformConfig {
     /// `oteryn-game-native-runtime-status-v1` §3. Absent: reporting is off
     /// (§15 rollback).
     pub runtime_status: Option<RuntimeStatusConfig>,
+    /// Optional purpose-separated credentials for the existing Character intent read.
+    pub bootstrap_intents: Option<BootstrapIntentsConfig>,
     /// `oteryn-game-list-characters-for-account-v1` §3. Absent: the
     /// projection publisher does not run. Endpoint, peer name and trust roots
     /// are those above.
@@ -185,6 +187,14 @@ pub struct RuntimeStatusConfig {
     pub client_key_file: PathBuf,
     /// Declared ownership-authority epoch until its Game storage exists (U-RS5).
     pub assignment_epoch: u64,
+}
+
+/// The existing intent issuer channel, using its own deployment credential.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BootstrapIntentsConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
 }
 
 /// The Character Authority host's own projection identity (never the evidence
@@ -689,6 +699,25 @@ impl NodeConfig {
                 return reject(key);
             }
         }
+        if let Some(intents) = &platform.bootstrap_intents {
+            for (key, path) in [
+                (
+                    "platform.bootstrap_intents.client_certificate_file",
+                    &intents.client_certificate_file,
+                ),
+                (
+                    "platform.bootstrap_intents.client_key_file",
+                    &intents.client_key_file,
+                ),
+            ] {
+                if !absolute(path)
+                    || path == &platform.client_certificate_file
+                    || path == &platform.client_key_file
+                {
+                    return reject(key);
+                }
+            }
+        }
         if let Some(status) = &platform.runtime_status {
             for (key, path) in [
                 (
@@ -942,6 +971,9 @@ fn check_public_projections(
     readiness: &ReadinessConfig,
 ) -> Result<(), ConfigError> {
     let mut taken = vec![&platform.client_certificate_file, &platform.client_key_file];
+    if let Some(intents) = &platform.bootstrap_intents {
+        taken.extend([&intents.client_certificate_file, &intents.client_key_file]);
+    }
     if let Some(status) = &platform.runtime_status {
         taken.extend([&status.client_certificate_file, &status.client_key_file]);
     }
@@ -1391,6 +1423,33 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
                 .required_gameplay_capabilities,
             [11, 18]
         );
+    }
+
+    #[test]
+    fn bootstrap_intent_identity_is_optional_and_separate() {
+        assert!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("default")
+                .platform
+                .bootstrap_intents
+                .is_none()
+        );
+        let document = format!(
+            "{NODE}\n[platform.bootstrap_intents]\nclient_certificate_file = \"/etc/oteryn/node/intent.crt\"\nclient_key_file = \"/etc/oteryn/node/intent.key\"\n"
+        );
+        assert!(
+            NodeConfig::parse(document.as_bytes())
+                .expect("dedicated intent channel")
+                .platform
+                .bootstrap_intents
+                .is_some()
+        );
+        for (from, to) in [
+            ("intent.crt", "platform-client.crt"),
+            ("intent.key", "platform-client.key"),
+        ] {
+            assert!(NodeConfig::parse(document.replace(from, to).as_bytes()).is_err());
+        }
     }
 
     const STATUS: &str = r#"
