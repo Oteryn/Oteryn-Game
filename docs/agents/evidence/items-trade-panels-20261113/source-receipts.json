@@ -1,0 +1,91 @@
+{
+  "schema": "OTERYN_INITIAL_TRADE_SOURCE_RECEIPTS/v1",
+  "base_sha": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+  "categories": [
+    {
+      "category": "Decoration",
+      "source_union_key": "items-reader-cloud-20261113/decoration-trade-initial-panels-1-462-combined-private.json",
+      "source_union_sha256": "9438aeca088547b3d56b1004e0bada19e6eefebdbb9dddce7b496a32c80c160e",
+      "export_file": "decoration-initial-panels.json",
+      "export_sha256": "a81aa660fee779165160ef484499d849c62432442aeef98a5cad85ef7ddac0bb",
+      "cards": 462,
+      "panels": 924,
+      "source_Basic_proofs_freshly_verified": 462,
+      "states": {
+        "OBSERVED_EMPTY_PANEL": 669,
+        "OBSERVED_NONEMPTY_INITIAL_PANEL": 255
+      },
+      "visible_quotes": 410,
+      "currency_UNKNOWN": []
+    },
+    {
+      "category": "Food",
+      "source_union_key": "items-reader-cloud-20261113/food-trade-initial-panels-1-169-combined-private.json",
+      "source_union_sha256": "20b4a5e7258a5b98da670aedc9791e133d2dd596df7b4f1c84d6c06082454545",
+      "export_file": "food-initial-panels.json",
+      "export_sha256": "a1d80487323f4ced3612ec8bea87d67ddf9ef73360219d5b3be997adea7fab39",
+      "cards": 169,
+      "panels": 338,
+      "source_Basic_proofs_freshly_verified": 169,
+      "states": {
+        "OBSERVED_EMPTY_PANEL": 245,
+        "OBSERVED_NONEMPTY_INITIAL_PANEL": 93
+      },
+      "visible_quotes": 227,
+      "currency_UNKNOWN": [
+        {
+          "physical_ui_ordinal": 8,
+          "panel": "Buy From",
+          "price_literal": "2"
+        },
+        {
+          "physical_ui_ordinal": 27,
+          "panel": "Buy From",
+          "price_literal": "1"
+        },
+        {
+          "physical_ui_ordinal": 46,
+          "panel": "Buy From",
+          "price_literal": "2"
+        },
+        {
+          "physical_ui_ordinal": 46,
+          "panel": "Buy From",
+          "price_literal": "2"
+        },
+        {
+          "physical_ui_ordinal": 46,
+          "panel": "Buy From",
+          "price_literal": "2"
+        },
+        {
+          "physical_ui_ordinal": 49,
+          "panel": "Buy From",
+          "price_literal": "2"
+        }
+      ]
+    }
+  ],
+  "correction_overlays": [
+    {
+      "category": "Decoration",
+      "key": "items-reader-cloud-20261113/decoration-trade-310-yasir-native-correction-20261113.json",
+      "sha256": "da938b493a53a4c5b928ea7e6e14ebdc90c697afcdb4b3e5ff4cca4fd9738fbc",
+      "physical_ui_ordinal": 310,
+      "panel": "Sell To",
+      "entry_index1": 1,
+      "fields": {
+        "npc_literal": "Yasir",
+        "first_line_literal": "10 gp, Yasir"
+      }
+    },
+    {
+      "category": "Food",
+      "key": "items-reader-cloud-20261113/food-trade-initial-panels-1-50-ramina-spelling-correction.json",
+      "sha256": "6efbdb4e44670cae4348a59613e74ead1545fa796bb816b4f1038f33ce37110f",
+      "physical_ui_ordinal": 21,
+      "npc_literal": "Ramina"
+    }
+  ],
+  "adapter": "Explicit whitelist only; preserve source item/panel/quote order and literal strings. physical_ui_ordinal <- ui_entry_ordinal; capture_key <- category/source capture_id. Location keys copied only when present; missing keys not invented. Currency derived only from explicit gp or x currency suffix. No other normalization."
+}
