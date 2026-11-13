@@ -10,6 +10,7 @@ use bevy::{
     ui_widgets::{SelectAllOnFocus, TextInput},
 };
 use oteryn_client_ui_bevy as source;
+type AmountLabelRole = Or<(With<Feedback>, With<Range>)>;
 
 #[allow(clippy::too_many_arguments)] // Separate editing and label queries preserve the live editor through model refreshes.
 pub(super) fn project(
@@ -19,7 +20,7 @@ pub(super) fn project(
     mut ui: ResMut<InventoryUi>,
     mut previous: Local<Option<(Prompt, Entity)>>,
     mut fields: Query<(Entity, &Field, &mut EditableText)>,
-    mut labels: Query<(&mut Text, Has<Feedback>, Has<Range>), Or<(With<Feedback>, With<Range>)>>,
+    mut labels: Query<(&mut Text, Has<Feedback>, Has<Range>), AmountLabelRole>,
     mut focus: ResMut<InputFocus>,
 ) {
     if previous.as_ref().map(|(prompt, _)| *prompt) != ui.prompt {
@@ -101,6 +102,7 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         .id();
     let panel = commands
         .spawn((
+            crate::bevy_shell::window_drag::DraggableDialog,
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             TabGroup {
                 order: 4,

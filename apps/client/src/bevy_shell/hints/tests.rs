@@ -203,11 +203,12 @@ fn accepted_delay_entity_generation_focus_and_disable_reset_hover_without_sleepi
     }
     app.update();
     assert!(!shown(&mut app));
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    let mut preferences = owner.settings.preferences.clone();
-    preferences.tooltips_enabled = false;
-    owner.settings.apply(preferences);
-    drop(owner);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.tooltips_enabled = false;
+        owner.settings.apply(preferences);
+    }
     app.insert_resource(TimeUpdateStrategy::ManualInstant(
         start + Duration::from_millis(2000),
     ));
@@ -220,11 +221,12 @@ fn accepted_delay_entity_generation_focus_and_disable_reset_hover_without_sleepi
 fn cursor_help_and_crosshair_stay_in_map_and_yield_to_text_and_modals() -> TestResult {
     use bevy::{picking::hover::Hovered, text::EditableText};
     let mut app = fixture(0)?;
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    let mut preferences = owner.settings.preferences.clone();
-    preferences.cursor_crosshair = true;
-    owner.settings.apply(preferences);
-    drop(owner);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.cursor_crosshair = true;
+        owner.settings.apply(preferences);
+    }
     app.update();
     assert_eq!(cursor(&mut app)?, SystemCursorIcon::Crosshair);
     app.world()

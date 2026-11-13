@@ -155,7 +155,7 @@ pub(super) fn confirm(owner: &HostOwner, ui: &mut InventoryUi, prompt: Prompt) {
     }
 }
 fn set_editor(editor: &mut EditableText, value: &str) {
-    if editor.value().to_string() != value {
+    if editor.value() != value {
         editor.pending_edits.clear();
         editor.pending_paste = None;
         editor.editor_mut().set_text(value);

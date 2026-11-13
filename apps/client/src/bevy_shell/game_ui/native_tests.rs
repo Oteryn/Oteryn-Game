@@ -100,7 +100,7 @@ fn capture(
     mut commands: Commands,
     mut capture: ResMut<Capture>,
     viewport: Res<super::viewport::WorldViewport>,
-    text: Query<&bevy::text::TextLayoutInfo>,
+    text: Query<(&Text, &bevy::text::TextLayoutInfo)>,
     assets: Res<AssetServer>,
     skins: Res<crate::bevy_shell::ui::Skins>,
     mut exit: MessageWriter<AppExit>,
@@ -115,7 +115,9 @@ fn capture(
         || !assets.is_loaded_with_dependencies(skins.font.id())
         || !assets.is_loaded_with_dependencies(skins.frame.id())
         || !assets.is_loaded_with_dependencies(skins.inset.id())
-        || !text.iter().any(|layout| !layout.glyphs.is_empty())
+        || !text
+            .iter()
+            .any(|(text, layout)| text.0 == "42/100" && !layout.glyphs.is_empty())
     {
         return;
     }

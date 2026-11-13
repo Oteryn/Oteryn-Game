@@ -9,7 +9,7 @@ use bevy::{
 #[derive(Component)]
 pub(in crate::bevy_shell) struct WorldCamera;
 #[derive(Component)]
-struct WorldBackdrop;
+pub(in crate::bevy_shell) struct WorldBackdrop;
 #[derive(Resource, Default, Clone, Copy)]
 pub(in crate::bevy_shell) struct WorldViewport {
     pub origin: UVec2,
