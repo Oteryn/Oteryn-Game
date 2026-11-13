@@ -349,7 +349,7 @@ pub(super) fn destination(
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// A bypassed field read still returns its checked-out holder observably
     /// before a subsequent movement callback acquires current authority.
-    pub(super) async fn return_unused_field_step_pass(
+    pub(in crate::gameplay_transport) async fn return_unused_field_step_pass(
         pass: Result<
             crate::durability::IssuedSemanticPass,
             crate::gameplay_transport::connection::AdmissionRefusal,

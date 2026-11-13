@@ -96,27 +96,30 @@ pub(super) fn effective_creature_health(
 #[cfg(test)]
 mod accepted_sphere_health_tests {
     use super::*;
+    use crate::content::ContentError;
 
-    fn document() -> crate::content::native_gameplay::CreatureProfilesDocument {
-        let witness = source_witness().expect("actual pinned witness");
-        crate::content::native_gameplay::CreatureProfilesDocument {
+    fn document() -> Result<crate::content::native_gameplay::CreatureProfilesDocument, ContentError>
+    {
+        let witness =
+            source_witness().ok_or(ContentError::InvalidArtifact("actual pinned witness"))?;
+        Ok(crate::content::native_gameplay::CreatureProfilesDocument {
             schema: "OTERYN_NATIVE_CREATURE_PROFILES/v1".into(),
             records: witness.records.clone(),
             source_definitions_sha256: Some(witness.source_definitions_sha256.clone()),
             prey_rules: None,
-        }
+        })
     }
 
     #[test]
-    fn selected_sphere_health_requires_exact_raw_source_record() {
-        let original = document();
+    fn selected_sphere_health_requires_exact_raw_source_record() -> Result<(), ContentError> {
+        let original = document()?;
         let index = original
             .records
             .iter()
             .position(|record| record.profile.target.key == "oteryn:creature.soul_sphere")
-            .unwrap();
+            .ok_or(ContentError::InvalidArtifact("actual Soul Sphere record"))?;
         assert_eq!(
-            effective_creature_health(&original, &original.records[index], 15).unwrap(),
+            effective_creature_health(&original, &original.records[index], 15)?,
             15_000
         );
         for raw in [0, 14, 16, 10_000, 15_000] {
@@ -132,14 +135,15 @@ mod accepted_sphere_health_tests {
         let crate::content::ProjectV2AuthoringProfileData::Creature(profile) =
             &mut changed.records[index].profile.data
         else {
-            panic!("actual Creature");
+            return Err(ContentError::InvalidArtifact("actual Creature"));
         };
         profile.health = Some(10_000);
         assert!(effective_creature_health(&changed, &changed.records[index], 15).is_err());
         assert_eq!(
-            effective_creature_health(&original, &original.records[0], 550_000).unwrap(),
+            effective_creature_health(&original, &original.records[0], 550_000)?,
             550_000
         );
+        Ok(())
     }
 }
 

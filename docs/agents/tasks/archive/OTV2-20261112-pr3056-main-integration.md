@@ -358,3 +358,30 @@ All453 accepted migration bytes must remain exact. The old540 proof is only
 historical subset evidence; the final543 fresh/current-main upgrade proof,
 independent whole-batch review and exact-head GitHub qualification are required
 before integration. Heavy generation/builds/runtime tests remain on GitHub.
+
+
+### Grouped compile and lint follow-up after872
+
+Exact872 runner qualification stopped before gameplay/PG execution. Completed
+build and unit leaves agree on E0624; Clippy independently reports five denied
+panic-family calls in the new health tests. A bounded independent layout sweep
+also reproduces the enlarged NPC Step::Reply large_enum_variant denial. These
+three confirmed P1 classes are repaired together: use the existing
+pub(in crate::gameplay_transport) helper boundary, return typed test errors with
+? while preserving every assertion, and box the complete Reply payload without
+changing its proof fields or application logic. No lint allowance, test skip,
+workflow change or authority relaxation is added.
+
+The previous source-zero receipt did not establish compilation and is superseded
+for these classes. A physical #[path] location does not determine pub(super)'s
+parent: future tiny boundary proofs must copy actual module mounts. Layout and
+test-lint probes must include actual new payloads and inherited deny settings.
+Scoped scratch checks remain narrower than a full exact-head runner result.
+
+The543 SQL files are unchanged by this repair. The actual872 fresh543 and
+accepted453-to543 upgrade qualification passed in15.739s with all accepted
+bytes retained; both owned databases were dropped. That DDL-only evidence is
+reused only while all SQL hashes remain identical. All24 PG partitions, native
+journeys and full Clippy/compilation still require the repaired head in GitHub.
+Node boot remains explicitly waived; failed or skipped runtime checks are never
+reported as passes.

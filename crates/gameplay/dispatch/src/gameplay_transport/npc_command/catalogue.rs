@@ -34,15 +34,16 @@ pub(super) enum Pending {
         supersedes_topic: bool,
     },
 }
+pub(super) struct ReplyStep {
+    lines: Vec<String>,
+    end: bool,
+    end_delay_ms: u64,
+    previous: Option<Conversation>,
+    next: Conversation,
+    supersedes_topic: bool,
+}
 pub(super) enum Step {
-    Reply {
-        lines: Vec<String>,
-        end: bool,
-        end_delay_ms: u64,
-        previous: Option<Conversation>,
-        next: Conversation,
-        supersedes_topic: bool,
-    },
+    Reply(Box<ReplyStep>),
     Refused,
     Held,
     Commit(Box<CommitStep>),
@@ -442,14 +443,14 @@ pub(super) fn prepare(
             state.catalogue = Some(Pending::Topic(next));
             return None;
         }
-        return Some(Step::Reply {
+        return Some(Step::Reply(Box::new(ReplyStep {
             lines: plan.reply,
             end,
             end_delay_ms,
             previous,
             next,
             supersedes_topic,
-        });
+        })));
     }
     request.transition_key = plan.selected_rule_keys.first()?.clone();
     let fallback_lines = if greeting && plan.reply.is_empty() {
@@ -591,14 +592,15 @@ pub(super) async fn apply(
         magic,
         supersedes_topic,
     } = match step {
-        Step::Reply {
-            lines,
-            end,
-            end_delay_ms,
-            previous,
-            next,
-            supersedes_topic,
-        } => {
+        Step::Reply(step) => {
+            let ReplyStep {
+                lines,
+                end,
+                end_delay_ms,
+                previous,
+                next,
+                supersedes_topic,
+            } = *step;
             {
                 let runtime = admission.runtime.lock().await;
                 if next.actor != actor
