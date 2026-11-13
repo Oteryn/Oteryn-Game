@@ -150,12 +150,27 @@ impl EquippedOffence {
     }
 }
 
-/// The leech of one hit (`Game::calculateLeechAmount`, `game.cpp:9058-9061`) on its single
-/// target: `round(real * skill / 10000)`, never above the damage dealt.
+/// A single target's pre-overkill damage contribution to leech (10000 = 100%).
+/// Global reference: Formulae oldid=1205374; ordinary AoE is shared equally by
+/// its qualified target count, with a ceiling for each target's contribution.
 #[must_use]
-pub fn leech_amount(real_damage: u32, skill: u16) -> u32 {
-    let amount = (u64::from(real_damage) * u64::from(skill) + 5_000) / 10_000;
-    u32::try_from(amount.min(u64::from(real_damage))).unwrap_or(real_damage)
+pub fn leech_amount(damage: u32, skill: u16) -> u32 {
+    leech_amount_for_targets(damage, skill, 1)
+}
+
+/// Calculate one contribution, not an entire area's sum. The caller preserves
+/// pre-HP-cap, pre-Damage-Prey damage and supplies the appropriate target group.
+/// Zero-damage targets may still count in that group; they restore nothing.
+/// Keep the existing per-hit damage cap for out-of-range (>100%) skill totals.
+#[must_use]
+pub fn leech_amount_for_targets(damage: u32, skill: u16, affected: usize) -> u32 {
+    if affected == 0 || damage == 0 || skill == 0 {
+        return 0;
+    }
+    let targets = affected as u128;
+    let numerator = u128::from(damage) * u128::from(skill) * (targets + 9);
+    let denominator = 100_000 * targets;
+    u32::try_from(numerator.div_ceil(denominator).min(u128::from(damage))).unwrap_or(damage)
 }
 
 /// Canary weapons.cpp:541-561: two neighbours flank the target, never the attacker.
@@ -304,10 +319,72 @@ mod tests {
     }
 
     #[test]
-    fn leech_rounds_and_never_exceeds_the_damage() {
+    fn global_leech_known_aoe_examples_and_individual_ceiling() {
+        assert_eq!(4 * leech_amount_for_targets(679, 5300, 4), 468);
+        assert_eq!(4 * leech_amount_for_targets(679, 5275, 4), 468);
+        assert_eq!(leech_amount_for_targets(100, 800, 2), 5);
+        assert_eq!(leech_amount_for_targets(300, 800, 2), 14);
+        assert_eq!(leech_amount_for_targets(1000, 1600, 2), 88);
+        assert_eq!(leech_amount_for_targets(1000, 1760, 2), 97);
+        assert_eq!(
+            [757, 759, 754].map(|damage| leech_amount_for_targets(damage, 1000, 3)),
+            [31; 3]
+        );
+        assert_eq!(
+            [757, 759, 754].map(|damage| leech_amount_for_targets(damage, 500, 3)),
+            [16; 3]
+        );
+    }
+
+    #[test]
+    fn global_leech_two_beam_groups_match_the_recorded_example() {
+        // The 18% skill is an explicit modelling assumption from research R3.
+        let central = 2 * leech_amount_for_targets(2086, 1800, 2);
+        let sides = 6 * leech_amount_for_targets(1621, 1800, 6);
+        assert_eq!((central, sides, central + sides), (414, 438, 852));
+        assert_eq!(
+            2 * leech_amount_for_targets(2086, 1800, 8)
+                + 6 * leech_amount_for_targets(1621, 1800, 8),
+            538
+        );
+    }
+
+    #[test]
+    fn global_leech_integer_bounds_and_zero_inputs() {
+        assert_eq!(leech_amount_for_targets(100, 1600, 0), 0);
+        assert_eq!(leech_amount_for_targets(0, 1600, 8), 0);
+        assert_eq!(leech_amount_for_targets(100, 0, 8), 0);
+        assert_eq!(leech_amount_for_targets(u32::MAX, u16::MAX, 1), u32::MAX);
+        assert!(leech_amount_for_targets(u32::MAX, u16::MAX, usize::MAX) > 0);
+        for targets in 1..=256 {
+            for damage in [1, 29, 100, 679, 1000, u32::MAX] {
+                let amount = leech_amount_for_targets(damage, 1600, targets);
+                assert!((1..=damage).contains(&amount));
+                assert!(
+                    amount
+                        <= leech_amount_for_targets(damage, 1600, targets.saturating_sub(1).max(1))
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn leech_global_nonzero_fraction_rounds_up() {
+        assert_eq!(
+            leech_amount(24, 200),
+            1,
+            "Global leech keeps a fractional contribution"
+        );
+        assert_eq!(leech_amount(1, 1), 1, "smallest positive skill and damage");
+        assert_eq!(leech_amount(0, 200), 0);
+        assert_eq!(leech_amount(100, 0), 0);
+    }
+
+    #[test]
+    fn leech_ceiling_keeps_existing_extreme_skill_cap() {
         assert_eq!(leech_amount(100, 1800), 18);
-        assert_eq!(leech_amount(25, 200), 1, "0.5 rounds half away from zero");
-        assert_eq!(leech_amount(24, 200), 0);
+        assert_eq!(leech_amount(25, 200), 1);
+        assert_eq!(leech_amount(24, 200), 1);
         assert_eq!(leech_amount(10, u16::MAX), 10);
         assert_eq!(leech_amount(0, 1800), 0);
     }

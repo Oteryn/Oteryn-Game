@@ -1592,3 +1592,30 @@ fn srx2_mana_drain_runs_numb_and_adrenaline_but_not_cleanse() {
         .is_empty()
     );
 }
+
+#[test]
+fn global_leech_projection_returns_only_passive_rate_for_the_assigned_race() {
+    let catalogue = Catalogue(catalogue_charms());
+    let state = State::with(
+        RACE,
+        &[("oteryn:charm.carnage", 3), ("oteryn:charm.voids_call", 3)],
+    );
+    let event = CharmHookEvent::LeechCalculation {
+        source: CharmHitSource::CharacterAttack,
+    };
+    let outcomes = evaluate(&catalogue, &state, event, 1).expect("projection");
+    assert_eq!(outcomes.len(), 1);
+    assert_eq!(outcomes[0].charm_key, "oteryn:charm.voids_call");
+    assert!(
+        evaluate(
+            &catalogue,
+            &state,
+            CharmHookEvent::LeechCalculation {
+                source: CharmHitSource::CharmDamage,
+            },
+            1
+        )
+        .expect("generated damage")
+        .is_empty()
+    );
+}

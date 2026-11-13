@@ -177,6 +177,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             )
             .map_err(debug)?;
         if matches!(case, 5 | 6) {
+            // This equipment-projection case remains nonlethal, so actual HP
+            // delta equals the admitted damage. Separate owner regressions
+            // require uncapped overkill Leech.
             let p = runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
@@ -190,7 +193,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .install_companion_policies(native.policies().clone())
                 .map_err(debug)?;
             let health = runtime
-                .companion_policy("oteryn:creature.rat")
+                .companion_policy("oteryn:creature.demon")
                 .map_err(debug)?
                 .maximum_health;
             runtime
@@ -198,7 +201,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     vec![(position.x, position.y, position.floor)],
                     60_000,
                     5_000,
-                    "oteryn:creature.rat".into(),
+                    "oteryn:creature.demon".into(),
                     u64::try_from(health)?,
                 )])
                 .map_err(debug)?;
@@ -206,7 +209,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                 .visible_entities()
                 .creatures
                 .first()
-                .ok_or("rat")?
+                .ok_or("nonlethal leech target")?
                 .actor;
             augment_target = Some((target, position));
         }
@@ -383,6 +386,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         let hp = runtime
             .creature_combat_facts(target, owner.owner_now().get() / 1000)
             .map_err(debug)?;
+        assert!(hp.health > 0, "equipment projection fixture must be nonlethal");
         let real = hp.maximum_health - hp.health;
         assert!(real > 0);
         assert_eq!(

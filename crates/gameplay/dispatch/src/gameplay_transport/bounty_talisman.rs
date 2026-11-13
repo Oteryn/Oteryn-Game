@@ -101,6 +101,19 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses(
     root: &GameplayDecisionRoot,
     occurrence: DecisionOccurrenceId,
 ) -> Option<Vec<SpellLeech>> {
+    apply_spell_bonuses_with_leech(runtime, batch, snapshot, root, occurrence, &mut [])
+}
+
+/// Scale retained leech damage beside its hit, excluding only the separate Prey
+/// stage. Existing Talisman/elite policy and deterministic draws stay unchanged.
+pub(in crate::gameplay_transport) fn apply_spell_bonuses_with_leech(
+    runtime: &ChannelRuntimeV1,
+    batch: &mut OwnerCombatBatch,
+    snapshot: &BountyTalismanSnapshot,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    leech_inputs: &mut [crate::gameplay_transport::item_spell_augments::leech_projection::Target],
+) -> Option<Vec<SpellLeech>> {
     let mut leech = Vec::new();
     for effect in &mut batch.effects {
         let magnitude = match &mut effect.change {
@@ -118,9 +131,16 @@ pub(in crate::gameplay_transport) fn apply_spell_bonuses(
             occurrence,
             effect.sub_ordinal,
         )?;
+        let elite = snapshot.elite(&creature.state.policy.definition_key);
         *magnitude = damage(*magnitude, extra_damage);
-        if snapshot.elite(&creature.state.policy.definition_key) {
+        if elite {
             *magnitude /= 2;
+        }
+        if let Some(input) = leech_inputs.iter_mut().find(|input| {
+            input.target == effect.target && input.ordinal == effect.sub_ordinal
+        }) && let Some(basis) = input.damage.as_mut() {
+            let scaled = damage(i64::from(*basis), extra_damage);
+            *basis = u32::try_from(if elite { scaled / 2 } else { scaled }).unwrap_or(u32::MAX);
         }
         if extra_life > 0 {
             leech.push((effect.target, effect.sub_ordinal, extra_life));

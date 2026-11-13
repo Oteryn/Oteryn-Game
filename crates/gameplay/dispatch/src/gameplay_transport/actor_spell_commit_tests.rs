@@ -3,7 +3,7 @@
 use super::*;
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::foundation::{CharacterId, CommandId, CommandRef, MovementLocalPosition};
-use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player, wound};
+use crate::gameplay_transport::actor_spell::tests::{FACTS, wound};
 use crate::spell::cast::{CastContext, cast, v1_spell_book};
 use crate::spell::combat_batch::{OwnerCombatEffect, SpellOccurrenceBinding};
 use oteryn_protocol_oteryn::actor_spell::{SpellCastIntent, SpellTarget};
@@ -20,24 +20,37 @@ struct Fixture {
     batch: OwnerCombatBatch,
 }
 fn fixture() -> Fixture {
-    let (mut runtime, caster, session) = runtime_with_player(31);
-    runtime
-        .initialize_movement_test_position(
-            caster,
-            MovementLocalPosition {
-                x: 10,
-                y: 10,
-                floor: 7,
-            },
-        )
-        .expect("position");
-    let target = runtime
-        .admit_test_creature(MovementLocalPosition {
-            x: 11,
-            y: 10,
-            floor: 7,
-        })
-        .expect("physical target");
+    fixture_with_capacity(2)
+}
+
+fn fixture_with_capacity(capacity: usize) -> Fixture {
+    fixture_with_position_context(capacity, false)
+}
+
+fn fixture_with_position_context(capacity: usize, pinned: bool) -> Fixture {
+    let (mut runtime, caster, session) = super::super::tests::runtime_with_capacity(31, capacity);
+    let position = MovementLocalPosition {
+        x: 10,
+        y: 10,
+        floor: 7,
+    };
+    if pinned {
+        runtime.initialize_pinned_test_position(caster, position)
+    } else {
+        runtime.initialize_movement_test_position(caster, position)
+    }
+    .expect("position");
+    let position = MovementLocalPosition {
+        x: 11,
+        y: 10,
+        floor: 7,
+    };
+    let target = if pinned {
+        runtime.admit_pinned_test_creature(position)
+    } else {
+        runtime.admit_test_creature(position)
+    }
+    .expect("physical target");
     let mut states = ChannelSpellStates::default();
     let now = SemanticTimeMicros::from_micros(100_000);
     states
@@ -919,4 +932,376 @@ fn analyser_committed_combat_emits_applied_damage_and_healing_once() {
             .applied
     );
     assert!(f.states.analyser.next(f.caster, f.session, 1).is_none());
+}
+
+#[test]
+fn global_spell_leech_uses_pre_overkill_damage_and_does_not_replay() {
+    let mut f = fixture();
+    f.batch.effects.truncate(1);
+    f.batch.effects[0].change = OwnerCombatChange::Damage {
+        target_atom: "test:creature".into(),
+        magnitude: 100,
+    };
+    assert_eq!(target_health(&f), 20);
+    let before = f.next.vitals().health;
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("player stage");
+    let inputs = vec![
+        crate::gameplay_transport::item_spell_augments::leech_projection::Target {
+            target: f.target,
+            ordinal: 0,
+            damage: Some(100),
+            rates: (1_600, 0),
+            affected: 1,
+        },
+    ];
+    proof
+        .stage_item_spell_leech(&staged, &inputs, &[])
+        .expect("leech stage");
+    let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+        .expect("joined commit");
+    assert!(receipt.applied);
+    assert_eq!(target_health(&f), 0);
+    assert_eq!(
+        f.states
+            .get(&f.runtime, f.caster, f.session)
+            .expect("caster")
+            .vitals()
+            .health,
+        before + 16,
+        "100 calculated damage leeches even when only 20 HP remained"
+    );
+    let after = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("caster")
+        .clone();
+    let replay = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("receipt replay");
+    assert!(
+        !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+            .expect("replay")
+            .applied
+    );
+    assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&after));
+}
+
+fn global_leech_inputs(
+    f: &Fixture,
+    rates: (u32, u32),
+) -> Vec<crate::gameplay_transport::item_spell_augments::leech_projection::Target> {
+    crate::gameplay_transport::item_spell_augments::leech_projection::capture(
+        &f.runtime,
+        &f.states,
+        &crate::content::charm_source::CanonicalCharmCatalogue::embedded().expect("catalogue"),
+        &f.batch,
+        rates,
+        None,
+        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([7; 32]),
+        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([8; 16]),
+    )
+    .expect("owner-qualified leech inputs")
+}
+
+#[test]
+fn global_spell_leech_retains_pre_prey_damage_and_caps_at_caster_vitals() {
+    for (damage, skill, expected) in [(100, 1600, 16), (100_000, 1600, 16_000)] {
+        let mut f = fixture();
+        f.batch.effects.truncate(1);
+        f.batch.effects[0].change = OwnerCombatChange::Damage {
+            target_atom: "test:creature".into(),
+            magnitude: damage,
+        };
+        let inputs = global_leech_inputs(&f, (skill, 0));
+        assert_eq!(
+            inputs[0].damage,
+            Some(u32::try_from(damage).expect("positive"))
+        );
+        if let OwnerCombatChange::Damage { magnitude, .. } = &mut f.batch.effects[0].change {
+            *magnitude = crate::gameplay_transport::prey::damage(*magnitude, 25);
+        }
+        let before = f.next.vitals().health;
+        let staged = f
+            .runtime
+            .stage_spell_batch(&f.batch)
+            .expect("physical stage");
+        let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+            .expect("player stage");
+        proof
+            .stage_item_spell_leech(&staged, &inputs, &[])
+            .expect("leech stage");
+        let receipt = commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+            .expect("joined commit");
+        assert!(receipt.applied);
+        assert_eq!(
+            f.states
+                .get(&f.runtime, f.caster, f.session)
+                .expect("caster")
+                .vitals()
+                .health,
+            (before + expected).min(f.next.vitals().max_health),
+            "Damage Prey is excluded and max HP is respected"
+        );
+    }
+}
+
+#[test]
+fn global_spell_leech_qualified_zero_damage_target_remains_in_denominator() {
+    let mut f = fixture_with_capacity(3);
+    f.batch.effects.truncate(1);
+    f.batch.effects[0].change = OwnerCombatChange::Damage {
+        target_atom: "test:creature".into(),
+        magnitude: 100,
+    };
+    let zero = f
+        .runtime
+        .admit_test_creature(MovementLocalPosition {
+            x: 12,
+            y: 10,
+            floor: 7,
+        })
+        .expect("second creature");
+    // Production obtains this count from the qualified magnitude plan. The
+    // physical batch omits the immune target, as lower_native requires.
+    let mut inputs = global_leech_inputs(&f, (1600, 0));
+    inputs[0].affected = 2;
+    let before = f.next.vitals().health;
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("player stage");
+    proof
+        .stage_item_spell_leech(&staged, &inputs, &[])
+        .expect("leech stage");
+    commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)).expect("joined commit");
+    assert_eq!(
+        f.states
+            .get(&f.runtime, f.caster, f.session)
+            .expect("caster")
+            .vitals()
+            .health,
+        before + 9
+    );
+    assert_eq!(
+        f.runtime
+            .creature_combat_facts(zero, 100)
+            .expect("zero victim")
+            .health,
+        20
+    );
+}
+
+#[test]
+fn global_spell_leech_stale_player_aborts_damage_and_gain_together() {
+    let mut f = fixture();
+    f.batch.effects.truncate(1);
+    f.batch.effects[0].change = OwnerCombatChange::Damage {
+        target_atom: "test:creature".into(),
+        magnitude: 100,
+    };
+    let inputs = global_leech_inputs(&f, (1600, 1600));
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("player stage");
+    proof
+        .stage_item_spell_leech(&staged, &inputs, &[])
+        .expect("leech stage");
+    f.states
+        .get_mut(&f.runtime, f.caster, f.session)
+        .expect("caster")
+        .advance_batch_revision()
+        .expect("independent owner write");
+    let before = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("caster")
+        .clone();
+    assert!(matches!(
+        commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+        Err(Error::SnapshotChanged)
+    ));
+    assert_eq!(target_health(&f), 20);
+    assert_eq!(f.states.get(&f.runtime, f.caster, f.session), Some(&before));
+}
+
+#[test]
+fn global_spell_leech_projection_retains_basis_without_changing_source_binding() {
+    let mut f = fixture();
+    let binding = f.batch.binding.clone();
+    let inputs = global_leech_inputs(&f, (1600, 800));
+    assert_eq!(
+        f.batch.binding, binding,
+        "deferred parent binding is unchanged"
+    );
+    assert_eq!(inputs[0].damage, Some(3));
+    assert_eq!(inputs[0].rates, (1600, 800));
+    assert_eq!(inputs[0].affected, 1);
+    f.batch.effects[0].change = OwnerCombatChange::Damage {
+        target_atom: "test:creature".into(),
+        magnitude: 100,
+    };
+    let retained = inputs.clone();
+    assert_eq!(
+        retained[0].damage,
+        Some(3),
+        "a retained attempt does not reread mutated damage"
+    );
+    assert_eq!(retained[0].rates, (1600, 800));
+}
+
+#[test]
+fn global_spell_leech_real_charm_owner_adds_only_the_assigned_race_bonus() {
+    use crate::content::creature_policy::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
+    };
+    use crate::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+    use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+    let mut f = fixture_with_position_context(3, true);
+    let policy = |key: &str| CompiledCreaturePolicy {
+        definition_key: key.into(),
+        definition_revision: "test:leech".into(),
+        display_name: key.into(),
+        maximum_health: 20,
+        forge_difficulty: None,
+        base_speed: 100,
+        outfit_look_type: 1,
+        object_look_type: None,
+        summonable: false,
+        convinceable: false,
+        mana_cost: None,
+        is_familiar: false,
+        preferred_distance: Some(1),
+        reward_boss: Some(false),
+        blocked_by_nearby_players: false,
+        condition_immunities: vec![],
+        defense: Some(0),
+        armor: Some(0),
+        mitigation: Some(CreatureExactRatio {
+            numerator: 0,
+            denominator: 1,
+        }),
+        resistances: vec![],
+        damage_immunities: vec![],
+        healing_from_damage: vec![],
+        flags: CreatureFlags {
+            attackable: true,
+            illusionable: false,
+            health_hidden: false,
+        },
+    };
+    f.runtime
+        .install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact(
+                f.runtime.content_pin().server_artifact_digest(),
+                vec![policy("oteryn:creature.rat"), policy("oteryn:creature.orc")],
+            )
+            .expect("policies"),
+        )
+        .expect("content-bound installation");
+    f.runtime
+        .install_creature_policy(f.target, "oteryn:creature.rat")
+        .expect("rat identity");
+    let other = f
+        .runtime
+        .admit_pinned_test_creature(MovementLocalPosition {
+            x: 12,
+            y: 10,
+            floor: 7,
+        })
+        .expect("other target");
+    f.runtime
+        .install_creature_policy(other, "oteryn:creature.orc")
+        .expect("orc identity");
+    f.runtime
+        .bind_attacker_lease(
+            f.caster,
+            f.session,
+            crate::foundation::CharacterLease::new(f.batch.attacker, 1).expect("lease"),
+        )
+        .expect("real character binding");
+    let key = CharmKey::new("oteryn:charm.voids_call").expect("key");
+    assert!(
+        f.states.install_charm_state(
+            &f.runtime,
+            f.caster,
+            f.session,
+            CombatCharmState::new(
+                crate::domain::CharacterId::from_bytes(*f.batch.attacker.as_bytes())
+                    .expect("character"),
+                CharacterCharmState {
+                    unlocks: [(key.clone(), CharmStage::new(3).expect("stage"))].into(),
+                    assignments: [(
+                        key,
+                        BestiaryRaceKey::new("oteryn:creature.rat").expect("race")
+                    )]
+                    .into(),
+                },
+            )
+        )
+    );
+    f.batch.effects.truncate(1);
+    f.batch.effects[0].change = OwnerCombatChange::Damage {
+        target_atom: "test:creature".into(),
+        magnitude: 100,
+    };
+    f.batch.effects.push(OwnerCombatEffect {
+        target: other,
+        sub_ordinal: 1,
+        change: OwnerCombatChange::Damage {
+            target_atom: "test:creature".into(),
+            magnitude: 100,
+        },
+    });
+    let inputs = global_leech_inputs(&f, (0, 1600));
+    assert_eq!(
+        inputs.iter().map(|input| input.rates).collect::<Vec<_>>(),
+        vec![(0, 1760), (0, 1600)]
+    );
+    assert!(
+        inputs
+            .iter()
+            .all(|input| input.affected == 2 && input.damage == Some(100))
+    );
+    assert!(
+        global_leech_inputs(&f, (0, 0))
+            .iter()
+            .all(|input| input.rates == (0, 0)),
+        "Void's Call augments rather than creates the ordinary mana-leech skill"
+    );
+    let before = f.next.vitals();
+    let staged = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    let mut proof = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("player stage");
+    proof
+        .stage_item_spell_leech(&staged, &inputs, &[])
+        .expect("leech stage");
+    commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)).expect("joined commit");
+    let after = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("caster")
+        .vitals();
+    assert_eq!(
+        after.mana,
+        (before.mana + 19).min(before.max_mana),
+        "ceil(9.68)+ceil(8.8), no bonus on the orc"
+    );
+    assert_eq!(
+        after.health, before.health,
+        "Void's Call grants no HP leech"
+    );
 }

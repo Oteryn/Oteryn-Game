@@ -254,7 +254,8 @@ pub struct PreparedMagnitudeOwner {
     canonical_hex: Vec<(ExactActorRef, ConditionBuffDelta)>,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
-    shared_extensions: Option<(bool, bool)>,
+    shared_extensions: Option<(Option<i64>, bool)>,
+    charm_critical: Vec<(ExactActorRef, u16, u16)>,
     pvp_targets: Vec<(ExactActorRef, bool)>,
     delayed_damage_percent: Option<u32>,
     /// Position snapshots are captured only for an active adjacency consumer and revalidated.
@@ -359,6 +360,54 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// Race identities come from the already-qualified creature owner snapshots.
+    pub fn charm_targets(&self) -> impl Iterator<Item = (ExactActorRef, &str)> {
+        self.targets
+            .iter()
+            .filter_map(|target| match &target.owner {
+                TargetOwner::Creature(creature) => {
+                    Some((target.actor, creature.state.policy.definition_key.as_str()))
+                }
+                TargetOwner::Player(_) => None,
+            })
+    }
+
+    /// Install per-target passive critical contributions before any damage roll.
+    /// Chance and extra are hundredths of a percentage point, not multipliers.
+    pub fn select_charm_critical(
+        &mut self,
+        bonuses: Vec<(ExactActorRef, u16, u16)>,
+    ) -> Result<(), Error> {
+        if self.shared_extensions.is_some()
+            || !self.finished_player_damage.is_empty()
+            || bonuses.len() > MAX_EFFECTS
+        {
+            return Err(Error::InvalidBatch);
+        }
+        for (i, (actor, chance, extra)) in bonuses.iter().enumerate() {
+            if bonuses[..i].iter().any(|(other, _, _)| other == actor)
+                || !self.charm_targets().any(|(target, _)| target == *actor)
+                || *chance > 10_000
+                || *extra > 10_000
+            {
+                return Err(Error::InvalidBatch);
+            }
+        }
+        self.charm_critical = bonuses;
+        Ok(())
+    }
+
+    /// Immediate AoE leech cardinality from the actual qualified plan, before
+    /// zero-damage effects are omitted. Central and combined side beams differ.
+    #[must_use]
+    pub fn leech_target_count(&self, actor: ExactActorRef) -> Option<usize> {
+        let target = self.targets.iter().find(|target| target.actor == actor)?;
+        let NativeCombatPlan::Combat(plan) = &self.plan else {
+            return None;
+        };
+        plan.leech_target_count(target.source_id)
+    }
+
     /// Damage classification for advisory committed-outcome emission.
     pub fn analyser_element(&self) -> oteryn_protocol_oteryn::damage_element::DamageElement {
         use oteryn_protocol_oteryn::damage_element::DamageElement as D;
@@ -816,6 +865,7 @@ impl PreparedMagnitudeOwner {
             plan: plan.clone(),
             targets,
             shared_extensions: None,
+            charm_critical: Vec::new(),
             pvp_targets: pvp_targets.to_vec(),
             delayed_damage_percent: None,
             wheel_positions,
@@ -984,11 +1034,9 @@ impl PreparedMagnitudeOwner {
     fn extensions(
         &mut self,
         shared: bool,
+        charm_chance: u16,
         draw: &mut dyn FnMut(i64, i64) -> i64,
     ) -> Result<(bool, bool), Error> {
-        if shared && let Some(value) = self.shared_extensions {
-            return Ok(value);
-        }
         let a = &self.resolved_attributes;
         let mut skill_chance = u32::from(needed(a.equipment_critical_chance_permyriad)?);
         let mut bonus = needed(a.equipment_critical_extra_permyriad)?;
@@ -1014,16 +1062,32 @@ impl PreparedMagnitudeOwner {
         let _ = bonus
             .checked_add(needed(a.base_critical_extra_permyriad)?)
             .ok_or(Error::InvalidMagnitude)?;
-        let critical = chance > 0 && checked_draw(draw, 1, 10000)? <= i64::from(chance);
-        let fatal_chance = needed(a.fatal_chance_permyriad)?;
-        let fatal = fatal_chance.numerator > 0
-            && i128::from(checked_draw(draw, 0, 10000)?) * i128::from(fatal_chance.denominator)
-                < i128::from(fatal_chance.numerator);
-        let value = (critical, fatal);
-        if shared {
-            self.shared_extensions = Some(value);
-        }
-        Ok(value)
+        let chance = chance
+            .checked_add(u32::from(charm_chance))
+            .ok_or(Error::InvalidMagnitude)?;
+        // Reuse the uniform draw, not the first target's critical boolean: only
+        // the assigned species receives Low Blow's extra threshold. All such
+        // targets share the resulting crit, regardless of evaluation order.
+        let cached = if shared { self.shared_extensions } else { None };
+        let (roll, fatal) = if let Some(value) = cached {
+            value
+        } else {
+            let roll = if chance > 0 || self.charm_critical.iter().any(|(_, chance, _)| *chance > 0)
+            {
+                Some(checked_draw(draw, 1, 10000)?)
+            } else {
+                None
+            };
+            let fatal_chance = needed(a.fatal_chance_permyriad)?;
+            let fatal = fatal_chance.numerator > 0
+                && i128::from(checked_draw(draw, 0, 10000)?) * i128::from(fatal_chance.denominator)
+                    < i128::from(fatal_chance.numerator);
+            if shared {
+                self.shared_extensions = Some((roll, fatal));
+            }
+            (roll, fatal)
+        };
+        Ok((roll.is_some_and(|roll| roll <= i64::from(chance)), fatal))
     }
 
     /// Retains source healingMap separately from the residual damage; the
@@ -1107,10 +1171,15 @@ impl PreparedMagnitudeOwner {
         };
         // Ordinary healing does not roll extensions. Grove's critical heal is rolled
         // after its healing bonuses below (Crystal 201189f game.cpp:7629-7645).
+        let (charm_chance, charm_extra) = self
+            .charm_critical
+            .iter()
+            .find(|(actor, _, _)| *actor == binding.actor)
+            .map_or((0, 0), |(_, chance, extra)| (*chance, *extra));
         let (critical, fatal) = if element == Element::Healing {
             (false, false)
         } else {
-            self.extensions(shared, draw)?
+            self.extensions(shared, charm_chance, draw)?
         };
         let a = &self.resolved_attributes;
         let mut value = signed_truncate(hit.magnitude as f64)?;
@@ -1128,7 +1197,10 @@ impl PreparedMagnitudeOwner {
             }
         }
         if critical {
-            let bonus = self.critical_extra()?;
+            let bonus = self
+                .critical_extra()?
+                .checked_add(i32::from(charm_extra))
+                .ok_or(Error::InvalidMagnitude)?;
             value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
         }
         if fatal {

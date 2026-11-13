@@ -2506,3 +2506,124 @@ fn ascetic_spell_and_rune_damage_use_own_or_guiding_mantra_after_flat_before_san
         }
     }
 }
+
+#[test]
+fn global_low_blow_aoe_shares_one_roll_but_not_the_race_bonus() {
+    let mut f = fixture();
+    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("ordinary player without Avatar");
+    f.attributes.binding.player_revision = f.state.revision();
+    f.attributes.base_critical_chance_permyriad = Some(0);
+    f.attributes.equipment_critical_chance_permyriad = Some(1000);
+    f.attributes.base_critical_extra_permyriad = Some(0);
+    f.attributes.equipment_critical_extra_permyriad = Some(5000);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.wheel_flat_damage = Some(0);
+    let other = f
+        .runtime
+        .admit_pinned_test_creature(MovementLocalPosition {
+            x: 12,
+            y: 9,
+            floor: 7,
+        })
+        .expect("third target");
+    f.runtime
+        .install_creature_policy(other, "fixture:qualified")
+        .expect("source policy");
+    f.bindings.push(LiveActorBinding {
+        source_id: 4,
+        actor: other,
+        target_atom: "test:other".into(),
+    });
+    let p = NativeCombatPlan::Combat(CombatPlan {
+        element: Element::Death,
+        area: None,
+        hits: (2..=4)
+            .map(|target| MagnitudePlan {
+                target,
+                magnitude: 10_000,
+                bonus_percent: 0,
+                side_percent: None,
+                delay_ms: 0,
+            })
+            .collect(),
+        cooldown_ms: None,
+        shared_cooldown: None,
+        reduce_all_spell_cooldowns_ms: 0,
+        block_armor: false,
+        use_weapon_charges: false,
+        weapon_missile: false,
+        dispel_paralysis_targets: vec![],
+        resolve_critical_and_fatal_once: true,
+    });
+    let NativeCombatPlan::Combat(combat) = &p else {
+        panic!("combat")
+    };
+    for order in [[0, 1, 2], [2, 0, 1]] {
+        let mut owner = qualify(&f, &p).expect("qualified actual owner");
+        owner
+            .select_charm_critical(vec![
+                (f.bindings[1].actor, 900, 0),
+                (f.bindings[2].actor, 900, 0),
+            ])
+            .expect("Low Blow on two matching targets");
+        let mut draws = 0;
+        let mut amounts = [0; 3];
+        for i in order {
+            amounts[i] = owner
+                .finish(&p, &combat.hits[i], &f.bindings[i + 1], &mut |lo, hi| {
+                    assert_eq!((lo, hi), (1, 10000));
+                    draws += 1;
+                    1500
+                })
+                .expect("finished damage");
+        }
+        assert_eq!(
+            amounts,
+            [14_250, 14_250, 9_500],
+            "race bonus does not leak to unrelated target"
+        );
+        assert_eq!(
+            draws, 1,
+            "one shared AoE critical draw regardless of target order"
+        );
+    }
+    let mut owner = qualify(&f, &p).expect("Savage Blow magnitude owner");
+    owner
+        .select_charm_critical(vec![(f.bindings[1].actor, 0, 4400)])
+        .expect("one race's extra");
+    let mut draws = 0;
+    let amounts = combat
+        .hits
+        .iter()
+        .enumerate()
+        .map(|(i, hit)| {
+            owner
+                .finish(&p, hit, &f.bindings[i + 1], &mut |lo, hi| {
+                    assert_eq!((lo, hi), (1, 10000));
+                    draws += 1;
+                    500
+                })
+                .expect("base critical shared by all targets")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        amounts,
+        [18_430, 14_250, 14_250],
+        "Savage Blow extra is per assigned target"
+    );
+    assert_eq!(draws, 1);
+    assert!(
+        owner.select_charm_critical(vec![]).is_err(),
+        "do not replace projection after rolling"
+    );
+    let mut owner = qualify(&f, &p).expect("owner");
+    assert!(
+        owner
+            .select_charm_critical(vec![(f.caster, 900, 0)])
+            .is_err(),
+        "player is not a creature charm target"
+    );
+}

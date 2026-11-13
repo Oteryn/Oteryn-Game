@@ -225,6 +225,69 @@ pub(super) fn bonuses(
     }
 }
 
+/// Feed passive Low Blow / Savage Blow into the real numerical spell owner.
+/// No chance is rolled here: the qualified AoE owner retains its common roll.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "current actor, source catalogue and spell provenance stay explicit"
+)]
+pub(in crate::gameplay_transport) fn select_spell_critical(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    actor: ExactActorRef,
+    command: CommandRef,
+    magnitude: &mut crate::spell::magnitude_owner::PreparedMagnitudeOwner,
+) -> Result<(), crate::spell::combat_batch::Error> {
+    use crate::spell::combat_batch::Error;
+    let offence = super::equipped_offence::attacker_offence(
+        states,
+        runtime,
+        actor,
+        command.game_session_id(),
+    );
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let hash = Sha256::new()
+        .chain_update(b"oteryn:spell-passive-charm:v1")
+        .chain_update(actor.placement_identity())
+        .chain_update(command.command_id().get().to_le_bytes())
+        .finalize();
+    let mut bytes = [0; 16];
+    bytes.copy_from_slice(&hash[..16]);
+    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+    let mut selected = Vec::new();
+    for (target, race) in magnitude.charm_targets() {
+        let outcomes = evaluate(
+            states,
+            runtime,
+            catalogue,
+            actor,
+            command.game_session_id(),
+            race,
+            &root,
+            occurrence,
+            CharmHookEvent::AttackDamageCalculation {
+                source: oteryn_gameplay_progression::charm_effects::CharmHitSource::CharacterAttack,
+            },
+        );
+        let mut augmented = offence.clone();
+        bonuses(&mut augmented, &outcomes);
+        let chance = augmented
+            .critical_chance
+            .saturating_sub(offence.critical_chance);
+        let extra = augmented
+            .critical_damage
+            .saturating_sub(offence.critical_damage);
+        if chance != 0 || extra != 0 {
+            selected
+                .try_reserve(1)
+                .map_err(|_| Error::AllocationFailed)?;
+            selected.push((target, chance, extra));
+        }
+    }
+    magnitude.select_charm_critical(selected)
+}
+
 pub(super) fn damage_amount(
     runtime: &ChannelRuntimeV1,
     target: ExactActorRef,

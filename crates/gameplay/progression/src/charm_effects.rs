@@ -107,6 +107,11 @@ pub enum CharmHookEvent {
         health_before: i64,
         health_after: i64,
     },
+    /// Passive per-race leech rates for an admitted direct hit. The owner still
+    /// requires an applied damage receipt before installing the resulting gain.
+    LeechCalculation {
+        source: CharmHitSource,
+    },
     IncomingCreatureAttack,
     /// The creature's hit on the character, with its base damage before the character's own
     /// resistances and armor.
@@ -365,6 +370,10 @@ fn event_runs_effect(event: &CharmHookEvent, lethal: bool, effect: CharmEffect) 
             }
             CharmHitSource::CharmDamage => false,
         },
+        CharmHookEvent::LeechCalculation { source } => {
+            *source != CharmHitSource::CharmDamage
+                && matches!(effect, CharmEffect::LifeLeech | CharmEffect::ManaLeech)
+        }
         CharmHookEvent::IncomingCreatureAttack => hook == CharmHook::IncomingCreatureAttack,
         CharmHookEvent::IncomingCreatureHit { .. } => hook == CharmHook::IncomingCreatureHit,
         CharmHookEvent::IncomingManaDrain { .. } => {

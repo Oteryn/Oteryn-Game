@@ -152,14 +152,16 @@ impl PlayerBatchPreflight {
         })
     }
 
-    /// Item spell leech consumes only actual staged damage, in the same owner install.
+    /// Leech is staged from qualified damage before overkill/Prey, but only an
+    /// applied receipt permits the gain. Both gains join the existing atomic install.
     pub(in crate::gameplay_transport) fn stage_item_spell_leech(
         &mut self,
         physical: &StagedSpellBatch,
-        rates: (u32, u32),
+        inputs: &[crate::gameplay_transport::item_spell_augments::leech_projection::Target],
         bounty: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
-        if rates == (0, 0) && bounty.is_empty() {
+        use oteryn_gameplay_combat_rules::resolution::equipped_offence::leech_amount_for_targets;
+        if !physical.will_apply() || inputs.is_empty() {
             return Ok(());
         }
         let damage = self
@@ -172,12 +174,21 @@ impl PlayerBatchPreflight {
                 )
             })
             .collect::<Vec<_>>();
-        let affected = damage.len();
-        if affected == 0 {
-            return Ok(());
+        if damage.len() != inputs.len() {
+            return Err(Error::InvalidBatch);
+        }
+        if inputs.iter().any(|input| {
+            input.affected == 0
+                || input.affected > crate::foundation::runtime_actor_spell_types::MAX_EFFECTS
+        }) {
+            return Err(Error::InvalidBatch);
         }
         let mut gains = (0u32, 0u32);
         for effect in damage {
+            let input = inputs
+                .iter()
+                .find(|input| input.target == effect.target && input.ordinal == effect.sub_ordinal)
+                .ok_or(Error::InvalidBatch)?;
             let receipt = physical
                 .preview_effect_receipts()
                 .iter()
@@ -192,16 +203,21 @@ impl PlayerBatchPreflight {
             if !receipt.applied {
                 continue;
             }
-            let real = receipt
-                .health_before
-                .saturating_sub(receipt.health_after.max(0))
-                .max(0);
+            let damage = input.damage.unwrap_or_else(|| {
+                u32::try_from(
+                    receipt
+                        .health_before
+                        .saturating_sub(receipt.health_after.max(0))
+                        .max(0),
+                )
+                .unwrap_or(u32::MAX)
+            });
             let amount = |rate: u32| {
-                (real as f64 * f64::from(rate.min(u32::from(u16::MAX))) / 10000.0
-                    * (0.1 * affected as f64 + 0.9)
-                    / affected as f64)
-                    .round()
-                    .clamp(0.0, real as f64) as u32
+                leech_amount_for_targets(
+                    damage,
+                    u16::try_from(rate).unwrap_or(u16::MAX),
+                    input.affected,
+                )
             };
             let bonus = bounty
                 .iter()
@@ -209,11 +225,10 @@ impl PlayerBatchPreflight {
                     *target == effect.target && *ordinal == effect.sub_ordinal
                 })
                 .map_or(0, |(_, _, rate)| u32::from(*rate));
-            // Canary's combat callback adds its rate before the shared round/AoE cap.
             gains.0 = gains
                 .0
-                .saturating_add(amount(rates.0.saturating_add(bonus)));
-            gains.1 = gains.1.saturating_add(amount(rates.1));
+                .saturating_add(amount(input.rates.0.saturating_add(bonus)));
+            gains.1 = gains.1.saturating_add(amount(input.rates.1));
         }
         let caster = self
             .replacements

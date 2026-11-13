@@ -54,6 +54,7 @@ pub async fn prepare_from_owners(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -238,6 +239,7 @@ pub async fn prepare_from_owners(
         states,
         room,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -271,6 +273,7 @@ pub async fn prepare_from_owners(
         states,
         room,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -296,6 +299,7 @@ pub async fn prepare_from_owners(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        leech_inputs: Vec::new(),
         item_spell_leech: item_spell_augments::leech(owned, spell, before, now),
         corpse_companion: None,
         direct_companion: None,
@@ -734,6 +738,7 @@ fn prepare_preview(
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -806,6 +811,15 @@ fn prepare_preview(
         owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
+        crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+            states,
+            runtime,
+            charms,
+            owned.binding().actor,
+            command,
+            owner,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let mut captured = json!({"intent":source_cast_intent(intent,rune),"spell":profile.spell(),
         "equipment_revision":b.equipment_revision,"character_revision":b.character_revision,
@@ -972,6 +986,7 @@ fn prepare_payment(
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -1035,6 +1050,15 @@ fn prepare_payment(
         owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
+        crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+            states,
+            runtime,
+            charms,
+            owned.binding().actor,
+            command,
+            owner,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let batch = OwnerCombatBatch {
         caster: actor,

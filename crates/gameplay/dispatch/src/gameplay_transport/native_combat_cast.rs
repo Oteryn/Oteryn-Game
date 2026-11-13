@@ -498,6 +498,7 @@ impl ChannelSpellStates {
 
 #[derive(Debug)]
 pub struct PreparedNativeCombatCast {
+    leech_inputs: Vec<item_spell_augments::leech_projection::Target>,
     item_spell_leech: (u32, u32),
     corpse_companion: Option<native_companion_item_cast::PreparedCorpseCompanionState>,
     direct_companion: Option<native_companion_item_cast::PreparedDirectCompanionState>,
@@ -664,7 +665,7 @@ impl PreparedNativeCombatCast {
             self.magnitude.as_deref(),
         )
         .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
-        player.stage_item_spell_leech(&physical, self.item_spell_leech, bounty_leech)?;
+        player.stage_item_spell_leech(&physical, &self.leech_inputs, bounty_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
         if let Some(original) = self.installation.as_ref() {
@@ -1461,6 +1462,7 @@ async fn prepare_source_self_from_owners(
         .as_ref()
         .map_or_else(Vec::new, |p| p.player_predecessors());
     Ok(PreparedNativeCombatCast {
+        leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         corpse_companion: None,
         direct_companion: None,
@@ -1977,6 +1979,7 @@ async fn prepare_named_failure(
         .positioned_actor_census()
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(PreparedNativeCombatCast {
+        leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         corpse_companion: None,
         direct_companion: None,
@@ -2598,7 +2601,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),parameter.as_ref(),attack_target,&mut draw).await
                     } else if let Some(parameter)=parameter.as_ref(){
                         match super::parameter_cast::resolve_named_player_in_transaction(&mut tx,owner.root,&authority,runtime,states,parameter).await {
-                            Ok(super::parameter_cast::NamedPlayerResolution::Found(target))=>ordinary_combat::prepare_named(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
+                            Ok(super::parameter_cast::NamedPlayerResolution::Found(target))=>ordinary_combat::prepare_named(&mut tx,owner.root,&authority,runtime,states,room,objects,content,owner.imported_charms,&owned,
                                 owner.spells,spell,&intent,command,occurrence,training_occurrence,now,parameter,&target,&mut draw).await,
                             Ok(super::parameter_cast::NamedPlayerResolution::Absent(reason))=>prepare_named_failure(&mut tx,&authority,runtime,states,room,objects,content,&owned,spell,parameter,command,occurrence,training_occurrence,now,reason).await,
                             Err(disposition)=>Err(disposition),
@@ -2616,10 +2619,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         prepare_source_self_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if ordinary_combat::applicable(spell) {
-                        ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
+                        ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,owner.imported_charms,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_modes,&mut draw).await
                     } else {
-                        prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
+                        prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,owner.imported_charms,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),attack_target,&mut draw).await
                     };
                     let mut prepared=match prepared_result{
@@ -2634,10 +2637,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
+                    prepared.leech_inputs=item_spell_augments::leech_projection::capture(
+                        runtime,states,owner.imported_charms,&prepared.batch,prepared.item_spell_leech,
+                        prepared.magnitude.as_deref(),&stream,decision).map_err(|_|DurabilityError::Unavailable)?;
                     states.apply_prey_spell_damage(runtime,&mut prepared.batch);
                     let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
-                    let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
-                        runtime,&mut prepared.batch,&talisman,&stream,decision).ok_or(DurabilityError::Unavailable)?;
+                    let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
+                        runtime,&mut prepared.batch,&talisman,&stream,decision,&mut prepared.leech_inputs).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;
