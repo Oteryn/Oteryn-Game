@@ -16,6 +16,11 @@ pub const PEER_CERT_DER_MAX: usize = 4096;
 pub const PEER_CERT_DER_AGGREGATE_MAX: usize = 16384;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
+    ListPendingCharacterCommandsV2,
+    ReadCharacterCommandIntentV2,
+    PublishCharacterCommandReceiptV2,
+    PublishCharacterServiceStateV2,
+    PublishCharacterServiceWatermarkV2,
     PublishGameJournalRecordV1,
     ReadGameJournalCursorV1,
     ReadAccountSecurityV1,
@@ -92,6 +97,14 @@ impl Operation {
         match self {
             Self::PublishGameJournalRecordV1 => "/internal/v1/playerdata/journal/records",
             Self::ReadGameJournalCursorV1 => "/internal/v1/playerdata/journal/cursor",
+            Self::ListPendingCharacterCommandsV2 => super::character_services_v2::PENDING_PATH,
+            Self::ReadCharacterCommandIntentV2 => super::character_services_v2::READ_PATH,
+            Self::PublishCharacterCommandReceiptV2 => super::character_services_v2::RECEIPT_PATH,
+            Self::PublishCharacterServiceStateV2 => super::character_services_v2::STATE_PATH,
+            Self::PublishCharacterServiceWatermarkV2 => {
+                super::character_services_v2::WATERMARK_PATH
+            }
+
             // The four closed evidence tags share the accepted Platform endpoint.
             // Operation identity remains bound by the existing request/response codec.
             Self::ReadAccountSecurityV1
@@ -213,6 +226,11 @@ impl Operation {
             Self::PublishPublicProjectionWatermarkV2 => 512,
             Self::PublishPublicProjectionWatermarkV1 => super::public_projections::WATERMARK_BYTES,
             Self::PublishGameRestoreNoticeV1 => super::restore_notice::NOTICE_BYTES,
+            Self::ListPendingCharacterCommandsV2 => 512,
+            Self::ReadCharacterCommandIntentV2 => 512,
+            Self::PublishCharacterCommandReceiptV2 => 1024,
+            Self::PublishCharacterServiceStateV2 => 2048,
+            Self::PublishCharacterServiceWatermarkV2 => 512,
             Self::PublishWorldEventOutcomeV1 => super::world_event_outcomes::EVENT_BYTES,
             Self::PublishGuildSeasonV1 => super::world_event_outcomes::SEASON_BYTES,
             Self::PublishLeagueWatermarkV1 => super::world_event_outcomes::WATERMARK_BYTES,

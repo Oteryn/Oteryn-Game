@@ -606,6 +606,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         end: FamiliarActorEnd,
     ) -> FamiliarLogoutSave {
         use crate::durability::character_familiar::{FamiliarCleanEndProof, FamiliarStateOutcome};
+        use crate::durability::character_progression::CharacterProgressionError;
         let retained = self
             .states
             .spell_states
@@ -811,6 +812,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 FamiliarStateOutcome::Committed(value)
                 | FamiliarStateOutcome::AlreadyCommitted(value),
             ) => value,
+            Err(
+                CharacterProgressionError::AuthorityRejected
+                | CharacterProgressionError::RespawnPending,
+            ) => {
+                // A definite refusal wrote no clean end. Login reconciles the familiar.
+                states
+                    .pending_familiar_logouts
+                    .retain(|v| v.actor != actor || v.session != session || v.end != end);
+                return FamiliarLogoutSave::FencedOut;
+            }
             Err(_) => return FamiliarLogoutSave::Unknown,
         };
         if !committed.matches_request(&prepared.fence, &prepared.request) {

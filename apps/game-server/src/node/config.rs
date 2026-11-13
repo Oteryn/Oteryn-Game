@@ -137,6 +137,10 @@ pub struct PlatformConfig {
     /// character command consumer does not run. Endpoint, peer name and trust roots are
     /// those above.
     pub character_commands: Option<CharacterCommandsConfig>,
+    /// New G-3 surface only. Missing configuration and environment both leave it off.
+    #[serde(default)]
+    pub services_v2_enabled: bool,
+    pub character_services: Option<AccountCharactersConfig>,
     /// Dedicated Bazaar transport credentials. An omitted table is an
     /// unconfigured deployment dependency, not a feature-off decision.
     /// A configured producer defaults enabled; explicit false pauses new work.
@@ -534,8 +538,36 @@ fn missing_required_capabilities(document: &[u8]) -> Option<ConfigError> {
 impl NodeConfig {
     /// Parse and validate one node configuration document.
     pub fn parse(document: &[u8]) -> Result<Self, ConfigError> {
-        let config: Self = parse(document)
+        let flag = std::env::var_os("OTERYN_CHARACTER_COMMANDS_V2_ENABLED");
+        let flag = flag
+            .as_deref()
+            .map(|v| {
+                v.to_str().ok_or(ConfigError {
+                    key: "OTERYN_CHARACTER_COMMANDS_V2_ENABLED",
+                })
+            })
+            .transpose()?;
+        Self::parse_with_services_flag(document, flag)
+    }
+    fn parse_with_services_flag(document: &[u8], flag: Option<&str>) -> Result<Self, ConfigError> {
+        let mut config: Self = parse(document)
             .map_err(|error| missing_required_capabilities(document).unwrap_or(error))?;
+        if let Some(flag) = flag {
+            config.platform.services_v2_enabled = match flag {
+                "true" => true,
+                "false" => false,
+                _ => return reject("OTERYN_CHARACTER_COMMANDS_V2_ENABLED"),
+            };
+        }
+        if config.platform.services_v2_enabled && config.platform.character_commands.is_none() {
+            return reject("platform.character_commands");
+        }
+        if config.platform.services_v2_enabled
+            && (config.platform.character_services.is_none()
+                || config.platform.account_characters.is_none())
+        {
+            return reject("platform.character_services");
+        }
         config.validate()?;
         Ok(config)
     }
@@ -782,6 +814,67 @@ impl NodeConfig {
             }
             if !outside(&projection.epoch_fence_file, &self.character) {
                 return reject("platform.account_characters.epoch_fence_file");
+            }
+        }
+        if let Some(services) = &platform.character_services {
+            let Some(accounts) = &platform.account_characters else {
+                return reject("platform.character_services.epoch_fence_file");
+            };
+            if services.epoch_fence_file != accounts.epoch_fence_file {
+                return reject("platform.character_services.epoch_fence_file");
+            }
+            let mut taken = vec![
+                &platform.client_certificate_file,
+                &platform.client_key_file,
+                &self.listener.certificate_chain_file,
+                &self.listener.private_key_file,
+            ];
+            let mut authorities = vec![
+                platform.source_authority.as_str(),
+                readiness.source_authority.as_str(),
+            ];
+            if let Some(v) = &platform.bootstrap_intents {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+            }
+            if let Some(v) = &platform.runtime_status {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+            }
+            taken.extend([&accounts.client_certificate_file, &accounts.client_key_file]);
+            authorities.push(accounts.source_authority.as_str());
+            if let Some(v) = &platform.character_commands {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+                authorities.push(v.source_authority.as_str());
+            }
+            if let Some(v) = &platform.bazaar {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+                authorities.push(v.source_authority.as_str());
+            }
+            if let Some(v) = &platform.public_projections {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+                authorities.push(v.source_authority.as_str());
+            }
+            if let Some(v) = &platform.world_event_outcomes {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+                authorities.push(v.source_authority.as_str());
+            }
+            if let Some(v) = &self.journal {
+                taken.extend([&v.client_certificate_file, &v.client_key_file]);
+                authorities.push(v.source_authority.as_str());
+            }
+            if !absolute(&services.client_certificate_file)
+                || !absolute(&services.client_key_file)
+                || services.client_certificate_file == services.client_key_file
+                || taken.contains(&&services.client_certificate_file)
+                || taken.contains(&&services.client_key_file)
+            {
+                return reject("platform.character_services.client_certificate_file");
+            }
+            if !token(&services.source_authority, 128, b"/")
+                || authorities.contains(&services.source_authority.as_str())
+                || services.source_authority
+                    == crate::native_admission_source::character_services_projection::PURPOSE
+            {
+                return reject("platform.character_services.source_authority");
             }
         }
         if let Some(commands) = &platform.character_commands {
@@ -1807,6 +1900,14 @@ start_y = 200
 start_floor = -7
 "#;
 
+    const SERVICES: &str = r#"
+[platform.character_services]
+client_certificate_file="/etc/oteryn/node/services.crt"
+client_key_file="/etc/oteryn/node/services.key"
+source_authority="oteryn:character-services:primary"
+epoch_fence_file="/var/lib/oteryn/projection/epoch-fence"
+
+[launch]"#;
     const COMMANDS: &str = r#"
 [platform.character_commands]
 client_certificate_file = "/etc/oteryn/node/commands.crt"
@@ -1885,6 +1986,62 @@ source_authority = "oteryn:game:primary"
         assert!(NodeConfig::parse(shared_fence.as_bytes()).is_err());
     }
 
+    #[test]
+    fn character_services_v2_real_config_defaults_off_and_parses_environment() {
+        assert!(
+            !NodeConfig::parse_with_services_flag(NODE.as_bytes(), None)
+                .expect("base")
+                .platform
+                .services_v2_enabled
+        );
+        let all = NODE
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", SERVICES);
+        assert!(
+            NodeConfig::parse_with_services_flag(all.as_bytes(), Some("true"))
+                .expect("v2")
+                .platform
+                .services_v2_enabled
+        );
+        assert!(
+            !NodeConfig::parse_with_services_flag(all.as_bytes(), Some("false"))
+                .expect("off")
+                .platform
+                .services_v2_enabled
+        );
+        assert!(NodeConfig::parse_with_services_flag(all.as_bytes(), Some("TRUE")).is_err());
+        assert!(NodeConfig::parse_with_services_flag(NODE.as_bytes(), Some("true")).is_err());
+    }
+    #[test]
+    fn character_services_v2_projection_requires_shared_fence_and_distinct_credentials() {
+        let all = NODE
+            .replace("\n[launch]", COMMANDS)
+            .replace("\n[launch]", PROJECTION)
+            .replace("\n[launch]", SERVICES);
+        assert!(NodeConfig::parse_with_services_flag(all.as_bytes(), Some("true")).is_ok());
+        for other in ["commands.crt", "projection.crt", "platform-client.crt"] {
+            assert!(
+                NodeConfig::parse_with_services_flag(
+                    all.replace("services.crt", other).as_bytes(),
+                    Some("true")
+                )
+                .is_err()
+            );
+        }
+        let bad = all.replace(
+            "epoch_fence_file=\"/var/lib/oteryn/projection/epoch-fence\"",
+            "epoch_fence_file=\"/var/lib/oteryn/services/other-fence\"",
+        );
+        assert!(NodeConfig::parse_with_services_flag(bad.as_bytes(), Some("true")).is_err());
+        assert!(
+            NodeConfig::parse_with_services_flag(
+                NODE.replace("\n[launch]", COMMANDS).as_bytes(),
+                Some("true")
+            )
+            .is_err()
+        );
+    }
     #[test]
     fn character_commands_section_is_optional_off_by_default_and_separate() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
