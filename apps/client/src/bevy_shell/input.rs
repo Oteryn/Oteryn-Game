@@ -1,6 +1,6 @@
 //! Reuse the production winit normalizer; world pointers use the current physical viewport.
 use super::{
-    game_ui::{GameModal, viewport::WorldViewport},
+    game_ui::{GameRegions, modal::ModalGuard, viewport::WorldViewport},
     owner::HostOwner,
 };
 use bevy::{prelude::*, winit::RawWinitWindowEvent};
@@ -8,6 +8,12 @@ use oteryn_input_actions::{
     NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
 };
 use oteryn_input_platform::InputPlatformAdapter;
+#[derive(bevy::ecs::system::SystemParam)]
+pub(super) struct WorldInputUi<'w, 's> {
+    viewport: Res<'w, WorldViewport>,
+    regions: Res<'w, GameRegions>,
+    guard: ModalGuard<'w, 's>,
+}
 pub(super) struct NativeInput {
     adapter: InputPlatformAdapter,
     generation: Option<u64>,
@@ -19,18 +25,19 @@ pub(super) fn route(
     mut owner: NonSendMut<HostOwner>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     editors: Query<(), With<bevy::text::EditableText>>,
-    modals: Query<&Node, With<GameModal>>,
-    viewport: Res<WorldViewport>,
+    ui: WorldInputUi,
 ) {
     if input.generation != Some(owner.generation()) {
-        let reset = input.adapter.notify_device_lost();
+        // Discard old gestures, but retain focus gained in the admission frame.
+        let reset = input
+            .adapter
+            .reset_after_window_events(raw.read().map(|event| &event.event));
         owner.route_input(&reset, true);
         input.generation = Some(owner.generation());
         input.physical_pointer = None;
-        raw.clear();
         return;
     }
-    let modal = modals.iter().any(|node| node.display != Display::None);
+    let modal = !ui.guard.allows_focus(None);
     let mut editing = focus.get().is_some_and(|e| editors.contains(e));
     for event in raw.read() {
         let events = match input.adapter.process_window_event(&event.event) {
@@ -42,10 +49,10 @@ pub(super) fn route(
             match event {
                 NormalizedInputEvent::PointerMoved { position, motion } => {
                     input.physical_pointer = Some(position);
-                    if let Some(position) = map_pointer(&owner, *viewport, position) {
+                    if let Some(position) = map_pointer(&owner, *ui.viewport, position) {
                         owner.route_input(
                             &[NormalizedInputEvent::PointerMoved { position, motion }],
-                            !input.adapter.focused() || modal,
+                            !input.adapter.focused() || !ui.guard.allows(ui.regions.world),
                         );
                     } else {
                         owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
@@ -57,7 +64,7 @@ pub(super) fn route(
                     // Reproject the retained physical cursor before the button reaches picking.
                     let position = input
                         .physical_pointer
-                        .and_then(|position| map_pointer(&owner, *viewport, position));
+                        .and_then(|position| map_pointer(&owner, *ui.viewport, position));
                     if let Some(position) = position
                         && let Ok(zero) = PointerDelta::new(0)
                     {
@@ -80,7 +87,7 @@ pub(super) fn route(
                                 },
                                 event,
                             ],
-                            !input.adapter.focused() || modal,
+                            !input.adapter.focused() || !ui.guard.allows(ui.regions.world),
                         );
                     } else {
                         owner.route_input(&[NormalizedInputEvent::DeviceLost], true);

@@ -129,6 +129,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     });
     commands.spawn((
         Overlay,
+        super::game_ui::GameModal,
         GlobalZIndex(160),
         Node {
             width: percent(100.),
@@ -145,7 +146,13 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
 fn escape(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     mut owner: NonSendMut<HostOwner>,
+    modal: super::game_ui::modal::ModalGuard,
+    overlays: Query<Entity, With<Overlay>>,
 ) {
+    if !overlays.iter().any(|entity| modal.allows(entity)) {
+        keys.clear();
+        return;
+    }
     if owner
         .play
         .as_ref()
@@ -163,7 +170,15 @@ fn escape(
         owner.pointer_context_closed();
     }
 }
-fn activate(event: On<Activate>, replies: Query<&Reply>, mut owner: NonSendMut<HostOwner>) {
+fn activate(
+    event: On<Activate>,
+    replies: Query<&Reply>,
+    mut owner: NonSendMut<HostOwner>,
+    modal: super::game_ui::modal::ModalGuard,
+) {
+    if !modal.allows(event.entity) {
+        return;
+    }
     if let Ok(reply) = replies.get(event.entity) {
         owner.choose_dialog(reply.id, reply.choice);
     }

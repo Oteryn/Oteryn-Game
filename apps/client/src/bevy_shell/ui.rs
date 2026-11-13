@@ -43,6 +43,8 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    Quests,
+    Spells,
     Login,
     CancelLogin,
     Fullscreen,
@@ -56,6 +58,8 @@ impl Control {
     pub fn id(self) -> &'static str {
         match self {
             Self::Options => "shell.options",
+            Self::Quests => "shell.quests",
+            Self::Spells => "shell.spells",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -157,6 +161,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
+        (Control::Quests, "Quest Log", 80.),
+        (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -165,6 +171,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     let modal = commands
         .spawn((
             Dialog,
+            super::game_ui::GameModal,
             GlobalZIndex(100),
             Node {
                 width: percent(100.),
@@ -344,18 +351,32 @@ fn action_button(
     commands.entity(button).add_child(text);
     button
 }
-fn activate(event: On<Activate>, controls: Query<&Control>, mut owner: NonSendMut<HostOwner>) {
+fn activate(
+    event: On<Activate>,
+    controls: Query<&Control>,
+    mut owner: NonSendMut<HostOwner>,
+    modal: super::game_ui::modal::ModalGuard,
+) {
+    if !modal.allows(event.entity) {
+        return;
+    }
     if let Ok(control) = controls.get(event.entity) {
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Options | Control::Login | Control::CancelLogin
+                Control::Options
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::Login
+                    | Control::CancelLogin
             )
         {
             return;
         }
         match control {
             Control::Options => owner.open_graphics(),
+            Control::Quests => super::game_ui::open_quests(&mut owner),
+            Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -369,7 +390,11 @@ fn toggle(
     event: On<ValueChange<bool>>,
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
+    modal: super::game_ui::modal::ModalGuard,
 ) {
+    if !modal.allows(event.source) {
+        return;
+    }
     if let Ok(control) = controls.get(event.source) {
         owner.edit(|draft| match control {
             Control::Fullscreen => draft.fullscreen = event.value,
@@ -391,8 +416,9 @@ pub(super) fn project(
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut focus: ResMut<InputFocus>,
     mut shown: Local<bool>,
+    full_options: Option<Res<super::game_ui::options::Installed>>,
 ) {
-    let open = owner.draft().is_some();
+    let open = owner.draft().is_some() && full_options.is_none();
     if open != *shown {
         if open {
             if let Some((entity, _, _)) = controls
@@ -407,11 +433,7 @@ pub(super) fn project(
         *shown = open;
     }
     for mut node in &mut dialogs {
-        node.display = if owner.draft().is_some() {
-            Display::Flex
-        } else {
-            Display::None
-        };
+        node.display = if open { Display::Flex } else { Display::None };
     }
     for (mut text, status, feedback, scope) in &mut text {
         let next = if status {
@@ -462,7 +484,14 @@ pub(super) fn project(
 pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     mut owner: NonSendMut<HostOwner>,
+    full_options: Option<Res<super::game_ui::options::Installed>>,
+    modal: super::game_ui::modal::ModalGuard,
+    dialogs: Query<Entity, With<Dialog>>,
 ) {
+    if full_options.is_some() || !dialogs.iter().any(|entity| modal.allows(entity)) {
+        keys.clear();
+        return;
+    }
     if owner
         .play
         .as_ref()
@@ -530,6 +559,12 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
+        } else if matches!(control, Some(Control::Quests | Control::Spells)) {
+            node.display = if playing {
+                Display::Flex
+            } else {
+                Display::None
+            };
         } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
             node.display = if playing {
                 Display::None

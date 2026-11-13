@@ -4,7 +4,10 @@ mod chat;
 mod feature_dialogs;
 mod hud;
 mod inventory;
+mod journal;
 pub(super) mod minimap;
+pub(super) mod modal;
+pub(super) mod options;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -221,6 +224,9 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut roots: Query<&mut Node, Wit
 }
 
 pub(super) fn install(app: &mut App) {
+    modal::install(app);
+    options::install(app);
+    journal::install(app);
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
@@ -295,4 +301,11 @@ fn project_regions(
             Display::None
         };
     }
+}
+
+pub(super) fn open_quests(owner: &mut HostOwner) {
+    journal::open_quests(owner);
+}
+pub(super) fn open_spells(owner: &mut HostOwner) {
+    journal::open_spells(owner);
 }
