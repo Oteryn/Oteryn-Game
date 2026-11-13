@@ -3,6 +3,7 @@ import argparse
 import copy
 import hashlib
 import json
+import csv
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -231,6 +232,39 @@ def npc_recovery(source_path=None):
                 assert norm(cols[6][i]) == norm(q["location_display"])
 
 
+def followup1260(source_path=None):
+    d=load(HERE,"followup1260-results.json");s=load(HERE,"followup1260-summary.json")
+    assert s["status"]=="FINAL_SNAPSHOT"
+    assert len(d["cases"])==len({r["observation_key"] for r in d["cases"]})==1260
+    assert {k:sum(r["current_state"]==k for r in d["cases"]) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]}=={"COMPLETE":562,"PARTIAL":671,"UNRECONCILED":27}
+    rows=list(csv.DictReader(open(HERE/"all-visible-after1260.csv",encoding="utf8")))
+    assert len(rows)==len({r["observation_key"] for r in rows})==2907
+    assert {k:sum(r["ALL_VISIBLE_state"]==k for r in rows) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]}=={"COMPLETE":2209,"PARTIAL":671,"UNRECONCILED":27}
+    assert sum(s["remaining_primary_groups_disjoint"].values())==698
+    assert sum(r["current_state"]=="UNRECONCILED" and r["observation_key"].startswith("3143:") for r in d["cases"])==22
+    receipts=load(HERE,"followup1260-source-receipts.json")
+    assert receipts["archive572_comparison"]["same_as_Windows531"]==58
+    assert len(receipts["archive572_comparison"]["file_receipts"])==510
+    assert len(receipts["archive572_comparison"]["two_decoder_holds"])==2
+    assert receipts["new541_source_proof_association"]["verified"]==541
+    for r in d["cases"]:
+        if r["current_state"]=="COMPLETE":
+            assert not r["remaining_reasons"] and r["recovered_panels"]
+            assert all(p["state"].startswith("COMPLETE_") for p in r["recovered_panels"].values())
+    if source_path:
+        raw=json.loads(source_path.read_bytes());cols=[c["values"] if c["encoding"]=="LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        norm=lambda s:"".join(c for c in s.lower() if c.isalnum())
+        matched=0
+        for r in d["cases"]:
+            if r["observation_key"] not in d["manual_native_QC_cases"]:continue
+            for panel,p in r["recovered_panels"].items():
+                if p["state"]!="COMPLETE_MANUALLY_READ_SAVED_NATIVE_PANE":continue
+                for q in p["quote_rows"]:
+                    assert any(norm(a)==norm(q["npc_name"]) and norm(b)==norm(q["location"]) and v==q["price"] for a,b,v in zip(cols[5],cols[6],cols[7 if panel=="Buy From" else 8]))
+                    matched+=1
+        assert matched==36
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -248,6 +282,7 @@ def main():
     completeness()
     night_collection()
     npc_recovery(args.npc_source)
+    followup1260(args.npc_source)
     stale = copy.deepcopy(rec)
     stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
     try:

@@ -47,6 +47,21 @@
       "sha256": "f1bca0dd52d33fc91e4dad3fdb9ecd5e7eaf72a521e370effb71a4f54e33dffe"
     },
     {
+      "file": "followup1260-results.json",
+      "bytes": 2715228,
+      "sha256": "bb2f29f5839101344ee3387b371b8fed30a1dbd241c63497e4e36f42e9dad323"
+    },
+    {
+      "file": "followup1260-source-receipts.json",
+      "bytes": 516106,
+      "sha256": "ffb997df570294099fbb8e299f7444a3555dd30afea69a1d290abf92869016d2"
+    },
+    {
+      "file": "followup1260-summary.json",
+      "bytes": 2776,
+      "sha256": "ef2f59c2d8e660e9232629a6a44e4e4ac3fadffaf6b584ecb60ccffb675096b7"
+    },
+    {
       "file": "item-completeness.json",
       "bytes": 1361669,
       "sha256": "0dc4fe60d4d1d2133284011640f8af4995a09add7ba28117f80d8b102c921333"

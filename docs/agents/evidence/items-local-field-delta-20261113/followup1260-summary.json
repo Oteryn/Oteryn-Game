@@ -1,0 +1,81 @@
+{
+  "classification": "DERIVED",
+  "status": "FINAL_SNAPSHOT",
+  "authoring_predecessor": "3bed3db0941aff145d608f474889af583ca52a10",
+  "input_remaining": 1260,
+  "processed_remaining": 1260,
+  "input_counts": {
+    "COMPLETE": 1647,
+    "PARTIAL": 1226,
+    "UNRECONCILED": 34,
+    "total": 2907
+  },
+  "current_counts": {
+    "COMPLETE": 2209,
+    "PARTIAL": 671,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "remaining1260_outcomes": {
+    "PARTIAL": 671,
+    "COMPLETE": 562,
+    "UNRECONCILED": 27
+  },
+  "source_counts": {
+    "prior1992_after_bitmap_and_native_QC": {
+      "RECOVERED_PARTIAL": 507,
+      "RECOVERED_COMPLETE": 1485
+    },
+    "FoodDecoration326": {
+      "RECOVERED_COMPLETE": 250,
+      "RECOVERED_PARTIAL": 76
+    },
+    "ArmorsAmulets215": {
+      "RECOVERED_PARTIAL": 81,
+      "RECOVERED_COMPLETE": 134
+    }
+  },
+  "archive572_vs531": {
+    "identical": 58,
+    "nonidentical_or_not_in_Windows531": 514,
+    "retrieved_collection_files": 510,
+    "excluded_helper_scripts": 4,
+    "retrieved_metadata_kinds": {
+      "JSON": 447,
+      "nonparseable_JSON": 2,
+      "Python": 16,
+      "sha256": 44,
+      "text": 1
+    }
+  },
+  "reason_counts_nonexclusive": true,
+  "scope": "Retained observation records, not unique global items. No canonical/server-ID requirement, guessed mapping, default currency or raw-zero absence.",
+  "UI_inputs": 0,
+  "new_screenshots": 0,
+  "remaining_reason_counts_nonexclusive": {
+    "OVERFLOW_OR_SCROLLBAR_GEOMETRY_NOT_QUALIFIED": 180,
+    "RAW_LITERAL_CROSSCHECK_OR_NATIVE_UNIT_BITMAP_NOT_QUALIFIED": 459,
+    "VISIBLE_UNIT_ROWS_AND_PARSED_QUOTE_COUNT_DIFFER": 85,
+    "NO_COMPLETE_GP_QUOTE_PARSED_CURRENCY_OR_TEXT_REQUIRES_QC": 73,
+    "UNACCOUNTED_VISIBLE_TEXT_BEFORE_FIRST_QUOTE": 18,
+    "VENDOR_SCROLL_TAIL_OR_LITERAL_NOT_QUALIFIED": 76,
+    "1853_ARCHIVE_HAS_FIRST_PANE_ONLY_NO_SAVED_NPC_SCROLL_TAIL": 7,
+    "RAW_CLIENT_NPC_TUPLES_AVAILABLE_BUT_FULL_VISIBLE_TAIL_PROJECTION_NOT_QUALIFIED": 7,
+    "QUERY_SCOPED_BASIC_VALUES_AND_PROOFS_AVAILABLE": 5,
+    "CROSS_COLLECTION_PROVENANCE_JOIN_UNPROVED_AND_NPC_REVIEW_DEFERRED": 5,
+    "HISTORICAL_15.33.ad0955_LABEL_GROUP:261_FIELDS_RETAINED_NOT_CURRENT_DD0955_PROOF": 22,
+    "ORIGINAL45_SCREENSHOTS_ONLY_IN_RECORDED_PRIVATE_LIBRARY_ARCHIVES_NOT_LOCAL": 22
+  },
+  "remaining_primary_groups_disjoint": {
+    "PANEL_END_OR_GEOMETRY_PROOF_NOT_QUALIFIED": 256,
+    "VISIBLE_TEXT_CURRENCY_OR_LITERAL_CROSSCHECK_HELD": 408,
+    "SAVED1853_FIRST_VIEW_WITHOUT_NPC_TAIL": 7,
+    "TARGETED_QUERY5": 5,
+    "HISTORICAL_PILOT22": 22
+  },
+  "unreconciled27_split": {
+    "historical_declared15.33ad0955_pilot_label_groups": 22,
+    "targeted_query_scopes_with_unproved_cross_collection_provenance_and_deferred_NPC_review": 5
+  },
+  "no_all_data_missing_claim": true
+}

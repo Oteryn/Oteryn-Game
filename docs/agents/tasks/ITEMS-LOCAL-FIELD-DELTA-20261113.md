@@ -70,6 +70,14 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING continued under allocation6864845684 from3bed3db094. All1260 remaining
+records processed using existing files only; final snapshot2209complete/
+671partial/27unreconciled of2907.562 newly closed.514 archive differences
+accounted;449 JSON valid, two scalar-schema holds explicitly corrected.
+No new bank/QC after source validation; no game input or new capture. Remaining
+cases have exact per-record reasons and source custody. Current result is
+followup1260-summary.json; older snapshots retained as history.
+
 AUTHORING continued under allocation6864189998 from faf65853bd. Laptop freshly
 ONLINE; actual1992 original Basic PNGs read and hashes matched to public scoped
 proofs. NPC recovery1307complete/678partial/7unresolved; resulting ALL-visible

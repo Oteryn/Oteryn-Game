@@ -1,5 +1,28 @@
 # All-category local item field delta
 
+**Latest continuation:2209 complete,671 partial,27 unreconciled =2907 scoped
+observation records.** `followup1260-summary.json` and
+`all-visible-after1260.csv` supersede the earlier counts below. All1260 prior
+partial/unreconciled positions were processed:562 became complete,671 remain
+partial and27 remain explicitly unreconciled. This is not a global unique-item
+count and does not require canonical/server IDs.
+
+The671 partial records have disjoint primary groups:256 need a qualified panel
+end/geometry proof,408 need literal/currency/crosscheck qualification,7 have no
+saved NPC tail in the1853 archive. Additional reason occurrences overlap.
+The27 unresolved positions retain22 historical15.33.ad0955 pilot label groups
+and5 targeted-query scopes; existing values are preserved rather than guessed
+into current/global identities. `followup1260-results.csv/.json` lists each case.
+
+The retrieved572-file laptop archive differs from Windows531 in514 entries:
+58 identical,12 changed at shared paths,498 additional collection paths and4
+excluded helper scripts.510 collection files were transferred and inventoried.
+Both proof-audit files initially marked nonparseable are valid JSON; the generic
+metadata counter could not normalize their scalar count fields.449 valid JSON
+files and the two schema-normalization holds are explicitly recorded with hashes.
+No archive helper was executed. Saved-native QC and36 paired-raw quote checks
+closed repeated literal errors; Avriel in amulet71 is500gp. No new game input.
+
 **Latest:1992 saved NPC-pane records recovered from the now-online laptop.**
 Current ALL-visible count: **1647 complete,1226 partial,34 unreconciled =2907
 retained scoped observation records**. This remains an observation-record
