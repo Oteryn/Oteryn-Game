@@ -12,6 +12,7 @@ mod npc_shop;
 pub(super) mod options;
 mod projection;
 pub(super) use projection::project;
+mod quick_loot;
 mod trade;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
@@ -230,6 +231,7 @@ pub(super) fn install(app: &mut App) {
     item_details::install(app);
     minimap::install(app);
     npc_shop::install(app);
+    quick_loot::install(app);
     trade::install(app);
     app.add_systems(
         Update,
