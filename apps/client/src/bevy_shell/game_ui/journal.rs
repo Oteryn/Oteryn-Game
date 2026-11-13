@@ -1,6 +1,7 @@
 //! Source-shaped quest journal and spell archive over the retained feature owners.
 mod actions;
 mod model;
+mod submission;
 mod widgets;
 use super::modal::ModalGuard;
 use super::{
@@ -77,6 +78,7 @@ struct State {
     missions: Vec<model::Row>,
     feedback: String,
     quest_page: usize,
+    pending: Option<submission::Pending>,
 }
 pub(super) fn open_quests(owner: &mut HostOwner) {
     if owner.modal_active() {
@@ -101,7 +103,11 @@ pub(super) fn open_spells(owner: &mut HostOwner) {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
-        .add_systems(Update, (keyboard, project, refresh_labels).chain());
+        .add_systems(Update, (keyboard, project, refresh_labels).chain())
+        .add_systems(
+            PostUpdate,
+            submission::finish.after(bevy::text::EditableTextSystems),
+        );
 }
 fn setup(mut commands: Commands) {
     commands.spawn((
@@ -278,14 +284,14 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     actions: Query<&Action>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field, &EditableText)>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<State>,
 ) {
     if guard.allows(event.entity)
         && let Ok(action) = actions.get(event.entity)
     {
-        actions::perform(&mut owner, &mut state, *action, &actions::values(&fields));
+        submission::request(&mut owner, &mut state, *action, &fields, event.entity);
     }
 }
 fn keyboard(
@@ -293,7 +299,7 @@ fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
     overlays: Query<Entity, With<Overlay>>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field, &EditableText)>,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<State>,
 ) {
@@ -320,11 +326,15 @@ fn keyboard(
             }
             _ => continue,
         };
-        actions::perform(
+        submission::request(
             &mut owner,
             &mut state,
             Action { key, kind },
-            &actions::values(&fields),
+            &fields,
+            focus
+                .get()
+                .or_else(|| overlays.iter().next())
+                .unwrap_or(Entity::PLACEHOLDER),
         );
     }
 }

@@ -1,6 +1,7 @@
 //! Real session-owned server dialogs; Bevy owns only focus and transient selection.
 mod build;
 mod notices;
+mod submission;
 use super::modal::ModalGuard;
 
 use super::{
@@ -50,6 +51,7 @@ struct State {
     remember: bool,
     feedback: String,
     panel: Option<Entity>,
+    pending: Option<submission::Pending>,
 }
 
 pub(super) fn install(app: &mut App) {
@@ -65,6 +67,10 @@ pub(super) fn install(app: &mut App) {
                 notices::project,
             )
                 .chain(),
+        )
+        .add_systems(
+            PostUpdate,
+            submission::finish.after(bevy::text::EditableTextSystems),
         );
 }
 fn setup(mut commands: Commands) {
@@ -119,6 +125,7 @@ fn project(
         commands.entity(panel).despawn();
     }
     state.key = key;
+    state.pending = None;
     state.selected = None;
     state.remember = false;
     state.feedback.clear();
@@ -198,7 +205,7 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     actions: Query<&Action>,
-    input: Query<&EditableText, With<ValueField>>,
+    input: Query<(Entity, &EditableText), With<ValueField>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
@@ -212,13 +219,13 @@ fn activate(
         return;
     }
     match action.kind {
-        ActionKind::Choice(id) => state.selected = Some(id),
+        ActionKind::Choice(id) => {
+            state.pending = None;
+            state.selected = Some(id);
+        }
         ActionKind::Remember => {}
         ActionKind::Button(id) => {
-            let text = input
-                .single()
-                .map_or_else(|_| String::new(), |text| text.value().to_string());
-            submit(&owner, &mut state, action.key, id, &text);
+            submission::request(&owner, &mut state, action.key, id, event.entity, &input);
         }
     }
 }
@@ -233,6 +240,7 @@ fn remember(
         && let Ok(action) = actions.get(event.source)
         && current(&owner, &state, action.key)
     {
+        state.pending = None;
         state.remember = event.value;
     }
 }
@@ -242,7 +250,7 @@ fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
-    input: Query<&EditableText, With<ValueField>>,
+    input: Query<(Entity, &EditableText), With<ValueField>>,
 ) {
     if !overlays.single().is_ok_and(|overlay| guard.allows(overlay)) {
         keys.clear();
@@ -263,11 +271,10 @@ fn keyboard(
                 .and_then(|p| p.link.server_modal_panel())
                 .and_then(|p| p.panel.active)
                 .and_then(|p| p.cancel_button);
-            if let Some(button) = button {
-                let text = input
-                    .single()
-                    .map_or_else(|_| String::new(), |text| text.value().to_string());
-                submit(&owner, &mut state, key, button, &text);
+            if let Some(button) = button
+                && let Ok(overlay) = overlays.single()
+            {
+                submission::request(&owner, &mut state, key, button, overlay, &input);
             }
         }
     }

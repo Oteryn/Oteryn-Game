@@ -17,12 +17,14 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 use std::path::PathBuf;
+mod submission;
 
 pub(super) struct LoginState {
     pub form: LoginForm,
     pub visible: bool,
     pub revision: u64,
     path: Option<PathBuf>,
+    pending_submit: Option<submission::Pending>,
 }
 impl Default for LoginState {
     fn default() -> Self {
@@ -31,6 +33,7 @@ impl Default for LoginState {
             visible: false,
             revision: 0,
             path: None,
+            pending_submit: None,
         }
     }
 }
@@ -100,6 +103,13 @@ impl LoginControl {
             Self::Cancel => "login.cancel",
         }
     }
+}
+
+pub(super) fn install(app: &mut App) {
+    app.add_systems(
+        PostUpdate,
+        submission::finish.after(bevy::text::EditableTextSystems),
+    );
 }
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
@@ -228,10 +238,10 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     }
     commands.entity(panel).add_children(&[message, footer]);
 }
-fn read_fields(owner: &mut HostOwner, fields: &Query<(&LoginField, &EditableText)>) {
+fn read_fields(owner: &mut HostOwner, fields: &Query<(Entity, &LoginField, &EditableText)>) {
     if owner.login.form.can_submit() {
         let mut values = owner.login.form.settings.values().map(str::to_owned);
-        for (field, input) in fields {
+        for (_, field, input) in fields {
             if let Some(value) = values.get_mut(field.0) {
                 *value = input.value().to_string();
             }
@@ -243,7 +253,7 @@ fn activate(
     event: On<Activate>,
     controls: Query<&LoginControl>,
     guard: ModalGuard,
-    fields: Query<(&LoginField, &EditableText)>,
+    fields: Query<(Entity, &LoginField, &EditableText)>,
     mut owner: NonSendMut<HostOwner>,
 ) {
     if !guard.allows(event.entity) || !owner.login.visible || owner.selection.pending().is_some() {
@@ -252,10 +262,10 @@ fn activate(
     if let Ok(control) = controls.get(event.entity) {
         match control {
             LoginControl::Submit => {
-                read_fields(&mut owner, &fields);
-                owner.submit_login();
+                submission::request(&mut owner, &fields);
             }
             LoginControl::Cancel => {
+                owner.login.pending_submit = None;
                 owner.cancel_login();
                 owner.login.visible = false;
             }
@@ -264,7 +274,7 @@ fn activate(
 }
 pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    fields: Query<(&LoginField, &EditableText)>,
+    fields: Query<(Entity, &LoginField, &EditableText)>,
     focus: Res<InputFocus>,
     dialogs: Query<Entity, With<LoginDialog>>,
     guard: ModalGuard,
@@ -284,14 +294,14 @@ pub(super) fn keyboard(
         }
         match key.key_code {
             KeyCode::Escape => {
+                owner.login.pending_submit = None;
                 owner.cancel_login();
                 owner.login.visible = false;
             }
             KeyCode::Enter | KeyCode::NumpadEnter
                 if focus.get().is_some_and(|entity| fields.get(entity).is_ok()) =>
             {
-                read_fields(&mut owner, &fields);
-                owner.submit_login();
+                submission::request(&mut owner, &fields);
             }
             _ => {}
         }

@@ -342,3 +342,5 @@ fn exit_confirmation_fences_login_keyboard_and_native_activate() -> TestResult {
     );
     Ok(())
 }
+
+mod text_input;

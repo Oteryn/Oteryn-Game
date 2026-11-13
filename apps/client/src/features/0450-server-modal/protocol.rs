@@ -109,3 +109,6 @@ mod bridge_tests;
 mod bridge;
 pub use bridge::ServerModalPanel;
 pub(in crate::play) use bridge::SharedModal;
+
+#[cfg(test)]
+pub(crate) use bridge::BevyServerModalFixture;

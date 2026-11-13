@@ -145,3 +145,5 @@ fn shared_notices_close_preserves_server_owned_history() {
     assert!(!link.notices_panel().open);
     assert_eq!(link.notices_panel().save_minutes, Some(5));
 }
+
+mod text_input;

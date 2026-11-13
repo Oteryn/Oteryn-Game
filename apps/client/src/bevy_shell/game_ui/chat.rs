@@ -14,6 +14,7 @@ use oteryn_client_ui_bevy as source;
 
 mod channels;
 mod commands;
+mod submission;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -26,6 +27,7 @@ struct ChatState {
     labels: Vec<String>,
     focus: bool,
     value: String,
+    pending: Option<submission::Pending>,
 }
 impl Default for ChatState {
     fn default() -> Self {
@@ -36,6 +38,7 @@ impl Default for ChatState {
             labels: Vec::new(),
             focus: false,
             value: String::new(),
+            pending: None,
         }
     }
 }
@@ -77,7 +80,11 @@ struct Control {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<ChatState>()
         .add_systems(Startup, widgets::setup.after(super::setup))
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(
+            PostUpdate,
+            submission::finish.after(bevy::text::EditableTextSystems),
+        );
     channels::install(app);
 }
 fn set_text(text: &mut EditableText, value: &str) {
@@ -92,7 +99,7 @@ fn keyboard(
     mut focus: ResMut<InputFocus>,
     mut fields: Query<(Entity, &Field, &mut EditableText)>,
     owner: NonSend<HostOwner>,
-    state: Res<ChatState>,
+    mut state: ResMut<ChatState>,
     guard: ModalGuard,
 ) {
     if !guard.allows_focus(focus.get()) {
@@ -114,6 +121,7 @@ fn keyboard(
         let focused = focus.get();
         match key.key_code {
             KeyCode::Escape => {
+                state.pending = None;
                 if focused.is_some_and(|entity| fields.get(entity).is_ok()) {
                     focus.clear();
                 }
@@ -122,24 +130,7 @@ fn keyboard(
             KeyCode::Enter | KeyCode::NumpadEnter => {
                 if let Some(entity) = focused {
                     if let Ok((_, field, mut text)) = fields.get_mut(entity) {
-                        match field {
-                            Field::Message => {
-                                if commands::submit(
-                                    &play.link,
-                                    state.generation.unwrap_or_default(),
-                                    owner.generation(),
-                                    state.mode,
-                                    &text.value().to_string(),
-                                ) {
-                                    set_text(&mut text, "");
-                                }
-                            }
-                            Field::Recipient => {
-                                play.link
-                                    .chat_channel_dialog_name(&text.value().to_string());
-                                play.link.chat_channel_dialog_confirm();
-                            }
-                        }
+                        submission::request(&owner, &mut state, entity, *field, &mut text, false);
                     }
                 } else if play.link.chat_panel().console.can_send() {
                     for (entity, field, _) in &fields {

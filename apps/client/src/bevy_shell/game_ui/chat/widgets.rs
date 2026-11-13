@@ -179,6 +179,9 @@ pub(super) fn activate(
     let Some(play) = &owner.play else {
         return;
     };
+    if !matches!(control.action, Action::Send | Action::Conversation) {
+        state.pending = None;
+    }
     match &control.action {
         Action::ComposerMode => {
             play.link.chat_console_mode();
@@ -203,15 +206,8 @@ pub(super) fn activate(
         Action::Send => {
             for (entity, field, mut text) in &mut fields {
                 if *field == Field::Message
-                    && commands::submit(
-                        &play.link,
-                        owner.generation(),
-                        owner.generation(),
-                        state.mode,
-                        &text.value().to_string(),
-                    )
+                    && submission::request(&owner, &mut state, entity, *field, &mut text, true)
                 {
-                    set_text(&mut text, "");
                     focus.set(entity, FocusCause::Navigated);
                 }
             }
@@ -228,13 +224,14 @@ pub(super) fn activate(
         Action::Close => play.link.chat_close_current(),
         Action::ChannelCancel => play.link.chat_channel_dialog_cancel(),
         Action::Conversation => {
-            for (_, field, text) in &mut fields {
+            let mut opened = false;
+            for (entity, field, mut text) in &mut fields {
                 if *field == Field::Recipient {
-                    play.link
-                        .chat_channel_dialog_name(&text.value().to_string());
+                    opened =
+                        submission::request(&owner, &mut state, entity, *field, &mut text, true);
                 }
             }
-            if play.link.chat_channel_dialog_confirm() {
+            if opened {
                 for (entity, field, _) in &mut fields {
                     if *field == Field::Message {
                         focus.set(entity, FocusCause::Navigated);

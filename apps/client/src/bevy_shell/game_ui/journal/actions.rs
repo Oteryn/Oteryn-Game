@@ -9,9 +9,9 @@ pub(super) struct Values {
     pub minimum: String,
     pub maximum: String,
 }
-pub(super) fn values(fields: &Query<(&Field, &EditableText)>) -> Values {
+pub(super) fn values(fields: &Query<(Entity, &Field, &EditableText)>) -> Values {
     let mut values = Values::default();
-    for (field, text) in fields {
+    for (_, field, text) in fields {
         let target = match field {
             Field::Search => &mut values.search,
             Field::Minimum => &mut values.minimum,

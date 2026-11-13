@@ -127,6 +127,7 @@ impl PlayLink {
 #[must_use]
 pub(crate) struct BevyServerModalFixture {
     _driver: Driver,
+    input_peer: Option<super::tests::AmountPeer>,
 }
 #[cfg(test)]
 impl PlayLink {
@@ -143,6 +144,59 @@ impl PlayLink {
             image: None,
         });
         driver.publish(false);
-        BevyServerModalFixture { _driver: driver }
+        BevyServerModalFixture {
+            _driver: driver,
+            input_peer: None,
+        }
+    }
+}
+
+#[cfg(test)]
+impl PlayLink {
+    pub(crate) fn bevy_server_modal_input_fixture(
+        &self,
+    ) -> Result<BevyServerModalFixture, Box<dyn std::error::Error>> {
+        self.use_shared_frontend();
+        let mut driver = Driver::new(true)
+            .with_input(true)
+            .with_outbox(&Outbox(Arc::clone(&self.mailbox)));
+        let mut peer = super::tests::AmountPeer::default();
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(driver.poll(&mut peer))?;
+        Ok(BevyServerModalFixture {
+            _driver: driver,
+            input_peer: Some(peer),
+        })
+    }
+}
+#[cfg(test)]
+impl BevyServerModalFixture {
+    pub(crate) fn with_choices(&mut self) {
+        if let Some(dialog) = &mut self._driver.panel.active {
+            dialog.choices = vec![(7, "First".into()), (9, "Second".into())];
+        }
+        self._driver.publish(false);
+    }
+    pub(crate) fn accepted_input(
+        &mut self,
+    ) -> Result<
+        Option<oteryn_client_runtime::server_modal::input::InputAnswer>,
+        Box<dyn std::error::Error>,
+    > {
+        let peer = self.input_peer.as_mut().ok_or("input fixture peer")?;
+        let completion = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(self._driver.poll(peer))?;
+        if completion.is_none() {
+            return Ok(None);
+        }
+        let bytes = peer.answer.take().ok_or("accepted driver answer")?;
+        Ok(Some(
+            oteryn_client_runtime::server_modal::input::InputAnswer::decode(&bytes)
+                .map_err(|_| "input answer decode")?,
+        ))
     }
 }

@@ -508,3 +508,5 @@ fn journal_builds_both_source_shaped_windows_with_real_text_controls() -> Result
     }
     Ok(())
 }
+
+mod text_input;
