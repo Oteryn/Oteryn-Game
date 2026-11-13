@@ -1069,8 +1069,60 @@ def test_item_inventory_emitter_matches_converter_format_and_explicit_output_set
             raise AssertionError("bootstrap silently selected one of two tails")
 
 
+def test_native_generation_refreshes_custody_census_before_first_pin() -> None:
+    # Stateful stand-ins for external owners: registration changes identities;
+    # the census records that exact union, and the pin seam refuses stale
+    # expectations. No generator, provider output or fixed cohort count is used.
+    register = "tools/content-migration/register_spell_families.py"
+    census = "tools/contracts/refresh_quest_custody_equipment.py"
+    pin = "tools/content-migration/refresh_equipment_profile_pin.py"
+    for skip_checks, refuse_census in ((False, False), (True, False), (False, True)):
+        initial = {"fixture:existing"}
+        fresh = initial | {"fixture:new-source-corpse"}
+        state = {"provider": initial, "census": initial}
+        calls, pinned = [], []
+
+        def owner(command):
+            calls.append(command)
+            if command[1] == register and "--check" not in command:
+                state["provider"] = fresh
+            elif command[1] == census:
+                if refuse_census:
+                    raise ValueError("fixture census source refusal")
+                state["census"] = set(state["provider"])
+            elif command[1] == pin:
+                if state["provider"] != state["census"]:
+                    raise ValueError("fixture declared cohorts differ from generated union")
+                pinned.append(set(state["provider"]))
+
+        arguments = ["regenerate_content.py", "--native-only"]
+        if skip_checks:
+            arguments.append("--skip-checks")
+        with patch.object(sys, "argv", arguments), patch.object(rc, "run", side_effect=owner), \
+                patch.object(rc, "refresh_quest_callback_proof"):
+            if refuse_census:
+                try:
+                    rc.main()
+                except ValueError as error:
+                    assert str(error) == "fixture census source refusal", str(error)
+                else:
+                    raise AssertionError("census refusal reached downstream native generation")
+                assert pinned == []
+                assert calls[-1][1] == census
+            else:
+                assert rc.main() == 0
+                # Both early and final consumers use the current census;
+                # final all-family census and native check remain in the path.
+                assert pinned == [fresh, fresh]
+                assert sum(command[1] == census for command in calls) == 2
+                checked = [command for command in calls
+                           if command[1] == register and "--check" in command]
+                assert bool(checked) == (not skip_checks)
+
+
 def main() -> None:
     tests = [
+        test_native_generation_refreshes_custody_census_before_first_pin,
         test_item_bootstrap_precedes_materializer_and_refusal_stops_world_work,
         test_normal_generation_orders_native_callback_producers,
         test_world_canonicalization_precedes_cohort_and_pins_and_refusal_stops_them,

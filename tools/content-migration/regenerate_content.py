@@ -786,6 +786,9 @@ def main() -> int:
         refresh_quest_callback_proof()
         run(["python3", "tools/content-migration/register_spell_families.py"])
         run(["python3", "tools/content-migration/qengine_equipment_audit.py", "content"])
+        # The pin validates the freshly generated identity union against this
+        # census owner's exact source inputs and added-key inventory.
+        run(["python3", "tools/contracts/refresh_quest_custody_equipment.py"])
         run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
         run(["python3", "tools/content-schema/quest-authoring/grizzly_rooms.py"])
         run(["python3", "tools/content-schema/quest-authoring/first_dragon_activity.py", "content"])
