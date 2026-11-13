@@ -1,6 +1,8 @@
 //! Opt-in Bevy desktop host over the production client owners.
+mod audio;
 mod audit;
 mod controls;
+mod game_ui;
 mod gameplay_dialogs;
 mod input;
 mod login;
@@ -67,8 +69,18 @@ impl Options {
 /// Called only by the executable. Headless tests never install WinitPlugin or run this loop.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::error::Error>> {
     let options = Options::parse(args)?;
-    let mut owner = HostOwner::new(options.preferences)?;
-    owner.configure_login(options.login_settings, |name| std::env::var(name).ok());
+    let mut owner = HostOwner::new(options.preferences.clone())?;
+    owner.configure_login(options.login_settings.clone(), |name| {
+        std::env::var(name).ok()
+    });
+    let mut app = build_app(options, owner);
+    // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
+    match app.run() {
+        AppExit::Success => Ok(()),
+        AppExit::Error(code) => Err(format!("Bevy event loop exited with {code}").into()),
+    }
+}
+fn build_app(options: Options, owner: HostOwner) -> App {
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
@@ -76,11 +88,19 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
                 file_path: options.ui_assets.to_string_lossy().into_owned(),
                 ..default()
             })
+            .set(bevy::winit::WinitPlugin {
+                run_on_any_thread: cfg!(test),
+            })
             .set(ImagePlugin::default_nearest())
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     title: "Oteryn — Bevy host (opt-in)".into(),
                     resolution: (1024, 720).into(),
+                    resize_constraints: bevy::window::WindowResizeConstraints {
+                        min_width: 1020.,
+                        min_height: 650.,
+                        ..default()
+                    },
                     ..default()
                 }),
                 ..default()
@@ -94,7 +114,18 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
     .insert_non_send(owner)
     .insert_resource(audit::AuditOutput::new(options.ui_audit))
     .init_resource::<scene::SceneCache>()
-    .add_systems(Startup, (ui::setup, login::setup, selection::setup).chain())
+    .init_resource::<game_ui::viewport::WorldViewport>()
+    .add_systems(
+        Startup,
+        (
+            ui::setup,
+            game_ui::setup,
+            game_ui::viewport::setup,
+            login::setup,
+            selection::setup,
+        )
+            .chain(),
+    )
     .add_systems(PreUpdate, selection::poll.before(poll_owner))
     .add_systems(PreUpdate, poll_owner)
     .add_systems(
@@ -106,10 +137,16 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
             selection::project,
             ui::keyboard,
             ui::project,
+            ui::project_toolbar,
             project_window,
+            game_ui::project,
             scene::project,
         )
             .chain(),
+    )
+    .add_systems(
+        PostUpdate,
+        game_ui::viewport::project.after(bevy::ui::UiSystems::PostLayout),
     )
     .add_systems(PostUpdate, audit::write.after(bevy::ui::UiSystems::Layout))
     .add_systems(Update, audit::capture_on_key);
@@ -122,15 +159,23 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
             .before(ui::project),
     );
     gameplay_dialogs::install(&mut app);
-    // App::run transfers the app into its runner. HostOwner::drop owns shutdown there.
-    match app.run() {
-        AppExit::Success => Ok(()),
-        AppExit::Error(code) => Err(format!("Bevy event loop exited with {code}").into()),
-    }
+    game_ui::install(&mut app);
+    audio::install(&mut app);
+    app
 }
-fn poll_owner(mut owner: NonSendMut<HostOwner>, window: Query<&Window, With<PrimaryWindow>>) {
+
+fn poll_owner(
+    mut owner: NonSendMut<HostOwner>,
+    window: Query<&Window, With<PrimaryWindow>>,
+    viewport: Res<game_ui::viewport::WorldViewport>,
+) {
     if let Ok(window) = window.single() {
-        owner.poll([window.physical_width(), window.physical_height()]);
+        let size = if viewport.size.x > 0 && viewport.size.y > 0 {
+            viewport.size.to_array()
+        } else {
+            [window.physical_width(), window.physical_height()]
+        };
+        owner.poll(size);
     }
 }
 fn project_window(

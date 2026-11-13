@@ -149,7 +149,7 @@ fn panel(commands: &mut Commands, skins: &Skins, parent: Entity, title: &str) ->
     let entity = commands
         .spawn((
             Projection,
-            source::frame(skins.frame.clone(), [1.; 4]),
+            source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             Node {
                 width: percent(100.),
                 flex_direction: FlexDirection::Column,
@@ -269,7 +269,7 @@ fn grid(
                 align_self: AlignSelf::Center,
                 ..default()
             },
-            ScrollArea::default(),
+            ScrollArea,
         ))
         .id();
     commands.entity(parent).add_child(grid);

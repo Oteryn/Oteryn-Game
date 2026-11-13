@@ -37,6 +37,10 @@ impl HostOwner {
             return;
         }
         if blocked || self.modal_active() {
+            if let Some(play) = &mut self.play {
+                let _ = play.view.world_pointer_input(&play.link, &reset);
+                play.view.clear_bar_pointer(&play.link);
+            }
             return;
         }
         let Some(play) = &mut self.play else {
@@ -50,6 +54,8 @@ impl HostOwner {
         {
             return;
         }
+        play.view.observe_creature_pointer(&routed);
+        play.view.observe_bar_pointer(&play.link);
         for action in custom {
             play.link.custom_hotkey_action(&play.view, &action);
         }
@@ -58,6 +64,19 @@ impl HostOwner {
         {
             return;
         }
+        if play.view.audio_input(&routed) {
+            if let Err(error) = self.settings.capture(&mut play.view) {
+                self.status = error.to_string();
+            }
+            return;
+        }
+        if play.link.quest_input(&routed)
+            || play.link.spell_catalog_input(&routed)
+            || play.link.notices_input(&routed)
+        {
+            return;
+        }
+        play.view.cursor_spell_input(&routed);
         if let Some(direction) = crate::input::arrow_step(&routed) {
             play.view.arrow(direction);
         }
@@ -76,6 +95,7 @@ impl HostOwner {
             .view
             .world_pointer_input(&play.link, &routed)
             .unwrap_or(true);
+        play.view.observe_bar_pointer(&play.link);
         let mut context = None;
         for click in clicks {
             if suppress_primary && !click.secondary {

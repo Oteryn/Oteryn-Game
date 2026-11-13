@@ -1,40 +1,155 @@
-//! Reuse the production winit physical normalizer on every native desktop.
-use super::owner::HostOwner;
+//! Reuse the production winit normalizer; world pointers use the current physical viewport.
+use super::{
+    game_ui::{GameModal, viewport::WorldViewport},
+    owner::HostOwner,
+};
 use bevy::{prelude::*, winit::RawWinitWindowEvent};
+use oteryn_input_actions::{
+    NormalizedInputEvent, PointerCoordinate, PointerDelta, PointerMotion, PointerPosition,
+};
 use oteryn_input_platform::InputPlatformAdapter;
 pub(super) struct NativeInput {
     adapter: InputPlatformAdapter,
     generation: Option<u64>,
+    physical_pointer: Option<PointerPosition>,
 }
 pub(super) fn route(
     mut raw: MessageReader<RawWinitWindowEvent>,
     mut input: NonSendMut<NativeInput>,
     mut owner: NonSendMut<HostOwner>,
-    focus: Res<bevy::input_focus::InputFocus>,
-    nodes: Query<(), With<Node>>,
+    mut focus: ResMut<bevy::input_focus::InputFocus>,
+    editors: Query<(), With<bevy::text::EditableText>>,
+    modals: Query<&Node, With<GameModal>>,
+    viewport: Res<WorldViewport>,
 ) {
     if input.generation != Some(owner.generation()) {
         let reset = input.adapter.notify_device_lost();
         owner.route_input(&reset, true);
         input.generation = Some(owner.generation());
+        input.physical_pointer = None;
         raw.clear();
         return;
     }
+    let modal = modals.iter().any(|node| node.display != Display::None);
+    let mut editing = focus.get().is_some_and(|e| editors.contains(e));
     for event in raw.read() {
         let events = match input.adapter.process_window_event(&event.event) {
             Ok(events) => events,
             Err(_) => input.adapter.notify_device_lost(),
         };
-        let blocked = !input.adapter.focused() || focus.get().is_some_and(|e| nodes.contains(e));
-        owner.route_input(&events, blocked);
+        for event in events {
+            let blocked = !input.adapter.focused() || editing || modal;
+            match event {
+                NormalizedInputEvent::PointerMoved { position, motion } => {
+                    input.physical_pointer = Some(position);
+                    if let Some(position) = map_pointer(&owner, *viewport, position) {
+                        owner.route_input(
+                            &[NormalizedInputEvent::PointerMoved { position, motion }],
+                            !input.adapter.focused() || modal,
+                        );
+                    } else {
+                        owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
+                    }
+                }
+                event @ (NormalizedInputEvent::MouseButton { .. }
+                | NormalizedInputEvent::Wheel { .. }) => {
+                    // Resize, DPI, UI scale and world zoom may change without CursorMoved.
+                    // Reproject the retained physical cursor before the button reaches picking.
+                    let position = input
+                        .physical_pointer
+                        .and_then(|position| map_pointer(&owner, *viewport, position));
+                    if let Some(position) = position
+                        && let Ok(zero) = PointerDelta::new(0)
+                    {
+                        if matches!(
+                            event,
+                            NormalizedInputEvent::MouseButton {
+                                state: oteryn_input_actions::ButtonState::Pressed,
+                                ..
+                            }
+                        ) && !modal
+                        {
+                            focus.clear();
+                            editing = false;
+                        }
+                        owner.route_input(
+                            &[
+                                NormalizedInputEvent::PointerMoved {
+                                    position,
+                                    motion: PointerMotion::new(zero, zero),
+                                },
+                                event,
+                            ],
+                            !input.adapter.focused() || modal,
+                        );
+                    } else {
+                        owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
+                    }
+                }
+                event => {
+                    if matches!(
+                        event,
+                        NormalizedInputEvent::DeviceLost
+                            | NormalizedInputEvent::FocusChanged { focused: false }
+                            | NormalizedInputEvent::CaptureChanged { captured: false }
+                    ) {
+                        input.physical_pointer = None;
+                    }
+                    owner.route_input(&[event], blocked);
+                }
+            }
+        }
     }
 }
-
+fn map_pointer(
+    owner: &HostOwner,
+    viewport: WorldViewport,
+    position: PointerPosition,
+) -> Option<PointerPosition> {
+    let (w, h) = owner.play.as_ref()?.view.scene().view().viewport_px();
+    let point = viewport.scene_point(
+        Vec2::new(position.x().get() as f32, position.y().get() as f32),
+        UVec2::new(w, h),
+    )?;
+    Some(PointerPosition::new(
+        PointerCoordinate::new(point.x as i32).ok()?,
+        PointerCoordinate::new(point.y as i32).ok()?,
+    ))
+}
 impl Default for NativeInput {
     fn default() -> Self {
         Self {
             adapter: InputPlatformAdapter::new(),
             generation: None,
+            physical_pointer: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn stationary_cursor_is_remapped_after_viewport_changes()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        let (w, h) = view.scene().view().viewport_px();
+        let (link, _commands, _events) = crate::play::play_channel();
+        owner.play = Some(super::super::owner::ActivePlay { view, link });
+        let mut viewport = WorldViewport {
+            origin: UVec2::new(4, 28),
+            size: UVec2::new(w + 80, h + 32),
+        };
+        let position =
+            PointerPosition::new(PointerCoordinate::new(64)?, PointerCoordinate::new(64)?);
+        let first = map_pointer(&owner, viewport, position).ok_or("first cursor projection")?;
+        assert_eq!((first.x().get(), first.y().get()), (20, 20));
+        viewport.origin.x += 10;
+        let shifted = map_pointer(&owner, viewport, position).ok_or("stationary cursor remap")?;
+        assert_eq!((shifted.x().get(), shifted.y().get()), (10, 20));
+        viewport.origin.x += 100;
+        assert!(map_pointer(&owner, viewport, position).is_none());
+        Ok(())
     }
 }

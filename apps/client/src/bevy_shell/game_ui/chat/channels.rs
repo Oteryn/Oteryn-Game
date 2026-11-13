@@ -20,7 +20,7 @@ pub(super) fn setup(commands: &mut Commands, root: Entity, skins: &Skins) {
     let panel = commands
         .spawn((
             Channels,
-            source::frame(skins.frame.clone(), [1.; 4]),
+            source::frame(skins.inset.clone(), [1.; 4]),
             BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
             Node {
                 position_type: PositionType::Absolute,

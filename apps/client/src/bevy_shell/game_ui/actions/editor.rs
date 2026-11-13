@@ -88,7 +88,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 order: 5,
                 modal: true,
             },
-            bevy::ui_widgets::ScrollArea::default(),
+            bevy::ui_widgets::ScrollArea,
             Node {
                 width: px(530.),
                 max_width: percent(98.),
@@ -184,7 +184,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                         overflow: Overflow::scroll_y(),
                         ..default()
                     },
-                    bevy::ui_widgets::ScrollArea::default(),
+                    bevy::ui_widgets::ScrollArea,
                 ))
                 .id();
             commands.entity(panel).add_child(choices);
@@ -367,7 +367,11 @@ pub(super) fn project(
             || state
                 .selected
                 .is_some_and(|(_, generation)| generation != owner.generation())
-            || keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape)))
+            || (!owner
+                .play
+                .as_ref()
+                .is_some_and(|play| play.link.server_modal_active())
+                && keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))))
     {
         state.selected = None;
         focus.clear();

@@ -40,7 +40,7 @@ struct Scope {
 }
 struct Draft {
     scope: Scope,
-    values: GraphicsDraft,
+    values: ReferencePreferences,
 }
 pub(super) struct ActivePlay {
     pub view: PlayView,
@@ -66,7 +66,7 @@ pub(super) struct HostOwner {
 }
 impl HostOwner {
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
-        let client = ClientBootstrap::new()?;
+        let client = ClientBootstrap::new()?.with_shared_frontend();
         let (selection, selector) = super::selection::SelectionBridge::new();
         Ok(Self {
             entry: Some(Reentry::new(client)),
@@ -91,7 +91,7 @@ impl HostOwner {
         (&self.settings.preferences).into()
     }
     pub fn draft(&self) -> Option<GraphicsDraft> {
-        self.draft.as_ref().map(|d| d.values)
+        self.draft.as_ref().map(|d| (&d.values).into())
     }
     pub fn generation(&self) -> u64 {
         self.scope.generation
@@ -107,10 +107,24 @@ impl HostOwner {
         self.settings.open = true;
         self.draft = Some(Draft {
             scope: self.scope,
-            values: self.accepted(),
+            values: self.settings.preferences.clone(),
         });
     }
     pub fn edit(&mut self, edit: impl FnOnce(&mut GraphicsDraft)) {
+        let Some(mut graphics) = self.preferences_draft().map(GraphicsDraft::from) else {
+            return;
+        };
+        edit(&mut graphics);
+        self.edit_preferences(|values| {
+            values.graphics.fullscreen = graphics.fullscreen;
+            values.graphics.vsync = graphics.vsync;
+            values.graphics.integer_scaling = graphics.integer_scaling;
+        });
+    }
+    pub fn preferences_draft(&self) -> Option<&ReferencePreferences> {
+        self.draft.as_ref().map(|draft| &draft.values)
+    }
+    pub fn edit_preferences(&mut self, edit: impl FnOnce(&mut ReferencePreferences)) {
         if let Some(draft) = &mut self.draft {
             edit(&mut draft.values);
         }
@@ -128,12 +142,13 @@ impl HostOwner {
             self.settings.open = false;
             return;
         }
-        let mut preferences = self.settings.preferences.clone();
-        preferences.graphics.fullscreen = draft.values.fullscreen;
-        preferences.graphics.vsync = draft.values.vsync;
-        preferences.graphics.integer_scaling = draft.values.integer_scaling;
-        // apply validates internally; even a failed save accepts live settings with feedback.
-        self.settings.apply(preferences);
+        // The retained owner alone validates, saves and installs preferences. Invalid edits
+        // remain in the transient draft; a disk failure still accepts the live values.
+        self.settings.apply(draft.values.clone());
+        if self.settings.preferences != draft.values {
+            self.draft = Some(draft);
+            return;
+        }
         if close {
             self.settings.open = false;
         } else {
@@ -150,7 +165,7 @@ impl HostOwner {
         };
         self.settings.select_character(character);
     }
-    fn install_play(&mut self, view: PlayView, link: PlayLink) -> bool {
+    fn install_play(&mut self, mut view: PlayView, link: PlayLink) -> bool {
         let Some(character) = view.preference_character() else {
             // Never substitute a login hint, display name or invented identity.
             drop((view, link));
@@ -159,6 +174,8 @@ impl HostOwner {
         };
         drop(self.play.take());
         self.change_scope(Some(character));
+        view.use_shared_frontend();
+        link.use_shared_frontend();
         self.play = Some(ActivePlay { view, link });
         self.phase = Phase::Playing;
         self.status = "Connected to Oteryn.".into();
@@ -187,6 +204,10 @@ impl HostOwner {
             || self.login.visible
             || self.selection.pending().is_some()
             || self.dialogs.active()
+            || self
+                .play
+                .as_ref()
+                .is_some_and(|play| play.link.server_modal_active())
     }
     pub fn request_login(&mut self) {
         if self.phase != Phase::Offline {
@@ -266,6 +287,15 @@ impl HostOwner {
         let mut end = None;
         if let Some(play) = &mut self.play {
             // The same owner projects accepted graphics, zoom, bindings and chat context.
+            self.settings.sync_skills_layout(&play.link);
+            self.settings.sync_item_hotkeys(&play.link);
+            self.settings.sync_bar_actions(&play.link);
+            self.settings.sync_spellbook_filter(&play.link);
+            self.settings.sync_stash_sort(&play.link);
+            self.settings.sync_archive_bindings(&play.link);
+            self.settings.refresh_custom_choices(&play.link);
+            self.settings.sync_presentation(&play.link);
+            self.settings.sync_battle_lists(&play.link);
             self.settings.sync_chat_context(&play.link);
             if let Err(error) = self.settings.restore(&mut play.view, viewport) {
                 self.settings.feedback = error.to_string();

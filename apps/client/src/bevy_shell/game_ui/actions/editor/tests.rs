@@ -107,3 +107,34 @@ fn stale_editor_cannot_write_into_current_session() -> TestResult {
     assert!(!app.world().resource::<EditorState>().active());
     Ok(())
 }
+
+#[test]
+fn escape_belongs_to_top_server_dialog_before_action_editor() -> TestResult {
+    let (mut app, _commands) = super::super::tests::fixture()?;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    let modal = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_server_modal_fixture();
+    app.init_resource::<ButtonInput<KeyCode>>();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world().resource::<EditorState>().active(),
+        "Escape also closed the lower action editor"
+    );
+    drop(modal);
+    app.update();
+    assert!(!app.world().resource::<EditorState>().active());
+    Ok(())
+}

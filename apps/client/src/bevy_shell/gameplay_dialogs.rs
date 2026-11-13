@@ -146,6 +146,14 @@ fn escape(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     mut owner: NonSendMut<HostOwner>,
 ) {
+    if owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.server_modal_active())
+    {
+        keys.clear();
+        return;
+    }
     if keys.read().any(|key| {
         key.key_code == KeyCode::Escape
             && key.state == bevy::input::ButtonState::Pressed

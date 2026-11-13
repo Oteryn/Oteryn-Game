@@ -226,10 +226,10 @@ fn project(
     };
     for children in &mode_buttons {
         for child in children {
-            if let Ok(mut text) = captions.get_mut(*child) {
-                if text.0 != mode {
-                    text.0 = mode.into();
-                }
+            if let Ok(mut text) = captions.get_mut(*child)
+                && text.0 != mode
+            {
+                text.0 = mode.into();
             }
         }
     }
@@ -248,7 +248,12 @@ fn project(
             .map(commands::Tab::Channel),
     );
     let labels = panel.console.tab_labels();
-    if state.tabs != current_tabs || state.labels != labels {
+    let selected = |tab: &commands::Tab| match tab {
+        commands::Tab::Fixed(tab) => panel.console.current.is_none() && panel.console.tab == *tab,
+        commands::Tab::Channel(tab) => panel.console.current.as_ref() == Some(tab),
+    };
+    let rebuilding = state.tabs != current_tabs || state.labels != labels;
+    if rebuilding {
         for parent in &tabs {
             commands.entity(parent).despawn_children();
             for (tab, label) in current_tabs.iter().zip(&labels) {
@@ -271,24 +276,24 @@ fn project(
                     justify_content: JustifyContent::Center,
                     ..default()
                 });
+                if selected(tab) {
+                    commands.entity(button).insert(bevy::ui::Checked);
+                }
                 commands.entity(parent).add_child(button);
             }
         }
         state.tabs = current_tabs;
         state.labels = labels;
     }
-    for (entity, control) in &controls {
-        if let Action::Tab(tab) = &control.action {
-            let selected = match tab {
-                commands::Tab::Fixed(tab) => {
-                    panel.console.current.is_none() && panel.console.tab == *tab
+    if !rebuilding {
+        // Old tab entities are already queued for deletion when the channel list changes.
+        for (entity, control) in &controls {
+            if let Action::Tab(tab) = &control.action {
+                if selected(tab) {
+                    commands.entity(entity).insert(bevy::ui::Checked);
+                } else {
+                    commands.entity(entity).remove::<bevy::ui::Checked>();
                 }
-                commands::Tab::Channel(tab) => panel.console.current.as_ref() == Some(tab),
-            };
-            if selected {
-                commands.entity(entity).insert(bevy::ui::Checked);
-            } else {
-                commands.entity(entity).remove::<bevy::ui::Checked>();
             }
         }
     }

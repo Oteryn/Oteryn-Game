@@ -1,5 +1,6 @@
 //! A direct projection of the existing Scene's ordered quads; no offline world.
-use super::owner::HostOwner;
+use super::{game_ui::viewport::WorldViewport, owner::HostOwner};
+use bevy::camera::visibility::RenderLayers;
 use bevy::{
     asset::RenderAssetUsages,
     prelude::*,
@@ -22,8 +23,9 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     window: Query<&Window, With<PrimaryWindow>>,
     mut cache: ResMut<SceneCache>,
+    viewport: Res<WorldViewport>,
     mut images: ResMut<Assets<Image>>,
-    mut quads: Query<(&mut Sprite, &mut Transform), With<WorldQuad>>,
+    mut quads: Query<(&mut Sprite, &mut Transform, &mut RenderLayers), With<WorldQuad>>,
 ) {
     let Some(play) = &owner.play else {
         for entity in cache.entities.drain(..) {
@@ -60,26 +62,63 @@ pub(super) fn project(
     let Some(image) = cache.image.clone() else {
         return;
     };
+    let scene_size = scene.view().viewport_px();
+    let size = if viewport.size.x > 0 {
+        viewport.size.as_vec2()
+    } else {
+        Vec2::new(
+            window.physical_width() as f32,
+            window.physical_height() as f32,
+        )
+    };
+    let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
+    let minimap_range = scene.minimap_quad_range();
     let lighting = &scene.sprites().lighting;
     let ordered = scene
         .tiles()
         .instances()
         .iter()
         .enumerate()
-        .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Terrain)))
+        .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Terrain), false))
         .chain(
             scene
                 .sprites()
                 .instances()
                 .iter()
                 .enumerate()
-                .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Overlay))),
+                .map(|(i, q)| {
+                    (
+                        q,
+                        lighting.quad_tint(q, i, QuadLayer::Overlay),
+                        minimap_range.contains(&i),
+                    )
+                }),
         );
     let mut count = 0;
-    for (index, (quad, tint)) in ordered.enumerate() {
-        let (sprite, transform) = project_quad(quad, tint, index, &image, scene.atlas(), window);
+    for (index, (quad, tint, minimap)) in ordered.enumerate() {
+        let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
+        let (scale, size, offset) = if minimap {
+            (1., super::game_ui::minimap::SIZE.as_vec2(), Vec2::ZERO)
+        } else {
+            (window.scale_factor(), size, offset)
+        };
+        let (sprite, transform) = project_quad(
+            quad,
+            tint,
+            index,
+            &image,
+            scene.atlas(),
+            QuadViewport {
+                scale,
+                size,
+                offset,
+            },
+        );
         if let Some(entity) = cache.entities.get(index) {
-            if let Ok((mut old_sprite, mut old_transform)) = quads.get_mut(*entity) {
+            if let Ok((mut old_sprite, mut old_transform, mut old_layer)) = quads.get_mut(*entity) {
+                if *old_layer != layer {
+                    *old_layer = layer.clone();
+                }
                 if *old_sprite != sprite {
                     *old_sprite = sprite;
                 }
@@ -90,7 +129,7 @@ pub(super) fn project(
         } else {
             cache
                 .entities
-                .push(commands.spawn((sprite, transform, WorldQuad)).id());
+                .push(commands.spawn((sprite, transform, WorldQuad, layer)).id());
         }
         count += 1;
     }
@@ -98,15 +137,25 @@ pub(super) fn project(
         commands.entity(entity).despawn();
     }
 }
+#[derive(Clone, Copy)]
+struct QuadViewport {
+    scale: f32,
+    size: Vec2,
+    offset: Vec2,
+}
 fn project_quad(
     quad: &QuadInstance,
     tint: [f32; 4],
     order: usize,
     image: &Handle<Image>,
     atlas: &AtlasImage,
-    window: &Window,
+    viewport: QuadViewport,
 ) -> (Sprite, Transform) {
-    let scale = window.scale_factor();
+    let QuadViewport {
+        scale,
+        size: viewport_size,
+        offset,
+    } = viewport;
     let [x, y] = quad.position;
     let [w, h] = quad.size;
     let [u0, v0, u1, v1] = quad.uv;
@@ -123,8 +172,8 @@ fn project_quad(
         ..default()
     };
     let transform = Transform::from_xyz(
-        (x + w / 2.) / scale - window.width() / 2.,
-        window.height() / 2. - (y + h / 2.) / scale,
+        (x + w / 2. + offset.x - viewport_size.x / 2.) / scale,
+        (viewport_size.y / 2. - (y + h / 2. + offset.y)) / scale,
         order as f32 * 0.001,
     );
     (sprite, transform)

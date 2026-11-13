@@ -318,3 +318,41 @@ fn existing_input_owners_turn_before_walk_and_clear_all_held_mappings_on_modal_r
     );
     Ok(())
 }
+
+#[test]
+fn full_preferences_draft_cancels_applies_and_preserves_invalid_edits() -> TestResult {
+    let temp = Temp::new()?;
+    let path = temp.preferences();
+    let mut host = HostOwner::new(Some(path.clone()))?;
+    let original = host.settings.preferences.interface_scale;
+    host.open_graphics();
+    host.edit_preferences(|preferences| preferences.interface_scale = 125);
+    assert_eq!(
+        host.preferences_draft().ok_or("draft")?.interface_scale,
+        125
+    );
+    assert_eq!(host.settings.preferences.interface_scale, original);
+    host.cancel();
+    assert_eq!(host.settings.preferences.interface_scale, original);
+    host.open_graphics();
+    host.edit_preferences(|preferences| preferences.interface_scale = 125);
+    host.apply(false);
+    assert_eq!(host.settings.preferences.interface_scale, 125);
+    assert_eq!(
+        HostOwner::new(Some(path))?
+            .settings
+            .preferences
+            .interface_scale,
+        125
+    );
+    host.edit_preferences(|preferences| preferences.interface_scale = 0);
+    host.apply(true);
+    assert_eq!(host.settings.preferences.interface_scale, 125);
+    assert_eq!(
+        host.preferences_draft()
+            .ok_or("invalid draft discarded")?
+            .interface_scale,
+        0
+    );
+    Ok(())
+}

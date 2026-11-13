@@ -34,8 +34,8 @@ pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
 #[derive(Resource)]
 pub(super) struct Skins {
     pub(super) buttons: source::ButtonImages,
-    checked: Handle<Image>,
-    unchecked: Handle<Image>,
+    pub(super) checked: Handle<Image>,
+    pub(super) unchecked: Handle<Image>,
     pub(super) frame: Handle<Image>,
     pub(super) inset: Handle<Image>,
     pub(super) font: Handle<Font>,
@@ -76,6 +76,8 @@ impl Control {
     }
 }
 #[derive(Component)]
+pub(super) struct ShellToolbar;
+#[derive(Component)]
 pub(super) struct Dialog;
 #[derive(Component)]
 pub(super) struct Status;
@@ -87,7 +89,15 @@ pub(super) struct ScopeLabel;
 pub(super) struct Indicator(Entity);
 
 pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
-    commands.spawn(Camera2d);
+    commands.spawn((
+        Camera2d,
+        Camera {
+            order: 1,
+            clear_color: bevy::camera::ClearColorConfig::None,
+            ..default()
+        },
+        IsDefaultUiCamera,
+    ));
     let skins = Skins {
         buttons: source::ButtonImages {
             up: assets.load(format!("{SKIN}button-grey-up.png")),
@@ -101,6 +111,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     };
     let shell = commands
         .spawn((
+            ShellToolbar,
             TabGroup::new(0),
             Node {
                 position_type: PositionType::Absolute,
@@ -127,6 +138,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     let toolbar = commands
         .spawn(Node {
             column_gap: px(6.),
+            row_gap: px(3.),
+            flex_wrap: FlexWrap::Wrap,
             ..default()
         })
         .id();
@@ -450,6 +463,14 @@ pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     mut owner: NonSendMut<HostOwner>,
 ) {
+    if owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.server_modal_active())
+    {
+        keys.clear();
+        return;
+    }
     for key in keys.read() {
         if owner.draft().is_some()
             && key.key_code == KeyCode::Escape
@@ -457,6 +478,64 @@ pub(super) fn keyboard(
             && !key.repeat
         {
             owner.cancel();
+        }
+    }
+}
+
+/// Keep admission controls outside the in-game HUD once play is installed.
+// One disjoint query changes the toolbar, status and admission button nodes together.
+#[allow(clippy::type_complexity)]
+pub(super) fn project_toolbar(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    regions: Query<Entity, With<super::game_ui::ToolbarRegion>>,
+    mut nodes: Query<
+        (
+            Entity,
+            &mut Node,
+            Has<ShellToolbar>,
+            Has<Status>,
+            Option<&Control>,
+            Option<&ChildOf>,
+        ),
+        Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
+    >,
+) {
+    let playing = owner.play.is_some();
+    for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
+        if toolbar {
+            if playing {
+                if let Ok(region) = regions.single() {
+                    if parent.is_none_or(|parent| parent.parent() != region) {
+                        commands.entity(entity).insert(ChildOf(region));
+                    }
+                    node.position_type = PositionType::Relative;
+                    node.width = percent(100.);
+                    node.max_width = percent(100.);
+                    node.overflow = Overflow::clip();
+                    node.top = Val::Auto;
+                    node.bottom = Val::Auto;
+                    node.left = Val::Auto;
+                    node.right = Val::Auto;
+                }
+            } else {
+                if parent.is_some() {
+                    commands.entity(entity).remove::<ChildOf>();
+                }
+                node.position_type = PositionType::Absolute;
+                node.width = Val::Auto;
+                node.max_width = Val::Auto;
+                node.top = px(8.);
+                node.bottom = Val::Auto;
+                node.left = px(8.);
+                node.right = px(8.);
+            }
+        } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
+            node.display = if playing {
+                Display::None
+            } else {
+                Display::Flex
+            };
         }
     }
 }

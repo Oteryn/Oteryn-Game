@@ -212,10 +212,8 @@ pub(super) fn project(
             focus.set(entity, FocusCause::Navigated);
         }
     }
-    if (previous.0 && dead.is_none()) || (previous.1 && notices.is_none()) {
-        if !server_modal {
-            focus.clear();
-        }
+    if ((previous.0 && dead.is_none()) || (previous.1 && notices.is_none())) && !server_modal {
+        focus.clear();
     }
     *previous = (dead.is_some(), notices.is_some());
     for (mut text, is_death, is_banner, is_notice) in &mut texts {
