@@ -145,6 +145,31 @@ def completeness():
     assert all(r[3] == "IDENTITY_UNRESOLVED" for r in i["appearance_rows"] if not r[9])
 
 
+def night_collection():
+    n = load(HERE,"night-all-visible-items.json")
+    s = load(HERE,"night-all-visible-summary.json")
+    a = load(HERE,"night-Armors33-visible-data.json")
+    ledger = load(HERE,"night-collection-inventory.json")
+    rows = n["records"]
+    assert len(rows) == len({r["observation_key"] for r in rows}) == 2907
+    assert sum(r["ALL_VISIBLE_status"] == "COMPLETE" for r in rows) == 340
+    assert sum(r["ALL_VISIBLE_status"] == "PARTIAL" for r in rows) == 2540
+    assert sum(r["ALL_VISIBLE_status"] == "UNRECONCILED" for r in rows) == 27
+    assert sum(s["complete_components"].values()) == 340
+    assert sum(s["partial_primary_reason_groups"].values()) == 2540
+    assert len(a["records"]) == 33 and a["NPC_quote_rows"] == 218
+    assert sum(len(r[p]["entries"]) for r in a["records"] for p in ["sell_to","buy_from"]) == 218
+    assert sum(not r[p]["entries"] for r in a["records"] for p in ["sell_to","buy_from"]) == 37
+    assert ledger["Windows_metadata_archive"]["present_byte_identical_in_workspace"] == 531
+    assert ledger["Armors33_reference_hash_checks"]["unique_referenced_files"] == 402
+    assert not ledger["Armors33_reference_hash_checks"]["failures"]
+    assert all(r["state"] == "HASH_MATCH" for r in ledger["Armors33_reference_hash_checks"]["receipts"].values())
+    assert all(not r["canonical_binding_required"] for r in rows)
+    assert all(not r["missing_data_or_recovery"] for r in rows if r["ALL_VISIBLE_status"] == "COMPLETE")
+    assert all(r["missing_data_or_recovery"] for r in rows if r["ALL_VISIBLE_status"] != "COMPLETE")
+    assert s["UI_actions"] == s["runtime_changes"] == 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -159,6 +184,7 @@ def main():
     rec = load(HERE, "saved1853-proof-reconciliation.json")
     reconcile(rec)
     completeness()
+    night_collection()
     stale = copy.deepcopy(rec)
     stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
     try:

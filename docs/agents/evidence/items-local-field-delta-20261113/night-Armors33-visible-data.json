@@ -1,0 +1,3352 @@
+{
+  "classification": "DERIVED",
+  "source_sha256": "d163d212e3af4bd1d955ac987105edfeb07cc33d075119514b71eec7c4698dd9",
+  "records": [
+    {
+      "full_current_capture_id": 1,
+      "basic_capture_key": "items-basic:1",
+      "name": "albino plate",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record0",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 1500,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00001-details.png",
+            "sha256": "43723e40ee679f8a0ecdd9a33dd37578f17f7a8cd6ff0f5f32d2d0698532ab76"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00001-details.png",
+            "sha256": "43723e40ee679f8a0ecdd9a33dd37578f17f7a8cd6ff0f5f32d2d0698532ab76"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 1500,
+        "evidence": {
+          "path": "../items-current/cards/00001-details.png",
+          "sha256": "43723e40ee679f8a0ecdd9a33dd37578f17f7a8cd6ff0f5f32d2d0698532ab76"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 2,
+      "basic_capture_key": "items-basic:2",
+      "name": "amazon armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record1",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00002-details.png",
+            "sha256": "b4f46979ed56de762d1cc19146580e8dc39aeab5563c40878fbd353a45a7366a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00002-details.png",
+            "sha256": "b4f46979ed56de762d1cc19146580e8dc39aeab5563c40878fbd353a45a7366a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00002-details.png",
+          "sha256": "b4f46979ed56de762d1cc19146580e8dc39aeab5563c40878fbd353a45a7366a"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 3,
+      "basic_capture_key": "items-basic:3",
+      "name": "arcane dragon robe",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record2",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00003-details.png",
+            "sha256": "3903923a4cfd1253abaa7b56f67b2d059a8b222230d3129054a8c840a7bef720"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00003-details.png",
+            "sha256": "3903923a4cfd1253abaa7b56f67b2d059a8b222230d3129054a8c840a7bef720"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00003-details.png",
+          "sha256": "3903923a4cfd1253abaa7b56f67b2d059a8b222230d3129054a8c840a7bef720"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 4,
+      "basic_capture_key": "items-basic:24",
+      "name": "ball gown",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record3",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00004-details.png",
+            "sha256": "4f7f9b3824817604f1eb3b607e54b1dadcf6f19df0e0b99919f06423945e117c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00004-details.png",
+            "sha256": "4f7f9b3824817604f1eb3b607e54b1dadcf6f19df0e0b99919f06423945e117c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00004-details.png",
+          "sha256": "4f7f9b3824817604f1eb3b607e54b1dadcf6f19df0e0b99919f06423945e117c"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 5,
+      "basic_capture_key": "items-basic:4",
+      "name": "bearskin",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record4",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00005-details.png",
+            "sha256": "886a69a49ac8d8ebdbf76e5ff8232982d41a60a08d51eb90b8519134746db0e3"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00005-details.png",
+            "sha256": "886a69a49ac8d8ebdbf76e5ff8232982d41a60a08d51eb90b8519134746db0e3"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00005-details.png",
+          "sha256": "886a69a49ac8d8ebdbf76e5ff8232982d41a60a08d51eb90b8519134746db0e3"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 6,
+      "basic_capture_key": "items-basic:5",
+      "name": "belted cape",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record5",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rudolph",
+            "residence": "Edron Castle",
+            "price": 500,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00006-details.png",
+            "sha256": "a512e94cc18b3d7885f94cb77cc2d772c086ac2e2f7453ff3200cb95faadf6cb"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Rudolph",
+            "residence": "Edron Castle",
+            "price": 1300,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00006-details.png",
+            "sha256": "a512e94cc18b3d7885f94cb77cc2d772c086ac2e2f7453ff3200cb95faadf6cb"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 500,
+        "evidence": {
+          "path": "../items-current/cards/00006-details.png",
+          "sha256": "a512e94cc18b3d7885f94cb77cc2d772c086ac2e2f7453ff3200cb95faadf6cb"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 7,
+      "basic_capture_key": "items-basic:6",
+      "name": "blue robe",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record6",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Nah'bob",
+            "residence": "Ashta'daramai",
+            "price": 10000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00007-details.png",
+            "sha256": "c045458867dd2197c8ed99f3a6ffd48a89f03b87ae9abe1bcaae98526a391271"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00007-details.png",
+            "sha256": "c045458867dd2197c8ed99f3a6ffd48a89f03b87ae9abe1bcaae98526a391271"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 10000,
+        "evidence": {
+          "path": "../items-current/cards/00007-details.png",
+          "sha256": "c045458867dd2197c8ed99f3a6ffd48a89f03b87ae9abe1bcaae98526a391271"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 8,
+      "basic_capture_key": "items-basic:7",
+      "name": "brass armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record7",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Avriel",
+            "residence": "Newhaven",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Aurelia",
+            "residence": "Targuna",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hector the Mentor",
+            "residence": "Thais Peninsula",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 150,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 50,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00008-details.png",
+            "sha256": "21f2ee90388750868c104f5a65b442f7839972ec3b84a60d4c46de80c38afa23"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-001.png",
+            "sha256": "43bf6f48059b622d7d7e1f09c9b4cea18c55c0b36594b02a719583af10be62f5"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-002.png",
+            "sha256": "698fa62694dbbde0029be72ebc90fc592fff3e92aff4788faa253c1caffa9d5a"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-003.png",
+            "sha256": "061f062e19084d73c686d716078beecc1b33c018336ab4ec4be839e21766ef76"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-004.png",
+            "sha256": "6ff671d68fb6c7d82e2e16764101d22a09e23d752b76504cff56d155b3ee3640"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-005.png",
+            "sha256": "04614e916f9c6f183be96ff93e742c09f0f697892925cfdc4194bdffc720e4d6"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-006.png",
+            "sha256": "e4872e517db93023265bbf1a6bc9a1b48142836a882059644e606f7e51313a03"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-007.png",
+            "sha256": "65c30d7707199ffd8ccbcbdf7feee905868a3ca724dc90bf586c60d837e6b6d2"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-008.png",
+            "sha256": "7ae68a0472ae767c8a9241ba9360b98721ff3565c1f42bb1e4da7a89bbc469ed"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-009.png",
+            "sha256": "611f9e0161bc2e153e08d5a88f386245c9158e6bea26cd780a64aeca5c8a42bc"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-010.png",
+            "sha256": "b4dea17eb2b16222d9e6db737edf97cece7358e85ea9b8c4f366d8d501de21c5"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-011.png",
+            "sha256": "9d2bb44238632b5ed956577509c00da54a0f1a5de1728b1dfa8e85187b1c326c"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-012.png",
+            "sha256": "ef91c31194e80632f2d20ea9fc6546a104e8902344cf8fa1b73e237c7f59ca85"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-013.png",
+            "sha256": "21503c43c36d112823b3767a68822383ec96b5f5701e835e167fc78ca30206b8"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-014.png",
+            "sha256": "d554394101f93a75fe2737d3f024cfcda6a443697ebcea0d574adaf82207fa28"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-015.png",
+            "sha256": "81c8ef663b715486730e9d25689f65616787003673298e37450bdf238e33c307"
+          },
+          {
+            "path": "../items-current/cards/00008-sell-016.png",
+            "sha256": "36a614a4048654d1af1f3c0ce03ef80d5b59de1dd5e6352e9a5cd859e2a79571"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Raffael",
+            "residence": "Isle of Destiny",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 450,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 450,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00008-details.png",
+            "sha256": "21f2ee90388750868c104f5a65b442f7839972ec3b84a60d4c46de80c38afa23"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-001.png",
+            "sha256": "f1299ddd60b2baf4d203d56ab2fbce69d809223cf9bd64a40cd5d02e31c8529b"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-002.png",
+            "sha256": "1204dc6ae1d454f1ec7dc61636ff87edd9ab2576c077d3d99e97de57b3875ba5"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-003.png",
+            "sha256": "737798ac7fd48e3b72da7a8e67609b013d9d52f8296010aa510086616aa0d243"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-004.png",
+            "sha256": "cd841887ae460d8187e8736bc1d514b040255146101783f88064c4cb6fc3108f"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-005.png",
+            "sha256": "87e44502938e0d707020ac26bac2fbc1da21b6b732f399fc5d1d0d1cd54ead62"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-006.png",
+            "sha256": "c3547400ba5d62869b006848fb7d7aa2a9462af8b970af29c7c31821ef7dc09d"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-007.png",
+            "sha256": "c172cfd0563271f32bf0f177ad1ac665d25078fadddfaa836f46481840ce5051"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-008.png",
+            "sha256": "8a164e4d29cb4eb118bead5003b5b0c0cbbc7f4803b5f34fb89e2c05431ae64b"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-009.png",
+            "sha256": "86f1bd8a5fb4a26f1be1db2d1a4e7cb94dd20f24900590b14057f48f8988ccae"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-010.png",
+            "sha256": "6a9c5d669517cabee7f2013bf426693684dc8d068afe317261ce1c6732bdda9a"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-011.png",
+            "sha256": "f37cb1460e6a04388383da0140e90e1424a802f38d5cb84820dda30081126b8c"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-012.png",
+            "sha256": "4609b2ea3566a9b73b42eceeb83ffabd157fb5156fe3d951906c523e749393bc"
+          },
+          {
+            "path": "../items-current/cards/00008-buy-013.png",
+            "sha256": "b6fb81e96b79ff8bc32e313e769414555ed3c747e64cf64c33f7d907b0e55440"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 150,
+        "evidence": {
+          "path": "../items-current/cards/00008-details.png",
+          "sha256": "21f2ee90388750868c104f5a65b442f7839972ec3b84a60d4c46de80c38afa23"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 9,
+      "basic_capture_key": "items-basic:8",
+      "name": "buckle",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record8",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 7000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00009-details.png",
+            "sha256": "c22cec8b4067b49a9803c8eb7a152371c48273ac1395f584ea0c352fac943f35"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00009-details.png",
+            "sha256": "c22cec8b4067b49a9803c8eb7a152371c48273ac1395f584ea0c352fac943f35"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 7000,
+        "evidence": {
+          "path": "../items-current/cards/00009-details.png",
+          "sha256": "c22cec8b4067b49a9803c8eb7a152371c48273ac1395f584ea0c352fac943f35"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 10,
+      "basic_capture_key": "items-basic:9",
+      "name": "calopteryx cape",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record9",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 15000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00010-details.png",
+            "sha256": "2b5fff0947f614f279913465325a8700b1c574ee066a4dd5b4c379b7d6eadd44"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00010-details.png",
+            "sha256": "2b5fff0947f614f279913465325a8700b1c574ee066a4dd5b4c379b7d6eadd44"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 15000,
+        "evidence": {
+          "path": "../items-current/cards/00010-details.png",
+          "sha256": "2b5fff0947f614f279913465325a8700b1c574ee066a4dd5b4c379b7d6eadd44"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 11,
+      "basic_capture_key": "items-basic:10",
+      "name": "cape",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record10",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00011-details.png",
+            "sha256": "3fefa48de2209a278597012e7462deb92e9996034ef996230f753f97850780b9"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Rudolph",
+            "residence": "Edron Castle",
+            "price": 9,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00011-details.png",
+            "sha256": "3fefa48de2209a278597012e7462deb92e9996034ef996230f753f97850780b9"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00011-details.png",
+          "sha256": "3fefa48de2209a278597012e7462deb92e9996034ef996230f753f97850780b9"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 12,
+      "basic_capture_key": "items-basic:11",
+      "name": "chain armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record11",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 70,
+            "unit": "gp"
+          },
+          {
+            "npc": "Coltrayne",
+            "residence": "Dawnport Centre",
+            "price": 40,
+            "unit": "gp"
+          },
+          {
+            "npc": "Raffael",
+            "residence": "Isle of Destiny",
+            "price": 40,
+            "unit": "gp"
+          },
+          {
+            "npc": "Dixi",
+            "residence": "Rookgaard",
+            "price": 40,
+            "unit": "gp"
+          },
+          {
+            "npc": "Lee'Delle",
+            "residence": "Rookgaard",
+            "price": 40,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 30,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00012-details.png",
+            "sha256": "ad73ee8ca01e28935a39dc4746cef4ea8a67c89164cf6848a83a7a25e0de9875"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-001.png",
+            "sha256": "35ec0ef21724612ea94cc553abf73bc5aa7dcda9601fdabcb3b4361e21dbdae8"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-002.png",
+            "sha256": "c7e9c35af3e46e3897c270f3eb45e17cb70d6b8c9db66342037c1e903e10fb18"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-003.png",
+            "sha256": "e5f96b88ca1c193365448da17651f8f8a5809aa0189fbfdf5f31c4361249f8f2"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-004.png",
+            "sha256": "d5d4338575c0bcb09be1837a48594a56e85a3450f6b61d53d566b0040257613b"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-005.png",
+            "sha256": "80efc81b3289a31601d32f23bbdd858ccc7e1acefc07c13cdffe6659e4f570b0"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-006.png",
+            "sha256": "e0c71a77739f6ae7e3d125770084e416a7fa915b8d7d9b9615671c09562ad907"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-007.png",
+            "sha256": "7bd82f6a00aa39a0a00c3033aa6c7126dd0af99468ce7ef62366b3f500eed316"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-008.png",
+            "sha256": "e01fe28b8662621186120312c613bdd8d5400c0532e47345a73aaed8580d962c"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-009.png",
+            "sha256": "560173e77c75d73e5fe2ba6ea02adc01eef70866ae20a4a1147fd25beb295770"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-010.png",
+            "sha256": "7db8417438ffaca5fb5098a65b165060384d1b55b07e53695fc5851246122dd1"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-011.png",
+            "sha256": "8b2ddcfde1ee1526d5660e95fe651e11161a25dd4032bcd1513f845c6193f9ab"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-012.png",
+            "sha256": "70190012ce09a5bcd249b2dfac78bd0c49fb3e6d9a324deaf572a28edc6f0737"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-013.png",
+            "sha256": "072f8c897999aa533bbbf7b8612aa0e5b0b5359f6013a5038c0c1a6e403311a4"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-014.png",
+            "sha256": "34b7c9a60f8c5b4e94cc620d5487897347f9772e2e3c2949c7c149cfbbf03c12"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-015.png",
+            "sha256": "65b3f3858664d883f9a7c392f096007624f1ef4c7ca2e9dea06ab07f19848923"
+          },
+          {
+            "path": "../items-current/cards/00012-sell-016.png",
+            "sha256": "440c7a1299d847fe0718e9ac71803342c090cae7a048ceb4ed0d58ff3fcedaeb"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Raffael",
+            "residence": "Isle of Destiny",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 200,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 200,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00012-details.png",
+            "sha256": "ad73ee8ca01e28935a39dc4746cef4ea8a67c89164cf6848a83a7a25e0de9875"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-001.png",
+            "sha256": "cbbfd58e708ee6fbf55d2445eb5868717fcbaa82d9d7db4a061dca38a83672e7"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-002.png",
+            "sha256": "9b63afdb0b85a187239c259f48d12203c311eb0866cbbc07c758b9e23a431cd8"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-003.png",
+            "sha256": "60cf38690583c0faa7657ce27333696a2af42c1337e2bfe51bb8dc5e738cbbf7"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-004.png",
+            "sha256": "dc9738d1a9b9470c549d02ca822f22070981fc88fac59b0f9ddd12c1e270502c"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-005.png",
+            "sha256": "f688db288ffe8bdb10e6bd21adab7d9160ccb514f072288c16d6c1718c7d6274"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-006.png",
+            "sha256": "8ae384cca5f5da05a48b9d976dbd26a2d644551c69bddc517cd750df5f89d004"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-007.png",
+            "sha256": "022ade8860e57e542c00e0aefd5d7f6251ccb7e6b96963eee19dab540c7d7aed"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-008.png",
+            "sha256": "dffdf0f506fa50210f0642da020e6d6f1ab5a4c3c3994b06a0187d236b8b5795"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-009.png",
+            "sha256": "bba49dc37849019f33e1af13aae3bd46a096f69992622f34b3094b05810aacdc"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-010.png",
+            "sha256": "0800e5d0195412f6e76d0c76f1145d8e2bd2762e7057bf23ad6080b10827c91f"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-011.png",
+            "sha256": "4e98a1a1c01313e0b802c29855c778a39dee2e16fa070b3cc7acf446d05f43fa"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-012.png",
+            "sha256": "65b4b2d7e7e4b56f1661cc24c72d10c21943be60cb58e59ce0e502e2c2e090ba"
+          },
+          {
+            "path": "../items-current/cards/00012-buy-013.png",
+            "sha256": "3e961c0df5cb409a976b0ccf49a41042a17aa6887fa20188f512c02339b61078"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 70,
+        "evidence": {
+          "path": "../items-current/cards/00012-details.png",
+          "sha256": "ad73ee8ca01e28935a39dc4746cef4ea8a67c89164cf6848a83a7a25e0de9875"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 13,
+      "basic_capture_key": "items-basic:12",
+      "name": "coat",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record12",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 1,
+            "unit": "gp"
+          },
+          {
+            "npc": "Norbert",
+            "residence": "Venore City",
+            "price": 1,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00013-details.png",
+            "sha256": "9bb9053bc7c2f99d69bb23a446284ee4767570656ba8ef0c0e54c3d925951913"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-001.png",
+            "sha256": "65d83deb01e63504045ce7c763b951ee11b1ffe08cb562424a378778d917b047"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-002.png",
+            "sha256": "0db965f34742ab82ed0f4f99370120f20ddcbb35fb9a0fb391305beab6f50c58"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-003.png",
+            "sha256": "68c72ee46fabca037ce0c5e7d0225f6318163c87e6ea85b57ab8718c98c02e22"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-004.png",
+            "sha256": "607d42b01708e4d8e807f0d2bc33f4d1780857cde2a81857e6ee552bc8820083"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-005.png",
+            "sha256": "3327929cced115f77fec104fb4042be391438c94273a1e57610f6db672c0036a"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-006.png",
+            "sha256": "bba56170d1c061763fde60f031edb69cf31d4f3b8b296babfb6d52cd7a4e189c"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-007.png",
+            "sha256": "308f4249846a031bd8039d2f002b5181fef28d3a8d37105cbe570e474adc17fa"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-008.png",
+            "sha256": "2b8220e6648cf94291b4a55bea8815b20a935a0f3a6b3cd39280d076c358d9fb"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-009.png",
+            "sha256": "88b9eb7e4e190f423a2412efb37d567fc40738513316a187ba6123ffe8c3b983"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-010.png",
+            "sha256": "55abfbad8641d6cb896f13721e7f3f03b0f83712780467180f9299dbe9208c25"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-011.png",
+            "sha256": "d6689820657f833ba77ae4593e25685f425d7bad483ded2e6b28cdc196c34f2e"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-012.png",
+            "sha256": "4a92dbe0a10e2aa9f517b6ee16946e5edd2d0940e71c2f9be5812a614b4fa20b"
+          },
+          {
+            "path": "../items-current/cards/00013-sell-013.png",
+            "sha256": "d5333c40ce178faa85f9e20c57a464cb3e29965fc3fc1597b2c730f26e53f7ba"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Coltrayne",
+            "residence": "Dawnport Centre",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Dixi",
+            "residence": "Rookgaard",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Lee'Delle",
+            "residence": "Rookgaard",
+            "price": 7,
+            "unit": "gp"
+          },
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 8,
+            "unit": "gp"
+          },
+          {
+            "npc": "Norbert",
+            "residence": "Venore City",
+            "price": 8,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00013-details.png",
+            "sha256": "9bb9053bc7c2f99d69bb23a446284ee4767570656ba8ef0c0e54c3d925951913"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-001.png",
+            "sha256": "a88e66eca669f06281678ce98b0e23774b3749c8d7e6e1b5bd4579ad00f4b728"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-002.png",
+            "sha256": "6bd7f6c08889968b25056aa46f84eca7d1c14dba76570024eb4b406869299869"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-003.png",
+            "sha256": "8a914ee899bcb440e9df00e011257e312fc6c66297130c34d48a53e1e3cea205"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-004.png",
+            "sha256": "3eaae2c4b93cbe2a9e1c1a24323b5dad72a27a3c736ebb1d6d6f9c2e1d4af57f"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-005.png",
+            "sha256": "c1521b2e8190ca778c6d08f8da0a15dd3ded15c4c88f2598892313c29b7881d0"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-006.png",
+            "sha256": "20d85d834d8cda10da66c2dce758cad07f172e97e56d258bf734836c2814d1dd"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-007.png",
+            "sha256": "260e78b1b081b915e1264b3281d8ad0d3cf417f51e76286269cd7d3b9afe3418"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-008.png",
+            "sha256": "55b4d406abb62b61c036d7765fd0d0938f968495658caa6fa985764740a1fe5c"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-009.png",
+            "sha256": "e2610c87eebddb16b2cb6d1baa83ccb4a95834d2bea8d3c8f685360416ffbd11"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-010.png",
+            "sha256": "6e5e3a617219e9f6041920a638f2a8d3407ebb575605df20a6158ea0d4072271"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-011.png",
+            "sha256": "605761622a1fc20b35efc36672919e2d327aab2135648000459dfe190c7dbc53"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-012.png",
+            "sha256": "ce8b11078c65542d9b6ece974a5f1f9ff58d6b3f3fe59c53e638bf72fe6cb6c7"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-013.png",
+            "sha256": "fe4f3f54f2b3fa3b79c1bc8717bc6ec0078cef9464036aedf9c358f1a352b359"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-014.png",
+            "sha256": "e627bf6f8c1c46079b4ec584f8ef295699879639fdb030f2d6bdbf73b175afb2"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-015.png",
+            "sha256": "c39225c09f1f1a96b2322861cb613caa1919874bdf9fd24cb949359e792935ff"
+          },
+          {
+            "path": "../items-current/cards/00013-buy-016.png",
+            "sha256": "6c0814176a81144a86c501f2c255587f3efc69db6a6fef22e25629b0243d632c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 1,
+        "evidence": {
+          "path": "../items-current/cards/00013-details.png",
+          "sha256": "9bb9053bc7c2f99d69bb23a446284ee4767570656ba8ef0c0e54c3d925951913"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 14,
+      "basic_capture_key": "items-basic:13",
+      "name": "crown armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record13",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Nah'bob",
+            "residence": "Ashta'daramai",
+            "price": 12000,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 210,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00014-details.png",
+            "sha256": "8f6a42c3a77ad59c70381fad8fdd2a86335af6b8fe96e1e5ad82e29a58618d65"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00014-details.png",
+            "sha256": "8f6a42c3a77ad59c70381fad8fdd2a86335af6b8fe96e1e5ad82e29a58618d65"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 12000,
+        "evidence": {
+          "path": "../items-current/cards/00014-details.png",
+          "sha256": "8f6a42c3a77ad59c70381fad8fdd2a86335af6b8fe96e1e5ad82e29a58618d65"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 15,
+      "basic_capture_key": "items-basic:14",
+      "name": "crystalline armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record14",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 16000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00015-details.png",
+            "sha256": "4163ae6e5d287feb48b86cf36341f737039e285f13873994b06088e48533b189"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00015-details.png",
+            "sha256": "4163ae6e5d287feb48b86cf36341f737039e285f13873994b06088e48533b189"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 16000,
+        "evidence": {
+          "path": "../items-current/cards/00015-details.png",
+          "sha256": "4163ae6e5d287feb48b86cf36341f737039e285f13873994b06088e48533b189"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 16,
+      "basic_capture_key": "items-basic:15",
+      "name": "dark armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record15",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Alesar",
+            "residence": "Mal'ouquah",
+            "price": 400,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 130,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00016-details.png",
+            "sha256": "d3a05fa93ef77ab90e50470650fa78ed64d5072417f91f96920af28c2833d30e"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Alesar",
+            "residence": "Mal'ouquah",
+            "price": 1500,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00016-details.png",
+            "sha256": "d3a05fa93ef77ab90e50470650fa78ed64d5072417f91f96920af28c2833d30e"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 400,
+        "evidence": {
+          "path": "../items-current/cards/00016-details.png",
+          "sha256": "d3a05fa93ef77ab90e50470650fa78ed64d5072417f91f96920af28c2833d30e"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 17,
+      "basic_capture_key": "items-basic:16",
+      "name": "dark lord's cape",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record16",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00017-details.png",
+            "sha256": "46146b3f38aa355dfbaa19d0177dd7ed7015503582c3e5c5032ef7806a0bc61c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00017-details.png",
+            "sha256": "46146b3f38aa355dfbaa19d0177dd7ed7015503582c3e5c5032ef7806a0bc61c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00017-details.png",
+          "sha256": "46146b3f38aa355dfbaa19d0177dd7ed7015503582c3e5c5032ef7806a0bc61c"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 18,
+      "basic_capture_key": "items-basic:17",
+      "name": "dauntless dragon scale armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record17",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00018-details.png",
+            "sha256": "2337a713b99f853aa4019c3dd698ac50a5bc14a7aeba9467711022be8fe8fccb"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00018-details.png",
+            "sha256": "2337a713b99f853aa4019c3dd698ac50a5bc14a7aeba9467711022be8fe8fccb"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00018-details.png",
+          "sha256": "2337a713b99f853aa4019c3dd698ac50a5bc14a7aeba9467711022be8fe8fccb"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 19,
+      "basic_capture_key": "items-basic:18",
+      "name": "dawnfire sherwani",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record18",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00019-details.png",
+            "sha256": "24c3dfa4cbceb6f9c47d4d4cfb6224dfddcf1367095b58ff0a60170b50f45607"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00019-details.png",
+            "sha256": "24c3dfa4cbceb6f9c47d4d4cfb6224dfddcf1367095b58ff0a60170b50f45607"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00019-details.png",
+          "sha256": "24c3dfa4cbceb6f9c47d4d4cfb6224dfddcf1367095b58ff0a60170b50f45607"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 20,
+      "basic_capture_key": "items-basic:19",
+      "name": "death oyoroi",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record19",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00020-details.png",
+            "sha256": "48161a4d9e74d69085d575d2b6d90b48778e38f956a2b323fb16e2d5df1e7365"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00020-details.png",
+            "sha256": "48161a4d9e74d69085d575d2b6d90b48778e38f956a2b323fb16e2d5df1e7365"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00020-details.png",
+          "sha256": "48161a4d9e74d69085d575d2b6d90b48778e38f956a2b323fb16e2d5df1e7365"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 21,
+      "basic_capture_key": "items-basic:20",
+      "name": "demon armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record20",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 195,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00021-details.png",
+            "sha256": "fa970a112a99ed0cd7eab574de5c64238ac56999c6c91154f0d63ef3bf9572d3"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00021-details.png",
+            "sha256": "fa970a112a99ed0cd7eab574de5c64238ac56999c6c91154f0d63ef3bf9572d3"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 195,
+        "evidence": {
+          "path": "../items-current/cards/00021-details.png",
+          "sha256": "fa970a112a99ed0cd7eab574de5c64238ac56999c6c91154f0d63ef3bf9572d3"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 22,
+      "basic_capture_key": "items-basic:21",
+      "name": "depth lorica",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record21",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 30000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00022-details.png",
+            "sha256": "1f2df19097cb7267b7305148e5918ecd3e9cd5858c2b08b6ab579e9fb13f2ef1"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00022-details.png",
+            "sha256": "1f2df19097cb7267b7305148e5918ecd3e9cd5858c2b08b6ab579e9fb13f2ef1"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 30000,
+        "evidence": {
+          "path": "../items-current/cards/00022-details.png",
+          "sha256": "1f2df19097cb7267b7305148e5918ecd3e9cd5858c2b08b6ab579e9fb13f2ef1"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 23,
+      "basic_capture_key": "items-basic:22",
+      "name": "divine plate",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record22",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 55000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00023-details.png",
+            "sha256": "44e88ab459b141ae35337c928e6db3f123170cb1f231e6c0ffffab24772cf148"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00023-details.png",
+            "sha256": "44e88ab459b141ae35337c928e6db3f123170cb1f231e6c0ffffab24772cf148"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 55000,
+        "evidence": {
+          "path": "../items-current/cards/00023-details.png",
+          "sha256": "44e88ab459b141ae35337c928e6db3f123170cb1f231e6c0ffffab24772cf148"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 24,
+      "basic_capture_key": "items-basic:23",
+      "name": "doublet",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record23",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hector the Mentor",
+            "residence": "Thais Peninsula",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Coltrayne",
+            "residence": "Dawnport Centre",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Dixi",
+            "residence": "Rookgaard",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Lee'Delle",
+            "residence": "Rookgaard",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "Norbert",
+            "residence": "Venore City",
+            "price": 3,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 1,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00024-details.png",
+            "sha256": "dc1aa0df2225ec68a05700310c5aa2920c5e62acdcec0867ee299cf577e7ee6f"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-001.png",
+            "sha256": "b90a60119cb5344d6ef2649b94299944e8ab099d94d6d06744a6da20ef7527b7"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-002.png",
+            "sha256": "01462785f22edf1cc21109872d8fdb2e863902bb9241b767f610cb54c75fcf74"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-003.png",
+            "sha256": "cdd44bcc6f245e18876337be5dd82e4853889d9cb3eecd0ae40cdf0cb8876354"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-004.png",
+            "sha256": "c7e2992f237ee691b5c4071b7bf819e9db0c4e1e665232a8f0eca3611a15be69"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-005.png",
+            "sha256": "08d62433661d8dc336d748c9951fea3b376c79b44e5a5b633a1e4056cf36ac18"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-006.png",
+            "sha256": "f7065f18d7a786251b6ed8118e58c5ead0469f4b72e1ac7db3052b780be0af25"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-007.png",
+            "sha256": "612d62cc042635ea6f9439408f0905e1191990ad8f018139511d906904d2cf22"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-008.png",
+            "sha256": "7c3e86007b7bf4ef57840415d4dbd84edf5e898bbab94d3c465f12368f670749"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-009.png",
+            "sha256": "c7af4665aff2d0ba0b4e013a1c1b6684b374b66d347874ca169f715eec188bc5"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-010.png",
+            "sha256": "dfc5956a2cf406faf17f330b0dedac7d078e49ec24ff2e55077c641d76a73875"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-011.png",
+            "sha256": "b1306a69dda67b6c050e01d4be28e723a217007c46ae17eb963143fbe744bd4b"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-012.png",
+            "sha256": "b2ec04dce5c2fc338971ca5f14cb536a10ff568f12bfe5b13df6f1cdb08d4e63"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-013.png",
+            "sha256": "2cdce664caaf240cabd092ecdfa6cd32f5bf31c811dcd7c78ad5539c5150453e"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-014.png",
+            "sha256": "898ab4afa46fbead5d91df033f1cef3df73b5a430ebd08bdab68475a31016530"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-015.png",
+            "sha256": "885413e39c65b13e8be0824c1c74d46520b6f4ee325a03d72d87377421040189"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-016.png",
+            "sha256": "9d8b641da77ae58b99365e39ee047237a9f934a31219ea9d9eaf5fff5d76fb19"
+          },
+          {
+            "path": "../items-current/cards/00024-sell-017.png",
+            "sha256": "eab3db0e72bd5a923503f51773ab6e35b1864cb3eefb4711bf2b54cd06f2b162"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Shanar",
+            "residence": "Ab'Dendriel City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Memech",
+            "residence": "Ankrahmun City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Wes the Blacksmith",
+            "residence": "Bounac",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cornelia",
+            "residence": "Carlin City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Azil",
+            "residence": "Darashia City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Willard",
+            "residence": "Edron Castle",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Esrik",
+            "residence": "Farmine City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Rock in a Hard Place",
+            "residence": "Gray Beach",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Ulrik",
+            "residence": "Greenshore",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Kroox",
+            "residence": "Kazordoon City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Cedrik",
+            "residence": "Liberty Bay City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Brengus",
+            "residence": "Port Hope City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Flint",
+            "residence": "Rathleton City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hireling",
+            "residence": "Secret Subarea",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Robert",
+            "residence": "Svargrond City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Sam",
+            "residence": "Thais City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Turvy",
+            "residence": "Thais City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Hardek",
+            "residence": "Thais Surroundings",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Baltim",
+            "residence": "Tyrsung",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Yanni",
+            "residence": "Venore City",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Morpel",
+            "residence": "Yalahar Centre",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Coltrayne",
+            "residence": "Dawnport Centre",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Dixi",
+            "residence": "Rookgaard",
+            "price": 16,
+            "unit": "gp"
+          },
+          {
+            "npc": "Lee'Delle",
+            "residence": "Rookgaard",
+            "price": 14,
+            "unit": "gp"
+          },
+          {
+            "npc": "Norbert",
+            "residence": "Venore City",
+            "price": 16,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00024-details.png",
+            "sha256": "dc1aa0df2225ec68a05700310c5aa2920c5e62acdcec0867ee299cf577e7ee6f"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-001.png",
+            "sha256": "54495a6039df3568052a41635e67fc1950bbbd607426dc59b54d852d507ddb92"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-002.png",
+            "sha256": "176ec3f3da3115cb33e794f57184034c0e1a14b6711aed17ee40b1ec06b37f37"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-003.png",
+            "sha256": "b0008f5931da15d844312ad8775c350b4c2ee8e87d2d668ba9cfcc1463adcd1d"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-004.png",
+            "sha256": "9af55ac6a9d5800d7e5765a02f9bec88aeab96fd066f21b057d3e4668ff6ab90"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-005.png",
+            "sha256": "4e4e01cfd0ed5509e4852005300ba969638b67137cf2ce04a4a20ec8516d7a2d"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-006.png",
+            "sha256": "7b378e2b6eab8a8702a3cd6043dacfe3a76e941c2e9b9312cfe3bc6749afdcd6"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-007.png",
+            "sha256": "a30d12d0453e9f6455704afa9e2e6c206ace0b2960b68ecb08872f45535a05d6"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-008.png",
+            "sha256": "e8b91d42f9863088c4cb17a42f82089e355a0cef5480f586b72c993c2cfc465a"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-009.png",
+            "sha256": "d494a1f1f2f7d4bdf29b0d96d73ec29d2a3311f91f1c88023a07a1b348e3ed99"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-010.png",
+            "sha256": "38f97e0f0b80f56169b571e7fd7de8fe90cc1fec7c42bfafc05eb79a2a6fb09f"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-011.png",
+            "sha256": "ba67b1eb8a3aa452ea45894d464cb45128238e2ed4fabd0262ac7e1a49d90942"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-012.png",
+            "sha256": "39159137678f957410e875cd9ff05bf0726bc622ac46ad2ef4c0f34fa86d5215"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-013.png",
+            "sha256": "582181c54e476185f77b0c17a19f8f053b2c4fe503d6cfa3351c8f57cbac10e3"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-014.png",
+            "sha256": "9e918ba58b50ec52ee4ac63225a55b5ebc55439f6e4a3fddfdfe4d9865ead543"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-015.png",
+            "sha256": "ec4d2d56ca262fabfeb7397bf62b428b8f467ce6e15e86e499d20799252aa229"
+          },
+          {
+            "path": "../items-current/cards/00024-buy-016.png",
+            "sha256": "1e7af13c8c07dfa6833defc827cee2800c0626160c891b33e55a932d1352244c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 3,
+        "evidence": {
+          "path": "../items-current/cards/00024-details.png",
+          "sha256": "dc1aa0df2225ec68a05700310c5aa2920c5e62acdcec0867ee299cf577e7ee6f"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 25,
+      "basic_capture_key": "items-basic:25",
+      "name": "dragon robe",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record24",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Gnomission",
+            "residence": "Gnomegate",
+            "price": 50000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00025-details.png",
+            "sha256": "6754fd3184e555128ccfd2d5fe83e9c78642d893e7ae386d0bb96281e5ed3083"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00025-details.png",
+            "sha256": "6754fd3184e555128ccfd2d5fe83e9c78642d893e7ae386d0bb96281e5ed3083"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 50000,
+        "evidence": {
+          "path": "../items-current/cards/00025-details.png",
+          "sha256": "6754fd3184e555128ccfd2d5fe83e9c78642d893e7ae386d0bb96281e5ed3083"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 26,
+      "basic_capture_key": "items-basic:26",
+      "name": "dragon scale mail",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record25",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 40000,
+            "unit": "gp"
+          },
+          {
+            "npc": "H.L.",
+            "residence": "Outlaw Camp",
+            "price": 280,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00026-details.png",
+            "sha256": "4cbb62b62b4b03e1909360050eed644077dea7604dbb00f2cbe4045cf67ac8ae"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00026-details.png",
+            "sha256": "4cbb62b62b4b03e1909360050eed644077dea7604dbb00f2cbe4045cf67ac8ae"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 40000,
+        "evidence": {
+          "path": "../items-current/cards/00026-details.png",
+          "sha256": "4cbb62b62b4b03e1909360050eed644077dea7604dbb00f2cbe4045cf67ac8ae"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 27,
+      "basic_capture_key": "items-basic:27",
+      "name": "dream shroud",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record26",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00027-details.png",
+            "sha256": "25f79d288f5aa713a0b5e33d632e1d483e23b0b69c48d0363be82f4f32b6146a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00027-details.png",
+            "sha256": "25f79d288f5aa713a0b5e33d632e1d483e23b0b69c48d0363be82f4f32b6146a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00027-details.png",
+          "sha256": "25f79d288f5aa713a0b5e33d632e1d483e23b0b69c48d0363be82f4f32b6146a"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 28,
+      "basic_capture_key": "items-basic:28",
+      "name": "dwarven armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record27",
+      "sell_to": {
+        "status": "visible_entries_manually_read",
+        "direction": "NPC buys from player",
+        "entries": [
+          {
+            "npc": "Rashid",
+            "residence": "Various Locations",
+            "price": 30000,
+            "unit": "gp"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00028-details.png",
+            "sha256": "8b4da6de247cadb23c89c2137bd80555c0edd23697f9181d00d65b04d2ce2731"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00028-details.png",
+            "sha256": "8b4da6de247cadb23c89c2137bd80555c0edd23697f9181d00d65b04d2ce2731"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 30000,
+        "evidence": {
+          "path": "../items-current/cards/00028-details.png",
+          "sha256": "8b4da6de247cadb23c89c2137bd80555c0edd23697f9181d00d65b04d2ce2731"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 29,
+      "basic_capture_key": "items-basic:29",
+      "name": "earthborn titan armor",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record28",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00029-details.png",
+            "sha256": "e6e949ee7fb032155d201bb345476dbec1e56975e444980cbf22e1ad4f7ea7d2"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "player buys from NPC",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00029-details.png",
+            "sha256": "e6e949ee7fb032155d201bb345476dbec1e56975e444980cbf22e1ad4f7ea7d2"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or a verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00029-details.png",
+          "sha256": "e6e949ee7fb032155d201bb345476dbec1e56975e444980cbf22e1ad4f7ea7d2"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 30,
+      "basic_capture_key": "items-basic:30",
+      "name": "earthheart cuirass",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record29",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00030-details.png",
+            "sha256": "dcf286542d88949e7a8a3ffcfc991cead4a9d61c77320d25d1f5f118d0d5a9d2"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Gledwyn",
+            "residence": "Adventurers' Guild",
+            "price": 100,
+            "unit": "Silver Token",
+            "currency_kind": "item_token",
+            "raw_offer": "100 x Silver Token, Gledwyn"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00030-details.png",
+            "sha256": "dcf286542d88949e7a8a3ffcfc991cead4a9d61c77320d25d1f5f118d0d5a9d2"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00030-details.png",
+          "sha256": "dcf286542d88949e7a8a3ffcfc991cead4a9d61c77320d25d1f5f118d0d5a9d2"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 31,
+      "basic_capture_key": "items-basic:31",
+      "name": "earthheart hauberk",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record30",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00031-details.png",
+            "sha256": "86b44e642496ededd3268e2f9529ea5f5c6f13412845fee0fd7ded150e4ef58c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Gledwyn",
+            "residence": "Adventurers' Guild",
+            "price": 100,
+            "unit": "Silver Token",
+            "currency_kind": "item_token",
+            "raw_offer": "100 x Silver Token, Gledwyn"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00031-details.png",
+            "sha256": "86b44e642496ededd3268e2f9529ea5f5c6f13412845fee0fd7ded150e4ef58c"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00031-details.png",
+          "sha256": "86b44e642496ededd3268e2f9529ea5f5c6f13412845fee0fd7ded150e4ef58c"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 32,
+      "basic_capture_key": "items-basic:32",
+      "name": "earthheart platemail",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record31",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00032-details.png",
+            "sha256": "f248e4a918fef351364f825a381eca38c8f46a077857651a11857d8d9ed13d7a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Gledwyn",
+            "residence": "Adventurers' Guild",
+            "price": 100,
+            "unit": "Silver Token",
+            "currency_kind": "item_token",
+            "raw_offer": "100 x Silver Token, Gledwyn"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00032-details.png",
+            "sha256": "f248e4a918fef351364f825a381eca38c8f46a077857651a11857d8d9ed13d7a"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00032-details.png",
+          "sha256": "f248e4a918fef351364f825a381eca38c8f46a077857651a11857d8d9ed13d7a"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    },
+    {
+      "full_current_capture_id": 33,
+      "basic_capture_key": "items-basic:33",
+      "name": "earthmind raiment",
+      "category": "Armors",
+      "Basic_values_reference": "3173:legacy-armors-amulets.json input0 record32",
+      "sell_to": {
+        "status": "no_entries_displayed_in_captured_pane",
+        "direction": "NPC buys from player",
+        "entries": [],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00033-details.png",
+            "sha256": "dd8b97991b0ff81fd253132618deecaf15cb09bffa409c550124ec48cdd85a71"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "buy_from": {
+        "status": "visible_entries_manually_read",
+        "direction": "player buys from NPC",
+        "entries": [
+          {
+            "npc": "Gledwyn",
+            "residence": "Adventurers' Guild",
+            "price": 100,
+            "unit": "Silver Token",
+            "currency_kind": "item_token",
+            "raw_offer": "100 x Silver Token, Gledwyn"
+          }
+        ],
+        "evidence": [
+          {
+            "path": "../items-current/cards/00033-details.png",
+            "sha256": "dd8b97991b0ff81fd253132618deecaf15cb09bffa409c550124ec48cdd85a71"
+          }
+        ],
+        "scroll_end_collector_asserted": true
+      },
+      "market_session_snapshot": {
+        "average_market_price_displayed": 0,
+        "unit": "gp",
+        "meaning": "Visible session state only; not intrinsic value or verified world market quote.",
+        "prefer_own_loot_value": "Type to set",
+        "resulting_value_displayed": 0,
+        "evidence": {
+          "path": "../items-current/cards/00033-details.png",
+          "sha256": "dd8b97991b0ff81fd253132618deecaf15cb09bffa409c550124ec48cdd85a71"
+        }
+      },
+      "name_icon_Basic_NPC_proofs_verified": true,
+      "icon_file_frames": 1,
+      "icon_recording_metadata_only": "Temporal full cycle is not qualified; observed static icon reference exists.",
+      "canonical_or_serverID_binding_needed_for_collection_complete": false
+    }
+  ],
+  "NPC_quote_rows": 218,
+  "empty_observed_NPC_panels": 37,
+  "scope": "Client Cyclopedia data on these33 scoped cards, not global vendor/runtime parity. Original PNGs and literal Description narratives are not published."
+}

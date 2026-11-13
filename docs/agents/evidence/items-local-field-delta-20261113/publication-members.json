@@ -52,6 +52,31 @@
       "sha256": "0dc4fe60d4d1d2133284011640f8af4995a09add7ba28117f80d8b102c921333"
     },
     {
+      "file": "night-all-open-PR-inventory.json",
+      "bytes": 535647,
+      "sha256": "813e40847212ff85fffc0dd6ddd3ea35d40846091be5db8c3ea1664b23de53b3"
+    },
+    {
+      "file": "night-all-visible-items.json",
+      "bytes": 1694730,
+      "sha256": "ca43e634aac95005b30231d4576779471307b0fd6aaa332182a568d2fc92abae"
+    },
+    {
+      "file": "night-all-visible-summary.json",
+      "bytes": 5135,
+      "sha256": "b3a268b19c7d85a38d315ed708c04bf92030c0b1da94b0a7d0ec7d2a310bc46c"
+    },
+    {
+      "file": "night-Armors33-visible-data.json",
+      "bytes": 114213,
+      "sha256": "488a808435081c1f6612839ab7e12b4273b4ff11c8188030c0157c42430bbec5"
+    },
+    {
+      "file": "night-collection-inventory.json",
+      "bytes": 100625,
+      "sha256": "9f051f0fc7502d2c1490861bae3062d1daec7e656bcbb9d42cf3d2fad5b2ff93"
+    },
+    {
       "file": "physical-card-completeness.json",
       "bytes": 137505,
       "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"

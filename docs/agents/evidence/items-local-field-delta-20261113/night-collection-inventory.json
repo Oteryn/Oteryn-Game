@@ -1,0 +1,2228 @@
+{
+  "classification": "DERIVED",
+  "known_Windows_roots": [
+    {
+      "root": "outputs\\items-current",
+      "exists": true,
+      "files": 387,
+      "suffix_counts": {
+        ".png": 352,
+        ".json": 35
+      },
+      "bytes": 41171727,
+      "manifest_candidates": [
+        "capture-index.json",
+        "cards\\00001-icon-animation.json",
+        "cards\\00001-icon-animation.png",
+        "cards\\00002-icon-animation.json",
+        "cards\\00002-icon-animation.png",
+        "cards\\00003-icon-animation.json",
+        "cards\\00003-icon-animation.png",
+        "cards\\00004-icon-animation.json",
+        "cards\\00004-icon-animation.png",
+        "cards\\00005-icon-animation.json",
+        "cards\\00005-icon-animation.png",
+        "cards\\00006-icon-animation.json",
+        "cards\\00006-icon-animation.png",
+        "cards\\00007-icon-animation.json",
+        "cards\\00007-icon-animation.png",
+        "cards\\00008-icon-animation.json",
+        "cards\\00008-icon-animation.png",
+        "cards\\00009-icon-animation.json",
+        "cards\\00009-icon-animation.png",
+        "cards\\00010-icon-animation.json",
+        "cards\\00010-icon-animation.png",
+        "cards\\00011-icon-animation.json",
+        "cards\\00011-icon-animation.png",
+        "cards\\00012-icon-animation.json",
+        "cards\\00012-icon-animation.png",
+        "cards\\00013-icon-animation.json",
+        "cards\\00013-icon-animation.png",
+        "cards\\00014-icon-animation.json",
+        "cards\\00014-icon-animation.png",
+        "cards\\00015-icon-animation.json",
+        "cards\\00015-icon-animation.png",
+        "cards\\00016-icon-animation.json",
+        "cards\\00016-icon-animation.png",
+        "cards\\00017-icon-animation.json",
+        "cards\\00017-icon-animation.png",
+        "cards\\00018-icon-animation.json",
+        "cards\\00018-icon-animation.png",
+        "cards\\00019-icon-animation.json",
+        "cards\\00019-icon-animation.png",
+        "cards\\00020-icon-animation.json",
+        "cards\\00020-icon-animation.png",
+        "cards\\00021-icon-animation.json",
+        "cards\\00021-icon-animation.png",
+        "cards\\00022-icon-animation.json",
+        "cards\\00022-icon-animation.png",
+        "cards\\00023-icon-animation.json",
+        "cards\\00023-icon-animation.png",
+        "cards\\00024-icon-animation.json",
+        "cards\\00024-icon-animation.png",
+        "cards\\00025-icon-animation.json",
+        "cards\\00025-icon-animation.png",
+        "cards\\00026-icon-animation.json",
+        "cards\\00026-icon-animation.png",
+        "cards\\00027-icon-animation.json",
+        "cards\\00027-icon-animation.png",
+        "cards\\00028-icon-animation.json",
+        "cards\\00028-icon-animation.png",
+        "cards\\00029-icon-animation.json",
+        "cards\\00029-icon-animation.png",
+        "cards\\00030-icon-animation.json",
+        "cards\\00030-icon-animation.png",
+        "cards\\00031-icon-animation.json",
+        "cards\\00031-icon-animation.png",
+        "cards\\00032-icon-animation.json",
+        "cards\\00032-icon-animation.png",
+        "cards\\00033-icon-animation.json",
+        "cards\\00033-icon-animation.png"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-current\\capture-index.json",
+          "bytes": 37889,
+          "sha256": "bd8e1ad541b53b233873776f4b613df516ceb41f309e608777f486ac5b76ad20"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00001-icon-animation.json",
+          "bytes": 2237,
+          "sha256": "de7feea877d5b09caef8de7aafc660c89862fc807de3b1c8ac407bdef7e2c3cb"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00002-icon-animation.json",
+          "bytes": 2247,
+          "sha256": "334f081d82528af8e5f87fd9ea7c597281a51e51bccd19bc00b25dd6e2d6f2ef"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00003-icon-animation.json",
+          "bytes": 2327,
+          "sha256": "08dafa70629ed016c733616aea0a03dab6f25f1e3820824b6ba072d5abbadb3d"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00004-icon-animation.json",
+          "bytes": 2284,
+          "sha256": "bd17134a34898f5f392dcf54fe3af1287c7b1e79a9daceddad9f2fce7ba72e7b"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00005-icon-animation.json",
+          "bytes": 2219,
+          "sha256": "431e7db1df01dacdd6a411effe75202e32ae77eee11ad1e7b6c0a8643c89e32d"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00006-icon-animation.json",
+          "bytes": 2337,
+          "sha256": "99f6513dcea5d7f23613011a5d99f448ea4fa58505c4e43e2aea338c12994965"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00007-icon-animation.json",
+          "bytes": 2282,
+          "sha256": "a0b3eea184b6715f74e70e82381c2c6c82b48e25fe3373049202ad741453ec7e"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00008-icon-animation.json",
+          "bytes": 2268,
+          "sha256": "fb9af3c8d25dc79b6126fc38c1a55c3de5364639296f2b2101714185660280d0"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00009-icon-animation.json",
+          "bytes": 2373,
+          "sha256": "ed7b70ce3ab6ffa45eae494c3e4c628b157d3da9cc13e44eaaab00872cd68f73"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00010-icon-animation.json",
+          "bytes": 2253,
+          "sha256": "f286e03f4ef9c0b885194250c9c51a0f111fc1859b914f42f4377bc14e50890e"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00011-icon-animation.json",
+          "bytes": 2302,
+          "sha256": "f2b16b5ab32e32cf344c82f9db69564ee9cb55154927330e8d47df5c61c08be3"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00012-icon-animation.json",
+          "bytes": 2282,
+          "sha256": "4b04c6edd5d78b17abe6a5b506b58a9e71149e83f2cd3e34103463609e3d4879"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00013-icon-animation.json",
+          "bytes": 2324,
+          "sha256": "f006513b04fdb7b39ea6dcc0f3a9ce0912f19f9177509b570c5ad0077e2b4e0a"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00014-icon-animation.json",
+          "bytes": 2292,
+          "sha256": "6b4fcc2afd018e18f52dd433972ddb1c320a7e3c668d2e8753b6cccceb32b05b"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00015-icon-animation.json",
+          "bytes": 2353,
+          "sha256": "240e32e2ec146cf0723b89d84efc0e93392b7ff09730a48dbfe990a4b6647b65"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00016-icon-animation.json",
+          "bytes": 2334,
+          "sha256": "f6b3e7fab41c41e933456f16ef7bfc62210eb4c2a901b42886b40454776a16be"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00017-icon-animation.json",
+          "bytes": 2323,
+          "sha256": "726d23c700016341b047d4d94f04345fad8df6c620ab8c2c05e6b954297e3c2b"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00018-icon-animation.json",
+          "bytes": 2283,
+          "sha256": "522e921311e579cf0d2cde5d0e18abbf261efc120764105bf503f93bb3dcd343"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00019-icon-animation.json",
+          "bytes": 2340,
+          "sha256": "4e5b5449333e33ab452b4bec5594f8bd48f5a136e342967a5435c1619e099341"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00020-icon-animation.json",
+          "bytes": 2372,
+          "sha256": "29ab32a06a1f5be80bb5e5f3f57f9e8db9c7971255e7a878218143acf94e1478"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00021-icon-animation.json",
+          "bytes": 2243,
+          "sha256": "d27df543e5a4499effd457fc67542d41f4358b3a0b0107051bb923dd549e857f"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00022-icon-animation.json",
+          "bytes": 2372,
+          "sha256": "6585b5100ae44670a0696df5693dd7da4ad8f30a2427ae727aa4cc282275a3f5"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00023-icon-animation.json",
+          "bytes": 2269,
+          "sha256": "37aea7ab982fd775f559da449869aad2ad6c2964e9b9b4fda5ee495ad3d1c844"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00024-icon-animation.json",
+          "bytes": 2356,
+          "sha256": "a13c7a5283a5c0d664542495981f39060031053a30d8680477e4c0030424665d"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00025-icon-animation.json",
+          "bytes": 2325,
+          "sha256": "c141051fd59cc2913dbc12e352d0ddff97734d49092045536ceef90672946fb4"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00026-icon-animation.json",
+          "bytes": 2276,
+          "sha256": "1700bec68aba87805b2003ab0e8335f363662160154657f102f294ffe49aae5c"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00027-icon-animation.json",
+          "bytes": 2273,
+          "sha256": "3882396f876de50f339aadc497e32c164f90ea79f044fef324d505007807ff64"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00028-icon-animation.json",
+          "bytes": 2288,
+          "sha256": "caacf88b62e97026aabc3844e7246a02b08852a3a877a301add960e2bc8305d0"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00029-icon-animation.json",
+          "bytes": 2319,
+          "sha256": "ce362e653d09e2dcd62be05e5efa2a72580d533bca3e34cd2095c265cb566015"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00030-icon-animation.json",
+          "bytes": 2325,
+          "sha256": "15cab142c7242c7bd0248f9d98406b9e9da5b6a3638063d1338b51f0d53fae83"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00031-icon-animation.json",
+          "bytes": 2333,
+          "sha256": "5c68409fa30346593118947918bb00f34e06882d4a092cfdb1e12cb40eae0a58"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00032-icon-animation.json",
+          "bytes": 2340,
+          "sha256": "020b9507c2b44188fb54448568189c05c4d3967158fcaa08b844d4676f4021f1"
+        },
+        {
+          "relative_path": "outputs\\items-current\\cards\\00033-icon-animation.json",
+          "bytes": 2308,
+          "sha256": "427a7cfb9d954564c638226416425f225e667c45af375c1ac468a3c060a88398"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-basic",
+      "exists": true,
+      "files": 1407,
+      "suffix_counts": {
+        ".png": 1405,
+        ".json": 2
+      },
+      "bytes": 177378380,
+      "manifest_candidates": [
+        "armors-completion.json",
+        "capture-index.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-basic\\armors-completion.json",
+          "bytes": 73,
+          "sha256": "1a8f9530775fb836dcc05e27776f4dbae26be4e6f10e86d9653395d967b368e8"
+        },
+        {
+          "relative_path": "outputs\\items-basic\\capture-index.json",
+          "bytes": 143763,
+          "sha256": "7afe39671100df273ae8631d144ed20630add0ce3486107df788bf1510257f4f"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-basic-amulets",
+      "exists": true,
+      "files": 762,
+      "suffix_counts": {
+        ".png": 759,
+        ".json": 3
+      },
+      "bytes": 96422030,
+      "manifest_candidates": [
+        "capture-index.json",
+        "category-completion.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-basic-amulets\\capture-index.json",
+          "bytes": 74046,
+          "sha256": "ed569483d9eade0c7bdaf8ded249e99c6ed617922c19a3c043fa8fb5ebe91685"
+        },
+        {
+          "relative_path": "outputs\\items-basic-amulets\\category-completion.json",
+          "bytes": 72,
+          "sha256": "14cfa04c099cbd80fef93f33773979dab6551b12a0f3cca258d731b1cc7384f4"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-basic-boots",
+      "exists": true,
+      "files": 338,
+      "suffix_counts": {
+        ".png": 336,
+        ".json": 2
+      },
+      "bytes": 41256387,
+      "manifest_candidates": [
+        "capture-index.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-basic-boots\\capture-index.json",
+          "bytes": 38619,
+          "sha256": "aa1953b3485f86331f26b9deb0afaf4cd66cd5ffc412ec71907353b8b89b61ae"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-sequence-boots",
+      "exists": true,
+      "files": 511,
+      "suffix_counts": {
+        ".json": 3,
+        ".png": 508
+      },
+      "bytes": 60974401,
+      "manifest_candidates": [
+        "capture-index.json",
+        "category-completion.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-sequence-boots\\capture-index.json",
+          "bytes": 81588,
+          "sha256": "dbd77dac9becb75c6beb8ad0a169db1d4e518d779eda0354f1fb3d4ee8c6d9a5"
+        },
+        {
+          "relative_path": "outputs\\items-sequence-boots\\category-completion.json",
+          "bytes": 375,
+          "sha256": "40474ff64494fa08189604b055f5b6d1be4ae26cdd40d6377767bece5780631a"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-sequence-containers",
+      "exists": true,
+      "files": 728,
+      "suffix_counts": {
+        ".json": 2,
+        ".png": 726
+      },
+      "bytes": 81252493,
+      "manifest_candidates": [
+        "capture-index.json",
+        "category-completion.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-sequence-containers\\capture-index.json",
+          "bytes": 126348,
+          "sha256": "c09127d791858b7f605349e7479694191c28bc3b7263c36aff813c6765c71894"
+        },
+        {
+          "relative_path": "outputs\\items-sequence-containers\\category-completion.json",
+          "bytes": 558,
+          "sha256": "15ffa986b642d6b9da5a48be4a30b9f70f87de01b2b1be8d736f751449e18fd7"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-sequence-creature-products",
+      "exists": true,
+      "files": 94,
+      "suffix_counts": {
+        ".json": 1,
+        ".png": 93
+      },
+      "bytes": 9460034,
+      "manifest_candidates": [
+        "capture-index.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-sequence-creature-products\\capture-index.json",
+          "bytes": 18694,
+          "sha256": "b637a51a99831519024e4f04f0aa7d034758e7ebd0480bb8a8b26d4f519bbbd5"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-evidence-extraction",
+      "exists": true,
+      "files": 29,
+      "suffix_counts": {
+        ".html": 10,
+        ".json": 19
+      },
+      "bytes": 2475963,
+      "manifest_candidates": [],
+      "metadata_receipts": [],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-comparison-takeover-20261113",
+      "exists": true,
+      "files": 13,
+      "suffix_counts": {
+        ".json": 8,
+        ".py": 3,
+        ".md": 2
+      },
+      "bytes": 7379968,
+      "manifest_candidates": [
+        "helmets-freeze-receipt-v2.json",
+        "helmets-freeze-receipt.json",
+        "source-pin-receipts.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-comparison-takeover-20261113\\helmets-freeze-receipt-v2.json",
+          "bytes": 1733,
+          "sha256": "504c39891fd80bbff4288c39ebcdb7047892a38455dc5fef88862b1f43a62643"
+        },
+        {
+          "relative_path": "outputs\\items-comparison-takeover-20261113\\helmets-freeze-receipt.json",
+          "bytes": 888,
+          "sha256": "69011295965d7cc97e6b25d28eb77cd882a7858d072010b5128a369d87af8bde"
+        },
+        {
+          "relative_path": "outputs\\items-comparison-takeover-20261113\\source-pin-receipts.json",
+          "bytes": 9174,
+          "sha256": "87114da272ea2f7271c57606c6d94a7f86a6efa3693a378d668872c18fd3974e"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-others-comparison-takeover-20261113",
+      "exists": true,
+      "files": 123,
+      "suffix_counts": {
+        ".json": 101,
+        ".py": 14,
+        ".md": 8
+      },
+      "bytes": 20579188,
+      "manifest_candidates": [
+        "native-difference-reread-receipts.json",
+        "range-1-580\\literal-fidelity-receipt.json"
+      ],
+      "metadata_receipts": [
+        {
+          "relative_path": "outputs\\items-others-comparison-takeover-20261113\\native-difference-reread-receipts.json",
+          "bytes": 1003,
+          "sha256": "3973f4fc69a8e24fc5de5478c8ffa4b46f6deefe52615794bda66454ba1738e3"
+        },
+        {
+          "relative_path": "outputs\\items-others-comparison-takeover-20261113\\range-1-580\\literal-fidelity-receipt.json",
+          "bytes": 4478,
+          "sha256": "d63e26abadc96757a64f25c2c4caf40b765d081556b4318a6132de3a84dbb585"
+        }
+      ],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    },
+    {
+      "root": "outputs\\items-potions-comparison-takeover-20261113",
+      "exists": true,
+      "files": 7,
+      "suffix_counts": {
+        ".json": 5,
+        ".py": 1,
+        ".md": 1
+      },
+      "bytes": 237507,
+      "manifest_candidates": [],
+      "metadata_receipts": [],
+      "relationship": "Primary scoped index, normalized review or duplicate evidence; see proven_merge_rules.",
+      "private_media_not_published": true
+    }
+  ],
+  "Windows_metadata_archive": {
+    "path": "outputs\\cloud-local-reconciliation-20261113T094007Z\\local-analysis-metadata-private.zip",
+    "sha256": "ffee79b549f2880f00a1355209d277f4959a93a6254e2d332d194f9b7149c443",
+    "members": 531,
+    "present_byte_identical_in_workspace": 531,
+    "archive_only_or_changed": 0
+  },
+  "Cloud_source_receipts": [
+    {
+      "private_source": "outputs/items-bulk-comparison-assets-first-20261113/creature-products-single-qualified-union-private.json",
+      "records": 980,
+      "sha256": "ffa049f8e6fc0efa93ebc75d9c3def9d7d0c7f0eaaeaf491fb3743934d269c7f",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-cloud-20261113/decoration-basic-1-462-combined-private.json",
+      "records": 462,
+      "sha256": "1b2581b2b7d727c68ab9a69c03d0d04f7138d2af78fd98479f9630fd8e19b18c",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-cloud-20261113/food-basic-1-169-combined-private.json",
+      "records": 169,
+      "sha256": "64f29437dbbac3c95f9e22b6137c066ba27bb567f920b9453e224726bfc902c6",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-cloud-20261113/gold-basic-1-3-reviewed-private.json",
+      "records": 3,
+      "sha256": "c735fe9b3d4e73b0e10e653dc1d97b50ea85b2667ea635792260f6e4373035a5",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-cloud-20261113/helmets-hats-union-1-128-corrected-private.json",
+      "records": 128,
+      "sha256": "4e0ebece746ce49d91908a13af83087306f179073d8c11fb12b93bc2698eded2",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-takeover-20261113/legs-union-1-66-end-observed-private.json",
+      "records": 66,
+      "sha256": "94b060dab5ef0836264eb8a45855926d54e6ac6abe3ed9e5f059aeb6fc6f2996",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-takeover-20261113/others-union-1-603-six-corrections-consumer-qualified-private.json",
+      "records": 603,
+      "sha256": "a02873b108a8d2ede7964e50da19e83b50183d487e1f0a9ffed3adc24392e742",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-reader-takeover-20261113/potions-union-1-36-cutoff-qualified-partial-private.json",
+      "records": 36,
+      "sha256": "febcc88c3179a275410f3c9a0c84745eeea853a8dc71b828b35b1855bfd30c4a",
+      "Windows_original_exists": false,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-evidence-extraction/boots-sequence-reviewed.json",
+      "records": 67,
+      "sha256": "94b4101b14bda719c6d8e7e33d33513c02dc920887a3f11c4efb87f8a5ca410c",
+      "Windows_original_exists": true,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    },
+    {
+      "private_source": "outputs/items-evidence-extraction/containers-sequence-reviewed.json",
+      "records": 109,
+      "sha256": "04d0af1dc1e15d79fa01edb3f41f9d52dabec5297bc4f068f517ebeeebd74d7e",
+      "Windows_original_exists": true,
+      "published_normalized_copy": "3173:ui2623-observations.json",
+      "source_host": "mole-IdeaPad Ubuntu; freshly offline7h, original private PNG directories not re-read"
+    }
+  ],
+  "old_Ubuntu_originals": {
+    "device": "mole-IdeaPad-Gaming-3-15IHU6",
+    "device_id": "a7037f94-ac2b-43f4-bb22-d173061b6583",
+    "status": "OFFLINE freshly queried; last_seen7h",
+    "known_original_root": "/home/mole/Documents/codex-evidence/2026-11-12/handoff/outputs",
+    "backup": "reconciliation-preservation-20261113T094342Z/private-metadata-and-handoff.zip,572files, SHA458109d6243fd6fb766d79bc1f7d5faf1a32559fc59860225c56ee3d950e190e",
+    "availability": "Remote original unavailable; no GUI/relogin/access bypass attempted. Windows531 metadata backup available, not a claim all572 files copied."
+  },
+  "old_Cloud_chat_readback": "No local readable Codex thread match for6af64c41-7780-8191-a9ba-a64934ef304a; no inference about Cloud work state.",
+  "Armors33_reference_hash_checks": {
+    "unique_referenced_files": 402,
+    "failures": [],
+    "receipts": {
+      "outputs\\items-current\\cards\\00001-name.png": {
+        "sha256": "90c4bcebee0a4d68d13be19f586c84633d2fbddca59d28ae63300c8ae102abd4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00001-details.png": {
+        "sha256": "43723e40ee679f8a0ecdd9a33dd37578f17f7a8cd6ff0f5f32d2d0698532ab76",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00001-icon.png": {
+        "sha256": "611a83b6c56c32d164dcd0e79ca0bfc149d88d6f015f5ec8681a4dc277fa4c6f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00001-icon-animation.png": {
+        "sha256": "1546eab8ce9ff904dc175b0edd9695eb272077f1d95299c92c60d46901e2ef46",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00001-icon-animation.json": {
+        "sha256": "de7feea877d5b09caef8de7aafc660c89862fc807de3b1c8ac407bdef7e2c3cb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00001-basic-top.png": {
+        "sha256": "e30e079fa75ca4472ef14c02f66d478bdecf64c3b7de5bcf9b299d98bedcf605",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-name.png": {
+        "sha256": "b3300ead824813c88e913009f2a40bc37c5540a7e5ca722505fb90291a3f9092",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-details.png": {
+        "sha256": "b4f46979ed56de762d1cc19146580e8dc39aeab5563c40878fbd353a45a7366a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-details-001.png": {
+        "sha256": "bd3c5159a812cd4a97e16814f5d9eaeb0d68ff8a3b78cb3e29f46abf0901d086",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-details-002.png": {
+        "sha256": "8f3d6d9ff1f6e3636a575f8c763b1ef56750aac0168ddbde8321bb3334529161",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-icon.png": {
+        "sha256": "e20e15fcd0fc0813b1aa21519fe53c9043adb887b78fb267579759831fe3eb8f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-icon-animation.png": {
+        "sha256": "67ac030cc09ff5f34a3b4cc375a2fe5f3caf4110f90591244d7b19d390e0796b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00002-icon-animation.json": {
+        "sha256": "334f081d82528af8e5f87fd9ea7c597281a51e51bccd19bc00b25dd6e2d6f2ef",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00002-basic-top.png": {
+        "sha256": "f4c79abbd8eb90dafb8f838f9fb0c576fb01d4ac6e4806a4a5fd6ff68dd14ce4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00002-basic-001.png": {
+        "sha256": "bd3c5159a812cd4a97e16814f5d9eaeb0d68ff8a3b78cb3e29f46abf0901d086",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00002-basic-002.png": {
+        "sha256": "8f3d6d9ff1f6e3636a575f8c763b1ef56750aac0168ddbde8321bb3334529161",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-name.png": {
+        "sha256": "cd5b5826ecb7186837fb0bade1b48454f94d7781b9bf5e8b3e418cae6e6f95ce",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-details.png": {
+        "sha256": "3903923a4cfd1253abaa7b56f67b2d059a8b222230d3129054a8c840a7bef720",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-details-001.png": {
+        "sha256": "d0ba5b48971c2527422b376dc650882bc1d2a309709ee151d1cd1f4c4bdff6ce",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-details-002.png": {
+        "sha256": "55b8728e8e22bec2d4430d77859c8b6b8a96a6304d4d4d924445573c30448e09",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-details-003.png": {
+        "sha256": "a7617bdaeda161796a29218f31c36bd38af3f13b9d2f7c3c9334b3d7c59f01bc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-icon.png": {
+        "sha256": "574f99f8dd826d29797d7846d46dccce5517ba7486ec83f58df7d9dd53babafc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-icon-animation.png": {
+        "sha256": "6bc3cdeb5d05ca3ddadc21c09fb474b0f96f66bd33f0c9e349863f59aea1e944",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00003-icon-animation.json": {
+        "sha256": "08dafa70629ed016c733616aea0a03dab6f25f1e3820824b6ba072d5abbadb3d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00003-basic-top.png": {
+        "sha256": "3dafd1a6743edc15244b5724f7c0be6f80bbf65a2673e7546e7e75be28e50cb0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00003-basic-001.png": {
+        "sha256": "d0ba5b48971c2527422b376dc650882bc1d2a309709ee151d1cd1f4c4bdff6ce",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00003-basic-002.png": {
+        "sha256": "55b8728e8e22bec2d4430d77859c8b6b8a96a6304d4d4d924445573c30448e09",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00003-basic-003.png": {
+        "sha256": "a7617bdaeda161796a29218f31c36bd38af3f13b9d2f7c3c9334b3d7c59f01bc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00004-name.png": {
+        "sha256": "b67aa31559129e5a78af2a8be43c91617cf38ac1577a92bc915397450675a11e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00004-details.png": {
+        "sha256": "4f7f9b3824817604f1eb3b607e54b1dadcf6f19df0e0b99919f06423945e117c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00004-icon.png": {
+        "sha256": "018775b46cfdbb3fbe0de0e7a28d0eb5bc07ed1af9569f1400d0eddd86f20b62",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00004-icon-animation.png": {
+        "sha256": "61b87fd358e7b53786175112220fe882b0ecf5a47611c020ee87437db8d931be",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00004-icon-animation.json": {
+        "sha256": "bd17134a34898f5f392dcf54fe3af1287c7b1e79a9daceddad9f2fce7ba72e7b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00024-basic-top.png": {
+        "sha256": "10459691caaae07571410ceab0114cd3f4b97f7934c1e0c10e8efde19ec8d3f2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-name.png": {
+        "sha256": "464713b304e0fe7e8bf6dcb2cca3730c10a23b3d750c5950bc7ac4bc31614962",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-details.png": {
+        "sha256": "886a69a49ac8d8ebdbf76e5ff8232982d41a60a08d51eb90b8519134746db0e3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-details-001.png": {
+        "sha256": "a82fdfeb4d64ea25056b107cdb3c96dfccdf747d4e28ce364d61281e0dca5fbd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-details-002.png": {
+        "sha256": "506b4621b99c6141cbc531a0a7b32df27f3b54883b8ed8b5d832881211237660",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-icon.png": {
+        "sha256": "415f43dd3e1b787ac037a4a49f5865bea2f6c5b207285effedcb498eded74e93",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-icon-animation.png": {
+        "sha256": "943e5cb92828e96e7f5a029fc97b6486a20685ab116ed9b40a4fbdd7ebdd3f1b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00005-icon-animation.json": {
+        "sha256": "431e7db1df01dacdd6a411effe75202e32ae77eee11ad1e7b6c0a8643c89e32d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00004-basic-top.png": {
+        "sha256": "d2c310f71cdabad9ed037df449986e619799e98d4a8cdad5bfecbde74fd9704a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00004-basic-001.png": {
+        "sha256": "a82fdfeb4d64ea25056b107cdb3c96dfccdf747d4e28ce364d61281e0dca5fbd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00004-basic-002.png": {
+        "sha256": "506b4621b99c6141cbc531a0a7b32df27f3b54883b8ed8b5d832881211237660",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00006-name.png": {
+        "sha256": "1bb36cf78f63cbcd74e89e91b0191eb9b2fdac21e4ef74bdce8e5c65a1f92a99",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00006-details.png": {
+        "sha256": "a512e94cc18b3d7885f94cb77cc2d772c086ac2e2f7453ff3200cb95faadf6cb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00006-icon.png": {
+        "sha256": "bf3229aaa4846f8dc68a9f769648704137f1fdd82221df0932ac8c3ec1b9a885",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00006-icon-animation.png": {
+        "sha256": "ab42aa7f4c46a691eccfd77e4bbf8a578de43276dee77301dac1135a479fdc51",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00006-icon-animation.json": {
+        "sha256": "99f6513dcea5d7f23613011a5d99f448ea4fa58505c4e43e2aea338c12994965",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00005-basic-top.png": {
+        "sha256": "205f0dbf2adb36d2fbbbb2d61fd23d8fe1eac4f1461013672d3d47f3acabf3a2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-name.png": {
+        "sha256": "f9c5cc2c499429f22b679b27ea822510b356a83a6711d47c3f0e7d3cfbf895be",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-details.png": {
+        "sha256": "c045458867dd2197c8ed99f3a6ffd48a89f03b87ae9abe1bcaae98526a391271",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-details-001.png": {
+        "sha256": "bddd72e7480d489b059c909168e919124beecb0904ad102fff1b4f7710be0437",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-icon.png": {
+        "sha256": "255186845dfbf5f6ca8a3d48047ec35f9d243dbba54f2ffb6415d696ecfffd23",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-icon-animation.png": {
+        "sha256": "462f2174e9bb55b43fedf9b734f0afb6fa71fac38ce5a162653cc5c5aa847339",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00007-icon-animation.json": {
+        "sha256": "a0b3eea184b6715f74e70e82381c2c6c82b48e25fe3373049202ad741453ec7e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00006-basic-top.png": {
+        "sha256": "c2804ce68fdba4ee0fee63576c3390f96015f1e112883f59e011fd7770141fa7",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00006-basic-001.png": {
+        "sha256": "bddd72e7480d489b059c909168e919124beecb0904ad102fff1b4f7710be0437",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-name.png": {
+        "sha256": "8dde0a9ec6621c65d9e7f95ff6c96cb7517823def220689ea38983d1d80d7313",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-details.png": {
+        "sha256": "21f2ee90388750868c104f5a65b442f7839972ec3b84a60d4c46de80c38afa23",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-001.png": {
+        "sha256": "43bf6f48059b622d7d7e1f09c9b4cea18c55c0b36594b02a719583af10be62f5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-002.png": {
+        "sha256": "698fa62694dbbde0029be72ebc90fc592fff3e92aff4788faa253c1caffa9d5a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-003.png": {
+        "sha256": "061f062e19084d73c686d716078beecc1b33c018336ab4ec4be839e21766ef76",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-004.png": {
+        "sha256": "6ff671d68fb6c7d82e2e16764101d22a09e23d752b76504cff56d155b3ee3640",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-005.png": {
+        "sha256": "04614e916f9c6f183be96ff93e742c09f0f697892925cfdc4194bdffc720e4d6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-006.png": {
+        "sha256": "e4872e517db93023265bbf1a6bc9a1b48142836a882059644e606f7e51313a03",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-007.png": {
+        "sha256": "65c30d7707199ffd8ccbcbdf7feee905868a3ca724dc90bf586c60d837e6b6d2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-008.png": {
+        "sha256": "7ae68a0472ae767c8a9241ba9360b98721ff3565c1f42bb1e4da7a89bbc469ed",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-009.png": {
+        "sha256": "611f9e0161bc2e153e08d5a88f386245c9158e6bea26cd780a64aeca5c8a42bc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-010.png": {
+        "sha256": "b4dea17eb2b16222d9e6db737edf97cece7358e85ea9b8c4f366d8d501de21c5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-011.png": {
+        "sha256": "9d2bb44238632b5ed956577509c00da54a0f1a5de1728b1dfa8e85187b1c326c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-012.png": {
+        "sha256": "ef91c31194e80632f2d20ea9fc6546a104e8902344cf8fa1b73e237c7f59ca85",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-013.png": {
+        "sha256": "21503c43c36d112823b3767a68822383ec96b5f5701e835e167fc78ca30206b8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-014.png": {
+        "sha256": "d554394101f93a75fe2737d3f024cfcda6a443697ebcea0d574adaf82207fa28",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-015.png": {
+        "sha256": "81c8ef663b715486730e9d25689f65616787003673298e37450bdf238e33c307",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-sell-016.png": {
+        "sha256": "36a614a4048654d1af1f3c0ce03ef80d5b59de1dd5e6352e9a5cd859e2a79571",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-001.png": {
+        "sha256": "f1299ddd60b2baf4d203d56ab2fbce69d809223cf9bd64a40cd5d02e31c8529b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-002.png": {
+        "sha256": "1204dc6ae1d454f1ec7dc61636ff87edd9ab2576c077d3d99e97de57b3875ba5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-003.png": {
+        "sha256": "737798ac7fd48e3b72da7a8e67609b013d9d52f8296010aa510086616aa0d243",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-004.png": {
+        "sha256": "cd841887ae460d8187e8736bc1d514b040255146101783f88064c4cb6fc3108f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-005.png": {
+        "sha256": "87e44502938e0d707020ac26bac2fbc1da21b6b732f399fc5d1d0d1cd54ead62",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-006.png": {
+        "sha256": "c3547400ba5d62869b006848fb7d7aa2a9462af8b970af29c7c31821ef7dc09d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-007.png": {
+        "sha256": "c172cfd0563271f32bf0f177ad1ac665d25078fadddfaa836f46481840ce5051",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-008.png": {
+        "sha256": "8a164e4d29cb4eb118bead5003b5b0c0cbbc7f4803b5f34fb89e2c05431ae64b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-009.png": {
+        "sha256": "86f1bd8a5fb4a26f1be1db2d1a4e7cb94dd20f24900590b14057f48f8988ccae",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-010.png": {
+        "sha256": "6a9c5d669517cabee7f2013bf426693684dc8d068afe317261ce1c6732bdda9a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-011.png": {
+        "sha256": "f37cb1460e6a04388383da0140e90e1424a802f38d5cb84820dda30081126b8c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-012.png": {
+        "sha256": "4609b2ea3566a9b73b42eceeb83ffabd157fb5156fe3d951906c523e749393bc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-buy-013.png": {
+        "sha256": "b6fb81e96b79ff8bc32e313e769414555ed3c747e64cf64c33f7d907b0e55440",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-icon.png": {
+        "sha256": "9d931ecbfe69be9e0fedb0465683909e23787f8bbae624e894ba2d77a12ecc3e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-icon-animation.png": {
+        "sha256": "dd7482c916ecee61d6f65ed819cfe1988f6e9702fb512e6794b123341aa1ecc6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00008-icon-animation.json": {
+        "sha256": "fb9af3c8d25dc79b6126fc38c1a55c3de5364639296f2b2101714185660280d0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00007-basic-top.png": {
+        "sha256": "eceea3602bb4bd75da8b380e28d8a7be6b12a6ebc5d6a5b289b60bf8c23d0576",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00009-name.png": {
+        "sha256": "f5f8c564e5bdef965629e64b00c9f4a02d2a6308c14634f33bfd6ba80c2052e2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00009-details.png": {
+        "sha256": "c22cec8b4067b49a9803c8eb7a152371c48273ac1395f584ea0c352fac943f35",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00009-icon.png": {
+        "sha256": "ee841e08df17c51f1cfc75303c08b8fc5d8ecefd6eab057367e43aae8f5990ef",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00009-icon-animation.png": {
+        "sha256": "51503adf7c45cb48fdb77ae2450cae0f7e04074f9597535a9ab54d862296735c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00009-icon-animation.json": {
+        "sha256": "ed7b70ce3ab6ffa45eae494c3e4c628b157d3da9cc13e44eaaab00872cd68f73",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00008-basic-top.png": {
+        "sha256": "151155ba7b447c62a33fdd8c31c3d394ab58eb57dfe116184dae4045f00765fa",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-name.png": {
+        "sha256": "886f9dd66f23cc18c785b39e8e6f04048f2bae19338eaef34a659ada9375ac1e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-details.png": {
+        "sha256": "2b5fff0947f614f279913465325a8700b1c574ee066a4dd5b4c379b7d6eadd44",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-details-001.png": {
+        "sha256": "348fef9b72939ff9ff239223c8bc540faba72e5391826ef62aab81ba8a3f4e21",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-details-002.png": {
+        "sha256": "723ec476a547d9ed5f1921e656f7d98b8d8050aed73510027b651921e9713396",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-icon.png": {
+        "sha256": "511f965da06f2a7020f4489cbdc03164b4e1aadeefb9835b69a478e4db4107d4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-icon-animation.png": {
+        "sha256": "c92f6f0327264dcd725e7309da90737ca72dbcb9e59ab64693c076ac2ed85cbd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00010-icon-animation.json": {
+        "sha256": "f286e03f4ef9c0b885194250c9c51a0f111fc1859b914f42f4377bc14e50890e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00009-basic-top.png": {
+        "sha256": "cca1a6b98eca903bdd21a8109f7321013649f6376edba26fdf06373d090fd13a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00009-basic-001.png": {
+        "sha256": "348fef9b72939ff9ff239223c8bc540faba72e5391826ef62aab81ba8a3f4e21",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00009-basic-002.png": {
+        "sha256": "723ec476a547d9ed5f1921e656f7d98b8d8050aed73510027b651921e9713396",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00011-name.png": {
+        "sha256": "67b0b6b6651d372708f8b27d04bd9b32cf5439814c9db7c75ba270f2765683d2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00011-details.png": {
+        "sha256": "3fefa48de2209a278597012e7462deb92e9996034ef996230f753f97850780b9",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00011-icon.png": {
+        "sha256": "c33f83dbfc0f380047b587025fa9aab63df0bf890fc68f8feeb061807a30fa2c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00011-icon-animation.png": {
+        "sha256": "fcef502b0c732fd95f05bedf8bbf6b2968914766a991a3197856a027c9d93114",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00011-icon-animation.json": {
+        "sha256": "f2b16b5ab32e32cf344c82f9db69564ee9cb55154927330e8d47df5c61c08be3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00010-basic-top.png": {
+        "sha256": "4b082a10c32d2c87f0b493e423504cb839b9acd91e5519e0742814dc36d87906",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-name.png": {
+        "sha256": "cd1c405c7ec2e50c311bd61e9dee51c2f6624194fb6b81ebf9d190d41d2bd31b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-details.png": {
+        "sha256": "ad73ee8ca01e28935a39dc4746cef4ea8a67c89164cf6848a83a7a25e0de9875",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-001.png": {
+        "sha256": "35ec0ef21724612ea94cc553abf73bc5aa7dcda9601fdabcb3b4361e21dbdae8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-002.png": {
+        "sha256": "c7e9c35af3e46e3897c270f3eb45e17cb70d6b8c9db66342037c1e903e10fb18",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-003.png": {
+        "sha256": "e5f96b88ca1c193365448da17651f8f8a5809aa0189fbfdf5f31c4361249f8f2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-004.png": {
+        "sha256": "d5d4338575c0bcb09be1837a48594a56e85a3450f6b61d53d566b0040257613b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-005.png": {
+        "sha256": "80efc81b3289a31601d32f23bbdd858ccc7e1acefc07c13cdffe6659e4f570b0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-006.png": {
+        "sha256": "e0c71a77739f6ae7e3d125770084e416a7fa915b8d7d9b9615671c09562ad907",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-007.png": {
+        "sha256": "7bd82f6a00aa39a0a00c3033aa6c7126dd0af99468ce7ef62366b3f500eed316",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-008.png": {
+        "sha256": "e01fe28b8662621186120312c613bdd8d5400c0532e47345a73aaed8580d962c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-009.png": {
+        "sha256": "560173e77c75d73e5fe2ba6ea02adc01eef70866ae20a4a1147fd25beb295770",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-010.png": {
+        "sha256": "7db8417438ffaca5fb5098a65b165060384d1b55b07e53695fc5851246122dd1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-011.png": {
+        "sha256": "8b2ddcfde1ee1526d5660e95fe651e11161a25dd4032bcd1513f845c6193f9ab",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-012.png": {
+        "sha256": "70190012ce09a5bcd249b2dfac78bd0c49fb3e6d9a324deaf572a28edc6f0737",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-013.png": {
+        "sha256": "072f8c897999aa533bbbf7b8612aa0e5b0b5359f6013a5038c0c1a6e403311a4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-014.png": {
+        "sha256": "34b7c9a60f8c5b4e94cc620d5487897347f9772e2e3c2949c7c149cfbbf03c12",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-015.png": {
+        "sha256": "65b3f3858664d883f9a7c392f096007624f1ef4c7ca2e9dea06ab07f19848923",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-sell-016.png": {
+        "sha256": "440c7a1299d847fe0718e9ac71803342c090cae7a048ceb4ed0d58ff3fcedaeb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-001.png": {
+        "sha256": "cbbfd58e708ee6fbf55d2445eb5868717fcbaa82d9d7db4a061dca38a83672e7",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-002.png": {
+        "sha256": "9b63afdb0b85a187239c259f48d12203c311eb0866cbbc07c758b9e23a431cd8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-003.png": {
+        "sha256": "60cf38690583c0faa7657ce27333696a2af42c1337e2bfe51bb8dc5e738cbbf7",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-004.png": {
+        "sha256": "dc9738d1a9b9470c549d02ca822f22070981fc88fac59b0f9ddd12c1e270502c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-005.png": {
+        "sha256": "f688db288ffe8bdb10e6bd21adab7d9160ccb514f072288c16d6c1718c7d6274",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-006.png": {
+        "sha256": "8ae384cca5f5da05a48b9d976dbd26a2d644551c69bddc517cd750df5f89d004",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-007.png": {
+        "sha256": "022ade8860e57e542c00e0aefd5d7f6251ccb7e6b96963eee19dab540c7d7aed",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-008.png": {
+        "sha256": "dffdf0f506fa50210f0642da020e6d6f1ab5a4c3c3994b06a0187d236b8b5795",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-009.png": {
+        "sha256": "bba49dc37849019f33e1af13aae3bd46a096f69992622f34b3094b05810aacdc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-010.png": {
+        "sha256": "0800e5d0195412f6e76d0c76f1145d8e2bd2762e7057bf23ad6080b10827c91f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-011.png": {
+        "sha256": "4e98a1a1c01313e0b802c29855c778a39dee2e16fa070b3cc7acf446d05f43fa",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-012.png": {
+        "sha256": "65b4b2d7e7e4b56f1661cc24c72d10c21943be60cb58e59ce0e502e2c2e090ba",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-buy-013.png": {
+        "sha256": "3e961c0df5cb409a976b0ccf49a41042a17aa6887fa20188f512c02339b61078",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-icon.png": {
+        "sha256": "e8ed554943f118d100d71cfbe1256d412e3005987ea081c2c137585711099cab",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-icon-animation.png": {
+        "sha256": "988dd5044f85cb9fd35040a37b06c0190b6e49cb1425c227c7714552be260dc9",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00012-icon-animation.json": {
+        "sha256": "4b04c6edd5d78b17abe6a5b506b58a9e71149e83f2cd3e34103463609e3d4879",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00011-basic-top.png": {
+        "sha256": "6d25cf42537ae676245dd026d4b6b31660de52fa1bccc64364db5acf47d6c39e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-name.png": {
+        "sha256": "e34ccae24fcd3be8f7f939c7fa18cba898e02f8fad29b4ae52c4dcc45194f155",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-details.png": {
+        "sha256": "9bb9053bc7c2f99d69bb23a446284ee4767570656ba8ef0c0e54c3d925951913",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-001.png": {
+        "sha256": "65d83deb01e63504045ce7c763b951ee11b1ffe08cb562424a378778d917b047",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-002.png": {
+        "sha256": "0db965f34742ab82ed0f4f99370120f20ddcbb35fb9a0fb391305beab6f50c58",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-003.png": {
+        "sha256": "68c72ee46fabca037ce0c5e7d0225f6318163c87e6ea85b57ab8718c98c02e22",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-004.png": {
+        "sha256": "607d42b01708e4d8e807f0d2bc33f4d1780857cde2a81857e6ee552bc8820083",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-005.png": {
+        "sha256": "3327929cced115f77fec104fb4042be391438c94273a1e57610f6db672c0036a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-006.png": {
+        "sha256": "bba56170d1c061763fde60f031edb69cf31d4f3b8b296babfb6d52cd7a4e189c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-007.png": {
+        "sha256": "308f4249846a031bd8039d2f002b5181fef28d3a8d37105cbe570e474adc17fa",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-008.png": {
+        "sha256": "2b8220e6648cf94291b4a55bea8815b20a935a0f3a6b3cd39280d076c358d9fb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-009.png": {
+        "sha256": "88b9eb7e4e190f423a2412efb37d567fc40738513316a187ba6123ffe8c3b983",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-010.png": {
+        "sha256": "55abfbad8641d6cb896f13721e7f3f03b0f83712780467180f9299dbe9208c25",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-011.png": {
+        "sha256": "d6689820657f833ba77ae4593e25685f425d7bad483ded2e6b28cdc196c34f2e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-012.png": {
+        "sha256": "4a92dbe0a10e2aa9f517b6ee16946e5edd2d0940e71c2f9be5812a614b4fa20b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-sell-013.png": {
+        "sha256": "d5333c40ce178faa85f9e20c57a464cb3e29965fc3fc1597b2c730f26e53f7ba",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-001.png": {
+        "sha256": "a88e66eca669f06281678ce98b0e23774b3749c8d7e6e1b5bd4579ad00f4b728",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-002.png": {
+        "sha256": "6bd7f6c08889968b25056aa46f84eca7d1c14dba76570024eb4b406869299869",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-003.png": {
+        "sha256": "8a914ee899bcb440e9df00e011257e312fc6c66297130c34d48a53e1e3cea205",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-004.png": {
+        "sha256": "3eaae2c4b93cbe2a9e1c1a24323b5dad72a27a3c736ebb1d6d6f9c2e1d4af57f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-005.png": {
+        "sha256": "c1521b2e8190ca778c6d08f8da0a15dd3ded15c4c88f2598892313c29b7881d0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-006.png": {
+        "sha256": "20d85d834d8cda10da66c2dce758cad07f172e97e56d258bf734836c2814d1dd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-007.png": {
+        "sha256": "260e78b1b081b915e1264b3281d8ad0d3cf417f51e76286269cd7d3b9afe3418",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-008.png": {
+        "sha256": "55b4d406abb62b61c036d7765fd0d0938f968495658caa6fa985764740a1fe5c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-009.png": {
+        "sha256": "e2610c87eebddb16b2cb6d1baa83ccb4a95834d2bea8d3c8f685360416ffbd11",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-010.png": {
+        "sha256": "6e5e3a617219e9f6041920a638f2a8d3407ebb575605df20a6158ea0d4072271",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-011.png": {
+        "sha256": "605761622a1fc20b35efc36672919e2d327aab2135648000459dfe190c7dbc53",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-012.png": {
+        "sha256": "ce8b11078c65542d9b6ece974a5f1f9ff58d6b3f3fe59c53e638bf72fe6cb6c7",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-013.png": {
+        "sha256": "fe4f3f54f2b3fa3b79c1bc8717bc6ec0078cef9464036aedf9c358f1a352b359",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-014.png": {
+        "sha256": "e627bf6f8c1c46079b4ec584f8ef295699879639fdb030f2d6bdbf73b175afb2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-015.png": {
+        "sha256": "c39225c09f1f1a96b2322861cb613caa1919874bdf9fd24cb949359e792935ff",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-buy-016.png": {
+        "sha256": "6c0814176a81144a86c501f2c255587f3efc69db6a6fef22e25629b0243d632c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-icon.png": {
+        "sha256": "ff123871006bf904c06af5f3435599646c02fb4a76ec3c6c5c69036dd9d91933",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-icon-animation.png": {
+        "sha256": "39bc31be2f03db6fecb33e6219a688495b513552f50ed4cf125b40c0eb3f56bf",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00013-icon-animation.json": {
+        "sha256": "f006513b04fdb7b39ea6dcc0f3a9ce0912f19f9177509b570c5ad0077e2b4e0a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00012-basic-top.png": {
+        "sha256": "157d04d1e09928ee40083d8672c37f739d3995bb28510e2ca1d7cfd9d00db10b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-name.png": {
+        "sha256": "34f023eb7790f0050cd32dc8a54f8ecf67f0d1cd5d3cf602a152eaf47ed5f764",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-details.png": {
+        "sha256": "8f6a42c3a77ad59c70381fad8fdd2a86335af6b8fe96e1e5ad82e29a58618d65",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-details-001.png": {
+        "sha256": "ec6546463f5e3c3f5c68ddc5db96bd7717b7b8c3202976a2b61aa07b1104da6c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-icon.png": {
+        "sha256": "f595560d9e8c3c6608f25b33cd64087533e565da7c581c50a0eca15fd44110af",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-icon-animation.png": {
+        "sha256": "cef0bdc2c73b5f930b8769b38300695db55a6c92578868a8bb38e29029c96b74",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00014-icon-animation.json": {
+        "sha256": "6b4fcc2afd018e18f52dd433972ddb1c320a7e3c668d2e8753b6cccceb32b05b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00013-basic-top.png": {
+        "sha256": "c11cdf63346ff832d117d5dbe9accc1ecac9a4fad36b45dc2f68357dbfe61322",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00013-basic-001.png": {
+        "sha256": "6fc9a2e92ffba8e38d0b53c8774b25e73772cf4ee8030b1bf4d9f600b155665b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-name.png": {
+        "sha256": "d14d3da3421e04bc7498d7f1934c90557e22f03f38bdd2be2a5e02e3c6d69880",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00014-basic-top.png": {
+        "sha256": "6139f9a9cf682c0f337bb06db638d81dc63d94204378ace3b2c624717198a648",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00014-basic-001.png": {
+        "sha256": "a58879e796cb694892cde421bedc65185eb44baa6259ad03137d6429daea3b31",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-details.png": {
+        "sha256": "4163ae6e5d287feb48b86cf36341f737039e285f13873994b06088e48533b189",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-icon.png": {
+        "sha256": "ccf40cc44658ba2e7dbd3657e17575c3a9ab575b11326989529b8a44b3755e48",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-icon-animation.png": {
+        "sha256": "14b6d467613afe64478faf2eb2d1fd28a4fd91c5ba991895f62fe549df00d82b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-icon-animation.json": {
+        "sha256": "240e32e2ec146cf0723b89d84efc0e93392b7ff09730a48dbfe990a4b6647b65",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00015-details-001.png": {
+        "sha256": "a58879e796cb694892cde421bedc65185eb44baa6259ad03137d6429daea3b31",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00016-name.png": {
+        "sha256": "c8366997dc8d7a072ec8a9070ee86b6f881bc3365b5ca43023a78ec8195817a6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00016-details.png": {
+        "sha256": "d3a05fa93ef77ab90e50470650fa78ed64d5072417f91f96920af28c2833d30e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00016-icon.png": {
+        "sha256": "54aff12fd167319b104b4d3b1dc43ca6b1c9fe280c4ab6c4422abaaf9677761b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00016-icon-animation.png": {
+        "sha256": "8c41053f910a550cca441b3cff0b6ce3d78bc6166a8c4bd5e0dbad2d39b0861a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00016-icon-animation.json": {
+        "sha256": "f6b3e7fab41c41e933456f16ef7bfc62210eb4c2a901b42886b40454776a16be",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00015-basic-top.png": {
+        "sha256": "3b8d5806ebd9e900e9d17dd7f8c36830a1e6db9c659e7fc17c11f44ad8b23103",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-name.png": {
+        "sha256": "7f0805475805022176cbce0582e26f9973fe8538c471f44c423996d86a412ddb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-details.png": {
+        "sha256": "46146b3f38aa355dfbaa19d0177dd7ed7015503582c3e5c5032ef7806a0bc61c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-details-001.png": {
+        "sha256": "852955eaede91d1ccc504fd047a70c198346a3d03532974e88c4cde0067346f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-details-002.png": {
+        "sha256": "a1439190291d115c18fa47f18bc4115e49f2fae76063fc37cb90b9829efce428",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-icon.png": {
+        "sha256": "e6c3dfc6443bdddf6498edad3eeb59d04a3181f782a016f0e29eecbbd6a6b704",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-icon-animation.png": {
+        "sha256": "0317146bf6c3455ebdc5d64f3f78cdc333c5d1f461be6a7a7cbc56309e54fc0a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00017-icon-animation.json": {
+        "sha256": "726d23c700016341b047d4d94f04345fad8df6c620ab8c2c05e6b954297e3c2b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00016-basic-top.png": {
+        "sha256": "d4c0347398eb60696cb9a38c94cfc528451c459148b53c90adf76c01bfc7c4cf",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00016-basic-001.png": {
+        "sha256": "852955eaede91d1ccc504fd047a70c198346a3d03532974e88c4cde0067346f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00016-basic-002.png": {
+        "sha256": "a1439190291d115c18fa47f18bc4115e49f2fae76063fc37cb90b9829efce428",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-name.png": {
+        "sha256": "cb5a5d3e3d89b1f30174e142345e5afba93acb46b83e94838c549319709750ff",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-details.png": {
+        "sha256": "2337a713b99f853aa4019c3dd698ac50a5bc14a7aeba9467711022be8fe8fccb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-details-001.png": {
+        "sha256": "601767b6bfda02a956b639f0cd7a607e7730938ef56d9b8c380dfdd871b33203",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-details-002.png": {
+        "sha256": "9f4790a3f6ab008e2ffd82e55d94c0868741308f9912059bf1dcb5f5246f144d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-details-003.png": {
+        "sha256": "0344be723965d50489aa2a228c3a8eec6fc272ba563e8aa71a3e4299881b7dae",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-icon.png": {
+        "sha256": "1d3f2656ab5ebcbf0653462a1c892566fd2ac1737a395eddf94efe2af8ff93ed",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-icon-animation.png": {
+        "sha256": "c13c24d8795e0978e68a0f61dca1df2d2650ee2dbbc6b2ae64eeb1a14a8297cd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00018-icon-animation.json": {
+        "sha256": "522e921311e579cf0d2cde5d0e18abbf261efc120764105bf503f93bb3dcd343",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00017-basic-top.png": {
+        "sha256": "df5980633f86dcb50745fc7c7433cc7d8bb0a944b6dffbb08e3d42593d52393c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00017-basic-001.png": {
+        "sha256": "0425aa8d87841ee28205ba002e3467cb4a4b2a90db4fa93a9f2f14246acbb667",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00017-basic-002.png": {
+        "sha256": "e9089954d730c25d6aae15199fbc2856118c7e91be1afc1940706d0ac3dfada0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00017-basic-003.png": {
+        "sha256": "231e61e0e053dd89a3c0a44858d811cc3e3f71125f55a3fe502a65988df05629",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-name.png": {
+        "sha256": "438ffd44a6a18e51bece105200bd0e7859e2eb5b16ecd169f9c5dac87d9925d5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-details.png": {
+        "sha256": "24c3dfa4cbceb6f9c47d4d4cfb6224dfddcf1367095b58ff0a60170b50f45607",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-details-001.png": {
+        "sha256": "00d62e5d5bb56d7fb8db6eff0b414977d09d28191b93680040584abafcb919f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-details-002.png": {
+        "sha256": "7ebf49424d3bc9a440e62c19e9e0505f36266da88b55ad4e139f1dbefe832106",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-icon.png": {
+        "sha256": "a7a16584b242a3ba22f033b6144c7c9a8f9863993975c7c2a0d9ed534d860ede",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-icon-animation.png": {
+        "sha256": "e3b34cf21095755b0dc5b3f814005a37283ae7da1b32a97d0e4e793d16925445",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00019-icon-animation.json": {
+        "sha256": "4e5b5449333e33ab452b4bec5594f8bd48f5a136e342967a5435c1619e099341",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00018-basic-top.png": {
+        "sha256": "a37023f0ba90d0e3bbb4861e6bb06a054c0c39d97f35fbc291c5dde18c6b3938",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00018-basic-001.png": {
+        "sha256": "00d62e5d5bb56d7fb8db6eff0b414977d09d28191b93680040584abafcb919f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00018-basic-002.png": {
+        "sha256": "7ebf49424d3bc9a440e62c19e9e0505f36266da88b55ad4e139f1dbefe832106",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-name.png": {
+        "sha256": "88a68040a8527df465009fbc9485ed183673d61b360cb1c9490738a22b7c8f31",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-details.png": {
+        "sha256": "48161a4d9e74d69085d575d2b6d90b48778e38f956a2b323fb16e2d5df1e7365",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-details-001.png": {
+        "sha256": "85a62333921d17344a016db4c14e80259977cfaaf83621014cb12b8010afb0e9",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-details-002.png": {
+        "sha256": "ada65286a0ae7a2c6ff06ad40768bd7c45e6d6a2ac52a9d621249a7b74fba61d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-details-003.png": {
+        "sha256": "afa08c9264c5f5738a36466a01d64e16100fb9d12ff8e6d79572f3e45260a95f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-details-004.png": {
+        "sha256": "4eabd55278f15236aad163782899fe4a25681765c83cf83cc1e72f6c920b16ca",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-icon.png": {
+        "sha256": "fd41d60ecb1f18c6c6db61dcbe061999931bb42ffac53682552a4fa811d0c96a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-icon-animation.png": {
+        "sha256": "c7560a6a3d65f8a01015a7e62c67d25fa2126a4253a4fa23aa5325fe8fe042b1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00020-icon-animation.json": {
+        "sha256": "29ab32a06a1f5be80bb5e5f3f57f9e8db9c7971255e7a878218143acf94e1478",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00019-basic-top.png": {
+        "sha256": "209c6beb17c1e5745e3db5c3a976bc8ad3db14b18ca44753f1e28ac0d6ed1ac4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00019-basic-001.png": {
+        "sha256": "ba86f68b37c1d9ecbb6a817c8d8bfe435626a770061acb70d764007c17b9be71",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00019-basic-002.png": {
+        "sha256": "fc88daef4e8b2521345bfdc1b3a4126cfe6bf8ee3051f2346c92e950d4aba76e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00019-basic-003.png": {
+        "sha256": "886af1c00849bbeda619d5efa1e6242f2891dfc29206f677c0f6e5e4e6088a08",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00019-basic-004.png": {
+        "sha256": "f5612ef750a9d521c6a2ed47495e84b8ced233aad652b04133c9a2292c790314",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00021-name.png": {
+        "sha256": "40591ccc815c82bdbe983b21dfa7b5fe0d8fde5e610ed964c6d477bac848eaed",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00021-details.png": {
+        "sha256": "fa970a112a99ed0cd7eab574de5c64238ac56999c6c91154f0d63ef3bf9572d3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00021-icon.png": {
+        "sha256": "d9e0b1783eee722bef782b8c06fd7ac1fa2340bb8140685b2349128de1e27f73",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00021-icon-animation.png": {
+        "sha256": "81f67fffd49f9c2174de045215c92d5dd53a83fb32122ec94f735622910fecc8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00021-icon-animation.json": {
+        "sha256": "d27df543e5a4499effd457fc67542d41f4358b3a0b0107051bb923dd549e857f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00020-basic-top.png": {
+        "sha256": "73a25e4885c4e65e78a9ebc14f3df321c3a444b7e74c44edb64860f62c2f2f2c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-name.png": {
+        "sha256": "264d953e284a4fe282f172dc418dd3692b10bbf915d881a0c5dde3becbf2019e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-details.png": {
+        "sha256": "1f2df19097cb7267b7305148e5918ecd3e9cd5858c2b08b6ab579e9fb13f2ef1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-details-001.png": {
+        "sha256": "0bb5e3b8f95eadd9e356342616364008d7b67ddda59057fa59eedc5d142126fd",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-details-002.png": {
+        "sha256": "bea98f5260d5d015a1ba2d5ecc3d5bcc020687d9c9030352c1f2e99d3fcc2d21",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-icon.png": {
+        "sha256": "2ce3ef7abe7a1bb31c904ff9a4fa3f6f670b0749cce9e611260703e6e71052c4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-icon-animation.png": {
+        "sha256": "bfecb2222466aedbdb1aec8a10ea869a3bd7563f7e23dcfcf6c3c226ccef6423",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00022-icon-animation.json": {
+        "sha256": "6585b5100ae44670a0696df5693dd7da4ad8f30a2427ae727aa4cc282275a3f5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00021-basic-top.png": {
+        "sha256": "6cf53dec4d4d7445a16d40e28d9c10e751b7763ff9ad2c31096bd8b821123a2f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00021-basic-001.png": {
+        "sha256": "fcbd58ec9ef9a63a8b23bd704496790fc552102ae5d73b1eeb68119b4904b636",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00021-basic-002.png": {
+        "sha256": "ef9d33824e1915dfcd6150750025d6d169b2c3b42db697e8bd104540d305c406",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-name.png": {
+        "sha256": "57ac45c34957cacc5ef901ea19ae8e80250179a69240788701bca268d1c181a5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-details.png": {
+        "sha256": "44e88ab459b141ae35337c928e6db3f123170cb1f231e6c0ffffab24772cf148",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-details-001.png": {
+        "sha256": "a3353ece9a21ab1d175b2a6e1943b24b61afa8a44371e022182a4c81e7043cdc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-icon.png": {
+        "sha256": "d6c69651f171c4c0590a58fc501042fba2555daa491334353bef14c23b61d764",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-icon-animation.png": {
+        "sha256": "6a7ffc2bd1eeca6220851ab14d8fbf40ea5bba5d42dafc9bae9dd90f2a62dd75",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00023-icon-animation.json": {
+        "sha256": "37aea7ab982fd775f559da449869aad2ad6c2964e9b9b4fda5ee495ad3d1c844",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00022-basic-top.png": {
+        "sha256": "c883f94c3c71eedcaa418467d72df3e59be40124d5a4f75df9bdb5f19ba4f4d3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00022-basic-001.png": {
+        "sha256": "a3353ece9a21ab1d175b2a6e1943b24b61afa8a44371e022182a4c81e7043cdc",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-name.png": {
+        "sha256": "b9ddacd2daaf7cea35d84d7fbbc0dc0b80c1191e63ace50079c4c81bab2d6909",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-details.png": {
+        "sha256": "dc1aa0df2225ec68a05700310c5aa2920c5e62acdcec0867ee299cf577e7ee6f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-001.png": {
+        "sha256": "b90a60119cb5344d6ef2649b94299944e8ab099d94d6d06744a6da20ef7527b7",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-002.png": {
+        "sha256": "01462785f22edf1cc21109872d8fdb2e863902bb9241b767f610cb54c75fcf74",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-003.png": {
+        "sha256": "cdd44bcc6f245e18876337be5dd82e4853889d9cb3eecd0ae40cdf0cb8876354",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-004.png": {
+        "sha256": "c7e2992f237ee691b5c4071b7bf819e9db0c4e1e665232a8f0eca3611a15be69",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-005.png": {
+        "sha256": "08d62433661d8dc336d748c9951fea3b376c79b44e5a5b633a1e4056cf36ac18",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-006.png": {
+        "sha256": "f7065f18d7a786251b6ed8118e58c5ead0469f4b72e1ac7db3052b780be0af25",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-007.png": {
+        "sha256": "612d62cc042635ea6f9439408f0905e1191990ad8f018139511d906904d2cf22",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-008.png": {
+        "sha256": "7c3e86007b7bf4ef57840415d4dbd84edf5e898bbab94d3c465f12368f670749",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-009.png": {
+        "sha256": "c7af4665aff2d0ba0b4e013a1c1b6684b374b66d347874ca169f715eec188bc5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-010.png": {
+        "sha256": "dfc5956a2cf406faf17f330b0dedac7d078e49ec24ff2e55077c641d76a73875",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-011.png": {
+        "sha256": "b1306a69dda67b6c050e01d4be28e723a217007c46ae17eb963143fbe744bd4b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-012.png": {
+        "sha256": "b2ec04dce5c2fc338971ca5f14cb536a10ff568f12bfe5b13df6f1cdb08d4e63",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-013.png": {
+        "sha256": "2cdce664caaf240cabd092ecdfa6cd32f5bf31c811dcd7c78ad5539c5150453e",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-014.png": {
+        "sha256": "898ab4afa46fbead5d91df033f1cef3df73b5a430ebd08bdab68475a31016530",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-015.png": {
+        "sha256": "885413e39c65b13e8be0824c1c74d46520b6f4ee325a03d72d87377421040189",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-016.png": {
+        "sha256": "9d8b641da77ae58b99365e39ee047237a9f934a31219ea9d9eaf5fff5d76fb19",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-sell-017.png": {
+        "sha256": "eab3db0e72bd5a923503f51773ab6e35b1864cb3eefb4711bf2b54cd06f2b162",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-001.png": {
+        "sha256": "54495a6039df3568052a41635e67fc1950bbbd607426dc59b54d852d507ddb92",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-002.png": {
+        "sha256": "176ec3f3da3115cb33e794f57184034c0e1a14b6711aed17ee40b1ec06b37f37",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-003.png": {
+        "sha256": "b0008f5931da15d844312ad8775c350b4c2ee8e87d2d668ba9cfcc1463adcd1d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-004.png": {
+        "sha256": "9af55ac6a9d5800d7e5765a02f9bec88aeab96fd066f21b057d3e4668ff6ab90",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-005.png": {
+        "sha256": "4e4e01cfd0ed5509e4852005300ba969638b67137cf2ce04a4a20ec8516d7a2d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-006.png": {
+        "sha256": "7b378e2b6eab8a8702a3cd6043dacfe3a76e941c2e9b9312cfe3bc6749afdcd6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-007.png": {
+        "sha256": "a30d12d0453e9f6455704afa9e2e6c206ace0b2960b68ecb08872f45535a05d6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-008.png": {
+        "sha256": "e8b91d42f9863088c4cb17a42f82089e355a0cef5480f586b72c993c2cfc465a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-009.png": {
+        "sha256": "d494a1f1f2f7d4bdf29b0d96d73ec29d2a3311f91f1c88023a07a1b348e3ed99",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-010.png": {
+        "sha256": "38f97e0f0b80f56169b571e7fd7de8fe90cc1fec7c42bfafc05eb79a2a6fb09f",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-011.png": {
+        "sha256": "ba67b1eb8a3aa452ea45894d464cb45128238e2ed4fabd0262ac7e1a49d90942",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-012.png": {
+        "sha256": "39159137678f957410e875cd9ff05bf0726bc622ac46ad2ef4c0f34fa86d5215",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-013.png": {
+        "sha256": "582181c54e476185f77b0c17a19f8f053b2c4fe503d6cfa3351c8f57cbac10e3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-014.png": {
+        "sha256": "9e918ba58b50ec52ee4ac63225a55b5ebc55439f6e4a3fddfdfe4d9865ead543",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-015.png": {
+        "sha256": "ec4d2d56ca262fabfeb7397bf62b428b8f467ce6e15e86e499d20799252aa229",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-buy-016.png": {
+        "sha256": "1e7af13c8c07dfa6833defc827cee2800c0626160c891b33e55a932d1352244c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-icon.png": {
+        "sha256": "b85cd442231ea79d930b82bbc1951f8a1301d1ecb9b1a0e57068a8704cbfd664",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-icon-animation.png": {
+        "sha256": "1209b570df06acb7f515d71a38d251af93efe9104ffae9caed7747435086cb7c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00024-icon-animation.json": {
+        "sha256": "a13c7a5283a5c0d664542495981f39060031053a30d8680477e4c0030424665d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00023-basic-top.png": {
+        "sha256": "121334515e23ef9a83b3f22cab75792801b161fce24fe160de25adc2273a1929",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-name.png": {
+        "sha256": "09faaed82a6436b1534c4d1ea2fab5d97f4a48ac8069b0fb6b3581ce6693bcd4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-details.png": {
+        "sha256": "6754fd3184e555128ccfd2d5fe83e9c78642d893e7ae386d0bb96281e5ed3083",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-details-001.png": {
+        "sha256": "8db7299818b346ba1e9ce100dc867dad527a220b988efcbaa74bc75a1c653822",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-details-002.png": {
+        "sha256": "2bf68278c5755cd7fe4e1a1cfa8f04cc6db0bf02120af1e49b0490e54cbf64d1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-icon.png": {
+        "sha256": "0371a8343fa90e366cd0cff986cf7b651cada4d75d7145c3b6ab2e656b04d107",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-icon-animation.png": {
+        "sha256": "3df7e027f684c881bf80fe1b659aa907b00b27369545dda9d01637fccf80c454",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00025-icon-animation.json": {
+        "sha256": "c141051fd59cc2913dbc12e352d0ddff97734d49092045536ceef90672946fb4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00025-basic-top.png": {
+        "sha256": "2ac86262d53a0194f52637220af4c83db03f77904c230bc78df3daa7f2e0bced",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00025-basic-001.png": {
+        "sha256": "c4416fdd0d9ec4aed94efe9070165d31369c2ad9f33dabc00c1ee1e512ea62af",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00025-basic-002.png": {
+        "sha256": "6213ce65b39fb686ba907c8c7e6f4a01a864bbb0221a0950a5c80c1930e74252",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-name.png": {
+        "sha256": "c4f94248b3d38ba9900957f28f6259a453c404eb8d3f660a3c060acda77ee4b6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-details.png": {
+        "sha256": "4cbb62b62b4b03e1909360050eed644077dea7604dbb00f2cbe4045cf67ac8ae",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-details-001.png": {
+        "sha256": "891b9276f9b5f0865fe5139b7eadd8a66ba82862d181e6ee1f1f75e391e0e875",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-icon.png": {
+        "sha256": "699a6df73209be4dd304b90d35201d82f699513cd17c3c3c463b5c3b396c9533",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-icon-animation.png": {
+        "sha256": "dd4567e12050777ec61f284e4d529a242f8393223b21cb750126825a824fe314",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00026-icon-animation.json": {
+        "sha256": "1700bec68aba87805b2003ab0e8335f363662160154657f102f294ffe49aae5c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00026-basic-top.png": {
+        "sha256": "3f92484e4db09bd1137fe61ceb1badfd8d5db3aee9ad1cab7034cb01f0274a3a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00026-basic-001.png": {
+        "sha256": "dcea47bb3cf818da6593d316802e6eb89610370d89171f74e070a14841694332",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-name.png": {
+        "sha256": "2ab902480994a10b7c4182ce5fd71a6edec6c9c9c4b0d040102b2a72c65669fb",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-details.png": {
+        "sha256": "25f79d288f5aa713a0b5e33d632e1d483e23b0b69c48d0363be82f4f32b6146a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-details-001.png": {
+        "sha256": "4b8e64bd2b338e2c34577357c45c1ee0a9475396974a3f817a76b9c5159d2a40",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-details-002.png": {
+        "sha256": "52a0926873ed5ed1bcba6f80ab4cbcae07b7a7045d5c28910946831d09a666be",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-icon.png": {
+        "sha256": "52fad56bca03ba5137cc4515d0f02fc4ec5b346f7c69f41a09d71026efb2ada3",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-icon-animation.png": {
+        "sha256": "e08dec373d11f81f0f49c475b71c315810b106bad1702073401722c131c4ced6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00027-icon-animation.json": {
+        "sha256": "3882396f876de50f339aadc497e32c164f90ea79f044fef324d505007807ff64",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00027-basic-top.png": {
+        "sha256": "970ccb2c872c45e709d93efc17974ce1c62324569297ca57309824285ab5a3f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00027-basic-001.png": {
+        "sha256": "9d7c50ec1d6207f27987c4a37edd7a42a8fd10823d8493cacf75c454f8adefd4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00027-basic-002.png": {
+        "sha256": "6499d26fb1806a9439ff172ff077a3e35242b6406467523741556b1eec812a8c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-name.png": {
+        "sha256": "51bc642784940eed0a107d3c27f44d814d4e27370f3e59cacecbba546a6acad8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-details.png": {
+        "sha256": "8b4da6de247cadb23c89c2137bd80555c0edd23697f9181d00d65b04d2ce2731",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-details-001.png": {
+        "sha256": "bd5190d35c7d075c114daa18434a655e43809bb9e2d21085d31da2c7b09ed5a9",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-icon.png": {
+        "sha256": "530f807cebc74b00a5803d86d67a804b61c392109e687e12ad6b116751227b63",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-icon-animation.png": {
+        "sha256": "0a3ca71a423d9adfa3d7888effa1b353b49375ff7da45803d702b952a9a48632",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00028-icon-animation.json": {
+        "sha256": "caacf88b62e97026aabc3844e7246a02b08852a3a877a301add960e2bc8305d0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00028-basic-top.png": {
+        "sha256": "e7008ed979a258930e47488c14bca67470277fce1bca37f92828b699bfc26c13",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00028-basic-001.png": {
+        "sha256": "bd5190d35c7d075c114daa18434a655e43809bb9e2d21085d31da2c7b09ed5a9",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-name.png": {
+        "sha256": "e11fffc7f49959b64471f2892a2902b76035bcbf5ed04fa978d81b0beb4a2c18",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-details.png": {
+        "sha256": "e6e949ee7fb032155d201bb345476dbec1e56975e444980cbf22e1ad4f7ea7d2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-details-001.png": {
+        "sha256": "732eff0c2ff7c86b382f68a3ffcf73299aed532b7315bd5d813e1a063bc1abe8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-details-002.png": {
+        "sha256": "e8f01133a03c0995ccf691fa02b4abe7c676f3ad15fcc266e849b8b1a94d5ff4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-icon.png": {
+        "sha256": "57a92a13aeef78b9f7f1a71438197161a8b917158c00b63a2c61311b8bd13ca8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-icon-animation.png": {
+        "sha256": "48b0ec6d2696f1f75d73fc60db3d12cac2dfdae9bde3af09f78211dd95e92d8b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00029-icon-animation.json": {
+        "sha256": "ce362e653d09e2dcd62be05e5efa2a72580d533bca3e34cd2095c265cb566015",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00029-basic-top.png": {
+        "sha256": "1d26f42dce10d80cb6a7844448b86018ab05590471e5e0d902222c87a033f5a5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00029-basic-001.png": {
+        "sha256": "732eff0c2ff7c86b382f68a3ffcf73299aed532b7315bd5d813e1a063bc1abe8",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00029-basic-002.png": {
+        "sha256": "e8f01133a03c0995ccf691fa02b4abe7c676f3ad15fcc266e849b8b1a94d5ff4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-name.png": {
+        "sha256": "15e6dc7adac3ff3004e07eb55cf9b8071ec0b4d1ef264ef3ce22de26a614a76b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-details.png": {
+        "sha256": "dcf286542d88949e7a8a3ffcfc991cead4a9d61c77320d25d1f5f118d0d5a9d2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-details-001.png": {
+        "sha256": "d5b4a5955b51e35baa0d86f2769fa126777748ea161a84c4633bbfe98ead702d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-details-002.png": {
+        "sha256": "04e461789fbd8ac0cfdf2ade0bcfc5cd5ea732644d3e7892b87473e1a3de4f43",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-icon.png": {
+        "sha256": "29b437d2f22843d6aeda05c276de80eac57e0a4f41d1f626d394ee60f2ee49f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-icon-animation.png": {
+        "sha256": "7ac391f08318b6c1710e9f10eadac691cb5cbeb0a7237887bac44a94d914adc5",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00030-icon-animation.json": {
+        "sha256": "15cab142c7242c7bd0248f9d98406b9e9da5b6a3638063d1338b51f0d53fae83",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00030-basic-top.png": {
+        "sha256": "4e8fd8ea5ea50e3b749c0285a4d996fdddaef8158df23fc4caca2ebf8eafbb7a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00030-basic-001.png": {
+        "sha256": "e1a5fbd3c7dc92cfb7b3671d4aca4a6e03ae033125dcdb246ebd78a6be637d95",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00030-basic-002.png": {
+        "sha256": "129e24191488b8a81063f4fdba72d0a0e9077e0f69e5bb248ae2ca87def3e232",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-name.png": {
+        "sha256": "2df06b622804148faffeea994d6a1d55a76f6530a8873040e1b1eac7a47deb58",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-details.png": {
+        "sha256": "86b44e642496ededd3268e2f9529ea5f5c6f13412845fee0fd7ded150e4ef58c",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-details-001.png": {
+        "sha256": "aa8400ac0a4e29945af501a93b6b46978f8e02e4f0aaca537d1f93d05680ea00",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-details-002.png": {
+        "sha256": "8a25c2be1ab9776eb8e1932a12b87153f6cea0962255da8c5ecf1d4168fd832d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-icon.png": {
+        "sha256": "f238ef7aaf51d2a9c193c30f2b63764cedff46a1aa019907b5cee7a9f1045843",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-icon-animation.png": {
+        "sha256": "552728728db340f3f8dc167da855ae0f2ebe00ea66e00f1ee65ad9c2ca8466a6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00031-icon-animation.json": {
+        "sha256": "5c68409fa30346593118947918bb00f34e06882d4a092cfdb1e12cb40eae0a58",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00031-basic-top.png": {
+        "sha256": "587d23cc7b54333801252d8e0e98c1e17d5f5a993307a925a10bf67b1a022ca4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00031-basic-001.png": {
+        "sha256": "414d6b722be2a29eb43d587cfa2fe73f748c0924e4ceef8a68fa342057a3b5ef",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00031-basic-002.png": {
+        "sha256": "aa5538c8643edaa24e6318fbc7c8bd157cd66d2dedbce80a0228e3d2e4f98541",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-name.png": {
+        "sha256": "c81c2b96121cf35e22ecc83f740b4c0285b05f688313b168fd446ce94ebbea14",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-details.png": {
+        "sha256": "f248e4a918fef351364f825a381eca38c8f46a077857651a11857d8d9ed13d7a",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-details-001.png": {
+        "sha256": "c7e56c8ea021c7106b8efda45d444c159742cf9da40511266a1ecc1eba62a5a4",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-details-002.png": {
+        "sha256": "5437b5b5b38585506386181d1406a4ce29891e24f1c6cad516d5034d845f03e2",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-icon.png": {
+        "sha256": "737d34a78f60ab16b4491f3e7e6c7975d082f44a382840674dd3ad25644652f6",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-icon-animation.png": {
+        "sha256": "9272d6ae29f3018de13f297210d1cb5934ba8688c35acb919a01e5a482765fac",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00032-icon-animation.json": {
+        "sha256": "020b9507c2b44188fb54448568189c05c4d3967158fcaa08b844d4676f4021f1",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00032-basic-top.png": {
+        "sha256": "10657252c16a470941796777b4fec6c542513fef03edcb128d687cf51ba92d11",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00032-basic-001.png": {
+        "sha256": "5e25926495d1fdd3a71f313d6ccb769979ac5e2ec71cecd0a048fd6a271db5fe",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00032-basic-002.png": {
+        "sha256": "2a14fb701399113a925aac4ef1a68eb78255e53afc2da49017d9c8a4c10bb094",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-name.png": {
+        "sha256": "d86cf830db2c37bbf3d169c6aa4efce32dd458ea8e6c058c9ba412e1dee5a8f0",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-details.png": {
+        "sha256": "dd8b97991b0ff81fd253132618deecaf15cb09bffa409c550124ec48cdd85a71",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-details-001.png": {
+        "sha256": "a8284ae82b73a3c215f90aa360000ed899081a90e9226502d841a08799186d5b",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-details-002.png": {
+        "sha256": "8d2f0ff1f1b2a36aea045561a67f81d32bb3841f8a068b4e6229140045f58830",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-icon.png": {
+        "sha256": "cd4406aae97345978227a95796ad61bd3c1b563a1eaf23663555af7471f1d455",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-icon-animation.png": {
+        "sha256": "4a416576511a2723720ded450ac9de85114c6091843b1a1872897a1e1a4fed85",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-current\\cards\\00033-icon-animation.json": {
+        "sha256": "427a7cfb9d954564c638226416425f225e667c45af375c1ac468a3c060a88398",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00033-basic-top.png": {
+        "sha256": "8bdbf25cd3de7d4a51e0eb74c743cb0b3d0325d936059e149d9b3694ed01258d",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00033-basic-001.png": {
+        "sha256": "d7d97a69b36f2fb74cce68fb99711505003497181255552206f8bd84f8d10dac",
+        "state": "HASH_MATCH"
+      },
+      "outputs\\items-basic\\cards\\00033-basic-002.png": {
+        "sha256": "e17f991c7212aad1f749d3c81eb48659bc36da982f6e59edf738ab78868f2b4d",
+        "state": "HASH_MATCH"
+      }
+    }
+  },
+  "proven_merge_rules": [
+    "33 items-current fullpass records link through verified-items.new_basic_pass +same identity fingerprints to33 of161 items-basic captures; one canonical observation per mapped capture.",
+    "Basic111plus51 records exactly duplicate Basic24..161 source_capture_key+properties; do not add51.",
+    "Basic33/fullpass/Basic110/category PRs repeat these same saved sources; no additional items.",
+    "3143batch003 is byte-identical1853 archive, counted once.",
+    "Targeted5 query scopes and22 historical pilot label groups remain UNRECONCILED, not name-deduplicated.",
+    "Boots43 presequence captures reuse proof explicitly present in boots-sequence-reuse-check;67 ordered Boots and109 Containers already represented by3173.",
+    "Known collections not represented by a newly normalized identity remain inventoried, never discarded."
+  ]
+}

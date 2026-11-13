@@ -1,0 +1,115 @@
+{
+  "classification": "DERIVED",
+  "authoritative_scope_for_current_owner_question": "All static data shown on scoped Cyclopedia item cards: manually read name, category/query scope, icon/reference, full Basic/Description capture and both NPC panels with saved complete scroll evidence or a qualified observed-empty pane. No canonical/server/runtime requirement.",
+  "counts": {
+    "retained_observation_records_after_proven_capture_merges": 2907,
+    "COMPLETE": 340,
+    "PARTIAL": 2540,
+    "UNRECONCILED": 27,
+    "normalized_primary_scoped_cards": 2880,
+    "NOT_a_global_unique_item_or6470_denominator": true
+  },
+  "complete_components": {
+    "Armors_full_current": 33,
+    "Decoration_both_observed_empty": 214,
+    "Food_both_observed_empty_after_3170_corrections": 88,
+    "Decoration_full_BuyFrom_plus_empty_SellTo": 3,
+    "saved1853_wealth_duplex_and_rat_claws": 2
+  },
+  "primary_category_counts": {
+    "Amulets": {
+      "PARTIAL": 87
+    },
+    "Armors": {
+      "COMPLETE": 33,
+      "PARTIAL": 128
+    },
+    "Boots": {
+      "PARTIAL": 67
+    },
+    "Containers": {
+      "PARTIAL": 109
+    },
+    "Creature Products": {
+      "PARTIAL": 980
+    },
+    "Decoration": {
+      "PARTIAL": 245,
+      "COMPLETE": 217
+    },
+    "Food": {
+      "COMPLETE": 88,
+      "PARTIAL": 81
+    },
+    "Gold": {
+      "PARTIAL": 3
+    },
+    "HISTORICAL_PILOT_LABEL_SCOPE": {
+      "UNRECONCILED": 22
+    },
+    "Helmets and Hats": {
+      "PARTIAL": 128
+    },
+    "Legs": {
+      "PARTIAL": 66
+    },
+    "Others": {
+      "PARTIAL": 603
+    },
+    "Potions": {
+      "PARTIAL": 43,
+      "COMPLETE": 1
+    },
+    "QUERY_SCOPED_UNRECONCILED_WITH_GLOBAL_LIST": {
+      "UNRECONCILED": 5
+    },
+    "UNKNOWN_GLOBAL_SEARCH_RESULT_NOT_CATEGORY_CENSUS": {
+      "COMPLETE": 1
+    }
+  },
+  "exact_missing_reason_counts": {
+    "Sell To:RECONCILE_RETAINED_BASIC_PANE_OR_NPC_EXPORT": 1992,
+    "Buy From:RECONCILE_RETAINED_BASIC_PANE_OR_NPC_EXPORT": 1992,
+    "Buy From:OFFSCREEN_SCROLL_COMPLETENESS_NOT_QUALIFIED_FROM_RETAINED_EVIDENCE": 252,
+    "Sell To:OFFSCREEN_SCROLL_COMPLETENESS_NOT_QUALIFIED_FROM_RETAINED_EVIDENCE": 93,
+    "Sell To/Buy From:VISIBLE_FIRST_PANEL_ONLY_NPC_TAIL_NOT_CAPTURED_IN_1853_ARCHIVE": 7,
+    "Sell To:DEFERRED_REVIEW_OF_RETAINED_BASIC_PNG_NPC_PANE": 128,
+    "Buy From:DEFERRED_REVIEW_OF_RETAINED_BASIC_PNG_NPC_PANE": 128,
+    "Sell To:EXPLICITLY_DEFERRED_REVIEW_EXISTING_BASIC_PNG": 87,
+    "Buy From:EXPLICITLY_DEFERRED_REVIEW_EXISTING_BASIC_PNG": 87,
+    "PROVEN_QUERY_TO_GLOBAL_CAPTURE_PROVENANCE_JOIN_NOT_AVAILABLE": 5,
+    "NPC_PANELS_NOT_REVIEWED": 5,
+    "SOURCE_VERSION_AND_CROSS_COLLECTION_PROVENANCE_UNRESOLVED": 22,
+    "VISIBLE_FIELD_OBSERVATIONS_RETAINED_NOT_ALL_ITEM_PANELS_CLOSED": 22
+  },
+  "actual_extra_night_data_recovered": {
+    "Armors33_complete_saved_index": 33,
+    "manually_reviewed_NPC_quotes": 218,
+    "observed_empty_panels": 37,
+    "verified_source_reference_files": 402,
+    "proof_failures": 0
+  },
+  "critical_differences_from_old_matrix": [
+    "Basic absence/applicability bookkeeping no longer turns fully read collected panels into missing item data.",
+    "An observed-empty UI pane is complete for that captured pane; never a claim no vendors exist globally.",
+    "A saved static icon/reference is sufficient for this collection scope.33 icon-animation files are one-frame PNGs; metadata says a sampling duration but full temporal cycle stays separately unqualified.",
+    "Canonical binding and Oteryn import/readiness do not gate client collection completeness.",
+    "Unknown capture-to-global correspondence is shown as27 UNRECONCILED records, not hidden or forced into unique-item totals."
+  ],
+  "sources_unavailable": [
+    "Old Ubuntu original PNG directories offline; published normalized records/custody receipts remain usable.",
+    "572-file Ubuntu preservation archive not directly reachable; Windows531 archive verified byte-identical with workspace, no hidden archive-only files."
+  ],
+  "original_private_media_published": false,
+  "UI_actions": 0,
+  "runtime_changes": 0,
+  "scope_excludes": "Per-user loot settings, dynamic market prices and current session state are not intrinsic static item data; retained33 market snapshots remain dated context. Full animation cycle is not a prerequisite for an observed static icon/reference.",
+  "partial_means": "Known missing OR not yet reconciled fields, not all actual data absent.1992 existing Basic capture records may recover NPC panes offline (176 Windows originals;1816 original source on offline Ubuntu).215 Armors/Amulets Basic-only records explicitly deferred NPC review, not proof no saved pane exists.",
+  "partial_primary_reason_groups": {
+    "NPC_panes_recover_from_existing_Basic_proofs": 1992,
+    "nonempty_panel_scroll_completeness_not_qualified": 326,
+    "new_potion_NPC_tail_not_captured_in_1853_archive": 7,
+    "Armors_Amulets_NPC_review_explicitly_deferred_existing_PNG": 215
+  },
+  "fresh_open_PR_snapshot": "night-all-open-PR-inventory.json:31 open PRs,6820 file occurrences at pre-publication heads; includes own923ff predecessor, no self-referential head assertion."
+}

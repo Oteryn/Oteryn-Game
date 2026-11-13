@@ -1,5 +1,41 @@
 # All-category local item field delta
 
+**Current owner question: ALL static data shown by Cyclopedia item cards.**
+The overnight reconciliation gives **340 complete,2540 partial and27
+unreconciled records =2907** after proven capture-source merges. This is not
+2907 globally unique items or a subtraction from6228 types. The older701/1931
+Basic-state matrix is retained historical metadata, not the ALL-data answer.
+
+The340 comprise33 full Armors cards,214 Decoration and88 Food with both NPC
+panes observed empty,3 Decoration cards with complete Buy From scrolls and an
+empty Sell To pane, plus wealth duplex and rat claws from saved1853. Empty
+means the captured UI pane, not no vendors globally. Full Basic page reads,
+names, icon references, Description custody and visible presentation are
+reused. Canonical/server IDs and runtime parity do not gate this collection.
+
+`night-all-visible-items.csv/.json` lists each scoped name and missing or
+unreconciled data. Of2540 partial records,1992 have NPC panes to reconcile
+from existing Basic proofs (176 Windows originals;1816 sources on offline
+Ubuntu),326 have unqualified vendor-scroll completion,7 new potion tails
+were not captured in1853, and215 Armors/Amulets records deferred NPC review.
+These are not2540 requests for new GUI reads.27 unreconciled records retain
+5 targeted query scopes and22 older pilot label groups without guessed joins.
+
+`night-collection-inventory.json` lists known collections, hashes, duplicate
+relationships and unavailable originals. All531 Windows metadata ZIP members
+are byte-identical to workspace files; none is archive-only. Old Ubuntu is
+offline: its572-file backup and original PNG directories were not freshly read.
+For33 full Armors records,402 referenced PNG/JSON files passed hash verification
+with zero failures.218 factual NPC quotes and37 empty panes are retained in
+`night-Armors33-visible-data.json`.
+
+The33 icon-animation.png files are one-frame PNGs; recording metadata does not
+prove a full temporal cycle. Static icons remain available. Per-user loot
+settings, dynamic market prices and session state are outside intrinsic item
+data; existing market snapshots remain dated context. Current count authority:
+`night-all-visible-summary.json`. Refreshed PR inventory:31 open PRs /6820
+complete file-path occurrences at pre-publication heads. No new game input.
+
 This **DERIVED, PARTIAL** packet reuses the complete6470-appearance /6228-type
 client cohort and the existing published observations. It adds exact compiled
 enum meanings, a thin field-presence/index projection and the **two actual

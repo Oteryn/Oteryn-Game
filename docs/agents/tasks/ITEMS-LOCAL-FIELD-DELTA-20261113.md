@@ -70,6 +70,15 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING scope corrected by allocation6863611510: reconcile actual overnight
+collections, not Basic bookkeeping. Current ALL-visible collection result:
+340 complete+2540 partial+27 unreconciled=2907 retained scoped records.
+33 full Armors map explicitly into161 Basic captures; old duplicates are not
+counted again.218 NPC quotes recovered,402 source-reference hashes verified,
+531 archive members equal workspace. Offline old Ubuntu originals/572-file
+backup explicitly unavailable. No GUI, canonical-ID or runtime prerequisite.
+Old Basic matrices remain historical. See night-all-visible-summary.json.
+
 Packet/source verifier with negative controls, governance validator,
 129 governance tests and diff check PASS before candidate freeze.
 No game build applies. Exact frozen SHA/PR and fresh checks will be recorded
