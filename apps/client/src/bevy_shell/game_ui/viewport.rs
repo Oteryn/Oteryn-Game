@@ -8,6 +8,8 @@ use bevy::{
 
 #[derive(Component)]
 pub(in crate::bevy_shell) struct WorldCamera;
+#[derive(Component)]
+struct WorldBackdrop;
 #[derive(Resource, Default, Clone, Copy)]
 pub(in crate::bevy_shell) struct WorldViewport {
     pub origin: UVec2,
@@ -29,7 +31,10 @@ impl WorldViewport {
         ((self.size.as_vec2() - scene_size.as_vec2()) * 0.5).floor()
     }
 }
-pub(in crate::bevy_shell) fn setup(mut commands: Commands) {
+pub(in crate::bevy_shell) fn setup(
+    mut commands: Commands,
+    skins: Res<crate::bevy_shell::ui::Skins>,
+) {
     commands.spawn((
         Camera2d,
         Camera {
@@ -37,6 +42,22 @@ pub(in crate::bevy_shell) fn setup(mut commands: Commands) {
             ..default()
         },
         WorldCamera,
+        RenderLayers::layer(1),
+    ));
+    commands.spawn((
+        Sprite {
+            image: skins.inset.clone(),
+            rect: Some(Rect::new(1., 1., 95., 95.)),
+            image_mode: SpriteImageMode::Tiled {
+                tile_x: true,
+                tile_y: true,
+                stretch_value: 1.,
+            },
+            ..default()
+        },
+        Transform::from_xyz(0., 0., -10.),
+        Visibility::Hidden,
+        WorldBackdrop,
         RenderLayers::layer(1),
     ));
 }
@@ -47,11 +68,15 @@ pub(in crate::bevy_shell) fn project(
     windows: Query<&Window, With<PrimaryWindow>>,
     mut viewport: ResMut<WorldViewport>,
     mut cameras: Query<&mut Camera, With<WorldCamera>>,
+    mut backdrops: Query<(&mut Sprite, &mut Visibility), With<WorldBackdrop>>,
 ) {
     let (Ok(window), Ok(mut camera)) = (windows.single(), cameras.single_mut()) else {
         return;
     };
     if owner.play.is_none() {
+        for (_, mut visibility) in &mut backdrops {
+            *visibility = Visibility::Hidden;
+        }
         camera.is_active = true;
         camera.viewport = None;
         *viewport = WorldViewport::default();
@@ -73,6 +98,14 @@ pub(in crate::bevy_shell) fn project(
             window.physical_height(),
         ));
     let size = end.saturating_sub(start);
+    for (mut sprite, mut visibility) in &mut backdrops {
+        sprite.custom_size = Some(size.as_vec2() / window.scale_factor());
+        *visibility = if size.min_element() > 0 {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
+    }
     if size.x == 0 || size.y == 0 {
         camera.is_active = false;
         camera.viewport = None;
