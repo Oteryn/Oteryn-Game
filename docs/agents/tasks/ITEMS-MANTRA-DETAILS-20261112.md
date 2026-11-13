@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: ITEMS-MANTRA-DETAILS-20261112
-title: Preserve literal Mantra values in Item Details
+title: Preserve literal Mantra and known zero weight in Item Details
 mode: REPAIR
 status: waiting
 repository: Oteryn/Oteryn-Game
@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root/mantra_resume
 created_at: 2026-11-12T22:57:37Z
-updated_at: 2026-11-13T02:26:01Z
+updated_at: 2026-11-13T02:58:54Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/inspection.rs
@@ -30,9 +30,9 @@ external_repositories: []
 
 ## Outcome
 
-PARTIAL candidate: Item Details projects Known SignedPoints Mantra as its literal
-signed decimal value. Independent review, exact-head CI and remaining validation
-are pending. This record remains active; the overall static Cyclopedia audit is
+PARTIAL grouped candidate: Item Details projects literal Known SignedPoints
+Mantra and retains a Known zero Weight. Independent review, exact-head CI and
+normal unit execution remain unqualified/pending. This record remains active; the overall static Cyclopedia audit is
 not complete.
 
 ## Architecture and source of truth
@@ -42,13 +42,50 @@ The owner-authorized Cloud coordinator transferred this lane to one writer and
 explicitly extended the task-record scope to this active location while validation
 is pending. The immutable local handoff patch has SHA256
 8837e3fae3029857e5148469e08af3e39035a764ca10b56fcba8f1977b652a29.
-It was applied exactly; reverse-apply verification confirms the retained delta.
+It was applied exactly. Its original six producer lines and138 regression
+lines remain intact as the prior portion of this grouped repair.
 
 The existing selected materializable profiles contain harmony amulet2, merudri
 scale mail13, robe of enlightenment15 and coned hat of enlightenment4. These are
 existing native profile references, not newly inferred appearance/server IDs.
 The real details function and existing attribute codec/client consumer are the
 qualified projection path. No deployed-server qualification is asserted.
+
+## Authoring continuation: known zero Weight
+
+The active control plane explicitly returned PR3154 and frozen head
+9b9ac05eab879c082cbe0b9fd5ef8f7fd42118b2 to AUTHORING before this write, grouping
+one newly verified defect in the same inspection module rather than opening an
+overlapping PR. Owned source/task-record paths remain unchanged.
+
+The own catalogue request22026 resolves the existing selected native key
+`oteryn:item.tibia.i36809` (curl of hair), a materializable CharacterInventory/Ground
+profile with physical.weight=Known(0). Request::Catalogue invokes project with
+count1/metadataNone, then details previously omitted Weight because of its
+nonzero guard. ReferenceItemField explicitly distinguishes Known(0) from Unknown,
+NotApplicable and Conflict. The fix removes only that value-filtering guard;
+Known-state checks, arithmetic and Weight/Total Weight label rules remain.
+
+Independent retail nettle evidence in the control-plane packet reports
+Weight0.00oz. It motivates preserving the state but does not bind any retail
+appearance/Cyclopedia ID to the native key or own catalogue request. Source Item
+values and IDs are unchanged.
+
+New regressions use the real selected curl-of-hair profile for Known0 versus
+Unknown/NotApplicable/Conflict and codec retention. Real wardrobe and sword
+profiles exercise a zero container template, zero aggregate, nonzero contents
+aggregate and positive stacked count, preserving Weight versus Total Weight.
+These newly authored tests have NOT executed. The known16GiB compiler OOM remains
+an execution blocker; no new RED/GREEN or full-unit pass is claimed. Fresh authoring checks: cargo fmt --all --check pass; strict dispatch Clippy
+--all-targets --all-features --quiet -- -D warnings pass (exit0, source/head
+fence retained); governance validation and129 governance unit tests pass;
+git diff --check pass. The new inspection source SHA256 is
+d22439e9b3e366456bcb03b031e1a320322f4517bb0a9724959a5addd2444ddb.
+These checks type-check the new regressions but do not execute them. Root read
+and accepted the actual one-line guard removal and103-line/two-test delta before
+publication. That is bounded TASK diff verification, not formal independent
+review. The root authorized one grouped commit/push on the same PR and a new
+freeze after these checks; no further unit retry is performed.
 
 ## High-risk authority/recovery qualification
 
@@ -63,7 +100,9 @@ their existing owners. Independent review remains REVIEW_PENDING.
 - [x] Preserve known zero and negative values; omit Unknown, NotApplicable and invalid parameter kinds.
 - [x] Cover shared instance projection, codec round trip and unrelated attributes/source preservation.
 - [ ] Complete normal unit qualification after the executor memory failure.
-- [x] Publish the bounded PARTIAL draft; final head is reported by remote readback.
+- [x] Original Mantra-only PARTIAL draft3154 published and frozen.
+- [x] Format, type-check and verify the grouped Known-zero Weight delta with root.
+- [ ] Complete CI/independent qualification of the new grouped frozen candidate.
 - [ ] Obtain coordinator-routed independent review and exact-head CI.
 
 ## Reference parity
@@ -122,7 +161,7 @@ The unfinished checks resume in a detached, singleton, source/head-hash-fenced
 runner with explicit command exit receipts. Completed baseline checks are not
 repeated.
 
-Fresh5efd67da candidate evidence:
+Prior Mantra-only candidate evidence (before this zero-Weight authoring delta):
 
 - cargo fmt --all --check: pass, exit0.
 - python tools/agents/validate_governance.py: pass.
@@ -144,7 +183,9 @@ command/profile/cache with only CARGO_BUILD_JOBS=1. It was bound to committed
 head159412f4eced4c8430c6019629f59949f5ada2d0 and the unchanged inspection hash.
 The retry also exited101 before tests, with rustc SIGKILL9; the cgroup OOM-kill
 counter increased from1 to2. No further local retries are authorized or planned.
-The final task-record commit changes metadata only, after the retry terminated.
+The prior final task-record commit changed metadata only after the retry
+terminated; the later explicit AUTHORING continuation above now introduces
+additional production/test changes, whose execution remains unqualified.
 
 FAST_UNIT_UNQUALIFIED_OOM: normal unit qualification remains pending CI or an
 adequate executor. The completed PostgreSQL baseline checks above are separate
@@ -155,8 +196,9 @@ from actual PostgreSQL execution. No full PG, CI-green or mergeability claim.
 
 The bounded producer and regression diff was read; source/profile values and
 codec ownership remain unchanged. The coordinator's earlier bounded inspection
-found no actionable defect in this projection scope. This is not an external
-independent review result.
+covered the Mantra-only candidate. Root subsequently accepted the bounded
+grouped zero-Weight TASK diff. Neither statement is an external independent
+review result.
 
 ## Independent review
 
@@ -167,7 +209,9 @@ and owns the applicable review route. No ready or merge claim.
 ## PR and closeout
 
 Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/3154. Active record status
-is waiting/PARTIAL; no completed/archive state is asserted. The source-only
-repair is reviewable, while normal unit execution is unqualified after two
+is waiting/PARTIAL; no completed/archive state is asserted. The original source-only
+repair was made reviewable. The grouped authoring delta has root TASK verification
+and explicit publication authorization on this same PR; the new frozen head is
+reported by remote readback. Normal unit execution remains unqualified after two
 compilation OOMs. Exact-head CI and independent review remain pending. No merge
 or deployment authority.

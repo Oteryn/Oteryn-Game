@@ -716,7 +716,6 @@ fn details(
     }
     if let Known(physical) = &s.physical
         && let Known(weight) = physical.weight
-        && (weight != 0 || total_weight.is_some_and(|weight| weight != 0))
     {
         let total = total_weight.unwrap_or(u64::from(weight).checked_mul(u64::from(count))?);
         add(
@@ -1303,6 +1302,109 @@ mod tests {
                 .iter()
                 .any(|(label, _)| label == "Tier" || label.starts_with("Imbuement Slot "))
         );
+        Ok(())
+    }
+    #[test]
+    fn inspection_retains_real_known_zero_weight_and_omits_unknown_weight()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::{ReferenceItemField as F, native_gameplay::ItemProfilesDocument};
+        let profiles: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let source = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == "oteryn:item.tibia.i36809")
+            .ok_or("selected curl of hair profile")?;
+        assert!(source.admission.materializable);
+        let Known(physical) = &source.semantics.physical else {
+            return Err("known physical group".into());
+        };
+        assert_eq!(physical.weight, Known(0));
+        let zero = details(source, 0, 1, 1, None, None).ok_or("zero-weight catalogue details")?;
+        assert!(zero.attributes.contains(&("Weight".into(), "0.00 oz".into())));
+        assert!(!zero.attributes.iter().any(|(label, _)| label == "Total Weight"));
+        let reply = Reply {
+            status: 1,
+            items: vec![zero],
+            requests: Vec::new(),
+            catalogue: None,
+        };
+        let encoded = oteryn_protocol_oteryn::inspection::encode_reply(&reply)
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(
+            oteryn_protocol_oteryn::inspection::decode_reply(&encoded)
+                .map_err(|error| format!("{error:?}"))?,
+            reply
+        );
+        for state in [F::Unknown, F::NotApplicable, F::Conflict] {
+            let mut record = source.clone();
+            let Known(physical) = &mut record.semantics.physical else {
+                return Err("known physical group".into());
+            };
+            physical.weight = state;
+            let item = details(&record, 0, 1, 1, None, None).ok_or("unqualified weight details")?;
+            assert!(!item
+                .attributes
+                .iter()
+                .any(|(label, _)| label == "Weight" || label == "Total Weight"));
+        }
+        assert_eq!(physical.weight, Known(0), "projection must retain the source state");
+        Ok(())
+    }
+
+    #[test]
+    fn inspection_weight_labels_preserve_zero_totals_contents_and_positive_counts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::native_gameplay::ItemProfilesDocument;
+        let profiles: ItemProfilesDocument = serde_json::from_slice(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        ))?;
+        let find = |key| {
+            profiles
+                .records
+                .iter()
+                .find(|record| record.production_definition.production_key == key)
+                .ok_or("selected profile")
+        };
+        let container = find("oteryn:item.tibia.i2429")?;
+        let sword = find("oteryn:item.tibia.i3264")?;
+        let Known(physical) = &container.semantics.physical else {
+            return Err("known container physical group".into());
+        };
+        assert_eq!(physical.weight, Known(0));
+        assert!(matches!(container.semantics.container, Known(_)));
+        let Known(physical) = &sword.semantics.physical else {
+            return Err("known sword physical group".into());
+        };
+        assert_eq!(physical.weight, Known(3500));
+        let positive = details(sword, 0, 1, 3, None, None).ok_or("positive stacked weight")?;
+        assert!(positive.attributes.contains(&("Weight".into(), "105.00 oz".into())));
+        let template = details(container, 0, 1, 1, None, None).ok_or("zero container template")?;
+        assert!(template.attributes.contains(&("Weight".into(), "0.00 oz".into())));
+        let definition = |record: &ItemProfileRecord| TypedDefinitionRef {
+            family: record.production_definition.family.clone(),
+            production_key: record.production_definition.production_key.clone(),
+            revision_ref: record.production_definition.revision_ref.clone(),
+        };
+        let mut metadata = ItemMetadata {
+            definition: definition(container),
+            quantity: 1,
+            tier: 0,
+            imbuements: Vec::new(),
+            contents: vec![(definition(container), 1)],
+            charges: None,
+            remaining_ms: None,
+        };
+        let empty = details(container, 0, 1, 1, Some(&metadata), Some(0))
+            .ok_or("known zero aggregate")?;
+        assert!(empty.attributes.contains(&("Total Weight".into(), "0.00 oz".into())));
+        assert!(!empty.attributes.iter().any(|(label, _)| label == "Weight"));
+        metadata.contents.push((definition(sword), 1));
+        let loaded = details(container, 0, 1, 1, Some(&metadata), Some(3500))
+            .ok_or("known nonzero contents aggregate")?;
+        assert!(loaded.attributes.contains(&("Total Weight".into(), "35.00 oz".into())));
+        assert!(!loaded.attributes.iter().any(|(label, _)| label == "Weight"));
         Ok(())
     }
 }
