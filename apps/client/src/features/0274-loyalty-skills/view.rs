@@ -1,7 +1,9 @@
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "layout.rs"]
 mod layout;
-pub use layout::{SkillsLayout, SkillsLayoutState, SkillsNumbers, SkillsWidget};
+#[cfg(feature = "bevy-shell")]
+pub use layout::SkillsNumbers;
+pub use layout::{SkillsLayout, SkillsLayoutState, SkillsWidget};
 
 impl PlayLink {
     pub fn skills_widget(&self) -> SkillsWidget {

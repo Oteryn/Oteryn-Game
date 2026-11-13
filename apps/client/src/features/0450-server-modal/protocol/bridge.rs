@@ -123,13 +123,13 @@ impl PlayLink {
 }
 
 /// Keeps the real driver's mailbox projection alive for frontend caller tests.
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 #[must_use]
 pub(crate) struct BevyServerModalFixture {
     _driver: Driver,
     input_peer: Option<super::tests::AmountPeer>,
 }
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl PlayLink {
     pub(crate) fn bevy_server_modal_fixture(&self) -> BevyServerModalFixture {
         self.use_shared_frontend();
@@ -151,7 +151,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl PlayLink {
     pub(crate) fn bevy_server_modal_input_fixture(
         &self,
@@ -171,7 +171,7 @@ impl PlayLink {
         })
     }
 }
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl BevyServerModalFixture {
     pub(crate) fn with_choices(&mut self) {
         if let Some(dialog) = &mut self._driver.panel.active {

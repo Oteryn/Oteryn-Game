@@ -64,7 +64,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_quest_state(
         &self,
@@ -73,7 +73,7 @@ impl crate::play::Outbox {
         self.quest_initialize(state);
     }
 }
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_journal_quest_result(&self, result: &oteryn_session::GatedCommandResult) {
         self.quest_result(result);
