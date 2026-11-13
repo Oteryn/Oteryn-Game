@@ -1,0 +1,27 @@
+[
+  {
+    "path": "content/charms/index.json",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "13f1d2e6353a39d5dcbb6adc61258e461c7afece39bf9f1077d6b23d1d06bf98"
+  },
+  {
+    "path": "content/charms/charms-00000-00024.json",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "ce118bb9933ed5fae362c819aa0c0b50c043df4c9829de9ea7d03f89d73e3afe"
+  },
+  {
+    "path": "rulesets/progression/charms/mechanics.json",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "42712916354e3414b2c980b13ca0dc9a1710dd84b6d10ca4bde75954dea3b823"
+  },
+  {
+    "path": "rulesets/progression/charms/progression.json",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "5c0c23f7a317756b66cd676e6cb576dcb6e3c4c0efcae4c06dab54eb1a0d1d59"
+  },
+  {
+    "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+  }
+]

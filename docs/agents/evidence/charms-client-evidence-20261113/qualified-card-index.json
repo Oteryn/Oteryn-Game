@@ -1,0 +1,212 @@
+{
+  "count": 25,
+  "major": 14,
+  "minor": 11,
+  "cards": [
+    {
+      "name": "Freeze",
+      "category": "major",
+      "file": "major-freeze-initial.png",
+      "sha256": "5c12247e2d052d77726a6f655ca5f4305e7b237b754461cebb610990052be076",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-freeze-initial.png",
+      "bytes": 238341
+    },
+    {
+      "name": "Low Blow",
+      "category": "major",
+      "file": "major-low-blow.png",
+      "sha256": "044c594b87cd46ec3e2cbe5b564562826cc53ec0aa255e916221d3aad88b8ad7",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-low-blow.png",
+      "bytes": 235953
+    },
+    {
+      "name": "Parry",
+      "category": "major",
+      "file": "major-parry.png",
+      "sha256": "3417b2284b2c0d340571d2d9eef38f71c669edea0b89074b70a9670bb0e7fec1",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-parry.png",
+      "bytes": 236924
+    },
+    {
+      "name": "Poison",
+      "category": "major",
+      "file": "major-poison.png",
+      "sha256": "31691325c52f2f67b1ea0582138f6873b349129de2b016539178fc99a9ff0125",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-poison.png",
+      "bytes": 239201
+    },
+    {
+      "name": "Savage Blow",
+      "category": "major",
+      "file": "major-savage-blow.png",
+      "sha256": "3b0b6b772db1974b5caaad4cbff9712302b8b12916dcb18214b8e32d4691899e",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-savage-blow.png",
+      "bytes": 237219
+    },
+    {
+      "name": "Enflame",
+      "category": "major",
+      "file": "major-enflame.png",
+      "sha256": "5294456f25d73b6670884913724ea45956ac503962e1f66ae714a1899b309d5d",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-enflame.png",
+      "bytes": 239721
+    },
+    {
+      "name": "Carnage",
+      "category": "major",
+      "file": "major-carnage.png",
+      "sha256": "5909fb2305d5969bcac551bf3b0ce766f3d7e36fccd9c2a044c822150453d41b",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-carnage.png",
+      "bytes": 236566
+    },
+    {
+      "name": "Curse",
+      "category": "major",
+      "file": "major-curse.png",
+      "sha256": "7fbe7b8d55517efee3491bd2560881b4a5b6f677ae8c86399dd1a4377883e2a9",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-curse.png",
+      "bytes": 235705
+    },
+    {
+      "name": "Divine Wrath",
+      "category": "major",
+      "file": "major-divine-wrath.png",
+      "sha256": "f467df905cd6db2b729b2de6942345008fe70bae7d95e0bdfcdeeac508f35779",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-divine-wrath.png",
+      "bytes": 220236
+    },
+    {
+      "name": "Dodge",
+      "category": "major",
+      "file": "major-dodge.png",
+      "sha256": "2d0337940bb2e4303db73373d56263422c9aceba45f9de7bde9f6c5731680a63",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-dodge.png",
+      "bytes": 217644
+    },
+    {
+      "name": "Overflux",
+      "category": "major",
+      "file": "major-overflux.png",
+      "sha256": "ba152777649d35889bad3925f99ad47c18a87f57844bb02a1a0bbc948264de0f",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-overflux.png",
+      "bytes": 218353
+    },
+    {
+      "name": "Overpower",
+      "category": "major",
+      "file": "major-overpower.png",
+      "sha256": "df5d00d17a862ef5aa9479529bbf7116534daef543702e18c5c3933f8a52fc56",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-overpower.png",
+      "bytes": 219114
+    },
+    {
+      "name": "Wound",
+      "category": "major",
+      "file": "major-wound.png",
+      "sha256": "a104901e87425f0c8e49f28a66af1bae73b86dca70730fb3995f4d191b16f2cf",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-wound.png",
+      "bytes": 219684
+    },
+    {
+      "name": "Zap",
+      "category": "major",
+      "file": "major-zap.png",
+      "sha256": "27e48c51b3475ca54ee9c0d8229406885bb62684e84592790860e2aa8b9b3530",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-zap.png",
+      "bytes": 219729
+    },
+    {
+      "name": "Vampiric Embrace",
+      "category": "minor",
+      "file": "minor-catalogue-initial.png",
+      "sha256": "be706dd9ffe65d3527d038369580eb8eecfc6b70df5d286192d6220fc0f3e46c",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-catalogue-initial.png",
+      "bytes": 232015
+    },
+    {
+      "name": "Void Inversion",
+      "category": "minor",
+      "file": "minor-void-inversion.png",
+      "sha256": "ef2628f334795d1a19664f280a40b99bf78ada7252dfedbd755077fa426473e8",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-void-inversion.png",
+      "bytes": 233216
+    },
+    {
+      "name": "Void's Call",
+      "category": "minor",
+      "file": "minor-voids-call.png",
+      "sha256": "dea7af83783433ab23933890e065828c8fde10871ca3d421ec124c045661ebdb",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-voids-call.png",
+      "bytes": 229933
+    },
+    {
+      "name": "Fatal Hold",
+      "category": "minor",
+      "file": "minor-fatal-hold.png",
+      "sha256": "89d9147578e7031a9c67a3042bdcf97a7be54ed47beb78639cc6a84533fb6093",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-fatal-hold.png",
+      "bytes": 234368
+    },
+    {
+      "name": "Adrenaline Burst",
+      "category": "minor",
+      "file": "minor-adrenaline-burst.png",
+      "sha256": "c9ae3015320704ac416f4cf8804453905879c3da745d48fe5c3d31c3f7f844aa",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-adrenaline-burst.png",
+      "bytes": 231998
+    },
+    {
+      "name": "Bless",
+      "category": "minor",
+      "file": "minor-bless.png",
+      "sha256": "3490a78b502bfdc803609e887f23d00c9694de8aec6453275aa67c9ccb326bbd",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-bless.png",
+      "bytes": 228658
+    },
+    {
+      "name": "Cleanse",
+      "category": "minor",
+      "file": "minor-cleanse.png",
+      "sha256": "49d8fdc1f51800850045f24e9ca2982f624066edf5b3decc458dae44ff60e202",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-cleanse.png",
+      "bytes": 231071
+    },
+    {
+      "name": "Cripple",
+      "category": "minor",
+      "file": "minor-cripple.png",
+      "sha256": "cae5a5a17c12da34bce11ae598ca89c9312dad3cab3fdc6b005c5772b10c5c1d",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-cripple.png",
+      "bytes": 229517
+    },
+    {
+      "name": "Gut",
+      "category": "minor",
+      "file": "minor-gut.png",
+      "sha256": "dfd95c0cc71ed56f4525b2deb0c8c5c23657e5dda5edbdc8d559047f9a8035e7",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-gut.png",
+      "bytes": 218520
+    },
+    {
+      "name": "Numb",
+      "category": "minor",
+      "file": "minor-numb.png",
+      "sha256": "cb620608ba08d289e7577dc53a1c7065d7e9826ce11f33406fbf554d58bb9c65",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-numb.png",
+      "bytes": 220344
+    },
+    {
+      "name": "Scavenge",
+      "category": "minor",
+      "file": "minor-scavenge.png",
+      "sha256": "7a1e22edb0de4a3b7e84636c056297bc4e09f50736b6b2328aa2ae4b4c9accf4",
+      "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-scavenge.png",
+      "bytes": 220392
+    }
+  ],
+  "scope": "All25 visible descriptions; current state and Unlock/next-stage cost only. Not all3stages or combat proof.",
+  "input_boundary": "Passive catalogue, hover, scroll only; no unlock/upgrade/clear/reset/assign",
+  "source_receipts": "source-receipts.json",
+  "client_source_check": "Same running Ubuntu TibiaExternal staticdata bd1f4c... verified in prior Bestiary source audit",
+  "graphics_boundary": "Client screenshots retain locked/unlocked icon variants. No sprite-ID binding or animation identity is proved."
+}
