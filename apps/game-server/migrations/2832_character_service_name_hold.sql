@@ -10,7 +10,9 @@ DO $$ DECLARE body TEXT;BEGIN
  EXECUTE body;
 END $$;
 CREATE FUNCTION game_character_service_release_name(k TEXT) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE h game_character_service_name_holds;n BIGINT:=game_character_service_now();BEGIN
+DECLARE h game_character_service_name_holds;n BIGINT;BEGIN
+ IF NOT EXISTS(SELECT 1 FROM game_character_service_name_holds WHERE name_key=k) THEN RETURN;END IF;
+ n:=game_character_service_now();
  IF n IS NULL OR n<=0 THEN RAISE EXCEPTION 'trusted service clock unavailable';END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('oteryn:character-name:'||k,0));
  SELECT * INTO h FROM game_character_service_name_holds WHERE name_key=k FOR UPDATE;

@@ -1,6 +1,5 @@
-CREATE FUNCTION game_character_service_now() RETURNS BIGINT LANGUAGE sql VOLATILE
- SET search_path=pg_catalog AS $$ SELECT CASE WHEN abs(extract(epoch FROM clock_timestamp()-statement_timestamp()))<=1
- THEN floor(extract(epoch FROM clock_timestamp()))::bigint END $$;
+CREATE FUNCTION game_character_service_now() RETURNS BIGINT LANGUAGE sql STABLE
+ SET search_path=pg_catalog,public AS $$ SELECT public.game_account_closure_now() $$;
 REVOKE ALL ON FUNCTION game_character_service_now() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION game_character_service_now() TO oteryn_game_runtime,oteryn_game_control;
 CREATE TABLE game_character_service_deletions (

@@ -453,6 +453,20 @@ fn invalid(key: &'static str) -> BootError {
     BootError::Startup(StartupError::Invalid { key })
 }
 
+type ServiceProjectionMaterial = (
+    crate::native_admission_source::character_services_projection::Descriptor,
+    String,
+    std::path::PathBuf,
+);
+
+type CommandTransportMaterial = (
+    CommandDescriptor,
+    String,
+    crate::durability::character_command::account_deletion::Config,
+    bool,
+    Option<ServiceProjectionMaterial>,
+);
+
 type BazaarTransportMaterial = (
     bazaar_transport::BazaarDescriptor,
     ProducerDescriptor,
@@ -477,14 +491,7 @@ struct Material {
         std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
     /// Character-command consumer identity and source authority; `None`
     /// (the default) disables it. Taken once by the serving loop.
-    character_commands: std::sync::Mutex<
-        Option<(
-            CommandDescriptor,
-            String,
-            crate::durability::character_command::account_deletion::Config,
-            bool,
-        )>,
-    >,
+    character_commands: std::sync::Mutex<Option<CommandTransportMaterial>>,
     bazaar: std::sync::Mutex<Option<BazaarTransportMaterial>>,
     /// Public-projection publisher: its identity, source authority and epoch
     /// fence `F_pub`; `None` (absent or not enabled) disables it. Taken once
@@ -704,11 +711,90 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 &others,
             )
             .map_err(|_| invalid("platform.character_commands"))?;
+            let services = if platform.services_v2_enabled {
+                let services = platform
+                    .character_services
+                    .as_ref()
+                    .ok_or_else(|| invalid("platform.character_services"))?;
+                let own = chain(
+                    "platform.character_services.client_certificate_file",
+                    &services.client_certificate_file,
+                )?;
+                let key = private_key(
+                    "platform.character_services.client_key_file",
+                    &secret(
+                        "platform.character_services.client_key_file",
+                        &services.client_key_file,
+                        MAX_GAMEPLAY_KEY_BYTES,
+                    )?,
+                )?;
+                let mut other_chains = vec![client.clone(), gameplay_chain.clone()];
+                let mut paths = vec![&commands.client_certificate_file];
+                if let Some(v) = &platform.bootstrap_intents {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.runtime_status {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.account_characters {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.bazaar {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.public_projections {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &platform.world_event_outcomes {
+                    paths.push(&v.client_certificate_file);
+                }
+                if let Some(v) = &config.journal {
+                    paths.push(&v.client_certificate_file);
+                }
+                for path in paths {
+                    other_chains.push(chain(
+                        "platform.character_services.identity_separation",
+                        path,
+                    )?);
+                }
+                for name in [
+                    "OTERYN_PREMIUM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+                ] {
+                    if let Some(path) = std::env::var_os(name) {
+                        other_chains.push(chain(
+                            "platform.character_services.identity_separation",
+                            Path::new(&path),
+                        )?);
+                    }
+                }
+                let others: Vec<_> = other_chains.iter().map(Vec::as_slice).collect();
+                let service_descriptor =
+                    crate::native_admission_source::character_services_projection::Descriptor::new(
+                        endpoint.clone(),
+                        platform.peer_name.clone(),
+                        roots.clone(),
+                        own,
+                        key,
+                        &others,
+                    )
+                    .map_err(|_| invalid("platform.character_services.identity_separation"))?;
+                Some((
+                    service_descriptor,
+                    services.source_authority.clone(),
+                    services.epoch_fence_file.clone(),
+                ))
+            } else {
+                None
+            };
             Some((
                 descriptor,
                 commands.source_authority.clone(),
                 commands.account_deletion.clone(),
                 platform.services_v2_enabled,
+                services,
             ))
         }
     };
@@ -1579,15 +1665,11 @@ async fn character_commands_loop(
     authority: &ReconciledCharacterAuthority<'_, '_>,
     proof: &NodeIncarnationProof,
     evidence: &FreshEvidenceSource,
-    commands: Option<(
-        CommandDescriptor,
-        String,
-        crate::durability::character_command::account_deletion::Config,
-        bool,
-    )>,
+    commands: Option<CommandTransportMaterial>,
     stop: &CancellationToken,
 ) {
-    let Some((descriptor, source_authority, deletion, services_enabled)) = commands else {
+    let Some((descriptor, source_authority, deletion, services_enabled, services)) = commands
+    else {
         return;
     };
     event("event=character_commands state=started");
@@ -1616,7 +1698,31 @@ async fn character_commands_loop(
         event,
     )
     .with_services(services_enabled);
-    first(both(consumer.run(), publisher), stop.cancelled()).await;
+    let delivery = async {
+        if let Some((descriptor, source, fence)) = services {
+            crate::native_admission_source::character_services_projection::Publisher::new(
+                SystemClock::default(),
+                crate::durability::character_services_projection::CharacterServicesStore {
+                    root,
+                    authority,
+                    proof,
+                },
+                crate::native_admission_source::character_services_projection::MtlsPeer::new(
+                    descriptor,
+                ),
+                EpochFenceFile::new(fence),
+                source,
+                crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
+            )
+            .run()
+            .await;
+        }
+    };
+    first(
+        both(both(consumer.run(), publisher), delivery),
+        stop.cancelled(),
+    )
+    .await;
 }
 
 /// One bounded owner reconciliation per cadence, independent of Platform reachability.

@@ -1,8 +1,8 @@
 # Character Authority services v2 (G-3)
 
-Status: **wire implemented against Platform PROPOSED revision 2 @a85b5da;
-activation pending**. Decisions, storage, consumers and delivery are being implemented under the
-resolved interpretation below. This is not service activation.
+Status: **implemented against Platform PROPOSED revision 2 @a85b5da;
+activation pending**. This records the Game implementation and the resolved
+LCFA interpretation below; it does not activate services.
 
 Owner implementation authorization: 2026-11-13. Source:
 [Platform proposal at the pinned revision](https://github.com/Oteryn/oteryn-platform/blob/a85b5da4de23f3e8633cfb25a2db1ad7f6133acd/docs/contracts/OTERYN_V2_CHARACTER_SERVICES_COMMAND_CONTRACT_PROPOSAL.md).
@@ -60,9 +60,10 @@ all existing progression metadata. A missing initialized progression state is
 an unavailable dependency, never fabricated progression. Account security,
 current node incarnation, restore fence, ownership, revision and offline state
 are checked in the deciding transaction. Unsafe/unavailable or backward-moving
-service time commits nothing; finalization waits. The service clock uses the
-existing trusted server clock, refusing a statement delayed more than one second;
-production clock assurance remains a deployment prerequisite.
+service time commits nothing; finalization waits. The service clock reuses
+the existing Character Authority/account-closure trusted server clock. A null or
+backwards source time is unavailable; no new production clock assurance value is
+selected. Production clock assurance remains a deployment prerequisite.
 
 Refusals use the closed §5 codes. A same-comparison-key rename uses
 `CHAR_CMD_NAME_UNAVAILABLE`: the closed vocabulary has no separate no-op code.
@@ -101,6 +102,87 @@ separate version-specific issuance capacities. Game issues no operations and
 uses one serialized consumer/deciding writer; reading a key never authorizes it.
 Receipts refused with 404/409 remain durable and automatic publication stops.
 
+## Companion delivery and resync
+
+`[platform.character_services]` supplies its dedicated certificate, private-key
+file, source authority, and the **same** `epoch_fence_file` as LCFA. Enabling v2
+requires both sections. Certificate public keys are compared against all other
+configured internal purposes, including command, LCFA, runtime/evidence,
+bootstrap, Store/Coins' existing identity, public/T94, journal, Premium and stream
+identities. The gameplay identity is also refused. Paths alone are insufficient
+for identity separation. No certificate, key or production setting is supplied.
+
+The command worker owns a separate serialized services publisher. It shares
+LCFA's transport, watermark/idle constants, transaction-slack computation and
+bounded phase helper. The existing LCFA publisher remains the sole writer of
+the shared external epoch witness. Services only publish when the DB epoch
+matches that durable witness; they never raise an epoch or rewrite its file.
+Every store pass checks recovery and current process authority. The receipt's
+projection revision is the independent services counter.
+
+A mutation stores a coalesced complete `(account_id,character_id)` snapshot.
+Each account has an independent services counter; ACK matches exact epoch and
+revision and cannot clear newer work or a quarantine. LCFA ACKs do not touch
+services, and services ACKs do not touch LCFA. An unacknowledged coalesced row
+keeps its oldest committed time, so replacing it cannot falsely advance
+completeness. Lost ACKs retry the same assigned facts/bytes. Source time is
+assignment time, not retry time.
+
+A never-enabled authority does not capture ordinary v1 changes. Capture starts
+atomically with its first service mutation or with the enabled publisher, and
+continues durably across publication pauses. This preserves already-created
+state for recovery. Initial enable and epoch raises queue bounded resync:
+sixteen subjects per pass, roots followed by retained old-owner removals,
+including DELETED tombstones. The watermark stays below resync start until
+enumeration completes. Late rows from the previous epoch are repaired under the
+same portfolio-before-root order. Resync does not change LCFA revisions.
+
+`REMOVED_FROM_ACCOUNT` uses retained old-owner facts, never the new owner's
+name, sex or subsequent revisions. Invalid snapshots and 400/401/409/413 replies
+quarantine their scope durably; current-generation updates do not erase that
+disposition. A watermark conflict quarantines the feed. Work remains pending and
+holds completeness back. Repair requires operator investigation and an approved
+shared epoch resync. Receipt publication stops are separately retained in 2830,
+bound to immutable receipt bytes and recovery generation, including restart.
+
+## Conservative readings and activation prerequisites
+
+The proposal says, verbatim:
+
+> backoff on 429/503 at most 10 s
+
+and:
+
+> 429 = throttled with Retry-After in seconds
+
+The publisher's own exponential backoff is bounded at ten seconds. A larger
+server Retry-After is an independent embargo and is never shortened to satisfy
+that local cap. It can suspend the nominal watermark cadence: the feed becomes
+stale/unavailable, rather than ignoring the peer's embargo or fabricating
+freshness. This operational conflict needs exact-peer confirmation before
+activation.
+
+The proposal also says:
+
+> A missing authoritative dependency, unknown eligibility, unsafe clock, unreconciled restore, database deadlock/serialization failure or loss of process proof commits nothing and stores no receipt; Game retries the same operation.
+
+An absent initialized progression baseline therefore keeps a service pending;
+this path does not fabricate gameplay initialization metadata or an admitted
+session to obtain it. Existing gameplay initialization must establish that
+owning dependency first. Same-key contradictory heads remain conflicts even
+when another malformed member prevents full decoding.
+
+For retention the proposal says:
+
+> Terminal detailed service payloads/old names/deletion timestamps are purged 90 days after finalization of the operation **and** resolution of associated financial/restore disputes, whichever is later.
+
+It supplies no Game read or acknowledgement of financial-dispute resolution.
+Unresolved bindings are consequently retained; no premature erasure or
+anti-replay GC is inferred from elapsed time. The configured backup-retention
+horizon must also be pinned before activation, as §8/Q7 require. Legal erasure
+or a paused grace window requires operator recovery review. No deployment,
+production enablement, PKI allocation or joint Platform E2E is implied.
+
 ## Resolved interpretation, pending Platform wording confirmation
 
 The proposal §6 says, verbatim:
@@ -130,3 +212,21 @@ independent per-account namespace under the shared epoch. Receipt
 `projection_revision` always means the services revision. Each feed has its own
 acknowledgement. A services-only change queues only services work. Platform is
 asked to confirm this wording; implementation does not wait for confirmation.
+
+## Projection isolation and conservative lifecycle handling
+
+Projection capture uses wall-clock seconds clamped to the account's previous
+observation, independently of the strict service-decision clock. Ordinary
+progression writes cannot fail on service clock unavailability or a backward
+clock step. Initial migration and epoch changes queue bounded resync work;
+they do not synchronously walk all roots. JSONB is internal facts storage:
+the publisher reconstructs the specified member order through the production
+canonical codec before sending any bytes. A Bazaar-locked lifecycle has no
+matching lifecycle in this proposal; its scope remains unavailable rather
+than advertising ACTIVE. A later eligible root change queues replacement work;
+publication quarantine still requires an approved epoch/resync repair.
+
+Deferred review items: the deletion finalizer currently selects the oldest
+candidate before checking session eligibility; oversized directly supplied
+intents remain transient; command polling shares backoff across v1/v2.
+These require further focused changes and are not claimed as resolved here.

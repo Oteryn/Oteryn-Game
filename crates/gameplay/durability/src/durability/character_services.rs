@@ -122,13 +122,14 @@ impl DurabilityRoot {
             let Some(candidate) = candidate else { return Ok(false); };
             let character: String = candidate.try_get("character_id")?; let account: String = candidate.try_get("account_id")?;
             portfolio(&mut tx, &account).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
             let root = sqlx::query("SELECT name,lifecycle,character_revision::text FROM game_character_roots WHERE character_id=$1::uuid AND account_id=$2::uuid FOR UPDATE")
                 .bind(&character).bind(&account).fetch_optional(&mut *tx).await?.ok_or(DurabilityError::Unavailable)?;
             let now = trusted_now(&mut tx, Some(&account)).await?;
             let deadline_row = sqlx::query("SELECT effective_at FROM game_character_service_deletions WHERE character_id=$1::uuid AND finalized_at IS NULL FOR UPDATE")
                 .bind(&character).fetch_optional(&mut *tx).await?;
             if root.try_get::<i16,_>("lifecycle")? != 3 || deadline_row.is_none_or(|d| d.get::<i64,_>("effective_at") > now) { return Ok(false); }
-            if in_session(&mut tx, &character).await? { return Err(DurabilityError::Unavailable); }
+            if in_session(&mut tx, &character, &account).await? { return Err(DurabilityError::Unavailable); }
             sqlx::query("UPDATE game_character_service_deletions SET finalized_at=$2 WHERE character_id=$1::uuid")
                 .bind(&character).bind(now).execute(&mut *tx).await?;
             change(&mut tx, Change { character: &character, operation: None, purpose: "FINALIZE", revision: &root.try_get::<String,_>("character_revision")?, old_name: &root.try_get::<String,_>("name")?, new_name: &root.try_get::<String,_>("name")?, old_lifecycle: 3, new_lifecycle: 4, now }).await?;
@@ -153,6 +154,9 @@ async fn trusted_now(tx: &mut Tx<'_>, account: Option<&str>) -> Result<i64, Dura
     Ok(now)
 }
 async fn portfolio(tx: &mut Tx<'_>, account: &str) -> Result<(), DurabilityError> {
+    // The empty portfolio mutex carries no ownership authority. Match creation's
+    // lock protocol for a canonical account that has not owned a character yet.
+    sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(account).execute(&mut **tx).await?;
     sqlx::query(
         "SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE",
     )
@@ -162,10 +166,15 @@ async fn portfolio(tx: &mut Tx<'_>, account: &str) -> Result<(), DurabilityError
     .ok_or(DurabilityError::Unavailable)?;
     Ok(())
 }
-async fn in_session(tx: &mut Tx<'_>, character: &str) -> Result<bool, DurabilityError> {
-    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id=$1::uuid AND session_state IN(1,2))")
-        .bind(character).fetch_one(&mut **tx).await?)
+async fn in_session(
+    tx: &mut Tx<'_>,
+    character: &str,
+    account: &str,
+) -> Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id=$1::uuid AND session_state IN(1,2)) OR EXISTS(SELECT 1 FROM game_durability_admission_character_guards WHERE character_id=$1::uuid AND holder_game_session_id IS NOT NULL) OR EXISTS(SELECT 1 FROM game_durability_admission_account_guards WHERE account_id=$2::uuid AND presence_character_id=$1::uuid)")
+        .bind(character).bind(account).fetch_one(&mut **tx).await?)
 }
+
 fn text<'a>(intent: &'a CharacterCommandIntentV2, key: &str) -> Result<&'a str, DurabilityError> {
     intent
         .field(key)
@@ -198,6 +207,20 @@ async fn decide(
     {
         return Ok(Decision::Conflict);
     }
+    // A readable contradictory key is never a terminal no-commit refund, even
+    // when another malformed member prevents a full canonical decode.
+    if let Ok(head) = serde_json::from_slice::<Value>(raw)
+        && (head
+            .get("command")
+            .and_then(Value::as_str)
+            .is_some_and(|value| value != command)
+            || head
+                .get("operation_id")
+                .and_then(Value::as_str)
+                .is_some_and(|value| value != operation))
+    {
+        return Ok(Decision::Conflict);
+    }
     let intent = CharacterCommandIntentV2::decode(raw).ok();
     let mut code = "CHAR_CMD_INTENT_INVALID";
     let mut facts = Vec::new();
@@ -213,6 +236,7 @@ async fn decide(
         let account = text(intent, "account_id")?;
         let character = text(intent, "character_id")?;
         portfolio(tx, account).await?;
+        super::db::lock_admission_relations(tx).await?;
         let root = sqlx::query("SELECT account_id::text,name,name_key,lifecycle,character_revision::text FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE")
             .bind(character).fetch_optional(&mut **tx).await?;
         now = trusted_now(tx, Some(account)).await?;
@@ -232,6 +256,12 @@ async fn decide(
             "CHAR_CMD_INTENT_INVALID"
         } else if expires <= now as u64 {
             "CHAR_CMD_INTENT_EXPIRED"
+        } else if sqlx::query_scalar::<_, bool>("SELECT game_account_closure_closed($1::uuid)")
+            .bind(account)
+            .fetch_one(&mut **tx)
+            .await?
+        {
+            "CHAR_CMD_ACCOUNT_NOT_ELIGIBLE"
         } else {
             match account_security(tx, &uuid_text(account)?, now).await? {
                 Security::Unknown => return Err(DurabilityError::Unavailable),
@@ -310,7 +340,7 @@ async fn execute(
     {
         return Ok("CHAR_CMD_LIFECYCLE_CONFLICT");
     }
-    if in_session(tx, character).await? {
+    if in_session(tx, character, account).await? {
         return Ok("CHAR_CMD_CHARACTER_IN_SESSION");
     }
     if matches!(command, "ChangeCharacterSex" | "TransferCharacterWorld") {

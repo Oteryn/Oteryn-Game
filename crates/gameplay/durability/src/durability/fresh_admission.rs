@@ -591,15 +591,15 @@ impl FreshAdmissionStore {
         // Match service decisions: account portfolio before CharacterLease relations.
         sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE")
             .bind(&b.account_id).fetch_optional(&mut *tx).await?;
-        let service_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle IN(3,4))")
-            .bind(checked(b.initial_commit())?.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
-        if service_blocked { return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority); }
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = store.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
             super::admission_journal::commit_pass_transaction(tx, deadline).await?;
             return Ok(outcome);
         }
+        let service_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle IN(3,4))")
+            .bind(checked(b.initial_commit())?.character_id().as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        if service_blocked { return Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority); }
         if let Some(revalidate) = revalidate
             && !revalidate(&mut tx).await?
         {
