@@ -252,3 +252,5 @@ No game build applies to these evidence-only paths. Draft publication does not
 authorize merge or deployment.
 
 Allocation: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6862554312.
+
+Saved-source follow-up: `saved-source-followup.json` accounts for all179 Decoration retake PNGs (160 panel-arrow and19 navigation). They cover already recorded46/52/59, plus a superseded46 attempt and a safe stop; no new item or count increase. The two exact pilot ZIP names were not found in the recorded laptop handoff/outputs and Downloads roots. This bounded search does not establish global archive absence. Current counts remain2209/671/27.

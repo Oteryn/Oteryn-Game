@@ -67,6 +67,11 @@
       "sha256": "0dc4fe60d4d1d2133284011640f8af4995a09add7ba28117f80d8b102c921333"
     },
     {
+      "file": "night-Armors33-visible-data.json",
+      "bytes": 114213,
+      "sha256": "488a808435081c1f6612839ab7e12b4273b4ff11c8188030c0157c42430bbec5"
+    },
+    {
       "file": "night-all-open-PR-inventory.json",
       "bytes": 535647,
       "sha256": "813e40847212ff85fffc0dd6ddd3ea35d40846091be5db8c3ea1664b23de53b3"
@@ -80,11 +85,6 @@
       "file": "night-all-visible-summary.json",
       "bytes": 5135,
       "sha256": "b3a268b19c7d85a38d315ed708c04bf92030c0b1da94b0a7d0ec7d2a310bc46c"
-    },
-    {
-      "file": "night-Armors33-visible-data.json",
-      "bytes": 114213,
-      "sha256": "488a808435081c1f6612839ab7e12b4273b4ff11c8188030c0157c42430bbec5"
     },
     {
       "file": "night-collection-inventory.json",
@@ -110,6 +110,11 @@
       "file": "physical-card-completeness.json",
       "bytes": 137505,
       "sha256": "9691c554c7602513e771c1a138bc7ec399e2020095b9b0f0ee8b1481971ef0fa"
+    },
+    {
+      "file": "saved-source-followup.json",
+      "bytes": 3817,
+      "sha256": "5304d3c6efea5f24eca8c3f2477a52579e7526d9288c6de22f07a09695bac94f"
     },
     {
       "file": "saved1853-proof-reconciliation.json",
