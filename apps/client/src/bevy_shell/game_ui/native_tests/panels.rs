@@ -15,7 +15,9 @@ pub(super) fn configure(
     };
     match panel.to_str() {
         Some("vip") => {
-            use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+            use oteryn_input_actions::{
+                ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent,
+            };
             outbox.bevy_vip_fixture(
                 r#"{"entries":[{"entry":73,"name":"Fixture contact","description":"Friend","icon":2,"notify":true,"groups":[]}],"groups":[],"next_entry":0}"#,
                 1,

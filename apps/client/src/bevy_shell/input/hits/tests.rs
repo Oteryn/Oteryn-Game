@@ -56,6 +56,7 @@ fn fixture(dpi: f32, cover: bool) -> Result<Fixture, Box<dyn std::error::Error>>
         .insert_non_send(input)
         .add_systems(Update, super::super::route);
     modal::install(&mut app);
+    crate::bevy_shell::game_ui::initialize_item_pointer_test_state(&mut app);
     let world = app.world_mut().spawn((WorldRegion, Node::default())).id();
     let floating = app.world_mut().spawn(Node::default()).id();
     let editor = app

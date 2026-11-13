@@ -28,12 +28,20 @@ pub(super) fn route(
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     editors: Query<(), With<bevy::text::EditableText>>,
     ui: WorldInputUi,
+    mut capture: super::game_ui::ItemPointerCapture,
 ) {
     if input.generation != Some(owner.generation()) {
         // Discard old gestures, but retain focus gained in the admission frame.
         let reset = input
             .adapter
             .reset_after_window_events(raw.read().map(|event| &event.event));
+        capture.before(
+            &owner,
+            *ui.viewport,
+            None,
+            &NormalizedInputEvent::DeviceLost,
+            false,
+        );
         owner.route_input(&reset, true);
         input.generation = Some(owner.generation());
         input.physical_pointer = None;
@@ -47,14 +55,22 @@ pub(super) fn route(
             Err(_) => input.adapter.notify_device_lost(),
         };
         for event in events {
-            let blocked = !input.adapter.focused() || editing || modal;
+            if let NormalizedInputEvent::PointerMoved { position, .. } = &event {
+                input.physical_pointer = Some(*position);
+            }
+            let physical = input
+                .physical_pointer
+                .map(|position| Vec2::new(position.x().get() as f32, position.y().get() as f32));
+            // Pointer ownership decides whether a mouse gesture may leave an editor.
+            // Active item drops keep this broad permission even outside the world.
+            let allowed = input.adapter.focused() && !modal && !owner.modal_active();
+            let consumed = capture.before(&owner, *ui.viewport, physical, &event, allowed);
+            let world_owned =
+                physical.is_some_and(|point| ui.hits.allows_world_start(ui.regions.world, point));
+            let blocked = !input.adapter.focused() || editing || modal || consumed;
             match event {
                 NormalizedInputEvent::PointerMoved { position, motion } => {
-                    input.physical_pointer = Some(position);
-                    if !ui.hits.allows_world_start(
-                        ui.regions.world,
-                        Vec2::new(position.x().get() as f32, position.y().get() as f32),
-                    ) {
+                    if consumed || !world_owned {
                         owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
                         continue;
                     }
@@ -72,18 +88,10 @@ pub(super) fn route(
                     // Resize, DPI, UI scale and world zoom may change without CursorMoved.
                     // Reproject the retained physical cursor before the button reaches picking.
                     let raw_position = input.physical_pointer;
-                    if !raw_position.is_some_and(|position| {
-                        ui.hits.allows_world_start(
-                            ui.regions.world,
-                            Vec2::new(position.x().get() as f32, position.y().get() as f32),
-                        )
-                    }) {
+                    if consumed || !world_owned {
                         owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
-                        continue;
-                    }
-                    let position = raw_position
-                        .and_then(|position| map_pointer(&owner, *ui.viewport, position));
-                    if let Some(position) = position
+                    } else if let Some(position) = raw_position
+                        .and_then(|position| map_pointer(&owner, *ui.viewport, position))
                         && let Ok(zero) = PointerDelta::new(0)
                     {
                         if matches!(
@@ -103,13 +111,21 @@ pub(super) fn route(
                                     position,
                                     motion: PointerMotion::new(zero, zero),
                                 },
-                                event,
+                                event.clone(),
                             ],
                             !input.adapter.focused() || !ui.guard.allows(ui.regions.world),
                         );
                     } else {
                         owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
                     }
+                    capture.after_press(
+                        &owner,
+                        *ui.viewport,
+                        physical,
+                        &event,
+                        allowed,
+                        world_owned && !consumed,
+                    );
                 }
                 event => {
                     if matches!(

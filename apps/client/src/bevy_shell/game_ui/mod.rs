@@ -4,6 +4,9 @@ mod chat;
 mod feature_dialogs;
 mod hud;
 mod inventory;
+pub(super) use inventory::ItemPointerCapture;
+#[cfg(test)]
+pub(super) use inventory::initialize_item_pointer_test_state;
 mod item_details;
 mod journal;
 pub(super) mod minimap;
