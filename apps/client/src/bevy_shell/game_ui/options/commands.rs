@@ -5,12 +5,19 @@ use super::{
 
 /// One typed edit of the current owner's session-bound transient draft.
 pub(super) fn edit(
-    _owner: &mut HostOwner,
-    _generation: u64,
-    _page: Page,
-    _id: &str,
-    _value: Value,
+    owner: &mut HostOwner,
+    generation: u64,
+    page: Page,
+    id: &str,
+    value: Value,
 ) -> bool {
-    // Intentionally unwired for the first red caller check.
-    false
+    if generation != owner.generation() || owner.preferences_draft().is_none() {
+        return false;
+    }
+    let Some(row) = metadata::find(page, id) else {
+        return false;
+    };
+    let mut edited = false;
+    owner.edit_preferences(|draft| edited = row.set(draft, value));
+    edited
 }

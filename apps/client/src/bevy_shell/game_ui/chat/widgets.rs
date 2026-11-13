@@ -180,7 +180,19 @@ pub(super) fn activate(
         return;
     };
     match &control.action {
-        Action::ComposerMode => {} // Deliberately unwired until the native caller test is observed red.
+        Action::ComposerMode => {
+            play.link.chat_console_mode();
+            if play.link.chat_panel().console.can_send() {
+                for (entity, field, _) in &mut fields {
+                    if *field == Field::Message {
+                        focus.set(entity, FocusCause::Navigated);
+                        break;
+                    }
+                }
+            } else {
+                focus.clear();
+            }
+        }
         Action::Tab(tab) if control.generation == owner.generation() => {
             commands::select(&play.link, tab)
         }

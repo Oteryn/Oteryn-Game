@@ -53,8 +53,11 @@ pub struct SettingsState {
 mod settings_actions;
 
 impl crate::play::PlayLink {
+    /// A visible console owns the text context only while its composer is enabled.
+    /// Docked chat can remain visible with chat Off; closed native panes remain inactive.
     pub fn preference_chat_open(&self) -> bool {
-        crate::play::mailbox::lock(&self.mailbox).chat.open
+        let mailbox = crate::play::mailbox::lock(&self.mailbox);
+        mailbox.chat.open && mailbox.chat.console.can_send()
     }
 }
 
