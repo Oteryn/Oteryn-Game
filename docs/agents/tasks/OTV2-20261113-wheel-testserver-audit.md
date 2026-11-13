@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: chatgpt-wheel-audit-root
 created_at: 2026-11-13T19:31:16Z
-updated_at: 2026-11-13T19:55:59Z
+updated_at: 2026-11-13T20:12:21Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/OTV2-20261113-wheel-testserver-audit.md
@@ -51,6 +51,8 @@ remain open; this PR is a draft.
 - Existing Wheel/Gem producers, consumers and fenced writers remain their owners.
 - Root is the only branch publisher. Workers did not commit, push, merge or trigger review.
 - Initial documentation candidate: `b8239a172cc2cb4c906fe914c7653d807f7a3c21`.
+- Numeric candidate: `bff551df2c10c27857da4c4665092c53bc633917`; all local gates were
+  rerun on that published head. The subsequent source-qualification delta changes no Rust blobs.
   Exact subsequent candidate/check/review SHAs are recorded in the PR; no self-referential
   commit hash is invented in this file.
 
@@ -115,9 +117,13 @@ Workshop state. Screenshot retention and source limitations are recorded in the 
 ## Self-review / independent review
 
 Root inspected the numeric diff and current vitals/spell/capacity callers. Source research
-and native evidence were independently collected. A separate authorized read-only Codex
-review is pending a stable published implementation head; it is not replaced by tests.
+and native evidence were independently collected. The cloud Codex CLI exited during app-server initialization with a read-only filesystem
+error, before any model review began. An isolated checkout on the authorized PC was
+prepared for the one native WSL Codex review (same model/effort, read-only sandbox).
+The review result is recorded in the PR; it is not replaced by tests.
 Review dispatch requires a fresh PR comments/reviews/provider-status deduplication check.
+The new lower-grade evidence directly qualifies all Mastery values. Monk row naming
+remains an explicit high-confidence inference from the unique official Grade IV match.
 
 ## Context checkpoint
 

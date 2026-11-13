@@ -154,8 +154,8 @@
       "control_check": "Clicking the displayed grade image did not change its grade or the selected values.",
       "consequence": "An imported allocation and mod-ID code does not reproduce the native character's complete Fragment Workshop grade state.",
       "lower_grades": {
-        "classification": "UNKNOWN_FRESH_VERIFICATION",
-        "statement": "Revelation Mastery I-III and Monk mixed Mana I-III were not freshly qualified through this planner. Their existing catalogue values remain catalogue-backed unless another explicit current source is supplied."
+        "classification": "QUALIFIED_BY_SEPARATE_CURRENT_CLIENT_DATA",
+        "statement": "The planner itself only shows Grade IV. See existing-mod-grades.json for all four current Mastery values and mixed-Mana tables. Mastery category/grade lookup is direct; the Monk row name is a high-confidence inference from its unique Grade IV150 and independent official planner observation."
       }
     },
     "native_preset_round_trip": {
@@ -661,9 +661,10 @@
     },
     {
       "topic": "Current lower grades of existing Mastery and Monk mixed Mana mods",
-      "status": "CATALOGUE_BACKED_ONLY",
-      "needed": "Current official numeric grade table or current installed-client decoding for those exact existing mod IDs.",
-      "impact": "Planner directly verifies only Grade IV: Mastery225 and Monk mixed Mana150. Existing 150/165/180/225 and 100/110/120/150 arrays must not all be labelled freshly native-verified by this packet."
+      "status": "RESOLVED_WITH_EXPLICIT_VOCATION_ROW_INFERENCE",
+      "needed": "Only a separately named native Monk enum-to-row mapping remains unextracted; the current Grade IV UI uniquely identifies row4.",
+      "impact": "All Mastery grades are directly qualified in current client data. Mixed Mana arrays are current static facts; identifying row4 as Monk is explicitly high-confidence inference from independent official UI.",
+      "resolved_by": "existing-mod-grades.json"
     },
     {
       "topic": "Monday revision package",

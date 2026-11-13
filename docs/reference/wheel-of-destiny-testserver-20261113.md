@@ -28,7 +28,8 @@ Donor code does not establish current Global behavior.
 
 Derived evidence is retained in
 [client-and-planner.json](wheel-of-destiny-testserver-20261113/client-and-planner.json),
-[new-supreme-mods.json](wheel-of-destiny-testserver-20261113/new-supreme-mods.json) and
+[new-supreme-mods.json](wheel-of-destiny-testserver-20261113/new-supreme-mods.json),
+[existing-mod-grades.json](wheel-of-destiny-testserver-20261113/existing-mod-grades.json) and
 [official-sources.json](wheel-of-destiny-testserver-20261113/official-sources.json).
 The modifier file records all four static grade values, hashes/table offsets and separate
 Grade IV planner checks. The official-source file includes dated forum observations and
@@ -73,8 +74,10 @@ that old-revision grades add zero and preserves the separate Grade IV point coun
 
 **FACT, repaired:** `wheel_effects/gems.rs::supreme_effect` doubled 150/165/180/225 points
 to 300/330/360/450 to imitate a donor's two applications. The current official planner shows +225 at Grade IV for all 16 Mastery IDs; the
-client/preset also shows Spiritual Outburst stage I. Grades I–III remain backed by the
-existing catalogue, not a new controlled native measurement.
+client/preset also shows Spiritual Outburst stage I. All four values are independently
+qualified by the current client category-5 descriptor and grade-indexed integer table
+at offset `0x1da99b0`; see `existing-mod-grades.json`. This remains client/reference
+evidence, not a controlled native server damage measurement.
 
 The repair contributes each Mastery modifier once. Tests cover all 16 existing Mastery
 IDs at every grade. Before the fix, Grade I returned 300,000 thousandths rather than
@@ -116,7 +119,11 @@ new index bounds reject them. The bounded repair plan below covers these obligat
 **FACT, repaired:** `basic_milli` returned zero Monk Mana for modifiers 33–36 while
 retaining their resistance. The native preset and official planner show mod 33 supplying
 150 Mana at Grade IV; the official planner confirms all four mixed Mana IDs at that
-grade. Grades I–III remain catalogue-backed at100/110/120, not newly measured in-game.
+grade. Current client constructor links for IDs33–36 and their five-vocation grade
+tables are retained in `existing-mod-grades.json`. Row4 is 100/110/120/150.
+**INFERENCE, high confidence:** row4 is Monk because only that row matches the official
+Monk Grade IV150; the other rows end at75/225/450/450. A separately named native
+vocation-enum mapping was not extracted. No live server-stat delta is claimed.
 
 The repair removes this donor override. Regression cases cover all four affected IDs at
 all grades and retain resistance checks. Before the fix, mod 33 Grade I returned zero
