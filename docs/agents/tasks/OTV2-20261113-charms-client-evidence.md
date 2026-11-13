@@ -172,3 +172,16 @@ modern-rule boundary tests2/2 PASS; original evidence16/16, private114 proofs,
 public/Discord/primary validators, governance and129 governance tests PASS.
 No independent review or current Global combat parity is claimed. Further
 publication changes require explicit return to AUTHORING.
+
+AUTHORING resumed for the explicit owner request to inspect both Gabriel
+recordings after fresh live OPEN/draft3172 head5ad59a7e2, unchanged main3e168ce6
+and overlap inventory readback. Same writer and two owned documentation paths.
+Selected actual frames supersede the earlier unreviewed-video lead status for
+those portions only; no continuous replay or runtime qualification is claimed.
+
+Gabriel successor frozen: two near-end video checkpoints, initial/reset evidence,
+expanded-description conditions and exact-source comparison retained. Arithmetic
+and3 asset boundary controls PASS,16 packet controls PASS, public/Discord/primary
+source validators PASS, governance and129 governance tests PASS; diff check PASS.
+Original media remain outside the repo. CI/review status is read separately;
+no independent review, all-frame or isolated-mechanics claim is made.

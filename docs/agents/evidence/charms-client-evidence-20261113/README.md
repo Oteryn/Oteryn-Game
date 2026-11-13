@@ -155,3 +155,8 @@ The [asset-first follow-up](asset-test-followup.md) retains six verified-query
 windows from both Discords, two visible numerical creator comparisons and
 qualified follow-up leads. Run `validate_asset_followup.py --repository .`
 and its `--test` mode. Hour projections are not separate hour experiments.
+
+The [Gabriel video comparison](gabriel-video-comparison.md) now reads selected
+actual frames from both previously linked recordings. Structured counters,
+counter-reset provenance and unverified stages/assignments remain explicit in
+`gabriel-video-cases.json`. The asset validator also checks these derived deltas.

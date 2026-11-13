@@ -14,6 +14,22 @@ def load():
     return json.loads((HERE / 'asset-test-followup.json').read_text(encoding='utf-8'))
 
 
+def validate_gabriel(data):
+    assert data['isolated_mechanics_or_combat_parity_verified'] is False
+    assert data['exact_charm_stages_verified'] is False
+    assert data['race_assignments_verified'] is False
+    b, d = data['blow'], data['divine']
+    assert d['initial_analyser_is_prior_run'] is True
+    assert d['reset_checkpoint']['raw_xp'] == d['reset_checkpoint']['damage'] == 0
+    assert b['session'] == d['session'] == '00:30h'
+    assert d['raw_xp'] - b['raw_xp'] == 58528
+    assert d['damage'] - b['damage'] == 9299
+    assert d['supplies'] - b['supplies'] == -264368
+    assert sum(d['kills'].values()) - sum(b['kills'].values()) == 10
+    assert round((d['raw_xp'] / b['raw_xp'] - 1) * 100, 4) == 1.8601
+    assert round((d['supplies'] / b['supplies'] - 1) * 100, 4) == -61.9185
+
+
 def validate(data, repository=None):
     v = data['venice']
     assert v['current_global_rule_verified'] is False
@@ -37,6 +53,12 @@ def validate(data, repository=None):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_prior_counter_substitution(self):
+        data = json.loads((HERE / 'gabriel-video-cases.json').read_text(encoding='utf-8'))
+        data['divine']['raw_xp'] = data['divine']['initial_analyser']['raw_xp']
+        with self.assertRaises(AssertionError):
+            validate_gabriel(data)
+
     def test_hour_projection_substitution(self):
         data = copy.deepcopy(load())
         data['venice']['hour_rows_are_projection'] = False
@@ -59,4 +81,5 @@ if __name__ == '__main__':
         unittest.main(argv=['validate_asset_followup'])
     else:
         validate(load(), args.repository)
+        validate_gabriel(json.loads((HERE / 'gabriel-video-cases.json').read_text(encoding='utf-8')))
         print('PASS: two creator samples, projection arithmetic, six query windows and source receipts')
