@@ -1,0 +1,4749 @@
+{
+  "schema": "OTERYN_LEGS_CLIENT_APPEARANCE_RECEIPT/v1",
+  "classification": "DERIVED_CLIENT_NAMESPACE_CANDIDATES",
+  "source_receipt": {
+    "filename": "items-legs-appearance-binding-takeover-20261113.json",
+    "bytes": 244151,
+    "sha256": "de6760ccd85a540008428af9c68f4199194eac1f62bfe74c94d1378a909a9640"
+  },
+  "current_DAT_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "private_program_receipt": {
+    "filename": "bind_legs_client_appearance_takeover_20261113.py",
+    "sha256": "12c0758ce1640143e46d3536647001b44e57c492afcf9b83d18f46adf15c42ad"
+  },
+  "decoder_sources": [
+    {
+      "repository_path": "tools/game-atlas-appearances/export.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58",
+      "git_blob_sha1": "a08b44c2a34ca745a93f1c7bbd6bf28ead51e14d"
+    },
+    {
+      "repository_path": "tools/game-atlas-appearances/self_test.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "4abf4f7816932e84cfc10bab6d3519e971cef0fd3c704263017f616364093095",
+      "git_blob_sha1": "2ba65cf89f6faa0091fb6a3a2c1ec5839052888b"
+    },
+    {
+      "repository_path": "tools/game-atlas-appearances/README.md",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "5c862e8d2d3b318ecb583a1189b4881f9355181645717d2764585a180d6461b5",
+      "git_blob_sha1": "6f1c831cc7badcf56328e6e12e8c9ad3fc74fddb"
+    },
+    {
+      "repository_path": "tools/content-schema/item-authoring/engine_items.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "0a494fd64d7774507b4d9e493492a7ffc9d99d751dd2ed4fec73561cb06f5b06",
+      "git_blob_sha1": "e2c0beb07239f7f41b2d70b058ece0ca1f963df4"
+    },
+    {
+      "repository_path": "tools/content-schema/world-authoring/client_appearance_reader.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "8767ed05f26b04844dca232e4441826857f918b74d52ebf683aa9b08c0c6503c",
+      "git_blob_sha1": "acc5d1358d5cb5b055c4bde40f641486d60174cf"
+    },
+    {
+      "repository_path": "tools/content-schema/world-authoring/client_map_reader.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "85b1f510ef818139a9f3d96bbfd6f0178b0fdd0b97af6819995d3b9892061c07",
+      "git_blob_sha1": "607d52a449499f69596fea6efd353ce7a3d89485"
+    },
+    {
+      "repository_path": "tools/content-census/stage_staticdata_houses_achievements.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "9aad75c873435a3fc681edcedc4c849ec17e1402ae782d73e40f86115fbe6e67",
+      "git_blob_sha1": "03f6765c37508b3e18e0162f40a514339973c670"
+    },
+    {
+      "repository_path": "tools/content-census/stage_staticdata_creatures_bosses_quests.py",
+      "commit": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "sha256": "be04de9a913c004bb262f4ba111439e89e28590c5edabe1328fce7f3f07262e3",
+      "git_blob_sha1": "86967f3bf0ab51bec829fb86a9620e22fcb80f6c"
+    }
+  ],
+  "counts": {
+    "unique_client_appearance_candidate": 66,
+    "unresolved": 0,
+    "observations": 66,
+    "decoded_sheets": 31,
+    "decoded_unique_sprites": 139
+  },
+  "sheet_checks": [
+    {
+      "file": "sprites-635bff242f420eeab062c2534746c6a18eb376b008c1f5b0ea8f8449e714ed9d.bmp.lzma",
+      "packed_sha256": "8e18f5552f9d728e9433e10c6fd5ab89f44be8841bb063fa32b6577b826734f1",
+      "packed_size": 39863,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "635bff242f420eeab062c2534746c6a18eb376b008c1f5b0ea8f8449e714ed9d",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-bd92db15a74d2b31efef7ae91b2c71e96a07d5b923366a268537b9870294661e.bmp.lzma",
+      "packed_sha256": "6cdd4f837daf5198875f409d4181f964bf34b8ecb5dc9ba4d5c2bbda7166693a",
+      "packed_size": 48504,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "bd92db15a74d2b31efef7ae91b2c71e96a07d5b923366a268537b9870294661e",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-0cc6b0095630dc8988416096b80e91a55a2bdfad8c2fa2c970b75165c47f70ac.bmp.lzma",
+      "packed_sha256": "ae342106be427f3046556eb976e0fdca37628825911bc1fbe881839ec682679c",
+      "packed_size": 77272,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "0cc6b0095630dc8988416096b80e91a55a2bdfad8c2fa2c970b75165c47f70ac",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-b7cd8e3f8021d5484a73950d21f68ec3da13e542a31854af00e59376e05c35d0.bmp.lzma",
+      "packed_sha256": "ac26f931dc7de2baf5e0e517114bd8f82ebf7fc8f8e6aeef815f6b12831ec29f",
+      "packed_size": 62951,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "b7cd8e3f8021d5484a73950d21f68ec3da13e542a31854af00e59376e05c35d0",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-49a3a2ddbc91973a99c0e57ab7905a0ec2c595ead97a9014972b56d553407838.bmp.lzma",
+      "packed_sha256": "b129da611c5d206d69c5c573187fca6e6b3c03c7346e95b06a5a319458f00921",
+      "packed_size": 112472,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "49a3a2ddbc91973a99c0e57ab7905a0ec2c595ead97a9014972b56d553407838",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-6adc25555528f28b295d7d830596d545bcd77ec8570c6764f997fba63ba91815.bmp.lzma",
+      "packed_sha256": "1824f08086213fdafb9a92b85b1f5646904f0606dc5bdaf94c1932f4ae72c3b8",
+      "packed_size": 59077,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "6adc25555528f28b295d7d830596d545bcd77ec8570c6764f997fba63ba91815",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-325ec4c6a7f3e5d3570fa4be979e1b0378f33bf2697ba972a45af15dfa8de5ba.bmp.lzma",
+      "packed_sha256": "a85847463dd4a739fbbc6e16f866531c337d9cc501658eb92b89549794b1fe8c",
+      "packed_size": 44448,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "325ec4c6a7f3e5d3570fa4be979e1b0378f33bf2697ba972a45af15dfa8de5ba",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-8876f4d2b38edaefdf7876066fb92e74cfcf803c6ef9e5c40b37b325da97fe84.bmp.lzma",
+      "packed_sha256": "68c5a6cbf26ba7ef2dae1353864968a4013a32b45f0428e2557f987627be4a6a",
+      "packed_size": 44024,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "8876f4d2b38edaefdf7876066fb92e74cfcf803c6ef9e5c40b37b325da97fe84",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-6d41f844fc325cfc0818f5a461fe82ff77334887d78f963a683e8046549ba6b6.bmp.lzma",
+      "packed_sha256": "0094febf0ff330bf5ac1b2ee0d90caa98d5bb9166920db9d668588de4425f357",
+      "packed_size": 40057,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "6d41f844fc325cfc0818f5a461fe82ff77334887d78f963a683e8046549ba6b6",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-25f3f9acd168d61e1e772db35fe71bb2ac23a4c0fd19ffc3e350a2ec70190dcb.bmp.lzma",
+      "packed_sha256": "756dc942d83a6acfd1c2e4f75e3189bfc735c40076490602a69d38c7aa1530b4",
+      "packed_size": 25504,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "25f3f9acd168d61e1e772db35fe71bb2ac23a4c0fd19ffc3e350a2ec70190dcb",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-f3b31bab34c7f6afed800e002c22543753f8a5e669324617e03e10c565870f4e.bmp.lzma",
+      "packed_sha256": "60823680c1525a94f4c25ca9e1c1bd3ad32be479e431562a30893ddaaf8900e0",
+      "packed_size": 62412,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "f3b31bab34c7f6afed800e002c22543753f8a5e669324617e03e10c565870f4e",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-3fc81687bc9b17bec46aa586dd07a89c8821709b9eb55781773de0823f5076d4.bmp.lzma",
+      "packed_sha256": "5d6f2a1ccc73a8f1e14630b488d7cc7b2d7478af19f580a2678af01b37ba08a1",
+      "packed_size": 34391,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "3fc81687bc9b17bec46aa586dd07a89c8821709b9eb55781773de0823f5076d4",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-0ae100f1f0872b973d06dc88a6bfb1b59c7c0f19f8b9edc1a04db73c9a6c9d82.bmp.lzma",
+      "packed_sha256": "24c734a8fd8f1604efb7f87c5bddcc6ec434d550ae634b70c6885cd20bdd7115",
+      "packed_size": 29828,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "0ae100f1f0872b973d06dc88a6bfb1b59c7c0f19f8b9edc1a04db73c9a6c9d82",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-7859f5f20cbcca54b064ded15c76116d25a61cb1cff6ebb08ec7e997aa864499.bmp.lzma",
+      "packed_sha256": "b1e5603d18af62f15b5983cf7e2f9c0a96131b4dd47d49f02066ad19f11608bc",
+      "packed_size": 66650,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "7859f5f20cbcca54b064ded15c76116d25a61cb1cff6ebb08ec7e997aa864499",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-505162061d6bf87ce303129e9673cc976cf28dff75dfa3e14f75b8f21e507f06.bmp.lzma",
+      "packed_sha256": "a9d274680874978c9ca6272e2669a79faaf70d8bc2977f336bd526dae3e8496f",
+      "packed_size": 52405,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "505162061d6bf87ce303129e9673cc976cf28dff75dfa3e14f75b8f21e507f06",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-cf5f4737ada73c3cb7f582dc943ad3763efd0cea3afb918e52ce56539cfa4783.bmp.lzma",
+      "packed_sha256": "e21dba3a3c0a28086fd2dffe81a637febbd6f6bedeeb6cab601059bed6e4aa69",
+      "packed_size": 26792,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "cf5f4737ada73c3cb7f582dc943ad3763efd0cea3afb918e52ce56539cfa4783",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-030bffe1d41f9b658353efac6d091f3729c7a72cd7d11fb428a8c0d55cedc32c.bmp.lzma",
+      "packed_sha256": "736a90ad335070ff94fef184b7b7415020bc50a118f4c777090e715db64b6ebe",
+      "packed_size": 32015,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "030bffe1d41f9b658353efac6d091f3729c7a72cd7d11fb428a8c0d55cedc32c",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-fb0cbc47f24f44b9bf7791f9f1d5804acd8da53f7d4129bd839daf3229d251fe.bmp.lzma",
+      "packed_sha256": "2f1fc6cb149d9eaf3cd794d5cc7f2005890cd33189731b756db3bc49df0096cd",
+      "packed_size": 43953,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "fb0cbc47f24f44b9bf7791f9f1d5804acd8da53f7d4129bd839daf3229d251fe",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-ae2b7cdd8fc7cfb9341f1da39fdec90040c9764769d23a18cee0e510a5bf5ad8.bmp.lzma",
+      "packed_sha256": "c84cb9979367be090a3cc2c5e208c8af3e0ee4cbeaa327bb906a1057aaab4c62",
+      "packed_size": 88409,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "ae2b7cdd8fc7cfb9341f1da39fdec90040c9764769d23a18cee0e510a5bf5ad8",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-ad096518fa420e3e59ff3300017426d0234d924914aaaaf82a1aa7761c1ce899.bmp.lzma",
+      "packed_sha256": "07d467a46641bf34a728a7696e16f284be2ee747def8bfe030e8ac9ecf8f6775",
+      "packed_size": 118577,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "ad096518fa420e3e59ff3300017426d0234d924914aaaaf82a1aa7761c1ce899",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-aa6774c6297f0dbb83634c298a122286510e917c6739a66e2687e92b37e49a77.bmp.lzma",
+      "packed_sha256": "b7991fb89153a5065d21461c08384c04e593d0f3b8e6ffd57c2ebe280307b3db",
+      "packed_size": 29619,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "aa6774c6297f0dbb83634c298a122286510e917c6739a66e2687e92b37e49a77",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-726dae75801bc4df8286054dd6e0ee542a987ae89b72aadaea83739af69d4a15.bmp.lzma",
+      "packed_sha256": "f12aad30ea3737e92f28bd9ee9aba5c6f26a9124319b810b58fd10bc9bbed34c",
+      "packed_size": 48800,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "726dae75801bc4df8286054dd6e0ee542a987ae89b72aadaea83739af69d4a15",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-14b34c389fee1193da95cdf5c53f735a09b21a690ff1eee2d46a23e7785e4e83.bmp.lzma",
+      "packed_sha256": "4b8b62289cbb669d842b08d3154ce33ca0422e3931c6ec17fdf8054a4ce12430",
+      "packed_size": 82661,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "14b34c389fee1193da95cdf5c53f735a09b21a690ff1eee2d46a23e7785e4e83",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-183ab8b3f0cdddc50c7b6493aef7bfdc97b017e2755503592ac2a480a3ebc3cf.bmp.lzma",
+      "packed_sha256": "6272d53bc729b8c5e6a3663d94178dd88ee3993b906fac6688ef739c7bec036b",
+      "packed_size": 31376,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "183ab8b3f0cdddc50c7b6493aef7bfdc97b017e2755503592ac2a480a3ebc3cf",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-3d91d7b7357083bc6ee3caecd99940c54c38ffe5d3d282b5553fc774a8583910.bmp.lzma",
+      "packed_sha256": "4e758dc6a9e4c3302299ee5d66349a9269921494ca0084911225e740a18aed26",
+      "packed_size": 37000,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "3d91d7b7357083bc6ee3caecd99940c54c38ffe5d3d282b5553fc774a8583910",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-0261fcdffac5a9bc1de24e72488290d7e8c0ee2ef5db060ea78b3d53f1c5dbb7.bmp.lzma",
+      "packed_sha256": "4af96fc18cb6ba05b5b2dc0545f0d3f5dc51d54dfc46f252a0bf654b5acd3535",
+      "packed_size": 33028,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "0261fcdffac5a9bc1de24e72488290d7e8c0ee2ef5db060ea78b3d53f1c5dbb7",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-8cf348cd52a286302c97cf148e0d429947d3ac017cf59b5f71d332f712c9c6d2.bmp.lzma",
+      "packed_sha256": "c63368c107830dfb491b689570d2f83d4083fb68151ef7312242465d6e01e729",
+      "packed_size": 54415,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "8cf348cd52a286302c97cf148e0d429947d3ac017cf59b5f71d332f712c9c6d2",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b.bmp.lzma",
+      "packed_sha256": "d37730c58970657b2466ad3aa0bad351115ae3744b00e820924cf2f498ed80a8",
+      "packed_size": 35972,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "5d793eb1e7b109c20eb211e4d755ec41df3270b707dc05bf5c9ac6275948533b",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-20c0622ac982e2aec1d6a31d52eef8728173be5cd91da88cc7a9abd562071ad9.bmp.lzma",
+      "packed_sha256": "aa4777b0b2575738831ef637ba68b2c82ac67dde92ae7d31d6eb7c39774b0097",
+      "packed_size": 98423,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "20c0622ac982e2aec1d6a31d52eef8728173be5cd91da88cc7a9abd562071ad9",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-e4dd9e59761220f6accedfa25314ab2623a51a50203d31216f9df54180be76dc.bmp.lzma",
+      "packed_sha256": "40eb756fb8791f566c52b586e5fbc3a504633eb8eca7cdf1e0b670b475af76b5",
+      "packed_size": 55460,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "e4dd9e59761220f6accedfa25314ab2623a51a50203d31216f9df54180be76dc",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    },
+    {
+      "file": "sprites-7ac91c249f936f6464f82283b11459bb3203fb02625f6425fbd1730c53e33f77.bmp.lzma",
+      "packed_sha256": "de7511181bebe8cd140e7b0216e5bf05d4fe6c6f99516e90f73c4dcb9e354d12",
+      "packed_size": 71089,
+      "packed_manifest_matches": true,
+      "decoded_bmp_sha256": "7ac91c249f936f6464f82283b11459bb3203fb02625f6425fbd1730c53e33f77",
+      "filename_hash_matches": true,
+      "bpp": 32,
+      "compression": 3
+    }
+  ],
+  "verification": {
+    "private_input_files_hash_verified": 73,
+    "decoder_files_hash_verified": 8,
+    "sprite_slot_metrics_independently_recomputed": 142,
+    "named_candidate_sets_reconciled_to_census": 66,
+    "projection": "EXPLICIT_KEY_WHITELIST_ONLY",
+    "descriptions": "HASH_LENGTH_RECEIPTS_ONLY"
+  },
+  "rows": [
+    {
+      "ui_entry_ordinal": 1,
+      "capture_key": "items-sequence-legs:1",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        21168
+      ],
+      "server_id": null,
+      "fullName": "alloy legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00001-icon.png",
+        "sha256": "4b02e99537451799b5ee97d77746e7b69fb99825abe8aea2311f9141abb961c9"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 21168,
+          "cyclopedia_type": 21168,
+          "market_trade_as_object_id": 21168,
+          "market_show_as_object_id": 21168,
+          "market_category": 8,
+          "record_sha256": "7223aa60aacd5efa89adfd2c9a0d36d89c2d6f3c31211127c183c243d3665178",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 217468,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 707,
+                  "opaque_exact_pixels": 707,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 2,
+      "capture_key": "items-sequence-legs:2",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        35517
+      ],
+      "server_id": null,
+      "fullName": "bast legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00002-icon.png",
+        "sha256": "2e1ede5b1df55696c104048d3d31c87546b79b4ce4b13bcfe6aa8046594c4bce"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 35517,
+          "cyclopedia_type": 35517,
+          "market_trade_as_object_id": 35517,
+          "market_show_as_object_id": 35517,
+          "market_category": 8,
+          "record_sha256": "a14a9e4d06bb581d7b08089dc8f1abe52507079a35a2a8ceca159a2cfb89d12b",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 226990,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 578,
+                  "opaque_exact_pixels": 578,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 3,
+      "capture_key": "items-sequence-legs:3",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3560
+      ],
+      "server_id": null,
+      "fullName": "bast skirt",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00003-icon.png",
+        "sha256": "412369e9da41c1d7ba53462b092c738d8f15d4139cffc312fd4479079284177a"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3560,
+          "cyclopedia_type": 3560,
+          "market_trade_as_object_id": 3560,
+          "market_show_as_object_id": 3560,
+          "market_category": 8,
+          "record_sha256": "a2962c68a180bb1356bf7c3cfd8db56d967e55ce26ed724142389f1181240c00",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204533,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 680,
+                  "opaque_exact_pixels": 680,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 4,
+      "capture_key": "items-sequence-legs:4",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        645
+      ],
+      "server_id": null,
+      "fullName": "blue legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00004-icon.png",
+        "sha256": "e7de57bc3bdeae0fbcb25809dd499658bc0d99d6233b67bf0585aa3d96c584a1"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 645,
+          "cyclopedia_type": 645,
+          "market_trade_as_object_id": 645,
+          "market_show_as_object_id": 645,
+          "market_category": 8,
+          "record_sha256": "13b0d066dd575405d2bad65d3dc67932a386897407240de0efca7e3eab7fab28",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 201353,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 537,
+                  "opaque_exact_pixels": 537,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 5,
+      "capture_key": "items-sequence-legs:5",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3372
+      ],
+      "server_id": null,
+      "fullName": "brass legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00005-icon.png",
+        "sha256": "a152c2b58f3546fdf00958d4a110e1361797b4dd7a1bd2c965f0b9049fc0d98e"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3372,
+          "cyclopedia_type": 3372,
+          "market_trade_as_object_id": 3372,
+          "market_show_as_object_id": 3372,
+          "market_category": 8,
+          "record_sha256": "b7d2f55f2a951ea62d22ea42d58d3ac8b4541d73f8e67a5070df3ecc4bd13240",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204247,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 549,
+                  "opaque_exact_pixels": 549,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 6,
+      "capture_key": "items-sequence-legs:6",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3558
+      ],
+      "server_id": null,
+      "fullName": "chain legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00006-icon.png",
+        "sha256": "2b168008cd5c2134ae7bdfd13f4fd081db14c5687a211768f6bbd2f03dfcd60e"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3558,
+          "cyclopedia_type": 3558,
+          "market_trade_as_object_id": 3558,
+          "market_show_as_object_id": 3558,
+          "market_category": 8,
+          "record_sha256": "d38891c517a99fee8d95c13b3026236754409edded1bcbd54c934208da7a72bb",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204531,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 596,
+                  "opaque_exact_pixels": 596,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 7,
+      "capture_key": "items-sequence-legs:7",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        24402
+      ],
+      "server_id": null,
+      "fullName": "chocolatey dragon scale legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00007-icon.png",
+        "sha256": "90b3c1b2fc683508fac4c7d65d1aec8dc86ba06d4ddcd1227764779ec7db05c8"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "8e7fad8e88b90acd93f825a9a9baf3a7b365a3c2ce9e9ffc78c226754c2fb887",
+        "bytes": 59,
+        "characters": 59
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 24402,
+          "cyclopedia_type": 24402,
+          "market_trade_as_object_id": 24402,
+          "market_show_as_object_id": 24402,
+          "market_category": 8,
+          "record_sha256": "64638afec252cfdc6626604efed5d0d67ef61158ecc6cc10cb8fd78193faa430",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "8e7fad8e88b90acd93f825a9a9baf3a7b365a3c2ce9e9ffc78c226754c2fb887",
+            "bytes": 59,
+            "characters": 59
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 220457,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 612,
+                  "opaque_exact_pixels": 612,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 8,
+      "capture_key": "items-sequence-legs:8",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        55230
+      ],
+      "server_id": null,
+      "fullName": "corrupted moonsilver ashstrider",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00008-icon.png",
+        "sha256": "c1aea90a8fc81481d098256f213b6a53d4271d1ea8dbb046c9342c7689770090"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 55230,
+          "cyclopedia_type": 55230,
+          "market_trade_as_object_id": 55230,
+          "market_show_as_object_id": 55230,
+          "market_category": 8,
+          "record_sha256": "fe2ab764cab7255ff8975da562232b8b49fd02c08a6738533fc63502f5fa6a9d",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 245500,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 631,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 245501,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 585,
+                  "opaque_mean_absolute_rgb_error": 1.774432118330692,
+                  "opaque_max_rgb_error": 68,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 245502,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 549,
+                  "opaque_mean_absolute_rgb_error": 4.353935552033809,
+                  "opaque_max_rgb_error": 132,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 245503,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 537,
+                  "opaque_mean_absolute_rgb_error": 5.08716323296355,
+                  "opaque_max_rgb_error": 93,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 245504,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 524,
+                  "opaque_mean_absolute_rgb_error": 4.617010036978341,
+                  "opaque_max_rgb_error": 89,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 245505,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 534,
+                  "opaque_mean_absolute_rgb_error": 4.536185948230322,
+                  "opaque_max_rgb_error": 110,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 245506,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 556,
+                  "opaque_mean_absolute_rgb_error": 3.3761225567881668,
+                  "opaque_max_rgb_error": 113,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 245507,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 550,
+                  "opaque_mean_absolute_rgb_error": 2.763338615953513,
+                  "opaque_max_rgb_error": 110,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 245508,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 546,
+                  "opaque_mean_absolute_rgb_error": 2.468040147913365,
+                  "opaque_max_rgb_error": 110,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 245509,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 631,
+                  "opaque_exact_pixels": 590,
+                  "opaque_mean_absolute_rgb_error": 1.2974115161119915,
+                  "opaque_max_rgb_error": 110,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 9,
+      "capture_key": "items-sequence-legs:9",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        55229
+      ],
+      "server_id": null,
+      "fullName": "corrupted moonsilver flamestrider",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00009-icon.png",
+        "sha256": "158e98c8899c0ac697db2a51216b4ea8f9ae599dcd9b42f87cecff9ffbb33d62"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 55229,
+          "cyclopedia_type": 55229,
+          "market_trade_as_object_id": 55229,
+          "market_show_as_object_id": 55229,
+          "market_category": 8,
+          "record_sha256": "0d64e4357e8bac7cedcef21fcb72940d1bfc5f6c93ed14ea72e06b971f846bcb",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 245490,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 716,
+                  "opaque_exact_pixels": 716,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 245491,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 715,
+                  "opaque_exact_pixels": 647,
+                  "opaque_mean_absolute_rgb_error": 2.787878787878788,
+                  "opaque_max_rgb_error": 220,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 245492,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 716,
+                  "opaque_exact_pixels": 620,
+                  "opaque_mean_absolute_rgb_error": 3.9869646182495346,
+                  "opaque_max_rgb_error": 190,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 245493,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 716,
+                  "opaque_exact_pixels": 600,
+                  "opaque_mean_absolute_rgb_error": 5.704376163873371,
+                  "opaque_max_rgb_error": 190,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 245494,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 715,
+                  "opaque_exact_pixels": 584,
+                  "opaque_mean_absolute_rgb_error": 6.258741258741258,
+                  "opaque_max_rgb_error": 231,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 245495,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 715,
+                  "opaque_exact_pixels": 581,
+                  "opaque_mean_absolute_rgb_error": 5.468997668997669,
+                  "opaque_max_rgb_error": 222,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 245496,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 716,
+                  "opaque_exact_pixels": 595,
+                  "opaque_mean_absolute_rgb_error": 5.808193668528864,
+                  "opaque_max_rgb_error": 251,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 245497,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 716,
+                  "opaque_exact_pixels": 593,
+                  "opaque_mean_absolute_rgb_error": 5.243482309124767,
+                  "opaque_max_rgb_error": 195,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 245498,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 715,
+                  "opaque_exact_pixels": 601,
+                  "opaque_mean_absolute_rgb_error": 4.935198135198135,
+                  "opaque_max_rgb_error": 237,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 245499,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 715,
+                  "opaque_exact_pixels": 612,
+                  "opaque_mean_absolute_rgb_error": 4.120745920745921,
+                  "opaque_max_rgb_error": 220,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 10,
+      "capture_key": "items-sequence-legs:10",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3382
+      ],
+      "server_id": null,
+      "fullName": "crown legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00010-icon.png",
+        "sha256": "8e12651948a775ba1a6974f84a44c486e7d36cdf0f0ad9b909177dc4401d0745"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3382,
+          "cyclopedia_type": 3382,
+          "market_trade_as_object_id": 3382,
+          "market_show_as_object_id": 3382,
+          "market_category": 8,
+          "record_sha256": "bb7256d177c25aca9da1fd2a03d483b97692ecac013dc65eb1650468e7cd6c7f",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204257,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 648,
+                  "opaque_exact_pixels": 648,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 11,
+      "capture_key": "items-sequence-legs:11",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        39166
+      ],
+      "server_id": null,
+      "fullName": "dawnfire pantaloons",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00011-icon.png",
+        "sha256": "5f158df84095f65c3b75d2efad50a5b6398da78b2ed8e4c48f72fc5df1434d8f"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 39166,
+          "cyclopedia_type": 39166,
+          "market_trade_as_object_id": 39166,
+          "market_show_as_object_id": 39166,
+          "market_category": 8,
+          "record_sha256": "1c307026ce5df41463ad2995bf3fa94266a3911624150f45b025ca110f946d4c",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 235974,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 600,
+                  "opaque_exact_pixels": 600,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 12,
+      "capture_key": "items-sequence-legs:12",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3389
+      ],
+      "server_id": null,
+      "fullName": "demon legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00012-icon.png",
+        "sha256": "42a58a6a32297e23973e98d1da60c27f3e776f09d2ebb138c3cbfe4633653db0"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3389,
+          "cyclopedia_type": 3389,
+          "market_trade_as_object_id": 3389,
+          "market_show_as_object_id": 3389,
+          "market_category": 8,
+          "record_sha256": "b979b21714d0a7c9113d960643661363712b209e6c71f3f584268c1bc40c1c69",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204264,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 536,
+                  "opaque_exact_pixels": 536,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 13,
+      "capture_key": "items-sequence-legs:13",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        13996
+      ],
+      "server_id": null,
+      "fullName": "depth ocrea",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00013-icon.png",
+        "sha256": "54a4bd2f44b52689fa88cb6ed3a6b63f4d2acd2f7afed98c36305e5ec28e3ba6"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 13996,
+          "cyclopedia_type": 13996,
+          "market_trade_as_object_id": 13996,
+          "market_show_as_object_id": 13996,
+          "market_category": 8,
+          "record_sha256": "45f6047ec9f8d299c1b57b6baf53186d6c829dfc6d4ad6ae8fb3d2ffda5f7a45",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 213424,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 463,
+                  "opaque_exact_pixels": 463,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 14,
+      "capture_key": "items-sequence-legs:14",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3363
+      ],
+      "server_id": null,
+      "fullName": "dragon scale legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00014-icon.png",
+        "sha256": "79646aca1a6d841375f307334729e8684b1e21a462c5851aec468c494e9ce849"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3363,
+          "cyclopedia_type": 3363,
+          "market_trade_as_object_id": 3363,
+          "market_show_as_object_id": 3363,
+          "market_category": 8,
+          "record_sha256": "ca69b6403fb94e60a4334539353792061b0b486fca8d27494319d6d7564f9bd5",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204238,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 612,
+                  "opaque_exact_pixels": 612,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 15,
+      "capture_key": "items-sequence-legs:15",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3398
+      ],
+      "server_id": null,
+      "fullName": "dwarven legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00015-icon.png",
+        "sha256": "94f8321f7cedf3c333f5da214927f117d5857d40e71da01c16804db84473a6ca"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3398,
+          "cyclopedia_type": 3398,
+          "market_trade_as_object_id": 3398,
+          "market_show_as_object_id": 3398,
+          "market_category": 8,
+          "record_sha256": "f59184e2b7c9b85c138fd0cd9ea222892e84613f2a07fadcae12d690158b9774",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204273,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 598,
+                  "opaque_exact_pixels": 598,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 16,
+      "capture_key": "items-sequence-legs:16",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        36667
+      ],
+      "server_id": null,
+      "fullName": "eldritch breeches",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00016-icon.png",
+        "sha256": "0ddedcc0e44abe18aba0b138f60c934e37af6f9091041ec7022ad70b16879598"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 36667,
+          "cyclopedia_type": 36667,
+          "market_trade_as_object_id": 36667,
+          "market_show_as_object_id": 36667,
+          "market_category": 8,
+          "record_sha256": "0287487ea1a6fc0d27d6417d70ddc416d992e19b27e71b85806a3407705a8504",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 227995,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 539,
+                  "opaque_exact_pixels": 539,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 17,
+      "capture_key": "items-sequence-legs:17",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3401
+      ],
+      "server_id": null,
+      "fullName": "elven legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00017-icon.png",
+        "sha256": "c0a17fd66b569584fd9e3e350b932471748a04e9790f1222ea9c52d6bf16eb33"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3401,
+          "cyclopedia_type": 3401,
+          "market_trade_as_object_id": 3401,
+          "market_show_as_object_id": 3401,
+          "market_category": 8,
+          "record_sha256": "c506f47ce6ecaf7db883bd1d29560d76a40c87331e3fa51c4f29e969a6873118",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204276,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 579,
+                  "opaque_exact_pixels": 579,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 18,
+      "capture_key": "items-sequence-legs:18",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        35516
+      ],
+      "server_id": null,
+      "fullName": "exotic legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00018-icon.png",
+        "sha256": "e47a16c4a5d482f9dcec2ceead974589ef0561c70f444b77eab87c8910b4a720"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 35516,
+          "cyclopedia_type": 35516,
+          "market_trade_as_object_id": 35516,
+          "market_show_as_object_id": 35516,
+          "market_category": 8,
+          "record_sha256": "55f33dda5c67d5a39b324086e42ea705dd84405ab4188ded105a3d03efb7e49c",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 226989,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 583,
+                  "opaque_exact_pixels": 583,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 19,
+      "capture_key": "items-sequence-legs:19",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        32617
+      ],
+      "server_id": null,
+      "fullName": "fabulous legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00019-icon.png",
+        "sha256": "d50f053889b41de2e934a3c26eedfb81c6fbda3ede06de635c6766c71ed4dcea"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 32617,
+          "cyclopedia_type": 32617,
+          "market_trade_as_object_id": 32617,
+          "market_show_as_object_id": 32617,
+          "market_category": 8,
+          "record_sha256": "a977cdebf92e238f0de68b168b2988a500bcf026e625323046062369e8f0f636",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 224159,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 520,
+                  "opaque_exact_pixels": 520,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 20,
+      "capture_key": "items-sequence-legs:20",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        28720
+      ],
+      "server_id": null,
+      "fullName": "falcon greaves",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00020-icon.png",
+        "sha256": "4c12e36bc283df86d17e38466d9fce21b4fd1e38a2c980885af4691807650663"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 28720,
+          "cyclopedia_type": 28720,
+          "market_trade_as_object_id": 28720,
+          "market_show_as_object_id": 28720,
+          "market_category": 8,
+          "record_sha256": "b0806f220bb42d45c47f5d7088bf62a6ceed6bb49a0074b64387d0f454976f76",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 222200,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 552,
+                  "opaque_exact_pixels": 552,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 21,
+      "capture_key": "items-sequence-legs:21",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        16106
+      ],
+      "server_id": null,
+      "fullName": "gill legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00021-icon.png",
+        "sha256": "2b2d46e293afdcd5bcf676115f6d143d6a4d0722fe112d0ed49f2a5c48df51d4"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 16106,
+          "cyclopedia_type": 16106,
+          "market_trade_as_object_id": 16106,
+          "market_show_as_object_id": 16106,
+          "market_category": 8,
+          "record_sha256": "27f3d3d25dcc8cb04376259b4d636524c1fa844612ba7e1098c8116f9dbaa7ab",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 214566,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 419,
+                  "opaque_exact_pixels": 419,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 22,
+      "capture_key": "items-sequence-legs:22",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        823
+      ],
+      "server_id": null,
+      "fullName": "glacier kilt",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00022-icon.png",
+        "sha256": "4475a962ddfebf1a926fd1fff88f3187d0ae8a6cd7833082f722545d47521aee"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 823,
+          "cyclopedia_type": 823,
+          "market_trade_as_object_id": 823,
+          "market_show_as_object_id": 823,
+          "market_category": 8,
+          "record_sha256": "46b28176b57f7e7a5d69c13f2e2641b63de2da38b717bd294cf8547a6d20cb54",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 201963,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 709,
+                  "opaque_exact_pixels": 709,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 23,
+      "capture_key": "items-sequence-legs:23",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        27649
+      ],
+      "server_id": null,
+      "fullName": "gnome legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00023-icon.png",
+        "sha256": "23f04484633da9c7be04126ca01b949263956712d4b224479f33a8a371e8f446"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 27649,
+          "cyclopedia_type": 27649,
+          "market_trade_as_object_id": 27649,
+          "market_show_as_object_id": 27649,
+          "market_category": 8,
+          "record_sha256": "78ad28a5c294b9e526ac6790da34727f06fad064af73c8f4c360746f4b75e66c",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 221637,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 422,
+                  "opaque_exact_pixels": 422,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 24,
+      "capture_key": "items-sequence-legs:24",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3364
+      ],
+      "server_id": null,
+      "fullName": "golden legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00024-icon.png",
+        "sha256": "c15c8100c8085f2af74a4b35ab324ab2def2bfb6d52850e6b4daa3c53c3f5b59"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3364,
+          "cyclopedia_type": 3364,
+          "market_trade_as_object_id": 3364,
+          "market_show_as_object_id": 3364,
+          "market_category": 8,
+          "record_sha256": "18e880e674181e33265dc5b3a031c1e5528bc94cfaba483474b0d7652f796a24",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204239,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 546,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 25,
+      "capture_key": "items-sequence-legs:25",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        14087
+      ],
+      "server_id": null,
+      "fullName": "grasshopper legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00025-icon.png",
+        "sha256": "146a81b9c5718a384c78ca674fe499ca82600a1fed97bd232490adff8b4d1dc4"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 14087,
+          "cyclopedia_type": 14087,
+          "market_trade_as_object_id": 14087,
+          "market_show_as_object_id": 14087,
+          "market_category": 8,
+          "record_sha256": "cb362d8425004bf9a0882407bd70cf75837ae7c8f4ca40ad5075980e14cef0aa",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 213474,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 480,
+                  "opaque_exact_pixels": 480,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 26,
+      "capture_key": "items-sequence-legs:26",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        37607
+      ],
+      "server_id": null,
+      "fullName": "green demon legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00026-icon.png",
+        "sha256": "ce8914f2d15a82e7254449d4e54150876dddd36a1b71afed79182261ca784999"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 37607,
+          "cyclopedia_type": 37607,
+          "market_trade_as_object_id": 37607,
+          "market_show_as_object_id": 37607,
+          "market_category": 8,
+          "record_sha256": "e8b98a3f18ec5f86cb8b660c74ab2e7fc6e5ca0c8000862ae84fa9bc439983ef",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 229107,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 536,
+                  "opaque_exact_pixels": 536,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 27,
+      "capture_key": "items-sequence-legs:27",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        19366
+      ],
+      "server_id": null,
+      "fullName": "icy culottes",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00027-icon.png",
+        "sha256": "63492a1f616ba9e9eaa69abeff6bf8e3bfe348d933c8b1c675951ae20c76c65a"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 19366,
+          "cyclopedia_type": 19366,
+          "market_trade_as_object_id": 19366,
+          "market_show_as_object_id": 19366,
+          "market_category": 8,
+          "record_sha256": "b121fb23afdbc3db1379230e8a7fcf120e3373357a030000639cc76cbfaf0f3a",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 216166,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 580,
+                  "opaque_exact_pixels": 580,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 28,
+      "capture_key": "items-sequence-legs:28",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50185
+      ],
+      "server_id": null,
+      "fullName": "jade legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00028-icon.png",
+        "sha256": "44e0e3e5a73f353826f50bdf92913622a34efabd9f7a2594ac2c33a390594a47"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50185,
+          "cyclopedia_type": 50185,
+          "market_trade_as_object_id": 50185,
+          "market_show_as_object_id": 50185,
+          "market_category": 8,
+          "record_sha256": "cc16b6f2249c58d127f80946eef2fe9bf070589a1f70c443f883c45a75234df3",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241599,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 518,
+                  "opaque_exact_pixels": 518,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 29,
+      "capture_key": "items-sequence-legs:29",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50186
+      ],
+      "server_id": null,
+      "fullName": "jungle survivor legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00029-icon.png",
+        "sha256": "8047f7e55911837ddbbba670910fbbace936dbad60fdeb8922ba4a8be5102f58"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50186,
+          "cyclopedia_type": 50186,
+          "market_trade_as_object_id": 50186,
+          "market_show_as_object_id": 50186,
+          "market_category": 8,
+          "record_sha256": "6a07ce17648ee0f2192ea1ce430b8ec677649f4db1797cc8e0787ce02862b548",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241600,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 546,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 30,
+      "capture_key": "items-sequence-legs:30",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3371
+      ],
+      "server_id": null,
+      "fullName": "knight legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00030-icon.png",
+        "sha256": "5d286d9462304a57a9d7c86f69836e186d9d578d0ca2e3c1986157b98c1ced77"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3371,
+          "cyclopedia_type": 3371,
+          "market_trade_as_object_id": 3371,
+          "market_show_as_object_id": 3371,
+          "market_category": 8,
+          "record_sha256": "797628218de671e9837ec00529613c785423d87223bdfc27686e324cd08dc3fa",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204246,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 627,
+                  "opaque_exact_pixels": 627,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 31,
+      "capture_key": "items-sequence-legs:31",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        9014
+      ],
+      "server_id": null,
+      "fullName": "leaf legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00031-icon.png",
+        "sha256": "db8cdf51fdae615476d149311418272b31207a9cf197755425dfedcd06636226"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 9014,
+          "cyclopedia_type": 9014,
+          "market_trade_as_object_id": 9014,
+          "market_show_as_object_id": 9014,
+          "market_category": 8,
+          "record_sha256": "42dc328115c8a5fb1215f1c166d8361b8ed94d3c5013ac06f4f97914b9f0746f",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 209587,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 341,
+                  "opaque_exact_pixels": 341,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 32,
+      "capture_key": "items-sequence-legs:32",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3559
+      ],
+      "server_id": null,
+      "fullName": "leather legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00032-icon.png",
+        "sha256": "021a02ff893f9bfeb1dc567fbb080d3e2b27968f1669dc437f94c43fdbc4baf3"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3559,
+          "cyclopedia_type": 3559,
+          "market_trade_as_object_id": 3559,
+          "market_show_as_object_id": 3559,
+          "market_category": 8,
+          "record_sha256": "feb134523c0ec10880341bcb57b5ad4a0d68faf9d7c807458d0ff064d5d1be6c",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204532,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 402,
+                  "opaque_exact_pixels": 402,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 33,
+      "capture_key": "items-sequence-legs:33",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50269
+      ],
+      "server_id": null,
+      "fullName": "legs of enlightenment",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00033-icon.png",
+        "sha256": "409999a33c22b8ff47359caf4d587b4d9baf4311aebecfe74a90c81c3cf1c67b"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "e953e06c4281224b1694aaa33049edc0d70ea142018171fe556c110afb90ef09",
+        "bytes": 121,
+        "characters": 121
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50269,
+          "cyclopedia_type": 50269,
+          "market_trade_as_object_id": 50269,
+          "market_show_as_object_id": 50269,
+          "market_category": 8,
+          "record_sha256": "4a682c9f40da99a58a44167cad5126af3bb8f751ae4482f0dff3ecf57026f9da",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "e953e06c4281224b1694aaa33049edc0d70ea142018171fe556c110afb90ef09",
+            "bytes": 121,
+            "characters": 121
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241668,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 603,
+                  "opaque_exact_pixels": 603,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 34,
+      "capture_key": "items-sequence-legs:34",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50187
+      ],
+      "server_id": null,
+      "fullName": "legs of wisdom",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00034-icon.png",
+        "sha256": "adc467ef4084239a7a7bf09c35c3649f5860e98ac4723d012194a305c09ba345"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50187,
+          "cyclopedia_type": 50187,
+          "market_trade_as_object_id": 50187,
+          "market_show_as_object_id": 50187,
+          "market_category": 8,
+          "record_sha256": "18efa5e8835b2befb3066417b44988153ec9da97b58040bed241779b548b657f",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241601,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 606,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 35,
+      "capture_key": "items-sequence-legs:35",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        822
+      ],
+      "server_id": null,
+      "fullName": "lightning legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00035-icon.png",
+        "sha256": "b8f8aa95e28dbc8ba0b57a1d38a4dc4e19d32a18cbfc3990165a8d4230c6f4e5"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 822,
+          "cyclopedia_type": 822,
+          "market_trade_as_object_id": 822,
+          "market_show_as_object_id": 822,
+          "market_category": 8,
+          "record_sha256": "0b9247d67ae442be22b271b2d4248450d4a88928ad189bef3427634050f76798",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 201962,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 607,
+                  "opaque_exact_pixels": 607,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 36,
+      "capture_key": "items-sequence-legs:36",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        821
+      ],
+      "server_id": null,
+      "fullName": "magma legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00036-icon.png",
+        "sha256": "9b504ab0a0897aa55afb894ab04f1a5eded3be58097c9cbebc713560aac9cfc8"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 821,
+          "cyclopedia_type": 821,
+          "market_trade_as_object_id": 821,
+          "market_show_as_object_id": 821,
+          "market_category": 8,
+          "record_sha256": "4216f1df28e6759e01b093fceab064836e866190a8527c94d4be926f2f1d84e1",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 201959,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 556,
+                  "opaque_exact_pixels": 483,
+                  "opaque_mean_absolute_rgb_error": 6.051558752997602,
+                  "opaque_max_rgb_error": 115,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 201960,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 556,
+                  "opaque_exact_pixels": 483,
+                  "opaque_mean_absolute_rgb_error": 2.8752997601918464,
+                  "opaque_max_rgb_error": 75,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 201961,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 556,
+                  "opaque_exact_pixels": 556,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 201960,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 556,
+                  "opaque_exact_pixels": 483,
+                  "opaque_mean_absolute_rgb_error": 2.8752997601918464,
+                  "opaque_max_rgb_error": 75,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 37,
+      "capture_key": "items-sequence-legs:37",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        7464
+      ],
+      "server_id": null,
+      "fullName": "mammoth fur shorts",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00037-icon.png",
+        "sha256": "1cfa298383ece1f69a34072ea4dda88f7297d3eebeb1f42174ed7640f8b4f1de"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+        "bytes": 78,
+        "characters": 78
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 7464,
+          "cyclopedia_type": 7464,
+          "market_trade_as_object_id": 7464,
+          "market_show_as_object_id": 7464,
+          "market_category": 8,
+          "record_sha256": "1e0f84cbea14bf7aab2f4d97ff4ec8095956129ee62bd43d729bdb229a239181",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+            "bytes": 78,
+            "characters": 78
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 208775,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 244,
+                  "opaque_exact_pixels": 244,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 38,
+      "capture_key": "items-sequence-legs:38",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        39167
+      ],
+      "server_id": null,
+      "fullName": "midnight sarong",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00038-icon.png",
+        "sha256": "98a63470bb5db46dc93880c7bf0bc473fa83c46814d987b3a09da7629e283523"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 39167,
+          "cyclopedia_type": 39167,
+          "market_trade_as_object_id": 39167,
+          "market_show_as_object_id": 39167,
+          "market_category": 8,
+          "record_sha256": "e91efbac92d69e2eb9d31d0ac60e28eb7fccc0999dd5e1f072c4c46ac33fa18d",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 235975,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 667,
+                  "opaque_exact_pixels": 667,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 39,
+      "capture_key": "items-sequence-legs:39",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        40595
+      ],
+      "server_id": null,
+      "fullName": "mutant bone kilt",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00039-icon.png",
+        "sha256": "dd8e9e9cc940923f03c1590f07945c1d1572e92a1f475e0e6b9ba94086a622c8"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 40595,
+          "cyclopedia_type": 40595,
+          "market_trade_as_object_id": 40595,
+          "market_show_as_object_id": 40595,
+          "market_category": 8,
+          "record_sha256": "0c71f078dc42b1ffd91389fd7b990f3caed172b87f6392b870487e25ab80cf73",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 236689,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 486,
+                  "opaque_exact_pixels": 486,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 40,
+      "capture_key": "items-sequence-legs:40",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50184
+      ],
+      "server_id": null,
+      "fullName": "mutant hide trousers",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00040-icon.png",
+        "sha256": "ba229c1e7f7d1a20f0f05accd0af6f12ada1b5a07624e68acf63664a64b17838"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50184,
+          "cyclopedia_type": 50184,
+          "market_trade_as_object_id": 50184,
+          "market_show_as_object_id": 50184,
+          "market_category": 8,
+          "record_sha256": "d7dc02c3a1831ec0103c6ef6bd8a062ef52fd762b73daafb83ecbca9a2b1c0de",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241598,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 535,
+                  "opaque_exact_pixels": 535,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 41,
+      "capture_key": "items-sequence-legs:41",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        40590
+      ],
+      "server_id": null,
+      "fullName": "mutated skin legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00041-icon.png",
+        "sha256": "fb7a92d8df2f22da1a812db8e041bf901684b35a3c5eb9bc10d218b05983fcc6"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 40590,
+          "cyclopedia_type": 40590,
+          "market_trade_as_object_id": 40590,
+          "market_show_as_object_id": 40590,
+          "market_category": 8,
+          "record_sha256": "ada79e9df663ea319be6f9b61594e173c8bffa78f46e1c2c25308801e33dc2aa",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 236684,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 395,
+                  "opaque_exact_pixels": 395,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 42,
+      "capture_key": "items-sequence-legs:42",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        51266
+      ],
+      "server_id": null,
+      "fullName": "norcferatu bloodstrider",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00042-icon.png",
+        "sha256": "1bf994d870a4d3a3f2da55ed18cfbc48384bc6a4b03a32c2e297b53aa61cd4ce"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 51266,
+          "cyclopedia_type": 51266,
+          "market_trade_as_object_id": 51266,
+          "market_show_as_object_id": 51266,
+          "market_category": 8,
+          "record_sha256": "80153c00f7a6842b2ad79b6934b04f40716a7d8c5192dfb1770554138f53a478",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 242280,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 636,
+                  "opaque_exact_pixels": 636,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 43,
+      "capture_key": "items-sequence-legs:43",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        51267
+      ],
+      "server_id": null,
+      "fullName": "norcferatu fleshguards",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00043-icon.png",
+        "sha256": "254810d0da1a012de8723aafedaa7bc0a482ca4553579e75d861cfe20e38dda1"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 51267,
+          "cyclopedia_type": 51267,
+          "market_trade_as_object_id": 51267,
+          "market_show_as_object_id": 51267,
+          "market_category": 8,
+          "record_sha256": "c02b6015ce83a3b0fce47bd0abdff5624ed388ae7886b199049eb7e67b7ca249",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 242281,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 569,
+                  "opaque_exact_pixels": 569,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 44,
+      "capture_key": "items-sequence-legs:44",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        51265
+      ],
+      "server_id": null,
+      "fullName": "norcferatu thornwraps",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00044-icon.png",
+        "sha256": "1a61b682b0879d4952212dc8353c3519a51d9325bf34a59bd9b4824fd8419b0d"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 51265,
+          "cyclopedia_type": 51265,
+          "market_trade_as_object_id": 51265,
+          "market_show_as_object_id": 51265,
+          "market_category": 8,
+          "record_sha256": "f36dceddcbc03c39f2167e658cfc2c983053dd1561b2aa02f343c600e229ffa7",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 242279,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 652,
+                  "opaque_exact_pixels": 652,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 45,
+      "capture_key": "items-sequence-legs:45",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        13999
+      ],
+      "server_id": null,
+      "fullName": "ornate legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00045-icon.png",
+        "sha256": "3dcf6d3340d56ab61d1ba7cb637acd63bd3ec208624f07d91b543cb3e42441eb"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 13999,
+          "cyclopedia_type": 13999,
+          "market_trade_as_object_id": 13999,
+          "market_show_as_object_id": 13999,
+          "market_category": 8,
+          "record_sha256": "525be541a56f6c2ba4eed83e915815aed849be25ff2e64aae0f4d668c8a7e94e",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 213427,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 441,
+                  "opaque_exact_pixels": 441,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 46,
+      "capture_key": "items-sequence-legs:46",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        5918
+      ],
+      "server_id": null,
+      "fullName": "pirate knee breeches",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00046-icon.png",
+        "sha256": "9a5d069d8ea3d03ccec4aa6d894503bd2e171c4499ab13bc4d786e65495d0a69"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 5918,
+          "cyclopedia_type": 5918,
+          "market_trade_as_object_id": 5918,
+          "market_show_as_object_id": 5918,
+          "market_category": 8,
+          "record_sha256": "6c0b396298c9d1fb244e10c2e38ce1fae4cce0314719292d36c404c391ed1cc3",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 206767,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 401,
+                  "opaque_exact_pixels": 401,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 47,
+      "capture_key": "items-sequence-legs:47",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3557
+      ],
+      "server_id": null,
+      "fullName": "plate legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00047-icon.png",
+        "sha256": "184888490eed50aae460e5596550d4aa523d56df9b527fec279d6e547ea49de0"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3557,
+          "cyclopedia_type": 3557,
+          "market_trade_as_object_id": 3557,
+          "market_show_as_object_id": 3557,
+          "market_category": 8,
+          "record_sha256": "6b8fb69f0167238af9340526d99ca83ffec79dfa7c6d6b47a504a15b85075e39",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204530,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 568,
+                  "opaque_exact_pixels": 568,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 48,
+      "capture_key": "items-sequence-legs:48",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        16111
+      ],
+      "server_id": null,
+      "fullName": "prismatic legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00048-icon.png",
+        "sha256": "550350cc764e879f01f30e466cc5f024c2664520bc455e5839fdf9e92272d441"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 16111,
+          "cyclopedia_type": 16111,
+          "market_trade_as_object_id": 16111,
+          "market_show_as_object_id": 16111,
+          "market_category": 8,
+          "record_sha256": "475c679f10f77a9923c7630a5b24fc81ff240071031cca04071968d1a7a9cf07",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 214571,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 443,
+                  "opaque_exact_pixels": 443,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 49,
+      "capture_key": "items-sequence-legs:49",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        8095
+      ],
+      "server_id": null,
+      "fullName": "ranger legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00049-icon.png",
+        "sha256": "36e2183989f3300f0300668cfe7d8e000c63f57fb6d8fb8bc871cd52a84f7203"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 8095,
+          "cyclopedia_type": 8095,
+          "market_trade_as_object_id": 8095,
+          "market_show_as_object_id": 8095,
+          "market_category": 8,
+          "record_sha256": "6d48dd3a3a5fe40457f9ce942d33bef6260ae8ebecadcd377a3d174ba589302d",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204276,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 579,
+                  "opaque_exact_pixels": 579,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 50,
+      "capture_key": "items-sequence-legs:50",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        43881
+      ],
+      "server_id": null,
+      "fullName": "sanguine greaves",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00050-icon.png",
+        "sha256": "96094efb8d520d3049c587591b369e272075c90a2a6cbf53533cb0a8f0953157"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 43881,
+          "cyclopedia_type": 43881,
+          "market_trade_as_object_id": 43881,
+          "market_show_as_object_id": 43881,
+          "market_category": 8,
+          "record_sha256": "5df4b1466f31623438645c080507a971a7d3e54236b7c2b8d5c3173f91e69608",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 237770,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 545,
+                  "opaque_exact_pixels": 519,
+                  "opaque_mean_absolute_rgb_error": 1.3327217125382262,
+                  "opaque_max_rgb_error": 188,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 237771,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 545,
+                  "opaque_exact_pixels": 545,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 237772,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 515,
+                  "opaque_mean_absolute_rgb_error": 2.061050061050061,
+                  "opaque_max_rgb_error": 225,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 237773,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 549,
+                  "opaque_exact_pixels": 514,
+                  "opaque_mean_absolute_rgb_error": 2.4177292046144507,
+                  "opaque_max_rgb_error": 188,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 237774,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 512,
+                  "opaque_mean_absolute_rgb_error": 2.2838827838827838,
+                  "opaque_max_rgb_error": 218,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 237775,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 509,
+                  "opaque_mean_absolute_rgb_error": 1.971916971916972,
+                  "opaque_max_rgb_error": 188,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 237776,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 546,
+                  "opaque_exact_pixels": 507,
+                  "opaque_mean_absolute_rgb_error": 2.296092796092796,
+                  "opaque_max_rgb_error": 196,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 237777,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 545,
+                  "opaque_exact_pixels": 500,
+                  "opaque_mean_absolute_rgb_error": 2.9645259938837922,
+                  "opaque_max_rgb_error": 211,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 237778,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 545,
+                  "opaque_exact_pixels": 499,
+                  "opaque_mean_absolute_rgb_error": 2.758409785932722,
+                  "opaque_max_rgb_error": 211,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 237779,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 547,
+                  "opaque_exact_pixels": 509,
+                  "opaque_mean_absolute_rgb_error": 2.1706276660572823,
+                  "opaque_max_rgb_error": 222,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 51,
+      "capture_key": "items-sequence-legs:51",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        43876
+      ],
+      "server_id": null,
+      "fullName": "sanguine legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00051-icon.png",
+        "sha256": "6a8ab80b71bc3eb9c367fa8823f91f9b78ec5972d17dcbc31fd59f01a759c80e"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 43876,
+          "cyclopedia_type": 43876,
+          "market_trade_as_object_id": 43876,
+          "market_show_as_object_id": 43876,
+          "market_category": 8,
+          "record_sha256": "dacc6c0ae63308a7e783f0ba2c98dcc154947a8e4cc4241f1716624fa6390ffc",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 237713,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 615,
+                  "opaque_exact_pixels": 591,
+                  "opaque_mean_absolute_rgb_error": 2.178319783197832,
+                  "opaque_max_rgb_error": 179,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 237714,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 619,
+                  "opaque_exact_pixels": 619,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 237715,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 624,
+                  "opaque_exact_pixels": 585,
+                  "opaque_mean_absolute_rgb_error": 2.909188034188034,
+                  "opaque_max_rgb_error": 194,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 237716,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 617,
+                  "opaque_exact_pixels": 578,
+                  "opaque_mean_absolute_rgb_error": 3.2042139384116695,
+                  "opaque_max_rgb_error": 222,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 237717,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 612,
+                  "opaque_exact_pixels": 559,
+                  "opaque_mean_absolute_rgb_error": 4.284858387799564,
+                  "opaque_max_rgb_error": 222,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 237718,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 603,
+                  "opaque_exact_pixels": 553,
+                  "opaque_mean_absolute_rgb_error": 4.539524599226092,
+                  "opaque_max_rgb_error": 222,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 237719,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 607,
+                  "opaque_exact_pixels": 557,
+                  "opaque_mean_absolute_rgb_error": 4.546952224052719,
+                  "opaque_max_rgb_error": 226,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 237720,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 612,
+                  "opaque_exact_pixels": 558,
+                  "opaque_mean_absolute_rgb_error": 4.549019607843137,
+                  "opaque_max_rgb_error": 226,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 237721,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 612,
+                  "opaque_exact_pixels": 558,
+                  "opaque_mean_absolute_rgb_error": 4.34041394335512,
+                  "opaque_max_rgb_error": 226,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 237722,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 613,
+                  "opaque_exact_pixels": 567,
+                  "opaque_mean_absolute_rgb_error": 3.476345840130506,
+                  "opaque_max_rgb_error": 195,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 52,
+      "capture_key": "items-sequence-legs:52",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        50146
+      ],
+      "server_id": null,
+      "fullName": "sanguine trousers",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00052-icon.png",
+        "sha256": "b5175b4b517220375de358107d7b1db93b5d564ff374fe60e3490d4f586cba8c"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 50146,
+          "cyclopedia_type": 50146,
+          "market_trade_as_object_id": 50146,
+          "market_show_as_object_id": 50146,
+          "market_category": 8,
+          "record_sha256": "daec486dfd24e738b99e24309982895079142c0a62ae7e6931856e6f0960efb6",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 241469,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 588,
+                  "opaque_exact_pixels": 520,
+                  "opaque_mean_absolute_rgb_error": 7.354308390022676,
+                  "opaque_max_rgb_error": 188,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 241470,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 588,
+                  "opaque_exact_pixels": 529,
+                  "opaque_mean_absolute_rgb_error": 6.191043083900227,
+                  "opaque_max_rgb_error": 191,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 241471,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 588,
+                  "opaque_exact_pixels": 536,
+                  "opaque_mean_absolute_rgb_error": 5.2227891156462585,
+                  "opaque_max_rgb_error": 188,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 241472,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 588,
+                  "opaque_exact_pixels": 588,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 241473,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 588,
+                  "opaque_exact_pixels": 538,
+                  "opaque_mean_absolute_rgb_error": 4.569160997732427,
+                  "opaque_max_rgb_error": 191,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 241474,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 590,
+                  "opaque_exact_pixels": 522,
+                  "opaque_mean_absolute_rgb_error": 6.703954802259887,
+                  "opaque_max_rgb_error": 221,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 241475,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 593,
+                  "opaque_exact_pixels": 521,
+                  "opaque_mean_absolute_rgb_error": 7.650927487352445,
+                  "opaque_max_rgb_error": 232,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 241476,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 593,
+                  "opaque_exact_pixels": 506,
+                  "opaque_mean_absolute_rgb_error": 9.82574480044969,
+                  "opaque_max_rgb_error": 232,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 241477,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 589,
+                  "opaque_exact_pixels": 500,
+                  "opaque_mean_absolute_rgb_error": 9.936049801924165,
+                  "opaque_max_rgb_error": 191,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 53,
+      "capture_key": "items-sequence-legs:53",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        32618
+      ],
+      "server_id": null,
+      "fullName": "soulful legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00053-icon.png",
+        "sha256": "25749254081a41b86527bf46dfd5714e4a9bc3dab9b265b6675bba7deedf1723"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 32618,
+          "cyclopedia_type": 32618,
+          "market_trade_as_object_id": 32618,
+          "market_show_as_object_id": 32618,
+          "market_category": 8,
+          "record_sha256": "f98542ee0b8484e69d7bf3552776289d764c650234bdd244e71d4243fc9d3a9d",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 224160,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 688,
+                  "opaque_exact_pixels": 688,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 54,
+      "capture_key": "items-sequence-legs:54",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        34092
+      ],
+      "server_id": null,
+      "fullName": "soulshanks",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00054-icon.png",
+        "sha256": "0408a91c181f890a9232debde9a80db99f0b1c2b246b32affc8f5c6f39957898"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 34092,
+          "cyclopedia_type": 34092,
+          "market_trade_as_object_id": 34092,
+          "market_show_as_object_id": 34092,
+          "market_category": 8,
+          "record_sha256": "f920e3019507a8327a81df96704a42effe4016dd0cf4a3ec169922047f283a41",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 224963,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 606,
+                  "opaque_mean_absolute_rgb_error": 0.7626752966558792,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 224964,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 609,
+                  "opaque_mean_absolute_rgb_error": 0.40507011866235165,
+                  "opaque_max_rgb_error": 66,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 224965,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 618,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 224966,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 610,
+                  "opaque_mean_absolute_rgb_error": 0.5544768069039914,
+                  "opaque_max_rgb_error": 108,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 224967,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 573,
+                  "opaque_mean_absolute_rgb_error": 2.605177993527508,
+                  "opaque_max_rgb_error": 118,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 224968,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 617,
+                  "opaque_exact_pixels": 511,
+                  "opaque_mean_absolute_rgb_error": 7.881145326850351,
+                  "opaque_max_rgb_error": 234,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 224969,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 614,
+                  "opaque_exact_pixels": 417,
+                  "opaque_mean_absolute_rgb_error": 15.492399565689468,
+                  "opaque_max_rgb_error": 226,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 224970,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 620,
+                  "opaque_exact_pixels": 383,
+                  "opaque_mean_absolute_rgb_error": 18.501612903225805,
+                  "opaque_max_rgb_error": 217,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 224971,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 621,
+                  "opaque_exact_pixels": 387,
+                  "opaque_mean_absolute_rgb_error": 16.171229200214707,
+                  "opaque_max_rgb_error": 218,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 224972,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 625,
+                  "opaque_exact_pixels": 420,
+                  "opaque_mean_absolute_rgb_error": 11.7632,
+                  "opaque_max_rgb_error": 219,
+                  "comparable": true
+                },
+                {
+                  "slot": 10,
+                  "sprite_id": 224973,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 621,
+                  "opaque_exact_pixels": 451,
+                  "opaque_mean_absolute_rgb_error": 4.949006977992485,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                },
+                {
+                  "slot": 11,
+                  "sprite_id": 224963,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 606,
+                  "opaque_mean_absolute_rgb_error": 0.7626752966558792,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                },
+                {
+                  "slot": 12,
+                  "sprite_id": 224974,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 582,
+                  "opaque_mean_absolute_rgb_error": 1.3408845738942827,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                },
+                {
+                  "slot": 13,
+                  "sprite_id": 224975,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 575,
+                  "opaque_mean_absolute_rgb_error": 2.0258899676375406,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                },
+                {
+                  "slot": 14,
+                  "sprite_id": 224976,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 618,
+                  "opaque_exact_pixels": 581,
+                  "opaque_mean_absolute_rgb_error": 1.8290183387270766,
+                  "opaque_max_rgb_error": 128,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 55,
+      "capture_key": "items-sequence-legs:55",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        34093
+      ],
+      "server_id": null,
+      "fullName": "soulstrider",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00055-icon.png",
+        "sha256": "b752ed87d6bc3cb837f9b9a6ed6146c2dd9b056c6edaa5626a908c62111f502f"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 34093,
+          "cyclopedia_type": 34093,
+          "market_trade_as_object_id": 34093,
+          "market_show_as_object_id": 34093,
+          "market_category": 8,
+          "record_sha256": "93afb8e27325a86941bfd874d913fc0cb51365969fab7117c4020156047f35a1",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 224977,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 629,
+                  "opaque_exact_pixels": 433,
+                  "opaque_mean_absolute_rgb_error": 5.853736089030207,
+                  "opaque_max_rgb_error": 236,
+                  "comparable": true
+                },
+                {
+                  "slot": 1,
+                  "sprite_id": 224978,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 629,
+                  "opaque_exact_pixels": 370,
+                  "opaque_mean_absolute_rgb_error": 13.24960254372019,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 2,
+                  "sprite_id": 224979,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 614,
+                  "opaque_exact_pixels": 331,
+                  "opaque_mean_absolute_rgb_error": 17.57111834961998,
+                  "opaque_max_rgb_error": 238,
+                  "comparable": true
+                },
+                {
+                  "slot": 3,
+                  "sprite_id": 224980,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 318,
+                  "opaque_mean_absolute_rgb_error": 19.387238723872386,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 4,
+                  "sprite_id": 224981,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 325,
+                  "opaque_mean_absolute_rgb_error": 19.023102310231025,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 5,
+                  "sprite_id": 224982,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 320,
+                  "opaque_mean_absolute_rgb_error": 19.350385038503852,
+                  "opaque_max_rgb_error": 248,
+                  "comparable": true
+                },
+                {
+                  "slot": 6,
+                  "sprite_id": 224983,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 322,
+                  "opaque_mean_absolute_rgb_error": 19.078657865786578,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 7,
+                  "sprite_id": 224984,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 326,
+                  "opaque_mean_absolute_rgb_error": 18.101760176017603,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 8,
+                  "sprite_id": 224985,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 324,
+                  "opaque_mean_absolute_rgb_error": 18.574807480748074,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 9,
+                  "sprite_id": 224986,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 326,
+                  "opaque_mean_absolute_rgb_error": 18.962046204620464,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 10,
+                  "sprite_id": 224987,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 606,
+                  "opaque_exact_pixels": 323,
+                  "opaque_mean_absolute_rgb_error": 19.668316831683168,
+                  "opaque_max_rgb_error": 243,
+                  "comparable": true
+                },
+                {
+                  "slot": 11,
+                  "sprite_id": 224988,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 614,
+                  "opaque_exact_pixels": 319,
+                  "opaque_mean_absolute_rgb_error": 19.57546145494028,
+                  "opaque_max_rgb_error": 242,
+                  "comparable": true
+                },
+                {
+                  "slot": 12,
+                  "sprite_id": 224989,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 630,
+                  "opaque_exact_pixels": 331,
+                  "opaque_mean_absolute_rgb_error": 16.916931216931218,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 13,
+                  "sprite_id": 224990,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 636,
+                  "opaque_exact_pixels": 636,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                },
+                {
+                  "slot": 14,
+                  "sprite_id": 224991,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 650,
+                  "opaque_exact_pixels": 341,
+                  "opaque_mean_absolute_rgb_error": 18.74102564102564,
+                  "opaque_max_rgb_error": 240,
+                  "comparable": true
+                },
+                {
+                  "slot": 15,
+                  "sprite_id": 224992,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 647,
+                  "opaque_exact_pixels": 352,
+                  "opaque_mean_absolute_rgb_error": 16.71870170015456,
+                  "opaque_max_rgb_error": 236,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 56,
+      "capture_key": "items-sequence-legs:56",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        52351
+      ],
+      "server_id": null,
+      "fullName": "stag legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00056-icon.png",
+        "sha256": "684349dbb1d01948d9caabf2716f3a9249893124420812e3eadd4b36f8482dac"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 52351,
+          "cyclopedia_type": 52351,
+          "market_trade_as_object_id": 52351,
+          "market_show_as_object_id": 52351,
+          "market_category": 8,
+          "record_sha256": "5e920c8ce19f48a2f8567d47571fd5ea55d2d3e8bf4b38fae08be9c427016ed4",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 242747,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 540,
+                  "opaque_exact_pixels": 540,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 57,
+      "capture_key": "items-sequence-legs:57",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        40589
+      ],
+      "server_id": null,
+      "fullName": "stitched mutant hide legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00057-icon.png",
+        "sha256": "4194a7737089031b9fccabf7fdaeadd01ee9bf506dbefd77c6d45feacfc5af52"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 40589,
+          "cyclopedia_type": 40589,
+          "market_trade_as_object_id": 40589,
+          "market_show_as_object_id": 40589,
+          "market_category": 8,
+          "record_sha256": "f06ed0e4ac29e35f94b3b05a3b80deebc2de94e562e20cba8f530598a0cfabb9",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 236683,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 411,
+                  "opaque_exact_pixels": 411,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 58,
+      "capture_key": "items-sequence-legs:58",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        44642
+      ],
+      "server_id": null,
+      "fullName": "stoic iks culet",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00058-icon.png",
+        "sha256": "a6611aef108c8d832a2854d11ad94ab7ffdfeeb48e7ac7f89d4daaebc5e59a6b"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 44642,
+          "cyclopedia_type": 44642,
+          "market_trade_as_object_id": 44642,
+          "market_show_as_object_id": 44642,
+          "market_category": 8,
+          "record_sha256": "028cf19eeee70294748cc24d71e3a967b42421752d44a617192defa417520e41",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 238512,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 617,
+                  "opaque_exact_pixels": 617,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 59,
+      "capture_key": "items-sequence-legs:59",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        44643
+      ],
+      "server_id": null,
+      "fullName": "stoic iks faulds",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00059-icon.png",
+        "sha256": "daee367563857afc25d9a8d93558d5997171ef860b066f38a95729c312cec376"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 44643,
+          "cyclopedia_type": 44643,
+          "market_trade_as_object_id": 44643,
+          "market_show_as_object_id": 44643,
+          "market_category": 8,
+          "record_sha256": "7c2df4ecd0d1af9cb5f4d8a80ad5df62b92625d1dd7562842596ff6ff54427ef",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 238513,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 636,
+                  "opaque_exact_pixels": 636,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 60,
+      "capture_key": "items-sequence-legs:60",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        3362
+      ],
+      "server_id": null,
+      "fullName": "studded legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00060-icon.png",
+        "sha256": "c86f74cff7d35f0028818316ca1f3b30a12e838102ac9e8386d5258f094b9ad4"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 3362,
+          "cyclopedia_type": 3362,
+          "market_trade_as_object_id": 3362,
+          "market_show_as_object_id": 3362,
+          "market_category": 8,
+          "record_sha256": "af95b7209ff6c21063c777f3cb1d778d753806457120e2552c5b01e23cb514b2",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204237,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 528,
+                  "opaque_exact_pixels": 528,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 61,
+      "capture_key": "items-sequence-legs:61",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        24404
+      ],
+      "server_id": null,
+      "fullName": "tatty dragon scale legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00061-icon.png",
+        "sha256": "d0060515453fd97fbf299a2f391c0a1b337e811477d86733310e3e713d304225"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "16db1cbdd6f720d416d8cae8bd394d83a8ccb57654338c2c20a614e01b5d2378",
+        "bytes": 34,
+        "characters": 34
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 24404,
+          "cyclopedia_type": 24404,
+          "market_trade_as_object_id": 24404,
+          "market_show_as_object_id": 24404,
+          "market_category": 8,
+          "record_sha256": "5f92dd40a5eb65d486084b3f54da1a9e13e80d5ac50ba6868573d38e0a0ff5fe",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "16db1cbdd6f720d416d8cae8bd394d83a8ccb57654338c2c20a614e01b5d2378",
+            "bytes": 34,
+            "characters": 34
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 220458,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 550,
+                  "opaque_exact_pixels": 550,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 62,
+      "capture_key": "items-sequence-legs:62",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        812
+      ],
+      "server_id": null,
+      "fullName": "terra legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00062-icon.png",
+        "sha256": "a4fd0bfbca1618f90cb2f6ea1e52d992f0d2b9eb2c6a095eb23bc357f7bc98f4"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 812,
+          "cyclopedia_type": 812,
+          "market_trade_as_object_id": 812,
+          "market_show_as_object_id": 812,
+          "market_category": 8,
+          "record_sha256": "ae64eff6a93f1188af8213737eecd6ae9025653a9f02407a661b28173e3b54a5",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 201948,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 593,
+                  "opaque_exact_pixels": 593,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 63,
+      "capture_key": "items-sequence-legs:63",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        9383
+      ],
+      "server_id": null,
+      "fullName": "trousers of the ancients",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00063-icon.png",
+        "sha256": "11a24bf5c6a54030ebe693a3056c1dcd887efda1f9811c3d740201a6b640c290"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "6ae10891ed35692f7c460319aa44e82e6cdab71d45f9695caa2dcfba8ff1f1b5",
+        "bytes": 66,
+        "characters": 66
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 9383,
+          "cyclopedia_type": 9383,
+          "market_trade_as_object_id": 9383,
+          "market_show_as_object_id": 9383,
+          "market_category": 8,
+          "record_sha256": "ba3efa175b12a72ac31c1ccb5192d8ff825630e7029edf87faea6ae195da17a7",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "6ae10891ed35692f7c460319aa44e82e6cdab71d45f9695caa2dcfba8ff1f1b5",
+            "bytes": 66,
+            "characters": 66
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 204745,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 212,
+                  "opaque_exact_pixels": 212,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 64,
+      "capture_key": "items-sequence-legs:64",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        22087
+      ],
+      "server_id": null,
+      "fullName": "wereboar loincloth",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00064-icon.png",
+        "sha256": "e4450372211afc1a3f3a69e85fb2562d53a6b90192982bb6001f9fc4cd320806"
+      },
+      "observed_description_receipt": {
+        "state": "RETAINED_PRIVATELY",
+        "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+        "bytes": 78,
+        "characters": 78
+      },
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 22087,
+          "cyclopedia_type": 22087,
+          "market_trade_as_object_id": 22087,
+          "market_show_as_object_id": 22087,
+          "market_category": 8,
+          "record_sha256": "6066aa51a94a393227f7483db6a471df0f8e019615d9f0a0b8d595dc12f83842",
+          "description_status": "exact_normalized",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": {
+            "state": "RETAINED_PRIVATELY",
+            "sha256_utf8": "8268af6623fca19eacacdd0f763f7799a2c0409e0046dc9c20e71b907bb6128e",
+            "bytes": 78,
+            "characters": 78
+          },
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 217939,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 520,
+                  "opaque_exact_pixels": 520,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 65,
+      "capture_key": "items-sequence-legs:65",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        8863
+      ],
+      "server_id": null,
+      "fullName": "yalahari leg piece",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00065-icon.png",
+        "sha256": "95040f8deed98d8a1c5c3c773df524b8ff72d55da226ee5e45f916954e3f85bb"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 8863,
+          "cyclopedia_type": 8863,
+          "market_trade_as_object_id": 8863,
+          "market_show_as_object_id": 8863,
+          "market_category": 8,
+          "record_sha256": "0e5e30efde4fd5818a30607d9903028702ddac6f96f380bac4d3251c370f22f7",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 209493,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 726,
+                  "opaque_exact_pixels": 726,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "ui_entry_ordinal": 66,
+      "capture_key": "items-sequence-legs:66",
+      "status": "unique_client_appearance_candidate",
+      "retained_appearance_object_ids": [
+        10387
+      ],
+      "server_id": null,
+      "fullName": "Zaoan legs",
+      "icon_proof": {
+        "private_source_key": "items-sequence-legs/cards/00066-icon.png",
+        "sha256": "a89c88d85d9b51aa4968b7abfff6ff1897c92aa01c4cde6e8bd17ae64c96f361"
+      },
+      "observed_description_receipt": null,
+      "candidate_evaluations": [
+        {
+          "appearance_object_id": 10387,
+          "cyclopedia_type": 10387,
+          "market_trade_as_object_id": 10387,
+          "market_show_as_object_id": 10387,
+          "market_category": 8,
+          "record_sha256": "2613561afb98dd6f20ffb0619450ebe9bba9bd9ae47fb754295d300af3e51021",
+          "description_status": "not_comparable_field_absent",
+          "unknown_object_field_numbers": [],
+          "opaque_exact_any_known_sprite": true,
+          "best_mean_rgb_error": 0,
+          "source_description_receipt": null,
+          "frame_groups": [
+            {
+              "group_index": 0,
+              "known_sprite_slot_metrics": [
+                {
+                  "slot": 0,
+                  "sprite_id": 210414,
+                  "offset": [
+                    1,
+                    1
+                  ],
+                  "opaque_pixels": 563,
+                  "opaque_exact_pixels": 563,
+                  "opaque_mean_absolute_rgb_error": 0,
+                  "opaque_max_rgb_error": 0,
+                  "comparable": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    "appearance_object_id, cyclopedia_type, market trade/show fields retained independently; server IDs unproved",
+    "All known sprite IDs in every parsed frame group compared, including all recorded phase/pattern/layer slots; all candidate groups have one layer",
+    "Static captured icon can match one phase only; no temporal playback, animation timing, phase completeness beyond parser, or full animation1:1 certification",
+    "Opaque RGB exact metric excludes transparent pixels and semitransparent compositing; no scaling/color correction",
+    "Unknown field60/62/63/64 semantics remain unqualified; name candidate search does not certify DAT category membership exhaustiveness",
+    "No runtime promotion, source correction, client modification, network access, GUI input or repository mutation"
+  ]
+}

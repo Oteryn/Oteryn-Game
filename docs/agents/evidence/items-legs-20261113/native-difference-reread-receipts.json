@@ -1,0 +1,69 @@
+{
+  "schema": "PRIVATE_NATIVE_DIFFERENCE_REREAD_RECEIPTS/v1",
+  "rows": [
+    {
+      "capture_key": "items-sequence-legs:28",
+      "ordinal": 28,
+      "name": "jade legs",
+      "field": "Mantra",
+      "native_observed_literal": "6",
+      "canonical_name_candidate_literal": 7,
+      "native_proof": {
+        "role": "basic_page",
+        "private_source_key": "items-sequence-legs/cards/00028-basic-002.png",
+        "sha256": "1c6bb1e8ac094a7f785a355a80cdc207015486e137d414c845ad833a355d5c79"
+      },
+      "method": "Independent native visual read of retained original PNG; no OCR, GUI input, or new capture.",
+      "identity_status": "UNQUALIFIED_NAME_CORRESPONDENCE",
+      "selected_status": "NOT_SELECTED"
+    },
+    {
+      "capture_key": "items-sequence-legs:29",
+      "ordinal": 29,
+      "name": "jungle survivor legs",
+      "field": "Armor",
+      "native_observed_literal": "6",
+      "canonical_name_candidate_literal": 5,
+      "native_proof": {
+        "role": "basic_top_image",
+        "private_source_key": "items-sequence-legs/cards/00029-basic-top.png",
+        "sha256": "573d41625a846e4cab3bb71473b936165b1c9232769280177092c748bb7cd3e1"
+      },
+      "method": "Independent native visual read of retained original PNG; no OCR, GUI input, or new capture.",
+      "identity_status": "UNQUALIFIED_NAME_CORRESPONDENCE",
+      "selected_status": "NOT_SELECTED"
+    },
+    {
+      "capture_key": "items-sequence-legs:29",
+      "ordinal": 29,
+      "name": "jungle survivor legs",
+      "field": "Mantra",
+      "native_observed_literal": "5",
+      "canonical_name_candidate_literal": 6,
+      "native_proof": {
+        "role": "basic_page",
+        "private_source_key": "items-sequence-legs/cards/00029-basic-002.png",
+        "sha256": "c2571caee7af6a6bccd6cd76711286f3aa77dac52ba1eca5dc9f032d295bd95a"
+      },
+      "method": "Independent native visual read of retained original PNG; no OCR, GUI input, or new capture.",
+      "identity_status": "UNQUALIFIED_NAME_CORRESPONDENCE",
+      "selected_status": "NOT_SELECTED"
+    },
+    {
+      "capture_key": "items-sequence-legs:34",
+      "ordinal": 34,
+      "name": "legs of wisdom",
+      "field": "Mantra",
+      "native_observed_literal": "4",
+      "canonical_name_candidate_literal": 5,
+      "native_proof": {
+        "role": "basic_page",
+        "private_source_key": "items-sequence-legs/cards/00034-basic-002.png",
+        "sha256": "1f66c8cd3aacc1b67658e98568027d9ccc7ddcfe720366d277cf34b2653b7e3e"
+      },
+      "method": "Independent native visual read of retained original PNG; no OCR, GUI input, or new capture.",
+      "identity_status": "UNQUALIFIED_NAME_CORRESPONDENCE",
+      "selected_status": "NOT_SELECTED"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "source_receipt": {
+    "filename": "journal.json",
+    "sha256": "a3af96c51c7c4f1eb953d4de0b1fcacd4e701e89cc10d2b0122128395838819a"
+  },
+  "receipt": {
+    "capture_attempts": 1,
+    "capture_receipt": {
+      "capture_id": 66,
+      "post_selection_offset": 2252,
+      "proof_receipts": [
+        {
+          "path": "cards/00066-name.png",
+          "sha256": "058f59eca239e813def3fed0838e582178372d6bbef2028ca20983f75ed81356"
+        },
+        {
+          "path": "cards/00066-name-hover.png",
+          "sha256": "f2892fef033be6abdc339401afb71a5dbf584c9c3a74de5279ff0433c0a95013"
+        },
+        {
+          "path": "cards/00066-basic-top.png",
+          "sha256": "24f612cfe36c7a6161e014a4261358d18df44746ae5ee6761452b6b209d1deb3"
+        },
+        {
+          "path": "cards/00066-icon.png",
+          "sha256": "a89c88d85d9b51aa4968b7abfff6ff1897c92aa01c4cde6e8bd17ae64c96f361"
+        }
+      ],
+      "source_index_sha_after": "22b7c02d984e962f868e6228e0a28cd50a874bdb5dbd25d3a1e01b0b0e5c35cb",
+      "ui_entry_ordinal": 66
+    },
+    "category": "Legs",
+    "end_proof_receipts": [
+      {
+        "bytes": 155316,
+        "path": "tail-audit-1794555293489731327/end-before-2.png",
+        "sha256": "f8a9aaf313e93c623fa05dfe3298eeb7af7ad381aaa3b77394bc100ec369784f"
+      },
+      {
+        "bytes": 159428,
+        "path": "tail-audit-1794555293489731327/end-after-2.png",
+        "sha256": "034fe23d0af8ce1e1f6bc07e214850543bc6984cd6f4e200524ff68a2994caef"
+      }
+    ],
+    "expected_next": 66,
+    "native_observed_frame_sha256": "5f90e5e5a1a972c1f05c10d2767541ba411db8b04054f06e455b548de109b8ae",
+    "restored_scope_proof": {
+      "actual_fresh_frame_sha256": "f8a9aaf313e93c623fa05dfe3298eeb7af7ad381aaa3b77394bc100ec369784f",
+      "category_filters_sha256": "960b73ccf9b83e6f5c2387ae7a63ff217971547286832bd7acb79410bd19c7bb",
+      "comparison_ranges": {
+        "basis": "Exact category/filter pixels and exact text mask plus measured physical offset, thumb and two stable end checks. Selected Basic/cursor/fullraw pixels are not identity proof.",
+        "category_filters": [
+          15,
+          90,
+          199,
+          226
+        ],
+        "geometry": [
+          698,
+          536
+        ],
+        "list_text_mask": [
+          50,
+          255,
+          199,
+          376
+        ],
+        "raw_pane_receipt_only": [
+          50,
+          255,
+          199,
+          376
+        ]
+      },
+      "freshness_basis": "ItemsClient.fresh frame timestamp after last accepted input plus150ms",
+      "geometry": [
+        698,
+        536
+      ],
+      "list_text_sha256": "74b5668656347e64a52e1b1572cf7d86ee483df4ab28e51fd69265575a5bdd5d",
+      "native_source_sha256": "5f90e5e5a1a972c1f05c10d2767541ba411db8b04054f06e455b548de109b8ae",
+      "physical_offset_pixels": 2252,
+      "raw_full_frame_equal_not_required": true,
+      "raw_pane_sha256": "7d0f4d68e8b2fc028e6a8691aaae2623497ce5732ad626d609e7aef7b3f012aa",
+      "stable_end_checks": 2,
+      "state": "QUALIFIED_RESTORED_SCOPE",
+      "thumb_top": 335
+    },
+    "schema": "OTERYN_PRIVATE_DYNAMIC_TAIL_JOURNAL/v1",
+    "source_index_sha_after": "22b7c02d984e962f868e6228e0a28cd50a874bdb5dbd25d3a1e01b0b0e5c35cb",
+    "source_index_sha_before": "4c6b219272a96dc2bf0cca277b151a8e110791f358e7c1c1575a85f610f427ed",
+    "stage": "POST_END_CONFIRMED"
+  }
+}

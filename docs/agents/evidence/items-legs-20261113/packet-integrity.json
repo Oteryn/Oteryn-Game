@@ -1,0 +1,52 @@
+{
+  "files": {
+    "observations-1-66.json": {
+      "bytes": 120014,
+      "sha256": "041fc00d20ba1f30b4ef1358a9578906097071a73f2e42345222928fde393e42"
+    },
+    "uncompared-field-backlog.json": {
+      "bytes": 703,
+      "sha256": "9500ec6d4e39eb48ed3c39df5534b0c4b6b66b5a156ccf6639f6d51077c2083d"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 633363,
+      "sha256": "deaf1c3c4a85d0ae244af6cfbc9ffb497224b8fe4be1cf23667bf0d5a4c4965d"
+    },
+    "category-end-receipt.json": {
+      "bytes": 3099,
+      "sha256": "9296c47dab2f945e92ef5ce1bc3c8c0b7c518538ef68750e0ab96b318b49d1a3"
+    },
+    "reader-coverage-union.json": {
+      "bytes": 1971,
+      "sha256": "17c82ca8aba31e73ae26c150c6f1fd5d341f9e8d21a0b96c47f4c5c55a692865"
+    },
+    "tail-journal-receipt.json": {
+      "bytes": 3371,
+      "sha256": "d7c3a117668f79de530facdf6ccc6f3280083a19b74ff23bab53db542531ce66"
+    },
+    "field-presence-and-display-coverage.json": {
+      "bytes": 12556,
+      "sha256": "a698a363f69cfb1507d0d43f364100f1f1ca8d041076776738788b405834db1e"
+    },
+    "native-difference-reread-receipts.json": {
+      "bytes": 2726,
+      "sha256": "07e51b0d53e8f016910448f523f7b004db6af4c18239028c6c47a55f54ade44a"
+    },
+    "client-appearance-receipt.json": {
+      "bytes": 165022,
+      "sha256": "ad48bd23cc2274ebdd118b56cc125e3b4d1ed749dc363b710b77b1e71fd630d4"
+    },
+    "compare_sources.py": {
+      "bytes": 14952,
+      "sha256": "d42197475aeb3e22e620321582efc710d4868a613ecc5aa95a984b792e6219ee"
+    },
+    "validate.py": {
+      "bytes": 15161,
+      "sha256": "7ed6ec38614d02d3cab49132ec915a3c99bfdbe5565ff08dea038a244749b0be"
+    },
+    "README.md": {
+      "bytes": 5156,
+      "sha256": "5ec3138414b6a5a180c4d9f96843491c271953e8b6e5ce59b55b44f7f4fd3065"
+    }
+  }
+}

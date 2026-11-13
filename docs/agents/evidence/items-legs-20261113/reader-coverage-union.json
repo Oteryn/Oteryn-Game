@@ -1,0 +1,65 @@
+{
+  "schema": "OTERYN_CYCLOPEDIA_BASIC_READER_COVERAGE_UNION/v2",
+  "category": "Legs",
+  "physical_ui_ordinals": {
+    "first": 1,
+    "last": 66,
+    "records": 66,
+    "gaps": [],
+    "duplicates": []
+  },
+  "distinct_original_basic_png": 153,
+  "original_proof_hashes_freshly_verified": 351,
+  "index_Basic_pathset_equals_reader_Basic_proofset": true,
+  "private_Description_values": 6,
+  "private_display_layouts": 6,
+  "immutable_inputs": [
+    {
+      "filename": "legs-basic-1-20-reviewed-private.json",
+      "bytes": 36713,
+      "sha256": "6d0a0c690542e0eb96506d1cef3108d8e3baa71dbd2a5f05a322cd01248698e8",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-21-40-reviewed-private.json",
+      "bytes": 39095,
+      "sha256": "50ef5492fd7a7c0bdca7ca2c6f395e1151ecc9f29c2ac49cad65a5207bf3bec6",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-41-60-reviewed-private.json",
+      "bytes": 43027,
+      "sha256": "fb7917e9dea643a2e5abb38eea80b8a1c79b15dc564a2ff2f515ea52303489bc",
+      "records": 20
+    },
+    {
+      "filename": "legs-basic-61-65-reviewed-private.json",
+      "bytes": 10430,
+      "sha256": "cb6fe35530903773370a93b68d59b2f0d75050cc009fabca3b5e2be834938d3b",
+      "records": 5
+    },
+    {
+      "filename": "legs-basic-66-66-reviewed-private.json",
+      "bytes": 2442,
+      "sha256": "35150d6f0a153c839fad742de331207e8eef6bf90e94d42b6f19f4c75a4e3278",
+      "records": 1
+    }
+  ],
+  "source_receipt": {
+    "filename": "legs-union-1-66-end-observed-private.json",
+    "bytes": 132684,
+    "sha256": "94b060dab5ef0836264eb8a45855926d54e6ac6abe3ed9e5f059aeb6fc6f2996"
+  },
+  "index_receipt": {
+    "filename": "capture-index.json",
+    "bytes": 75187,
+    "sha256": "22b7c02d984e962f868e6228e0a28cd50a874bdb5dbd25d3a1e01b0b0e5c35cb"
+  },
+  "manual_current_scope": [
+    1,
+    66
+  ],
+  "reused_without_manual_reread_scope": [],
+  "trade_or_animation_complete": false,
+  "overall_static_audit_complete": false
+}
