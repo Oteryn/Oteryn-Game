@@ -1,0 +1,35 @@
+{
+  "classification": "DERIVED",
+  "members": [
+    {
+      "file": "appearance-field-coverage.json",
+      "bytes": 941179,
+      "sha256": "ecd4f4ec4ea6aa61b594eedfac17aefcf2053fca93cfb6c918d5074f8082b56a"
+    },
+    {
+      "file": "category-field-coverage.json",
+      "bytes": 29480,
+      "sha256": "87368bf2902305b51fe078dff7f37863c7e81f4469e9d894c082bfb9689e1ad9"
+    },
+    {
+      "file": "compiled-enum-delta.json",
+      "bytes": 4959,
+      "sha256": "8b76060e9626cef1cbdd9e30d03f7f5e33a1d685cdcd913700e7bc9594e636c7"
+    },
+    {
+      "file": "current-proficiency-delta.json",
+      "bytes": 4077,
+      "sha256": "f1bca0dd52d33fc91e4dad3fdb9ecd5e7eaf72a521e370effb71a4f54e33dffe"
+    },
+    {
+      "file": "source-receipts.json",
+      "bytes": 19872,
+      "sha256": "c712198420ed78d3feff4779e2489eef8306e53bef26fc49e670262da148243f"
+    },
+    {
+      "file": "ui-field-reuse-and-queue.json",
+      "bytes": 491178,
+      "sha256": "21fd48fe9ae09abfa1e82b58ccc2b2300046bc83e2e86e9f4e26346f6fd941cd"
+    }
+  ]
+}

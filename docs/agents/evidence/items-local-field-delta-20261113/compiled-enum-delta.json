@@ -1,0 +1,214 @@
+{
+  "elf_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "shared_descriptor_offset": 45618144,
+  "scanned_bytes": 1618,
+  "enums": [
+    {
+      "name": "ITEM_CATEGORY",
+      "values": [
+        {
+          "name": "ITEM_CATEGORY_ARMORS",
+          "number": 1
+        },
+        {
+          "name": "ITEM_CATEGORY_AMULETS",
+          "number": 2
+        },
+        {
+          "name": "ITEM_CATEGORY_BOOTS",
+          "number": 3
+        },
+        {
+          "name": "ITEM_CATEGORY_CONTAINERS",
+          "number": 4
+        },
+        {
+          "name": "ITEM_CATEGORY_DECORATION",
+          "number": 5
+        },
+        {
+          "name": "ITEM_CATEGORY_FOOD",
+          "number": 6
+        },
+        {
+          "name": "ITEM_CATEGORY_HELMETS_HATS",
+          "number": 7
+        },
+        {
+          "name": "ITEM_CATEGORY_LEGS",
+          "number": 8
+        },
+        {
+          "name": "ITEM_CATEGORY_OTHERS",
+          "number": 9
+        },
+        {
+          "name": "ITEM_CATEGORY_POTIONS",
+          "number": 10
+        },
+        {
+          "name": "ITEM_CATEGORY_RINGS",
+          "number": 11
+        },
+        {
+          "name": "ITEM_CATEGORY_RUNES",
+          "number": 12
+        },
+        {
+          "name": "ITEM_CATEGORY_SHIELDS",
+          "number": 13
+        },
+        {
+          "name": "ITEM_CATEGORY_TOOLS",
+          "number": 14
+        },
+        {
+          "name": "ITEM_CATEGORY_VALUABLES",
+          "number": 15
+        },
+        {
+          "name": "ITEM_CATEGORY_AMMUNITION",
+          "number": 16
+        },
+        {
+          "name": "ITEM_CATEGORY_AXES",
+          "number": 17
+        },
+        {
+          "name": "ITEM_CATEGORY_CLUBS",
+          "number": 18
+        },
+        {
+          "name": "ITEM_CATEGORY_DISTANCE_WEAPONS",
+          "number": 19
+        },
+        {
+          "name": "ITEM_CATEGORY_SWORDS",
+          "number": 20
+        },
+        {
+          "name": "ITEM_CATEGORY_WANDS_RODS",
+          "number": 21
+        },
+        {
+          "name": "ITEM_CATEGORY_PREMIUM_SCROLLS",
+          "number": 22
+        },
+        {
+          "name": "ITEM_CATEGORY_TIBIA_COINS",
+          "number": 23
+        },
+        {
+          "name": "ITEM_CATEGORY_CREATURE_PRODUCTS",
+          "number": 24
+        },
+        {
+          "name": "ITEM_CATEGORY_QUIVER",
+          "number": 25
+        },
+        {
+          "name": "ITEM_CATEGORY_SOUL_CORES",
+          "number": 26
+        },
+        {
+          "name": "ITEM_CATEGORY_FIST_WEAPONS",
+          "number": 27
+        }
+      ]
+    },
+    {
+      "name": "WEAPON_TYPE",
+      "values": [
+        {
+          "name": "WEAPON_TYPE_NOWEAPON",
+          "number": 0
+        },
+        {
+          "name": "WEAPON_TYPE_SWORD",
+          "number": 1
+        },
+        {
+          "name": "WEAPON_TYPE_AXE",
+          "number": 2
+        },
+        {
+          "name": "WEAPON_TYPE_CLUB",
+          "number": 3
+        },
+        {
+          "name": "WEAPON_TYPE_FIST",
+          "number": 4
+        },
+        {
+          "name": "WEAPON_TYPE_BOW",
+          "number": 5
+        },
+        {
+          "name": "WEAPON_TYPE_CROSSBOW",
+          "number": 6
+        },
+        {
+          "name": "WEAPON_TYPE_WAND_ROD",
+          "number": 7
+        },
+        {
+          "name": "WEAPON_TYPE_THROW",
+          "number": 8
+        }
+      ]
+    },
+    {
+      "name": "VOCATION",
+      "values": [
+        {
+          "name": "VOCATION_ANY",
+          "number": -1
+        },
+        {
+          "name": "VOCATION_NONE",
+          "number": 0
+        },
+        {
+          "name": "VOCATION_KNIGHT",
+          "number": 1
+        },
+        {
+          "name": "VOCATION_PALADIN",
+          "number": 2
+        },
+        {
+          "name": "VOCATION_SORCERER",
+          "number": 3
+        },
+        {
+          "name": "VOCATION_DRUID",
+          "number": 4
+        },
+        {
+          "name": "VOCATION_MONK",
+          "number": 5
+        },
+        {
+          "name": "VOCATION_PROMOTED",
+          "number": 10
+        }
+      ]
+    }
+  ],
+  "classification": "DERIVED",
+  "method": "Read serialized FileDescriptorProto from static client ELF; no process memory, live protocol or inferred opcode.",
+  "compiled_field_map_dependency": {
+    "PR": 3179,
+    "head": "539fcd4b9ddeb05d776b70e0a1d72d6f92080560",
+    "path": "docs/agents/evidence/tools-local-first-20261113/compiled-field-map.json"
+  },
+  "qualification": {
+    "60": "imbueable.slot_count uint32",
+    "61": "proficiency reference",
+    "62": "restrict_to_vocation repeated shared.VOCATION",
+    "63": "minimum_level uint32",
+    "64": "weapon_type shared.WEAPON_TYPE",
+    "zero": "Present zero is retained; absence remains null/missing. Enum names qualify wire values, not runtime application.",
+    "negative_enum": "VOCATION_ANY=-1; unsigned raw values are not silently rewritten in existing receipts."
+  }
+}

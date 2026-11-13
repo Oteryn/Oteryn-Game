@@ -1,0 +1,365 @@
+{
+  "classification": "DERIVED",
+  "main": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6862554312",
+  "appearance_asset_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "client_elf_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "pinned_cross_PR_inventory": [
+    {
+      "PR": 3179,
+      "head": "539fcd4b9ddeb05d776b70e0a1d72d6f92080560",
+      "files": [
+        "docs/agents/evidence/tools-local-first-20261113/README.md",
+        "docs/agents/evidence/tools-local-first-20261113/cache-check.json",
+        "docs/agents/evidence/tools-local-first-20261113/compiled-field-map.json",
+        "docs/agents/evidence/tools-local-first-20261113/extract.py",
+        "docs/agents/evidence/tools-local-first-20261113/gui-queue.json",
+        "docs/agents/evidence/tools-local-first-20261113/provenance.json",
+        "docs/agents/evidence/tools-local-first-20261113/tools82.json",
+        "docs/agents/evidence/tools-local-first-20261113/validate.py",
+        "docs/agents/tasks/TOOLS-LOCAL-FIRST-20261113.md"
+      ]
+    },
+    {
+      "PR": 3175,
+      "head": "0515417abe9bf7b77c1842c988712e2fd838fa4b",
+      "files": [
+        "docs/agents/evidence/static-local-data-20261113/README.md",
+        "docs/agents/evidence/static-local-data-20261113/achievements378-metadata.json",
+        "docs/agents/evidence/static-local-data-20261113/creatures845-classes21-bosses453-summary.json",
+        "docs/agents/evidence/static-local-data-20261113/houses995-source-metadata-columns.json",
+        "docs/agents/evidence/static-local-data-20261113/maps473-structure-summary.json",
+        "docs/agents/evidence/static-local-data-20261113/provenance.json",
+        "docs/agents/evidence/static-local-data-20261113/quests104-title-custody.json",
+        "docs/agents/evidence/static-local-data-20261113/test_validate.py",
+        "docs/agents/evidence/static-local-data-20261113/validate.py",
+        "docs/agents/tasks/STATIC-LOCAL-DATA-20261113.md"
+      ]
+    },
+    {
+      "PR": 3173,
+      "head": "657e3bf49ad1eadaf5390a7d97e1dd125c317d97",
+      "files": [
+        "docs/agents/evidence/items-offline-consolidated-20261113/README.md",
+        "docs/agents/evidence/items-offline-consolidated-20261113/catalogue-index.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/client-ui-relations.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/client6470-five-tags.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/client6470-flags.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/gaps.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/legacy-armors-amulets.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/proficiency-profiles.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/ui2623-observations.json",
+        "docs/agents/evidence/items-offline-consolidated-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-OFFLINE-CONSOLIDATED-20261113.md"
+      ]
+    },
+    {
+      "PR": 3170,
+      "head": "54c930ab3771d28d7d5584beed6b3e69125bf5a7",
+      "files": [
+        "docs/agents/evidence/items-client-local-data-20261113/README.md",
+        "docs/agents/evidence/items-client-local-data-20261113/alias-taxonomy-matrix.json",
+        "docs/agents/evidence/items-client-local-data-20261113/client-cyclopedia-coverage.json",
+        "docs/agents/evidence/items-client-local-data-20261113/client-npc-tuples.json",
+        "docs/agents/evidence/items-client-local-data-20261113/field-comparison-candidates.json",
+        "docs/agents/evidence/items-client-local-data-20261113/item-names-description-custody.json",
+        "docs/agents/evidence/items-client-local-data-20261113/provenance.json",
+        "docs/agents/evidence/items-client-local-data-20261113/qualified-correction-deltas.json",
+        "docs/agents/evidence/items-client-local-data-20261113/static-dataset-readiness.json",
+        "docs/agents/evidence/items-client-local-data-20261113/test_validate.py",
+        "docs/agents/evidence/items-client-local-data-20261113/validate.py",
+        "docs/agents/evidence/items-client-local-data-20261113/weapon-comparison-supplement.json",
+        "docs/agents/evidence/items-client-local-data-20261113/whole-cohort-description-status.json",
+        "docs/agents/evidence/items-client-local-data-20261113/whole-cohort-description-summary.json",
+        "docs/agents/evidence/items-client-local-data-20261113/whole-cohort-name-candidates.json",
+        "docs/agents/evidence/items-client-local-data-20261113/whole-cohort-npc-axes.json",
+        "docs/agents/evidence/items-client-local-data-20261113/whole-cohort-npc-summary.json",
+        "docs/agents/tasks/ITEMS-CLIENT-LOCAL-DATA-20261113.md"
+      ]
+    },
+    {
+      "PR": 3161,
+      "head": "98cd7d0f841ef09c33eb45f9661d41ba5394c424",
+      "files": [
+        "docs/agents/evidence/items-legs-20261113/README.md",
+        "docs/agents/evidence/items-legs-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-legs-20261113/client-appearance-receipt.json",
+        "docs/agents/evidence/items-legs-20261113/compare_sources.py",
+        "docs/agents/evidence/items-legs-20261113/field-presence-and-display-coverage.json",
+        "docs/agents/evidence/items-legs-20261113/native-difference-reread-receipts.json",
+        "docs/agents/evidence/items-legs-20261113/observations-1-66.json",
+        "docs/agents/evidence/items-legs-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-legs-20261113/reader-coverage-union.json",
+        "docs/agents/evidence/items-legs-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-legs-20261113/tail-journal-receipt.json",
+        "docs/agents/evidence/items-legs-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-legs-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-LEGS-EVIDENCE-20261113.md"
+      ]
+    },
+    {
+      "PR": 3160,
+      "head": "a240e5a2069e72844eae787407cc80f9df618ca4",
+      "files": [
+        "docs/agents/evidence/items-helmets-hats-20261113/README.md",
+        "docs/agents/evidence/items-helmets-hats-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/client-appearance-receipt.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/compare_sources.py",
+        "docs/agents/evidence/items-helmets-hats-20261113/field-presence-and-display-coverage.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/observations-1-128.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/reader-correction-receipt.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/reader-coverage-union.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/tail-journal-receipt.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-helmets-hats-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-HELMETS-HATS-20261113.md"
+      ]
+    },
+    {
+      "PR": 3159,
+      "head": "894eddccb3890f82d14cab487988136c5288dd60",
+      "files": [
+        "docs/agents/evidence/items-gold-20261113/README.md",
+        "docs/agents/evidence/items-gold-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-gold-20261113/compare_sources.py",
+        "docs/agents/evidence/items-gold-20261113/field-presence-and-display-coverage.json",
+        "docs/agents/evidence/items-gold-20261113/observations-1-3.json",
+        "docs/agents/evidence/items-gold-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-gold-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-gold-20261113/trade-initial-panel-coverage.json",
+        "docs/agents/evidence/items-gold-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-gold-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-GOLD-20261113.md"
+      ]
+    },
+    {
+      "PR": 3158,
+      "head": "0d8340614cd9f298579fcdc05d35292f1ae27f13",
+      "files": [
+        "docs/agents/evidence/items-trade-panels-20261113/README.md",
+        "docs/agents/evidence/items-trade-panels-20261113/decoration-full-panel-46-buy-from.json",
+        "docs/agents/evidence/items-trade-panels-20261113/decoration-full-panel-52-buy-from.json",
+        "docs/agents/evidence/items-trade-panels-20261113/decoration-full-panel-59-buy-from.json",
+        "docs/agents/evidence/items-trade-panels-20261113/decoration-initial-panels.json",
+        "docs/agents/evidence/items-trade-panels-20261113/food-initial-panels.json",
+        "docs/agents/evidence/items-trade-panels-20261113/material-corrections.json",
+        "docs/agents/evidence/items-trade-panels-20261113/retake-backlog.json",
+        "docs/agents/evidence/items-trade-panels-20261113/source-receipts.json",
+        "docs/agents/evidence/items-trade-panels-20261113/test_validate.py",
+        "docs/agents/evidence/items-trade-panels-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-TRADE-PANELS-20261113.md"
+      ]
+    },
+    {
+      "PR": 3156,
+      "head": "26b958e6485c778353211b47b62d4d98a55e0cd7",
+      "files": [
+        "docs/agents/evidence/items-food-20261113/README.md",
+        "docs/agents/evidence/items-food-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-food-20261113/compare_sources.py",
+        "docs/agents/evidence/items-food-20261113/observations-1-169.json",
+        "docs/agents/evidence/items-food-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-food-20261113/reader-coverage-union.json",
+        "docs/agents/evidence/items-food-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-food-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-food-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-FOOD-20261113.md"
+      ]
+    },
+    {
+      "PR": 3155,
+      "head": "1977d159e985544503a770dec375e2651b4b70b4",
+      "files": [
+        "docs/agents/evidence/items-decoration-20261113/README.md",
+        "docs/agents/evidence/items-decoration-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-decoration-20261113/compare_sources.py",
+        "docs/agents/evidence/items-decoration-20261113/observations-1-180.json",
+        "docs/agents/evidence/items-decoration-20261113/observations-181-224.json",
+        "docs/agents/evidence/items-decoration-20261113/observations-225-462.json",
+        "docs/agents/evidence/items-decoration-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-decoration-20261113/reader-coverage-union.json",
+        "docs/agents/evidence/items-decoration-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-decoration-20261113/source-route-backlog.json",
+        "docs/agents/evidence/items-decoration-20261113/trade-initial-panel-coverage.json",
+        "docs/agents/evidence/items-decoration-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-decoration-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-DECORATION-20261113.md"
+      ]
+    },
+    {
+      "PR": 3154,
+      "head": "a45faafc52e68783f2e4a9de5add4c7504b03f4d",
+      "files": [
+        "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs",
+        "docs/agents/tasks/ITEMS-MANTRA-DETAILS-20261112.md"
+      ]
+    },
+    {
+      "PR": 3153,
+      "head": "8437bce34a1a764a80950f3eb726dc6054edcd52",
+      "files": [
+        "docs/agents/evidence/items-creature-products-next-20261113/README.md",
+        "docs/agents/evidence/items-creature-products-next-20261113/category-end-receipt.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/compare_sources.py",
+        "docs/agents/evidence/items-creature-products-next-20261113/gap-correction.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/observations-135-247.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/observations-248-500.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/observations-501-980.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/reader-coverage-union.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/uncompared-field-backlog.json",
+        "docs/agents/evidence/items-creature-products-next-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-CREATURE-PRODUCTS-NEXT-20261113.md"
+      ]
+    },
+    {
+      "PR": 3152,
+      "head": "57403cf2ef48cc6e8cd2ac278ccbf413faa4370a",
+      "files": [
+        "docs/agents/evidence/items-observations-20261113/README.md",
+        "docs/agents/evidence/items-observations-20261113/additional-custody-validation.json",
+        "docs/agents/evidence/items-observations-20261113/armors-basic-1-33-qualified-repo-ready.json",
+        "docs/agents/evidence/items-observations-20261113/category-audit-backlog-20261113-v2.json",
+        "docs/agents/evidence/items-observations-20261113/compare_sources.py",
+        "docs/agents/evidence/items-observations-20261113/creature-products-basic-1-134-repo-ready.json",
+        "docs/agents/evidence/items-observations-20261113/custody-validation.json",
+        "docs/agents/evidence/items-observations-20261113/packet-integrity.json",
+        "docs/agents/evidence/items-observations-20261113/source-candidate-comparison.json",
+        "docs/agents/evidence/items-observations-20261113/trade-initial-panel-audit.json",
+        "docs/agents/evidence/items-observations-20261113/trade-recapture-checklist-batch-20261113.json",
+        "docs/agents/evidence/items-observations-20261113/validate.py",
+        "docs/agents/tasks/ITEMS-OBSERVATIONS-CLOUD-20261113.md"
+      ]
+    },
+    {
+      "PR": 3150,
+      "head": "8bf243e96f0307040e57cd16b2de893d563daa1d",
+      "files": [
+        "docs/agents/evidence/items-15-33/README.md",
+        "docs/agents/evidence/items-15-33/census-repair-receipts.json",
+        "docs/agents/evidence/items-15-33/census.py",
+        "docs/agents/evidence/items-15-33/client-basic110.json",
+        "docs/agents/evidence/items-15-33/client-proof-receipts.json",
+        "docs/agents/evidence/items-15-33/corpus-summary.json",
+        "docs/agents/evidence/items-15-33/field-catalogue.json",
+        "docs/agents/evidence/items-15-33/field-coverage.csv",
+        "docs/agents/evidence/items-15-33/qualified-differences.json",
+        "docs/agents/evidence/items-15-33/source-receipts.json",
+        "docs/agents/evidence/items-15-33/test_census.py",
+        "docs/agents/evidence/items-15-33/validate.py",
+        "docs/agents/evidence/items-15-33/validation-receipts.json",
+        "docs/agents/tasks/archive/ITEMS-CENSUS-REPAIR-20261113.md"
+      ]
+    },
+    {
+      "PR": 3148,
+      "head": "99738f5d262251241ac5c7803f12c4422adf547e",
+      "files": [
+        "docs/agents/evidence/items-15-33/README.md",
+        "docs/agents/evidence/items-15-33/client-basic110.json",
+        "docs/agents/evidence/items-15-33/client-proof-receipts.json",
+        "docs/agents/evidence/items-15-33/corpus-summary.json",
+        "docs/agents/evidence/items-15-33/field-catalogue.json",
+        "docs/agents/evidence/items-15-33/field-coverage.csv",
+        "docs/agents/evidence/items-15-33/qualified-differences.json",
+        "docs/agents/evidence/items-15-33/source-receipts.json",
+        "docs/agents/evidence/items-15-33/validate.py",
+        "docs/agents/evidence/items-15-33/validation-receipts.json",
+        "docs/agents/tasks/archive/ITEMS-1533-EVIDENCE-20261112.md"
+      ]
+    },
+    {
+      "PR": 3102,
+      "head": "4d1bd69a0a2e39dea83097cc3e0569c02471c3ff",
+      "files": [
+        "crates/gameplay/content/src/content/item_abilities.rs",
+        "crates/gameplay/dispatch/src/gameplay_transport/equipment_field.rs",
+        "crates/gameplay/items/src/equipment_effects.rs",
+        "crates/gameplay/items/src/equipment_effects_tests.rs",
+        "docs/agents/evidence/OTV2-20261110-elemental-balance-notes.md",
+        "docs/agents/evidence/OTV2-20261110-elemental-balance-proposal-v1.json",
+        "tools/content-schema/item-authoring/elemental_balance.py",
+        "tools/content-schema/item-authoring/test_elemental_balance.py"
+      ]
+    }
+  ],
+  "consumed_snapshot_files": [
+    {
+      "file": "3170-client-cyclopedia-coverage.json",
+      "bytes": 1021748,
+      "sha256": "1eab503e0f1ded5c828fb8a424278458fe83c6146ea7794d2e0c9f8f42c9a8cc"
+    },
+    {
+      "file": "3170-provenance.json",
+      "bytes": 5873,
+      "sha256": "a0b9f6dcc2db992825f21762720725875cf9477c0e29003520569bd8b9d1d401"
+    },
+    {
+      "file": "3170-qualified-correction-deltas.json",
+      "bytes": 3145,
+      "sha256": "3e3c25922175c3cd662b9b05345ec4fcd00fa14521d685521ce8bc46c929c919"
+    },
+    {
+      "file": "3173-catalogue-index.json",
+      "bytes": 82621,
+      "sha256": "fea968bf854dbf0c3b9a484356e6cf03d206cf2b564152f6d4bb0408386b9b6a"
+    },
+    {
+      "file": "3173-client-ui-relations.json",
+      "bytes": 70690,
+      "sha256": "ded2d16a63c3e57480cc2d84fa5a8c9c55a58bd06614c3faeed9af5b81ce599f"
+    },
+    {
+      "file": "3173-client6470-five-tags.json",
+      "bytes": 754093,
+      "sha256": "49bde9e4057d7fbcc2452b08bdf2fe6b084e078e180d4165f73658d908cb0378"
+    },
+    {
+      "file": "3173-client6470-flags.json",
+      "bytes": 1769417,
+      "sha256": "d345130bed5f2b7a419bd929120dbe6672d2848aaaa717f96cc508d0f9386d69"
+    },
+    {
+      "file": "3173-gaps.json",
+      "bytes": 31114,
+      "sha256": "af9475bde3abe4cf32cf07b1d226a60d26b454816d1a1583981f162e2d12d58b"
+    },
+    {
+      "file": "3173-legacy-armors-amulets.json",
+      "bytes": 259448,
+      "sha256": "d8fbfc7bd4e0017f3e8db68cd9e28296e0664fbf9821f88d8b33f771fa6469fe"
+    },
+    {
+      "file": "3173-proficiency-profiles.json",
+      "bytes": 434101,
+      "sha256": "4c79c4508e2577c04d1ef38a6fd048b4d5a5ebcab133a5b862dff6608d218278"
+    },
+    {
+      "file": "3173-ui2623-observations.json",
+      "bytes": 2490580,
+      "sha256": "0c4e4c99a8c4018bf9bce486279dc328e8bc6d988cf0e99196dfcd600992e73e"
+    }
+  ],
+  "current_main_source_comparison": {
+    "previous_data_pin": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+    "current_main": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+    "command": "git diff --name-only <previous_data_pin> <current_main> -- content imports tools/content-schema",
+    "changed_paths": [],
+    "qualification": "These entire source subtrees are identical; previous qualified source comparisons remain comparisons, not runtime/ID admission."
+  },
+  "1853_manifest": {
+    "bytes": 24395,
+    "sha256": "8475efbdd4940e956da9bc406db60f8ba84ec9d9e70458a3059980b7fa270f92",
+    "PNG_count": 89,
+    "originals_private": true
+  },
+  "freshness": "Pinned snapshot, not a claim later PR heads cannot move. Main and3173 re-read immediately before authoring.",
+  "limitations": [
+    "PR inventory is inspected at head/file granularity; consumed consolidated payloads are listed separately. Earlier per-category PRs retain trade and richer source receipts; this packet does not replace them.",
+    "Caches inspected are bounded allowlisted sources from PR3179, not proof no Weight exists anywhere.",
+    "No original third-party media, DAT/ELF or narrative Description published."
+  ]
+}
