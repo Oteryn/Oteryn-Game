@@ -41,8 +41,8 @@
     "retrieved_collection_files": 510,
     "excluded_helper_scripts": 4,
     "retrieved_metadata_kinds": {
-      "JSON": 447,
-      "nonparseable_JSON": 2,
+      "valid_JSON": 449,
+      "scalar_schema_counter_normalization_cases_within_valid_JSON": 2,
       "Python": 16,
       "sha256": 44,
       "text": 1

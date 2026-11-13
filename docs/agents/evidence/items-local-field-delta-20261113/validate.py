@@ -306,7 +306,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;1992 NPC recovery1307/678/7;ALL1647/1226/34;1120 quotes;6 negative controls"
+    print("PASS:6470 appearances/6228 types;all1260 processed;current ALL2209/671/27;historical1992 recovery retained;6 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 
