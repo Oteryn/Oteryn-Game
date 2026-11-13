@@ -1,6 +1,7 @@
 //! Real session-owned server dialogs; Bevy owns only focus and transient selection.
 mod build;
 mod notices;
+use super::modal::ModalGuard;
 
 use super::{
     super::{owner::HostOwner, ui::Skins},
@@ -56,7 +57,14 @@ pub(super) fn install(app: &mut App) {
         .add_systems(Startup, (setup, notices::setup).after(super::setup))
         .add_systems(
             Update,
-            (keyboard, project, refresh, notices::project).chain(),
+            (
+                keyboard,
+                project,
+                refresh,
+                notices::keyboard,
+                notices::project,
+            )
+                .chain(),
         );
 }
 fn setup(mut commands: Commands) {
@@ -188,11 +196,15 @@ fn submit(owner: &HostOwner, state: &mut State, key: Key, button: u8, text: &str
 }
 fn activate(
     event: On<Activate>,
+    guard: ModalGuard,
     actions: Query<&Action>,
     input: Query<&EditableText, With<ValueField>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
@@ -212,22 +224,30 @@ fn activate(
 }
 fn remember(
     event: On<ValueChange<bool>>,
+    guard: ModalGuard,
     actions: Query<&Action>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
-    if let Ok(action) = actions.get(event.source)
+    if guard.allows(event.source)
+        && let Ok(action) = actions.get(event.source)
         && current(&owner, &state, action.key)
     {
         state.remember = event.value;
     }
 }
 fn keyboard(
+    guard: ModalGuard,
+    overlays: Query<Entity, With<Overlay>>,
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     input: Query<&EditableText, With<ValueField>>,
 ) {
+    if !overlays.single().is_ok_and(|overlay| guard.allows(overlay)) {
+        keys.clear();
+        return;
+    }
     let Some(key) = state.key else {
         keys.clear();
         return;
@@ -305,3 +325,17 @@ fn refresh(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(super) struct NoticeInputForTest;
+#[cfg(test)]
+pub(super) fn install_notice_input_for_test(app: &mut App) {
+    app.add_systems(Startup, notices::setup.after(crate::bevy_shell::ui::setup))
+        .add_systems(
+            Update,
+            (notices::keyboard, notices::project)
+                .chain()
+                .in_set(NoticeInputForTest),
+        );
+}

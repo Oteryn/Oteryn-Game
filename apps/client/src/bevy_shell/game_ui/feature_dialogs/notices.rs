@@ -129,15 +129,52 @@ fn close_button(commands: &mut Commands, skins: &Skins, parent: Entity, generati
     commands.entity(parent).add_child(button);
     button
 }
-fn close(event: On<Activate>, buttons: Query<&CloseNotice>, owner: NonSend<HostOwner>) {
-    if let Ok(button) = buttons.get(event.entity)
+fn close(
+    event: On<Activate>,
+    buttons: Query<&CloseNotice>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+) {
+    if !owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.server_modal_active())
+        && guard.allows(event.entity)
+        && let Ok(button) = buttons.get(event.entity)
         && button.0 == owner.generation()
         && let Some(play) = &owner.play
     {
         play.link.notices_set_open(false);
     }
 }
-// Bevy injects independent visibility, text, focus and keyboard projections.
+pub(super) fn keyboard(
+    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    overlays: Query<Entity, With<NoticeOverlay>>,
+) {
+    if owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.server_modal_active())
+        || !overlays.single().is_ok_and(|overlay| guard.allows(overlay))
+    {
+        keys.clear();
+        return;
+    }
+    if let Some(play) = &owner.play {
+        if keys.read().any(|event| {
+            event.state == bevy::input::ButtonState::Pressed
+                && !event.repeat
+                && event.key_code == KeyCode::Escape
+        }) {
+            play.link.notices_set_open(false);
+        }
+    } else {
+        keys.clear();
+    }
+}
+// Bevy injects independent visibility, text and focus projections.
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub(super) fn project(
     mut commands: Commands,
@@ -149,27 +186,7 @@ pub(super) fn project(
     close: Query<(Entity, &CloseNotice, &ChildOf)>,
     mut focus: ResMut<InputFocus>,
     mut previous: Local<(bool, bool)>,
-    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    pressed: Res<ButtonInput<KeyCode>>,
 ) {
-    if let Some(play) = &owner.play {
-        for event in keys.read() {
-            if event.state != bevy::input::ButtonState::Pressed || event.repeat {
-                continue;
-            }
-            let control =
-                pressed.pressed(KeyCode::ControlLeft) || pressed.pressed(KeyCode::ControlRight);
-            let shift = pressed.pressed(KeyCode::ShiftLeft) || pressed.pressed(KeyCode::ShiftRight);
-            if event.key_code == KeyCode::KeyN && control && shift {
-                play.link.notices_set_open(true);
-            }
-            if event.key_code == KeyCode::Escape && play.link.server_modal_panel().is_none() {
-                play.link.notices_set_open(false);
-            }
-        }
-    } else {
-        keys.clear();
-    }
     let dead = owner
         .play
         .as_ref()
