@@ -31,13 +31,29 @@ impl DurabilityRoot {
     ) -> Option<PreparedContent> {
         let recovery = authority.record_for(self).ok()?;
         let proof = proof.clone();
-        let policy=self.try_issue_semantic_pass().ok()?.run(move|holder,deadline|Box::pin(async move{
-            let mut tx=begin_semantic_transaction(holder,deadline).await?;assert_recovery_fence(&mut tx,&recovery).await?;
-            if !prove_current_incarnation(&mut tx,&proof).await?{return Err(DurabilityError::Unavailable);}
-            let raw:String=sqlx::query_scalar("SELECT policy::text FROM game_bazaar_configuration WHERE singleton FOR SHARE").fetch_one(&mut *tx).await?;
-            let policy:Policy=serde_json::from_str(&raw).map_err(|_|DurabilityError::InvalidStoredState)?;
-            commit_semantic_transaction(tx,deadline).await?;Ok(policy)
-        })).await.ok()?;
+        let policy = self
+            .try_issue_semantic_pass()
+            .ok()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    if !prove_current_incarnation(&mut tx, &proof).await? {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    let raw: String = sqlx::query_scalar(
+                        "SELECT policy FROM game_character_service_bazaar_policy()",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let policy: Policy = serde_json::from_str(&raw)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(policy)
+                })
+            })
+            .await
+            .ok()?;
         let path = policy.content_artifact_file.clone()?;
         let digest = policy.content_artifact_sha256.clone()?;
         let read = async move {

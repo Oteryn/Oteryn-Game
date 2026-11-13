@@ -3307,6 +3307,8 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "toml",
+ "unicode-normalization",
+ "unicode-properties",
 ]
 
 [[package]]
