@@ -29,6 +29,9 @@ Supply both roots explicitly:
 - `OTERYN_ASSET_DIR`: the matching pinned Oteryn world-asset root. Before starting
   sign-in, the client validates the pinned manifest, catalog and appearance
   metadata. Sprite sheets retain the existing lazy verification.
+  This root contains both `content/assets/files/` and
+  `imports/official/client-assets/15.30/manifest.json` (normally the checkout root),
+  rather than pointing directly at the files directory.
 
 On Linux/macOS, after the approved test connection environment is loaded:
 
