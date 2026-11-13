@@ -1,0 +1,38 @@
+{
+  "sources": [
+    {
+      "private_source_key": "outputs/items-reader-cloud-20261113/creature-products-basic-1-134-repo-ready.json",
+      "bytes": 101101,
+      "sha256": "9b4dd2cc5fba5fe15f94d74be6d02c418bc0284da10ffc645157c7be0f137b71"
+    },
+    {
+      "private_source_key": "outputs/items-reader-cloud-20261113/trade-initial-panel-audit.json",
+      "bytes": 214582,
+      "sha256": "b3d3ff8e30201df25ec8e6d27c9aaf15f1d8b20a7b580c00dfd394218e7ccfb0"
+    },
+    {
+      "private_source_key": "outputs/items-reader-cloud-20261113/trade-recapture-checklist-batch-20261113.json",
+      "bytes": 19018,
+      "sha256": "75b6627004b6c4f6b7a078fcaea0dcfcb5296e2a88fe3aee64cb5ae6733c2432"
+    }
+  ],
+  "proof_bytes_verified_on_owner_ubuntu": {
+    "creature_products": 404,
+    "trade_initial_panels": 176,
+    "combined_unique": 580
+  },
+  "private_proof_paths_relative_to": "owner private handoff evidence root",
+  "transformation": "Only absolute owner-root prefixes replaced with relative keys; other JSON fields and literal values retained.",
+  "source_json_sha256_is_pre_transformation": true,
+  "calibration": {
+    "private_receipt_key": "work/legacy-sequence-offset-calibration-20261113.json",
+    "sha256": "07b33629a950cfe8b568ab032bfbb52b624b52bdc343d806b67237b8466b40e6",
+    "ordinals_audited": 134,
+    "all_ordinals_preserved": true,
+    "defect": "Legacy capture83 changed list position4px without adjusting recorded offset; adjacent snapshots0143\u21920144 measure24px, otherlatest-run steps20px.",
+    "recorded_checkpoint_offset": 4720,
+    "qualified_target_offset": 4724,
+    "qualified_current_restore_offset": 4720,
+    "boundary": "Original index labels retained. New resumable collector rejects unexpected capture-induced list motion. No new Item identity inferred."
+  }
+}

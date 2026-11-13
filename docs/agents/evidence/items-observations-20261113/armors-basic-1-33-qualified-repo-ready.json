@@ -1,0 +1,1570 @@
+{
+  "schema": "OTERYN_PARTIAL_BASIC_REQUALIFICATION/v1",
+  "client": "Tibia Test Server15.33.dd0955",
+  "source_role": "GLOBAL_BLACKBOX",
+  "classification": "OBSERVED",
+  "category": "Armors",
+  "scope": "New Basic1..33 independently read from75 retained pages; names retained with explicit old manual provenance. No trade/animation qualification. No global physical order completeness.",
+  "absent_fields_policy": "No invisible field inferred zero, false, N/A or intrinsic absence.",
+  "prior_evidence": {
+    "key": "items-evidence-extraction/verified-items.json",
+    "sha256": "d163d212e3af4bd1d955ac987105edfeb07cc33d075119514b71eec7c4698dd9"
+  },
+  "items": [
+    {
+      "capture_key": "items-basic:1",
+      "capture_id": 1,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "albino plate",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "11",
+        "Imbuement Slots": "2",
+        "Weight": "84.00 oz",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:1",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00001-name.png",
+          "sha256": "90c4bcebee0a4d68d13be19f586c84633d2fbddca59d28ae63300c8ae102abd4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00001-name-hover.png",
+          "sha256": "d1e444ce7b46749f905e25fd10b7dacd3065de1bf86a70da97e09fa0c227b47d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00001-basic-top.png",
+          "sha256": "e30e079fa75ca4472ef14c02f66d478bdecf64c3b7de5bcf9b299d98bedcf605"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:2",
+      "capture_id": 2,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "amazon armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "13",
+        "Skill Boost": "distance fighting +3",
+        "Imbuement Slots": "2",
+        "Weight": "45.00 oz",
+        "Required Level": "60",
+        "Vocations": "paladins",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:2",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00002-name.png",
+          "sha256": "b3300ead824813c88e913009f2a40bc37c5540a7e5ca722505fb90291a3f9092"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00002-name-hover.png",
+          "sha256": "c709373691b626b4e81c0e746865b864b77f9f44627eaeb79dc03b7b5b006b39"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00002-basic-top.png",
+          "sha256": "f4c79abbd8eb90dafb8f838f9fb0c576fb01d4ac6e4806a4a5fd6ff68dd14ce4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00002-basic-001.png",
+          "sha256": "bd3c5159a812cd4a97e16814f5d9eaeb0d68ff8a3b78cb3e29f46abf0901d086"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00002-basic-002.png",
+          "sha256": "8f3d6d9ff1f6e3636a575f8c763b1ef56750aac0168ddbde8321bb3334529161"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:3",
+      "capture_id": 3,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "arcane dragon robe",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "15",
+        "Protection": "ice +12%, fire -6%",
+        "Skill Boost": "magic level +3, energy magic level +1",
+        "Augments": "Energy Wave -> +5% life leech",
+        "Imbuement Slots": "1",
+        "Weight": "43.00 oz",
+        "Required Level": "300",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:3",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00003-name.png",
+          "sha256": "cd5b5826ecb7186837fb0bade1b48454f94d7781b9bf5e8b3e418cae6e6f95ce"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00003-name-hover.png",
+          "sha256": "d4fcf555f3b6a771a09c8987c0ab3395029f44c2f0472590f03fa4de8aed46a4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00003-basic-top.png",
+          "sha256": "3dafd1a6743edc15244b5724f7c0be6f80bbf65a2673e7546e7e75be28e50cb0"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00003-basic-001.png",
+          "sha256": "d0ba5b48971c2527422b376dc650882bc1d2a309709ee151d1cd1f4c4bdff6ce"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00003-basic-002.png",
+          "sha256": "55b8728e8e22bec2d4430d77859c8b6b8a96a6304d4d4d924445573c30448e09"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00003-basic-003.png",
+          "sha256": "a7617bdaeda161796a29218f31c36bd38af3f13b9d2f7c3c9334b3d7c59f01bc"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:4",
+      "capture_id": 4,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "bearskin",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "16",
+        "Protection": "earth +11%, fire -2%",
+        "Skill Boost": "magic level +4",
+        "Imbuement Slots": "1",
+        "Weight": "44.00 oz",
+        "Required Level": "230",
+        "Vocations": "druids",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:5",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00004-name.png",
+          "sha256": "464713b304e0fe7e8bf6dcb2cca3730c10a23b3d750c5950bc7ac4bc31614962"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00004-name-hover.png",
+          "sha256": "ae641c4ff475aa8862bf38d8a304e13e8114ea9e84b6f7bdf5d67e05ce169d5d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00004-basic-top.png",
+          "sha256": "d2c310f71cdabad9ed037df449986e619799e98d4a8cdad5bfecbde74fd9704a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00004-basic-001.png",
+          "sha256": "a82fdfeb4d64ea25056b107cdb3c96dfccdf747d4e28ce364d61281e0dca5fbd"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00004-basic-002.png",
+          "sha256": "506b4621b99c6141cbc531a0a7b32df27f3b54883b8ed8b5d832881211237660"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:5",
+      "capture_id": 5,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "belted cape",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "10",
+        "Weight": "35.00 oz",
+        "Vocations": "paladins",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:6",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00005-name.png",
+          "sha256": "1bb36cf78f63cbcd74e89e91b0191eb9b2fdac21e4ef74bdce8e5c65a1f92a99"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00005-name-hover.png",
+          "sha256": "f265a263e574f723ac4ddb3606ceffb211a72e3f5022b9f15a83df39243b9a6f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00005-basic-top.png",
+          "sha256": "205f0dbf2adb36d2fbbbb2d61fd23d8fe1eac4f1461013672d3d47f3acabf3a2"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:6",
+      "capture_id": 6,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "blue robe",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Description": "It is a magic robe",
+        "Armor": "11",
+        "Imbuement Slots": "2",
+        "Weight": "22.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:7",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00006-name.png",
+          "sha256": "f9c5cc2c499429f22b679b27ea822510b356a83a6711d47c3f0e7d3cfbf895be"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00006-name-hover.png",
+          "sha256": "4b11bd53eeb5fde1a7bf619ac7f76c2083cc2092d8e1ef179389243cdc36e89a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00006-basic-top.png",
+          "sha256": "c2804ce68fdba4ee0fee63576c3390f96015f1e112883f59e011fd7770141fa7"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00006-basic-001.png",
+          "sha256": "bddd72e7480d489b059c909168e919124beecb0904ad102fff1b4f7710be0437"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:7",
+      "capture_id": 7,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "brass armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "8",
+        "Weight": "80.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:8",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00007-name.png",
+          "sha256": "8dde0a9ec6621c65d9e7f95ff6c96cb7517823def220689ea38983d1d80d7313"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00007-name-hover.png",
+          "sha256": "b381caa3a894c105d974004a90aab0c71a6e00d70719bf4bed349b2ed6d56c89"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00007-basic-top.png",
+          "sha256": "eceea3602bb4bd75da8b380e28d8a7be6b12a6ebc5d6a5b289b60bf8c23d0576"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:8",
+      "capture_id": 8,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "buckle",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "12",
+        "Weight": "75.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:9",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00008-name.png",
+          "sha256": "f5f8c564e5bdef965629e64b00c9f4a02d2a6308c14634f33bfd6ba80c2052e2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00008-name-hover.png",
+          "sha256": "5631b1a572cf84d5babc0d7a1ee3135d50e79e8b0c5c739ccd9af35e6aa583b4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00008-basic-top.png",
+          "sha256": "151155ba7b447c62a33fdd8c31c3d394ab58eb57dfe116184dae4045f00765fa"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:9",
+      "capture_id": 9,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "calopteryx cape",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "12",
+        "Protection": "ice +5%",
+        "Skill Boost": "magic level +1",
+        "Weight": "20.00 oz",
+        "Required Level": "80",
+        "Vocations": "druids, sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:10",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00009-name.png",
+          "sha256": "886f9dd66f23cc18c785b39e8e6f04048f2bae19338eaef34a659ada9375ac1e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00009-name-hover.png",
+          "sha256": "47da024e893cc595b9cc4563f27c1c2552e1ae61e9ada6cd2abc4f7503aa8fdb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00009-basic-top.png",
+          "sha256": "cca1a6b98eca903bdd21a8109f7321013649f6376edba26fdf06373d090fd13a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00009-basic-001.png",
+          "sha256": "348fef9b72939ff9ff239223c8bc540faba72e5391826ef62aab81ba8a3f4e21"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00009-basic-002.png",
+          "sha256": "723ec476a547d9ed5f1921e656f7d98b8d8050aed73510027b651921e9713396"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:10",
+      "capture_id": 10,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "cape",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "1",
+        "Weight": "32.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:11",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00010-name.png",
+          "sha256": "67b0b6b6651d372708f8b27d04bd9b32cf5439814c9db7c75ba270f2765683d2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00010-name-hover.png",
+          "sha256": "ae0440721243958f6d2bad125c0ac4cc6b60615b115c2da2e17d8bcdb6efb5cb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00010-basic-top.png",
+          "sha256": "4b082a10c32d2c87f0b493e423504cb839b9acd91e5519e0742814dc36d87906"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:11",
+      "capture_id": 11,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "chain armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "6",
+        "Imbuement Slots": "2",
+        "Weight": "100.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:12",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00011-name.png",
+          "sha256": "cd1c405c7ec2e50c311bd61e9dee51c2f6624194fb6b81ebf9d190d41d2bd31b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00011-name-hover.png",
+          "sha256": "a21b5038220d04ea0f5f48127e248c30f990dc786127516a4122102f225f0d2a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00011-basic-top.png",
+          "sha256": "6d25cf42537ae676245dd026d4b6b31660de52fa1bccc64364db5acf47d6c39e"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:12",
+      "capture_id": 12,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "coat",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "1",
+        "Weight": "27.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:13",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00012-name.png",
+          "sha256": "e34ccae24fcd3be8f7f939c7fa18cba898e02f8fad29b4ae52c4dcc45194f155"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00012-name-hover.png",
+          "sha256": "73c559d86ece0d59e3c806256716d4c03c744a4a9753afd3b51a9287df04488f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00012-basic-top.png",
+          "sha256": "157d04d1e09928ee40083d8672c37f739d3995bb28510e2ca1d7cfd9d00db10b"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:13",
+      "capture_id": 13,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "crown armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "13",
+        "Imbuement Slots": "1",
+        "Weight": "99.00 oz",
+        "Vocations": "paladins, knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:14",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00013-name.png",
+          "sha256": "34f023eb7790f0050cd32dc8a54f8ecf67f0d1cd5d3cf602a152eaf47ed5f764"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00013-name-hover.png",
+          "sha256": "8eda858cbb5ecf3b6e7fbe293eecc23f2ea383df7c695a12d823144d9a7b4609"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00013-basic-top.png",
+          "sha256": "c11cdf63346ff832d117d5dbe9accc1ecac9a4fad36b45dc2f68357dbfe61322"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00013-basic-001.png",
+          "sha256": "6fc9a2e92ffba8e38d0b53c8774b25e73772cf4ee8030b1bf4d9f600b155665b"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:14",
+      "capture_id": 14,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "crystalline armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Protection": "ice +3%, energy -3%",
+        "Weight": "84.50 oz",
+        "Required Level": "60",
+        "Vocations": "paladins, knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body",
+        "Armor": "13"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:15",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00014-name.png",
+          "sha256": "d14d3da3421e04bc7498d7f1934c90557e22f03f38bdd2be2a5e02e3c6d69880"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00014-name-hover.png",
+          "sha256": "77e64167945fbe74c4a5483e99b584458907034172de5c3c1741c8fa87231468"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00014-basic-top.png",
+          "sha256": "6139f9a9cf682c0f337bb06db638d81dc63d94204378ace3b2c624717198a648"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00014-basic-001.png",
+          "sha256": "a58879e796cb694892cde421bedc65185eb44baa6259ad03137d6429daea3b31"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:15",
+      "capture_id": 15,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dark armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "10",
+        "Weight": "120.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:16",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00015-name.png",
+          "sha256": "c8366997dc8d7a072ec8a9070ee86b6f881bc3365b5ca43023a78ec8195817a6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00015-name-hover.png",
+          "sha256": "549c0c948d3fbc612632d8665d0803ee2d29249d543c7c0ccfa881926e404d65"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00015-basic-top.png",
+          "sha256": "3b8d5806ebd9e900e9d17dd7f8c36830a1e6db9c659e7fc17c11f44ad8b23103"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:16",
+      "capture_id": 16,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dark lord's cape",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Description": "There is a dark aura surrounding it",
+        "Armor": "11",
+        "Protection": "death +8%, holy -8%",
+        "Weight": "29.00 oz",
+        "Required Level": "65",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:17",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00016-name.png",
+          "sha256": "7f0805475805022176cbce0582e26f9973fe8538c471f44c423996d86a412ddb"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00016-name-hover.png",
+          "sha256": "5f81039333af1e0498f3ecf6ac3c5b938764c2bff6ae032bb615c384aa4c81e7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00016-basic-top.png",
+          "sha256": "d4c0347398eb60696cb9a38c94cfc528451c459148b53c90adf76c01bfc7c4cf"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00016-basic-001.png",
+          "sha256": "852955eaede91d1ccc504fd047a70c198346a3d03532974e88c4cde0067346f1"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00016-basic-002.png",
+          "sha256": "a1439190291d115c18fa47f18bc4115e49f2fae76063fc37cb90b9829efce428"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:17",
+      "capture_id": 17,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dauntless dragon scale armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "18",
+        "Protection": "physical +8%",
+        "Skill Boost": "sword fighting +3, club fighting +3, axe fighting +3",
+        "Augments": "Front Sweep -> +4% life leech",
+        "Imbuement Slots": "2",
+        "Weight": "152.00 oz",
+        "Required Level": "300",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:18",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00017-name.png",
+          "sha256": "cb5a5d3e3d89b1f30174e142345e5afba93acb46b83e94838c549319709750ff"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00017-name-hover.png",
+          "sha256": "8b3109e87180392e84e6f7872e91e7d2af4f4765e0f8e7738e1d3ac264090d7d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00017-basic-top.png",
+          "sha256": "df5980633f86dcb50745fc7c7433cc7d8bb0a944b6dffbb08e3d42593d52393c"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00017-basic-001.png",
+          "sha256": "0425aa8d87841ee28205ba002e3467cb4a4b2a90db4fa93a9f2f14246acbb667"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00017-basic-002.png",
+          "sha256": "e9089954d730c25d6aae15199fbc2856118c7e91be1afc1940706d0ac3dfada0"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00017-basic-003.png",
+          "sha256": "231e61e0e053dd89a3c0a44858d811cc3e3f71125f55a3fe502a65988df05629"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:18",
+      "capture_id": 18,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dawnfire sherwani",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "16",
+        "Protection": "fire +10%, earth -2%",
+        "Skill Boost": "magic level +4",
+        "Imbuement Slots": "1",
+        "Weight": "28.00 oz",
+        "Required Level": "270",
+        "Vocations": "sorcerers",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:19",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00018-name.png",
+          "sha256": "438ffd44a6a18e51bece105200bd0e7859e2eb5b16ecd169f9c5dac87d9925d5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00018-name-hover.png",
+          "sha256": "35e3f4b84b845c0e6aeb5ce247fe4c0772f193c2d71560b8c3ef0d45c94ea63f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00018-basic-top.png",
+          "sha256": "a37023f0ba90d0e3bbb4861e6bb06a054c0c39d97f35fbc291c5dde18c6b3938"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00018-basic-001.png",
+          "sha256": "00d62e5d5bb56d7fb8db6eff0b414977d09d28191b93680040584abafcb919f1"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00018-basic-002.png",
+          "sha256": "7ebf49424d3bc9a440e62c19e9e0505f36266da88b55ad4e139f1dbefe832106"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:19",
+      "capture_id": 19,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "death oyoroi",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Description": "A dark oyoroi with an even darker past. Worn and ragged from many a battle",
+        "Armor": "9",
+        "Protection": "death +5%",
+        "Skill Boost": "fist fighting +4, magic level +1",
+        "Imbuement Slots": "1",
+        "Weight": "105.00 oz",
+        "Required Level": "230",
+        "Vocations": "monks",
+        "Classification": "3",
+        "Mantra": "16",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:20",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00019-name.png",
+          "sha256": "88a68040a8527df465009fbc9485ed183673d61b360cb1c9490738a22b7c8f31"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00019-name-hover.png",
+          "sha256": "9504483ffea149ede421f419848a6413bc4b20720426dcb2891d37318717553a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00019-basic-top.png",
+          "sha256": "209c6beb17c1e5745e3db5c3a976bc8ad3db14b18ca44753f1e28ac0d6ed1ac4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00019-basic-001.png",
+          "sha256": "ba86f68b37c1d9ecbb6a817c8d8bfe435626a770061acb70d764007c17b9be71"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00019-basic-002.png",
+          "sha256": "fc88daef4e8b2521345bfdc1b3a4126cfe6bf8ee3051f2346c92e950d4aba76e"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00019-basic-003.png",
+          "sha256": "886af1c00849bbeda619d5efa1e6242f2891dfc29206f677c0f6e5e4e6088a08"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00019-basic-004.png",
+          "sha256": "f5612ef750a9d521c6a2ed47495e84b8ced233aad652b04133c9a2292c790314"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:20",
+      "capture_id": 20,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "demon armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "16",
+        "Imbuement Slots": "2",
+        "Weight": "80.00 oz",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:21",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00020-name.png",
+          "sha256": "40591ccc815c82bdbe983b21dfa7b5fe0d8fde5e610ed964c6d477bac848eaed"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00020-name-hover.png",
+          "sha256": "a88c652dc783c4fdf86eb24ba3138804ddbddc802b4f3ee2fbd2e903944f7e0f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00020-basic-top.png",
+          "sha256": "73a25e4885c4e65e78a9ebc14f3df321c3a444b7e74c44edb64860f62c2f2f2c"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:21",
+      "capture_id": 21,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "depth lorica",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "16",
+        "Protection": "death +5%",
+        "Skill Boost": "distance fighting +3",
+        "Imbuement Slots": "2",
+        "Weight": "145.00 oz",
+        "Required Level": "150",
+        "Vocations": "paladins",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:22",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00021-name.png",
+          "sha256": "264d953e284a4fe282f172dc418dd3692b10bbf915d881a0c5dde3becbf2019e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00021-name-hover.png",
+          "sha256": "ea6fb192edfdfb0739080e54c20a78944d7437fb9c6fc9519fd71ec35aa32391"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00021-basic-top.png",
+          "sha256": "6cf53dec4d4d7445a16d40e28d9c10e751b7763ff9ad2c31096bd8b821123a2f"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00021-basic-001.png",
+          "sha256": "fcbd58ec9ef9a63a8b23bd704496790fc552102ae5d73b1eeb68119b4904b636"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00021-basic-002.png",
+          "sha256": "ef9d33824e1915dfcd6150750025d6d169b2c3b42db697e8bd104540d305c406"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:22",
+      "capture_id": 22,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "divine plate",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "13",
+        "Protection": "death +10%, holy -10%",
+        "Weight": "75.00 oz",
+        "Required Level": "75",
+        "Vocations": "paladins",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:23",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00022-name.png",
+          "sha256": "57ac45c34957cacc5ef901ea19ae8e80250179a69240788701bca268d1c181a5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00022-name-hover.png",
+          "sha256": "b95095a27e05016f1350dd1e420b1685c6b170689e5625b7c9932dbeb38c5fe7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00022-basic-top.png",
+          "sha256": "c883f94c3c71eedcaa418467d72df3e59be40124d5a4f75df9bdb5f19ba4f4d3"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00022-basic-001.png",
+          "sha256": "a3353ece9a21ab1d175b2a6e1943b24b61afa8a44371e022182a4c81e7043cdc"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:23",
+      "capture_id": 23,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "doublet",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "2",
+        "Weight": "25.00 oz",
+        "Classification": "1",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:24",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00023-name.png",
+          "sha256": "b9ddacd2daaf7cea35d84d7fbbc0dc0b80c1191e63ace50079c4c81bab2d6909"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00023-name-hover.png",
+          "sha256": "f53b900f598ca67aa72894ccc3231ff2c477709e5c0e944cb7b52b035f12e189"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00023-basic-top.png",
+          "sha256": "121334515e23ef9a83b3f22cab75792801b161fce24fe160de25adc2273a1929"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:24",
+      "capture_id": 24,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "ball gown",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Weight": "25.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:4",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00024-name.png",
+          "sha256": "b67aa31559129e5a78af2a8be43c91617cf38ac1577a92bc915397450675a11e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00024-name-hover.png",
+          "sha256": "db851a669a7e20c682f20c55477dabc3e511aab19a276e98bc56275855737a62"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00024-basic-top.png",
+          "sha256": "10459691caaae07571410ceab0114cd3f4b97f7934c1e0c10e8efde19ec8d3f2"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:25",
+      "capture_id": 25,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dragon robe",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Description": "It is covered with runic symbols",
+        "Armor": "12",
+        "Protection": "fire +12%, ice -12%",
+        "Weight": "28.50 oz",
+        "Required Level": "75",
+        "Vocations": "sorcerers",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:25",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00025-name.png",
+          "sha256": "09faaed82a6436b1534c4d1ea2fab5d97f4a48ac8069b0fb6b3581ce6693bcd4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00025-name-hover.png",
+          "sha256": "589f61e8da669c649364ec4c6c583552e8cfe13f8b6171dce42250fbbd3a4af6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00025-basic-top.png",
+          "sha256": "2ac86262d53a0194f52637220af4c83db03f77904c230bc78df3daa7f2e0bced"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00025-basic-001.png",
+          "sha256": "c4416fdd0d9ec4aed94efe9070165d31369c2ad9f33dabc00c1ee1e512ea62af"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00025-basic-002.png",
+          "sha256": "6213ce65b39fb686ba907c8c7e6f4a01a864bbb0221a0950a5c80c1930e74252"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:26",
+      "capture_id": 26,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dragon scale mail",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "15",
+        "Imbuement Slots": "1",
+        "Weight": "114.00 oz",
+        "Vocations": "paladins, knights",
+        "Classification": "2",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:26",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00026-name.png",
+          "sha256": "c4f94248b3d38ba9900957f28f6259a453c404eb8d3f660a3c060acda77ee4b6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00026-name-hover.png",
+          "sha256": "264a77bf6db2ee71fb46200628cc63199c72b2b305d898c4d57e0ea5c5d88c4f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00026-basic-top.png",
+          "sha256": "3f92484e4db09bd1137fe61ceb1badfd8d5db3aee9ad1cab7034cb01f0274a3a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00026-basic-001.png",
+          "sha256": "dcea47bb3cf818da6593d316802e6eb89610370d89171f74e070a14841694332"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:27",
+      "capture_id": 27,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dream shroud",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "12",
+        "Protection": "energy +10%",
+        "Skill Boost": "magic level +3",
+        "Imbuement Slots": "1",
+        "Weight": "25.00 oz",
+        "Required Level": "180",
+        "Vocations": "druids, sorcerers",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:27",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00027-name.png",
+          "sha256": "2ab902480994a10b7c4182ce5fd71a6edec6c9c9c4b0d040102b2a72c65669fb"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00027-name-hover.png",
+          "sha256": "4b3868cef999ed266b5b9884c0ecb54fee498767f0fa5fae7c81a1eda22b01a3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00027-basic-top.png",
+          "sha256": "970ccb2c872c45e709d93efc17974ce1c62324569297ca57309824285ab5a3f1"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00027-basic-001.png",
+          "sha256": "9d7c50ec1d6207f27987c4a37edd7a42a8fd10823d8493cacf75c454f8adefd4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00027-basic-002.png",
+          "sha256": "6499d26fb1806a9439ff172ff077a3e35242b6406467523741556b1eec812a8c"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:28",
+      "capture_id": 28,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "dwarven armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "10",
+        "Protection": "physical +5%",
+        "Imbuement Slots": "2",
+        "Weight": "130.00 oz",
+        "Classification": "3",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:28",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00028-name.png",
+          "sha256": "51bc642784940eed0a107d3c27f44d814d4e27370f3e59cacecbba546a6acad8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00028-name-hover.png",
+          "sha256": "be624ec96ae72b40dca507ef80ce7775a7036c202ea88981c77175bff0273621"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00028-basic-top.png",
+          "sha256": "e7008ed979a258930e47488c14bca67470277fce1bca37f92828b699bfc26c13"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00028-basic-001.png",
+          "sha256": "bd5190d35c7d075c114daa18434a655e43809bb9e2d21085d31da2c7b09ed5a9"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:29",
+      "capture_id": 29,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "earthborn titan armor",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Armor": "15",
+        "Protection": "earth +5%, fire -5%",
+        "Skill Boost": "axe fighting +2",
+        "Weight": "120.00 oz",
+        "Required Level": "100",
+        "Vocations": "knights",
+        "Classification": "4",
+        "Tradeable In Market": "yes",
+        "Body Position": "body"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:29",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00029-name.png",
+          "sha256": "e11fffc7f49959b64471f2892a2902b76035bcbf5ed04fa978d81b0beb4a2c18"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00029-name-hover.png",
+          "sha256": "dce191c5de395258ffeeb784702e94a8eff4da00bf94e9a06e427bbbd875f4c2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00029-basic-top.png",
+          "sha256": "1d26f42dce10d80cb6a7844448b86018ab05590471e5e0d902222c87a033f5a5"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00029-basic-001.png",
+          "sha256": "732eff0c2ff7c86b382f68a3ffcf73299aed532b7315bd5d813e1a063bc1abe8"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00029-basic-002.png",
+          "sha256": "e8f01133a03c0995ccf691fa02b4abe7c676f3ad15fcc266e849b8b1a94d5ff4"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:30",
+      "capture_id": 30,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "earthheart cuirass",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Protection": "earth +8%, fire -8%",
+        "Required Level": "200",
+        "Tradeable In Market": "yes",
+        "Body Position": "body",
+        "Classification": "2",
+        "Armor": "18",
+        "Skill Boost": "sword fighting +4",
+        "Weight": "145.00 oz",
+        "Vocations": "knights"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:30",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00030-name.png",
+          "sha256": "15e6dc7adac3ff3004e07eb55cf9b8071ec0b4d1ef264ef3ce22de26a614a76b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00030-name-hover.png",
+          "sha256": "039db4fc09c01d3dea3f0d7c416d70cf45edc40e3baa5f4576066d4899912015"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00030-basic-top.png",
+          "sha256": "4e8fd8ea5ea50e3b749c0285a4d996fdddaef8158df23fc4caca2ebf8eafbb7a"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00030-basic-001.png",
+          "sha256": "e1a5fbd3c7dc92cfb7b3671d4aca4a6e03ae033125dcdb246ebd78a6be637d95"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00030-basic-002.png",
+          "sha256": "129e24191488b8a81063f4fdba72d0a0e9077e0f69e5bb248ae2ca87def3e232"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:31",
+      "capture_id": 31,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "earthheart hauberk",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Protection": "earth +8%, fire -8%",
+        "Required Level": "200",
+        "Tradeable In Market": "yes",
+        "Body Position": "body",
+        "Classification": "2",
+        "Armor": "18",
+        "Skill Boost": "axe fighting +4",
+        "Weight": "145.00 oz",
+        "Vocations": "knights"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:31",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00031-name.png",
+          "sha256": "2df06b622804148faffeea994d6a1d55a76f6530a8873040e1b1eac7a47deb58"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00031-name-hover.png",
+          "sha256": "8e3d9572043d587c02fed2c6f6483aa48de26a93356e9b4c1169342077db6475"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00031-basic-top.png",
+          "sha256": "587d23cc7b54333801252d8e0e98c1e17d5f5a993307a925a10bf67b1a022ca4"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00031-basic-001.png",
+          "sha256": "414d6b722be2a29eb43d587cfa2fe73f748c0924e4ceef8a68fa342057a3b5ef"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00031-basic-002.png",
+          "sha256": "aa5538c8643edaa24e6318fbc7c8bd157cd66d2dedbce80a0228e3d2e4f98541"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:32",
+      "capture_id": 32,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "earthheart platemail",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Protection": "earth +8%, fire -8%",
+        "Required Level": "200",
+        "Tradeable In Market": "yes",
+        "Body Position": "body",
+        "Classification": "2",
+        "Armor": "18",
+        "Skill Boost": "club fighting +4",
+        "Weight": "145.00 oz",
+        "Vocations": "knights"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:32",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00032-name.png",
+          "sha256": "c81c2b96121cf35e22ecc83f740b4c0285b05f688313b168fd446ce94ebbea14"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00032-name-hover.png",
+          "sha256": "c87b6d008dd46e9b46abff9c7fc533c8778227dcb345df8270bfe357d0630ad8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00032-basic-top.png",
+          "sha256": "10657252c16a470941796777b4fec6c542513fef03edcb128d687cf51ba92d11"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00032-basic-001.png",
+          "sha256": "5e25926495d1fdd3a71f313d6ccb769979ac5e2ec71cecd0a048fd6a271db5fe"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00032-basic-002.png",
+          "sha256": "2a14fb701399113a925aac4ef1a68eb78255e53afc2da49017d9c8a4c10bb094"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    },
+    {
+      "capture_key": "items-basic:33",
+      "capture_id": 33,
+      "global_physical_ui_ordinal": null,
+      "global_physical_ui_ordinal_status": "UNKNOWN",
+      "fullName": "earthmind raiment",
+      "name_provenance": "Existing manually read fullpass name retained after exact stored category+name-pixel fingerprint join to current Basic capture; no name-to-ID claim.",
+      "properties": {
+        "Protection": "earth +8%, fire -8%",
+        "Required Level": "200",
+        "Tradeable In Market": "yes",
+        "Body Position": "body",
+        "Classification": "2",
+        "Armor": "15",
+        "Skill Boost": "magic level +4",
+        "Weight": "55.00 oz",
+        "Vocations": "druids, sorcerers"
+      },
+      "review": "All newly retained Basic pages manually read now,75 PNG across33 cards; every emitted field visually checked against new pages. Prior fullpass properties agree; no field-value differences found.",
+      "prior_fullpass_capture_key": "items-current:33",
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-basic/cards/00033-name.png",
+          "sha256": "d86cf830db2c37bbf3d169c6aa4efce32dd458ea8e6c058c9ba412e1dee5a8f0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-basic/cards/00033-name-hover.png",
+          "sha256": "e868f608cb111cb3740c4bb041044a7593d1abee7494fed095aaefce7274dd4e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-basic/cards/00033-basic-top.png",
+          "sha256": "8bdbf25cd3de7d4a51e0eb74c743cb0b3d0325d936059e149d9b3694ed01258d"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00033-basic-001.png",
+          "sha256": "d7d97a69b36f2fb74cce68fb99711505003497181255552206f8bd84f8d10dac"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-basic/cards/00033-basic-002.png",
+          "sha256": "e17f991c7212aad1f749d3c81eb48659bc36da982f6e59edf738ab78868f2b4d"
+        }
+      ],
+      "property_comparison_to_prior_fullpass": {
+        "differences": []
+      },
+      "name_hash_is_item_identity": false
+    }
+  ]
+}
