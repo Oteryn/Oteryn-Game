@@ -612,7 +612,7 @@ impl ChannelSpellStates {
                 self.0
             }
         }
-        let result = timer.fire_due_current_with_context(
+        let result = timer.fire_one_due_current_with_context(
             runtime,
             &Clock(crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get())),
             stamp,

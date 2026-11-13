@@ -1343,6 +1343,25 @@ pub(super) async fn observe_container_with_house_capacity(
     target: ItemKey,
     house_capacity_v2: bool,
 ) -> Option<ContainerObservation> {
+    admission
+        .root
+        .with_background_operation(observe_container_with_house_capacity_inner(
+            admission,
+            actor,
+            fence,
+            target,
+            house_capacity_v2,
+        ))
+        .await
+}
+
+async fn observe_container_with_house_capacity_inner(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    fence: Option<CurrentCharacterItemFence>,
+    target: ItemKey,
+    house_capacity_v2: bool,
+) -> Option<ContainerObservation> {
     let named_house = if let Some(current) = fence.filter(|current| {
         matches!(
             current.runtime_scope,

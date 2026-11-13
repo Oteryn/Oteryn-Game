@@ -89,8 +89,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // drain only after that stronger shared quiescence boundary.
                 return;
             }
-            // One owner pass is one owner turn: the world-interaction cap starts anew, under
-            // the runtime lock that every admitted act holds through its commit.
+            // Keep the population sweep outside any operation. Multi-pass
+            // units such as equipment checkpoints scope their own grants.
             {
                 let runtime = self.runtime.lock().await;
                 if runtime.owner_fence().is_err() {
@@ -103,23 +103,105 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
-            let _ = self.flush_daily_kill_statistics().await;
-            self.tick_timed_items().await;
-            if !self.ensure_source_map_initialized().await {
-                continue;
+            // Rotate independent units, including empty discoveries. The two
+            // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
+            // no whole-population grant is introduced.
+            let start = self.background_start("source-cycle", 14);
+            for index in (start..14).chain(0..start) {
+                self.background_turn("source-cycle", index + 1, async {
+                    match index {
+                        0 => {
+                            let _ = self
+                                .root
+                                .with_background_operation(self.flush_daily_kill_statistics())
+                                .await;
+                        }
+                        1 => {
+                            self.tick_timed_items().await;
+                        }
+                        2 => {
+                            let _ = self.ensure_source_map_initialized().await;
+                        }
+                        3 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_source_item_deadlines())
+                                    .await;
+                                self.drain_spite_recovery_notices().await;
+                            }
+                        }
+                        4 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_quest_encounter_deadlines().await;
+                            }
+                        }
+                        5 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_elemental_altar_bosses())
+                                    .await;
+                            }
+                        }
+                        6 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_source_party_deadlines_bounded().await;
+                            }
+                        }
+                        7 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_rotten_movement_callbacks(),
+                                    )
+                                    .await;
+                            }
+                        }
+                        8 => {
+                            if self.ensure_source_map_initialized().await {
+                                let _ = self.drain_native_ai_timers().await;
+                            }
+                        }
+                        9 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(
+                                        self.drain_rotten_movement_callbacks(),
+                                    )
+                                    .await;
+                            }
+                        }
+                        10 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_bak_first_think_claims())
+                                    .await;
+                            }
+                        }
+                        11 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_primal_pod_callbacks())
+                                    .await;
+                            }
+                        }
+                        12 => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_primal_pod_expiries())
+                                    .await;
+                            }
+                        }
+                        _ => {
+                            if self.ensure_source_map_initialized().await {
+                                self.root
+                                    .with_background_operation(self.drain_rotten_portal_callbacks())
+                                    .await;
+                            }
+                        }
+                    }
+                })
+                .await;
             }
-            self.drain_source_item_deadlines().await;
-            self.drain_spite_recovery_notices().await;
-            self.drain_quest_encounter_deadlines().await;
-            self.drain_elemental_altar_bosses().await;
-            self.drain_source_party_deadlines_bounded().await;
-            self.drain_rotten_movement_callbacks().await;
-            let _ = self.drain_native_ai_timers().await;
-            self.drain_rotten_movement_callbacks().await;
-            self.drain_bak_first_think_claims().await;
-            self.drain_primal_pod_callbacks().await;
-            self.drain_primal_pod_expiries().await;
-            self.drain_rotten_portal_callbacks().await;
             if let Some(cycle) = npc_voices.as_mut() {
                 self.emit_npc_voices(cycle, self.owner_now().get()).await;
             }
@@ -143,13 +225,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             states.next_party_deadline_pass_us = now.saturating_add(1_000_000);
         }
-        let _ = self.drain_source_house_dispositions().await;
-        let _ = self.drain_source_pvp_expiry().await;
-        let _ = self.drain_source_party_expiry().await;
-        let _ = self.drain_source_party_offline_presence().await;
+        let start = self.background_start("party-deadlines", 4);
+        for index in (start..4).chain(0..start) {
+            self.background_turn("party-deadlines", index + 1, async {
+                match index {
+                    0 => {
+                        let _ = self.drain_source_house_dispositions().await;
+                    }
+                    1 => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_pvp_expiry())
+                            .await;
+                    }
+                    2 => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_party_expiry())
+                            .await;
+                    }
+                    _ => {
+                        let _ = self
+                            .root
+                            .with_background_operation(self.drain_source_party_offline_presence())
+                            .await;
+                    }
+                }
+            })
+            .await;
+        }
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {
+        self.root
+            .with_background_operation(self.ensure_source_map_initialized_inner())
+            .await
+    }
+
+    async fn ensure_source_map_initialized_inner(&self) -> bool {
         #[cfg(test)]
         let stage = |name: &str| {
             if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {

@@ -38,10 +38,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // A busy durability holder is transient; never stop the world's existing spawn loop.
         loop {
             let Some(initialized) = stopping_first(
-                async {
+                self.root.with_background_operation(async {
                     self.initialize_daily_boost().await?;
                     self.initialize_cyclopedia_respawn().await
-                },
+                }),
                 shutdown,
             )
             .await
@@ -101,8 +101,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
     ) -> Result<bool, RespawnExit> {
         use crate::durability::boss_encounter::{BossClockClaim, BossClockError, BossClockKey};
-        let mut checked_all = self.grizzly_boss_pass().await?;
-        checked_all &= self.elemental_spawn_pass().await?;
+        let mut checked_all = true;
         let (binding, spawns) = {
             let runtime = self.runtime.lock().await;
             runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
@@ -112,7 +111,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(channel) = binding.channel_id() else {
             return Ok(true);
         };
-        for spawn in spawns {
+        let count = spawns.len() + 2;
+        let start = self.background_start("boss-turn", count);
+        for index in (start..count).chain(0..start) {
+            if index == spawns.len() {
+                checked_all &= self
+                    .background_turn("boss-turn", index + 1, self.grizzly_boss_pass())
+                    .await?;
+                continue;
+            }
+            if index == spawns.len() + 1 {
+                checked_all &= self
+                    .background_turn("boss-turn", 0, self.elemental_spawn_pass())
+                    .await?;
+                continue;
+            }
+            let spawn = &spawns[index];
             if spawn.is_elemental_arrival() {
                 continue;
             }
@@ -144,14 +158,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 spawn: spawn.key.clone(),
             };
             let outcome = self
-                .root
-                .activate_boss_clock(
-                    self.character,
-                    self.holder,
-                    key,
-                    spawn.creature.clone(),
-                    binding.scope_generation(),
-                    spawn.policy,
+                .background_unit(
+                    "boss-turn",
+                    index + 1,
+                    self.root.activate_boss_clock(
+                        self.character,
+                        self.holder,
+                        key,
+                        spawn.creature.clone(),
+                        binding.scope_generation(),
+                        spawn.policy,
+                    ),
                 )
                 .await;
             match outcome {
@@ -174,14 +191,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             u64::try_from(delay).ok()?,
                         ))
                     });
-                    timers.insert(spawn.key, due);
+                    timers.insert(spawn.key.clone(), due);
                 }
                 Ok(BossClockClaim::Unchanged) => {
                     // NBHOG-3: nothing to claim yet (an at-reset boss before any reset, or one
                     // alive at another point). Each check is a whole fenced pass on the single
                     // holder, so a point is checked again only after a pause, not every second.
                     timers.insert(
-                        spawn.key,
+                        spawn.key.clone(),
                         unchanged_boss_recheck(tokio::time::Instant::now()),
                     );
                 }

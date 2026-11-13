@@ -1058,8 +1058,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn write_due_last_positions(&self, all: bool) -> usize {
         let due = self.states.last_positions.due(Instant::now(), all);
         let mut failed = 0;
-        for batch in due.chunks(LAST_POSITION_WRITE_BATCH) {
-            failed += self.write_last_position_batch(batch).await;
+        let batches: Vec<_> = due.chunks(LAST_POSITION_WRITE_BATCH).collect();
+        let start = self.background_start("last-positions", batches.len());
+        let count = batches.len();
+        for index in (start..count).chain(0..start) {
+            failed += self
+                .background_turn(
+                    "last-positions",
+                    index + 1,
+                    self.write_last_position_batch(batches[index]),
+                )
+                .await;
         }
         failed
     }
@@ -1068,6 +1077,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// sessions' fences in one root pass and write them in one transaction, so the batch costs
     /// two durability passes whatever its size (`CHARPOS0-RL-01`). Returns the failed writes.
     async fn write_last_position_batch(&self, batch: &[(GameSessionId, Track)]) -> usize {
+        self.root
+            .with_background_operation(self.write_last_position_batch_inner(batch))
+            .await
+    }
+
+    async fn write_last_position_batch_inner(&self, batch: &[(GameSessionId, Track)]) -> usize {
         let mut changed = Vec::with_capacity(batch.len());
         for &(session, track) in batch {
             let capture = match self.capture_last_position(&track, session).await {

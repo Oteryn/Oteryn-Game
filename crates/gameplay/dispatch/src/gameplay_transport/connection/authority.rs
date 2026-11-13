@@ -25,6 +25,11 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// One bounded cadence body; production retains its root's fairness grant across passes.
+    fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
+        future
+    }
+
     /// Informational operator publication, read only after authoritative admission.
     fn client_bulletin(&self) -> impl Future<Output = Option<String>> {
         async { None }

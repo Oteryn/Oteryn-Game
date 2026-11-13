@@ -1318,6 +1318,79 @@ impl Drop for BootPassDeadline {
 }
 
 impl DurabilityRoot {
+    /// Classifies scheduled work, including its ordinary semantic passes, as background.
+    /// Its independent owner key survives awaits and is inherited by `spawn_task`.
+    /// Shared helpers cannot promote it to foreground or keep a retry ticket.
+    pub fn with_background_holder<F: Future>(future: F) -> impl Future<Output = F::Output> {
+        static NEXT_BACKGROUND: AtomicU64 = AtomicU64::new(0);
+        // Boxed before the async body: an async fn stores its argument in its own layout.
+        let future = Box::pin(future);
+        async move {
+            holder_queue::spawned_for(
+                holder_queue::OwnerKey::Background(NEXT_BACKGROUND.fetch_add(1, Ordering::Relaxed)),
+                future,
+            )
+            .await
+        }
+    }
+
+    /// Keeps one background fairness grant across all passes of a bounded operation.
+    /// The holder is still checked out non-blockingly for each pass; completion or
+    /// cancellation drops the grant, including when the caller is a long-lived scheduler.
+    pub fn with_background_operation<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = F::Output> {
+        // Bound layout depth when scheduler units nest task-local grant scopes. Boxed
+        // before the async body: an async fn stores its argument in its own layout.
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation(&self.holder_priority, future).await
+            } else {
+                future.await
+            }
+        }
+    }
+
+    /// Runs one bounded scheduler unit and reports whether it consumed a grant.
+    /// Schedulers use acquisition (including empty reads) to resume past completed
+    /// units, while a refused unit retains its place. Do not wrap a sweep.
+    pub fn with_background_operation_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::operation_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
+        }
+    }
+
+    /// Observe progress in a sweep without granting it access. Excludes any
+    /// caller grant for this scope; each item establishes its own operation.
+    pub fn with_background_sweep_progress<F: Future>(
+        &self,
+        future: F,
+    ) -> impl Future<Output = (F::Output, bool)> {
+        let future = Box::pin(future);
+        async move {
+            if holder_queue::is_background() {
+                foreground::sweep_progress(&self.holder_priority, future).await
+            } else {
+                (future.await, true)
+            }
+        }
+    }
+
+    pub(crate) fn next_house_disposition(&self, count: usize) -> Option<usize> {
+        holder_queue::is_background().then(||
+            self.holder_priority.house_cursor.fetch_add(1, Ordering::Relaxed) % count.max(1))
+    }
+
     /// Longest semantic-pass deadline a boot step may take (NODE-BOOT-DEADLINE-1).
     pub const MAX_BOOT_PASS_DEADLINE: Duration = Duration::from_secs(60);
 
@@ -1435,10 +1508,10 @@ impl DurabilityRoot {
         F::Output: Send + 'static,
     {
         // Work spawned on an owner's behalf keeps that owner's place for the holder.
-        self.spawn_on_runtime(holder_queue::spawned_for(
+        self.spawn_on_runtime(foreground::inherit_operation(holder_queue::spawned_for(
             holder_queue::current_owner(),
             future,
-        ))
+        )))
     }
 
     fn spawn_on_runtime<F>(&self, future: F) -> tokio::task::JoinHandle<F::Output>
@@ -1492,7 +1565,11 @@ impl DurabilityRoot {
     /// Checkout only an already-idle holder. This method never establishes a connection.
     /// While an owner refused earlier still waits, a later owner is refused too, so the idle
     /// holder goes to the oldest waiting owner (see [`HolderWaiter`]).
+    /// A scheduled owner instead observes the bounded background preference policy.
     pub fn try_acquire_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        if holder_queue::is_background() {
+            return self.try_acquire_background_ready();
+        }
         let owner = holder_queue::current_owner();
         let now = Instant::now();
         let mut queue = self
@@ -1519,6 +1596,9 @@ impl DurabilityRoot {
     /// retries. `None` when the queue is full, or an outer retry of the same owner already
     /// holds the place.
     pub fn holder_waiter(&self) -> Option<HolderWaiter> {
+        if holder_queue::is_background() {
+            return None;
+        }
         HolderWaiter::enqueue(&self.holder_queue, &self.holder_returned)
     }
 
@@ -1775,21 +1855,9 @@ impl DurabilityRoot {
         &self,
     ) -> Result<IssuedSemanticPass, DurabilityError> {
         let caller = std::panic::Location::caller();
-        let holder = self
-            .holder_priority
-            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
-                // Priority already granted this pass its fairness turn. The ticket
-                // queue must not reserve an idle holder against that grant.
-                let holder = self.pool.try_acquire();
-                if holder.is_none() {
-                    self.request_ready();
-                }
-                holder
-            })
-            .ok_or_else(|| {
-                record_holder_usage(Some(caller), None);
-                DurabilityError::RootUnavailable
-            })?;
+        let holder = self.try_acquire_background_ready().inspect_err(|_| {
+            record_holder_usage(Some(caller), None);
+        })?;
         let issued = Instant::now();
         Ok(IssuedSemanticPass {
             root: self.clone(),
@@ -1797,6 +1865,20 @@ impl DurabilityRoot {
             deadline: issued + self.pass_deadline(),
             owner: PassOwner::checked_out(&self.holder_owner, caller, issued),
         })
+    }
+
+    fn try_acquire_background_ready(&self) -> Result<PoolConnection<Postgres>, DurabilityError> {
+        self.holder_priority
+            .background(Instant::now(), ROOT_RECOVERY_WINDOW, || {
+                // Priority already granted this operation its fairness turn. The ticket
+                // queue must not reserve an idle holder against that grant.
+                let holder = self.pool.try_acquire();
+                if holder.is_none() {
+                    self.request_ready();
+                }
+                holder
+            })
+            .ok_or(DurabilityError::RootUnavailable)
     }
 
     #[track_caller]

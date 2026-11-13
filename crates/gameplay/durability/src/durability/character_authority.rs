@@ -160,11 +160,49 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)").bind(character.as_slice()).fetch_optional(&mut *tx).await?;
-            let Some(row) = row else { return Ok(Err(CharacterAuthorityError::Rejected)); };
-            let record = decode_current_row(&row)?;
+            let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            };
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(record))
+        })).await?
+    }
+
+    /// Read a live session and its current Character revision in one fenced pass.
+    /// Periodic gameplay consumers need both, so they must not return and reacquire
+    /// the single holder between the admission journal and Character reads.
+    pub async fn read_current_gameplay_fence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: crate::foundation::GameSessionId,
+    ) -> Result<Option<super::character_progression::CurrentCharacterGameplayFence>> {
+        let recovery = authority.record_for(self)?;
+        let store = super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            super::db::lock_admission_relations(&mut tx).await?;
+            let current = store.current_session_in_transaction(&mut tx, session).await?;
+            if current.session_state() == crate::foundation::GameSessionState::Terminal {
+                commit_semantic_transaction(tx, deadline).await?;
+                return Ok(Ok(None));
+            }
+            let character = *current.commit().character_id().as_bytes();
+            let character_id = CharacterId::from_bytes(character)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let Some(record) = read_current_character_in_transaction(&mut tx, character).await? else {
+                return Ok(Err(CharacterAuthorityError::Rejected));
+            };
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(Ok(Some(super::character_progression::CurrentCharacterGameplayFence {
+                character_id,
+                game_session_id: session,
+                connection_generation: current.current_connection_generation(),
+                character_lease_generation: current.current_character_lease().generation(),
+                runtime_scope: current.current_runtime_scope(),
+                scope_ownership_generation: current.current_scope_generation(),
+                expected_character_revision: record.revision,
+            })))
         })).await?
     }
 
@@ -577,6 +615,16 @@ pub fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> 
     }
     Ok(out)
 }
+
+async fn read_current_character_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: [u8; 16],
+) -> std::result::Result<Option<CharacterAuthorityRecord>, DurabilityError> {
+    let row = sqlx::query("SELECT r.account_id::text, r.character_id::text, r.world_id::text, r.character_revision::text, o.event_id::text, o.transaction_id::text, o.account_id::text AS creation_account_id FROM game_character_roots r JOIN game_character_creation_receipts o USING (character_id) WHERE r.character_id = encode($1,'hex')::uuid AND r.lifecycle = 1 AND NOT game_account_closure_detached(r.character_id)")
+        .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+    row.as_ref().map(decode_current_row).transpose()
+}
+
 /// In-transaction current read for a composition that already holds the
 /// reconciled capability: asserts the sealed recovery fence in the caller's
 /// transaction, then returns the active Character (lifecycle 1), if any.

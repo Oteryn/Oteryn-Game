@@ -1,9 +1,6 @@
 //! Quest admission/refresh orchestration; existing durability owners serialize every write.
 
-use super::{
-    ComposedFreshAdmission, FreshAdmissionStore, GameSessionId, QUEST_OBLIGATION_RETRY, domain,
-    operator_event,
-};
+use super::{ComposedFreshAdmission, GameSessionId, QUEST_OBLIGATION_RETRY, operator_event};
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
@@ -187,35 +184,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::DurabilityError,
     > {
         use crate::durability::{DurabilityError, character_authority::CharacterAuthorityError};
-        let store = FreshAdmissionStore::from_root(self.root.clone());
-        let (current, _) = store.current_session_at(session).await?;
-        if current.session_state() == crate::foundation::GameSessionState::Terminal {
-            return Ok(None);
-        }
-        let character_id =
-            domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-        let record = self
-            .root
-            .read_current_character(self.character, character_id)
+        self.root
+            .read_current_gameplay_fence(self.character, session)
             .await
             .map_err(|error| match error {
                 CharacterAuthorityError::Unavailable(error) => error,
                 CharacterAuthorityError::Rejected
                 | CharacterAuthorityError::Conflict
                 | CharacterAuthorityError::NameUnavailable => DurabilityError::CommitRejected,
-            })?;
-        Ok(Some(
-            crate::durability::character_progression::CurrentCharacterGameplayFence {
-                character_id,
-                game_session_id: session,
-                connection_generation: current.current_connection_generation(),
-                character_lease_generation: current.current_character_lease().generation(),
-                runtime_scope: current.current_runtime_scope(),
-                scope_ownership_generation: current.current_scope_generation(),
-                expected_character_revision: record.revision,
-            },
-        ))
+            })
     }
 }
 

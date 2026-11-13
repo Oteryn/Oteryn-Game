@@ -488,6 +488,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(in crate::gameplay_transport) async fn refresh_terrain_tools(&self) {
+        self.root
+            .with_background_operation(self.refresh_terrain_tools_inner())
+            .await;
+    }
+
+    async fn refresh_terrain_tools_inner(&self) {
         if !self.refresh_cake_world_map().await {
             return;
         }

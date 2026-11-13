@@ -676,9 +676,19 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
     assert!(owner.due_familiar_expiries(caster, session, due).is_empty());
 }
 
-#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 #[test]
 fn due_context_observes_prior_commits_and_retains_a_refused_phase() {
+    due_context_case(false);
+}
+
+#[test]
+fn background_callback_turn_executes_one_item_and_retains_later_items() {
+    due_context_case(true);
+}
+
+// Preserve the existing fixture's assertion-based construction in both cases.
+#[allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
+fn due_context_case(single_callback: bool) {
     let id = |n| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
     let world = crate::foundation::WorldId::decode(&id(60)).unwrap();
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -868,11 +878,49 @@ fn due_context_observes_prior_commits_and_retains_a_refused_phase() {
         })
     };
     let stamp = runtime.issue_owner_work().unwrap();
-    let first = owner
-        .fire_due_current_with_context(&mut runtime, &Clock, stamp, &mut context, &mut build)
-        .unwrap();
+    let first = if single_callback {
+        // This case has no injected refusal: only the unit boundary may defer a callback.
+        context.refused_once = true;
+        owner
+            .fire_one_due_current_with_context(
+                &mut runtime,
+                &Clock,
+                stamp,
+                &mut context,
+                &mut build,
+            )
+            .unwrap()
+    } else {
+        owner
+            .fire_due_current_with_context(&mut runtime, &Clock, stamp, &mut context, &mut build)
+            .unwrap()
+    };
     assert_eq!(first.receipts.len(), 1);
     assert!(first.receipts[0].batch.applied);
+    if single_callback {
+        assert!(first.blocked.is_none());
+        assert_eq!(context.committed, 1);
+        assert_eq!(owner.pending_len(), 2);
+        for committed in 2..=3 {
+            let stamp = runtime.issue_owner_work().unwrap();
+            let report = owner
+                .fire_one_due_current_with_context(
+                    &mut runtime,
+                    &Clock,
+                    stamp,
+                    &mut context,
+                    &mut build,
+                )
+                .unwrap();
+            assert!(report.blocked.is_none());
+            assert_eq!(report.receipts.len(), 1);
+            assert!(report.receipts[0].batch.applied);
+            assert_eq!(context.committed, committed);
+        }
+        assert_eq!(owner.pending_len(), 0);
+        assert_eq!(observations.borrow().as_slice(), &[(0, 0), (1, 1), (2, 2)]);
+        return;
+    }
     assert!(matches!(
         first.blocked,
         Some((SpellTimerOccurrence { phase: 1, .. }, Error::InvalidPayload))
