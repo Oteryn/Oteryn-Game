@@ -1,0 +1,760 @@
+{
+  "source_audit_sha256": "b3d3ff8e30201df25ec8e6d27c9aaf15f1d8b20a7b580c00dfd394218e7ccfb0",
+  "scope": "No actions performed;19 distinct cards require vertical evidence,21 panels total. Golden mug horizontal label and2 NPC names separately unresolved. Crop rectangles use left,top,right,bottom in698x536 retained modal PNG. Add644,300 for historical global coordinates, only after fresh anchor guard.",
+  "items": [
+    {
+      "category": "boots",
+      "ui_entry_ordinal": 3,
+      "capture_id": 2,
+      "fullName": "boots of enlightenment",
+      "proof": {
+        "path": "outputs/items-sequence-boots/cards/00002-basic-top.png",
+        "sha256": "5e6cdbe78ebfc3d616a78a979277cb4895b2ad1ff9640cbe923b21d7c3ced9a2"
+      },
+      "vertical_panels": [],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": true,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": [
+        270,
+        272,
+        440,
+        287
+      ]
+    },
+    {
+      "category": "boots",
+      "ui_entry_ordinal": 30,
+      "capture_id": 30,
+      "fullName": "leather boots",
+      "proof": {
+        "path": "outputs/items-sequence-boots/cards/00030-basic-top.png",
+        "sha256": "a7eb363bcd770a17287fec05e51be9c97a225dd67f317dccf42351ef20027975"
+      },
+      "vertical_panels": [
+        "Sell To",
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "boots",
+      "ui_entry_ordinal": 48,
+      "capture_id": 48,
+      "fullName": "sandals",
+      "proof": {
+        "path": "outputs/items-sequence-boots/cards/00048-basic-top.png",
+        "sha256": "bdc019e7caddc57333e09ee07193904af7ad8b96096246327189330bce5083d1"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 3,
+      "capture_id": 3,
+      "fullName": "amphora",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00003-basic-top.png",
+        "sha256": "80eea890c3337de57f816710fbfeea7432d24bb1a136d7a07a9375a444f79496"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 5,
+      "capture_id": 5,
+      "fullName": "backpack",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00005-basic-top.png",
+        "sha256": "b796a15767fe793627dafbed417077085231a97163a6360ebf148f68efdc51f7"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 7,
+      "capture_id": 7,
+      "fullName": "bag",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00007-basic-top.png",
+        "sha256": "779fcdff468bf5d0e81abd9580d003ff4941aaf3b1ebda72404fb52519a45670"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 9,
+      "capture_id": 9,
+      "fullName": "basket",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00009-basic-top.png",
+        "sha256": "5d8bac6a0a5faeb34221313bebabe58834045e632cae74cab65e84349af8c5b6"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 17,
+      "capture_id": 17,
+      "fullName": "bottle",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00017-basic-top.png",
+        "sha256": "14cb954a94f91a0ebad2b019d2acc242c00827fa19ce5d3aaf085af0cd2be6c4"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 19,
+      "capture_id": 19,
+      "fullName": "box",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00019-basic-top.png",
+        "sha256": "97460c8b43600b4820692329a1858fe9554bde646c697fda47eee01de7291000"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 24,
+      "capture_id": 24,
+      "fullName": "bucket",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00024-basic-top.png",
+        "sha256": "354fd4afd70fcd72b1e89bb4a689f0d21cd8c86934a24eef5d0ef9a7d5d43351"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 30,
+      "capture_id": 30,
+      "fullName": "chest",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00030-basic-top.png",
+        "sha256": "467dd419595b2cf62a078cc426bba807b15f74fb43b7ae844a1a1507a54712a6"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 38,
+      "capture_id": 38,
+      "fullName": "cup",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00038-basic-top.png",
+        "sha256": "40ef7b0e72049ee21fdb9f36e878393908995cbdebc5ef156e0ae791e59834d3"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 62,
+      "capture_id": 62,
+      "fullName": "golden mug",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00062-basic-top.png",
+        "sha256": "33e9c10ba8154588cec6ec1b52a2db1b0bc380e9b6f48211b941ff0cf6c98dee"
+      },
+      "vertical_panels": [],
+      "horizontal_clipped": true,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 70,
+      "capture_id": 70,
+      "fullName": "jug",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00070-basic-top.png",
+        "sha256": "0be27519f7bc9ed5b281b616292a5cb852e0b5778e042a0bd59ba67fed37e065"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 74,
+      "capture_id": 74,
+      "fullName": "mug",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00074-basic-top.png",
+        "sha256": "361d7e9690ced3b7d13f1d31f1d6037d5a411d034bd959a4857e9d91457d1973"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 80,
+      "capture_id": 80,
+      "fullName": "parcel",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00080-basic-top.png",
+        "sha256": "a8102d80370a864f18e985ab6578d7abd8659ba24ef811bbbe2e895a93eacf33"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 86,
+      "capture_id": 86,
+      "fullName": "present",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00086-basic-top.png",
+        "sha256": "be7a6fb9602da9f88728a8328155e27931eb34c3ecd185888960eda239b3f8fc"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 89,
+      "capture_id": 89,
+      "fullName": "raccoon backpack",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00089-basic-top.png",
+        "sha256": "aa44208b273e52283336aa831910065352d2f58895bf4fa1260ff4d3a2f6d8a0"
+      },
+      "vertical_panels": [],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": true,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": [
+        580,
+        272,
+        665,
+        287
+      ]
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 100,
+      "capture_id": 100,
+      "fullName": "treasure chest",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00100-basic-top.png",
+        "sha256": "78924124e063bf1d59420dec286af2f942ece71eb6e32dbe0429fde6b0c09077"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 102,
+      "capture_id": 102,
+      "fullName": "vase",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00102-basic-top.png",
+        "sha256": "7ab1e82ce33e82ee3aae35b3c11959f419b51f7b5350a42af0880c4f1c4b6b91"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 103,
+      "capture_id": 103,
+      "fullName": "vial",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00103-basic-top.png",
+        "sha256": "00a750767580930d8e7e2f77862dad48e65002ada686b279286e889e6de81896"
+      },
+      "vertical_panels": [
+        "Sell To",
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    },
+    {
+      "category": "containers",
+      "ui_entry_ordinal": 104,
+      "capture_id": 104,
+      "fullName": "waterskin",
+      "proof": {
+        "path": "outputs/items-sequence-containers/cards/00104-basic-top.png",
+        "sha256": "4f6019acce281e1bec2eef2609111d3d691f91ce4d5458aa87c72268c5db9481"
+      },
+      "vertical_panels": [
+        "Buy From"
+      ],
+      "horizontal_clipped": false,
+      "npc_exact_text_unknown": false,
+      "modal_png_crop_coordinates": {
+        "Sell To": [
+          237,
+          271,
+          445,
+          370
+        ],
+        "Buy From": [
+          462,
+          271,
+          670,
+          370
+        ]
+      },
+      "global_screen_coordinates_add": [
+        644,
+        300
+      ],
+      "exact_unknown_npc_crop": null
+    }
+  ]
+}

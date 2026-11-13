@@ -1,0 +1,16 @@
+{
+  "sources": [
+    {
+      "private_source_key": "outputs/items-reader-cloud-20261113/armors-basic-1-33-qualified-repo-ready.json",
+      "bytes": 52451,
+      "sha256": "fd35be40e29e620f1bd35c1a914653def78de1ec1284b6b98d1230c47688be5b"
+    },
+    {
+      "private_source_key": "outputs/items-reader-cloud-20261113/category-audit-backlog-20261113-v2.json",
+      "bytes": 9265,
+      "sha256": "237a1a060dba16ce9688171b0e7683ae34db1db622e28ca80d15444ef6df2234"
+    }
+  ],
+  "proof_bytes_verified_on_owner_ubuntu": 141,
+  "absolute_prefixes_removed": true
+}

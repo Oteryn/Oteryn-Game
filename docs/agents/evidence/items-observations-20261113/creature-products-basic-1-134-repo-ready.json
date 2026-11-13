@@ -1,0 +1,3573 @@
+{
+  "schema": "OTERYN_CYCLOPEDIA_PARTIAL_BASIC_READER/v1",
+  "client": "Tibia Test Server15.33.dd0955",
+  "source_role": "GLOBAL_BLACKBOX",
+  "classification": "OBSERVED",
+  "category": "Creature Products",
+  "coverage": {
+    "status": "PARTIAL",
+    "first_physical_ui_ordinal": 1,
+    "last_physical_ui_ordinal": 134,
+    "read_records": 134,
+    "collector_checkpoint": "rotation_due_safe_pause",
+    "category_end_observed": false,
+    "qualified_fields": "retained Basic properties only",
+    "trade_panels_complete": false,
+    "trade_panels_qualified": false,
+    "animation_qualified": false
+  },
+  "identity_boundary": "Physical UI ordinal and name/pixel fingerprint do not establish appearance ID, cyclopedia ID, serverID, or canonical Item identity. Same name/icon does not collapse records.",
+  "missing_value_policy": "Only visibly read fields are emitted; absent fields are not zero, false, N/A or intrinsic absence. UNKNOWN/N/A/zero are not interchangeable.",
+  "private_artifacts": "Original PNG remain private on owner Ubuntu; source keys resolve against private evidence root. No images or proprietary assets included.",
+  "reader_batches": [
+    {
+      "file": "creature-products-1-17-reviewed.json",
+      "sha256": "a879a93d000c7d728aa0dc9972db0c2f19f272ed8d83e2bc1a114ae70874151d"
+    },
+    {
+      "file": "creature-products-18-49-reviewed.json",
+      "sha256": "8041aef7f2dcb69c0045fffb5ab91a547e8d311c5b246d54c6613f288daf8895"
+    },
+    {
+      "file": "creature-products-50-104-reviewed.json",
+      "sha256": "1bad08e91911d24a7f37c1647d9c97b9a027ca3380131d3ca94da21f632c76a7"
+    },
+    {
+      "file": "creature-products-105-134-reviewed.json",
+      "sha256": "0eb4590651378872ac1bded2f7c5ed54e27b90921a0c6d9c8fe9abbfc5cab04b"
+    }
+  ],
+  "items": [
+    {
+      "capture_key": "items-sequence-creature-products:1",
+      "ui_entry_ordinal": 1,
+      "fullName": "Abomination's eye",
+      "properties": {
+        "Weight": "0.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00001-name.png",
+          "sha256": "0a891894f879b55ae38964c77d4300ba7eb03eee51048a6a546f32e6d7af8d84"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00001-name-hover.png",
+          "sha256": "f9d0e2bcf4c0187249a8c5b232911fd1e9aa1daf51b8b6e78a6526bca38510ab"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00001-basic-top.png",
+          "sha256": "00a43240e98648bcd6db58bedb2c29974e255da51315e5f5e8f41a35aceadb8d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:2",
+      "ui_entry_ordinal": 2,
+      "fullName": "Abomination's tail",
+      "properties": {
+        "Weight": "0.80 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00002-name.png",
+          "sha256": "e383bf02cedc0ce8319efc6120b029a29da6d2a22b5fdf99f862fa1eb3c7ff79"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00002-name-hover.png",
+          "sha256": "ae04c45dfb9ca2e1f5f8395753b751efde59d96affa8101f21bfffc3d2fa6a3d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00002-basic-top.png",
+          "sha256": "8f4abe32757cc9319963f485bc903bc1b3148c89b6b4cbbe14d98ac03264cc32"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:3",
+      "ui_entry_ordinal": 3,
+      "fullName": "Abomination's tongue",
+      "properties": {
+        "Weight": "1.30 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00003-name.png",
+          "sha256": "6ad2e46fde64264cb9fe3eef3b14e004a710bdbe0f6962196799550b1bc9440b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00003-name-hover.png",
+          "sha256": "5a4906af3021e495d490b98bf4efad805b13f6cd9db0d5997e2da448774f4006"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00003-basic-top.png",
+          "sha256": "1abb952642678b8e3534cb4964ddd48dc5fe004b0efe6136164adfee1f3da92f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:4",
+      "ui_entry_ordinal": 4,
+      "fullName": "Abyssador's lash",
+      "properties": {
+        "Weight": "1.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00004-name.png",
+          "sha256": "cfa624e5635226d892bd938731397d1f872853a10216891c70e38f080fcae6d4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00004-name-hover.png",
+          "sha256": "63514a2da1ead3adb48cb97895172fe0b567e530403e7bdfc39faaa423f209ac"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00004-basic-top.png",
+          "sha256": "7068465b83a7dfd71a134b8958b0a630ea49bbf0ec7a0f286a8e5144a5bc471b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:5",
+      "ui_entry_ordinal": 5,
+      "fullName": "acorn",
+      "properties": {
+        "Weight": "0.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00005-name.png",
+          "sha256": "0e01cd00bec0cbe414d7cbebcd68119508e64c941286d80d8d23b30037ab689e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00005-name-hover.png",
+          "sha256": "c9b03bac70ab8ed14d19dba097d4e260553d313ea818af6454955f4550a7c58e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00005-basic-top.png",
+          "sha256": "4e16cf53ad8d6df134c0471e3af4202cce9eb40ece5486d9767ab7d525d0a2c2"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:6",
+      "ui_entry_ordinal": 6,
+      "fullName": "afflicted strider head",
+      "properties": {
+        "Weight": "1.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00006-name.png",
+          "sha256": "d43d317298d4993f0c287ac776e3db5af9ea607054dd7f7bbfad9a4c468ea6a7"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00006-name-hover.png",
+          "sha256": "f96eb6ad6dec451673e6254f297580291a35885ec7b96aa4d176e2fc72b75219"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00006-basic-top.png",
+          "sha256": "7cc00a74bbd80d2cb69c0a4cb467bb391e56b03104b3c86286edf0125c8c21ff"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:7",
+      "ui_entry_ordinal": 7,
+      "fullName": "afflicted strider worms",
+      "properties": {
+        "Weight": "1.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00007-name.png",
+          "sha256": "cfac99d6b53b4b9f5973d0f4ba94489abfa3e723af18eb3f66de452293cedef0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00007-name-hover.png",
+          "sha256": "1ecd36f24570a616afec7cb8cca1569b118b4d1b8dfc66679f4c15b095a44a1c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00007-basic-top.png",
+          "sha256": "db860c44de99336a622c936f085941b567a3c7871e51667dded3689fea40d5ca"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:8",
+      "ui_entry_ordinal": 8,
+      "fullName": "albino dragon leather",
+      "properties": {
+        "Weight": "0.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00008-name.png",
+          "sha256": "4a1cef8278dbae301892abe0a0a6213f9eea8fc91ff939b10f143753ba4cc34c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00008-name-hover.png",
+          "sha256": "c64f8713f459c8adb10867bb140558f1399c22c44b3533a3d8c7e880b09cdc58"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00008-basic-top.png",
+          "sha256": "e8700d1453d302e55d4edc81e99f66ed6330fd15ab8820b1740780a61b4b7243"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:9",
+      "ui_entry_ordinal": 9,
+      "fullName": "almost a treasure",
+      "properties": {
+        "Weight": "5.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00009-name.png",
+          "sha256": "6cfb9b07be398e4daa52cb3400b09dde4c02848b27844d67fd8b3cef01c1070c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00009-name-hover.png",
+          "sha256": "b2fe5ae7a19f43a38b6de59c4bba750462363bbe5e6cbe82b8c859ea74de1228"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00009-basic-top.png",
+          "sha256": "ec87271af69c2f76d284045cdae9a3f391e1b0415624b1e77b23dc7901d72ebc"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:10",
+      "ui_entry_ordinal": 10,
+      "fullName": "Alptraum's toothbrush",
+      "properties": {
+        "Weight": "0.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00010-name.png",
+          "sha256": "c4d5e2703d0345d6a7c40ce660ebb99080fa41d5ae05f4ea5da3fb44f4eeba1c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00010-name-hover.png",
+          "sha256": "b2ea8b65a213758d9aa0f1f43e9b23ad116cf49d5689537345041eb93f4f300e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00010-basic-top.png",
+          "sha256": "2225d66b6e3ef69157b063253476ffbe8a1a6c493393b5cf467d5d519b9293f1"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:11",
+      "ui_entry_ordinal": 11,
+      "fullName": "amber souvenir",
+      "properties": {
+        "Weight": "1.30 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00011-name.png",
+          "sha256": "970489556e64f491e795ba55e3b46781f625ee159e6c8f76a27bca930172a07e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00011-name-hover.png",
+          "sha256": "156a1e5a1579a0d796d202c59997cf01ff8c7114b981168a435af3421d9c4300"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00011-basic-top.png",
+          "sha256": "125de76415e7b8c569700f0e37b7f3e1c1e0312c7ce297af19a7e1e83c2e79f1"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:12",
+      "ui_entry_ordinal": 12,
+      "fullName": "ancient belt buckle",
+      "properties": {
+        "Weight": "2.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00012-name.png",
+          "sha256": "6fe52ae89cf2a8f62812b4c21a54f3edd7ca7048839e95e733fb62e81a5e698a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00012-name-hover.png",
+          "sha256": "c54ba974500f36b401796fd84c3c29923a9da67b3f039941550ab068f1d5f58a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00012-basic-top.png",
+          "sha256": "6de9490c6e47ef4c2c1e63fcadf873b9f9aa719cd84bb3a00f1232c248a4f845"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:13",
+      "ui_entry_ordinal": 13,
+      "fullName": "ancient crypt rune",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "This rune pulses with corrupt magic bound into bone. Only by offering a complete set to the guardian spirit may its blight be undone"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00013-name.png",
+          "sha256": "41542faa37e69d0befbdd8f44c99bb4398d9b6e987b4208e69aa42827d274db5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00013-name-hover.png",
+          "sha256": "13ef80a0a6f21b89d25d64e1e3be9e78a91ef8f9734fb630f505fe13aaf54764"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00013-basic-top.png",
+          "sha256": "a29ea9de7b6ec7becf4bdbc7d43df35f097ea530acb91507fed6148d7b91395c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:14",
+      "ui_entry_ordinal": 14,
+      "fullName": "ancient eye stalk",
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00014-name.png",
+          "sha256": "7e972c7f30af6eb46eb660c68a39f938fef363a6ebf07804f571f98ac8c5b2ed"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00014-name-hover.png",
+          "sha256": "e4163d44966b211673e0afbba2cf40bea24c9da492a200aeff0f42cd45e4466b"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00014-basic-top.png",
+          "sha256": "a0b221aca7b335e364854255c2fcda8f1b73ac3de211571b791cc4294d3c33f8"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:15",
+      "ui_entry_ordinal": 15,
+      "fullName": "ancient liche bone",
+      "properties": {
+        "Weight": "0.80 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00015-name.png",
+          "sha256": "0eede2c3412dc2ff376e6eee1714c45e51c0c87de8aaf2fad675b0460e546a3f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00015-name-hover.png",
+          "sha256": "a103a947143419a58e1c643b0c9b5441a58c58f26924d3aff4c509700542ba0d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00015-basic-top.png",
+          "sha256": "56bf7de49fd4b5ccd9e6474e58907ff3fd40313584ba4eff22c80737ab89cf1e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:16",
+      "ui_entry_ordinal": 16,
+      "fullName": "ancient scales",
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00016-name.png",
+          "sha256": "136973eca018bb5ad7a1ce95682d916b573f4ac5a23bf74ff08095c9bc1373a6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00016-name-hover.png",
+          "sha256": "a7dea7d6221b55c83d59a4ff38b2b1f9215bc08aa18141b97d59ff49bc990d71"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00016-basic-top.png",
+          "sha256": "48230d203736f3e1d2be1978233d35ae680d0d30a2e93ec62e4893d0c3b9692c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:17",
+      "ui_entry_ordinal": 17,
+      "fullName": "ancient stone",
+      "properties": {
+        "Weight": "1.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00017-name.png",
+          "sha256": "4a1444b90ee67e3afa8c7525a7250c8bbb730a77c996b664f23b42a1b6dfe51f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00017-name-hover.png",
+          "sha256": "f9781134fe26ba7332f6d64c356d62f523206fe59c40828fe1c5d8a9c3f80db7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00017-basic-top.png",
+          "sha256": "16e8eeab20cc1818ea94b46583da0485cce93a9eb74339648b571066af56436e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:18",
+      "ui_entry_ordinal": 18,
+      "fullName": "ancient watch",
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00018-name.png",
+          "sha256": "ef34da4d818553ee029b03821ac3166bc085ad2a5074242b7d91d5e6081ebd3e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00018-name-hover.png",
+          "sha256": "c9630bacdfdb56066ef93d924c341ec09f8bc5e48cde6e8fb38d1496c8ed58c5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00018-basic-top.png",
+          "sha256": "d8f00dd09190ec65f179380438f7c1ddd65413df36ca997a8c35a002083c680a"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:19",
+      "ui_entry_ordinal": 19,
+      "fullName": "antlers",
+      "properties": {
+        "Weight": "0.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00019-name.png",
+          "sha256": "7a306bf0f22108c27eee5d0ccbad85efa29d975d184be0a0e3f6e5aa947aaf4e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00019-name-hover.png",
+          "sha256": "e46d94fe03f944ae94518acf30d1c95e22673508be9c64f19829f0c9bb1a24b6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00019-basic-top.png",
+          "sha256": "d57ce64acac11fc4a432798aa1f12c556869b882e125d4cafb2033b5f9ca8d36"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:20",
+      "ui_entry_ordinal": 20,
+      "fullName": "ape fur",
+      "properties": {
+        "Weight": "1.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00020-name.png",
+          "sha256": "a95e1b34f76556e805d4951b1d90efbefe2cd758c43268ed23d3ee6aaabb513c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00020-name-hover.png",
+          "sha256": "72c04f9dae3f1ab86cf1b0dda167c4cea80460aa9c400b2f018509466df7306b"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00020-basic-top.png",
+          "sha256": "5d8ff02d1be6fee3c833d392d1e7308d90f6afbc72c5104b80eac112fbe8bc80"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:21",
+      "ui_entry_ordinal": 21,
+      "fullName": "apron",
+      "properties": {
+        "Weight": "0.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00021-name.png",
+          "sha256": "54c86ac776d8c6970fb38df65ebddd90de5fc9e121de489a2a6265fd48609f59"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00021-name-hover.png",
+          "sha256": "9fd4ff9a78fa5a6b37b6c89fe7cb49a1c95dce26a0d9351768a25af81e9151c0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00021-basic-top.png",
+          "sha256": "74fe7d74d52298b215e3a2bb82954a3132ca3d58780906231b12c5e9756da329"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:22",
+      "ui_entry_ordinal": 22,
+      "fullName": "Arbaziloth shoulder piece",
+      "properties": {
+        "Weight": "0.25 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00022-name.png",
+          "sha256": "18413d56249d376759a2bb2c5a8d502f2b4c58653fa5fcf39f745f10ea31da62"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00022-name-hover.png",
+          "sha256": "df1aa1a5e93f91722e93cc13da3f5661a092ef6541320c61ab473f6847ddda7a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00022-basic-top.png",
+          "sha256": "856ab9433fd710a6109bb3dc2860dd954a2de9e2743e9c4733899ffdb8ca23d2"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:23",
+      "ui_entry_ordinal": 23,
+      "fullName": "astral glyph",
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00023-name.png",
+          "sha256": "707053694adab461c367ec261afd6be2a5c21d80d5a6ade3b08eac752d730963"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00023-name-hover.png",
+          "sha256": "e9fac11b0a599e62daf990146fe6cbc24abc18e566df691dd32868a892d5866d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00023-basic-top.png",
+          "sha256": "e30c1dfcb7ad9c0aecc04502cb59e8d184e1479c26a55bedf349dfc0f0f9bc58"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:24",
+      "ui_entry_ordinal": 24,
+      "fullName": "astral source",
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00024-name.png",
+          "sha256": "fa23a4c8a0d8bff25c881cf76019d305a5fd0d90923a0d7165c21ed6e2fa24ca"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00024-name-hover.png",
+          "sha256": "ad9daa04f19df12538c9761fcdaf67ff0bfc79d3922ccf542873a0c11405f3fa"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00024-basic-top.png",
+          "sha256": "e8c467fcf9c83b659210cc41d4b8998788d523ab8ae7b6f8a6cff379794e0747"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:25",
+      "ui_entry_ordinal": 25,
+      "fullName": "Atab's Mitmah helmet",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00025-name.png",
+          "sha256": "36124cbe94c24edaf9f7df9b7e912ebb8f68f57bd5834d53b8505414f084b7d0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00025-name-hover.png",
+          "sha256": "2225e0e74c8549225bd38b9f709577e1e798bc7ba2df96086a69bf340e72672e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00025-basic-top.png",
+          "sha256": "c81c42bc21f44b17d363415d962d7307010c8b7f448bad53ebe9f6458a69b5a9"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:26",
+      "ui_entry_ordinal": 26,
+      "fullName": "axe of Sir Leonard",
+      "properties": {
+        "Weight": "0.25 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00026-name.png",
+          "sha256": "d0cdeb372387f2651cdd55df2d935fb52656418710f39ed3222eb1b7315d463f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00026-name-hover.png",
+          "sha256": "57b23e82fc1a30bcfc68ecc30ed19a6a8a30d67acf8919bde20c81da148b5456"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00026-basic-top.png",
+          "sha256": "335b75c9519ccc95e9bc48b820aa155dca79be17f7a550be7a3b7d913a2a5a6d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:27",
+      "ui_entry_ordinal": 27,
+      "fullName": "badger fur",
+      "properties": {
+        "Weight": "0.65 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00027-name.png",
+          "sha256": "607e7803e49752226500184b4ed9f76a127b8c3a6fd972904847adcd416211bb"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00027-name-hover.png",
+          "sha256": "e7be907c0d21d607f720ec2a28de6743afab84b8b8aab111dd55e99398f6e1fc"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00027-basic-top.png",
+          "sha256": "9cf2f14a4a234ee4b1d21a7acb9db5f415fc2fcba2d89e8e5b6b6d170c184e20"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:28",
+      "ui_entry_ordinal": 28,
+      "fullName": "Bakragore's amalgamation",
+      "properties": {
+        "Weight": "5.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00028-name.png",
+          "sha256": "b36442ae1b25d0a81d2cb18265ee246ff5fed79cb37add12af6f8a28dde417f6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00028-name-hover.png",
+          "sha256": "bf21f1cda7db6921e267f511e286d5bb941f0eabc8e378bbea62411682cd74e3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00028-basic-top.png",
+          "sha256": "75668a27b6849d5ef2f19691c4a8e436f1e10781c03023721ea881647d632812"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:29",
+      "ui_entry_ordinal": 29,
+      "fullName": "bamboo stick",
+      "properties": {
+        "Weight": "1.12 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00029-name.png",
+          "sha256": "7ae626fc6c01465e402ecb901667cd80b64b3eab39779f828d2f31318055f151"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00029-name-hover.png",
+          "sha256": "bf4212a88ba5bf0c41b63b073ceb7fae08db326b7b57b97a2851c27c19bc5516"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00029-basic-top.png",
+          "sha256": "b4226d652a9eb17c90ba8cb967ab93054a52b98a02f3cb9e7f33cdab80259d65"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:30",
+      "ui_entry_ordinal": 30,
+      "fullName": "banana sash",
+      "properties": {
+        "Weight": "0.68 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00030-name.png",
+          "sha256": "e1e07c3e90a814a7a2855e9642552d9c036b2cdf010ce94fe56ed6b0f973cb3d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00030-name-hover.png",
+          "sha256": "9a6df5841818b10a6bce64dd0927a7d39cb9f11d5a5f68b49112cf5101f570ab"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00030-basic-top.png",
+          "sha256": "263550e7a69fe4cb4d4ea5fbaec9560361e987d4f39bf2325f8b9b209b9d46bf"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:31",
+      "ui_entry_ordinal": 31,
+      "fullName": "basalt core",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00031-name.png",
+          "sha256": "36de81ec8fdac52711e4759d8ee4e8fa2ce0534e8c0f04285edba5ed0f7ad0b3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00031-name-hover.png",
+          "sha256": "a241724170182caddecb3e501c436b45ea61bac1c1025146d40aa07aad17f493"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00031-basic-top.png",
+          "sha256": "b3fd6b8452c84d9877e787db04a9418e0cdd81c33f3c5e0704ce797a705167f2"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:32",
+      "ui_entry_ordinal": 32,
+      "fullName": "basalt crumb",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00032-name.png",
+          "sha256": "8e703998665640658ef457b1c7d2f5dae237f4b6054b796d753a51c7c9677e07"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00032-name-hover.png",
+          "sha256": "f889016c5a19482bceda9118007f247bd9c1be1563cc851a381e4916243e3bf3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00032-basic-top.png",
+          "sha256": "d6a17fa0c97bbcb029978196b74d43a6670a9e6603989a8150706f924122ab40"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:33",
+      "ui_entry_ordinal": 33,
+      "fullName": "basalt fetish",
+      "properties": {
+        "Weight": "2.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00033-name.png",
+          "sha256": "d1b17c7c39431dd6f3d4d41b0d82d2c3d56114b94a78f7c0a33c413d45a939e2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00033-name-hover.png",
+          "sha256": "958379722a27d2416fb196c799cb8d05666d4dc1b6c39862c51f822ddbc0d8d8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00033-basic-top.png",
+          "sha256": "5b4a752b18de1ea6416839ede73c115d298363280f0c8aa128f6bd243242cb5a"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:34",
+      "ui_entry_ordinal": 34,
+      "fullName": "basalt figurine",
+      "properties": {
+        "Weight": "2.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00034-name.png",
+          "sha256": "6f93504876eeb04620b4ea9434582becd1badf466803485c5d8d166b628fd7f2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00034-name-hover.png",
+          "sha256": "ebd1d321730da60cd4326bbac536972912a28714795997e55b3629e0d0cdcf8e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00034-basic-top.png",
+          "sha256": "ef04d5880f7107bb55b2113f71ea7bae829768040a799a66a42ca53aecb04efc"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:35",
+      "ui_entry_ordinal": 35,
+      "fullName": "bashmu fang",
+      "properties": {
+        "Weight": "1.50 oz",
+        "Tradeable In Market": "yes",
+        "Description": "Green venom is still dripping off it"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00035-name.png",
+          "sha256": "ee528c92dda4a061d9658f42ce380a5d1b89c0ba1562770bb460bac7d3d5334b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00035-name-hover.png",
+          "sha256": "babfc51f5552673f55b92e64abdf402be17ffc368d10357f5a39a440b80e4772"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00035-basic-top.png",
+          "sha256": "3824799d97774cdf57bb08e11af8352f1bb7d17f0bae9223c7d7433518f0b1f5"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:36",
+      "ui_entry_ordinal": 36,
+      "fullName": "bashmu feather",
+      "properties": {
+        "Weight": "2.50 oz",
+        "Tradeable In Market": "yes",
+        "Description": "It is pearly-white and quite big"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00036-name.png",
+          "sha256": "1ac091a21da698f68d89ce920a0454a96d301d500aa7a62b85665f4d4b07a0c6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00036-name-hover.png",
+          "sha256": "dab0917841b3f624324e7873fd7e002b57b3d753774c1aedd86c31af374ddea2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00036-basic-top.png",
+          "sha256": "32662c1060c1a65abd9ee6a94dfe7e8b84c82b1aefe09b5cbd28566eaacc7f1c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:37",
+      "ui_entry_ordinal": 37,
+      "fullName": "bashmu tongue",
+      "properties": {
+        "Weight": "2.50 oz",
+        "Tradeable In Market": "yes",
+        "Description": "It is blue, forked and very long"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00037-name.png",
+          "sha256": "a66e031979b88ca90330c4cc9dd8eb4c7cc7018b07521fb0b03ee7e313fe4be0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00037-name-hover.png",
+          "sha256": "9b67d8760c883790ac8eca5eedf684d1c3a434fe08338cf449a6226dbc0d1c46"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00037-basic-top.png",
+          "sha256": "22994498c5a910c5231b85cacea99e884c950bf185c426c13a6a8952c72b2d66"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:38",
+      "ui_entry_ordinal": 38,
+      "fullName": "bat wing",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00038-name.png",
+          "sha256": "301d588e546afcc48c7748fe4dbd3242f2066902c175d71ce918d32945a55db3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00038-name-hover.png",
+          "sha256": "37d82a4f8fbf1ca548542b429ae8dcc375106098ce8d53aed75255c8fa1f1114"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00038-basic-top.png",
+          "sha256": "c784185e7f5128e2657146679d7abc4be036dabef2283c64601532d17f4bdc6f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:39",
+      "ui_entry_ordinal": 39,
+      "fullName": "battle stone",
+      "properties": {
+        "Weight": "1.50 oz",
+        "Tradeable In Market": "yes",
+        "Description": "It seems to be perfect to shape a weapon from it. Someone could definitely be interested in it"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00039-name.png",
+          "sha256": "002a00bc1ab10b25a623d36e6612d37117e9346a40a25fb7e47c7fa6ce871936"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00039-name-hover.png",
+          "sha256": "65dd274501758d3c6ef23bb017804e7a418ee978a6ed111711177b211a4d6822"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00039-basic-top.png",
+          "sha256": "fbd601f59f660100b7044d7d9c3ed22309c7d14dc3aeb6cd55450a7abe8960cd"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:40",
+      "ui_entry_ordinal": 40,
+      "fullName": "bear paw",
+      "properties": {
+        "Weight": "1.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00040-name.png",
+          "sha256": "b13eb7a56d5a497697496fb22d63e59ea1291a2506bc90774d7026a313390384"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00040-name-hover.png",
+          "sha256": "04729c34b763fe4a8fa227c7839fe7e7f29deb33e04046b0224aff31b65edacb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00040-basic-top.png",
+          "sha256": "966ec7358810477f321421867a96819547d3736616ca736c2a2088b1360a0d10"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:41",
+      "ui_entry_ordinal": 41,
+      "fullName": "beast's nightmare-cushion",
+      "properties": {
+        "Weight": "0.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00041-name.png",
+          "sha256": "86d44771f153cb9eb0f29c93d48a590f3967b7017fb930557ad293597c9fc8c1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00041-name-hover.png",
+          "sha256": "eacd1337ce0f84065ca435ac4fe29920299162960749722183ea08df9de7c507"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00041-basic-top.png",
+          "sha256": "2986143b18859fb96235add09947b15300932744a9987dc78c41a4ecd52d5825"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:42",
+      "ui_entry_ordinal": 42,
+      "fullName": "bed of nails",
+      "properties": {
+        "Weight": "4.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "Not for everyone"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00042-name.png",
+          "sha256": "fe1b5bd6d2cb3ad0e82555e1446ceabac13498db9236308be543f8c1c7101578"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00042-name-hover.png",
+          "sha256": "040e8b599573f7bec2beb12dceda31858ce1e9417da3bee5f25bdf3693221a00"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00042-basic-top.png",
+          "sha256": "d4add5463d35fd4ac7f1f7734d6b4e1f1635d0df5359c104de9f8d4e823d812d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:43",
+      "ui_entry_ordinal": 43,
+      "fullName": "beetle carapace",
+      "properties": {
+        "Weight": "35.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00043-name.png",
+          "sha256": "355366517293eadcf4ebc81c9f4b29ff2e2c5e17043efcfdbb0c6369cb6b883e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00043-name-hover.png",
+          "sha256": "4f7b2d24a90e88b288810bd1f279ef165752ac18efeca99fab9bc3a0be36260d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00043-basic-top.png",
+          "sha256": "0d55dab4c78e7aa768c61e9834e2cf1f51c0419ed42ffb13a4b6718da6748083"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:44",
+      "ui_entry_ordinal": 44,
+      "fullName": "behemoth claw",
+      "properties": {
+        "Weight": "12.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00044-name.png",
+          "sha256": "ff4816146e15c3b012a06f8133dab755958bc9c643034fba80cfc0e9c9d2b8c4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00044-name-hover.png",
+          "sha256": "145bdc9dc07c187745385e931c33651acb19ba9589e3a9d918f3cc6eb41858bb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00044-basic-top.png",
+          "sha256": "3cc5f77c2c7227e097fc2b2892fc93d52d0a1c2777c7cc399bfbfbe508b9a795"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:45",
+      "ui_entry_ordinal": 45,
+      "fullName": "beijinho",
+      "properties": {
+        "Weight": "0.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00045-name.png",
+          "sha256": "3388db6024e03c32f48027deb715b21a1bcdf2073103d9968e80683d1a356d17"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00045-name-hover.png",
+          "sha256": "5cdcfe61821bc59599b992c476d3d529f89700b8f7a5be6cb6ae0ca141efbca4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00045-basic-top.png",
+          "sha256": "730058c36f7af2d0bb05986c91e8f53b049c7b9ed1726df68bfa66e72339d32a"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:46",
+      "ui_entry_ordinal": 46,
+      "fullName": "black hood",
+      "properties": {
+        "Weight": "1.75 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00046-name.png",
+          "sha256": "8c0976cacdd5bb9a03fb3e2a1b94f8142173072a784155238917173dd5ec7a51"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00046-name-hover.png",
+          "sha256": "64ca3607c13e92d5a87d085b1073d74adee3e4e1598cb33a28a66cdc7c96a481"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00046-basic-top.png",
+          "sha256": "d6b56fceee1d1d5079f6071bf6aabca207100d6c4167b4ac8026e8b0330b7b7a"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:47",
+      "ui_entry_ordinal": 47,
+      "fullName": "black wool",
+      "properties": {
+        "Weight": "1.18 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00047-name.png",
+          "sha256": "0672b767ac1dc51cec04f6d5da31a8c2b0ab0356eadd95a3d947f42be78163bd"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00047-name-hover.png",
+          "sha256": "f24ec79123eb80cbddb5d7db3b5481595cf197ef719de7efffe71da11141aa49"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00047-basic-top.png",
+          "sha256": "40f93681f50fe90311ce0b7d57bd2836331ca9f06c6c590f030148750296f84d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:48",
+      "ui_entry_ordinal": 48,
+      "fullName": "blazing bone",
+      "properties": {
+        "Weight": "2.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00048-name.png",
+          "sha256": "f61eaa7b342b93a8d311a29ceeab3b4a75e9988cb8d58d53d89c32f5f09d41d9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00048-name-hover.png",
+          "sha256": "10467028f777d86662aa10a30963b0d18f284453f0c083ca784abf9c1d4200c2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00048-basic-top.png",
+          "sha256": "bb642f69c774e14d8102cc37aefc00f0a1710ea5967fb807efe8c94127780374"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:49",
+      "ui_entry_ordinal": 49,
+      "fullName": "blemished spawn abdomen",
+      "properties": {
+        "Weight": "2.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00049-name.png",
+          "sha256": "166374ee0ed1ba8a5634a7eb6869e9cc26be49d626b4f7551896d83c6dfc336f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00049-name-hover.png",
+          "sha256": "7847db912c3b558b6983432159a0ff791d52b35d8b26dfb8a02ecd78ff16abfe"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00049-basic-top.png",
+          "sha256": "5082006829245d3dfdf714a7e90195e7f937c36b0da31faab0cdf4ca157ee24c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:50",
+      "ui_entry_ordinal": 50,
+      "fullName": "blemished spawn head",
+      "properties": {
+        "Weight": "1.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00050-name.png",
+          "sha256": "c912417b2711831e3ba8e5a92b45dd70e69b1b1af97ba293cd450c6feb53954e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00050-name-hover.png",
+          "sha256": "434d71f05da5794c203176d8f0aece7af090ff551aca7fe108bd1a814d4bb3f2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00050-basic-top.png",
+          "sha256": "c92d3d562fdc50a31b60688ba276d3dc148a2fc556d41c9132c0c665f5a5e39f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:51",
+      "ui_entry_ordinal": 51,
+      "fullName": "blemished spawn tail",
+      "properties": {
+        "Weight": "1.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00051-name.png",
+          "sha256": "e3b511cb97c50c07bb5ba540293aaa81b8d17c407bb77647eef1c11d638e3683"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00051-name-hover.png",
+          "sha256": "c7615c1ff970d7b33b428ee5965026389254696f423966fe6363531385167707"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00051-basic-top.png",
+          "sha256": "0393a57e894c61eb5b4f53998941d87cd07cd3ae56a972e6b27a7b398739e4e0"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:52",
+      "ui_entry_ordinal": 52,
+      "fullName": "bloated maggot",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00052-name.png",
+          "sha256": "8eaac8162a1617485174563c76d74b724ad18b30f801af6d5e84b4d2c3bb2eec"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00052-name-hover.png",
+          "sha256": "a22f3d3b4de065d5be254335c59526bd71ec2ae2d64b255525710b106c18e211"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00052-basic-top.png",
+          "sha256": "cbf9d825d48cab75ed20c31dff317516f236f26b46bea53ff2ac0893a2501095"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:53",
+      "ui_entry_ordinal": 53,
+      "fullName": "blood amulet",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00053-name.png",
+          "sha256": "6f3cfcebb4d3845095bccaef2c60fcb636d33360fd57aae90df610b5c56d7c94"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00053-name-hover.png",
+          "sha256": "1fd4743b70689b4e8d9f0ce5083a2e4c4b0b352ae4cc27af48e7ce5cb871d619"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00053-basic-top.png",
+          "sha256": "b6ff212e6d5af2c412f15ee44c3ef00b6d99dd45296cf9049701b00c36df4810"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:54",
+      "ui_entry_ordinal": 54,
+      "fullName": "blood crown",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00054-name.png",
+          "sha256": "07935cc5dd30bccdaf41dafb1d28ddb2d25f2220eebbf329a0482594d16fa659"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00054-name-hover.png",
+          "sha256": "2cb8efb696f2097e48aa99764536f531f00c33ecc88a16671bf08998d6b1d5e5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00054-basic-top.png",
+          "sha256": "4153c45b3d3c0ca1f9d1b7cf871ec2f70316374e11a67a566c0afdf4ff535638"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:55",
+      "ui_entry_ordinal": 55,
+      "fullName": "blood hood",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00055-name.png",
+          "sha256": "55cf133a8aa7f89329d14505ba8de4a9aa02936317e43d54dc31a18ecc7b6456"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00055-name-hover.png",
+          "sha256": "7ad44cc64e64e31290bd029b0b6da3b7e6565ea7601c5a76de480a608386f684"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00055-basic-top.png",
+          "sha256": "b0c5ee25dfea976c0eb8d255d00abf2951de956f186d988fc17b71d0c5d8d004"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:56",
+      "ui_entry_ordinal": 56,
+      "fullName": "blood onyx",
+      "properties": {
+        "Weight": "2.80 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00056-name.png",
+          "sha256": "b1f6476796a873ca45084fbc97a73c4add45000c6f63ebb1d84f570429e01d2f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00056-name-hover.png",
+          "sha256": "739a713ded79d5f712b55c36bb6cd723e63beb03246ef48605efdc09e7e5c3ed"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00056-basic-top.png",
+          "sha256": "c3047ad7571bb3923630971da7c09d32c9917e5a4160f114ea8267e4cc82d0cf"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:57",
+      "ui_entry_ordinal": 57,
+      "fullName": "blood onyx core",
+      "properties": {
+        "Weight": "5.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00057-name.png",
+          "sha256": "0b85b12d423560fe9b9cb0a3fb3e4f2b768e941ad43f4689bf95592a79b7bf6b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00057-name-hover.png",
+          "sha256": "f0844fd80e1ba9ffc874af5beb644c31435d671f74eab903cac9a72d56899b89"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00057-basic-top.png",
+          "sha256": "c8f9d40995c9715aa2307cdfa020ad67c8336b663f996659ea13913122a74eb6"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:58",
+      "ui_entry_ordinal": 58,
+      "fullName": "blood preservation",
+      "properties": {
+        "Weight": "0.80 oz",
+        "Tradeable In Market": "yes",
+        "Description": "Someone put a cocktail straw in it"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00058-name.png",
+          "sha256": "3b82bb7f54a8e29068a8cf63f57d58471952447d5a21bfad4eee42b9a0152afe"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00058-name-hover.png",
+          "sha256": "bf217228773775dc2530f5c30e80214fc619c45738c709e731bfe9e97188f2e4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00058-basic-top.png",
+          "sha256": "a626746c104ecdbccd9fdc28c7101c647384cbc409361b8890e18bdf15eb383c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:59",
+      "ui_entry_ordinal": 59,
+      "fullName": "blood sceptre",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00059-name.png",
+          "sha256": "657183f892f76c8656cf1e26de85b1364a0804a06b39a4cd17b6e1ac3bad8af6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00059-name-hover.png",
+          "sha256": "1c20dc11d64882eeff276088b0be494760b239219e6094260af723a450391fe2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00059-basic-top.png",
+          "sha256": "97b42cfd99fff501e925c649334cd66138edfb81ee79ea19602fdf1de32ffe20"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:60",
+      "ui_entry_ordinal": 60,
+      "fullName": "blood tincture in a vial",
+      "properties": {
+        "Weight": "6.30 oz",
+        "Tradeable In Market": "yes",
+        "Description": "Used for writing and spattering unholy items"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00060-name.png",
+          "sha256": "bfe13adf5d315b066a476bbcec2a9b3a1c5b036083b3af3a8858df98a42f66b0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00060-name-hover.png",
+          "sha256": "046c2df8c4df2330cfded98d34abf4b952810407970a66b79af3cfaa28e8239a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00060-basic-top.png",
+          "sha256": "1ba3d1cc31796e67064ef5307435b9fd4cc818ee67ba7f9ce3bc6c1e8e27457e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:61",
+      "ui_entry_ordinal": 61,
+      "fullName": "blooded worm",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00061-name.png",
+          "sha256": "33cf476d3afb5efb26dff30544567ba706c898ff77bb9b18887b6609f13202ce"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00061-name-hover.png",
+          "sha256": "5f24d38eadcf5434c0ba26711f7f45ea082ff1a7ff0df1d17339f921b6dc7851"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00061-basic-top.png",
+          "sha256": "e3be4f051d5165aa41143f51c66b5b19d69960d3f8d41aabce0008ce8cbad9ce"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:62",
+      "ui_entry_ordinal": 62,
+      "fullName": "bloodshot giant eye",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00062-name.png",
+          "sha256": "6b8479fb1c5a878de04c28b3b9842d61a2d22f87c0febd05b5f8aa18610f9f8a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00062-name-hover.png",
+          "sha256": "36b1a6e474ec80dc141c869265921fb1b80f1ad6a620305ac6c76e828b35809a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00062-basic-top.png",
+          "sha256": "2b3104477f4dacd169e7018ec2a3f57afd0fcf5d5bece5fec93cdbe6c8e4a270"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:63",
+      "ui_entry_ordinal": 63,
+      "fullName": "bloodstained scythe",
+      "properties": {
+        "Weight": "8.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00063-name.png",
+          "sha256": "e146f0b207d2ed0a0c5d4fe342e18971afd4297337963c96b0f5f5eea4195942"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00063-name-hover.png",
+          "sha256": "f543bbff6e6d3f209381f956f12e9395f7d373a8d6c48b042deffb7d5531197f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00063-basic-top.png",
+          "sha256": "d0a206d1dd189606a0aebfa425fa4b1b8d29d051a523dfd3f73854aa771c35f9"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:64",
+      "ui_entry_ordinal": 64,
+      "fullName": "bloody dwarven beard",
+      "properties": {
+        "Weight": "0.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00064-name.png",
+          "sha256": "1e7eb8a62143c8f7937d478b86d5e33c26d4be72c78a5418d4b445943daa4930"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00064-name-hover.png",
+          "sha256": "31818b4beee5cef281fb1a319f2ee5abfd106e59a6ab417305d4b378837d7b63"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00064-basic-top.png",
+          "sha256": "e9fa39da6409eab0d02622b7bc47c8092fadc845d74f1421fa8e02f8fdce4b5f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:65",
+      "ui_entry_ordinal": 65,
+      "fullName": "bloody pincers",
+      "properties": {
+        "Weight": "1.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00065-name.png",
+          "sha256": "1a944fa0719bd010e3e46263f4e5d922705d65a5eb192050d76df2b9e069bae1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00065-name-hover.png",
+          "sha256": "1d3b1f36ba06f3c553aba1b3fcb856b3046fa3e4cc94958023aa32b1ae18340d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00065-basic-top.png",
+          "sha256": "388ea5b3b89d77120737545742d142ac391fcbbf07d3f8eca207563175e48a85"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:66",
+      "ui_entry_ordinal": 66,
+      "fullName": "bloody tears",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00066-name.png",
+          "sha256": "44c66d482028eed8a7f6a631a26f45cdb7e729f9e1f1b2c7e1260e96bfb76258"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00066-name-hover.png",
+          "sha256": "fa1db4809e31e35031010aaa0dc4ce9b45f3210d9b9d4fc2f2226c6ddfbee797"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00066-basic-top.png",
+          "sha256": "a79e66490d46bf9387dfcafcd66e77953fd138a09333897721e58a7b8ae78014"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:67",
+      "ui_entry_ordinal": 67,
+      "fullName": "blue fireworks powder",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00067-name.png",
+          "sha256": "82c0dae95c7644fe09a590d93eedce03ab3502e7317cec9116e6027830cbc38f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00067-name-hover.png",
+          "sha256": "e4f22d96a8e50ae67c2ad9111aa23e5cca9112efdcdb57a11ed8637e3e75b58f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00067-basic-top.png",
+          "sha256": "83aaeeac5db3a9d6b6aeb06b69afe2c950c6a282c562c5982a9fe37924083ea0"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:68",
+      "ui_entry_ordinal": 68,
+      "fullName": "blue goanna scale",
+      "properties": {
+        "Weight": "0.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00068-name.png",
+          "sha256": "cab0bd2eb28885ab69b1747482ef6798e304ddfd2b2a9c4c4ad349cfc5dc73b6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00068-name-hover.png",
+          "sha256": "3ca62091f26b6a19e8f25e7defc3e3b9090f53bad5abceecaf6fea979c45f7b3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00068-basic-top.png",
+          "sha256": "afd789ee5f786905d04ab8e0ae217d919aec85abce423e74fb129b8cb773a15d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:69",
+      "ui_entry_ordinal": 69,
+      "fullName": "blue piece of cloth",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00069-name.png",
+          "sha256": "d67f3402ae9774f85c4374cc057eb177c4e9a2e0f013b93edaa2edabe0bba4e3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00069-name-hover.png",
+          "sha256": "af2bcb8840d53f38a5cdaf4ec7a2c20238633563893579987c6444ffbedd336e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00069-basic-top.png",
+          "sha256": "b6ef1471cfe8438296c1e7dbe10ac3de048da28e9544baa3c11f9dcc0eb3fa55"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:70",
+      "ui_entry_ordinal": 70,
+      "fullName": "boar man hoof",
+      "properties": {
+        "Weight": "2.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00070-name.png",
+          "sha256": "4be39f941d6fefcf2e2d8babdfcad476df8ae7f2f3f3fd1d7ea2b81cb7b1c117"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00070-name-hover.png",
+          "sha256": "3a7a7a9a63b834ff32e08283e8511257c726b3ed38f461d83b4c50c8c3c4da69"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00070-basic-top.png",
+          "sha256": "d9c158625dcd37f2574fe126db09394bc03c090a7663daa5756a672e9552438e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:71",
+      "ui_entry_ordinal": 71,
+      "fullName": "boggy dreads",
+      "properties": {
+        "Weight": "1.69 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00071-name.png",
+          "sha256": "121dbae4f2f87551a572138e8951f9383afb3b26d4c49bfa42152dc78f27523d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00071-name-hover.png",
+          "sha256": "edc43baf65f3ce381e4371b7bd574e3aafb1a7b5cd1ac0b94dbc811825ef4d35"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00071-basic-top.png",
+          "sha256": "a5ddb9814499bd5b6807b5f2e1cc267fab4b42ea1092acf146398b3c6d0272db"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:72",
+      "ui_entry_ordinal": 72,
+      "fullName": "bola",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00072-name.png",
+          "sha256": "87b0aa3d9e884b4dd90b9a0e55c27c778c0d6f5e7a33f2139542441a63a9e839"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00072-name-hover.png",
+          "sha256": "d779c975dcc86206d69faaec0c9ef5efa091241ca8ef2e4b7fd2e76700ea7d76"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00072-basic-top.png",
+          "sha256": "8cf7a9a886ef6e9e2b6788ef261cf9eeb52c54eff5b165bf833d0c1770a1555b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:73",
+      "ui_entry_ordinal": 73,
+      "fullName": "bone fetish",
+      "properties": {
+        "Weight": "1.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00073-name.png",
+          "sha256": "6547721709cdeea164b975e971f99048dbd6a3d37d417e654d6cec3583169a1c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00073-name-hover.png",
+          "sha256": "f92ff7d88afa5fd798619b13197ff40a3d417fb0d2227341e3fa25baa2c3d35f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00073-basic-top.png",
+          "sha256": "9df7bb65d76f6b23ed0d76d07f2701012d5c4203fe4425404c10f926007d17e8"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:74",
+      "ui_entry_ordinal": 74,
+      "fullName": "bone fibula",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00074-name.png",
+          "sha256": "9114b22c8091ba66c3564d329d014facdda8271aacd5f5203001227f8587dc9c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00074-name-hover.png",
+          "sha256": "03f02a5c6be088c5317dc06c93ecff220e0b357bee4566c3a338f510f95ac710"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00074-basic-top.png",
+          "sha256": "803375499b1620b6f2d7fdf3ed3fd17d8b519834ede0d21611c91aa8d0fbc1ef"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:75",
+      "ui_entry_ordinal": 75,
+      "fullName": "bone rattle",
+      "properties": {
+        "Weight": "0.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00075-name.png",
+          "sha256": "82623aaacaffcc2b84bbc01cf65f79d37ab17f7aef62b4a37cc80b46afe9a3bb"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00075-name-hover.png",
+          "sha256": "a8d5b5dcdab8e941a127710a8692967aabcbba0badbc7deabe5d16ef4feaddb4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00075-basic-top.png",
+          "sha256": "8c9c707ce977ba1de8c29dad1d9d7a9fceb48e7a80d57801a2cefb4c19a8d730"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:76",
+      "ui_entry_ordinal": 76,
+      "fullName": "bone shoulderplate",
+      "properties": {
+        "Weight": "2.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00076-name.png",
+          "sha256": "7a275ab86db1f704b597c830c78234f3456a9accf9cffc84cd7f5c072ded20d9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00076-name-hover.png",
+          "sha256": "cc657195143c696ce666a87584a50f99b07a31b1ecca2d82c0244f4a5fcfd616"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00076-basic-top.png",
+          "sha256": "097e97d40eae0851922d877605caaa62d144b7370699c0605f3ec30eac0d4e2f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:77",
+      "ui_entry_ordinal": 77,
+      "fullName": "bone spikes",
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00077-name.png",
+          "sha256": "4394a42c6ae02aaaf55569bd6940f7e37b100c43db9eab3c9f18ffe8ef6bca7d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00077-name-hover.png",
+          "sha256": "dfd731a0744300f6c9df187d81395bbafc3c4f9b62ebb80200907511c050f0a1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00077-basic-top.png",
+          "sha256": "9e04c9f132252d8c40c66572db0b74079e46b0e08377039591662a866018bf9c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:78",
+      "ui_entry_ordinal": 78,
+      "fullName": "bone toothpick",
+      "properties": {
+        "Weight": "20.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00078-name.png",
+          "sha256": "d177274c2c7a2fb636f30e6e1b43f06fc871b3d821a9328e0fb56355a2f52f6d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00078-name-hover.png",
+          "sha256": "71f81138298bb9d78117cc8f378e4d230d35fb6bdb87657189f471c30392f167"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00078-basic-top.png",
+          "sha256": "8de4eb136ebb05ce2ea1f292eb3a076c110792926df0a64af8544acd6a030269"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:79",
+      "ui_entry_ordinal": 79,
+      "fullName": "bonecarving knife",
+      "properties": {
+        "Weight": "1.20 oz",
+        "Tradeable In Market": "yes",
+        "Description": "The blade of this knife already assumes the colour of the carved bones"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00079-name.png",
+          "sha256": "5f9294474f7466c8c3b2a0343cc7ddeac94105cc5ce19b79de5d84f5b968ffb8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00079-name-hover.png",
+          "sha256": "fa7fce465ca4140c3446bb7e17a1d99ba358d7f7f630b7bcd56681f1c88ccdd6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00079-basic-top.png",
+          "sha256": "9971a2595f3cb9fe8f8c8c58347fa9103ea7538f79971ce30cba02af3cda3123"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:80",
+      "ui_entry_ordinal": 80,
+      "fullName": "bonelord eye",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "You could swear it just winked at you"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00080-name.png",
+          "sha256": "3eb4cc5aad3291a35f7f415b9f2523cd4001a07d9020950c95382f868213e137"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00080-name-hover.png",
+          "sha256": "c1d31abcb048aedd824766ebfc1247fb44b420290d51c9a6fe45ba343ac43ada"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00080-basic-top.png",
+          "sha256": "6ec88fdf620193c6f642a67788095fb2ee7ab0d02deee0392a44feac2fca31a8"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:81",
+      "ui_entry_ordinal": 81,
+      "fullName": "bony tail",
+      "properties": {
+        "Weight": "0.92 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00081-name.png",
+          "sha256": "4799c09509c2195aca87400da50b24639c26c6571c8f238e9ba265c1f98343a2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00081-name-hover.png",
+          "sha256": "a037b60296e14c4ce6f39f1539d11a3fa11935f306f7eb8d7169d31e61c33435"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00081-basic-top.png",
+          "sha256": "25f042ea56033e5fafffbab645dab5c9278e700ace9e4a60598d6312c29e1022"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:82",
+      "ui_entry_ordinal": 82,
+      "fullName": "book of faith",
+      "properties": {
+        "Weight": "2.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00082-name.png",
+          "sha256": "33bcb15edfc2fd976553f642a18a2bcb2fa8a33b308f1ce1ec23cb70367d90c3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00082-name-hover.png",
+          "sha256": "848fb169b5f1826dd711400c72257ac739d4db6a4543ea1d57abaf4ee31dbfb7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00082-basic-top.png",
+          "sha256": "9de65e086dea9e4fbb635f67b20647aecc05f6bb1603264ce7e2506de7b7b3d4"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:83",
+      "ui_entry_ordinal": 83,
+      "fullName": "book of necromantic rituals",
+      "properties": {
+        "Weight": "3.58 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00083-name.png",
+          "sha256": "b3408852a4094177e41def56d4497cdc8e57cbe11c9d549885067949879cf00b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00083-name-hover.png",
+          "sha256": "b47cfbc8d63fb43b5117d4078ba709dc2c23b39e4e9ddde3327563fb49d1b279"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00083-basic-top.png",
+          "sha256": "9c30412b931e98b9655ba7879e6c437dcc0aabefc46d88d795eb9a0890742189"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:84",
+      "ui_entry_ordinal": 84,
+      "fullName": "book of prayers",
+      "properties": {
+        "Weight": "1.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00084-name.png",
+          "sha256": "f694ecb0e8fc919641277a3409b62f74fa5f876061e2975c16cc5a782b5a0850"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00084-name-hover.png",
+          "sha256": "e72de1e1df5f364bd4fda7dc86d2c1b7f2c9ba49ac0082affe0a667b6c72fe0e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00084-basic-top.png",
+          "sha256": "256c2f12367a357748cf5d33a425bee5e1fab52b4bb63bfc0dd59d3963329653"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:85",
+      "ui_entry_ordinal": 85,
+      "fullName": "book page",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00085-name.png",
+          "sha256": "8ebce5d5ad584777ba0e384cd2580169a9e87f25d37182b8cd2690ded5d6a3c3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00085-name-hover.png",
+          "sha256": "712aa68b28215f4cde38f9640cf83a7f57c88978e2d37e7f645b6e2dd2334548"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00085-basic-top.png",
+          "sha256": "d06b55ac0ee924d4709b28047a7a2c4a942b69d5a426dba215dedabe91a29c66"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:86",
+      "ui_entry_ordinal": 86,
+      "fullName": "book with a dragon",
+      "properties": {
+        "Weight": "8.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "It is full of jokes about dragons, wyrms and wyverns"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00086-name.png",
+          "sha256": "3602b29d8efc9ebee1ce6703c31fa56534ae4096cc0515cdba2c8d14fd80d1d8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00086-name-hover.png",
+          "sha256": "8cfb5e77c01b04aac19889a49e2e205cc01be1ddd6de39a0263fe95fbb04cac9"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00086-basic-top.png",
+          "sha256": "e6a059821eebeb18ce0e1196af2ea5853276bb7aafaf8c1389ce4db917615b28"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:87",
+      "ui_entry_ordinal": 87,
+      "fullName": "book with an hourglass",
+      "properties": {
+        "Weight": "8.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "It is entitled \"The Meaning of Life\". All pages are blank"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00087-name.png",
+          "sha256": "8270ca723fb8d091c67a7031620d74d20b1505c4d911c0b0bbe1983af8b42df4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00087-name-hover.png",
+          "sha256": "4acdbe4fab6e994a7c3fc00d8a0f81b636f758790d9dfad23985e8e86c861830"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00087-basic-top.png",
+          "sha256": "26dbcc693b91b99e05b0b4a70b6f353cd9db843a1f7ea06f0a6be49892446eef"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:88",
+      "ui_entry_ordinal": 88,
+      "fullName": "bowl of terror sweat",
+      "properties": {
+        "Weight": "3.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00088-name.png",
+          "sha256": "ce703338b1c3826e29eb2edd88c67a4eac203962eeb30735e8aa8ef1aaf70f08"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00088-name-hover.png",
+          "sha256": "8130369a787d27ac637e9b48adea1a55617dd0bb6f30cb347544c11036bcd5a8"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00088-basic-top.png",
+          "sha256": "9e5443735ea13ab32f4b316e3a36866c2cf2a2de7c9ad0f4769e711fed6fb1cb"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:89",
+      "ui_entry_ordinal": 89,
+      "fullName": "Brain Head's brain",
+      "properties": {
+        "Weight": "0.70 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00089-name.png",
+          "sha256": "01affa23ef6538bb507c58b307ea27f2478b313578cc20e598954ea6f7f07eb3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00089-name-hover.png",
+          "sha256": "95b2af255f24ceafe5cee3c7c49bef95bef626fc33d5c5530da7efe3f8be75dd"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00089-basic-top.png",
+          "sha256": "e1b940fc742efb14262182c65d7e5ff39dd51cd09badc295bcf5ea9148b3e33b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:90",
+      "ui_entry_ordinal": 90,
+      "fullName": "Brain Head's giant neuron",
+      "properties": {
+        "Weight": "0.24 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00090-name.png",
+          "sha256": "dbba4edd1db708152fd3a7525028f31b6068d34f7439978a73e4cbe17e750008"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00090-name-hover.png",
+          "sha256": "317c02f4334ce9b6b29964bb7b65c0035eb75715dc1a290d410ad8dab238e460"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00090-basic-top.png",
+          "sha256": "e1eb6b81e3398a29869e885e705f47a1065d45a9f187636305b5bf1a9449a0e3"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:91",
+      "ui_entry_ordinal": 91,
+      "fullName": "Brain Head's left hemisphere",
+      "properties": {
+        "Weight": "0.35 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00091-name.png",
+          "sha256": "d61e9f1b3d2a758326db543fbca8583e05cd625173688ac52c2f2321f3e2baea"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00091-name-hover.png",
+          "sha256": "20eb183defda3127cf330503053a28477199bbe73fd93d3e44f219737c860a95"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00091-basic-top.png",
+          "sha256": "9e396e40e4b3c194f1f71c3b30ed685d6bd994dff9de95706b4b5bc8b6ffaeda"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:92",
+      "ui_entry_ordinal": 92,
+      "fullName": "Brain Head's right hemisphere",
+      "properties": {
+        "Weight": "0.35 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00092-name.png",
+          "sha256": "4635466d1bd670e41c248a1065e53a65b81b9146c458736daab7074f0ffbf140"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00092-name-hover.png",
+          "sha256": "46dfeea69445c13cd4fadc56f90afed092384a7f38e3d05946eb09aafff67b71"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00092-basic-top.png",
+          "sha256": "371dfaebae29d7b96caf235cfbba4058e3d096c27f5f3f061250e1a5ddd32eeb"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:93",
+      "ui_entry_ordinal": 93,
+      "fullName": "Brainstealer's brain",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00093-name.png",
+          "sha256": "94c7511757aefd4a72fd4e0dc0cb7452187beaaeb5e248930bc9b3a7c00a11cb"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00093-name-hover.png",
+          "sha256": "543ff59ea77192ddfba760de8d9d71af6815acc875d0bd73e4423431641ba3b3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00093-basic-top.png",
+          "sha256": "e5ae9b01ab702b82c57955b49f95fbf6d43dccd0a1ade702a04425634390cf58"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:94",
+      "ui_entry_ordinal": 94,
+      "fullName": "Brainstealer's brainwave",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00094-name.png",
+          "sha256": "c7d51a180309430e714586dd76f2d34362f44be426908a3ba6ee18e021926a37"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00094-name-hover.png",
+          "sha256": "dc9c857268b115680c25030d2b0eee98049951fc9fa2366834b3078f41000414"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00094-basic-top.png",
+          "sha256": "28f18faaaabf7a312bc785149993a11d89f762f964036463444b32607249c569"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:95",
+      "ui_entry_ordinal": 95,
+      "fullName": "Brainstealer's tissue",
+      "properties": {
+        "Weight": "1.30 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00095-name.png",
+          "sha256": "21a93e1b1dd418321c9cd795de3190a9b6be306e03611850f306c269413e3e42"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00095-name-hover.png",
+          "sha256": "6b123043063d675ffc32b0efc0c53cb9401dc55c242dd89d5fa4bf0c78de1a7e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00095-basic-top.png",
+          "sha256": "6cf7653c4588208b1dd4446e801d6b3bd08090ba6bad430cc7a3f4f2f5987547"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:96",
+      "ui_entry_ordinal": 96,
+      "fullName": "brigadeiro",
+      "properties": {
+        "Weight": "0.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00096-name.png",
+          "sha256": "9ce396c8f7cc1cb415244e8b1ef897cb2df5928535d558cb9641897966054ab3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00096-name-hover.png",
+          "sha256": "31a10e941d4a020e1c4d5a02d97b83ac219b29433f4839cead68c824a96d21f6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00096-basic-top.png",
+          "sha256": "fdc9408c9a1ccd2b446848465ae9276b93f39b7de8305490f92916e76e5de9cd"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:97",
+      "ui_entry_ordinal": 97,
+      "fullName": "bright bell",
+      "properties": {
+        "Weight": "2.20 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00097-name.png",
+          "sha256": "83ec3e64893b49208ddf9c2384ff6c3c4e2b60fae2a5a9a2481d1af2614b48a1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00097-name-hover.png",
+          "sha256": "e88a99115c6faceb725f8f81869b7a24d0b3ea89fd0b76847d376a5bda9cf22b"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00097-basic-top.png",
+          "sha256": "6fe133318c6c7523e6c7450b1b260ca3ec130724f2a90f97834875a08cbe10f7"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:98",
+      "ui_entry_ordinal": 98,
+      "fullName": "brimstone fangs",
+      "properties": {
+        "Weight": "1.12 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00098-name.png",
+          "sha256": "ec1bad85bbe162143ed6f9eb8d77fc7cbebccb53754e2e6dd9831f18cc290a75"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00098-name-hover.png",
+          "sha256": "c6ba176d411e5ff38e761493f1d77002978b3aa5cd2628d283c9adf01b3faf82"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00098-basic-top.png",
+          "sha256": "00bec756d6962f6a2e4fd71ab7610fe20aab0736d091675e447a2ad394156308"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:99",
+      "ui_entry_ordinal": 99,
+      "fullName": "brimstone shell",
+      "properties": {
+        "Weight": "1.12 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00099-name.png",
+          "sha256": "4452d4988deb278895273f0e1bdde4bce0471a823dda268ca14bd39c7ca20589"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00099-name-hover.png",
+          "sha256": "dfe605ce18ba2c576f9f5596bafd8f8e5291c1b040f67fabf08dde0fa58ddef7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00099-basic-top.png",
+          "sha256": "6fcefbde2ba03cd8a50302e2ba4118b9960933f4ab2b71d3f19f554c8f6c551b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:100",
+      "ui_entry_ordinal": 100,
+      "fullName": "brinebrute claw",
+      "properties": {
+        "Weight": "2.40 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00100-name.png",
+          "sha256": "478b1bddaaa4a8205fa1198c22a60f698e05bf6a9063dea2aecba5ab0c2b3c3a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00100-name-hover.png",
+          "sha256": "f907e1dfd929da036a59feb9b9ee370f19abe7ccfb459791b27d6d88d0ef52f7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00100-basic-top.png",
+          "sha256": "99ab9b7054e4f061f3da1a41e3663cdac72e5f271284678371e7ba0ff68b96d4"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:101",
+      "ui_entry_ordinal": 101,
+      "fullName": "broken arrow",
+      "properties": {
+        "Weight": "0.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00101-name.png",
+          "sha256": "8284169f4aadb348387f967a598fb8188cb9f452544dd1f88e0a97e03ea9cbe4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00101-name-hover.png",
+          "sha256": "72b0c23135bb44b634d87b1cd75b722bf6da89478ce1b1b56f1410c62b5cc845"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00101-basic-top.png",
+          "sha256": "b4d296bc0caa49c28aa9adb809ff2891d1f744c7bacf532f43a2e6144c511203"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:102",
+      "ui_entry_ordinal": 102,
+      "fullName": "broken blood onyx amulet",
+      "properties": {
+        "Weight": "2.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00102-name.png",
+          "sha256": "8ef8e2d2d6bf6d8a09300be3085e05b79d3cc166bd997c15090955c96dfc8153"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00102-name-hover.png",
+          "sha256": "94098954b46643b9fc2baa1d102d1db794629c18c684ecbc2b1648048f505a98"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00102-basic-top.png",
+          "sha256": "14e498e760249a682c509b19cba3808f501fff1e57700de7311a27e02e8568db"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:103",
+      "ui_entry_ordinal": 103,
+      "fullName": "broken crossbow",
+      "properties": {
+        "Weight": "1.30 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00103-name.png",
+          "sha256": "c4d7f74f11ad739b50f3bfeae56b9f5fc86fe1ab2187909e70b0969056b8c70a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00103-name-hover.png",
+          "sha256": "3f193a81e102c4608446e25dee3f20116d18a60a346c90f6bf7a851ab4b4a270"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00103-basic-top.png",
+          "sha256": "4651c715b1e06919589241f3970c76684aced45f7d29f702f2905fd9d29028d0"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:104",
+      "ui_entry_ordinal": 104,
+      "fullName": "broken draken mail",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00104-name.png",
+          "sha256": "db0ebcf164c87a3f8b4b6a4b737c8bb2d25744cba5c5e30e526963fb0f903315"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00104-name-hover.png",
+          "sha256": "7d85bb5bb6c253304d246a0aebb851b532d2a03943e8f284262fb09b0a29b867"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00104-basic-top.png",
+          "sha256": "f1900d758eb31858e1bd61eb6c39015c3ac9a9da68a0324d0562b9868283cc61"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:105",
+      "ui_entry_ordinal": 105,
+      "fullName": "broken gladiator shield",
+      "properties": {
+        "Weight": "6.40 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00105-name.png",
+          "sha256": "63255a23250ede930dcac93182f46802c49d8526e1b340fd478459b094b5772f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00105-name-hover.png",
+          "sha256": "9f9aff70a16a93c7070759dd705b672f1c1f3ab2f3e8ed38bbdfac58a11828a1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00105-basic-top.png",
+          "sha256": "e4f07e91d8d5c58fdf22681b22ac10d7eedc81acaf62370328e88e34ef81e643"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:106",
+      "ui_entry_ordinal": 106,
+      "fullName": "broken gullet lenses",
+      "properties": {
+        "Weight": "5.40 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00106-name.png",
+          "sha256": "6da3042d943a2c7efa27e71467a5230bda851ddd7658fd0096d96c0b17e7e391"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00106-name-hover.png",
+          "sha256": "49c38c9d05c27fe1b8c12013ca60b3c1c3f9de37e68b6465a60213489825c872"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00106-basic-top.png",
+          "sha256": "df6c2413a307320e989d851d3bd410848a6499792595d2ceb811ca607fccf95e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:107",
+      "ui_entry_ordinal": 107,
+      "fullName": "broken halberd",
+      "properties": {
+        "Weight": "2.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00107-name.png",
+          "sha256": "1c59385bfa834090ea565c3207d4762f1d03142953bb5ce0f21109515484261e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00107-name-hover.png",
+          "sha256": "ea5cb421fac836892d6a5f08a24495bbc608c22879305e2206b777d6c0900d68"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00107-basic-top.png",
+          "sha256": "020893ac1c21ed4eaae906ad3486e933f7c2f92fef758f10829926c4451eb9da"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:108",
+      "ui_entry_ordinal": 108,
+      "fullName": "broken helmet",
+      "properties": {
+        "Weight": "1.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00108-name.png",
+          "sha256": "dde1f301c4ded670d3d622974691d9eb1c917cb624263d6f5ef00af64118490a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00108-name-hover.png",
+          "sha256": "b4187eb4ef57572ef1ecf2d2c98b85c3abcb9b431e6488e337b3e23e5b7cd51a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00108-basic-top.png",
+          "sha256": "b5d50ff82049ddbe34579a00767b33193d5d8e6e4fa9a13ffd399dd33988894d"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:109",
+      "ui_entry_ordinal": 109,
+      "fullName": "broken Iks cuirass",
+      "properties": {
+        "Weight": "19.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "This cuirass once kept a brave warrior of the ancient Iks from harm",
+        "Armor": "1",
+        "Body Position": "body"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00109-name.png",
+          "sha256": "13730f167fe84348cfcd6f9569d1c9088b2b32d5e1a3239cda43ee45c3daaaa8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00109-name-hover.png",
+          "sha256": "dff6301b41812cb120e966b33ea1dfed630f374906d081ec09fc8b9b547de63a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00109-basic-top.png",
+          "sha256": "fc377173977ce59df98ea474ee0e9a3ab3bf9f02a914485d8cf20424b51977e8"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:110",
+      "ui_entry_ordinal": 110,
+      "fullName": "broken Iks faulds",
+      "properties": {
+        "Weight": "15.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "These faulds were once worn by a proud warrior of the ancient Iks",
+        "Armor": "1",
+        "Body Position": "legs"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00110-name.png",
+          "sha256": "70bce9f4d9b7b1e47c60d90ace4ad885617c1684651c5817bdcdbb9955aebe6e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00110-name-hover.png",
+          "sha256": "2d90ad243d4f75a9a8813da6587b8cc06ab998b1a7884268842edc5aaa7a53b2"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00110-basic-top.png",
+          "sha256": "e3c570959ffaccf21b4b5df3ae6a5cc32b59db924bc6bf8fbbf8ae28d928ce52"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:111",
+      "ui_entry_ordinal": 111,
+      "fullName": "broken Iks headpiece",
+      "properties": {
+        "Weight": "9.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "This headpiece once protected a fierce warrior of the ancient Iks",
+        "Armor": "1",
+        "Body Position": "head"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00111-name.png",
+          "sha256": "55491302f72d58749691dd7914aeb6740762488c6a72af4a34540ee50d0e39b9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00111-name-hover.png",
+          "sha256": "b1daa463beda3fc73f678194c0245f7f4218d02bbaa9eb575e5dc5522b9be6fc"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00111-basic-top.png",
+          "sha256": "c93dc9078d35a7addf54f819c3cbc69c5486926a486ce8d8020cc3f1c617129e"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:112",
+      "ui_entry_ordinal": 112,
+      "fullName": "broken Iks sandals",
+      "properties": {
+        "Weight": "3.80 oz",
+        "Tradeable In Market": "yes",
+        "Description": "These sandals once belonged to a warrior of the ancient Iks",
+        "Armor": "1",
+        "Body Position": "feet"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00112-name.png",
+          "sha256": "f7783de2d6e3568fbfecc64fc3fcbd4c90ad745ba855840b4affd2e8d8d21093"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00112-name-hover.png",
+          "sha256": "e12b390a5c5ac102e7cabd32540cc2b6c2a062c11c5d08afb6f14a48e38cf89c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00112-basic-top.png",
+          "sha256": "07d6ef3eb112eb0e23bb4c2d2c4eee21d94c99bb8cd3db5361de301c99ebb3b5"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:113",
+      "ui_entry_ordinal": 113,
+      "fullName": "broken Iks spear",
+      "properties": {
+        "Weight": "13.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "This spear was once wielded by the ancient Iks",
+        "Attack": "1",
+        "Defence": "1",
+        "Weapon Type": "cutting weapon, two-handed",
+        "Body Position": "both hands"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-name.png",
+          "sha256": "4f82691a2f2783d7c55e6232fa854fcbdd888dc8aad2ce2fe6fa375347db7209"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-name-hover.png",
+          "sha256": "283fa3f656d481d81cd6f134115920c6c32e6f1745a7b3d3c9a1df1dc1aa3261"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-basic-top.png",
+          "sha256": "bcca3f78a3caf07f9ad392a34f3750140cca3a0eff34b3f7cd556ec5c72eb8cd"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-creature-products/cards/00113-basic-001.png",
+          "sha256": "00f036894f89d10bff0887834f490e3bc4121fb534ac4fbad50fbdd540fa984f"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:114",
+      "ui_entry_ordinal": 114,
+      "fullName": "broken key ring",
+      "properties": {
+        "Weight": "0.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00114-name.png",
+          "sha256": "399ed3f68aab7802ba12154f8afab3b9bd168fa91bb4c9a434fae3021dbad381"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00114-name-hover.png",
+          "sha256": "c84907e62e85145fb7b0048c8b81f011978783bcf3e6d1b78bc3529d4c1b82f7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00114-basic-top.png",
+          "sha256": "ec937ecb2be6bab133849033d63fec2897c4676b1bbd9a9f0115fc133702cd95"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:115",
+      "ui_entry_ordinal": 115,
+      "fullName": "broken longbow",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00115-name.png",
+          "sha256": "e5cb5141f366cf4349c1c4de2c67bb243c6c9750bae1df656394a03efc75b287"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00115-name-hover.png",
+          "sha256": "f008a1182579585a8017b8550944a54d6b8486414e0d52b71ce6c78459e1686a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00115-basic-top.png",
+          "sha256": "ba99a01cd43e444d9a498333a4a47e73c8d771574a9ebccf29ad7a944454382c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:116",
+      "ui_entry_ordinal": 116,
+      "fullName": "broken macuahuitl",
+      "properties": {
+        "Weight": "24.00 oz",
+        "Tradeable In Market": "yes",
+        "Description": "This macuahuitl was a once legendary obsidian sword wielded by the ancient Iks",
+        "Attack": "1",
+        "Defence": "1",
+        "Weapon Type": "stabbing weapon",
+        "Body Position": "weapon hand"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-name.png",
+          "sha256": "d7c111edd33d325bd7e770cd7a224676847b2290d77027e8eb37078c781f6048"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-name-hover.png",
+          "sha256": "49f08ff5cfda52ca90efd48a718cad11e3364eaa6311fd50a5a9a4f650d2cf23"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-basic-top.png",
+          "sha256": "197961d89ee485d5c5ff99db133f4be7c7d7c6f53809740d37cb88d37d954adb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-creature-products/cards/00116-basic-001.png",
+          "sha256": "cdf5f1f385b99b82f5d108f5c12b4a52e94187453f85e819931139f5d4f79ee7"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:117",
+      "ui_entry_ordinal": 117,
+      "fullName": "broken Mitmah chestplate",
+      "properties": {
+        "Weight": "2.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00117-name.png",
+          "sha256": "dcbe9ca894bef62ac92701e58ba0b503590359c584cd6ac4451bf3aed5e09b0f"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00117-name-hover.png",
+          "sha256": "7fcd2399a9c76450df7cc70fabfa492b2269d0614fb626b0ad567f4ad521a86e"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00117-basic-top.png",
+          "sha256": "8716751ec5fb2e5f5bf4005b6f58e0bff89104df2bf30f9fb10c3338f29023fc"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:118",
+      "ui_entry_ordinal": 118,
+      "fullName": "broken Mitmah necklace",
+      "properties": {
+        "Weight": "1.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00118-name.png",
+          "sha256": "ab84165490346e317c82ac7b69715aed011a50bfbf9a915913006199c4361bb5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00118-name-hover.png",
+          "sha256": "6bdc232d29e1e1ef17afb09ca294125c7e0b0b072cf0300a497a5d5e2bbbb20d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00118-basic-top.png",
+          "sha256": "f2f29969a90385a601658cea8a1eb590459edb0d3a9c8e938236ed8a43055c23"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:119",
+      "ui_entry_ordinal": 119,
+      "fullName": "broken shamanic staff",
+      "properties": {
+        "Weight": "1.28 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00119-name.png",
+          "sha256": "28f9840d7449f4fc0f8e7744de175f4394478ede80b80477bb69a7ca2c4a5791"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00119-name-hover.png",
+          "sha256": "e5eae30bbdfcf1d07397a6a215fecd7b79461639aa6584855982fd16ab2e71d5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00119-basic-top.png",
+          "sha256": "fedbc30aac500ff5282e2e81368794ad9d83aeeee861778d27c9372057bcb2d3"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:120",
+      "ui_entry_ordinal": 120,
+      "fullName": "broken slicer",
+      "properties": {
+        "Weight": "1.40 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00120-name.png",
+          "sha256": "c54ba7591654f9e53fe685d1e028926529c44d4ecb4d08607620b67b0442feb3"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00120-name-hover.png",
+          "sha256": "f2cc8843f094e464bd28b03cc2385dc7d955242e193f2e01dde50e2e6369c597"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00120-basic-top.png",
+          "sha256": "ea543e08ed39cf53c7123a74c0bd0b9b1a047a93a9f7c0579e0980bdb06185aa"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:121",
+      "ui_entry_ordinal": 121,
+      "fullName": "broken staff of mind control",
+      "properties": {
+        "Weight": "10.01 oz",
+        "Tradeable In Market": "yes",
+        "Description": "A broken staff with a skull on one end. One of the means of which an evil warlock controlled the minds of others"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00121-name.png",
+          "sha256": "fcc0cb128327d6e3cb6ab5c424a7c24dd4dc80c4db6fa36db4fa8f58212fce91"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00121-name-hover.png",
+          "sha256": "7d6c278837f56a2123ad9096913d261e5de8a9db1cc1b66c5f4af754b6282861"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00121-basic-top.png",
+          "sha256": "0a3f596e3dc83bcc1285971f6405264967a3dbc6932230eceec5ce9b4b6ac220"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:122",
+      "ui_entry_ordinal": 122,
+      "fullName": "broken throwing axe",
+      "properties": {
+        "Weight": "11.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00122-name.png",
+          "sha256": "4c3419805ba41f00ae4b2b15b1f0622edb582909e3d56a6d901410783b402e29"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00122-name-hover.png",
+          "sha256": "9727b74914cef1e4afbea478835d3230774068ac05b4a80f1b6d8e9e7c7546fe"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00122-basic-top.png",
+          "sha256": "2f547fbb92cedf4119c3a757d197eeacecab7224cadcb4c344647671bd814aac"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:123",
+      "ui_entry_ordinal": 123,
+      "fullName": "broken visor",
+      "properties": {
+        "Weight": "14.00 oz",
+        "Tradeable In Market": "yes",
+        "Armor": "1",
+        "Body Position": "head"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00123-name.png",
+          "sha256": "e1a0ebbf934f7eb3b6fe541cf656fc80518f90b6e666b5b1f202cb0bee59edee"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00123-name-hover.png",
+          "sha256": "aaa85cdc7b8cec79965fc3f6cada2185eb05c4540e01a7b9dfc55b29cff1bf68"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00123-basic-top.png",
+          "sha256": "528b66550a52448e4b8de226087955edbc1fb08f0f7884b6f5fee067643ffa44"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:124",
+      "ui_entry_ordinal": 124,
+      "fullName": "broodrider saddle",
+      "properties": {
+        "Weight": "3.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00124-name.png",
+          "sha256": "92d54bbc56aaf3746e3454a827e6c5dc2721681b3cc8364d2f0928e018bb8e68"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00124-name-hover.png",
+          "sha256": "3751f2ceb246f9279a6e423b180cdf1e4a952119a8c44277e85108a048191961"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00124-basic-top.png",
+          "sha256": "ed09e3ad6da745c1a1361f4b8fd5fc534e54a5e15352ee62232eae1e29da5b3b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:125",
+      "ui_entry_ordinal": 125,
+      "fullName": "brown piece of cloth",
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00125-name.png",
+          "sha256": "f8a7dac7cb4e316742260d7023d54c4370167256bb5ce2af5fb33d71b16addba"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00125-name-hover.png",
+          "sha256": "f259e3cffb402ec3718769c8be8e9593ea27a88e26b9cce4158a768a83139cc6"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00125-basic-top.png",
+          "sha256": "6b6790f1ed4f8d3b6a8ee43de72667121ee6514cf3a4b141b78d5044cc407d4c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:126",
+      "ui_entry_ordinal": 126,
+      "fullName": "Brutus Bloodbeard's hat",
+      "properties": {
+        "Weight": "12.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00126-name.png",
+          "sha256": "703664920bf947b6a49a1aadaf7b37f35757370563147fa369dca7b7e9ab4a16"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00126-name-hover.png",
+          "sha256": "bb9d503441fe2153fa818ed97db03689cbbf936b88a1c7fdaabddd112a0f2d03"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00126-basic-top.png",
+          "sha256": "4b99058115caf3e2f6287c365f0a7eb7fb10408ed11bfffad65bd99bc5167175"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:127",
+      "ui_entry_ordinal": 127,
+      "fullName": "bulltaur armor scrap",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00127-name.png",
+          "sha256": "dff088dbdddce089be9f1ba44e64f9db7898ed6e9d21ba73de83c03e1aa1b778"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00127-name-hover.png",
+          "sha256": "ed8c3a2ba5b4b4317bc9ec8c81930673d8fe50a8bc797c76e82666113754ce73"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00127-basic-top.png",
+          "sha256": "d44b3f34addcc0f19957d4d4f9c799fdad1435b0d6251a78f7c3fc8691951050"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:128",
+      "ui_entry_ordinal": 128,
+      "fullName": "bulltaur hoof",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00128-name.png",
+          "sha256": "0f77b818dfa90c93cf58a6d7a8225f9df3d61bf097c618ffc4906ebecaa72953"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00128-name-hover.png",
+          "sha256": "33cffa0067a3ea57b8bc2e439fab1fcb59ce995f4d0eb10b3d7f0eca7bc369d1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00128-basic-top.png",
+          "sha256": "9ffb0313259d6134e72617efa3018c14d677c970647ce06c99959e5a61f48f0c"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:129",
+      "ui_entry_ordinal": 129,
+      "fullName": "bulltaur horn",
+      "properties": {
+        "Weight": "2.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00129-name.png",
+          "sha256": "9ad9dffe2b3f1cf39e32d98516a4bc3280ac9a35673f3e56be7d4d6e35dfd862"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00129-name-hover.png",
+          "sha256": "4a182345309e80e95abe1f32e1fcd49a5b699d3982cbd97052ab6a37cf0da2c0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00129-basic-top.png",
+          "sha256": "49084077f02aa827575c46db5ececb6c8c810d74f5c2e89d37e530f6b3a6fbff"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:130",
+      "ui_entry_ordinal": 130,
+      "fullName": "bunch of troll hair",
+      "properties": {
+        "Weight": "0.85 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00130-name.png",
+          "sha256": "153c8855063591ca1f0b4903a9d7037a91dd0bfe0f55bf4e67ce01d85a9dda86"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00130-name-hover.png",
+          "sha256": "7c8189f104661837ebbb69e161a2a01fd6bf4b33b2f2a5b593306eb5d6b650d9"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00130-basic-top.png",
+          "sha256": "5e8974f7d9d18a785a51c63a9c6f033e2b3bd3682b6b62554339fbae1dfd871a"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:131",
+      "ui_entry_ordinal": 131,
+      "fullName": "bundle of cursed straw",
+      "properties": {
+        "Weight": "2.27 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00131-name.png",
+          "sha256": "c1872de5b1b52376b8446716d071d90de62bf6d6a101a345f1bbcad542cd46c7"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00131-name-hover.png",
+          "sha256": "76d92ceb21b79bcd0b0cad61e0b0684cfc05f867969f6c5b002707462b8a2bf0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00131-basic-top.png",
+          "sha256": "ce071fb7fc1ee90064fee86fc296c8de7e4f01fd88a28363756dd212dc5c35d5"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:132",
+      "ui_entry_ordinal": 132,
+      "fullName": "burnt out devourer core",
+      "properties": {
+        "Weight": "5.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00132-name.png",
+          "sha256": "c5e1ffaf7c53c2f3b271fb575e8aab587afa9d55c8d288f4e8f49e1dd5fbba1d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00132-name-hover.png",
+          "sha256": "35073d60ab554f228658f93fd4f0ca1c4baa040dee09ea3a7c749e0dff97952f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00132-basic-top.png",
+          "sha256": "95f008e9259c67a6375e77921b3404d0d216fb51cc54af115c1e5747eb6b245b"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:133",
+      "ui_entry_ordinal": 133,
+      "fullName": "capricious heart",
+      "properties": {
+        "Weight": "0.75 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00133-name.png",
+          "sha256": "3797f2bb00409a0edc295db795cb33c96f696a8b1226d2a837238585b8e06d20"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00133-name-hover.png",
+          "sha256": "9cb149c6bc5ab3c3a342b5f893adcd83f6f39ba4d09898268c5ef535f2c07e16"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00133-basic-top.png",
+          "sha256": "bce1e96d8c0170e86b85932a48f961f661ad7f9d2a78842eb8a89856636857aa"
+        }
+      ]
+    },
+    {
+      "capture_key": "items-sequence-creature-products:134",
+      "ui_entry_ordinal": 134,
+      "fullName": "capricious robe",
+      "properties": {
+        "Weight": "1.80 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00134-name.png",
+          "sha256": "944c976b5a952dcab52386a506487d87dd19702c23256809cb808ef2696a8134"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00134-name-hover.png",
+          "sha256": "cb32dd2121c2db74c1c5ed4424c40c61fa1b363d3f04cfbf74864216b58bd5f1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00134-basic-top.png",
+          "sha256": "d5f93d7ff2348088d4edfc3732eeb2d717b7a489b601b3657b0e4817afd8cd5c"
+        }
+      ]
+    }
+  ]
+}

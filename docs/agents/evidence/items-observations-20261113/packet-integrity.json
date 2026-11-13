@@ -1,0 +1,37 @@
+{
+  "files": {
+    "creature-products-basic-1-134-repo-ready.json": {
+      "bytes": 134761,
+      "sha256": "9b527980edcfdadeeaa9580a338e8c14568e7984ed6c9717b995e1b9e438e5aa"
+    },
+    "armors-basic-1-33-qualified-repo-ready.json": {
+      "bytes": 67201,
+      "sha256": "6403b5552527986e8e1a7a6de073d58951678bb8d0b6136eeb0f9d7a9f8e2bdd"
+    },
+    "category-audit-backlog-20261113-v2.json": {
+      "bytes": 9265,
+      "sha256": "237a1a060dba16ce9688171b0e7683ae34db1db622e28ca80d15444ef6df2234"
+    },
+    "trade-initial-panel-audit.json": {
+      "bytes": 204902,
+      "sha256": "7baede6f09086f058d4a48c74390965954d415d58fa97239e729f267283837ab"
+    },
+    "trade-recapture-checklist-batch-20261113.json": {
+      "bytes": 17808,
+      "sha256": "5f87c626454da955a48919e5d342250da7b6b3ff5381a2a7bf97c5d89dcc5e89"
+    },
+    "custody-validation.json": {
+      "bytes": 1800,
+      "sha256": "82bc80f4223ecb079df475d8578e3928773883b097f2fc3c7e557e379d8fece5"
+    },
+    "additional-custody-validation.json": {
+      "bytes": 559,
+      "sha256": "855b7e6a29af23523eebb4bf41c49dd427c0668f0a3ee98527cce9885997046a"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 343407,
+      "sha256": "2d650372272016335e551b60909432dfbac2ddff6a2a6a9701f2f527c1532041"
+    }
+  },
+  "boundary": "Integrity of sanitized repository JSON; pre-transformation private-source hashes remain in custody receipts."
+}
