@@ -1,0 +1,47 @@
+{
+  "source_receipt": {
+    "filename": "helmets-hats-ordinal10-armor-correction-private.json",
+    "bytes": 1822,
+    "sha256": "f10548cee67cdd8d42f6828b1743de97970f62b0344af230f94d924c375e9487"
+  },
+  "receipt": {
+    "schema": "PRIVATE_TRANSCRIPTION_CORRECTION_RECEIPT/v1",
+    "category": "Helmets and Hats",
+    "capture_id": 10,
+    "ui_entry_ordinal": 10,
+    "fullName": "brass helmet",
+    "old_packet": "helmets-hats-basic-1-20-reviewed-private.json",
+    "old_packet_sha256": "44ca71916f27a36509fa8cc61793e70565bc1f5361530fb7e8f54ab66eea2185",
+    "correction": {
+      "field": "properties.Armor",
+      "old": "7",
+      "new": "3"
+    },
+    "reason": "Błąd wcześniejszej transkrypcji. Natywnie ponownie ręcznie przeczytane name crop, pełny hover i Basic top: Armor: 3. Indeks ma basic_pages=[]; brak dalszych zapisanych stron.",
+    "complete_basic_transcription": {
+      "Armor": "3",
+      "Weight": "27.00 oz",
+      "Tradeable In Market": "yes",
+      "Body Position": "head",
+      "Classification": "1"
+    },
+    "proofs": [
+      {
+        "role": "name_image",
+        "path": "00010-name.png",
+        "sha256": "ace22a57d21ca94ca460d8387338bee9ea39d48723e656ff26d1c89e5d627378"
+      },
+      {
+        "role": "name_hover_image",
+        "path": "00010-name-hover.png",
+        "sha256": "d062055e2f3da7db05d8057ba6b42f93fb4da42c2fc10459302bfa13db773ad4"
+      },
+      {
+        "role": "basic_top_image",
+        "path": "00010-basic-top.png",
+        "sha256": "dd4b585b051777442bc9f6f3066a390b2112129f60027b039b903bf1270b5e7e"
+      }
+    ],
+    "identity_boundary": "To korekta odczytu konkretnej pozycji UI, bez ustalania ItemID. Nie zmieniono źródeł gry ani starego immutable pakietu."
+  }
+}
