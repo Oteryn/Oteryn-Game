@@ -37,15 +37,42 @@ pub(super) fn corpse_facts(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
     pub(in crate::gameplay_transport) async fn drain_elemental_altar_bosses(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
         self.realize_elemental_altar_bosses(&permit).await;
     }
+    /// Select one source rule before discovery, so an empty/blocked first rule
+    /// cannot consume every background grant ahead of the other occurrences.
+    pub(in crate::gameplay_transport) async fn drain_elemental_altar_boss_unit(&self) {
+        let rules = elemental_spheres::rules();
+        if rules.is_empty() {
+            return;
+        }
+        let index = self.background_start("source-altar-realizations", rules.len());
+        self.background_unit("source-altar-realizations", index + 1, async {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return;
+            };
+            self.realize_elemental_altar_bosses_selected(&permit, Some(rules[index].key))
+                .await;
+        })
+        .await;
+    }
+    #[cfg(test)]
     pub(super) async fn realize_elemental_altar_bosses(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) {
+        self.realize_elemental_altar_bosses_selected(permit, None)
+            .await;
+    }
+    async fn realize_elemental_altar_bosses_selected(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        selected: Option<&str>,
     ) {
         let Some(map) = self.bundle_map() else {
             return;
@@ -91,7 +118,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     && pending.iter().any(|p| p.source.transaction_id == *id)
             });
         }
-        for pending in pending {
+        // The latch primary key permits one row per rule/current epoch. The
+        // scheduled path handles at most that one occurrence; direct drains keep all4.
+        for pending in pending
+            .into_iter()
+            .filter(|pending| selected.is_none_or(|key| pending.source.rule == key))
+            .take(if selected.is_some() { 1 } else { usize::MAX })
+        {
             let Some(rule) = elemental_spheres::rules()
                 .iter()
                 .find(|r| r.key == pending.source.rule)

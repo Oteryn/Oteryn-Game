@@ -631,7 +631,7 @@ impl NativeEntryProject {
 fn qualified_item_profile_source(
     compiled: &crate::content::CompiledFirstProductionContent,
 ) -> Result<Option<crate::content::native_gameplay::NativeItemProfileSource>, ProjectError> {
-    let (_, runtime) = crate::content::StagedGeneration::stage(
+    let (_, runtime) = crate::content::production::StagedGeneration::stage(
         &compiled.server_artifact,
         &compiled.client_artifact,
         compiled.expectation(),

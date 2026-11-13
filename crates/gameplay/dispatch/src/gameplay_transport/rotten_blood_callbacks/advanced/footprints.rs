@@ -24,11 +24,20 @@ impl super::super::RottenBloodCallbacks {
     }
 }
 impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
     pub(crate) async fn drain_rotten_movement_callbacks(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
         self.resolve_rotten_movement_callbacks(&permit).await;
+    }
+    /// One scheduled source event; direct/foreground callers retain their full drain.
+    pub(crate) async fn drain_rotten_movement_callback_unit(&self) {
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        self.resolve_rotten_movement_callbacks_inner(&permit, 1)
+            .await;
     }
     /// True only after every synchronous onMove and started callback has a
     /// known physical outcome. The caller retains its ORIGINAL source cursor
@@ -37,7 +46,8 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     ) -> bool {
-        self.resolve_rotten_movement_callbacks_inner(permit).await;
+        self.resolve_rotten_movement_callbacks_inner(permit, 32)
+            .await;
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         !states
@@ -47,6 +57,7 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
     async fn resolve_rotten_movement_callbacks_inner(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        limit: usize,
     ) {
         let Some(native) = self
             .active_generation
@@ -54,7 +65,7 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        for _ in 0..32 {
+        for _ in 0..limit {
             let now = self.owner_now().get();
             let (callback, prefix, binding) = {
                 let runtime = self.runtime.lock().await;

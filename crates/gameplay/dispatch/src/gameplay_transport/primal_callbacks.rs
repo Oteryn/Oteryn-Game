@@ -429,7 +429,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
     /// A sealed immutable callback crosses SQL. Native runtime/spell guards are
     /// released before the writer independently proves the current Node/scope.
+    #[cfg(test)]
     pub(super) async fn drain_primal_pod_callbacks(&self) {
+        self.drain_primal_pod_callbacks_limited(4).await;
+    }
+    pub(super) async fn drain_primal_pod_callback_unit(&self) {
+        self.drain_primal_pod_callbacks_limited(1).await;
+    }
+    async fn drain_primal_pod_callbacks_limited(&self, limit: usize) {
         let cutoff = match self.states.attack.lock().await.kills().core_head() {
             Ok(Some((_, _, Some(clock)))) => clock.get(),
             Ok(None) => u64::MAX,
@@ -438,7 +445,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
-        for _ in 0..4 {
+        for _ in 0..limit {
             if self
                 .drain_primal_pod_creates_with_permit(&permit, cutoff, self.owner_now().get())
                 .await

@@ -112,15 +112,32 @@ pub(super) fn plan_through(
     Ok(())
 }
 impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
+    #[cfg(test)]
     pub(crate) async fn drain_rotten_portal_callbacks(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
         };
         self.resolve_rotten_portal_callbacks(&permit).await;
     }
+    /// One scheduled callback, keeping its full read/write unit together.
+    pub(crate) async fn drain_rotten_portal_callback_unit(&self) {
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        self.resolve_rotten_portal_callbacks_limited(&permit, 1)
+            .await;
+    }
     pub(in crate::gameplay_transport) async fn resolve_rotten_portal_callbacks(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) {
+        self.resolve_rotten_portal_callbacks_limited(permit, 8)
+            .await;
+    }
+    async fn resolve_rotten_portal_callbacks_limited(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        limit: usize,
     ) {
         let Some(native) = self
             .active_generation
@@ -128,7 +145,7 @@ impl super::super::super::ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        for _ in 0..8 {
+        for _ in 0..limit {
             let now = self.owner_now().get();
             let (pending, prefix, binding) = {
                 let runtime = self.runtime.lock().await;

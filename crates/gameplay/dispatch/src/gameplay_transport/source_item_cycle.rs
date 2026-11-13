@@ -138,7 +138,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         5 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
-                                    .with_background_operation(self.drain_elemental_altar_bosses())
+                                    .with_background_operation(
+                                        self.drain_elemental_altar_boss_unit(),
+                                    )
                                     .await;
                             }
                         }
@@ -151,7 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
-                                        self.drain_rotten_movement_callbacks(),
+                                        self.drain_rotten_movement_callback_unit(),
                                     )
                                     .await;
                             }
@@ -165,7 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
-                                        self.drain_rotten_movement_callbacks(),
+                                        self.drain_rotten_movement_callback_unit(),
                                     )
                                     .await;
                             }
@@ -180,7 +182,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         11 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
-                                    .with_background_operation(self.drain_primal_pod_callbacks())
+                                    .with_background_operation(
+                                        self.drain_primal_pod_callback_unit(),
+                                    )
                                     .await;
                             }
                         }
@@ -194,7 +198,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         _ => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
-                                    .with_background_operation(self.drain_rotten_portal_callbacks())
+                                    .with_background_operation(
+                                        self.drain_rotten_portal_callback_unit(),
+                                    )
                                     .await;
                             }
                         }
