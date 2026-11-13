@@ -12,6 +12,10 @@ PINS = {
     "client-npc-tuples.json": "dbb9a784bcb6d4dd654cce06db665fe547ccf89c516f14b2d9c0d6903d8bb811",
     "field-comparison-candidates.json": "ba6d7be6d8aaaac0ef629e05aa6c46561822251a443153869c8df5805fe01378",
     "qualified-correction-deltas.json": "3e3c25922175c3cd662b9b05345ec4fcd00fa14521d685521ce8bc46c929c919",
+    "item-names-description-custody.json": "213fa25696b34b6aa0ebf4d7e48318861b1d72da53f1127c4799f695611de262",
+    "alias-taxonomy-matrix.json": "d53e36c8b6303e48351b60c0e0d762f1cd903cb79e3bd143449936b38da80c12",
+    "static-dataset-readiness.json": "5a57afd9040cc3392f84975c3bdb137a8cd4251e3e2b36fc04d513488502c76c",
+    "weapon-comparison-supplement.json": "5165efcef1901170d5ad6f76e2a950879d5d84dfee932e038d2f2840bc57703f",
 }
 NPC_FIELDS = ["appearance_object_id", "flags_message_ordinal1", "flags40_entry_ordinal1",
               "raw_tuple_sha256", "field_presence_bits", "npc_name", "location",
@@ -177,6 +181,177 @@ def validate_corrections(doc):
     return {"records": 9, "groups": 8, "empty_arrays_scope": "OBSERVED_INITIAL_PANEL_ONLY"}
 
 
+def decode_names(doc):
+    expected = ["appearance_object_id", "cyclopedia_type", "raw_record_sha256", "name_exact_utf8",
+                "name_raw_sha256", "name_utf8_bytes", "name_unicode_codepoints",
+                "description_presence", "description_state", "description_raw_sha256",
+                "description_raw_bytes", "description_utf8_qualified",
+                "description_unicode_codepoints", "description_line_count", "description_count_state"]
+    require(doc["field_order"] == expected and doc["row_count"] == 6470
+            and len(doc["columns"]) == len(expected), "name custody column contract")
+    values = []
+    for column in doc["columns"]:
+        if column["encoding"] == "literal_values":
+            require(set(column) == {"encoding", "values"}, "name literal fields")
+            decoded = column["values"]
+        else:
+            require(column["encoding"] == "dictionary_indices" and
+                    set(column) == {"encoding", "dictionary", "indices"}, "name dictionary fields")
+            require(all(type(i) is int and 0 <= i < len(column["dictionary"])
+                        for i in column["indices"]), "name dictionary index")
+            decoded = [column["dictionary"][i] for i in column["indices"]]
+        require(len(decoded) == 6470, "name column length")
+        values.append(decoded)
+    return [dict(zip(expected, row)) for row in zip(*values)]
+
+
+def validate_names(doc, coverage):
+    rows = decode_names(doc)
+    observed = {row["appearance_object_id"]: row for row in
+                decode_table(coverage["record_columns"], coverage["record_arrays"])}
+    require(len({row["appearance_object_id"] for row in rows}) == 6470
+            and {row["appearance_object_id"] for row in rows} == set(observed), "name row identity")
+    states = collections.Counter()
+    for row in rows:
+        name = row["name_exact_utf8"]
+        require(isinstance(name, str) and name and
+                hashlib.sha256(name.encode("utf-8")).hexdigest() == row["name_raw_sha256"]
+                and len(name.encode("utf-8")) == row["name_utf8_bytes"]
+                and len(name) == row["name_unicode_codepoints"], "exact UTF8 name custody")
+        other = observed[row["appearance_object_id"]]
+        require(row["cyclopedia_type"] == other["cyclopedia_type"] and
+                row["raw_record_sha256"] == other["raw_record_sha256"], "name coverage source join")
+        state = row["description_state"]
+        states[state] += 1
+        if state == "FIELD_ABSENT":
+            require(row["description_presence"] is False and all(row[k] is None for k in
+                    ("description_raw_sha256", "description_raw_bytes", "description_utf8_qualified",
+                     "description_unicode_codepoints", "description_line_count")) and
+                    row["description_count_state"] == "METADATA_NOT_APPLICABLE_FIELD_ABSENT",
+                    "absent Description must not become zero/known")
+        else:
+            require(row["description_presence"] is True and
+                    re.fullmatch(r"[0-9a-f]{64}", row["description_raw_sha256"]), "Description custody")
+            if state == "FIELD_PRESENT_ENCODING_UNKNOWN":
+                require(row["description_utf8_qualified"] is False and
+                        row["description_unicode_codepoints"] is None and
+                        row["description_line_count"] is None and
+                        row["description_count_state"] == "UNKNOWN_TEXT_ENCODING",
+                        "unknown encoding must not acquire text counts")
+            else:
+                require(state == "FIELD_PRESENT_UTF8_QUALIFIED" and
+                        row["description_utf8_qualified"] is True and
+                        row["description_count_state"] == "KNOWN", "Description text state")
+    require(states == {"FIELD_ABSENT": 3697, "FIELD_PRESENT_UTF8_QUALIFIED": 2771,
+                       "FIELD_PRESENT_ENCODING_UNKNOWN": 2}, "Description state census")
+    return {"exact_names": 6470, "Description_custody_states": dict(states)}
+
+
+def validate_alias_matrix(doc, names, coverage):
+    by_id = {row["appearance_object_id"]: row for row in decode_names(names)}
+    source = {row["appearance_object_id"]: row for row in
+              decode_table(coverage["record_columns"], coverage["record_arrays"])}
+    expected = {row["cyclopedia_type"]: row["appearance_object_ids"] for row in
+                decode_table(coverage["alias_columns"], coverage["alias_arrays"])}
+    require(len(doc["aliases"]) == 157 and
+            {row["cyclopedia_type"]: row["appearance_object_ids"] for row in doc["aliases"]} ==
+            expected, "alias matrix distinct identities")
+    for group in doc["aliases"]:
+        members = group["members"]
+        require([row["appearance_object_id"] for row in members] == group["appearance_object_ids"],
+                "alias member ancestry")
+        for member in members:
+            name = by_id[member["appearance_object_id"]]
+            original = source[member["appearance_object_id"]]
+            require(all(member[k] == name[k] for k in
+                        ("raw_record_sha256", "name_raw_sha256", "description_presence",
+                         "description_state", "description_raw_sha256")), "alias name custody join")
+            require(member["market_category"] == original["market_category"] and
+                    member["NPC_raw_tuple_occurrences"] == original["NPC_raw_tuple_count"],
+                    "alias market/NPC source join")
+        require(group["literal_name_variants"] ==
+                len({by_id[m["appearance_object_id"]]["name_exact_utf8"] for m in members}) and
+                group["description_raw_presence_hash_variants"] ==
+                len({(m["description_presence"], m["description_raw_sha256"]) for m in members}) and
+                group["market_category_presence_value_variants"] ==
+                len({(m["market_category_presence"], m["market_category"]) for m in members}) and
+                group["NPC_ordered_semantic_sequence_variants"] ==
+                len({m["NPC_ordered_semantic_sequence_sha256"] for m in members}), "alias variants")
+    require(len(doc["wholly_market_absent_cyclopedia_types"]) == 1056 and
+            len(doc["mixed_market_presence_cyclopedia_types"]) == 40 and
+            len(doc["invalid_description_encoding_receipts"]) == 2, "taxonomy/custody census")
+    markets = collections.defaultdict(list)
+    for row in source.values():
+        markets[row["cyclopedia_type"]].append(row["market_category"] is not None)
+    require(set(doc["wholly_market_absent_cyclopedia_types"]) ==
+            {key for key, values in markets.items() if not any(values)} and
+            set(doc["mixed_market_presence_cyclopedia_types"]) ==
+            {key for key, values in markets.items() if any(values) and not all(values)},
+            "taxonomy presence sets must match source, including category zero")
+    return {"groups": 157, "wholly_market_absent_types": 1056, "mixed_market_presence_types": 40}
+
+
+def validate_static(doc):
+    require(doc["raw_current_counts"] == {"creatures": 845, "bestiary_classes": 21, "bosses": 453,
+                                         "quest_lines": 104, "achievements": 378, "houses": 995},
+            "raw current static counts")
+    require(doc["profile_admission"]["runtime_admitted"] is False and
+            doc["profile_admission"]["gates_modified"] is False and
+            doc["source_profile_admitted"] is False and doc["any_UI_tab_complete"] is False,
+            "raw static data must not gain admission/UI qualification")
+    require(doc["proficiency_metadata"]["records"] == 444 and
+            doc["proficiency_metadata"]["matched_ref_occurrences"] == 667 and
+            doc["map_metadata"]["mask_pixels_or_UI_parity_qualified"] is False,
+            "static structural readiness boundary")
+    return {"raw_counts": doc["raw_current_counts"], "runtime_admitted": False}
+
+
+def validate_weapons(doc):
+    require(len(doc["rows"]) == 4 and doc["observed_field_instances"] == 12 and
+            [r["physical_ui_ordinal"] for r in doc["rows"]] == [113, 116, 725, 729],
+            "weapon bounded observation scope")
+    counts = {"canonical": collections.Counter(), "selected": collections.Counter()}
+    for row in doc["rows"]:
+        require(row["identity_status"] == "NAME_ONLY_CANDIDATE", "weapon identity promotion")
+        for name, layer in row["layers"].items():
+            if layer["state"] == "NOT_SELECTED":
+                counts[name]["NOT_SELECTED"] += 3
+                continue
+            require(len(layer["fields"]) == 3 and
+                    layer["raw_weapon_states"]["attack"]["state"] == "KNOWN" and
+                    layer["raw_weapon_states"]["defense"]["state"] == "KNOWN", "weapon raw states")
+            raw = layer["raw_weapon_states"]
+            require(raw["weapon_type"]["state"] == "KNOWN" and
+                    raw["weapon_type"]["value"] in {"AXE", "SWORD"} and
+                    raw["elemental"] in ({"state": "UNKNOWN"}, {"state": "KNOWN", "value": []})
+                    and raw["extra_defense"] in
+                    ({"state": "UNKNOWN"}, {"state": "KNOWN", "value": 0}), "bounded melee route")
+            patterns = layer["raw_equipment_patterns"]
+            require(patterns["state"] == "KNOWN", "weapon equipment route")
+            two_handed = bool(patterns["value"]) and all(
+                p["primary_slot"] == {"state": "KNOWN", "value": "WEAPON"}
+                and p["additional_reserved_slots"]["state"] == "KNOWN"
+                and "SHIELD" in p["additional_reserved_slots"]["value"] for p in patterns["value"])
+            formatted = {"Attack": str(raw["attack"]["value"]),
+                         "Defence": str(raw["defense"]["value"]),
+                         "Weapon Type": {"AXE": "axe", "SWORD": "sword"}[raw["weapon_type"]["value"]]
+                         + (", two-handed" if two_handed else "")}
+            require(layer["two_handed_source_projection"] == two_handed and
+                    {f["field"]: f["source_formatter_literal"] for f in layer["fields"]} == formatted,
+                    "weapon exact bounded source projection")
+            for field in layer["fields"]:
+                expected = ("LITERAL_EQUAL_CANDIDATE_ONLY" if field["observed_literal"] ==
+                            field["source_formatter_literal"] else "LITERAL_DIFFERENT_CANDIDATE_ONLY")
+                require(field["status"] == expected, "weapon candidate status")
+                counts[name][expected] += 1
+    require(counts == {"canonical": {"LITERAL_EQUAL_CANDIDATE_ONLY": 8,
+                                     "LITERAL_DIFFERENT_CANDIDATE_ONLY": 4},
+                       "selected": {"LITERAL_EQUAL_CANDIDATE_ONLY": 6,
+                                    "LITERAL_DIFFERENT_CANDIDATE_ONLY": 3, "NOT_SELECTED": 3}},
+            "weapon layer census")
+    return {"observed_fields": 12, "counts": {k: dict(v) for k, v in counts.items()}}
+
+
 def validate(root=HERE):
     documents = {}
     for name, expected in PINS.items():
@@ -188,11 +363,17 @@ def validate(root=HERE):
     ids = {row["appearance_object_id"] for row in
            decode_table(coverage_doc["record_columns"], coverage_doc["record_arrays"])}
     populations = validate_populations(ids, decode_columns(documents["client-npc-tuples.json"]))
-    return {"members": 4, "coverage": validate_coverage(coverage_doc),
+    names = documents["item-names-description-custody.json"]
+    return {"members": 8, "coverage": validate_coverage(coverage_doc),
             "npc": validate_npc(documents["client-npc-tuples.json"]),
             "NPC_populations": populations,
             "candidates": validate_candidates(documents["field-comparison-candidates.json"]),
             "corrections": validate_corrections(documents["qualified-correction-deltas.json"]),
+            "names": validate_names(names, coverage_doc),
+            "alias_matrix": validate_alias_matrix(documents["alias-taxonomy-matrix.json"], names,
+                                                   coverage_doc),
+            "static_readiness": validate_static(documents["static-dataset-readiness.json"]),
+            "weapons": validate_weapons(documents["weapon-comparison-supplement.json"]),
             "private_originals_rechecked_here": False, "overall_static_audit": "PARTIAL",
             "server_id_bindings": 0}
 

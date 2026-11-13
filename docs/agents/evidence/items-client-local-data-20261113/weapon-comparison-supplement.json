@@ -1,0 +1,945 @@
+{
+  "schema": "PRIVATE_SUPPLEMENTAL_WEAPON_COMPARISON_AND_FIELD_READINESS/v1",
+  "classification": "DERIVED",
+  "source_pin": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+  "inspection_source": {
+    "path": "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs",
+    "sha256": "c3df453b732fa83dc7387ef2a7e49bd344fe5c1c0856f847515ce01179a319e4",
+    "lines": [
+      397,
+      492
+    ],
+    "bounded_domain": "OnlyfourknownpositiveAXE/SWORDmelee cases; no new ranged/elemental/rationalimplementation"
+  },
+  "source_aggregate_sha256": "b43968d3cf9e611b40fd672d805703867c101390c09eb7ab2477e2b5cced37c1",
+  "source_file_count": 72,
+  "input_result_sha256": "7df89feb0405e35f757a518006dc6c2159210833c4f3506538437283096725d9",
+  "input_CP_union_sha256": "ffa049f8e6fc0efa93ebc75d9c3def9d7d0c7f0eaaeaf491fb3743934d269c7f",
+  "rows": [
+    {
+      "category": "Creature Products",
+      "physical_ui_ordinal": 113,
+      "capture_key": "items-sequence-creature-products:113",
+      "fullName": "broken Iks spear",
+      "identity_status": "NAME_ONLY_CANDIDATE",
+      "source_candidate_key": "oteryn:item.tibia.i40535",
+      "observed_fields": {
+        "Attack": "1",
+        "Defence": "1",
+        "Weapon Type": "cutting weapon, two-handed"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-name.png",
+          "sha256": "4f82691a2f2783d7c55e6232fa854fcbdd888dc8aad2ce2fe6fa375347db7209"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-name-hover.png",
+          "sha256": "283fa3f656d481d81cd6f134115920c6c32e6f1745a7b3d3c9a1df1dc1aa3261"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00113-basic-top.png",
+          "sha256": "bcca3f78a3caf07f9ad392a34f3750140cca3a0eff34b3f7cd556ec5c72eb8cd"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-creature-products/cards/00113-basic-001.png",
+          "sha256": "00f036894f89d10bff0887834f490e3bc4121fb534ac4fbad50fbdd540fa984f"
+        }
+      ],
+      "layers": {
+        "canonical": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "KNOWN",
+              "value": 3
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "AXE"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": [
+                    "SHIELD"
+                  ]
+                },
+                "compatibility_rule": {
+                  "state": "UNKNOWN"
+                },
+                "level": {
+                  "state": "UNKNOWN"
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": true,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "cutting weapon, two-handed",
+              "source_formatter_literal": "axe, two-handed",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        },
+        "selected": {
+          "state": "NOT_SELECTED"
+        }
+      }
+    },
+    {
+      "category": "Creature Products",
+      "physical_ui_ordinal": 116,
+      "capture_key": "items-sequence-creature-products:116",
+      "fullName": "broken macuahuitl",
+      "identity_status": "NAME_ONLY_CANDIDATE",
+      "source_candidate_key": "oteryn:item.tibia.i40530",
+      "observed_fields": {
+        "Attack": "1",
+        "Defence": "1",
+        "Weapon Type": "stabbing weapon"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-name.png",
+          "sha256": "d7c111edd33d325bd7e770cd7a224676847b2290d77027e8eb37078c781f6048"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-name-hover.png",
+          "sha256": "49f08ff5cfda52ca90efd48a718cad11e3364eaa6311fd50a5a9a4f650d2cf23"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00116-basic-top.png",
+          "sha256": "197961d89ee485d5c5ff99db133f4be7c7d7c6f53809740d37cb88d37d954adb"
+        },
+        {
+          "role": "basic_page",
+          "private_source_key": "items-sequence-creature-products/cards/00116-basic-001.png",
+          "sha256": "cdf5f1f385b99b82f5d108f5c12b4a52e94187453f85e819931139f5d4f79ee7"
+        }
+      ],
+      "layers": {
+        "canonical": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "UNKNOWN"
+                },
+                "level": {
+                  "state": "UNKNOWN"
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        },
+        "selected": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "UNKNOWN"
+                },
+                "level": {
+                  "state": "UNKNOWN"
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        }
+      }
+    },
+    {
+      "category": "Creature Products",
+      "physical_ui_ordinal": 725,
+      "capture_key": "items-sequence-creature-products:725",
+      "fullName": "ritual bone knife",
+      "identity_status": "NAME_ONLY_CANDIDATE",
+      "source_candidate_key": "oteryn:item.tibia.i51475",
+      "observed_fields": {
+        "Attack": "5",
+        "Defence": "1",
+        "Weapon Type": "stabbing weapon"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00725-name.png",
+          "sha256": "f945f72d554cf82efd6fdfcebdf5caa9dd6e3600aa79ca71c227ff3e3b6e0ba2"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00725-name-hover.png",
+          "sha256": "4922f0edcd77f50a46acfa2614279fc07b9c0a77a94c0027879bcda1932bb776"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00725-basic-top.png",
+          "sha256": "c5aea301873e3e808df879ddce6cc9d05c42ce2f5de97f4860ba83cc6798fe19"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-creature-products/cards/00725-icon.png",
+          "sha256": "d21b599cc78c8f5ccda1d0df0b0a897a00cd9f7eb8797852beabb2870a050cab"
+        }
+      ],
+      "layers": {
+        "canonical": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 5
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "UNKNOWN"
+                },
+                "level": {
+                  "state": "UNKNOWN"
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "5",
+              "source_formatter_literal": "5",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        },
+        "selected": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "NOT_APPLICABLE"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 5
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "elemental": {
+              "state": "KNOWN",
+              "value": []
+            },
+            "extra_defense": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "max_hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "range": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "NOT_APPLICABLE"
+                },
+                "level": {
+                  "state": "KNOWN",
+                  "value": 0
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "KNOWN",
+                  "value": []
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "5",
+              "source_formatter_literal": "5",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "1",
+              "source_formatter_literal": "1",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        }
+      }
+    },
+    {
+      "category": "Creature Products",
+      "physical_ui_ordinal": 729,
+      "capture_key": "items-sequence-creature-products:729",
+      "fullName": "Ron the Ripper's sabre",
+      "identity_status": "NAME_ONLY_CANDIDATE",
+      "source_candidate_key": "oteryn:item.tibia.i6101",
+      "observed_fields": {
+        "Attack": "12",
+        "Defence": "10",
+        "Weapon Type": "stabbing weapon"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-creature-products/cards/00729-name.png",
+          "sha256": "a68644e3e9e18637632cf70453478bb7458f7987e0fae76b24905fd7f66f3804"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-creature-products/cards/00729-name-hover.png",
+          "sha256": "825e1c12ffe1955d25ff791d6cd05f716d15625de4874f6ef39c3951044a63af"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-creature-products/cards/00729-basic-top.png",
+          "sha256": "921d1ff25bff1b7fd79336d37fa13c7edf12f2c16620c463d8ab87d3c15dae21"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-creature-products/cards/00729-icon.png",
+          "sha256": "5d805715735944865a9965f960288e48e9d683853618bd80a1ab62d6900dd5d4"
+        },
+        {
+          "role": "basic_page",
+          "page_index": 2,
+          "private_source_key": "items-sequence-creature-products/cards/00729-basic-001.png",
+          "sha256": "4a557d5ed9e7a6f9d1bd15786d6e6e9f29404954d4c9f1486e4baf6d62c366fb"
+        }
+      ],
+      "layers": {
+        "canonical": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "UNKNOWN"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 12
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 10
+            },
+            "elemental": {
+              "state": "UNKNOWN"
+            },
+            "extra_defense": {
+              "state": "UNKNOWN"
+            },
+            "hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "max_hit_chance": {
+              "state": "UNKNOWN"
+            },
+            "range": {
+              "state": "UNKNOWN"
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "UNKNOWN"
+                },
+                "level": {
+                  "state": "UNKNOWN"
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "12",
+              "source_formatter_literal": "12",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "10",
+              "source_formatter_literal": "10",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        },
+        "selected": {
+          "state": "SOURCE_RECORD_PRESENT",
+          "raw_weapon_states": {
+            "ammunition": {
+              "state": "NOT_APPLICABLE"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 12
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 10
+            },
+            "elemental": {
+              "state": "KNOWN",
+              "value": []
+            },
+            "extra_defense": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "max_hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "range": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SWORD"
+            }
+          },
+          "raw_equipment_patterns": {
+            "state": "KNOWN",
+            "value": [
+              {
+                "additional_reserved_slots": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "compatibility_rule": {
+                  "state": "NOT_APPLICABLE"
+                },
+                "level": {
+                  "state": "KNOWN",
+                  "value": 0
+                },
+                "mutually_exclusive_groups": {
+                  "state": "KNOWN",
+                  "value": []
+                },
+                "pattern_id": 1,
+                "primary_slot": {
+                  "state": "KNOWN",
+                  "value": "WEAPON"
+                },
+                "vocations": {
+                  "state": "KNOWN",
+                  "value": []
+                }
+              }
+            ]
+          },
+          "two_handed_source_projection": false,
+          "fields": [
+            {
+              "field": "Attack",
+              "observed_literal": "12",
+              "source_formatter_literal": "12",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Defence",
+              "observed_literal": "10",
+              "source_formatter_literal": "10",
+              "status": "LITERAL_EQUAL_CANDIDATE_ONLY",
+              "qualification": "EXACT_PINNED_MELEE_DISPLAY_PROJECTION_NOT_RUNTIME_PARITY"
+            },
+            {
+              "field": "Weapon Type",
+              "observed_literal": "stabbing weapon",
+              "source_formatter_literal": "sword",
+              "status": "LITERAL_DIFFERENT_CANDIDATE_ONLY",
+              "qualification": "ENUM_LABEL_MAPPING_NOT_QUALIFIED"
+            }
+          ],
+          "unknown_display_fallbacks_preserve_raw_state": [
+            "Unknown extra_defense uses display0; does not becomeKnown0",
+            "Unknown elemental yields no displayedparts; does not becomeKnown[]"
+          ]
+        }
+      }
+    }
+  ],
+  "counts": {
+    "canonical": {
+      "LITERAL_EQUAL_CANDIDATE_ONLY": 8,
+      "LITERAL_DIFFERENT_CANDIDATE_ONLY": 4
+    },
+    "selected": {
+      "NOT_SELECTED": 3,
+      "LITERAL_EQUAL_CANDIDATE_ONLY": 6,
+      "LITERAL_DIFFERENT_CANDIDATE_ONLY": 3
+    }
+  },
+  "observed_field_instances": 12,
+  "distinct_source_proofs_freshly_verified": 17,
+  "old_comparator_status": "UNKNOWN_OR_UNPROJECTED was missingextractor, not sourceUNKNOWN for these12knownprimaryfields",
+  "readiness": {
+    "ImbuementEffect": {
+      "observed_rows": 72,
+      "categories": {
+        "Basic": 24,
+        "Intricate": 24,
+        "Powerful": 24
+      },
+      "canonical_unique_name_candidates": 48,
+      "no_unique_name_candidates": 24,
+      "selected_records": 0,
+      "runtime_scroll_table_entries": 48,
+      "recipe_table_entries": 72,
+      "inspection_label_route": "NOT_PRESENT",
+      "related_source_routes": [
+        "crates/gameplay/items/src/imbuement.rs:38..48,287..315,372..397",
+        "crates/gameplay/items/src/imbuement_catalogue.rs:13",
+        "crates/gameplay/dispatch/src/gameplay_transport/inspection_imbuements.rs:1",
+        "crates/client-ui/src/features/0470-imbuement-scroll-catalogue/view.rs:3"
+      ],
+      "boundary": "Basic source-namecandidates are not admitted runtime scrolls; runtime family/tier map and descriptions need independentqualification; inspection imbuementslot/20h remaining text is another field"
+    },
+    "Augments": {
+      "observed_rows": 46,
+      "unique_name_candidates": 36,
+      "no_unique_name_candidates": 10,
+      "selected_name_candidates": 7,
+      "selected_authoring_augments_field_present": 0,
+      "selected_keys": [
+        "oteryn:item.tibia.i50274",
+        "oteryn:item.tibia.i50269",
+        "oteryn:item.tibia.i43881",
+        "oteryn:item.tibia.i43876",
+        "oteryn:item.tibia.i50146",
+        "oteryn:item.tibia.i43884",
+        "oteryn:item.tibia.i43887"
+      ],
+      "route": "authoring.augments[].inspection Option<String>, joined comma-space; no derivation from typedtarget/effect/ranks",
+      "contract": "crates/gameplay/content/src/content/project/v2.rs:1092..1105",
+      "formatter": "inspection.rs:874..881",
+      "boundary": "JSON fieldABSENT isnot fabricatedKnown[]/0. Missinginspection Option meansunknowntext. No newruntime parity/bug claim"
+    },
+    "Expiration": {
+      "observed_rows": 5,
+      "all_identity_states": "AMBIGUOUS_NAME",
+      "candidate_pairs": {
+        "Decoration235": [
+          "i3046",
+          "i3047"
+        ],
+        "Hats118": [
+          "i23474",
+          "i23475"
+        ],
+        "Boots21": [
+          "i9018",
+          "i9019"
+        ],
+        "Boots42": [
+          "i3549",
+          "i6529"
+        ],
+        "Boots61": [
+          "i23476",
+          "i23477"
+        ]
+      },
+      "known_canonical_durations_ms": {
+        "i3046": 3000000,
+        "i3047": 3000000,
+        "i9018": 3600000,
+        "i3549": 14400000,
+        "i23476": 3600000
+      },
+      "other_pair_members": "temporalUNKNOWN",
+      "retail_magic_light_wand": "unknown literal, not numeric0",
+      "type_route": "Known temporal.duration Milliseconds -> Total Expire Time integerseconds=floor(ms/1000), includingKnown0",
+      "instance_route": "ItemMetadata.remaining_ms Option -> Expires floor(ms/1000), not immutabletypeduration",
+      "formatter": "inspection.rs:726..754",
+      "contract": "reference_playable.rs:644..649; durability/inspection.rs:10..17",
+      "boundary": "1hour=3600000ms,4hours=14400000ms isunitconversion only; do not select active/expired pair by name or compare remaininginstance totypemax"
+    },
+    "Charges": {
+      "observed_rows_in2623": 0,
+      "raw_type_route": "Known charges.count u32; metadataNone rendersn/n onlyifn!=0",
+      "instance_route": "metadata.charges.or(typecount) rendersn/n evenSome0; current formatterdoesnotprovide separatecurrent/maxvalues",
+      "contract": "reference_playable.rs:638..640; durability/inspection.rs:10..17",
+      "formatter": "inspection.rs:726..745",
+      "boundary": "No eligible observedchargecomparison in this2623scope. HistoricalAmulet/ArmorTotalCharges observations excluded; do not importsilently or equateUnknown/NA/zero"
+    }
+  },
+  "identity_boundary": "Name-onlysourcecandidates; no retailID/serverIDbinding/runtime parity orverifiedbug",
+  "constraints": [
+    "ZERO GUI clicks/keys/focus/scroll/modalhandling/anti-logout; no collector/supervisorrestart",
+    "PR3170frozen82bb3bd54a87b7b124e3f8b71b23fec902b65277 unchanged",
+    "No Rust/content/contracts/repo implementation; new privateanalysis receipt only"
+  ]
+}

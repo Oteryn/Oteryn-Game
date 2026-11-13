@@ -1,9 +1,11 @@
 # Client-local Items data and bounded comparison evidence
 
 This snapshot makes prepared local-data evidence reviewable:6,470 Cyclopedia-bearing
-client appearance records representing6,228 client types;15,350 raw NPC tuple
-occurrences from2,679 appearances;115 candidate comparison rows; and9 qualified
-evidence correction records in8 groups. It changes no runtime or source definitions.
+client appearance records and exact item names representing6,228 client types;
+Description hash/count/state custody;157 alias/taxonomy groups;15,350 raw NPC tuple
+occurrences;115 candidate comparison rows;9 correction records/8groups; static-data
+readiness and a12-field weapon comparison supplement. Eight data files total3,923,138B.
+It changes no runtime or source definitions.
 
 These populations differ: the Cyclopedia-bearing subset contains14,235 NPC tuples
 from2,571 appearances. Another1,115 of the global15,350 tuples occur outside that
@@ -29,6 +31,23 @@ not a claim that the old data equals current main or the running client.
   Decoration116 remains310 gp: the30 gp candidate was rejected. Every empty
   quote array, including Food117 Sell To, means OBSERVED_INITIAL_PANEL_ONLY;
   it never establishes global absence of NPC offers.
+- `item-names-description-custody.json`: all6,470 exact UTF8 item names and their
+  byte/codepoint/hash receipts. Description literals are excluded:3,697 fields
+  absent,2,771 UTF8 qualified,2 encoding UNKNOWN. Absent/unknown text counts stay
+  null, never zero; no encoding is guessed.
+- `alias-taxonomy-matrix.json`:157 groups preserve every separate appearance and
+  compare name/Description custody/market/NPC-sequence variants.1,056 types wholly
+  lack a market category and40 have mixed presence. These are client taxonomy
+  facts, not missing game items, ID bindings or permission to merge records.
+- `static-dataset-readiness.json`: raw structural counts845 creatures,21 bestiary
+  classes,453 bosses,104 quest lines,378 achievements and995 houses; map and444
+  proficiency-record metadata. Current raw assets fail old15.30 profile gates;
+  gates remain unchanged, runtime is not admitted, no UI tab is declared complete.
+- `weapon-comparison-supplement.json`: four Creature Products cards113/116/725/729,
+ 12 observed Attack/Defence/Weapon Type fields. Canonical has8 literal matches/4
+  unqualified label differences; selected has6/3 plus3 NOT_SELECTED comparisons.
+  Source axe/sword versus retail cutting/stabbing labels remain candidate-only.
+  Secondary UNKNOWN fields retain raw state even when the formatter uses a fallback.
 
 Names, images, appearance IDs, Cyclopedia types, source candidate keys and server
 IDs are distinct namespaces. No name/icon/ordinal equality promotes identity.
@@ -46,8 +65,9 @@ private; only their custody hashes/counts are included.
 
 Overall static audit: **PARTIAL**. Potions1..36 remain partial with UNKNOWN total;
 Others547 retains an unresolved description glyph. Armors/Amulets are excluded
-from the selected bulk comparison. Augments, weapon statistics, Imbuement Effect,
-instance expiry/charges and NPC runtime offers are not qualified by this comparator.
+from the selected bulk comparison. Augments, Imbuement Effect, instance expiry/charges
+and NPC runtime offers remain unqualified. Only the supplement's four bounded melee
+cases have a source display projection; no general weapon/runtime parity is claimed.
 Speed/ratio/sign/zero-display formatter differences need their own qualification.
 
 Original assets, screenshots, raw private exports, Description narratives, quest
@@ -58,7 +78,11 @@ transfer. Repository validation checks the pinned prepared projection, structure
 counts and privacy boundaries; it does not claim fresh private screenshot access.
 
 Run `python3 validate.py` and `python3 -m unittest discover -s . -p test_validate.py`.
-Governance checks are recorded in the active task. AUTHORING draft; CI and formal
-independent review remain pending. No merge/deploy or review dispatch is authorized.
+Governance checks are recorded in the active task. Draft stays PARTIAL; exact-head CI
+and formal independent review are separate qualification. Embedded historical PR/head
+strings in source packets are custody snapshots, never current lifecycle authority.
+No merge/deploy or review dispatch is authorized. ZERO client clicks/keys/focus/scroll,
+modal handling, anti-logout or collector/supervisor restarts remains binding.
 
 Allocation: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6849833911
+Material append/reopen: https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6850459977

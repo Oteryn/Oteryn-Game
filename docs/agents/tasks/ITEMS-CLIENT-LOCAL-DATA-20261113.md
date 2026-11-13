@@ -8,14 +8,14 @@ status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-client-local-data-cloud-20261113
-pr: null
+pr: 3170
 base_sha: 3e168ce6afe374485da20ee0ac13d3749558e2f8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Cloud /root/mantra_resume
 created_at: 2026-11-13T10:17:46Z
-updated_at: 2026-11-13T10:17:46Z
+updated_at: 2026-11-13T10:43:15Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/items-client-local-data-20261113/**
@@ -35,7 +35,7 @@ Existing PRs and private originals remain unchanged. No gameplay behavior change
 
 ## Architecture and source of truth
 
-DERIVED projection from four prepared members, manifest SHA
+DERIVED projection: original four prepared members, manifest SHA
 968570840801b3e3326068bb30771d50c5b7a4edd33538ef4e7b226ba3d84e1b.
 Retained comparison source5efd67da is historical, distinct from authoring base.
 META3.1.0 binding1bfb5ff98c8aa156e73669a14e083a1d464c29fb resolved by coordinator.
@@ -48,7 +48,7 @@ authority, session, persistence, production, GUI or controller mutation.
 
 ## Acceptance criteria
 
-- [x] Four exact prepared member hashes,2,302,762B total, imported to owned prefix.
+- [x] Eight exact prepared member hashes,3,923,138B total, imported to owned prefix.
 - [x] Lossless structure/coverage/privacy validator and meaningful negative tests.
 - [x] Preserve all raw tuples/order/presence/zero/UNKNOWN and namespace boundaries.
 - [x] Governance,129 governance tests and diff check pass before grouped push.
@@ -66,7 +66,8 @@ GUI/network collection, server item/currency binding, paid review, merge or depl
 
 ## Implementation / findings
 
-AUTHORING. Prepared coverage6470/6228/157aliases; NPC15350/2679; candidate115rows;
+AUTHORING successor to82bb3bd54a87b7b124e3f8b71b23fec902b65277. Eight data blobs;
+coverage6470/6228/157aliases; NPC15350/2679; candidate115rows;
 9correction records/8groups. Potions36PARTIAL; Others547UNKNOWN; allItems incomplete.
 Every empty correction quote array is scoped OBSERVED_INITIAL_PANEL_ONLY.
 
@@ -74,22 +75,30 @@ Every empty correction quote array is scoped OBSERVED_INITIAL_PANEL_ONLY.
 
 - python3 docs/agents/evidence/items-client-local-data-20261113/validate.py: PASS exit0;
  6470/6228/157aliases,globalNPC15350/subset14235/outside1115,115/116/30known0,9records/8groups.
-- python3 -m unittest discover -s docs/agents/evidence/items-client-local-data-20261113 -p test_validate.py: PASS9tests/0fail exit0.
+- python3 -m unittest discover -s docs/agents/evidence/items-client-local-data-20261113 -p test_validate.py: PASS14tests/0fail exit0.
 - python3 tools/agents/validate_governance.py: PASS22documents/9lanes exit0.
 - python3 -m unittest discover -s tools/agents/tests: PASS129tests/0fail exit0.
 - git diff --check: PASS before grouped commit; owned-file scope checked.
 - Integration/E2E: NOT_APPLICABLE, auxiliary evidence only.
-- Exact-head CI: pending after draft publication.
+- Exact-head CI: predecessor82bb game-gate SUCCESS; successor pending after grouped push.
 
 ## Self-review
 
 TASK diff/provenance/privacy inspection completed over owned files; Root independently
-ran the validator and9negative tests on this payload tree, exit0. Prepared packet
+ran the predecessor validator and9negative tests on this payload tree, exit0. Prepared packet
 privacy/semantic checks are not formal independent PR review.
 
 ## Independent review
 
 REVIEW_PENDING. Required before merge; coordinator owns dispatch. No worker trigger.
+
+## Material append
+
+Reopened by live allocation6850459977. Existing four data blobs byte-identical.
+Append6470exactnames/Descriptioncustody,157aliasmatrix,rawstaticreadiness and
+4-card12-fieldweaponprojection. No Description text, assets or runtime admission.
+Names encoding UNKNOWN2 retain null counts; no guessed decoding.
+ZERO client input, anti-logout and collector/supervisor restarts.
 
 ## PR and closeout
 

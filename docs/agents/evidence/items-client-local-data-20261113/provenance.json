@@ -24,9 +24,29 @@
       "file": "qualified-correction-deltas.json",
       "bytes": 3145,
       "sha256": "3e3c25922175c3cd662b9b05345ec4fcd00fa14521d685521ce8bc46c929c919"
+    },
+    {
+      "file": "item-names-description-custody.json",
+      "bytes": 1299469,
+      "sha256": "213fa25696b34b6aa0ebf4d7e48318861b1d72da53f1127c4799f695611de262"
+    },
+    {
+      "file": "alias-taxonomy-matrix.json",
+      "bytes": 280195,
+      "sha256": "d53e36c8b6303e48351b60c0e0d762f1cd903cb79e3bd143449936b38da80c12"
+    },
+    {
+      "file": "static-dataset-readiness.json",
+      "bytes": 8446,
+      "sha256": "5a57afd9040cc3392f84975c3bdb137a8cd4251e3e2b36fc04d513488502c76c"
+    },
+    {
+      "file": "weapon-comparison-supplement.json",
+      "bytes": 32266,
+      "sha256": "5165efcef1901170d5ad6f76e2a950879d5d84dfee932e038d2f2840bc57703f"
     }
   ],
-  "total_data_bytes": 2302762,
+  "total_data_bytes": 3923138,
   "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6849833911",
   "independent_private_packet_checks": {
     "privacy_format_audit_sha256": "cd6d46e0054a80e3e16b2543e823874173732250e09ff07984277995bd3d6a51",
@@ -52,5 +72,21 @@
     "formal_independent_review": "PENDING",
     "runtime_changes": false,
     "existing_PR_or_source_mutations": false
+  },
+  "append_authority": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6850459977",
+  "append_predecessor_sha": "82bb3bd54a87b7b124e3f8b71b23fec902b65277",
+  "original_four_members_byte_unchanged": true,
+  "append_scope": {
+    "exact_UTF8_names": 6470,
+    "Description_custody_states": {
+      "FIELD_ABSENT": 3697,
+      "FIELD_PRESENT_UTF8_QUALIFIED": 2771,
+      "FIELD_PRESENT_ENCODING_UNKNOWN": 2
+    },
+    "alias_groups": 157,
+    "static_data_runtime_admitted": false,
+    "weapon_observed_fields": 12,
+    "weapon_comparison": "CANDIDATE_ONLY",
+    "zero_client_input": true
   }
 }

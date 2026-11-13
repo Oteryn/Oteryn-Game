@@ -18,6 +18,10 @@ class EvidenceBoundaries(unittest.TestCase):
         cls.coverage = json.loads((HERE / "client-cyclopedia-coverage.json").read_text())
         cls.candidates = json.loads((HERE / "field-comparison-candidates.json").read_text())
         cls.corrections = json.loads((HERE / "qualified-correction-deltas.json").read_text())
+        cls.names = json.loads((HERE / "item-names-description-custody.json").read_text())
+        cls.aliases = json.loads((HERE / "alias-taxonomy-matrix.json").read_text())
+        cls.static = json.loads((HERE / "static-dataset-readiness.json").read_text())
+        cls.weapons = json.loads((HERE / "weapon-comparison-supplement.json").read_text())
 
     def test_dictionary_index_must_not_wrap_negative(self):
         doc = copy.deepcopy(self.npc)
@@ -82,6 +86,45 @@ class EvidenceBoundaries(unittest.TestCase):
         row["physical_ui_ordinal"] = 116
         with self.assertRaisesRegex(ValueError, "rejected Decoration116"):
             validator.validate_corrections(doc)
+
+    def test_exact_item_name_cannot_be_normalized(self):
+        doc = copy.deepcopy(self.names)
+        column = doc["columns"][doc["field_order"].index("name_exact_utf8")]
+        column["values"][0] += " "
+        with self.assertRaisesRegex(ValueError, "exact UTF8 name"):
+            validator.validate_names(doc, self.coverage)
+
+    def test_unknown_encoding_cannot_receive_zero_line_count(self):
+        doc = copy.deepcopy(self.names)
+        rows = validator.decode_names(doc)
+        row = next(i for i, r in enumerate(rows) if r["description_state"] ==
+                   "FIELD_PRESENT_ENCODING_UNKNOWN")
+        column = doc["columns"][doc["field_order"].index("description_line_count")]
+        column["dictionary"].append(0)
+        column["indices"][row] = len(column["dictionary"]) - 1
+        with self.assertRaisesRegex(ValueError, "unknown encoding"):
+            validator.validate_names(doc, self.coverage)
+
+    def test_alias_npc_count_must_match_source_cohort(self):
+        doc = copy.deepcopy(self.aliases)
+        doc["aliases"][0]["members"][0]["NPC_raw_tuple_occurrences"] += 1
+        with self.assertRaisesRegex(ValueError, "alias market/NPC source join"):
+            validator.validate_alias_matrix(doc, self.names, self.coverage)
+
+    def test_raw_static_counts_cannot_admit_runtime_profile(self):
+        doc = copy.deepcopy(self.static)
+        doc["profile_admission"]["runtime_admitted"] = True
+        with self.assertRaisesRegex(ValueError, "must not gain admission"):
+            validator.validate_static(doc)
+
+    def test_weapon_formatter_cannot_be_replaced_by_retail_label(self):
+        doc = copy.deepcopy(self.weapons)
+        field = next(f for f in doc["rows"][0]["layers"]["canonical"]["fields"]
+                     if f["field"] == "Weapon Type")
+        field["source_formatter_literal"] = field["observed_literal"]
+        field["status"] = "LITERAL_EQUAL_CANDIDATE_ONLY"
+        with self.assertRaisesRegex(ValueError, "exact bounded source projection"):
+            validator.validate_weapons(doc)
 
 
 if __name__ == "__main__":
