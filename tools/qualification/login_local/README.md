@@ -19,7 +19,7 @@ game node ─ Character projection (own mTLS identity) ─> Platform (ownership 
 
 ```bash
 # Platform main carrying U1 (>= 71bbe6c) and #1472, exactly the pinned SHA in run.sh:
-git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout b18d32d30c4c4e496330077d12b37db3f0f29011
+git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 bash tools/qualification/login_local/run.sh
 ```
 
