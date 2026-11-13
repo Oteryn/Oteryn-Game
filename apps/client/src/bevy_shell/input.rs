@@ -1,4 +1,5 @@
 //! Reuse the production winit normalizer; world pointers use the current physical viewport.
+pub(super) mod hits;
 use super::{
     game_ui::{GameRegions, modal::ModalGuard, viewport::WorldViewport},
     owner::HostOwner,
@@ -13,6 +14,7 @@ pub(super) struct WorldInputUi<'w, 's> {
     viewport: Res<'w, WorldViewport>,
     regions: Res<'w, GameRegions>,
     guard: ModalGuard<'w, 's>,
+    hits: hits::WorldPointerHits<'w, 's>,
 }
 pub(super) struct NativeInput {
     adapter: InputPlatformAdapter,
@@ -49,6 +51,13 @@ pub(super) fn route(
             match event {
                 NormalizedInputEvent::PointerMoved { position, motion } => {
                     input.physical_pointer = Some(position);
+                    if !ui.hits.allows_world_start(
+                        ui.regions.world,
+                        Vec2::new(position.x().get() as f32, position.y().get() as f32),
+                    ) {
+                        owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
+                        continue;
+                    }
                     if let Some(position) = map_pointer(&owner, *ui.viewport, position) {
                         owner.route_input(
                             &[NormalizedInputEvent::PointerMoved { position, motion }],
@@ -62,8 +71,17 @@ pub(super) fn route(
                 | NormalizedInputEvent::Wheel { .. }) => {
                     // Resize, DPI, UI scale and world zoom may change without CursorMoved.
                     // Reproject the retained physical cursor before the button reaches picking.
-                    let position = input
-                        .physical_pointer
+                    let raw_position = input.physical_pointer;
+                    if !raw_position.is_some_and(|position| {
+                        ui.hits.allows_world_start(
+                            ui.regions.world,
+                            Vec2::new(position.x().get() as f32, position.y().get() as f32),
+                        )
+                    }) {
+                        owner.route_input(&[NormalizedInputEvent::DeviceLost], true);
+                        continue;
+                    }
+                    let position = raw_position
                         .and_then(|position| map_pointer(&owner, *ui.viewport, position));
                     if let Some(position) = position
                         && let Ok(zero) = PointerDelta::new(0)
