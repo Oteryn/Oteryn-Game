@@ -1,4 +1,5 @@
 //! Explicit native qualification fixture; never compiled into the shipped client.
+mod panels;
 use crate::bevy_shell::{
     self,
     owner::{ActivePlay, HostOwner, Phase},
@@ -18,6 +19,7 @@ struct Capture {
     started: Instant,
     requested: bool,
     result: Option<Result<(), String>>,
+    expected_panel_text: Option<&'static str>,
 }
 #[test]
 fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error::Error>> {
@@ -70,6 +72,7 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         true,
         true,
     );
+    let expected_panel_text = panels::configure(&link, &outbox)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
     let options = bevy_shell::Options {
@@ -95,6 +98,7 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         started: Instant::now(),
         requested: false,
         result: None,
+        expected_panel_text,
     })
     .add_systems(PostUpdate, capture.after(bevy::ui::UiSystems::PostLayout));
     let result = app.run();
@@ -129,6 +133,11 @@ fn capture(
         || !text
             .iter()
             .any(|(text, layout)| text.0 == "42/100" && !layout.glyphs.is_empty())
+        || capture.expected_panel_text.is_some_and(|expected| {
+            !text
+                .iter()
+                .any(|(text, layout)| text.0 == expected && !layout.glyphs.is_empty())
+        })
     {
         return;
     }
