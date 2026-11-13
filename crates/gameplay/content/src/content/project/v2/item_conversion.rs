@@ -437,6 +437,12 @@ pub(super) fn validate_item_conversions(
         "../../../../../../../content/craft/sources.json"
     ))
     .map_err(|e| ProjectError::InvalidJson(e.to_string()))?;
+    // M22 is authored by its independently captured source packet rather than
+    // the older common craft snapshot. Keep both exact provenance owners.
+    let tainted_souls: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../../../tools/content-schema/craft-authoring/samples/tainted-souls.json"
+    ))
+    .map_err(|e| ProjectError::InvalidJson(e.to_string()))?;
     for declaration in &state.declarations {
         let ProjectV2Declaration::ItemConversion {
             identity, recipe, ..
@@ -470,7 +476,16 @@ pub(super) fn validate_item_conversions(
                     && s["lines"].as_u64() == Some(u64::from(source.lines))
             })
         });
-        if pinned.is_none()
+        let tainted_source = (tainted_souls["recipe"].as_str() == Some(identity.key.as_str()))
+            .then_some(&tainted_souls["source"])
+            .filter(|pinned| {
+                pinned["path"].as_str() == Some(source.path.as_str())
+                    && pinned["revision"].as_str() == Some(source.revision.as_str())
+                    && pinned["repository"].as_str() == Some(source.repository.as_str())
+                    && pinned["sha256"].as_str() == Some(source.sha256.as_str())
+                    && pinned["lines"].as_u64() == Some(u64::from(source.lines))
+            });
+        if (pinned.is_none() && tainted_source.is_none())
             || source.line_start == 0
             || source.line_start > source.line_end
             || source.line_end > source.lines

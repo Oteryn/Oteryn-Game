@@ -145,16 +145,22 @@ pub(super) fn project_current_corpse_flags(
             .ok_or(SpellItemError::Rejected("corpse MINT cause Item absent"))?,
     );
     let id = uuid(&row.try_get::<String, _>("item_instance_id")?)?;
-    let current_world = uuid(&row.try_get::<String, _>("corpse_current_world")?)?;
-    let current_channel = row
-        .try_get::<Option<String>, _>("corpse_current_channel")?
-        .map(|value| uuid(&value))
-        .transpose()?;
-    let current_instance = row
-        .try_get::<Option<String>, _>("corpse_current_instance")?
-        .map(|value| uuid(&value))
-        .transpose()?;
-    let scope_matches = match row.try_get::<i16, _>("corpse_current_scope_kind")? {
+    let current_scope = row.try_get::<Vec<Option<String>>, _>("corpse_current_scope")?;
+    let [world, channel, instance, kind] = current_scope.as_slice() else {
+        return Err(SpellItemError::Rejected("corpse current scope shape"));
+    };
+    let current_world = uuid(
+        world
+            .as_deref()
+            .ok_or(SpellItemError::Rejected("corpse current World absent"))?,
+    )?;
+    let current_channel = channel.as_deref().map(uuid).transpose()?;
+    let current_instance = instance.as_deref().map(uuid).transpose()?;
+    let scope_kind = kind
+        .as_deref()
+        .and_then(|kind| kind.parse::<i16>().ok())
+        .ok_or(SpellItemError::Rejected("corpse current scope kind"))?;
+    let scope_matches = match scope_kind {
         1 => {
             current_instance.is_none()
                 && ground.instance_id.is_none()

@@ -361,12 +361,12 @@ mod requirements;
 /// A static native anchor or a closed mutable Ground-only prerequisite.
 pub use ground_stack::GroundStackEntry as GroundStackItem;
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorldRequirement {
     pub position: Position,
     /// Zero only for a mutable Ground stack; otherwise the legacy map appearance.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "WorldRequirement::zero_appearance")]
     pub appearance: u16,
     /// Exact durable Ground roots, bottom first, in addition to the static anchor.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -375,7 +375,37 @@ pub struct WorldRequirement {
     pub ground: Option<ground::GroundStackRequirement>,
 }
 
+impl<'de> Deserialize<'de> for WorldRequirement {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Wire {
+            position: Position,
+            #[serde(default)]
+            appearance: u16,
+            #[serde(default)]
+            ground_stack: Option<Vec<GroundStackEntry>>,
+            #[serde(default)]
+            ground: Option<ground::GroundStackRequirement>,
+        }
+        let wire = Wire::deserialize(deserializer)?;
+        let requirement = Self {
+            position: wire.position,
+            appearance: wire.appearance,
+            ground_stack: wire.ground_stack,
+            ground: wire.ground,
+        };
+        if !requirement.valid() {
+            return Err(serde::de::Error::custom("invalid world requirement"));
+        }
+        Ok(requirement)
+    }
+}
+
 impl WorldRequirement {
+    fn zero_appearance(appearance: &u16) -> bool {
+        *appearance == 0
+    }
     pub fn position(&self) -> Position {
         self.position
     }

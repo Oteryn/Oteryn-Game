@@ -1947,18 +1947,26 @@ fn reward_claim_shape_fails_closed() -> Result<(), ContentError> {
     reward_claim_kind_mut(&mut no_item)?.placements[0]
         .items
         .clear();
-    let mut two_items = source_with_reward_claim()?;
-    let extra = reward_claim_kind_mut(&mut two_items)?.placements[0].items[0].clone();
-    reward_claim_kind_mut(&mut two_items)?.placements[0]
-        .items
-        .push(extra);
-    for candidate in [no_item, two_items] {
+    let mut too_many_items = source_with_reward_claim()?;
+    let item = reward_claim_kind_mut(&mut too_many_items)?.placements[0].items[0].clone();
+    reward_claim_kind_mut(&mut too_many_items)?.placements[0].items = vec![item; 21];
+    for candidate in [no_item, too_many_items] {
         assert!(matches!(
             link_reference_playable(candidate),
             Err(ContentError::InvalidArtifact(
-                "reference-playable reward claim placement requires exactly one reward item"
+                "reference-playable reward claim placement requires 1..20 reward items"
             ))
         ));
+    }
+
+    for count in [1, 2, 20] {
+        let mut valid = source_with_reward_claim()?;
+        let item = reward_claim_kind_mut(&mut valid)?.placements[0].items[0].clone();
+        reward_claim_kind_mut(&mut valid)?.placements[0].items = vec![item; count];
+        assert!(
+            link_reference_playable(valid).is_ok(),
+            "valid reward item count {count}"
+        );
     }
 
     let mut zero = source_with_reward_claim()?;

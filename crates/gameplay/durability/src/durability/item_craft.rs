@@ -74,8 +74,18 @@ impl DurabilityRoot {
         probe: bool,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         permit.check_scope(fence.runtime_scope)?;
-        self.craft_item_owned::<C, ()>(recovery, node, fence, request, native, content, probe, None)
-            .await
+        self.craft_item_with_lane::<C, ()>(
+            recovery,
+            node,
+            fence,
+            request,
+            native,
+            content,
+            probe,
+            None,
+            Some(permit),
+        )
+        .await
     }
 
     /// The same craft owner, with a retained live-state successor around COMMIT.
@@ -90,6 +100,28 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
         window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
+    ) -> Result<Option<UseDisposition>, DurabilityError> {
+        self.craft_item_with_lane(
+            recovery, node, fence, request, native, content, probe, window, None,
+        )
+        .await
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "shared craft owner keeps current fences and the borrowed lane/window proof distinct"
+    )]
+    async fn craft_item_with_lane<C: ItemLoopContent, T: Send + 'static>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemCraftRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
+        permit: Option<&super::spell_owner_commit::SpellLanePermit>,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
         // An enchanting write may not bypass the live resource owner's retained successor.
         // Probes remain available to the common replay path before resolving current handles.
@@ -110,7 +142,10 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content, window);
+        if let Some(permit) = permit {
+            permit.check_scope(fence.runtime_scope)?;
+        }
+        let mut context = (native, content, window, permit);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
@@ -130,7 +165,12 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(request.command), context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            let result = write(&mut tx, fence, &request, context.0, context.1).await?;
+            // Historical receipts and probes above need no fresh write authority.
+            // A new craft must retain the real outer permit or its live window.
+            let Some(permit) = context.2.as_ref().map(|window| window.permit()).or(context.3) else {
+                return Ok(Some(UseDisposition::Rejected));
+            };
+            let result = write(&mut tx, permit, fence, &request, context.0, context.1).await?;
             if result == UseDisposition::Committed {
                 if let Some(window) = context.2.as_mut() {
                     super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
@@ -143,12 +183,13 @@ impl DurabilityRoot {
 
 async fn write<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    permit: &super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     content: &C,
 ) -> Result<UseDisposition, DurabilityError> {
-    write_with_skinning(tx, fence, request, native, content, None).await
+    write_with_skinning(tx, permit, fence, request, native, content, None).await
 }
 
 #[allow(
@@ -157,6 +198,7 @@ async fn write<C: ItemLoopContent>(
 )]
 async fn write_with_skinning<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    permit: &super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
@@ -402,7 +444,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return Ok(UseDisposition::NothingToUse);
     };
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal"
-        && !elemental_energy::has_room(tx, fence).await?
+        && !elemental_energy::has_room(tx, permit, fence).await?
     {
         return Ok(UseDisposition::NotPossible);
     }
@@ -419,7 +461,9 @@ async fn write_with_skinning<C: ItemLoopContent>(
     };
     let retires_source = consumes_source && quantity == consumed_quantity;
     let frees_output_slot = retires_source && nested_source.is_none();
-    let retires_ingredient = ingredient_consumed.as_ref().is_some_and(|(_, retires)| *retires);
+    let retires_ingredient = ingredient_consumed
+        .as_ref()
+        .is_some_and(|(_, retires)| *retires);
     let parent: Vec<u8> = source.try_get("parent")?;
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let tree_count: i64 = sqlx::query_scalar(
@@ -667,7 +711,8 @@ async fn write_with_skinning<C: ItemLoopContent>(
         .await?;
     }
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal" {
-        elemental_energy::create(tx, fence, request, native, &transaction, occurred).await?;
+        elemental_energy::create(tx, permit, fence, request, native, &transaction, occurred)
+            .await?;
     }
     Ok(UseDisposition::Committed)
 }

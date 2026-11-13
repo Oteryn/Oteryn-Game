@@ -484,3 +484,37 @@ fn item_conversion_closed_operand_schema_rejects_extra_quantity_and_lifecycle_fi
         );
     }
 }
+
+#[test]
+fn item_conversion_m22_source_packet_remains_exactly_bound() {
+    let catalogue: Value =
+        serde_json::from_str(include_str!("../../../content/craft/recipes.json"))
+            .expect("catalogue");
+    let source = catalogue["records"]
+        .as_array()
+        .expect("recipes")
+        .iter()
+        .find(|row| {
+            row["identity"]["key"] == "oteryn:item-conversion.tainted-souls-antler-talisman"
+        })
+        .expect("accepted M22 recipe");
+    let (draft, limits) = item_conversion_candidate(vec![source.clone()]);
+    CanonicalProjectDocuments::from_v2_draft(draft, limits).expect("exact M22 source");
+    for (field, replacement) in [
+        ("repository", json!("substituted/repository")),
+        ("revision", json!("unreviewed-source")),
+        ("path", json!("other.lua")),
+        ("sha256", json!("0".repeat(64))),
+        ("lines", json!(20)),
+        ("line_start", json!(0)),
+        ("line_end", json!(20)),
+    ] {
+        let mut changed = source.clone();
+        changed["recipe"]["source"][field] = replacement;
+        let (draft, limits) = item_conversion_candidate(vec![changed]);
+        assert!(
+            CanonicalProjectDocuments::from_v2_draft(draft, limits).is_err(),
+            "M22 source substitution {field} was admitted"
+        );
+    }
+}

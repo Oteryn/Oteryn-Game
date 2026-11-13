@@ -71,7 +71,8 @@ fn mutable_ground_requires_exact_quantity_order_instance_and_revision() {
 }
 
 #[test]
-fn mutable_ground_schema_rejects_ambiguous_and_unbounded_conditions() {
+fn mutable_ground_schema_rejects_ambiguous_and_unbounded_conditions()
+-> Result<(), serde_json::Error> {
     use oteryn_gameplay_quests::quest::world_callbacks::ground::{
         GroundStackItem, GroundStackRequirement,
     };
@@ -87,8 +88,31 @@ fn mutable_ground_schema_rejects_ambiguous_and_unbounded_conditions() {
         }
         .valid()
     );
-    let mixed = serde_json::json!({"position":{"x":1,"y":1,"floor":-7},"appearance":3031,"ground":{"stacks":[row]}});
+    let mixed = serde_json::json!({"position":{"x":1,"y":1,"floor":-7},"appearance":3031,"ground":{"stacks":[row.clone()]}});
     assert!(serde_json::from_value::<WorldRequirement>(mixed).is_err());
+    let ground =
+        serde_json::json!({"position":{"x":1,"y":1,"floor":-7},"ground":{"stacks":[row.clone()]}});
+    let parsed: WorldRequirement = serde_json::from_value(ground.clone())?;
+    assert_eq!(serde_json::to_value(&parsed)?, ground);
+    for mutation in 0..5 {
+        let mut invalid = ground.clone();
+        match mutation {
+            0 => invalid["ground"]["stacks"] = serde_json::json!([]),
+            1 => invalid["ground"]["stacks"] = serde_json::json!(vec![row.clone(); 9]),
+            2 => invalid["ground_stack"] = serde_json::json!([{"item":row.item,"count":1}]),
+            3 => invalid["appearance"] = serde_json::json!(3031),
+            _ => invalid["unexpected"] = serde_json::json!(true),
+        }
+        assert!(
+            serde_json::from_value::<WorldRequirement>(invalid).is_err(),
+            "invalid Ground shape {mutation}"
+        );
+    }
+    // Existing exact static-anchor plus ordered native stack remains admitted.
+    let anchored = serde_json::json!({"position":{"x":1,"y":1,"floor":-7},"appearance":3031,"ground_stack":[{"item":"oteryn:item.tibia.i3031","count":1}]});
+    let parsed: WorldRequirement = serde_json::from_value(anchored.clone())?;
+    assert_eq!(serde_json::to_value(parsed)?, anchored);
+    Ok(())
 }
 
 #[test]

@@ -4,10 +4,12 @@ use serde_json::Value;
 
 pub(super) async fn adopt(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     binding: &NativeMapOwnerBinding,
     node: &NodeIncarnationProof,
     epoch: u64,
 ) -> Result<()> {
+    permit.check_channel(binding.world, binding.channel)?;
     // The initializer already holds key-33 and the actual scope/Node fences.
     // The accepted channel field budget bounds this complete ownership census.
     let rows = sqlx::query("SELECT r.transaction_id::text,to_jsonb(g) AS ground_before FROM game_elemental_energy_field_receipts r JOIN game_item_instances i USING(item_instance_id) JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.world_id=encode($1,'hex')::uuid AND r.channel_id=encode($2,'hex')::uuid AND r.map_revision=$3 AND r.content_revision=$4 AND r.placement_context=$5 AND r.reset_epoch=$6::text::bigint AND g.runtime_scope_ownership_generation<$7::text::numeric AND game_elemental_energy_field_source(i.item_instance_id) ORDER BY i.item_instance_id LIMIT 20001 FOR UPDATE OF i")

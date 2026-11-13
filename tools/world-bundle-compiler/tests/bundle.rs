@@ -700,9 +700,17 @@ fn reader_refuses_a_bundle_this_node_cannot_run() -> TestResult {
             "{refused:?} was accepted"
         );
     }
-    assert!(bundle::SUPPORTED_CAPABILITIES.is_empty());
+    for capability in bundle::SUPPORTED_CAPABILITIES {
+        let accepted = with(Identity {
+            required_capabilities: vec![(*capability).into()],
+            ..current.clone()
+        })?;
+        assert!(bundle::read(&accepted.bytes).is_ok());
+    }
+    let unsupported = "oteryn:feature/x";
+    assert!(!bundle::SUPPORTED_CAPABILITIES.contains(&unsupported));
     let result = with(Identity {
-        required_capabilities: vec!["oteryn:feature/x".into()],
+        required_capabilities: vec![unsupported.into()],
         ..current
     });
     assert!(matches!(result, Err(Error::Format(_))));

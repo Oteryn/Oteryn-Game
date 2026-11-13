@@ -120,10 +120,39 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
         enchanting: None,
     };
     eprintln!("M22_CRAFT INPUTS_READY full_bag_entries={entries_before}");
+    let unowned = h
+        .root
+        .craft_item_owned::<_, ()>(
+            &authority,
+            &h.node,
+            f::item_fence()?,
+            request.clone(),
+            native,
+            &weights,
+            false,
+            None,
+        )
+        .await
+        .map_err(f::debug)?;
+    assert_eq!(
+        unowned,
+        Some(UseDisposition::Rejected),
+        "a fresh craft needs the actual lane or live window"
+    );
+    let unowned_receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_craft_records WHERE game_session_id=encode($1,'hex')::uuid AND command_id=9500")
+        .bind(f::item_fence()?.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        unowned_receipts, 0,
+        "missing lane proof must not mint a craft receipt"
+    );
+    let permit = durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(f::scope()?)
+        .await
+        .map_err(f::debug)?;
     for _ in 0..2 {
         let result = h
             .root
-            .craft_item_owned::<_, ()>(
+            .craft_item(
+                &permit,
                 &authority,
                 &h.node,
                 f::item_fence()?,
@@ -131,7 +160,6 @@ async fn exercise(h: &f::Harness) -> f::TestResult {
                 native,
                 &weights,
                 false,
-                None,
             )
             .await
             .map_err(f::debug)?;

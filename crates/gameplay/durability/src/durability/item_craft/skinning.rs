@@ -62,7 +62,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content, catalogue);
+        let mut context = (native, content, catalogue, permit);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder,deadline,context| Box::pin(async move {
             let mut tx=begin_type2_transaction(holder,deadline).await?;
             super::super::character_authority::assert_recovery_fence(&mut tx,&record).await?;
@@ -78,7 +78,7 @@ impl DurabilityRoot {
             if assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,Some(request.craft.command),context.1.loop_content_digest()).await.is_err() {
                 return Ok(Some(UseDisposition::Rejected));
             }
-            let result=super::write_with_skinning(&mut tx,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
+            let result=super::write_with_skinning(&mut tx,context.3,fence,&request.craft,context.0,context.1,Some((&request,context.2))).await?;
             if result==UseDisposition::Committed { tx.commit(deadline).await?; }
             Ok(Some(result))
         })).await

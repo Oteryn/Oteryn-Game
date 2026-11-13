@@ -86,7 +86,7 @@ pub async fn initialize_in_transaction(
     .await?;
     // Immutable script creation records identify candidates only. The actual
     // current recovery, Scope, Node and map owner were checked above.
-    elemental_energy::adopt(tx, &binding, node, epoch).await?;
+    elemental_energy::adopt(tx, permit, &binding, node, epoch).await?;
     let mut keys = BTreeSet::new();
     let mut out = Vec::new();
     for p in proof.placements() {

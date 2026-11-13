@@ -11,7 +11,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[2]
 PIN = ROOT / 'apps/game-server/tests/integration_rest/spell_lane_key33_pin.rs'
-TABLE = r'(?:game_item_ground_locations|game_item_corpse_container_entries|game_native_map_scope_adoptions)\b'
+TABLE = r'(?:game_item_ground_locations|game_item_corpse_container_entries|game_native_map_scope_adoptions|game_elemental_energy_field_receipts|game_elemental_energy_field_adoptions)\b'
 WRITE = re.compile(r'(?:INSERT INTO|DELETE FROM|UPDATE) ' + TABLE)
 LOCK = re.compile(r"'hex'\), ?33\)")
 ROW = re.compile(r'\("([^"]+)", "([^"]+)"\)')

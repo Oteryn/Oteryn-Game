@@ -5,8 +5,10 @@ use super::*;
 /// recovery, Node, scope and current equipment fence in this transaction.
 pub(super) async fn has_room(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    permit: &super::super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
 ) -> Result<bool, DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Use the same channel Item lock as spell fields and the receipt's final guard.
     // The count is a separate statement so its snapshot follows lock acquisition.
@@ -25,12 +27,14 @@ pub(super) async fn has_room(
 
 pub(super) async fn create(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
+    permit: &super::super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
     request: &ItemCraftRequest,
     native: &NativeGameplayState,
     parent: &str,
     occurred: i64,
 ) -> Result<(), DurabilityError> {
+    permit.check_scope(fence.runtime_scope)?;
     let policy = native
         .item_policy("oteryn:item.tibia.i2126", "definition-r1")
         .ok_or(DurabilityError::InvalidStoredState)?;
