@@ -95,7 +95,7 @@ def generate():
         results.append(row)
     return {'schema':'OTERYN_PARTIAL_ITEMS_SOURCE_CANDIDATES/v1','classification':'DERIVED','source_commit':PIN,
         'input_observation_receipts':input_receipts,
-        'scope':{'category':'Creature Products','ordinals':[observations[0]['ui_entry_ordinal'],observations[-1]['ui_entry_ordinal']],'records':len(observations),'category_complete':False,
+        'scope':{'category':'Creature Products','ordinals':[observations[0]['ui_entry_ordinal'],observations[-1]['ui_entry_ordinal']],'records':len(observations),'category_semantic_parity_complete':False,'observed_category_end_receipt':'category-end-receipt.json'if(HERE/'category-end-receipt.json').exists()else None,
                  'compared_fields':['Weight','Tradeable In Market'],'non_narrative_fields_retained_but_not_source_compared':True,'narrative_text_retained_privately_with_hash_receipts':True},
         'identity_boundary':'Every repository key is an unqualified name candidate, including unique names; no UI ID or appearance mapping was read. Equal name/icon never collapses rows.',
         'weight_conversion_source':{'commit':PIN,'path':'crates/gameplay/dispatch/src/gameplay_transport/inspection.rs'},
@@ -122,6 +122,7 @@ if __name__=='__main__':
             'boundary':'These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim.'}
         (HERE/'uncompared-field-backlog.json').write_text(json.dumps(backlog,indent=2)+'\n')
         paths=sorted(HERE.glob('observations-*.json'))+[HERE/'gap-correction.json',HERE/'uncompared-field-backlog.json',path]
+        paths += [HERE/name for name in ('category-end-receipt.json','reader-coverage-union.json')if(HERE/name).exists()]
         integrity={'files':{p.name:{'bytes':len(p.read_bytes()),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}for p in paths}}
         (HERE/'packet-integrity.json').write_text(json.dumps(integrity,indent=2)+'\n')
     print(json.dumps(result['counts']))

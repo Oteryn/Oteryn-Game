@@ -1,0 +1,118 @@
+{
+  "schema": "OTERYN_CYCLOPEDIA_BASIC_READER_COVERAGE_UNION/v2",
+  "category": "Creature Products",
+  "classification": "OBSERVED",
+  "source_receipt": {
+    "private_source_key": "items-reader-cloud-20261113/creature-products-basic-1-980-coverage-union-receipt-v2.json",
+    "sha256": "bb3fd2f70edb815f1ee73842859929f58f275861ae1de03cf203e6d3bb48a941",
+    "bytes": 5041
+  },
+  "physical_ui_ordinals": {
+    "first": 1,
+    "last": 980,
+    "records": 980,
+    "gaps": [],
+    "duplicates": []
+  },
+  "saved_basic_pages": 984,
+  "distinct_original_basic_png": 984,
+  "original_proof_hashes_freshly_verified": 3790,
+  "immutable_inputs": [
+    {
+      "private_key": "items-reader-cloud-20261113/creature-products-basic-1-134-repo-ready.json",
+      "sha256": "9b4dd2cc5fba5fe15f94d74be6d02c418bc0284da10ffc645157c7be0f137b71",
+      "records": 134,
+      "first_physical_ui_ordinal": 1,
+      "last_physical_ui_ordinal": 134,
+      "proofs": 404
+    },
+    {
+      "private_key": "items-reader-cloud-20261113/creature-products-basic-135-247-gap-repaired-repo-ready.json",
+      "sha256": "26ea07dd41145e0e1a4116e8f9fc0f538b5739a7a02255e9ab78acb81999d61e",
+      "records": 113,
+      "first_physical_ui_ordinal": 135,
+      "last_physical_ui_ordinal": 247,
+      "proofs": 452
+    },
+    {
+      "private_key": "items-reader-cloud-20261113/creature-products-basic-248-500-combined-private.json",
+      "sha256": "64e77a93f9e591e0a4e23035469dd44b6176462d900bb9fb285dde614aa43bff",
+      "records": 253,
+      "first_physical_ui_ordinal": 248,
+      "last_physical_ui_ordinal": 500,
+      "proofs": 1013
+    },
+    {
+      "private_key": "items-reader-cloud-20261113/creature-products-basic-501-980-combined-private.json",
+      "sha256": "03cea6ecf54e1d61744ecdcbf32366331446766fe01339b1ff845ea825a1b1a6",
+      "records": 480,
+      "first_physical_ui_ordinal": 501,
+      "last_physical_ui_ordinal": 980,
+      "proofs": 1921
+    }
+  ],
+  "original_capture_index_receipt": {
+    "private_key": "items-sequence-creature-products/capture-index.json",
+    "sha256": "76f0d8ce904b76b4cc7c46987b6390c9d552b3dde52b14355ddb4c4d3d6ae9ed",
+    "ranges": [
+      {
+        "physical_ui_range": [
+          1,
+          134
+        ],
+        "records": 134,
+        "basic_top_png": 134,
+        "extra_basic_png": 2,
+        "distinct_basic_png": 136,
+        "extra_page_ordinals": [
+          113,
+          116
+        ]
+      },
+      {
+        "physical_ui_range": [
+          135,
+          247
+        ],
+        "records": 113,
+        "basic_top_png": 113,
+        "extra_basic_png": 0,
+        "distinct_basic_png": 113,
+        "extra_page_ordinals": []
+      },
+      {
+        "physical_ui_range": [
+          248,
+          500
+        ],
+        "records": 253,
+        "basic_top_png": 253,
+        "extra_basic_png": 1,
+        "distinct_basic_png": 254,
+        "extra_page_ordinals": [
+          315
+        ]
+      },
+      {
+        "physical_ui_range": [
+          501,
+          980
+        ],
+        "records": 480,
+        "basic_top_png": 480,
+        "extra_basic_png": 1,
+        "distinct_basic_png": 481,
+        "extra_page_ordinals": [
+          729
+        ]
+      }
+    ]
+  },
+  "count_correction": {
+    "superseded_receipt_sha256": "055c043b88e14e2c2017285530ee7d0197cfeb8b041628fea6d0b49bc0c9e3a7",
+    "correct_basic_pages": 984,
+    "basis": "Actual original Basic top+page paths, including extra pages113/116/315/729. Original observations and historical receipt unchanged.",
+    "understated_by": 2
+  },
+  "boundary": "Reader evidence union only; immutable earlier1..134 linked, not duplicated. Trade,animation,all-static goal remain incomplete."
+}

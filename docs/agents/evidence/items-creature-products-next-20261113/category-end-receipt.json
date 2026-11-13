@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_CAPTURE_CATEGORY_END_RECEIPT/v1",
+  "category": "Creature Products",
+  "classification": "OBSERVED_ROOT_COLLECTION_END",
+  "source_receipt": {
+    "private_source_key": "items-sequence-creature-products/category-completion.json",
+    "sha256": "68ce650072ab1d3683ed3e434a9519edca402a9f4055d1a84ba30e2cc3312bcd",
+    "bytes": 9218
+  },
+  "category_end_observed": true,
+  "captured_physical_ui_range": [
+    1,
+    980
+  ],
+  "captured_records": 980,
+  "final_entry_ui_ordinal": 980,
+  "final_capture_id": 980,
+  "end_stability_checks_before": 2,
+  "end_stability_checks_after": 2,
+  "end_proof_receipts": [
+    {
+      "private_source_key": "items-sequence-creature-products/manual-tail-end-1794537827219270014.png",
+      "sha256": "e08675da640063f72f1fcd7406ec4f4b43e6634020da509f7cbc88ad1367e705"
+    },
+    {
+      "private_source_key": "items-sequence-creature-products/manual-tail-after-1794537830017629203.png",
+      "sha256": "4d78f657cc42419ebd2fcb0ca0a1aa42949ac3e6c77f69b4081c7947c877b130"
+    }
+  ],
+  "reader_qualification_now": "All980 Basic rows independently qualified by linked V2 union; collector end receipt historically preceded the final reader batch.",
+  "boundary": "Complete ordered Basic capture/read coverage is not complete trade,animation,identity,projection parity or overall static Cyclopedia completion."
+}

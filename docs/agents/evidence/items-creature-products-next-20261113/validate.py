@@ -62,6 +62,38 @@ def main():
         assert by[315]['properties']['Armor']=='1'and by[315]['properties']['Body Position']=='head'
         assert by[315]['properties']['Classification']=='4'and by[315]['properties']['Weight']=='8.50 oz'
         assert by[352]['properties']['Body Position']=='finger'and by[393]['properties']['Body Position']=='extra slot'
+    if 980 in by:
+        assert len(observations)==846 and len(proofs)==3386 and private_text==113 and private_layouts==97
+        assert by[594]['fullName']=='nettle spit'and by[594]['properties']['Weight']=='0.00 oz'
+        assert by[572]['properties']['Body Position']=='extra slot'
+        assert by[624]['properties']['Armor']=='1'and by[624]['properties']['Body Position']=='body'
+        assert by[725]['properties']['Attack']=='5'and by[725]['properties']['Defence']=='1'
+        assert by[729]['properties']['Attack']=='12'and by[729]['properties']['Defence']=='10'
+        assert by[729]['properties']['Classification']=='3'
+        assert by[872]['fullName']==by[873]['fullName']
+        assert by[980]['fullName']=='zaogun shoulderplates'and by[980]['properties']['Weight']=='1.03 oz'
+        assert by[980]['properties']['Tradeable In Market']=='yes'
+        union=read('reader-coverage-union.json');end=read('category-end-receipt.json')
+        assert union['physical_ui_ordinals']=={'first':1,'last':980,'records':980,'gaps':[],'duplicates':[]}
+        assert union['saved_basic_pages']==union['distinct_original_basic_png']==984
+        assert union['original_proof_hashes_freshly_verified']==3790
+        assert union['count_correction']['understated_by']==2 and union['count_correction']['correct_basic_pages']==984
+        assert union['source_receipt']['sha256']=='bb3fd2f70edb815f1ee73842859929f58f275861ae1de03cf203e6d3bb48a941'
+        assert sum(row['records']for row in union['immutable_inputs'])==980
+        assert sum(row['proofs']for row in union['immutable_inputs'])==3790
+        assert union['immutable_inputs'][0]['sha256']=='9b4dd2cc5fba5fe15f94d74be6d02c418bc0284da10ffc645157c7be0f137b71'
+        packets={packet['coverage']['first_physical_ui_ordinal']:packet for packet in [json.loads(p.read_text())for p in sorted(HERE.glob('observations-*.json'))]}
+        for source in union['immutable_inputs'][1:]:
+            assert packets[source['first_physical_ui_ordinal']]['source_receipt']['sha256']==source['sha256']
+        assert [r['extra_page_ordinals']for r in union['original_capture_index_receipt']['ranges']]==[[113,116],[],[315],[729]]
+        basic_proofs={key for key in proofs if re.search(r'-basic-(?:top|\d+)\.png$',key)}
+        assert len(basic_proofs)==848 and 848+136==984
+        assert end['category_end_observed']is True and end['captured_records']==980
+        assert end['captured_physical_ui_range']==[1,980]
+        assert end['end_stability_checks_before']==end['end_stability_checks_after']==2
+        assert end['final_entry_ui_ordinal']==end['final_capture_id']==980
+        assert len(end['end_proof_receipts'])==2
+        assert all(re.fullmatch('[0-9a-f]{64}',p['sha256'])for p in end['end_proof_receipts'])
     repair=read('gap-correction.json');assert repair['repairs']==[{key:by[n][key]for key in ('ui_entry_ordinal','capture_id','fullName','properties')}for n in(197,237)]
     for name,receipt in read('packet-integrity.json')['files'].items():
         raw=(HERE/name).read_bytes();assert len(raw)==receipt['bytes']and hashlib.sha256(raw).hexdigest()==receipt['sha256'],name
@@ -81,7 +113,7 @@ def main():
     print(json.dumps({'passed':True,'physical_ordinal_cutoff':[min(ordinals),max(ordinals)],'records':len(observations),
         'private_png_receipts':len(proofs),'observed_private_description_receipts':private_text,'observed_private_display_layout_receipts':private_layouts,'uncompared_literal_fields':sorted(expected),
         'gap_repairs_verified':[197,237],'duplicate_name_rows_preserved':[[163,164],[222,223]],
-        'source_receipts':len(comparison['source_receipts']),'overall_audit':'PARTIAL'}))
+        'source_receipts':len(comparison['source_receipts']),'ordered_basic_reader_category_complete':980 in by,'global_basic_pages':984 if 980 in by else None,'global_card_proof_references':3790 if 980 in by else None,'overall_audit':'PARTIAL'}))
 
 
 if __name__=='__main__':main()
