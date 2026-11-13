@@ -5,6 +5,7 @@ mod controls;
 mod exit;
 mod game_ui;
 mod gameplay_dialogs;
+mod hints;
 mod input;
 mod login;
 mod owner;
@@ -164,6 +165,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     gameplay_dialogs::install(&mut app);
     game_ui::install(&mut app);
     audio::install(&mut app);
+    hints::install(&mut app);
     exit::install(&mut app);
     window_drag::install(&mut app);
     app
