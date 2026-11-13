@@ -1,7 +1,7 @@
 //! Existing product input owners, shared with headless caller tests.
 use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
-use oteryn_input_actions::{InputError, NormalizedInputEvent};
+use oteryn_input_actions::{InputError, KeyCode, NormalizedInputEvent};
 pub(super) struct Controls {
     mouse: MouseActions,
     spells: SpellHotkeys,
@@ -75,6 +75,9 @@ impl HostOwner {
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
             || play.link.discovery_input(&routed)
+            || (routed.iter().any(|event| {
+                matches!(event, NormalizedInputEvent::Key { code: KeyCode::KEY_V, .. })
+            }) && play.link.vip_input(&routed))
         {
             return;
         }
