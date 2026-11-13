@@ -2,7 +2,7 @@
 use super::super::{owner::HostOwner, ui::Skins};
 use crate::bevy_shell::game_ui::modal::ModalGuard;
 use bevy::{prelude::*, ui::InteractionDisabled, ui_widgets::Activate};
-use oteryn_client_ui::{battle::Action, vip::Intent};
+use oteryn_client_ui::battle::Action;
 use oteryn_client_ui_bevy as source;
 use oteryn_session::{ChaseMode, EntityRef, FightMode};
 
@@ -10,6 +10,8 @@ use oteryn_session::{ChaseMode, EntityRef, FightMode};
 mod battle;
 #[path = "hud/skills.rs"]
 mod skills;
+#[path = "hud/vip.rs"]
+mod vip;
 #[derive(Clone, Copy, Component)]
 struct HudAction {
     generation: u64,
@@ -22,7 +24,6 @@ enum Command {
     Fight(FightMode),
     Chase(ChaseMode),
     Skills,
-    Vip,
     BattleList(usize),
     Analyser(oteryn_client_ui::analyser::Tool),
 }
@@ -32,12 +33,12 @@ struct VitalLabel(bool);
 struct VitalFill(bool);
 #[derive(Clone, Copy, Component)]
 enum InfoText {
-    Vip,
     Analyser,
 }
 
 pub(super) fn install(app: &mut App) {
     skills::install(app);
+    vip::install(app);
     app.add_systems(
         Startup,
         setup.after(super::setup).after(super::super::ui::setup),
@@ -98,40 +99,23 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
         commands.entity(track).add_children(&[fill, label]);
         commands.entity(regions.vitals).add_child(track);
     }
-    for (region, title, command) in [
-        (regions.skills, "Skills", Command::Skills),
-        (regions.vip, "VIP", Command::Vip),
-    ] {
-        let header = commands
-            .spawn(Node {
-                width: percent(100.),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::SpaceBetween,
-                ..default()
-            })
-            .id();
-        let caption = commands
-            .spawn(source::text(title, source::font(skins.font.clone(), false)))
-            .id();
-        let refresh = button(&mut commands, &skins, 0, command, "Refresh", 48.);
-        commands.entity(header).add_children(&[caption, refresh]);
-        commands.entity(region).add_child(header);
-        if matches!(command, Command::Vip) {
-            let body = commands
-                .spawn((
-                    InfoText::Vip,
-                    source::text("", source::font(skins.font.clone(), false)),
-                    Node {
-                        width: percent(100.),
-                        padding: UiRect::all(px(3.)),
-                        ..default()
-                    },
-                ))
-                .insert(TextLayout::default())
-                .id();
-            commands.entity(region).add_child(body);
-        }
-    }
+    let header = commands
+        .spawn(Node {
+            width: percent(100.),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::SpaceBetween,
+            ..default()
+        })
+        .id();
+    let caption = commands
+        .spawn(source::text(
+            "Skills",
+            source::font(skins.font.clone(), false),
+        ))
+        .id();
+    let refresh = button(&mut commands, &skins, 0, Command::Skills, "Refresh", 48.);
+    commands.entity(header).add_children(&[caption, refresh]);
+    commands.entity(regions.skills).add_child(header);
     let title = commands
         .spawn(source::text(
             "Analysers",
@@ -222,7 +206,6 @@ fn activate(
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
         Command::Skills => play.link.skills_widget_request(),
-        Command::Vip => play.link.vip_request(Intent::Query(0)),
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);
         }
@@ -251,7 +234,6 @@ fn project(
     let generation = owner.generation();
     if *entered != Some(generation) {
         play.link.skills_widget_request();
-        play.link.vip_request(Intent::Query(0));
         *entered = Some(generation);
     }
     let vitals = play.link.actor_vitals();
@@ -289,7 +271,6 @@ fn project(
     for (kind, mut text) in &mut info {
         let next = match kind {
             InfoText::Analyser => play.link.analyser_text().replace("\r\n", "\n"),
-            InfoText::Vip => vip_text(&play.link.vip_panel(), &play.link.vip_presence_panel()),
         };
         if text.0 != next {
             text.0 = next;
@@ -300,19 +281,13 @@ fn project(
     let loyalty = play.link.loyalty_skills_panel();
     let skills_blocked =
         (!skills.selected && !loyalty.selected) || skills.pending || loyalty.pending;
-    let vip = play.link.vip_panel();
-    let vip_blocked = !vip.selected || vip.pending;
     let analyser_blocked = !play.link.analyser_panel().selected;
     for (entity, mut action, disabled) in &mut actions {
-        if matches!(
-            action.command,
-            Command::Skills | Command::Vip | Command::Analyser(_)
-        ) {
+        if matches!(action.command, Command::Skills | Command::Analyser(_)) {
             action.generation = generation;
             let blocked = blocked
                 || match action.command {
                     Command::Skills => skills_blocked,
-                    Command::Vip => vip_blocked,
                     Command::Analyser(_) => analyser_blocked,
                     _ => false,
                 };
@@ -324,40 +299,6 @@ fn project(
             }
         }
     }
-}
-fn vip_text(
-    panel: &oteryn_client_ui::vip::VipPanel,
-    presence: &oteryn_client_ui::vip_presence::VipPresencePanel,
-) -> String {
-    if !panel.selected {
-        return "VIP unavailable in this session".into();
-    }
-    let mut lines = Vec::new();
-    if let Some(view) = panel
-        .view
-        .as_ref()
-        .and_then(|view| serde_json::from_str::<serde_json::Value>(view).ok())
-    {
-        for entry in view["entries"].as_array().into_iter().flatten() {
-            if let Some(name) = entry["name"].as_str() {
-                let status = presence
-                    .presence
-                    .entries
-                    .iter()
-                    .find(|row| Some(row.entry) == entry["entry"].as_u64())
-                    .map(|row| format!("{:?}", row.status))
-                    .unwrap_or_else(|| "Unconfirmed".into());
-                lines.push(format!("{name} — {status}"));
-            }
-        }
-    }
-    if let Some(feedback) = &panel.feedback {
-        lines.push(feedback.clone());
-    }
-    if panel.pending {
-        lines.push("Updating…".into());
-    }
-    lines.join("\n")
 }
 #[cfg(test)]
 #[path = "hud/tests.rs"]
