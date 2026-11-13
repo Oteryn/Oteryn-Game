@@ -251,10 +251,10 @@ pub(super) fn project(
     } else {
         ""
     };
-    if let Ok(mut caption) = text.get_mut(widgets.progress) {
-        if caption.0 != progress {
-            caption.0 = progress.into();
-        }
+    if let Ok(mut caption) = text.get_mut(widgets.progress)
+        && caption.0 != progress
+    {
+        caption.0 = progress.into();
     }
 }
 fn autofocus(mut state: ResMut<State>, mut focus: ResMut<InputFocus>, guard: ModalGuard) {

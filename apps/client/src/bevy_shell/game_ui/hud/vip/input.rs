@@ -193,10 +193,10 @@ pub(super) fn keyboard(
                 state.draft = None;
                 state.pending = None;
             }
-            KeyCode::Enter | KeyCode::NumpadEnter => {
-                if focus.get().is_some_and(|entity| fields.get(entity).is_ok()) {
-                    prepare(&mut state, &fields, serial);
-                }
+            KeyCode::Enter | KeyCode::NumpadEnter
+                if focus.get().is_some_and(|entity| fields.get(entity).is_ok()) =>
+            {
+                prepare(&mut state, &fields, serial);
             }
             _ => {}
         }
