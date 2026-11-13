@@ -4,15 +4,15 @@
 task_id: ITEMS-LEGS-EVIDENCE-20261113
 title: Ordered Legs Basic66 evidence and bounded source/client candidates
 mode: AUDIT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-legs-evidence-takeover-20261113
-pr: null
+pr: 3161
 base_sha: 9b7552e07f241a423a10d8304726c2de94489c74
 owner: /root/compare_items
 created_at: 2026-11-13T07:47:07Z
-updated_at: 2026-11-13T07:47:07Z
+updated_at: 2026-11-13T07:50:18Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/items-legs-20261113/**
@@ -32,8 +32,15 @@ Original private assets/text/config remain private. Frozen Helmets3160 and all o
 
 ## Validation
 
-Focused validator, source reproduction, required governance/tests and full delta integrity are run before publication. Final positive draft PR number and validation handoff are recorded before the last authoring commit; exact FREEZE_SHA is external after that commit. No game compilation: documentation evidence only.
+- `python docs/agents/evidence/items-legs-20261113/validate.py`: pass,66 cards/153 BasicPNG/351 proofs,6 Description+6 layout seals,66 client-only candidates.
+- `python docs/agents/evidence/items-legs-20261113/compare_sources.py --check`: pass, exact canonical/selected source reproduction.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: OK,129 tests.
+- `git diff --check`: pass; all12 integrity receipts match staged Git bytes.
+- Private source/appearance checks: pass, exact actual index/reader pathset;73 input hashes,8 decoder hashes/Git blobs,31 packed/decoded sheet hashes,142 independently recomputed sprite-slot metrics. Nested raw Description and serverID promotion negative cases rejected.
+
+No game compilation or runtime/E2E tests: documentation evidence only. Exact FREEZE_SHA is external after the final commit, never self-referentially recorded here.
 
 ## Closeout
 
-AUTHORING. Root is sole independent review dispatcher; no worker review trigger, merge or deployment. Keep this active task waiting/PARTIAL after final freeze rather than terminally archived.
+Draft #3161 published. Root is sole independent review dispatcher; formal review and exact-head CI qualification remain pending after freeze. No worker review trigger, merge or deployment. This active task remains waiting/PARTIAL rather than terminally archived; final writer freeze ends this candidate's authoring, not the complete Items audit.
