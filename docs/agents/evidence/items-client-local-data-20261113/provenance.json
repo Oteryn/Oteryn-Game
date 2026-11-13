@@ -1,0 +1,56 @@
+{
+  "schema": "ITEMS_CLIENT_LOCAL_DATA_PUBLICATION_PROVENANCE/v1",
+  "classification": "DERIVED",
+  "authoring_base_sha": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "historical_comparison_data_pin": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+  "prepared_manifest_sha256": "968570840801b3e3326068bb30771d50c5b7a4edd33538ef4e7b226ba3d84e1b",
+  "data_members": [
+    {
+      "file": "client-cyclopedia-coverage.json",
+      "bytes": 1021748,
+      "sha256": "1eab503e0f1ded5c828fb8a424278458fe83c6146ea7794d2e0c9f8f42c9a8cc"
+    },
+    {
+      "file": "client-npc-tuples.json",
+      "bytes": 1106991,
+      "sha256": "dbb9a784bcb6d4dd654cce06db665fe547ccf89c516f14b2d9c0d6903d8bb811"
+    },
+    {
+      "file": "field-comparison-candidates.json",
+      "bytes": 170878,
+      "sha256": "ba6d7be6d8aaaac0ef629e05aa6c46561822251a443153869c8df5805fe01378"
+    },
+    {
+      "file": "qualified-correction-deltas.json",
+      "bytes": 3145,
+      "sha256": "3e3c25922175c3cd662b9b05345ec4fcd00fa14521d685521ce8bc46c929c919"
+    }
+  ],
+  "total_data_bytes": 2302762,
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6849833911",
+  "independent_private_packet_checks": {
+    "privacy_format_audit_sha256": "cd6d46e0054a80e3e16b2543e823874173732250e09ff07984277995bd3d6a51",
+    "NPC_disk_roundtrip_manifest_sha256": "3ed9b10ad9e8f615da96b884396c958db8da7c20ac878728d417f2e4ec9b1aca",
+    "scope": "Pre-publication packet integrity/semantic spot checks, not formal PR review"
+  },
+  "population_scope": {
+    "Cyclopedia_bearing_appearances": 6470,
+    "Cyclopedia_types": 6228,
+    "global_NPC_appearances": 2679,
+    "global_NPC_tuples": 15350,
+    "Cyclopedia_subset_NPC_appearances": 2571,
+    "Cyclopedia_subset_NPC_tuples": 14235,
+    "outside_Cyclopedia_NPC_tuples": 1115
+  },
+  "boundaries": {
+    "all_empty_correction_quote_arrays": "OBSERVED_INITIAL_PANEL_ONLY",
+    "raw_NPC_currency": "No missing currency inferred as gp; present client refs remain unbound",
+    "appearance_Cyclopedia_source_server_namespaces": "DISTINCT",
+    "serverID_bindings": 0,
+    "overall_static_audit": "PARTIAL",
+    "private_originals_rechecked_in_Cloud": false,
+    "formal_independent_review": "PENDING",
+    "runtime_changes": false,
+    "existing_PR_or_source_mutations": false
+  }
+}
