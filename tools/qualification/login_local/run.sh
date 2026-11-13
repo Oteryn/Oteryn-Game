@@ -293,6 +293,8 @@ make_leaf client oteryn-game-native-evidence client-ca clientAuth
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
 make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth "DNS:$RUNTIME_IDENTITY"
+python3 "$GAME_SOURCE/tools/qualification/login_local/runtime_identity.py" \
+  "$WP5_PKI/runtime-status.crt" "$RUNTIME_IDENTITY" "$WP5_PKI/runtime-status-map.conf"
 make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
 make_leaf projection "$PROJECTION_IDENTITY" client-ca clientAuth
 # Gateway -> Platform upstream: nginx serves TLS (SAN nginx) from a test CA the gateway trusts via SSL_CERT_FILE.
@@ -386,7 +388,7 @@ evidence "registry world_id=$WORLD_ID channel_id=$CHANNEL_ID route_revision=$ROU
 
 # Real scope identities and the Character projection feed (mode 33a off); recreate Platform with them,
 # then install the issuer seed (0600, www-data).
-LL_RUNTIME_STATUS_IDENTITIES="{\"CN=$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
+LL_RUNTIME_STATUS_IDENTITIES="{\"$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 export LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
