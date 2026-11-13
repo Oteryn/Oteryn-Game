@@ -187,3 +187,76 @@ fn native_activate_sends_the_visible_editor_through_the_existing_owner()
     );
     Ok(())
 }
+
+#[test]
+fn native_composer_mode_button_cycles_the_existing_console_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::{Action, ChatModeButton, ChatState, Control, Field, HostOwner, widgets};
+    use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
+    use oteryn_client_ui::chat::ComposerMode;
+    let (link, _commands, _outbox) = play_channel();
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let generation = host.generation();
+    let mut app = App::new();
+    app.init_resource::<InputFocus>()
+        .insert_non_send(host)
+        .insert_resource(ChatState {
+            generation: Some(generation),
+            ..default()
+        });
+    let editor = app
+        .world_mut()
+        .spawn((Field::Message, EditableText::new("unsent draft")))
+        .id();
+    let button = app
+        .world_mut()
+        .spawn((
+            ChatModeButton,
+            Control {
+                action: Action::ComposerMode,
+                generation,
+            },
+        ))
+        .observe(widgets::activate)
+        .id();
+    app.world_mut().trigger(Activate { entity: button });
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .mode,
+        ComposerMode::Off
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), None);
+    app.world_mut().trigger(Activate { entity: button });
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .mode,
+        ComposerMode::Temporary
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(editor));
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "unsent draft"
+    );
+    Ok(())
+}

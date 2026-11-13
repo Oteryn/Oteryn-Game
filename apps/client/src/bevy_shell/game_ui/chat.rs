@@ -1,4 +1,5 @@
 //! Interactive console projected from the retained chat owner; no local message echoes.
+use super::modal::ModalGuard;
 use super::{
     super::{owner::HostOwner, ui::Skins},
     GameRegions,
@@ -48,6 +49,8 @@ struct Transcript;
 struct HistoryScroll;
 #[derive(Component)]
 struct ModeButton;
+#[derive(Component)]
+struct ChatModeButton;
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum Field {
     Message,
@@ -55,6 +58,7 @@ enum Field {
 }
 #[derive(Clone)]
 enum Action {
+    ComposerMode,
     Send,
     Mode,
     Channels,
@@ -89,7 +93,12 @@ fn keyboard(
     mut fields: Query<(Entity, &Field, &mut EditableText)>,
     owner: NonSend<HostOwner>,
     state: Res<ChatState>,
+    guard: ModalGuard,
 ) {
+    if !guard.allows_focus(focus.get()) {
+        keys.clear();
+        return;
+    }
     if owner.modal_active() || state.generation != Some(owner.generation()) {
         keys.clear();
         return;
@@ -159,6 +168,8 @@ fn project(
     mut texts: Query<&mut Text, With<Transcript>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
+    chat_mode_buttons: Query<&Children, With<ChatModeButton>>,
+    guard: ModalGuard,
     tabs: Query<Entity, With<Tabs>>,
     controls: Query<(Entity, &Control)>,
     mut scroll: Query<(&ComputedNode, &mut ScrollPosition), With<HistoryScroll>>,
@@ -213,17 +224,27 @@ fn project(
             }
         }
     }
-    let mode = if !panel.console.can_send() {
-        "Chat off"
-    } else {
-        match state.mode {
-            Mode::Say => "Say",
-            Mode::Whisper => "Whisper",
-            Mode::Yell => "Yell",
-            Mode::Guild => "Guild",
-            Mode::Private => "Private",
-        }
+    let mode = match state.mode {
+        Mode::Say => "Say",
+        Mode::Whisper => "Whisper",
+        Mode::Yell => "Yell",
+        Mode::Guild => "Guild",
+        Mode::Private => "Private",
     };
+    let composer_mode = match panel.console.mode {
+        oteryn_client_ui::chat::ComposerMode::On => "Chat On",
+        oteryn_client_ui::chat::ComposerMode::Off => "Chat Off",
+        oteryn_client_ui::chat::ComposerMode::Temporary => "Chat Once",
+    };
+    for children in &chat_mode_buttons {
+        for child in children {
+            if let Ok(mut text) = captions.get_mut(*child)
+                && text.0 != composer_mode
+            {
+                text.0 = composer_mode.into();
+            }
+        }
+    }
     for children in &mode_buttons {
         for child in children {
             if let Ok(mut text) = captions.get_mut(*child)
@@ -314,7 +335,7 @@ fn project(
                 .remove::<bevy::ui::InteractionDisabled>();
         }
         if *field == Field::Message {
-            let focused = focus.get() == Some(entity) && !disabled;
+            let focused = focus.get() == Some(entity) && !disabled && guard.allows(entity);
             if text.value() != state.value.as_str() || state.focus != focused {
                 state.value = text.value().to_string();
                 state.focus = focused;

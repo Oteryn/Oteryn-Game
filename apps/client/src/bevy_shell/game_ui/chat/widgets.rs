@@ -88,9 +88,18 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     let send = button(&mut commands, &skins, "Send", 44., Action::Send, 0);
     let channels = button(&mut commands, &skins, "+", 22., Action::Channels, 0);
     let close = button(&mut commands, &skins, "×", 22., Action::Close, 0);
+    let chat_mode = button(
+        &mut commands,
+        &skins,
+        "Chat On",
+        70.,
+        Action::ComposerMode,
+        0,
+    );
+    commands.entity(chat_mode).insert(ChatModeButton);
     commands
         .entity(compose)
-        .add_children(&[mode, frame, send, channels, close]);
+        .add_children(&[mode, frame, send, channels, close, chat_mode]);
     commands
         .entity(root)
         .add_children(&[tabs, history, compose]);
@@ -156,7 +165,11 @@ pub(super) fn activate(
     mut focus: ResMut<InputFocus>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<ChatState>,
+    guard: ModalGuard,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok(control) = controls.get(event.entity) else {
         return;
     };
@@ -167,6 +180,7 @@ pub(super) fn activate(
         return;
     };
     match &control.action {
+        Action::ComposerMode => {} // Deliberately unwired until the native caller test is observed red.
         Action::Tab(tab) if control.generation == owner.generation() => {
             commands::select(&play.link, tab)
         }
@@ -191,16 +205,12 @@ pub(super) fn activate(
             }
         }
         Action::Mode => {
-            if !play.link.chat_panel().console.can_send() {
-                play.link.chat_console_mode();
-            } else {
-                state.mode = match state.mode {
-                    Mode::Say => Mode::Whisper,
-                    Mode::Whisper => Mode::Yell,
-                    Mode::Yell => Mode::Guild,
-                    _ => Mode::Say,
-                };
-            }
+            state.mode = match state.mode {
+                Mode::Say => Mode::Whisper,
+                Mode::Whisper => Mode::Yell,
+                Mode::Yell => Mode::Guild,
+                _ => Mode::Say,
+            };
         }
         Action::Channels => play.link.chat_channel_dialog_open(),
         Action::Close => play.link.chat_close_current(),
