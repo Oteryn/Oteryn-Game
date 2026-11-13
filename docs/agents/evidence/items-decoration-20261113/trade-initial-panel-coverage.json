@@ -1,0 +1,35 @@
+{
+  "classification": "PROVEN_INITIAL_VISIBLE_PANELS_ONLY",
+  "source_receipt": {
+    "filename": "decoration-trade-initial-panels-1-50-audit-v2.json",
+    "bytes": 82180,
+    "sha256": "6789526aa54238ce65b38f454854c0a29ffdfe815e586e73583e8ac6d8e47d29"
+  },
+  "category": "Decoration",
+  "physical_ui_range": [
+    1,
+    50
+  ],
+  "initial_panels": 100,
+  "original_proof_hashes_freshly_verified": 50,
+  "initial_panel_states": {
+    "OBSERVED_EMPTY_PANEL": 73,
+    "OBSERVED_NONEMPTY_INITIAL_PANEL": 27
+  },
+  "visible_entries_including_partial": 32,
+  "vertical_retake_ordinals": [
+    46
+  ],
+  "horizontal_retake_ordinals": [],
+  "trade_panels_complete": false,
+  "npc_lists_complete": false,
+  "transactions_or_conversations": 0,
+  "gui_input_actions": 0,
+  "boundary": "Observed empty panel is not global NPC absence. Buy From46 fourth-entry location and lower rows UNKNOWN because vertical clipping. Literal NPC/price/residence audit stays private.",
+  "superseded_audit_receipt": {
+    "filename": "decoration-trade-initial-panels-1-50-audit.json",
+    "bytes": 81472,
+    "sha256": "9d1198aea990390992043a87df01d6f85608fe8c629d414b26b32b528fb271c3"
+  },
+  "native_transcription_correction_count": 1
+}

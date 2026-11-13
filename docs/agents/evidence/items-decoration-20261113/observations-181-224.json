@@ -1,0 +1,1874 @@
+{
+  "schema": "OTERYN_COMPACT_PRIVATE_ITEMS_OBSERVATIONS/v1",
+  "classification": "PROVEN",
+  "category": "Decoration",
+  "client": "Tibia Test Server 15.33.dd0955",
+  "source_receipt": {
+    "filename": "decoration-basic-181-224-reviewed-private.json",
+    "bytes": 92091,
+    "sha256": "7430c341ed574887af6d4094a5185a6c323b98fae9637864a49744c8bfed533d"
+  },
+  "coverage": {
+    "first_physical_ui_ordinal": 181,
+    "last_physical_ui_ordinal": 224,
+    "records": 44,
+    "saved_basic_pages": 44,
+    "missing_physical_ordinals_in_cutoff": [],
+    "category_end_observed": false,
+    "trade_panels_qualified": false,
+    "animation_qualified": false
+  },
+  "identity_boundary": "Names, graphics, physical ordinals and capture IDs do not establish client/server identity. Same-name cards remain separate.",
+  "field_export_policy": {
+    "non_narrative_basic_literals": "EXPORTED_EXACTLY",
+    "Description": "OBSERVED_VALUE_RETAINED_PRIVATELY_WHEN_PRESENT",
+    "description_display_lines": "OBSERVED_LAYOUT_RETAINED_PRIVATELY_WHEN_PRESENT",
+    "private_text_receipts": 18,
+    "private_display_layout_receipts": 18,
+    "no_full_repository_text_parity_claim": true
+  },
+  "private_png_hash_checks": 176,
+  "items": [
+    {
+      "capture_key": "items-sequence-decoration:181",
+      "capture_id": 181,
+      "ui_entry_ordinal": 181,
+      "fullName": "god flowers",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "11.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00181-name.png",
+          "sha256": "cd94163dadadaa863299c976e7fe8c31c1aa3352dcd02417cd506c5d7e347a4e"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00181-name-hover.png",
+          "sha256": "a42442994d8716719c7e5c06099a54779fc0b463af474d0d3561181192fce0a4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00181-basic-top.png",
+          "sha256": "d37896bc9163c45cef65abaab1d705a342bd7d6b8adcf43d14989216313c38c3"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00181-icon.png",
+          "sha256": "f4341b762e3c7ae6512bac534d78707ab96ee33bd9dbbf6cf1375c01f0faad18"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:182",
+      "capture_id": 182,
+      "ui_entry_ordinal": 182,
+      "fullName": "golden rat",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00182-name.png",
+          "sha256": "d23a422a181149e04309dc71864bf3c860d2065db338b7f6ae18707480b23466"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00182-name-hover.png",
+          "sha256": "7a6719eb84581acefbebeb0e40d7081ff0ee4c857722b6d0d63afcc0e66d2a4a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00182-basic-top.png",
+          "sha256": "426a7302c629789e94e51c0cd857e403b9bce0f9a852b03fe71d8ef5052cbfd8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00182-icon.png",
+          "sha256": "e70e7778be65e418ade3207c7f0061e131621c4f710a98661c83dadeb5ca4bda"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "931dba569d9112ec310bef7d06f6a082dcb607eb9b4a2ce26694a61cd743f764",
+        "bytes": 39,
+        "characters": 39
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "945c08b89f39193c9a7a244b2e29a620427e250fc4321847ccbbbf572e3b08e1",
+        "canonical_utf8_bytes": 43,
+        "line_count": 1,
+        "line_character_lengths": [
+          39
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:183",
+      "capture_id": 183,
+      "ui_entry_ordinal": 183,
+      "fullName": "golden wallpaper",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "8.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00183-name.png",
+          "sha256": "ad94db46170f8d3de5f218245038c58c578d877e2a44ff3b2d62bf1df7c8511a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00183-name-hover.png",
+          "sha256": "64c6281cc2221590b9a821b2f4474d90260dc71970c12aac38734e0bf9a2f1f0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00183-basic-top.png",
+          "sha256": "846f5f76d84da93eaabb41256143517ea320f302ec9bbc937332d3626adc5ab5"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00183-icon.png",
+          "sha256": "48f1152db95e5a323bbae3cc84279abadddee6f828611926a8d14da2805c6810"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:184",
+      "capture_id": 184,
+      "ui_entry_ordinal": 184,
+      "fullName": "goldfish bowl",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "32.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00184-name.png",
+          "sha256": "d9beaf1365ce69ac06ceb63c852750e8f7144d01392e78eb85902db2d26f3e0b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00184-name-hover.png",
+          "sha256": "527a179830cc8a45ef095056bab17da0a14a5e29e071bbe059600807227a9392"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00184-basic-top.png",
+          "sha256": "0c2d7c7b21b74f85b3eff0f99b45ea722a8078db72d6a326b8ef8e36fa320c54"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00184-icon.png",
+          "sha256": "242b9eb70b80c8c7bbc39ad998f664eb98637e61979894b9a5917cb8b0167c54"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:185",
+      "capture_id": 185,
+      "ui_entry_ordinal": 185,
+      "fullName": "grave flower",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.60 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00185-name.png",
+          "sha256": "2e2e3954df5d6fd1117623eb1ffa14328d79de593c0cd1ed5e33c71c459b88a1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00185-name-hover.png",
+          "sha256": "d606dc02167adb0b5808006f676224b7b0114d47de2c859b83c37e8e1279993c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00185-basic-top.png",
+          "sha256": "8887c85854a00612314fe5a2ecfd02a66025a707c9a24997d512b1360ca5bf3c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00185-icon.png",
+          "sha256": "e4750d658a8f8584dca18e3608b2784bf10b48673dd721202f6ee8586973c88c"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:186",
+      "capture_id": 186,
+      "ui_entry_ordinal": 186,
+      "fullName": "greed king santa",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00186-name.png",
+          "sha256": "90ad74b5741bea6453f1c3abb55c8a628ab60f193b95b557bc09dc06fdb1569c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00186-name-hover.png",
+          "sha256": "8841731960a0a5c14dc40c1a3f2a17226e9652722a77bd9ea35ee220832ad191"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00186-basic-top.png",
+          "sha256": "0dc4175b0c74867cc7849b620f5034d3658652479c1511caf5ee49173a4610dd"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00186-icon.png",
+          "sha256": "8381275edf56f946101f02a162e2b71c2a84111a1c778aeb04b2a736eed2542b"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:187",
+      "capture_id": 187,
+      "ui_entry_ordinal": 187,
+      "fullName": "green 25 years balloon",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.15 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00187-name.png",
+          "sha256": "7a17e1118ef6a9f499c8fd5625553ad7492265a48f44ea0226c068588ce469bc"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00187-name-hover.png",
+          "sha256": "1bcd68e8a9a1d9a46ad39005bc19275f623d41c169d4c5bcc9c41aea9bebfa5a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00187-basic-top.png",
+          "sha256": "772dc4b5b0dae7b06e231c18c739be6ee0b62c2d912f623b5eeb68ee369c1541"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00187-icon.png",
+          "sha256": "ec2f3b884823fef5d54d5399d22043ffa3910957180f22822cff93cf30b477bc"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:188",
+      "capture_id": 188,
+      "ui_entry_ordinal": 188,
+      "fullName": "green and blue presents kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "25.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00188-name.png",
+          "sha256": "f92bd6558e0d7baecfc2f9df5e47ee20dae493e79f9a06adc6885ad7de29c55a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00188-name-hover.png",
+          "sha256": "cb2f2927019cc937e3b1f21578767d311ce0931c85099ccf1c2a397de372e747"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00188-basic-top.png",
+          "sha256": "915edafb876f34a31b175acb9be5d59fbc2d495d0ae01ae9a03f5c6db33f6bb4"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00188-icon.png",
+          "sha256": "3cb51922f67b3bcb082c1a53e92b372e0c9825087ce75639867a5fdd64a83313"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "7f83f9b17f67de9e2b93db1cd6e9e15cd7ea985e0cf12e7e0a10905d1526d0eb",
+        "bytes": 56,
+        "characters": 56
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "5dd58722dbb230c617844aa778a52dad95dd967059f7e420967f028525ce2a8e",
+        "canonical_utf8_bytes": 62,
+        "line_count": 2,
+        "line_character_lengths": [
+          48,
+          7
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:189",
+      "capture_id": 189,
+      "ui_entry_ordinal": 189,
+      "fullName": "green and red presents kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "25.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00189-name.png",
+          "sha256": "29601226bfbf0d67a8a9d704b94b9965bea3b2566ce7385cea663e9d7734da9c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00189-name-hover.png",
+          "sha256": "b69de10f3e2229ebd36654308922b6057a5ae1f79611f4ae34718abbe04e3c23"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00189-basic-top.png",
+          "sha256": "d6f891359dbcea5c6ced764c423aa70847967c77dfda73cb43db2e76d14853aa"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00189-icon.png",
+          "sha256": "3cb51922f67b3bcb082c1a53e92b372e0c9825087ce75639867a5fdd64a83313"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "c61305cb063759de9426b5e74247ce3e0b1195b9dfde9490eb9d78f66ac1ff61",
+        "bytes": 55,
+        "characters": 55
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "8ad2f0485c997f75d6b4ae6bf74721e8e4cae234fc239b4b48193f5ca04769eb",
+        "canonical_utf8_bytes": 61,
+        "line_count": 2,
+        "line_character_lengths": [
+          47,
+          7
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:190",
+      "capture_id": 190,
+      "ui_entry_ordinal": 190,
+      "fullName": "green balloon",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.15 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00190-name.png",
+          "sha256": "e9627df52e6611d8c301df0815d315037f604e10cee0fc86074f8fe43055a888"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00190-name-hover.png",
+          "sha256": "b1a41897a5c8ec80c0f429f4d98ce5e2a2ff8fc5b7d53991e8ed16c69c7f2ee5"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00190-basic-top.png",
+          "sha256": "e86c4a1e008e0d5a4d75b7bc9688c3561c602794cf25c36d0c17f3ac1af426bf"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00190-icon.png",
+          "sha256": "fcfaf5cb9147c21d2ebfcd8dcb6b979fbec2c7b041b485cc76d43444d2e9085c"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:191",
+      "capture_id": 191,
+      "ui_entry_ordinal": 191,
+      "fullName": "green balloons",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.10 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00191-name.png",
+          "sha256": "3b4109e7ca96a639b5af0e56f5c7a138b858ceb6362d13952a4cf3c1418e432b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00191-name-hover.png",
+          "sha256": "6a9cac4ecc30772af292c0b22f62bdd2b9369a66afece5a6d0f4e102af9d65b4"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00191-basic-top.png",
+          "sha256": "c53a58de9794ad0059d69aa60a27327d95fd43b5c8b3143337c6f4e688d817d3"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00191-icon.png",
+          "sha256": "48bb8af05b048fb39b18a7cd89904ed1be8013d13b807305706416216f96fce5"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:192",
+      "capture_id": 192,
+      "ui_entry_ordinal": 192,
+      "fullName": "green cushioned chair kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "25.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00192-name.png",
+          "sha256": "4c7d16b6164c5b8c459ef27372af33f107a29866b5a84be2fdf58eaa785ac71a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00192-name-hover.png",
+          "sha256": "ee58d300ab466f51ea937d2752a430beeb07b41ccc2def5c428e8aaff7eee3f9"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00192-basic-top.png",
+          "sha256": "07719cc4df06f9facb8840cfd95b9074295d9c31277b4cea184512410cc6285f"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00192-icon.png",
+          "sha256": "3cb51922f67b3bcb082c1a53e92b372e0c9825087ce75639867a5fdd64a83313"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "a3ea952c95478c63aadc7c7b3ef43d4d388d7302966bb8fc6d56badedee0707a",
+        "bytes": 57,
+        "characters": 57
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "425391e6be2be5d069bc5397ac779e4755e3eab203698eaa9ba4c214591f160a",
+        "canonical_utf8_bytes": 63,
+        "line_count": 2,
+        "line_character_lengths": [
+          41,
+          15
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:193",
+      "capture_id": 193,
+      "ui_entry_ordinal": 193,
+      "fullName": "green pillow",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "16.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00193-name.png",
+          "sha256": "8f60eec5bb806c0cb982fca70095a15711f24b049213549ebaedf8450812e38a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00193-name-hover.png",
+          "sha256": "f208d38ad4a5db0e538b9ac8c78962049d3cfb00e8d473769fe5ff76070f8591"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00193-basic-top.png",
+          "sha256": "e89d4066b92233462c0f3876a5d80affd54d5416e0454ca646a64516878cbdd1"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00193-icon.png",
+          "sha256": "26d314b093ebf7f699bba2278a42e6f1e12b819ae9d849925a7e6e4aff147320"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:194",
+      "capture_id": 194,
+      "ui_entry_ordinal": 194,
+      "fullName": "green pit demon",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00194-name.png",
+          "sha256": "f09a0e5e39117cfdb8470a97063feee4104224ce794c3537d63b6655907e5247"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00194-name-hover.png",
+          "sha256": "0887f0c29246fd2a20e62211cac70718fcf047649e683e9f5e93c5a395bccdb0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00194-basic-top.png",
+          "sha256": "fea45fc8a1a50ac32f411b544d81c3f990885269dacb844c2600d235f13f7be0"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00194-icon.png",
+          "sha256": "67fee19f15b89208974317090e469fbef9b8225ed0b96b8a5f8334e0e4242beb"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "ab1382af557a43d363edce875f589f646505889c30f12c9c78b25062a4400cfa",
+        "bytes": 15,
+        "characters": 15
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "63e8e32c67b3a54acdc88956138f98778a709d64ef73bf6b833b6dba851800c7",
+        "canonical_utf8_bytes": 19,
+        "line_count": 1,
+        "line_character_lengths": [
+          15
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:195",
+      "capture_id": 195,
+      "ui_entry_ordinal": 195,
+      "fullName": "green rat",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.90 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00195-name.png",
+          "sha256": "461088dfcd8bc9077db15461e4e46e0c7b85121613796b4192979de4b3655bbd"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00195-name-hover.png",
+          "sha256": "7ea4cb58ba6ef1fe09b89931b652463d64a78786a59eabdf28aad88fa4af4c5a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00195-basic-top.png",
+          "sha256": "333a507f7e39171bbe0fbde0a474bc1c78306e525cbf402d2d0e664a6203f596"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00195-icon.png",
+          "sha256": "181b9d83d7d8edfa0a8ae66a2f514a07a9fa50c97380c5a4eeb23c5b26688738"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "a582653cd99f40e5dfebf3df947c3b531ce0c3399ebd6925d45b098d95ecca2b",
+        "bytes": 28,
+        "characters": 28
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "138bc998e688f95c2dc7e15e1a035b61e5add129c64cf6269f57ff194365128b",
+        "canonical_utf8_bytes": 32,
+        "line_count": 1,
+        "line_character_lengths": [
+          28
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:196",
+      "capture_id": 196,
+      "ui_entry_ordinal": 196,
+      "fullName": "green tapestry",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00196-name.png",
+          "sha256": "daf6d897f5a818f79c5bb769f803901b6637d893126c6d8612d0bc3de338a232"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00196-name-hover.png",
+          "sha256": "beb500cd018ad6cca572597557e6b95d46c64a0abe66a877563031f583f8fee7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00196-basic-top.png",
+          "sha256": "8a0c3a6861d5081d052a47c36660b7a35086f2e18280d684437887a8327e524e"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00196-icon.png",
+          "sha256": "3bad2d252fe156fc4ff6338e94a179accd3b54db23101fcfafa9c43290dca985"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:197",
+      "capture_id": 197,
+      "ui_entry_ordinal": 197,
+      "fullName": "green wallpaper",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "8.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00197-name.png",
+          "sha256": "7b3de9302602c2dfc775f0b3f009c33b86603517db6f7cf8e67deca9f9271be4"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00197-name-hover.png",
+          "sha256": "f237dcf067696f749f8128ada6a0083380c036e13ef8641d77fa14594d3900ad"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00197-basic-top.png",
+          "sha256": "bd286cd6d63e95001ff73e4dd9f83803df9cdea2830b519a18fc5526ce972ff8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00197-icon.png",
+          "sha256": "25ea0c602690f3f49de660fd46d3037350cdda78c8cf80ee29b59a0788fa7234"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:198",
+      "capture_id": 198,
+      "ui_entry_ordinal": 198,
+      "fullName": "grey raven kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "80.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00198-name.png",
+          "sha256": "6a39b5f8c78c7a82165c7df351ab5ad143e8953fffbed38da83a08c5c863e104"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00198-name-hover.png",
+          "sha256": "47c3efdb38cf91ddc8545af67e190ae3231eb915853d3a06e4fb6666bb29a6d3"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00198-basic-top.png",
+          "sha256": "f12390b473264095b0ce1b7a1b093da2eca44408976339ef09d1dfcc70663e40"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00198-icon.png",
+          "sha256": "b1e9faa5d4138a8be38ab7c09f2fee17cd68d875dc4677a0474c40a1107a88d7"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "8eba0c0c843d40525f126d2cc9197b23b3edfdc3898b9bc8410255778896c84a",
+        "bytes": 42,
+        "characters": 42
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "f4425713b054fe42156272eae9bfdb234d8d1c04a72cde86b0eac15572569163",
+        "canonical_utf8_bytes": 46,
+        "line_count": 1,
+        "line_character_lengths": [
+          42
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:199",
+      "capture_id": 199,
+      "ui_entry_ordinal": 199,
+      "fullName": "grovebeast figurine",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00199-name.png",
+          "sha256": "e78fcd86b96e74fe04c059c10af80b1c8496f30ef9980e8d6fd4dd7130de85a6"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00199-name-hover.png",
+          "sha256": "c612e9741cfde67f406e8182fb68601cc2aa32608c0d7b2a8d080b78922829ee"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00199-basic-top.png",
+          "sha256": "2b9b91717782998c4df231476ab9edbe4eddc8f9b975a0460df4f01fc65d5c7b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00199-icon.png",
+          "sha256": "95d043f86399fa57287de2170d8bc521643cff6a9f95dfbc5de8aac577a2a705"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:200",
+      "capture_id": 200,
+      "ui_entry_ordinal": 200,
+      "fullName": "guardian statue",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "9.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00200-name.png",
+          "sha256": "ddacbf54600cfbd7c127428b23107779ca300c6f4050cb4ad3b24776e8545d54"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00200-name-hover.png",
+          "sha256": "65068265df2e31423d7ac3e771d6facb11f1989bb8127f73cabcdc79870b0167"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00200-basic-top.png",
+          "sha256": "4c52df58e16ebd75d1336223bf8359b0f5448454843e6a5240887b5e619edc5f"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00200-icon.png",
+          "sha256": "c7a2715c6b6a2bd2e8e6a380a7d39c4316a347eb125ce914dcbcd27f5261dba7"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "1d62425d32336ad2fc716b7ed6d5df9a4cd9dc931a2949fbde2112d76912f160",
+        "bytes": 137,
+        "characters": 137
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "35df22b02253cff9278a0c802e600e5e75b19ee3dbb6ce7b1187697ceaaca0ce",
+        "canonical_utf8_bytes": 145,
+        "line_count": 3,
+        "line_character_lengths": [
+          45,
+          45,
+          45
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:201",
+      "capture_id": 201,
+      "ui_entry_ordinal": 201,
+      "fullName": "harp kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "35.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00201-name.png",
+          "sha256": "724821ff6999c8d5771ccb89c9fe5dc144b5746fe329408f37500f4c678951dd"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00201-name-hover.png",
+          "sha256": "7bbd1fc7563432d0605587a34ecb37f112e4a8580c14c732f590fc859ae41f04"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00201-basic-top.png",
+          "sha256": "39d5486d160054e0b001d8d6904b826c1a2b6fb960eed38c42e33cfacca2abe0"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00201-icon.png",
+          "sha256": "b1e9faa5d4138a8be38ab7c09f2fee17cd68d875dc4677a0474c40a1107a88d7"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "f1c14d50db470c444198fd0dd89d388377c04dd26ab3b914327e21642d269078",
+        "bytes": 40,
+        "characters": 40
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "967ef9b2b246369c6821d428d145dbba6591245016474332768d603666c818f9",
+        "canonical_utf8_bytes": 44,
+        "line_count": 1,
+        "line_character_lengths": [
+          40
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:202",
+      "capture_id": 202,
+      "ui_entry_ordinal": 202,
+      "fullName": "heart pillow",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "17.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00202-name.png",
+          "sha256": "b642dc39fe6ff26ad3b6971e4b3c315c8c63f36c3d13827bedb28be5769a3853"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00202-name-hover.png",
+          "sha256": "1268359091bcd26ab873e83562f3cdfd5dec994576086da8a54bcfff9e901207"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00202-basic-top.png",
+          "sha256": "7af141aa17d7d3d50fa7e99d8c09e5a78b6858c0b8dc5a6c2b5650dc4dbcb7f8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00202-icon.png",
+          "sha256": "9788674a83ab4a5a899fb3c32f7614b4826f7bad889477d15a0e0301e7f5b36d"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:203",
+      "capture_id": 203,
+      "ui_entry_ordinal": 203,
+      "fullName": "hieroglyph banner",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00203-name.png",
+          "sha256": "398c17c2ee8ee832bece3f536370fa19c5bc2012a981f7bf041913f7e5fd56af"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00203-name-hover.png",
+          "sha256": "165b467a832e940c39a8c312f667a107db901b5e4bcd8243d5d3e0e2c19a730d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00203-basic-top.png",
+          "sha256": "3e5ccacd4e767332d158cb9476bc107a6e5d94a9ff2354170ca0975d758f576f"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00203-icon.png",
+          "sha256": "74e9cdd321283235ca9d8ccb2f4d4059463c471fcbe2235d1b504fd8d5b764e7"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:204",
+      "capture_id": 204,
+      "ui_entry_ordinal": 204,
+      "fullName": "honey flower",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "10.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00204-name.png",
+          "sha256": "4a2415225576c999666aea170a866ec2ef6f1374a942f64d9b9c321936ae33c5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00204-name-hover.png",
+          "sha256": "ac4a990f348f1c705bf7a8d756b41a6147a5f8567c11eea73ffc3ff31d1cd981"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00204-basic-top.png",
+          "sha256": "6e070e7e81f916d7461e2d704c418a84c378962ac55b3c601f65da85d66fcf91"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00204-icon.png",
+          "sha256": "14430bee45cad0e845c7a81e10c684903464bd87e6d9900024c457de0506b17e"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:205",
+      "capture_id": 205,
+      "ui_entry_ordinal": 205,
+      "fullName": "hydra balloon",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.15 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00205-name.png",
+          "sha256": "4147808058403b3a4cf4469251aba079f3a080e41ed39bcf0d8b7a8e5da8057c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00205-name-hover.png",
+          "sha256": "c914620c86c8192f0cf43e9428019dcd376d0a42d1d180aad78d42e075a8a74a"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00205-basic-top.png",
+          "sha256": "cbe5012febc8707b1c9b5726d5167811a209c5b08826f2073a07e7780464c799"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00205-icon.png",
+          "sha256": "72c515b4423e58161a958fe464efcbc794baf302c28655eddbd84cb4c000dc20"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:206",
+      "capture_id": 206,
+      "ui_entry_ordinal": 206,
+      "fullName": "Impward",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "6.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00206-name.png",
+          "sha256": "43d50c5999e89b09bcc61ebad849ccfb0877c32a86fdbfc2804c2636940ce48c"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00206-name-hover.png",
+          "sha256": "0a3493488a3e373b2a06dae99958cde8e8cdd1987efe4561fe0d53d10f53250f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00206-basic-top.png",
+          "sha256": "998a5be0f02cd51b618405154cd7d7dadacbaad42fc8ca1478172edd5a91ae71"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00206-icon.png",
+          "sha256": "c9059cc0a81218c9e881adfdb2eed8d7ae6beb98c7e4e9bee48af9e2901594e8"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:207",
+      "capture_id": 207,
+      "ui_entry_ordinal": 207,
+      "fullName": "indoor plant kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "30.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00207-name.png",
+          "sha256": "688515b03da10a98b00485a7261dfa37e939a9c2f4e41c12f734e63a70a41149"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00207-name-hover.png",
+          "sha256": "d659074d0263b8d13f6b59addf88e0e0d2e8ce591ba13a87d44dfc0e56c72fee"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00207-basic-top.png",
+          "sha256": "d45b67d22e95ade182460bdbeffaab95c7c5beca53019088b659273884c99d7b"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00207-icon.png",
+          "sha256": "77975e347881f558550bf7429291e5719e190e3621c3c9bb1f32f2bc92477230"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "a11b362e3194036285a25bb9bc1cd8f0c7686924c0edf6cd20236d711f3fbabc",
+        "bytes": 46,
+        "characters": 46
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "ab39fa9da8941b38e643b24ab040d12c4a4969454c419cc31846ccc93a220d74",
+        "canonical_utf8_bytes": 50,
+        "line_count": 1,
+        "line_character_lengths": [
+          46
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:208",
+      "capture_id": 208,
+      "ui_entry_ordinal": 208,
+      "fullName": "ink blade",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "3.50 oz",
+        "Tradeable In Market": "yes",
+        "Protection": "energy +2%",
+        "Augments": "Summon Knight Familiar -> -300s cooldown",
+        "Vocations": "knights",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00208-name.png",
+          "sha256": "97ca30b0243970a10da7aff18c8c60468034b216c995e2374a5cb600ff06cdc8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00208-name-hover.png",
+          "sha256": "f06d888a5ebde76d218c7e55e0e037e28fce87d773f1851c1f07ae26788141ac"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00208-basic-top.png",
+          "sha256": "448b6bd7e3df50367a1263ae5c26bf339b530bf5c8dea00a9b57bd2c93bbcb15"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00208-icon.png",
+          "sha256": "92d4c55d8f0df91520f5d4895429c3a9d1bab922d0fab89343030064bde45c23"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:209",
+      "capture_id": 209,
+      "ui_entry_ordinal": 209,
+      "fullName": "ink brush",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "2.80 oz",
+        "Tradeable In Market": "yes",
+        "Protection": "energy +2%",
+        "Augments": "Summon Monk Familiar -> -300s cooldown",
+        "Vocations": "monks",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00209-name.png",
+          "sha256": "381a8ff4077c7eff21ae05d8549d08c4f7d125f7a509816af4496e7048411bba"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00209-name-hover.png",
+          "sha256": "90122fe6c1b705fe630664b412cd1863e7aed08532e9cb9bef5aab8eab37a5d7"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00209-basic-top.png",
+          "sha256": "d18b74f8e4c2e1c3a2c60f2a218ed4dc0e9391e60b6790b9ef604e4eef45eb87"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00209-icon.png",
+          "sha256": "7167d056ae99dd531214106a0d57d091a9528d0173add541f6ca51cafcdef68b"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:210",
+      "capture_id": 210,
+      "ui_entry_ordinal": 210,
+      "fullName": "ink claw",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "3.10 oz",
+        "Tradeable In Market": "yes",
+        "Protection": "energy +2%",
+        "Augments": "Summon Sorcerer Familiar -> -300s cooldown",
+        "Vocations": "sorcerers",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00210-name.png",
+          "sha256": "f19ac60c1d35afec7c9598e85bf2fd0ecf9bab35f1373cdb065d2b47eb4d947b"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00210-name-hover.png",
+          "sha256": "cd2fd00e12e6ad796e9629945106eaaeb29124e9fbc55d7b3ba4dff00fb85d49"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00210-basic-top.png",
+          "sha256": "9d3674f4d51459c3c54575433a554d7ac53db03539ce3862e7de3495a56f8ff3"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00210-icon.png",
+          "sha256": "58af0da7a8f0ab7cd38ef12e3e3dc9391e569d9703f44709b0054f4175d0a933"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:211",
+      "capture_id": 211,
+      "ui_entry_ordinal": 211,
+      "fullName": "ink quill",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "2.20 oz",
+        "Tradeable In Market": "yes",
+        "Protection": "energy +2%",
+        "Augments": "Summon Paladin Familiar -> -300s cooldown",
+        "Vocations": "paladins",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00211-name.png",
+          "sha256": "544011dd752d05ca1cc1a74d26bcc2c761f25983645d12693c8d10f459a1e01a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00211-name-hover.png",
+          "sha256": "a354e6bca883c548601740be59331d7406c12e39c18225310f584d889e9ad89f"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00211-basic-top.png",
+          "sha256": "c85cac07ebf0220c11ab417e1ae0c15e9b5cfe2b54cc1cadc2716d0c585c1e78"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00211-icon.png",
+          "sha256": "770fdfe2fcffcf0e861796b79eae1b1216262c7ab51dcbe087ae0b9cedcbf21e"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:212",
+      "capture_id": 212,
+      "ui_entry_ordinal": 212,
+      "fullName": "ink vine",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "2.30 oz",
+        "Tradeable In Market": "yes",
+        "Protection": "energy +2%",
+        "Augments": "Summon Druid Familiar -> -300s cooldown",
+        "Vocations": "druids",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00212-name.png",
+          "sha256": "1910be9f669cdef6fe6d16bbcbd132e0f97a5616b3ce9069a93ae006c3319eb8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00212-name-hover.png",
+          "sha256": "a82c1753858097fafcbe7b7e545752e8e1681625e319bb57650dc99b4d117ac0"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00212-basic-top.png",
+          "sha256": "828a6f57975dd5279a531f0c0157af12cac66ec85fa717faaeb018fd0547b9a8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00212-icon.png",
+          "sha256": "f4c98f13cb2ddd7678fc134f440d85179965f2c8af04c67e9e9ce4464710a1f1"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:213",
+      "capture_id": 213,
+      "ui_entry_ordinal": 213,
+      "fullName": "interwoven moss florets",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "0.40 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00213-name.png",
+          "sha256": "4d3bc4917a9f7414e0c258fb2d1d44687c3a1827ce27af1c795f2de6dc530ce0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00213-name-hover.png",
+          "sha256": "7e762c2b4e447fb23da35ee45c3e027ab36a06104a202b4412a21014f7387669"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00213-basic-top.png",
+          "sha256": "2a25a9c3c80293513bd5e3ee6243f67bbda1e6504a88e2eb27dd2d027ed11a34"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00213-icon.png",
+          "sha256": "12f58aac3472368d16d23a3474b34269e5bd37548370392db5381d94d78d2d61"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:214",
+      "capture_id": 214,
+      "ui_entry_ordinal": 214,
+      "fullName": "jade Zaoan bishop",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00214-name.png",
+          "sha256": "a891b38dc0d9509d55cd04dafabfd7f342f48786c76f20069d44e4d9daeba326"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00214-name-hover.png",
+          "sha256": "989b4fbe74e3ba033a5c62916c332528ce0b2f84d49b668c50848e6ece03b7ab"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00214-basic-top.png",
+          "sha256": "c85f7e5445cb732b8a83ed0d1f0f5c3c8b750c5605849627bf30d24cc98dd09c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00214-icon.png",
+          "sha256": "e8e3e2bbbeb50fbc5c786971026fa4677a9f377ab4e253d0503246ac8d79736f"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "af85343796b63ba1bf577bb0ae76aad09af1e77693f6f507f05405dbf52bc2d7",
+        "bytes": 56,
+        "characters": 56
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "e3c836800b25a9ed82a8d88df1beb8b103ca8f09541e04643021f72f1393424f",
+        "canonical_utf8_bytes": 62,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          6
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:215",
+      "capture_id": 215,
+      "ui_entry_ordinal": 215,
+      "fullName": "jade Zaoan king",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00215-name.png",
+          "sha256": "8e13b6d59ff021a5202fd2f38586672898724535f737d0170d73d9a6d1a315b9"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00215-name-hover.png",
+          "sha256": "aee8ace7f204ccc55837e494958ade126d378885fff56579c9e0e948917dd18c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00215-basic-top.png",
+          "sha256": "0f51e52c1a8e939fa4e3eb8ceee89356faffaf1165bbbb867386406861a6336c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00215-icon.png",
+          "sha256": "382e28905925052e9eba44eff2f66ef9e30436d3f774fee3b84da02c78b5c91e"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "c0f37d54a7ed4fc7a45124e42b466d4883da61c29193b541b79d227659f4a72f",
+        "bytes": 54,
+        "characters": 54
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "4f6fea3ff7feef0083e83eca97a5aadc9d0a26578ed4edbc242c136821b96206",
+        "canonical_utf8_bytes": 60,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          4
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:216",
+      "capture_id": 216,
+      "ui_entry_ordinal": 216,
+      "fullName": "jade Zaoan knight",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00216-name.png",
+          "sha256": "608b213cb5521b1db48aa156ff85dc790afb24afba0b4473326ce2dae49c2aad"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00216-name-hover.png",
+          "sha256": "583e1e50f7a2cae87a4a464fc03eee485bb97a7466b770bddd91eab1d749ae2c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00216-basic-top.png",
+          "sha256": "b9280c61ff9420852736525deaa549bec1abc36abd27549a57f59015c3578aff"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00216-icon.png",
+          "sha256": "8435cbf7f028b808ffbb2114d9a090d57e744abc8ce9c6c000db146cabcac800"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "8db10607d55c01b5577c327f0cc74764e57a27575854ef116e127ea5edab8a99",
+        "bytes": 56,
+        "characters": 56
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "ea4b292f887c95d93e8b3956c24e75cfaddbb4af025fc921c0f5c9c50f15356e",
+        "canonical_utf8_bytes": 62,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          6
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:217",
+      "capture_id": 217,
+      "ui_entry_ordinal": 217,
+      "fullName": "jade Zaoan pawn",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00217-name.png",
+          "sha256": "c5438bfff87a4a36ffa31a8e348fe07877a48e32325eb77b54dd8f6cc98eb8d1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00217-name-hover.png",
+          "sha256": "90e8136b91df814c396701107d79883f367a116a9078ceb9eea497c3b9032fcb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00217-basic-top.png",
+          "sha256": "90778e1b89a8bc11dfc604ead3dab324da55888d2d80ea57bc87e8f6224b98ae"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00217-icon.png",
+          "sha256": "c34dba7730e1e30fa54b89451bf3920473c1de691f18219e03b1999745296039"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "2157a1d8b309597e978faabd2726ad51cabcec07f68fccf1f622ef8c52e2dded",
+        "bytes": 54,
+        "characters": 54
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "a862988f8550321dbb7a32c08badc01d0c5a068664d358938784e47b323f5a0d",
+        "canonical_utf8_bytes": 60,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          4
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:218",
+      "capture_id": 218,
+      "ui_entry_ordinal": 218,
+      "fullName": "jade Zaoan queen",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00218-name.png",
+          "sha256": "c154aceece16c2aecb996ec68f8b238d11dc5e1b0204fc29518806d72499d0a8"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00218-name-hover.png",
+          "sha256": "b5adce5222e89471a86743cd3b1cc06978653065cfdb8885f1300dd4ad281e1c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00218-basic-top.png",
+          "sha256": "e40ff4792ebdb67a479bd5c0c566a82fd7120a74df77c6c163f74af753d79c73"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00218-icon.png",
+          "sha256": "d2d31c66230d00bbd521b5ca9b1e10760e7e640025615c2146e3ef2dafea9154"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "f7adc6c7da94dd418f59992b5f2e2efb19a086c2ab7c7553c8736b9cc378e7e7",
+        "bytes": 55,
+        "characters": 55
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "e08eb4fd8c8367f490f5fba6717d0e5929d2bd1fa6d7e1b92eecadf51a140e83",
+        "canonical_utf8_bytes": 61,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          5
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:219",
+      "capture_id": 219,
+      "ui_entry_ordinal": 219,
+      "fullName": "jade Zaoan rook",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "5.00 oz",
+        "Tradeable In Market": "yes",
+        "Body Position": "extra slot"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00219-name.png",
+          "sha256": "b6dffce20a62f30433de490321b0663e7aafe5ef4e7d96cb50f284317c9314ed"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00219-name-hover.png",
+          "sha256": "4939b67b8efddd9e01b0497ef9365e06dc139c680d837ff45475b251644d5170"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00219-basic-top.png",
+          "sha256": "970c0f5b287dfb4593d602985487c3631697c9f01544c90ebc454f72402f489c"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00219-icon.png",
+          "sha256": "b085ea660083303a39e4014331dde98e53bf13488f20545c4cdec389753a0805"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "21c4b165eccfe8fcf3ce8047118f6facf37ea8c111600a81d82618649c73697c",
+        "bytes": 54,
+        "characters": 54
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "7826a73401f082cfb1d52f57c93416730fe2a6162ada10d0b0b3426129764508",
+        "canonical_utf8_bytes": 60,
+        "line_count": 2,
+        "line_character_lengths": [
+          49,
+          4
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:220",
+      "capture_id": 220,
+      "ui_entry_ordinal": 220,
+      "fullName": "jester doll",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "12.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00220-name.png",
+          "sha256": "6ce7922cd9095a4188c6d06ed84a5b56bc82e0c9e90ae0495e4a166728bb033d"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00220-name-hover.png",
+          "sha256": "279258dd76c23fe7ed66cd00d3d9ece759d38d5c344b6d88d1ec35cacebd9deb"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00220-basic-top.png",
+          "sha256": "59e9c4e95d498007f5b61994e66fb2378220ec6357a0be3122628b5df3d69400"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00220-icon.png",
+          "sha256": "ddbf89732742d8063ab590f7848c42e78e1efcfc38fa2193c953ad9e0c3b8034"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:221",
+      "capture_id": 221,
+      "ui_entry_ordinal": 221,
+      "fullName": "jester staff",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "7.25 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00221-name.png",
+          "sha256": "b6491cc07b06037b429b3ba86969c02f4862251151d7137e94dd19146f515626"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00221-name-hover.png",
+          "sha256": "c48eeb9833bebd9a995ae5eab8d088f3c5336a9e757cc049605198084628c03d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00221-basic-top.png",
+          "sha256": "773bda49c3acb2a093a63130ddcd47a75f159d15ab16c7c2e1969f7454709c06"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00221-icon.png",
+          "sha256": "52967662a42d9d9e086f2d5068dab866cf1828d908817615f5502521164084cb"
+        }
+      ],
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-decoration:222",
+      "capture_id": 222,
+      "ui_entry_ordinal": 222,
+      "fullName": "knight statue kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "30.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00222-name.png",
+          "sha256": "14d212aac7aa93858b7c2f1c2b9cc0087c5e67533a0388cdb4cc27b38a4d80e5"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00222-name-hover.png",
+          "sha256": "43b884800200691b7adce672bf3616f5456a0cd781b82f2e7e7df05845f790e1"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00222-basic-top.png",
+          "sha256": "ae1607b084a3fa75608d0b1c44232f1aa46981a3154239a9139f23226d11d5c6"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00222-icon.png",
+          "sha256": "77975e347881f558550bf7429291e5719e190e3621c3c9bb1f32f2bc92477230"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "64cc15054e6a4d41e46ff26b16e4ae0d2f583940ec60c148980b7917571563be",
+        "bytes": 49,
+        "characters": 49
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "f1225c076280676b33fb37741543e85b8ae9e594fe95d2da3d746b3f70c71966",
+        "canonical_utf8_bytes": 53,
+        "line_count": 1,
+        "line_character_lengths": [
+          49
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:223",
+      "capture_id": 223,
+      "ui_entry_ordinal": 223,
+      "fullName": "large amphora kit",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "30.00 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00223-name.png",
+          "sha256": "5d8387dd411bfca27f940838de71c844c27a5775d7cb54754708e81b6d8e032a"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00223-name-hover.png",
+          "sha256": "26a959dd3bf73f045aac1df3c3a5188bfee2dd69373afb463386916a3936e692"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00223-basic-top.png",
+          "sha256": "b29cac179c42e181500775074c7e7453e20909b4831543c1a9c8b8adbb3340e4"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00223-icon.png",
+          "sha256": "77975e347881f558550bf7429291e5719e190e3621c3c9bb1f32f2bc92477230"
+        }
+      ],
+      "saved_basic_pages": 1,
+      "description_receipt": {
+        "field_name": "Description",
+        "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+        "sha256_utf8": "61a845bb1cacccfb38369d8bd6451067ce21a34d1be6912bf0fe7fcda3444dce",
+        "bytes": 49,
+        "characters": 49
+      },
+      "description_display_lines_receipt": {
+        "field_name": "description_display_lines",
+        "state": "OBSERVED_LAYOUT_RETAINED_PRIVATELY",
+        "canonical_json_sha256": "d2a76d3b7fd90f9cdf6895051a159264069dc0d856134d86c7b171c66072203c",
+        "canonical_utf8_bytes": 55,
+        "line_count": 2,
+        "line_character_lengths": [
+          41,
+          7
+        ]
+      }
+    },
+    {
+      "capture_key": "items-sequence-decoration:224",
+      "capture_id": 224,
+      "ui_entry_ordinal": 224,
+      "fullName": "leaf golem santa",
+      "name_hash_is_item_identity": false,
+      "properties": {
+        "Weight": "6.50 oz",
+        "Tradeable In Market": "yes"
+      },
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-decoration/cards/00224-name.png",
+          "sha256": "dc11ff440cce0a3d1f7e4a6d321ac396e7053af64a45ffbabfb792478f0769a0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-decoration/cards/00224-name-hover.png",
+          "sha256": "208013da02c57c423250bc9ce63186f6e0de42e7399a44df481ee38691754f51"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-decoration/cards/00224-basic-top.png",
+          "sha256": "ad64eb0df568aabc1951c8652b1bb3b2e4b80aa43d84a6b63469a202345d125f"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-decoration/cards/00224-icon.png",
+          "sha256": "141476e00d842f6faf30fca871b0a51732dd6caba66a7c9d620e6731df461e53"
+        }
+      ],
+      "saved_basic_pages": 1
+    }
+  ]
+}

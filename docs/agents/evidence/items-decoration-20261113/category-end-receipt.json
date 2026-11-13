@@ -1,0 +1,49 @@
+{
+  "source_receipt": {
+    "filename": "category-completion.json",
+    "bytes": 5250,
+    "sha256": "69ac3ce174bca885cd5b391b0485e1a95f738e944fe37cd3f87dd92819eeca37"
+  },
+  "category": "Decoration",
+  "captured_records": 462,
+  "captured_physical_ui_range": [
+    1,
+    462
+  ],
+  "category_end_observed": true,
+  "end_stability_checks_before": 2,
+  "end_stability_checks_after": 2,
+  "final_entry_ui_ordinal": 462,
+  "final_capture_id": 462,
+  "end_proof_receipts": [
+    {
+      "filename": "manual-tail-end-1794542972649263854.png",
+      "bytes": 156073,
+      "sha256": "860f62cc7617503c32c070dd2bf4e767f323605816438a301ca1e93fb0e6f42e",
+      "private_source_key": "items-sequence-decoration/manual-tail-end-1794542972649263854.png"
+    },
+    {
+      "filename": "manual-tail-after-1794542975453103511.png",
+      "bytes": 161241,
+      "sha256": "e508a6fb6add289fc74d4412a6066f3c766ea85964d77b07769a6b8f52673698",
+      "private_source_key": "items-sequence-decoration/manual-tail-after-1794542975453103511.png"
+    }
+  ],
+  "script_receipt": {
+    "filename": "root_finish_decoration_tail_20261113.py",
+    "bytes": 8282,
+    "sha256": "550c4a62b937efa1f410317fb88dee63ecf1a055765d43786bf0b4f486e6032e"
+  },
+  "held_result_receipt": {
+    "filename": "decoration-manual-tail-repair-result.json",
+    "bytes": 78,
+    "sha256": "55b3fa1baafd0136a288ca3b26ee356e825b2e124cb26298b3b39e1fde040801"
+  },
+  "finalization_receipt": {
+    "filename": "decoration-tail-finalization-result.json",
+    "bytes": 915,
+    "sha256": "5ef64ea7c274d7ba126695d5fd7840a28b453a0b152716cf1f35c056ffe6b94b"
+  },
+  "qualification": "Actual final capture succeeded; stale Creature Products range assertion prevented initial completion write. Offline exact-script/trace/index/end-proof validation finalized checkpoint without repeated GUI input. Historical pending-reader receipt remains unchanged; current reader union separately qualifies all462.",
+  "reader_qualification_receipt": "reader-coverage-union.json"
+}

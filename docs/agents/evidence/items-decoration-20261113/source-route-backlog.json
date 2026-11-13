@@ -1,0 +1,17 @@
+{
+  "classification": "UNCOMPARED_OBSERVED_FIELDS_WITH_PRIVATE_ROUTE_RESEARCH",
+  "source_commit": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+  "private_route_receipts": [
+    {
+      "filename": "source-extra-basic-routes-decoration-20261113.json",
+      "bytes": 5679,
+      "sha256": "9e0e11277ea437cc57cfb97905d44757f97fc40e86deb051775b3639bbc41135"
+    },
+    {
+      "filename": "source-field-routes-armor-classification-body-20261113.json",
+      "bytes": 7104,
+      "sha256": "4dc14d0c8d3d8b570c74c6811188a53b44f066e7e97b11e271a7bf184b228ddb"
+    }
+  ],
+  "boundary": "Private route research is not field comparison qualification or client/server identity. Only Weight and Tradeable In Market are compared in this packet. Protection rational/sign and token mapping, Skill Boost formatting, Speed unit routes, instance/template slots, Augments and other fields remain explicit backlog. Descriptions remain private receipts, not semantic comparisons."
+}

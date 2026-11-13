@@ -1,0 +1,77 @@
+{
+  "classification": "PROVEN_ORDERED_BASIC_READER_COVERAGE",
+  "source_receipt": {
+    "filename": "decoration-basic-1-462-combined-private.json",
+    "bytes": 944515,
+    "sha256": "1b2581b2b7d727c68ab9a69c03d0d04f7138d2af78fd98479f9630fd8e19b18c"
+  },
+  "physical_ui_ordinals": {
+    "first": 1,
+    "last": 462,
+    "records": 462,
+    "gaps": [],
+    "duplicates": []
+  },
+  "distinct_original_basic_png": 463,
+  "original_proof_hashes_freshly_verified": 1849,
+  "private_Description_values": 135,
+  "immutable_inputs": [
+    {
+      "filename": "decoration-basic-1-383-combined-private.json",
+      "bytes": 785099,
+      "sha256": "5ca2c06537c74d93d2b37d47adc3a3a05f481a10bde2e367b1303620f8d12853",
+      "records": 383
+    },
+    {
+      "filename": "decoration-basic-384-420-reviewed-private.json",
+      "bytes": 74751,
+      "sha256": "4496e6203d937397afd9c982466d97562da66bc9cb111e7a02a8213bf403d300",
+      "records": 37
+    },
+    {
+      "filename": "decoration-basic-421-456-reviewed-private.json",
+      "bytes": 74034,
+      "sha256": "5b55340441cf818de8ecea85828aa5e548ab631e8c575799cf5b27ccf0fb7938",
+      "records": 36
+    },
+    {
+      "filename": "decoration-basic-457-461-reviewed-private.json",
+      "bytes": 11538,
+      "sha256": "0c6384c6b135a8cf4f0c5e9aad24d86a9252a27401fb41a084af3f4f3652d1fa",
+      "records": 5
+    },
+    {
+      "filename": "decoration-basic-462-final-reviewed-private.json",
+      "bytes": 3361,
+      "sha256": "20951ec160053f2510116bd77dc48526501bddf423dc77bbe3ef39905b780202",
+      "records": 1
+    }
+  ],
+  "original_index_receipt": {
+    "filename": "capture-index.json",
+    "bytes": 506764,
+    "sha256": "443f86e6eda961e04c88a7e138248e96ddee3002a0185ca507ea3421ab57bbda"
+  },
+  "prior_published_1_224_compact_rows_unchanged": true,
+  "duplicate_row_qualification": {
+    "source_receipt": {
+      "filename": "decoration-yellow-pillow-458-459-native-row-qualification-20261113.json",
+      "bytes": 2631,
+      "sha256": "6e2cdc38f38f1d3f7308e5ca3c16ba7ded341521ed2da67eecbd544da2406e04"
+    },
+    "physical_ordinals": [
+      458,
+      459
+    ],
+    "witness_sha256_freshly_verified": true,
+    "boundary": "Separate same-name pillows supported by independent one-frame witness. No name/ordinal to serverID inference.",
+    "witness_receipt": {
+      "private_source_key": "items-sequence-decoration/list-1794542097-resume-0206.png",
+      "sha256": "07849576092d1dfa8bf59050de3e7861a153888f81265c44f4338ef008e0bce8",
+      "bytes": 158896,
+      "freshly_verified": true
+    }
+  },
+  "overall_static_audit_complete": false,
+  "trade_or_animation_complete": false
+}

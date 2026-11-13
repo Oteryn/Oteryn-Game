@@ -1,0 +1,40 @@
+{
+  "files": {
+    "observations-1-180.json": {
+      "bytes": 272033,
+      "sha256": "7e19d3f02351d4f63ca120dec22c59d70a249ba4725e4e05ae7219b65c6ccffe"
+    },
+    "observations-181-224.json": {
+      "bytes": 69851,
+      "sha256": "ffd7d7470b50d3a229ace609a3014456e04fcba1b3c47739188ce15a711dcb10"
+    },
+    "observations-225-462.json": {
+      "bytes": 338706,
+      "sha256": "5ca961c934fbfb8e25eb580bbba30b88664ff9a4c2e6fe3be08f51f08327fe0f"
+    },
+    "uncompared-field-backlog.json": {
+      "bytes": 2264,
+      "sha256": "7b6d0c78aa1fbbf8438cd819780f88b640dcf2cfcbbcf98172fce0d2caf35336"
+    },
+    "source-candidate-comparison.json": {
+      "bytes": 1661398,
+      "sha256": "fd75af2be78617f33c22b148f90274779c31f9ba88b00aef72e9855460fa821d"
+    },
+    "source-route-backlog.json": {
+      "bytes": 962,
+      "sha256": "220c5b2b1c98eb8629bd72395a93bf6c603b8302ee41e69637d12282dbb509ab"
+    },
+    "trade-initial-panel-coverage.json": {
+      "bytes": 1211,
+      "sha256": "04105db899df867b4f937a17777a22e30393245c2ee2056198680e7759b0bbd7"
+    },
+    "category-end-receipt.json": {
+      "bytes": 2004,
+      "sha256": "a1f6251a16dd6ae3df2c77c2e547c0f7fb8227fc0d9ea30922e7b735071c794d"
+    },
+    "reader-coverage-union.json": {
+      "bytes": 2634,
+      "sha256": "c670144aec35b436296c55db81187b624c0c7f72008d0e785ff6d1bfef086421"
+    }
+  }
+}
