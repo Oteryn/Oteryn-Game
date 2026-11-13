@@ -38,7 +38,12 @@ class StaticConstructors(unittest.TestCase):
             for group, value in canonical['semantics'].items():
                 if group not in ('physical', 'stack', 'container'):
                     self.assertEqual(row['semantics'][group], value)
-            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], 1000)
+            self.assertEqual(row['semantics']['physical']['value']['weight']['value'], {
+                'oteryn:item.tibia.i50335': 900,
+                'oteryn:item.tibia.i50336': 300,
+                'oteryn:item.tibia.i50337': 300,
+                'oteryn:item.tibia.i50338': 300,
+            }[key])
             self.assertTrue(producer.matches_admission(row, admissions))
             changed = copy.deepcopy(row)
             changed['admission']['stack_class'] = 'StackCapable'
@@ -64,7 +69,7 @@ class StaticConstructors(unittest.TestCase):
 
     def test_rejects_unpinned_unrelated_duplicate_and_invalid_policies(self):
         original = json.loads((ROOT / producer.INTENT).read_bytes())
-        for case in range(8):
+        for case in range(9):
             intent = copy.deepcopy(original)
             if case == 0: intent['recipes']['sha256'] = '0' * 64
             elif case == 1: intent['constructors'][0]['role'] = 'Unrelated reward'
@@ -73,7 +78,8 @@ class StaticConstructors(unittest.TestCase):
             elif case == 4: intent['constructors'][0]['item'] = 'oteryn:item.tibia.i3031'
             elif case == 5: intent['constructors'][0]['recipe_title'] = 'Unknown quest'
             elif case == 6: intent['basis'] = 'SOURCE_EQUIVALENT'
-            else: intent['constructors'][0]['quest'] = 'oteryn:quest.authored.unrelated'
+            elif case == 7: intent['constructors'][0]['quest'] = 'oteryn:quest.authored.unrelated'
+            else: intent['constructors'][0]['weight'] = 1000
             with self.subTest(case=case), self.assertRaises(ValueError):
                 producer.prepare(ROOT, intent)
 

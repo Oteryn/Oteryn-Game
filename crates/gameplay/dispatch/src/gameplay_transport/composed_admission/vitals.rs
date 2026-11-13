@@ -181,6 +181,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             )
         };
+        let fifth_taint = self.tick_soul_war_fifth_taint(actor, game_session_id).await;
         let resting = {
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
@@ -230,6 +231,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
-        resting.or(result).or(party_vitals)
+        resting.or(fifth_taint).or(result).or(party_vitals)
     }
 }

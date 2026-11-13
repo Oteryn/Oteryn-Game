@@ -230,37 +230,49 @@ mod rotten_access_tests {
 
     #[test]
     fn rotten_access_fee_is_closed_to_exact_source_price_and_empty_extra_proof() {
-        let mut occurrence=vec![1;16];
-        occurrence[6]=0x70;
-        occurrence[8]=0x80;
-        let cause=OneItemNpcPurchaseV1 {
-            service_key:"oteryn:service.quest.rotten-blood.access".into(),
-            occurrence,atelier_proof:Vec::new(),
+        let mut occurrence = vec![1; 16];
+        occurrence[6] = 0x70;
+        occurrence[8] = 0x80;
+        let cause = OneItemNpcPurchaseV1 {
+            service_key: "oteryn:service.quest.rotten-blood.access".into(),
+            occurrence,
+            atelier_proof: Vec::new(),
         };
-        let valid=OneItemFeeBurnV1 {
-            cause:Some(OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause.clone())) }),
-            fee_gold_units:5_000_000,..Default::default()
+        let valid = OneItemFeeBurnV1 {
+            cause: Some(OneItemFeeBurnCauseV1 {
+                cause: Some(FeeBurnCauseV1::QuestAccessPurchase(cause.clone())),
+            }),
+            fee_gold_units: 5_000_000,
+            ..Default::default()
         };
         assert!(check(&valid).is_ok());
-        for price in [0,4_999_999,5_000_001] {
-            let mut value=valid.clone(); value.fee_gold_units=price;
+        for price in [0, 4_999_999, 5_000_001] {
+            let mut value = valid.clone();
+            value.fee_gold_units = price;
             assert!(check(&value).is_err());
         }
         for case in 0..3 {
-            let mut bad=cause.clone();
+            let mut bad = cause.clone();
             match case {
-                0 => bad.service_key="oteryn:service.quest.other".into(),
-                1 => bad.occurrence=vec![0;16],
-                _ => bad.atelier_proof=vec![1],
+                0 => bad.service_key = "oteryn:service.quest.other".into(),
+                1 => bad.occurrence = vec![0; 16],
+                _ => bad.atelier_proof = vec![1],
             }
-            let mut value=valid.clone();
-            value.cause=Some(OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(bad)) });
+            let mut value = valid.clone();
+            value.cause = Some(OneItemFeeBurnCauseV1 {
+                cause: Some(FeeBurnCauseV1::QuestAccessPurchase(bad)),
+            });
             assert!(check(&value).is_err());
         }
-        let wire=OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause)) };
+        let wire = OneItemFeeBurnCauseV1 {
+            cause: Some(FeeBurnCauseV1::QuestAccessPurchase(cause)),
+        };
         // Internal type-2 audit tag15 is appended without changing older sources.
-        assert_eq!(wire.encode_to_vec().first(),Some(&122));
-        assert_eq!(OneItemFeeBurnCauseV1::decode(wire.encode_to_vec().as_slice()), Ok(wire));
+        assert_eq!(wire.encode_to_vec().first(), Some(&122));
+        assert_eq!(
+            OneItemFeeBurnCauseV1::decode(wire.encode_to_vec().as_slice()),
+            Ok(wire)
+        );
         let task_board = OneItemFeeBurnCauseV1 {
             cause: Some(FeeBurnCauseV1::TaskBoardTalisman(OneItemNpcPurchaseV1 {
                 service_key: "oteryn:taskboard.talisman".into(),
@@ -269,7 +281,9 @@ mod rotten_access_tests {
             })),
         };
         assert_eq!(task_board.encode_to_vec().first(), Some(&106));
-        assert_eq!(OneItemFeeBurnCauseV1::decode(task_board.encode_to_vec().as_slice()), Ok(task_board));
-
+        assert_eq!(
+            OneItemFeeBurnCauseV1::decode(task_board.encode_to_vec().as_slice()),
+            Ok(task_board)
+        );
     }
 }

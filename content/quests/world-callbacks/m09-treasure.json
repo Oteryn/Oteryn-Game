@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/m09-treasure-telescope",
+      "quest": "oteryn:quest.treasure_hunt_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32144,
+          "y": 32968,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2478
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m09/treasure/telescope",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found the hidden treasure.",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Treasure_Hunt_Quest&oldid=431833#Recompensa",
+        "docs/reference/content-prep/qmech-m09/reward-sources.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i9616",
+          "count": 1,
+          "contents": []
+        }
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/m09-treasure-ingots",
+      "quest": "oteryn:quest.treasure_hunt_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32139,
+          "y": 32978,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 2478
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/m09/treasure/ingots",
+          "minimum": -1,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "success_message": "You found the hidden treasure.",
+      "sources": [
+        "https://www.tibiawiki.com.br/index.php?title=Treasure_Hunt_Quest&oldid=431833#Recompensa",
+        "docs/reference/content-prep/qmech-m09/reward-sources.md"
+      ],
+      "effects": {
+        "item_reward": {
+          "item": "oteryn:item.tibia.i9058",
+          "count": 3,
+          "contents": []
+        }
+      }
+    }
+  ]
+}

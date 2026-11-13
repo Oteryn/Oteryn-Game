@@ -24,7 +24,10 @@ serde_json.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
+oteryn-gameplay-content = { version = "=0.1.0", path = "../content", features = ["test-support"] }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation", features = ["test-support"] }
+sqlx.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

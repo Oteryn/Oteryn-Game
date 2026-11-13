@@ -11,7 +11,13 @@ impl Outbox {
     }
 
     /// Delivers validated session events to the native view (also used by the headless harness).
-    pub fn push(&self, events: Vec<SessionEvent>) {
+    pub fn push(&self, mut events: Vec<SessionEvent>) {
+        if let Some(index) = events
+            .iter()
+            .rposition(|event| matches!(event, SessionEvent::ActivityScope(_)))
+        {
+            events.drain(..index);
+        }
         self.console_events(&events);
         self.activity_scope_events(&events);
         self.channel_list_events(&events);

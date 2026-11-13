@@ -81,6 +81,12 @@ pub(super) fn scenario(case: Case) -> TestResult {
         )
         .map_err(debug)?;
         let cells = world.movement_cells(deps.room.movement_cells()).map_err(debug)?;
+        let combat_room = deps.room.bundle_view(
+            cells.clone(),
+            pin.frame_binding().digest(),
+            world.map_revision_digest(),
+            crate::content::NativeEntryStart { x: 6, y: 0, floor: 7 },
+        ).ok_or("browse combat room")?;
         let content_pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -106,6 +112,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
         owner.movement_cells = (&cells).into();
+        owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
         deps.initialize(&owner).await;
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
@@ -164,6 +171,7 @@ pub(super) fn scenario(case: Case) -> TestResult {
             let mut restarted = deps.owner(&harness, &authority);
             restarted.active_generation = Some(generation);
             restarted.movement_cells = (&cells).into();
+            restarted.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&combat_room));
             deps.initialize(&restarted).await;
             admitted.continuity.item_view.handle_counter = 1000;
             admitted.continuity.next_command_id = 1;

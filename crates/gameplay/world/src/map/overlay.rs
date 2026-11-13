@@ -26,6 +26,7 @@ use std::mem::size_of;
 use std::sync::Arc;
 
 pub mod pickup;
+pub mod quest_ground;
 
 /// `MAP01-CHANNEL-OVERLAY-BYTES`: the default budget of one channel overlay.
 pub const OVERLAY_BUDGET_BYTES: usize = 64 * 1024 * 1024;
@@ -352,6 +353,12 @@ pub struct ChannelOverlay {
     alarms: u64,
 }
 
+#[derive(Clone, Copy)]
+enum NativeGroundGeneration {
+    Current,
+    CommittedCorpse,
+}
+
 impl ChannelOverlay {
     /// An empty overlay with the default budget.
     pub fn new(base: Arc<WorldBase>, world_id: WorldId, channel_id: ChannelId) -> Self {
@@ -608,6 +615,80 @@ impl ChannelOverlay {
         Ok(id)
     }
 
+    /// Indexes a current source Ground row in the native map's negative-floor
+    /// view, retaining its exact physical custody record. This changes only the
+    /// read overlay; it grants no Item mutation or pickup authority.
+    pub fn add_native_ground_view(
+        &mut self,
+        item: GroundItemInstance,
+        field_pin: ([u8; 32], [u8; 32], u64),
+    ) -> Result<EntryId, OverlayError> {
+        self.add_native_ground_view_inner(item, field_pin, NativeGroundGeneration::Current)
+    }
+
+    /// Indexes accepted corpse history in the same current scope and source frame.
+    /// The caller must have read a materialized corpse MINT with its matching audit
+    /// and reservation. This read-only view does not grant Item custody or pickup.
+    pub fn add_committed_corpse_ground_view(
+        &mut self,
+        item: GroundItemInstance,
+        field_pin: ([u8; 32], [u8; 32], u64),
+    ) -> Result<EntryId, OverlayError> {
+        self.add_native_ground_view_inner(item, field_pin, NativeGroundGeneration::CommittedCorpse)
+    }
+
+    fn add_native_ground_view_inner(
+        &mut self,
+        item: GroundItemInstance,
+        field_pin: ([u8; 32], [u8; 32], u64),
+        generation: NativeGroundGeneration,
+    ) -> Result<EntryId, OverlayError> {
+        use sha2::{Digest, Sha256};
+        if item.world_id != self.world_id {
+            return Err(OverlayError::World);
+        }
+        if item.runtime_scope != self.runtime_scope {
+            return Err(OverlayError::Channel);
+        }
+        let revision = |digest: [u8; 32]| {
+            let mut value = String::with_capacity(71);
+            value.push_str("sha256:");
+            for byte in digest {
+                value.push_str(&format!("{byte:02x}"));
+            }
+            value
+        };
+        let generation_matches = match generation {
+            NativeGroundGeneration::Current => {
+                item.runtime_scope_ownership_generation == field_pin.2
+            }
+            NativeGroundGeneration::CommittedCorpse => {
+                item.runtime_scope_ownership_generation != 0
+                    && item.runtime_scope_ownership_generation <= field_pin.2
+            }
+        };
+        if field_pin.2 == 0
+            || !generation_matches
+            || item.ground.map_revision
+                != revision(Sha256::digest(self.map_revision.as_bytes()).into())
+            || item.ground.content_revision != revision(field_pin.0)
+            || item.ground.native_room_placement_context.as_slice() != field_pin.1.as_slice()
+        {
+            return Err(OverlayError::MapRevision);
+        }
+        let cell = decode_ground_cell(&item.ground.spatial_position)
+            .map_err(|_| OverlayError::Position)?;
+        if !(0..=15).contains(&cell.z) {
+            return Err(OverlayError::Position);
+        }
+        let pos = TilePos {
+            x: u16::try_from(cell.x).map_err(|_| OverlayError::Position)?,
+            y: u16::try_from(cell.y).map_err(|_| OverlayError::Position)?,
+            floor: i8::try_from(-cell.z).map_err(|_| OverlayError::Position)?,
+        };
+        self.insert_ground_at(item, pos)
+    }
+
     /// Adds a durable Ground item at its own position. Never refused for the budget.
     pub fn add_ground(&mut self, item: GroundItemInstance) -> Result<EntryId, OverlayError> {
         if item.world_id != self.world_id {
@@ -629,6 +710,14 @@ impl ChannelOverlay {
             (Ok(x), Ok(y), Ok(floor)) => TilePos { x, y, floor },
             _ => return Err(OverlayError::Position),
         };
+        self.insert_ground_at(item, pos)
+    }
+
+    fn insert_ground_at(
+        &mut self,
+        item: GroundItemInstance,
+        pos: TilePos,
+    ) -> Result<EntryId, OverlayError> {
         self.top_level_count(pos)?;
         if self.ground.contains_key(&item.item_instance_id) {
             return Err(OverlayError::DuplicateItem);
@@ -722,5 +811,110 @@ impl ChannelOverlay {
         }
         expired.retain(|(_, id)| removed.contains(id));
         expired
+    }
+}
+
+#[cfg(test)]
+mod native_ground_view_tests {
+    use super::*;
+    use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
+    use sha2::{Digest, Sha256};
+
+    #[test]
+    fn srx3_native_ground_view_projects_index_without_rewriting_canonical_custody()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (bytes, pins) = crate::map::boot::tests::bundle();
+        let base = Arc::new(crate::map::load(&bytes, &pins)?);
+        let uuid = |n| {
+            let mut id = [n; 16];
+            id[6] = 0x70;
+            id[8] = 0x80;
+            id
+        };
+        let world = WorldId::decode(&uuid(1)).map_err(|e| format!("{e:?}"))?;
+        let scope = crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: uuid(2),
+        };
+        let source_pin = ([0x11; 32], [0x22; 32], 3);
+        let hex_revision = |digest: [u8; 32]| {
+            let hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+            format!("sha256:{hex}")
+        };
+        let mut spatial = Vec::new();
+        spatial.extend_from_slice(&1_i32.to_be_bytes());
+        spatial.extend_from_slice(&0_i32.to_be_bytes());
+        spatial.extend_from_slice(&7_i16.to_be_bytes());
+        let original = GroundItemInstance {
+            item_instance_id: uuid(3),
+            world_id: world,
+            runtime_scope: scope,
+            definition: TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i39176".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            quantity: 1,
+            runtime_scope_ownership_generation: source_pin.2,
+            ground: GroundPlacement {
+                spatial_position: spatial,
+                corpse_ref: vec![1],
+                map_revision: hex_revision(Sha256::digest(map_revision(&base).as_bytes()).into()),
+                content_revision: hex_revision(source_pin.0),
+                native_room_placement_context: source_pin.1.to_vec(),
+            },
+            minted_transaction_id: uuid(4),
+        };
+        let at = TilePos {
+            x: 1,
+            y: 0,
+            floor: -7,
+        };
+        assert!(base.tile(at.x, at.y, at.floor).is_some());
+        let mut overlay = ChannelOverlay::for_scope(base.clone(), scope);
+        assert_eq!(
+            overlay.add_ground(original.clone()),
+            Err(OverlayError::MapRevision)
+        );
+        let added = overlay.add_native_ground_view(original.clone(), source_pin)?;
+        assert_eq!(
+            overlay.ground_entry(&original.item_instance_id),
+            Some((at, added))
+        );
+        let stored = overlay.tile(at).ok_or("native display tile")?;
+        assert_eq!(stored.added().len(), 1);
+        assert_eq!(
+            stored.added()[0].item(),
+            &AddedItem::Ground(Box::new(original.clone())),
+            "native rendering must preserve the exact canonical positive-floor custody row"
+        );
+        assert_eq!(
+            overlay.add_native_ground_view(original.clone(), source_pin),
+            Err(OverlayError::DuplicateItem)
+        );
+        for changed in 0..7 {
+            let mut invalid = original.clone();
+            match changed {
+                0 => invalid.ground.map_revision.push('0'),
+                1 => invalid.ground.content_revision.push('0'),
+                2 => invalid.ground.native_room_placement_context[0] ^= 1,
+                3 => invalid.runtime_scope_ownership_generation += 1,
+                4 => {
+                    invalid.runtime_scope = crate::foundation::RuntimeScopeRefV1::Instance {
+                        world_id: world,
+                        instance_id: uuid(8),
+                    }
+                }
+                5 => invalid.world_id = WorldId::decode(&uuid(9)).map_err(|e| format!("{e:?}"))?,
+                _ => invalid.ground.spatial_position[8..].copy_from_slice(&16_i16.to_be_bytes()),
+            }
+            let mut refused = ChannelOverlay::for_scope(base.clone(), scope);
+            assert!(
+                refused.add_native_ground_view(invalid, source_pin).is_err(),
+                "wrong native source binding {changed}"
+            );
+            assert_eq!(refused.ground_entry(&original.item_instance_id), None);
+        }
+        Ok(())
     }
 }

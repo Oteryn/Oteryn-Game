@@ -261,6 +261,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "npc_event_presence",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Seasonal NPC presence refresh retries on transient failure."
+    },
+    {
       "event": "ops_diagnose",
       "level": "info",
       "span": false,

@@ -1,9 +1,24 @@
-//! Closed source bindings and committed feedback for batch four's two native rules.
+//! Closed source bindings and committed feedback for native world rules.
 use super::{Callback, NativeRule, Position, Trigger};
 use crate::quest::{QuestTrackChange, cults_of_tibia as cults, unnatural_selection as dance};
 
 pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bool {
-    let (trigger, position, action, ranges, source) = match rule {
+    if let NativeRule::LionTrial { trial } = rule {
+        return super::super::lions_rock::callbacks().get(usize::from(trial)) == Some(callback);
+    }
+    let (trigger, position, action, ranges, source): (_, _, _, &[(i64, i64)], _) = match rule {
+        NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy => return false,
+        NativeRule::IceSealPaint { seal } => {
+            return crate::quest::ice_islands_seals::callbacks::admitted(callback, seal);
+        }
+        NativeRule::LionTrial { .. } => return false,
+        NativeRule::BarbarianMead => (
+            Trigger::Use,
+            (32201, 31154, -7),
+            None,
+            &crate::quest::barbarian_mead::RANGES,
+            crate::quest::barbarian_mead::SOURCE,
+        ),
         NativeRule::CultsSymbol { symbol } => {
             let Some(position) = cults::SYMBOL_POSITIONS.get(usize::from(symbol)).copied() else {
                 return false;
@@ -12,7 +27,7 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 Trigger::Use,
                 position,
                 Some(5535),
-                [(0, 7), (0, i64::from(i32::MAX)), (0, i64::from(i32::MAX))],
+                &[(0, 7), (0, i64::from(i32::MAX)), (0, i64::from(i32::MAX))],
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/cults_of_tibia/actions_cult_symbol.lua:",
             )
         }
@@ -30,13 +45,17 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
                 Trigger::StepIn,
                 position,
                 None,
-                [(1, 16), (-1, 3), (-1, 15)],
+                &[(1, 16), (-1, 3), (-1, 15)],
                 "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/unnatural_selection/movements_mission3_dance_dance_evolution.lua:",
             )
         }
     };
     callback.quest == rule.quest()
-        && callback.selector.native.is_none()
+        && callback.selector.native
+            == match rule {
+                NativeRule::BarbarianMead => Some(crate::quest::barbarian_mead::NATIVE),
+                _ => None,
+            }
         && callback.trigger == trigger
         && callback.selector.position
             == Some(Position {
@@ -49,11 +68,12 @@ pub(super) fn valid_native_callback(callback: &Callback, rule: NativeRule) -> bo
         && callback.selector.ordinal.is_none()
         && callback.selector.unique.is_none()
         && callback.selector.appearance.is_none()
-        && callback.storage.len() == 3
+        && callback.storage.len() == rule.tracks().len()
         && rule
             .tracks()
-            .into_iter()
-            .zip(ranges)
+            .iter()
+            .copied()
+            .zip(ranges.iter().copied())
             .all(|(track, (minimum, maximum))| {
                 callback
                     .storage
@@ -100,6 +120,7 @@ impl Callback {
     /// repeat success text; the dispatch owner supplies that distinction.
     pub fn committed_message<'a>(&'a self, changes: &[QuestTrackChange]) -> Option<&'a str> {
         match self.native_rule {
+            Some(NativeRule::BarbarianMead) => crate::quest::barbarian_mead::message(changes),
             // Crystal actions_cult_symbol.lua:43-47. Mission-only repair is silent.
             Some(NativeRule::CultsSymbol { .. }) => {
                 let count = changes
@@ -135,7 +156,9 @@ impl Callback {
                     None
                 }
             }
-            None => self.success_message.as_deref(),
+            Some(NativeRule::IceSealPaint { .. }) => None,
+            Some(NativeRule::SoulWarRemorse | NativeRule::SoulWarEnergy) => None,
+            Some(NativeRule::LionTrial { .. }) | None => self.success_message.as_deref(),
         }
     }
 }

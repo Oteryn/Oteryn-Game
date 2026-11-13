@@ -1,0 +1,7 @@
+{
+  "mechanic": "0372-native-creature-icons",
+  "kind": "panels",
+  "id": "0372-native-creature-icons-native-labels",
+  "status": "supported",
+  "entry": "protocol.rs::labels"
+}

@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 
 import quest_native_binding_preflight as preflight
+from test_chosen_source_binding_plan import REGISTERED_TALK_STAGES
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -39,11 +40,21 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             summary["source_lowered_consumer_lanes"],
         )
 
-    def test_every_stage_has_real_owner_and_is_unbound(self):
+    def test_every_stage_has_real_owner_and_three_selected_bindings(self):
         summary = self.report["summary"]
         self.assertEqual(1887, summary["plan_stages"])
-        self.assertEqual(1887, summary["unbound_dispatch_stages"])
-        self.assertEqual(0, summary["native_dispatch_bindings"])
+        expected = REGISTERED_TALK_STAGES | {
+            ("oteryn:quest.adventures_of_galthen_quest", "s5"),
+            ("oteryn:quest.adventures_of_galthen_quest", "s8"),
+        }
+        self.assertEqual(1887 - len(expected), summary["unbound_dispatch_stages"])
+        self.assertEqual(len(expected), summary["native_dispatch_bindings"])
+        bound = [row for row in self.report["records"] if row["native_dispatch_binding_count"]]
+        self.assertEqual({quest for quest, _ in expected}, {row["quest"] for row in bound})
+        self.assertEqual(len({quest for quest, _ in expected}), len(bound))
+        for row in bound:
+            self.assertEqual(sum(quest == row["quest"] for quest, _ in expected),
+                             row["native_dispatch_binding_count"])
         self.assertEqual(0, summary["native_reward_delivery_bindings"])
         self.assertEqual(
             {

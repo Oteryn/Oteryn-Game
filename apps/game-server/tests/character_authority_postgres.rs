@@ -3408,3 +3408,6 @@ async fn character_commands_flow(database: &Database) -> TestResult {
 // Every case file in `support/authority_cases/` is mounted here by `build.rs`, so a new mechanic
 // adds its file there instead of editing this shared target.
 include!(concat!(env!("OUT_DIR"), "/authority_cases_mounts.rs"));
+
+#[path = "support/qworld_live_admission_cases.rs"]
+mod qm03_world_admission;

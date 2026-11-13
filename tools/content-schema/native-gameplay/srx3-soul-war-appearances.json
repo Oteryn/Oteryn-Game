@@ -1,0 +1,106 @@
+{
+  "schema": "OTERYN_SOUL_WAR_CALLBACK_APPEARANCES/v1",
+  "source_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "source_lines": {
+    "242": [
+      1612,
+      1625
+    ],
+    "286": [
+      609,
+      618
+    ]
+  },
+  "asset_evidence": [
+    {
+      "path": "src/protobuf/appearances.proto",
+      "git_blob": "7069b5ead685929c0a79cb6e8b0664bbe8f19a3a",
+      "sha256": "3aaf2965b14d9c3c0252876f8d3e228f20188568a03f8840b122588dbb76b78f"
+    },
+    {
+      "path": "data/items/appearances.dat",
+      "git_blob": "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    }
+  ],
+  "records": [
+    {
+      "outfit_key": "oteryn:outfit.source.crystal.soul-war.look242",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 242,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/lib/quests/soul_war.lua",
+        "git_blob": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703",
+        "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+        "explicit_fields": {
+          "lookType": 242,
+          "lookHead": 0,
+          "lookBody": 0,
+          "lookLegs": 0,
+          "lookFeet": 0,
+          "lookAddons": 0
+        },
+        "defaulted_fields": [
+          "lookMount",
+          "lookTypeEx"
+        ],
+        "default_source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "src/creatures/creatures_definitions.hpp",
+          "git_blob": "fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a",
+          "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+        }
+      },
+      "qualification_sha256": "e51319e4f1ba5be9da5ab0235972287349832ccd466bc4e6a7d06773254bd904"
+    },
+    {
+      "outfit_key": "oteryn:outfit.source.crystal.soul-war.look286",
+      "outfit_revision": "source-outfit-r1",
+      "look_type": 286,
+      "colours": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "addons": 0,
+      "mount_key": null,
+      "creature": null,
+      "source": {
+        "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/lib/quests/soul_war.lua",
+        "git_blob": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703",
+        "sha256": "89c0024914b0593b9b7d2bfb535a24025a552f54b158319697cdf56a66375e75",
+        "explicit_fields": {
+          "lookType": 286,
+          "lookHead": 0,
+          "lookBody": 0,
+          "lookLegs": 0,
+          "lookFeet": 0,
+          "lookAddons": 0,
+          "lookMount": 0
+        },
+        "defaulted_fields": [
+          "lookTypeEx"
+        ],
+        "default_source": {
+          "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+          "path": "src/creatures/creatures_definitions.hpp",
+          "git_blob": "fc4ae0cf45a56ee7c363b0f452acfb14cbd3c63a",
+          "sha256": "8fbc70bf2416b6e76f17cce3dc1b075f8a5451f0f85b522b0a4ae34cf2cccf94"
+        }
+      },
+      "qualification_sha256": "18c15a2531baba2fec904a5e6267baaff142d28ca0d5637d65b0cd23a72a1133"
+    }
+  ]
+}

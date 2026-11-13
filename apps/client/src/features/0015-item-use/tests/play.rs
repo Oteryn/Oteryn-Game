@@ -1,6 +1,9 @@
 use super::*;
 use oteryn_client_runtime::world_interaction::{Action, Target};
 
+#[path = "activity_scope.rs"]
+mod activity_scope;
+
 #[test]
 fn targeting_click_sends_one_command_without_walking_or_attacking() -> Result<(), BatchError> {
     let mut view = view()?;

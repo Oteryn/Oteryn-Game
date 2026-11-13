@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import hand_weapon_kinds as hand
 
@@ -46,6 +47,24 @@ class HandKinds(unittest.TestCase):
             for file in (hand.XML,hand.BINDINGS):
                 path=root/file;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(b'{}')
             with self.assertRaisesRegex(ValueError,'SOURCE_PIN'):hand.capture(root,{'records':[]})
+
+    def test_unrelated_historical_binding_change_remains_refused(self):
+        binding_path = hand.ROOT / hand.BINDINGS
+        document = json.loads(binding_path.read_bytes())
+        unrelated = next(row for row in document['bindings'] if row['external_id'] == '3031')
+        facts = json.loads((hand.ROOT / hand.PROOF).read_bytes())
+        self.assertNotIn(3031, {row['source_id'] for row in facts['records']})
+        unrelated['source_revision'] = '0' * 40
+        changed = (json.dumps(document, sort_keys=True, separators=(',', ':')) + '\n').encode()
+        read_bytes = Path.read_bytes
+
+        def changed_read(path):
+            return changed if path == binding_path else read_bytes(path)
+
+        profiles = json.loads((hand.ROOT / hand.PROFILE).read_bytes())
+        with patch.object(Path, 'read_bytes', changed_read):
+            with self.assertRaisesRegex(ValueError, 'Item binding table digest mismatch'):
+                hand.capture(hand.ROOT, profiles)
 
 
 if __name__=='__main__':unittest.main()

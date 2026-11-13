@@ -18,6 +18,8 @@ use tokio::sync::{Mutex, Notify};
 
 mod foreground;
 mod holder_queue;
+#[cfg(any(test, feature = "test-support"))]
+mod quest_clock;
 mod ready_admission;
 
 use foreground::HolderPriority;
@@ -1246,9 +1248,14 @@ fn build_production_root_pool(
 enum RootRuntime {
     Dedicated(tokio::runtime::Handle),
     #[cfg(any(test, feature = "test-support"))]
-    OwnedTestFixture(Arc<tokio::runtime::Runtime>),
+    OwnedTestFixture {
+        runtime: Arc<tokio::runtime::Runtime>,
+        quest_clock: Arc<std::sync::atomic::AtomicI64>,
+    },
     #[cfg(any(test, feature = "test-support"))]
-    AmbientTestFixture,
+    AmbientTestFixture {
+        quest_clock: Arc<std::sync::atomic::AtomicI64>,
+    },
 }
 
 impl RootRuntime {
@@ -1256,9 +1263,9 @@ impl RootRuntime {
         match self {
             Self::Dedicated(handle) => Some(handle),
             #[cfg(any(test, feature = "test-support"))]
-            Self::OwnedTestFixture(runtime) => Some(runtime.handle()),
+            Self::OwnedTestFixture { runtime, .. } => Some(runtime.handle()),
             #[cfg(any(test, feature = "test-support"))]
-            Self::AmbientTestFixture => None,
+            Self::AmbientTestFixture { .. } => None,
         }
     }
 }
@@ -1397,7 +1404,10 @@ impl DurabilityRoot {
         } else {
             #[cfg(any(test, feature = "test-support"))]
             {
-                RootRuntime::OwnedTestFixture(Arc::new(build_wp3_runtime_owned()?))
+                RootRuntime::OwnedTestFixture {
+                    runtime: Arc::new(build_wp3_runtime_owned()?),
+                    quest_clock: quest_clock::new(),
+                }
             }
             #[cfg(not(any(test, feature = "test-support")))]
             {
@@ -1464,7 +1474,9 @@ impl DurabilityRoot {
                 .idle_timeout(HOLDER_IDLE_TIMEOUT)
                 .max_lifetime(HOLDER_MAX_LIFETIME)
                 .connect_lazy_with(options),
-            runtime: RootRuntime::AmbientTestFixture,
+            runtime: RootRuntime::AmbientTestFixture {
+                quest_clock: quest_clock::new(),
+            },
             ready_demand: Arc::new(AtomicBool::new(true)),
             holder_owner: Arc::new(StdMutex::new(None)),
             holder_returned: Arc::new(Notify::new()),
@@ -1522,9 +1534,9 @@ impl DurabilityRoot {
         match &self.runtime {
             RootRuntime::Dedicated(handle) => handle.spawn(future),
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::OwnedTestFixture(runtime) => runtime.handle().spawn(future),
+            RootRuntime::OwnedTestFixture { runtime, .. } => runtime.handle().spawn(future),
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::AmbientTestFixture => tokio::spawn(future),
+            RootRuntime::AmbientTestFixture { .. } => tokio::spawn(future),
         }
     }
 
@@ -1656,7 +1668,7 @@ impl DurabilityRoot {
                 .await
             }
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::OwnedTestFixture(_) => {
+            RootRuntime::OwnedTestFixture { .. } => {
                 let root = self.clone();
                 await_root_task(
                     self.spawn_task(async move { root.maintain_ready_once_inner().await }),
@@ -1664,7 +1676,7 @@ impl DurabilityRoot {
                 .await
             }
             #[cfg(any(test, feature = "test-support"))]
-            RootRuntime::AmbientTestFixture => self.maintain_ready_once_inner().await,
+            RootRuntime::AmbientTestFixture { .. } => self.maintain_ready_once_inner().await,
         }
     }
 

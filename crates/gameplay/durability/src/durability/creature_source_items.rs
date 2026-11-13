@@ -4,6 +4,26 @@
     dead_code,
     reason = "Source-qualified SQL and native owner component is locally tested; Channel shipping activation remains the explicit #162 single-scheduler integration gate"
 )]
+mod cloak_blood;
+pub use cloak_blood::CloakBloodCallback;
+mod cloak_blood_step;
+pub use cloak_blood_step::{CloakBloodPlayerStep, CloakBloodStepReceipt, cloak_blood_percentage};
+mod primal_pod;
+mod scoped_global;
+mod source_step;
+mod spite_global;
+mod w01_death;
+use scoped_global::{ScopedGroundCauseRef, ScopedGroundPreparedRef};
+pub use source_step::{
+    PreparedSourceCreatureItem, SourceCreatureGroundStep, SourceCreatureGroundTile,
+    SourceGroundStep, SourceGroundStepKind, SourceGroundStepReceipt,
+};
+pub use spite_global::{
+    PreparedSpiteGlobalWrite, SpiteGlobalFireCallback, SpiteGlobalFireReceipt,
+    execute_spite_global_fire_in_transaction,
+};
+mod rotten_footprint;
+mod rotten_portal;
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::TypedDefinitionRef;
@@ -17,8 +37,21 @@ use crate::durability::spell_item_transaction::{
     read_creature_scope_tile_in_transaction, reference, source_map_protection_tags, uuid, uuid_v7,
 };
 use crate::durability::spell_items_abi::*;
+pub use primal_pod::{
+    PrimalPodCallback, PrimalPodExpiry, PrimalPodPlayerStep, PrimalPodStepReceipt,
+    drain_primal_pod_expiry_in_transaction, execute_primal_pod_callback_in_transaction,
+    primal_pod_step_item_indices,
+};
+pub use rotten_footprint::{
+    RottenFootprintCallback, RottenFootprintClockSample, RottenFootprintReceipt,
+    execute_rotten_footprint_in_transaction,
+};
+pub use rotten_portal::{
+    RottenPortalCallback, RottenPortalSource, execute_rotten_portal_callback_in_transaction,
+};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
+pub use w01_death::{W01DeathGroundCallback, W01DeathGroundReceipt};
 type ProfileAbilityProposal = crate::foundation::profile_schedule::ProfileAbilityProposal<
     crate::content::ProjectV2DefinitionRef,
     crate::content::ProjectV2Magnitude,
@@ -28,16 +61,110 @@ type Result<T> = std::result::Result<T, SpellItemError>;
 /// Sealed cause is created by the trusted current Creature source dispatcher,
 /// after immutable native ability membership and owner fence validation.
 /// It grants no inventory, Player, cost or command authority.
-#[derive(PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CreatureEventRule {
+    RottenPortalCreate,
+    RottenPortalExpire,
+    RottenPortalStep,
+    RottenFootprintCreate,
+    RottenFootprintTransform,
+    RottenFootprintRemove,
+    GazMinionCreate,
+    GazMinionExpire,
+    CorruptedSoulCreate,
+    CorruptedSoulTransform,
+    CorruptedSoulExpire,
+}
+impl CreatureEventRule {
+    fn permits_source(self, parent: &str, scope_kind: i16) -> bool {
+        match self {
+            Self::GazMinionCreate | Self::GazMinionExpire => {
+                matches!(scope_kind, 1 | 2) && parent == "oteryn:creature.minion_of_gaz_haragoth"
+            }
+            Self::CorruptedSoulCreate
+            | Self::CorruptedSoulTransform
+            | Self::CorruptedSoulExpire => {
+                matches!(scope_kind, 1 | 2) && parent == "oteryn:creature.corrupted_soul"
+            }
+            _ => {
+                scope_kind == 2
+                    && matches!(
+                        parent,
+                        "oteryn:creature.vemiath"
+                            | "oteryn:creature.chagorz"
+                            | "oteryn:creature.bakragore"
+                    )
+            }
+        }
+    }
+    fn key(self) -> &'static str {
+        match self {
+            Self::RottenPortalCreate => "rotten-blood.portal.create",
+            Self::RottenPortalExpire => "rotten-blood.portal.expire",
+            Self::RottenPortalStep => "rotten-blood.portal.step",
+            Self::RottenFootprintCreate => "rotten-blood.footprint.create",
+            Self::RottenFootprintTransform => "rotten-blood.footprint.transform",
+            Self::RottenFootprintRemove => "rotten-blood.footprint.remove",
+            Self::GazMinionCreate => "w01.gaz-minion.create",
+            Self::GazMinionExpire => "w01.gaz-minion.expire",
+            Self::CorruptedSoulCreate => "w01.corrupted-soul.create",
+            Self::CorruptedSoulTransform => "w01.corrupted-soul.transform",
+            Self::CorruptedSoulExpire => "w01.corrupted-soul.expire",
+        }
+    }
+    fn action_id(self) -> Option<u32> {
+        if self == Self::GazMinionCreate {
+            return Some(33542);
+        }
+        matches!(
+            self,
+            Self::RottenPortalCreate | Self::RottenPortalExpire | Self::RottenPortalStep
+        )
+        .then_some(50001)
+    }
+    fn permits_item(self, key: &str) -> bool {
+        match self {
+            Self::RottenPortalCreate | Self::RottenPortalExpire | Self::RottenPortalStep => {
+                key == "oteryn:item.tibia.i37000"
+            }
+            Self::RottenFootprintCreate => {
+                matches!(key, "oteryn:item.tibia.i43589" | "oteryn:item.tibia.i43294")
+            }
+            Self::RottenFootprintTransform => matches!(
+                key,
+                "oteryn:item.tibia.i43590"
+                    | "oteryn:item.tibia.i43297"
+                    | "oteryn:item.tibia.i43625"
+                    | "oteryn:item.tibia.i43295"
+            ),
+            Self::RottenFootprintRemove => {
+                matches!(key, "oteryn:item.tibia.i43297" | "oteryn:item.tibia.i43625")
+            }
+            Self::GazMinionCreate | Self::GazMinionExpire => key == "oteryn:item.tibia.i20121",
+            Self::CorruptedSoulCreate => key == "oteryn:item.tibia.i23726",
+            Self::CorruptedSoulTransform => {
+                matches!(key, "oteryn:item.tibia.i23727" | "oteryn:item.tibia.i23728")
+            }
+            Self::CorruptedSoulExpire => matches!(
+                key,
+                "oteryn:item.tibia.i23726"
+                    | "oteryn:item.tibia.i23727"
+                    | "oteryn:item.tibia.i23728"
+            ),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct CreatureGroundCause {
     world: [u8; 16],
-    channel: [u8; 16],
+    scope: crate::foundation::RuntimeScopeRefV1,
     scope_generation: u64,
     source_items: Vec<TypedDefinitionRef>,
     placement: [u8; 16],
     generation: u64,
     creature: TypedDefinitionRef,
     ability: TypedDefinitionRef,
+    event_rule: Option<CreatureEventRule>,
     occurrence: String,
     content: [u8; 32],
     map: [u8; 32],
@@ -75,43 +202,120 @@ async fn apply_creature_ground_in_transaction<F>(
 where
     F: FnOnce() -> Result<()>,
 {
-    let operations = &prepared.operations;
-    if prepared.placement != cause.placement
-        || prepared.generation != cause.generation
-        || prepared.body != cause.body
-        || prepared.cast != cause.cast
-    {
-        return Err(SpellItemError::Rejected("Creature prepared batch binding"));
+    apply_scoped_ground_in_transaction(
+        tx,
+        authority,
+        ScopedGroundCauseRef::Creature(cause),
+        transaction,
+        event,
+        ScopedGroundPreparedRef::Creature(prepared),
+        current_guard,
+    )
+    .await
+}
+
+async fn apply_scoped_ground_in_transaction<F>(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    cause: ScopedGroundCauseRef<'_>,
+    transaction: [u8; 16],
+    event: [u8; 16],
+    prepared: ScopedGroundPreparedRef<'_>,
+    current_guard: F,
+) -> Result<CreatureGroundReceipt>
+where
+    F: FnOnce() -> Result<()>,
+{
+    let operations = prepared.operations();
+    if !prepared.matches(cause) {
+        return Err(SpellItemError::Rejected("source prepared batch binding"));
     }
     check_scope_transaction(tx, authority).await?;
     current_guard()?;
-    if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != Some(cause.channel)
-        || authority.generation() != cause.scope_generation
+    if authority.world_bytes() != cause.world()
+        || authority.runtime_scope() != cause.scope()
+        || authority.generation() != cause.generation()
     {
         return Err(SpellItemError::Rejected("Creature source foreign scope"));
     }
-    if cause.placement == [0; 16]
-        || cause.generation == 0
-        || cause.creature.family != "Creature"
-        || cause.ability.family != "Ability"
-        || cause.creature.production_key.is_empty()
-        || cause.creature.revision_ref.is_empty()
-        || cause.ability.production_key.is_empty()
-        || cause.ability.revision_ref.is_empty()
-        || cause.occurrence.is_empty()
-        || cause.occurrence.len() > 1024
-        || [cause.content, cause.map, cause.frame, cause.body].contains(&[0; 32])
+    if !cause.valid_shape()
+        || cause.definition().production_key.is_empty()
+        || cause.definition().revision_ref.is_empty()
+        || cause.occurrence().is_empty()
+        || cause.occurrence().len() > 1024
+        || [cause.content(), cause.map(), cause.frame(), cause.body()].contains(&[0; 32])
         || !uuid_v7(&transaction)
         || !uuid_v7(&event)
-        || operations.len() > 500
+        || operations.len()
+            > if matches!(cause.cause_kind(), 4 | 6) {
+                1
+            } else {
+                500
+            }
     {
-        return Err(SpellItemError::Rejected("Creature ground cause shape"));
+        return Err(SpellItemError::Rejected("scoped source ground cause shape"));
     }
     let mut ids = std::collections::BTreeSet::new();
     let mut encoded = Vec::new();
     for op in operations {
         let (id, value) = match op {
+            SpellItemOperation::TransformGround(t) => {
+                let r = &t.current;
+                if !matches!(cause, ScopedGroundCauseRef::Creature(c) if c.cause_kind()==3)
+                    || !r.contents.is_empty()
+                    || r.quantity != 1
+                    || !t.target.materializable
+                    || !t.target.ground_destination
+                    || t.target.stack_maximum != 1
+                    || t.target.container_capacity.is_some()
+                    || match (&t.target.decay, &t.intrinsic_decay_clock) {
+                        (None, None) => false,
+                        (Some(decay), Some(clock)) => {
+                            r.definition.production_key != "oteryn:item.tibia.i43590"
+                                || t.target.definition.production_key != "oteryn:item.tibia.i43297"
+                                || t.target.definition.revision_ref != "definition-r1"
+                                || decay.duration_millis != 248_000
+                                || decay.target.is_some()
+                                || clock.execution_unix_ms <= 0
+                                || !matches!(cause, ScopedGroundCauseRef::Creature(c)
+                                    if c.event_rule == Some(CreatureEventRule::RottenFootprintTransform))
+                        }
+                        _ => true,
+                    }
+                    || !t.target.decay_chain.is_empty()
+                    || !cause.source_items().contains(&t.target.definition)
+                    || t.target.content_generation_digest != cause.content()
+                    || !matches!(
+                        (
+                            r.definition.production_key.as_str(),
+                            t.target.definition.production_key.as_str()
+                        ),
+                        ("oteryn:item.tibia.i43589", "oteryn:item.tibia.i43590")
+                            | (
+                                "oteryn:item.tibia.i43590",
+                                "oteryn:item.tibia.i43297" | "oteryn:item.tibia.i43625"
+                            )
+                            | ("oteryn:item.tibia.i43294", "oteryn:item.tibia.i43295")
+                            | ("oteryn:item.tibia.i23726", "oteryn:item.tibia.i23727")
+                            | ("oteryn:item.tibia.i23727", "oteryn:item.tibia.i23728")
+                    )
+                {
+                    return Err(SpellItemError::Rejected("closed source Ground transform"));
+                }
+                let mut value = serde_json::json!({"kind":"transform_ground","id":r.item_instance_id,
+                    "before":reference(&r.definition),"definition":reference(&t.target.definition),
+                    "revision":r.state_revision,"ordinal":r.top_down_ordinal,"quantity":r.quantity,
+                    "placement":ground(&r.placement),"blocks_movement":t.blocks_movement,"blocks_projectile":t.blocks_projectile});
+                if let Some(clock) = &t.intrinsic_decay_clock {
+                    value["intrinsic_decay"] = serde_json::json!({
+                        "original_execution_us":clock.original_execution_us.to_string(),
+                        "execution_unix_ms":clock.execution_unix_ms,
+                        "duration_millis":248_000,
+                    });
+                }
+                (r.item_instance_id, value)
+            }
+
             SpellItemOperation::MintGround {
                 item_instance_id,
                 definition,
@@ -122,13 +326,14 @@ where
                 blocks_projectile,
                 description,
             } => {
-                if !definition.materializable
+                if matches!(cause, ScopedGroundCauseRef::SourceStep(_))
+                    || !definition.materializable
                     || !definition.ground_destination
-                    || definition.content_generation_digest != cause.content
+                    || definition.content_generation_digest != cause.content()
                     || !item_definition_valid(&definition.definition)
                     || *quantity == 0
                     || *quantity != 1
-                    || !cause.source_items.contains(&definition.definition)
+                    || !cause.source_items().contains(&definition.definition)
                     || *quantity > definition.stack_maximum
                     || definition.stack_maximum > 100
                     || definition.container_capacity.is_some()
@@ -145,7 +350,10 @@ where
                 )
             }
             SpellItemOperation::RemoveGround(r) => {
-                if !r.contents.is_empty()
+                if (matches!(cause.cause_kind(), 3 | 4 | 6)
+                    && !cause.source_items().contains(&r.definition))
+                    || (matches!(cause, ScopedGroundCauseRef::SourceStep(c) if c.item != r.item_instance_id || r.quantity != 1))
+                    || !r.contents.is_empty()
                     || r.quantity == 0
                     || r.state_revision == 0
                     || r.top_down_ordinal == 0
@@ -167,16 +375,17 @@ where
         }
         encoded.push(value);
     }
-    let hex = |b: &[u8]| b.iter().map(|v| format!("{v:02x}")).collect::<String>();
-    let intent=serde_json::to_vec(&serde_json::json!({"schema":"OTERYN_CREATURE_GROUND_CAUSE/v1","player":null,"cost":null,"caster_origin":null,"world":hex(&authority.world_bytes()),"channel":hex(&cause.channel),"ownership_generation":authority.generation().to_string(),"creature":{"key":cause.creature.production_key,"revision":cause.creature.revision_ref,"placement":hex(&cause.placement),"generation":cause.generation.to_string()},"ability":reference(&cause.ability),"occurrence":cause.occurrence,"content":hex(&cause.content),"map":hex(&cause.map),"frame":hex(&cause.frame),"source_body":hex(&cause.body),"source_cast":hex(&cause.cast),"operations":encoded})).map_err(|_|SpellItemError::Rejected("Creature intent encoding"))?;
+    let intent_value = cause.intent(authority, &encoded);
+    let intent = serde_json::to_vec(&intent_value)
+        .map_err(|_| SpellItemError::Rejected("Creature intent encoding"))?;
     if intent.len() > 524288 {
         return Err(SpellItemError::Rejected("Creature audit budget"));
     }
     let binding: [u8; 32] = Sha256::digest(&intent).into();
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || ':' || $2 || ':' || $3 || ':' || $4,45))")
-        .bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.occurrence).execute(&mut **tx).await?;
-    let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding FROM game_spell_item_receipts WHERE cause_kind=1 AND world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND ownership_generation=$3::text::numeric(20,0) AND creature_placement=$4 AND creature_actor_generation=$5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
-        .bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
+        .bind(cause.lock_identity().0.as_slice()).bind(cause.lock_identity().1.to_string()).bind(&cause.definition().production_key).bind(cause.occurrence()).execute(&mut **tx).await?;
+    let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding FROM game_spell_item_receipts WHERE cause_kind=$9 AND world_id=encode($1,'hex')::uuid AND channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND instance_id IS NOT DISTINCT FROM encode($10,'hex')::uuid AND runtime_scope_kind=$11 AND ownership_generation=$3::text::numeric(20,0) AND creature_placement IS NOT DISTINCT FROM $4 AND creature_actor_generation IS NOT DISTINCT FROM $5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
+        .bind(authority.world_bytes().as_slice()).bind(cause.channel_bytes().as_ref().map(|value|value.as_slice())).bind(authority.generation().to_string()).bind(cause.actor_placement()).bind(cause.actor_generation()).bind(&cause.definition().production_key).bind(&cause.definition().revision_ref).bind(cause.occurrence()).bind(cause.cause_kind()).bind(cause.instance_bytes().as_ref().map(|value|value.as_slice())).bind(cause.scope_kind()).fetch_optional(&mut **tx).await?;
     if let Some(row) = prior {
         if row.try_get::<Vec<u8>, _>("binding")?.as_slice() != binding {
             return Err(SpellItemError::Rejected(
@@ -192,8 +401,14 @@ where
     }
     // Revalidate every exact removal before publishing any receipt or line.
     for op in operations {
-        if let SpellItemOperation::RemoveGround(r) = op {
+        let reserved = match op {
+            SpellItemOperation::RemoveGround(r) => Some(r),
+            SpellItemOperation::TransformGround(t) => Some(&t.current),
+            _ => None,
+        };
+        if let Some(r) = reserved {
             let target = SpellGroundTarget {
+                item_profile_source: None,
                 spatial_position: r.placement.spatial_position.clone(),
                 map_revision: r.placement.map_revision.clone(),
                 content_revision: r.placement.content_revision.clone(),
@@ -243,10 +458,42 @@ where
                 .ok_or(SpellItemError::Rejected("Creature field deadline overflow"))?;
         }
     }
-    sqlx::query("INSERT INTO game_spell_item_receipts(transaction_id,event_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,occurred_at_unix_ms,cause_kind,creature_placement,creature_actor_generation,creature_definition_key,creature_definition_revision,creature_occurrence,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),'Ability',$6,$7,$8,$9,$10,$11,$12,1,$13,$14::text::numeric(20,0),$15,$16,$17,$18,$19,$20,$21)")
-        .bind(transaction.as_slice()).bind(event.as_slice()).bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(cause.content.as_slice()).bind(binding.as_slice()).bind(&intent).bind(i32::try_from(operations.len()).map_err(|_|SpellItemError::Rejected("Creature operation count"))?).bind(occurred).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.creature.production_key).bind(&cause.creature.revision_ref).bind(&cause.occurrence).bind(cause.map.as_slice()).bind(cause.frame.as_slice()) .bind(cause.body.as_slice()).bind(cause.cast.as_slice()).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_spell_item_receipts(transaction_id,event_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,operation_count,occurred_at_unix_ms,cause_kind,creature_placement,creature_actor_generation,creature_definition_key,creature_definition_revision,creature_occurrence,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest,runtime_scope_kind,instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0), $22,$6,$7,$8,$9,$10,$11,$12,$23,$13,$14::text::numeric(20,0),$15,$16,$17,$18,$19,$20,$21,$24,encode($25,'hex')::uuid)")
+        .bind(transaction.as_slice()).bind(event.as_slice()).bind(authority.world_bytes().as_slice()).bind(cause.channel_bytes().as_ref().map(|value|value.as_slice())).bind(authority.generation().to_string()).bind(&cause.definition().production_key).bind(&cause.definition().revision_ref).bind(cause.content().as_slice()).bind(binding.as_slice()).bind(&intent).bind(i32::try_from(operations.len()).map_err(|_|SpellItemError::Rejected("Creature operation count"))?).bind(occurred).bind(cause.actor_placement()).bind(cause.actor_generation()).bind(cause.creature().map(|value| value.production_key.as_str())).bind(cause.creature().map(|value| value.revision_ref.as_str())).bind(cause.occurrence()).bind(cause.map().as_slice()).bind(cause.frame().as_slice()) .bind(cause.body().as_slice()).bind(cause.cast().as_slice()).bind(&cause.definition().family).bind(cause.cause_kind()).bind(cause.scope_kind()).bind(cause.instance_bytes().as_ref().map(|value|value.as_slice())).execute(&mut **tx).await?;
     for (index, op) in operations.iter().enumerate() {
         match op {
+            SpellItemOperation::TransformGround(t) => {
+                let r = &t.current;
+                apply_physical_item_line(
+                    tx,
+                    cause.owner(authority),
+                    cause.physical_cause(transaction),
+                    index + 1,
+                    occurred,
+                    op,
+                    7,
+                    r.item_instance_id,
+                    &t.target.definition,
+                    r.quantity,
+                    r.quantity,
+                    r.state_revision,
+                    Some(r.top_down_ordinal),
+                    &r.placement,
+                    cause.content(),
+                    t.blocks_movement,
+                    t.blocks_projectile,
+                    None,
+                    None,
+                )
+                .await?;
+                if let Some(clock) = &t.intrinsic_decay_clock {
+                    crate::durability::spell_item_temporal::schedule_source_scope_intrinsic_transform_in_transaction(
+                        tx, authority, transaction, &t.target, r.item_instance_id,
+                        u32::try_from(index + 1).map_err(|_| SpellItemError::Rejected("source transform ordinal"))?,
+                        clock.execution_unix_ms,
+                    ).await?;
+                }
+            }
             SpellItemOperation::MintGround {
                 item_instance_id,
                 definition,
@@ -266,8 +513,8 @@ where
                     .transpose()?;
                 apply_physical_item_line(
                     tx,
-                    PhysicalItemOwner::Creature(authority),
-                    PhysicalItemCause::Creature(transaction),
+                    cause.owner(authority),
+                    cause.physical_cause(transaction),
                     index + 1,
                     occurred,
                     op,
@@ -279,7 +526,7 @@ where
                     0,
                     None,
                     placement,
-                    cause.content,
+                    cause.content(),
                     *blocks_movement,
                     *blocks_projectile,
                     expires,
@@ -290,8 +537,8 @@ where
             SpellItemOperation::RemoveGround(r) => {
                 apply_physical_item_line(
                     tx,
-                    PhysicalItemOwner::Creature(authority),
-                    PhysicalItemCause::Creature(transaction),
+                    cause.owner(authority),
+                    cause.physical_cause(transaction),
                     index + 1,
                     occurred,
                     op,
@@ -303,7 +550,7 @@ where
                     r.state_revision,
                     Some(r.top_down_ordinal),
                     &r.placement,
-                    cause.content,
+                    cause.content(),
                     false,
                     false,
                     None,
@@ -324,6 +571,41 @@ where
 }
 
 impl CreatureGroundCause {
+    fn cause_kind(&self) -> i16 {
+        if self.event_rule.is_some() {
+            3
+        } else if self.ability.family == "Encounter" {
+            2
+        } else {
+            1
+        }
+    }
+    fn channel_bytes(&self) -> Option<[u8; 16]> {
+        match self.scope {
+            crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                Some(*channel_id.as_bytes())
+            }
+            crate::foundation::RuntimeScopeRefV1::Instance { .. } => None,
+        }
+    }
+    fn instance_bytes(&self) -> Option<[u8; 16]> {
+        match self.scope {
+            crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => Some(instance_id),
+            crate::foundation::RuntimeScopeRefV1::Channel { .. } => None,
+        }
+    }
+    fn scope_kind(&self) -> i16 {
+        if self.channel_bytes().is_some() { 1 } else { 2 }
+    }
+    fn hash_scope(&self, hash: &mut Sha256) {
+        if let Some(channel) = self.channel_bytes() {
+            hash.update(channel);
+        } else if let Some(instance) = self.instance_bytes() {
+            hash.update([2]);
+            hash.update(instance);
+        }
+    }
+
     /// Only current native typed content and the exact actual Creature schedule
     /// can construct a cause. Detached authoring bodies/digests are not inputs.
     fn from_current_native_proposal(
@@ -338,6 +620,11 @@ impl CreatureGroundCause {
         use crate::content::{ProjectV2AuthoringProfileData, ProjectV2Family};
         let actor = proposal.issuer;
         let scope = actor.runtime_scope();
+        if actor.channel_id().is_none() {
+            return Err(SpellItemError::Rejected(
+                "Instance creature Ability items unsupported",
+            ));
+        }
         if !fence.accepts_stamp(stamp)
             || !fence.is_current_for_scope(scope, actor.scope_generation())
             || !runtime
@@ -475,12 +762,7 @@ impl CreatureGroundCause {
             .map_err(|_| SpellItemError::Rejected("Creature source body encoding"))?;
         Ok(Self {
             world: *actor.world_id().as_bytes(),
-            channel: *actor
-                .channel_id()
-                .ok_or(SpellItemError::Rejected(
-                    "Instance creature items unsupported",
-                ))?
-                .as_bytes(),
+            scope,
             scope_generation: actor.scope_generation().get(),
             source_items,
             placement: actor.placement_identity(),
@@ -501,6 +783,7 @@ impl CreatureGroundCause {
             frame: runtime.content_pin().frame_binding_digest(),
             body: Sha256::digest(bytes).into(),
             cast,
+            event_rule: None,
         })
     }
 }
@@ -517,27 +800,45 @@ async fn reconcile_creature_ground_in_transaction<F>(
 where
     F: FnOnce() -> Result<()>,
 {
+    reconcile_scoped_ground_in_transaction(
+        tx,
+        authority,
+        ScopedGroundCauseRef::Creature(cause),
+        current_guard,
+    )
+    .await
+}
+
+async fn reconcile_scoped_ground_in_transaction<F>(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    cause: ScopedGroundCauseRef<'_>,
+    current_guard: F,
+) -> Result<Option<CreatureGroundReceipt>>
+where
+    F: FnOnce() -> Result<()>,
+{
     check_scope_transaction(tx, authority).await?;
     current_guard()?;
-    if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != Some(cause.channel)
-        || authority.generation() != cause.scope_generation
+    if authority.world_bytes() != cause.world()
+        || authority.runtime_scope() != cause.scope()
+        || authority.generation() != cause.generation()
     {
         return Err(SpellItemError::Rejected("Creature replay foreign scope"));
     }
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || ':' || $2 || ':' || $3 || ':' || $4,45))")
-        .bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.occurrence).execute(&mut **tx).await?;
-    let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding,catalog_digest,creature_definition_key,creature_definition_revision,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest FROM game_spell_item_receipts WHERE cause_kind=1 AND world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND ownership_generation=$3::text::numeric(20,0) AND creature_placement=$4 AND creature_actor_generation=$5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
-        .bind(authority.world_bytes().as_slice()).bind(cause.channel.as_slice()).bind(authority.generation().to_string()).bind(cause.placement.as_slice()).bind(cause.generation.to_string()).bind(&cause.ability.production_key).bind(&cause.ability.revision_ref).bind(&cause.occurrence).fetch_optional(&mut **tx).await?;
+        .bind(cause.lock_identity().0.as_slice()).bind(cause.lock_identity().1.to_string()).bind(&cause.definition().production_key).bind(cause.occurrence()).execute(&mut **tx).await?;
+    let prior=sqlx::query("SELECT transaction_id::text,event_id::text,binding,catalog_digest,creature_definition_key,creature_definition_revision,creature_map_digest,creature_frame_digest,creature_source_body_digest,creature_cast_digest FROM game_spell_item_receipts WHERE cause_kind=$9 AND world_id=encode($1,'hex')::uuid AND channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND instance_id IS NOT DISTINCT FROM encode($10,'hex')::uuid AND runtime_scope_kind=$11 AND ownership_generation=$3::text::numeric(20,0) AND creature_placement IS NOT DISTINCT FROM $4 AND creature_actor_generation IS NOT DISTINCT FROM $5::text::numeric(20,0) AND spell_production_key=$6 AND spell_revision=$7 AND creature_occurrence=$8")
+        .bind(authority.world_bytes().as_slice()).bind(cause.channel_bytes().as_ref().map(|value|value.as_slice())).bind(authority.generation().to_string()).bind(cause.actor_placement()).bind(cause.actor_generation()).bind(&cause.definition().production_key).bind(&cause.definition().revision_ref).bind(cause.occurrence()).bind(cause.cause_kind()).bind(cause.instance_bytes().as_ref().map(|value|value.as_slice())).bind(cause.scope_kind()).fetch_optional(&mut **tx).await?;
     let Some(row) = prior else {
         return Ok(None);
     };
     for (column, expected) in [
-        ("catalog_digest", cause.content),
-        ("creature_map_digest", cause.map),
-        ("creature_frame_digest", cause.frame),
-        ("creature_source_body_digest", cause.body),
-        ("creature_cast_digest", cause.cast),
+        ("catalog_digest", cause.content()),
+        ("creature_map_digest", cause.map()),
+        ("creature_frame_digest", cause.frame()),
+        ("creature_source_body_digest", cause.body()),
+        ("creature_cast_digest", cause.cast()),
     ] {
         if row.try_get::<Vec<u8>, _>(column)?.as_slice() != expected {
             return Err(SpellItemError::Rejected(
@@ -545,11 +846,17 @@ where
             ));
         }
     }
-    if row.try_get::<String, _>("creature_definition_key")? != cause.creature.production_key
-        || row.try_get::<String, _>("creature_definition_revision")? != cause.creature.revision_ref
+    if row
+        .try_get::<Option<String>, _>("creature_definition_key")?
+        .as_deref()
+        != cause.creature().map(|value| value.production_key.as_str())
+        || row
+            .try_get::<Option<String>, _>("creature_definition_revision")?
+            .as_deref()
+            != cause.creature().map(|value| value.revision_ref.as_str())
     {
         return Err(SpellItemError::Rejected(
-            "conflicting Creature source definition replay",
+            "conflicting exact source definition replay",
         ));
     }
     let binding: Vec<u8> = row.try_get("binding")?;
@@ -586,7 +893,7 @@ async fn prepare_creature_source_fields_in_transaction<
     use crate::foundation::{MovementFacing, MovementLocalPosition as Pos};
     check_scope_transaction(tx, authority).await?;
     if authority.world_bytes() != cause.world
-        || authority.channel_bytes() != Some(cause.channel)
+        || authority.runtime_scope() != cause.scope
         || authority.generation() != cause.scope_generation
         || cause.placement != proposal.issuer.placement_identity()
         || cause.generation != proposal.issuer.actor_local_generation()
@@ -815,7 +1122,7 @@ async fn prepare_creature_source_fields_in_transaction<
         let mut hash = Sha256::new();
         hash.update(b"oteryn:creature-source-field:v1");
         hash.update(cause.world);
-        hash.update(cause.channel);
+        cause.hash_scope(&mut hash);
         hash.update(cause.scope_generation.to_be_bytes());
         hash.update(cause.placement);
         hash.update(cause.generation.to_be_bytes());
@@ -1045,7 +1352,7 @@ pub async fn execute_creature_source_items_in_transaction<
         let mut h = Sha256::new();
         h.update(tag);
         h.update(cause.world);
-        h.update(cause.channel);
+        cause.hash_scope(&mut h);
         h.update(cause.scope_generation.to_be_bytes());
         h.update(cause.placement);
         h.update(cause.generation.to_be_bytes());
@@ -1463,6 +1770,8 @@ mod conservative_destroy_tests {
             expires_at_unix_ms: None,
             field_origin: None,
             creature_field_origin: None,
+            native_map_origin: false,
+            environment_field_origin: false,
         }
     }
     #[test]

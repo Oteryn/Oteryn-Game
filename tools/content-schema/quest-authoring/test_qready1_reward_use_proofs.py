@@ -88,3 +88,28 @@ class Qready1RewardUseProofTest(unittest.TestCase):
         for summary in ("16 passed; 0 failed;", "17 passed; 1 failed;"):
             with self.subTest(summary=summary), self.assertRaises(ValueError):
                 lane.generate(ROOT, self.log.replace("17 passed; 0 failed;", summary))
+
+    def test_focused_refresh_preserves_unselected_evidence(self):
+        previous = lane.generate(ROOT, self.log)
+        selected = "qready1_circle_room_quest_exact_reward_once"
+        log = ("POSTGRES_CASE_COMPLETED qready1_circle_room_quest "
+               "duration=2.5s success=true\n"
+               "test result: ok. 1 passed; 0 failed;\n")
+        refreshed = lane.generate(ROOT, log, selected={selected}, previous=previous)
+        for bad_log in (log.replace('success=true', 'success=false'),
+                        log.replace('duration=2.5s', 'duration=0.001s'),
+                        log.replace('1 passed', '0 passed'),
+                        log.replace('qready1_circle_room_quest', 'missing_marker')):
+            with self.subTest(log=bad_log), self.assertRaises(ValueError):
+                lane.generate(ROOT, bad_log, selected={selected}, previous=previous)
+        for before, after in zip(previous["cases"], refreshed["cases"]):
+            if before["test"] == selected:
+                self.assertEqual(after["duration_seconds"], 2.5)
+            else:
+                self.assertEqual(before, after)
+        previous["cases"][0]["claim_sha256"] = "stale"
+        with self.assertRaises(ValueError):
+            lane.generate(ROOT, log, selected={selected}, previous=previous)
+        previous['test_sha256'] = 'changed'
+        with self.assertRaises(ValueError):
+            lane.generate(ROOT, log, selected={selected}, previous=previous)

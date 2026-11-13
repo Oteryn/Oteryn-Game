@@ -73,7 +73,16 @@ pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, 
     check_line(chat::decode_chat_line(payload)?, selected)
 }
 
-/// The capability checks of a decoded line, shared by the legacy and the extended decoder.
+pub(super) fn decode_native_line(
+    payload: &[u8],
+    selected: &[u32],
+) -> Result<ChatLine, SessionError> {
+    check_line(
+        oteryn_protocol_oteryn::native_map_cues::decode_native_map_chat_line(payload)?,
+        selected,
+    )
+}
+
 pub(super) fn check_line(line: ChatLine, selected: &[u32]) -> Result<ChatLine, SessionError> {
     if matches!(
         line,

@@ -436,7 +436,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(FireReport::default());
         };
         let permit = &permit;
+        let health_names = self
+            .read_native_health_names(permit)
+            .await
+            .map_err(|_| Error::StaleOwner)?;
         let mut runtime = self.runtime.lock().await;
+        let native_health_observations = self
+            .seal_native_health_observations(&runtime, health_names)
+            .map_err(|_| Error::StaleOwner)?;
         let mut states = self.states.spell_states.lock().await;
         let Some(timer) = states.spell_timers.as_ref() else {
             return Ok(FireReport::default());
@@ -615,6 +622,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &current.fence,
                     &casters,
                     access.as_ref(),
+                    &native_health_observations,
                 )
                 .await?;
             self.record_spell_kills(
@@ -678,6 +686,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &casters,
                 room.ok_or(Error::StaleOwner)?,
                 &mut accepted,
+                &native_health_observations,
             );
             pass.run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
@@ -694,6 +703,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         casters,
                         room,
                         accepted,
+                        native_health_observations,
                     ) = ctx;
                     let active = owner
                         .active_generation
@@ -754,7 +764,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             saved.binding.command.game_session_id(),
                         )
                         .ok_or(DurabilityError::Unavailable)?;
-                    let owned =
+                    let mut owned =
                         super::super::spell_access_facts::load_owned_cast_facts_in_transaction(
                             &mut tx,
                             owner.root,
@@ -771,6 +781,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
+                    owned.set_native_health_observations(native_health_observations.to_vec());
                     if saved.resolved.is_none() {
                         let phase_now = owner.owner_now();
                         let requests = super::prepare_ordinary_due_presentations(

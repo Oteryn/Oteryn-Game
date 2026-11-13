@@ -202,6 +202,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    ElementalArrival(Box<super::super::loop_move::elemental_arrival::PendingElementalArrival>),
     Enchanting(Box<super::super::item_craft::enchanting::PendingEnchanting>),
     PlayerField(Box<super::player_field::PendingPlayerField>),
     FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
@@ -324,7 +325,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            if permit.has_unresolved() || !self.resolve_player_trades(&permit).await {
+            if permit.has_unresolved()
+                || !self.resolve_player_trades(&permit).await
+                || !self.resolve_primal_pod_steps(&permit).await
+                || !self.resolve_cloak_blood_steps(&permit).await
+                || !self.resolve_spite_steps(&permit).await
+            {
                 return None;
             }
             Some(permit)
@@ -351,6 +357,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::ElementalArrival(pending) => {
+                drop(states);
+                self.resolve_elemental_arrival(&mut permit, *pending).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Enchanting(pending) => {
                 drop(states);
                 self.resolve_enchanting(&mut permit, *pending).await;
@@ -1289,6 +1300,8 @@ async fn prepare_source_self_from_owners(
         now,
         &mut |minimum, _| minimum,
     )?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=paid_preview");
     item_spell_augments::cooldown(owned, spell, &mut preview.next, &mut preview.anchor, now)?;
     // Source reentry protection suppresses outgoing ally healing; self healing
     // remains eligible. This selection preview consumes no live random stream.
@@ -1329,11 +1342,17 @@ async fn prepare_source_self_from_owners(
             preview_requests,
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=presentation_preview");
     runtime
         .stage_spell_batch(&preview_batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=runtime_preview");
     stage_player_batch(runtime, states, &preview_batch, Some(preview.next.clone()))
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    #[cfg(test)]
+    eprintln!("SEAM_EVIDENCE source_self_prepare stage=player_preview");
     before
         .prepare_paid_training(
             &preview.next,
@@ -2425,6 +2444,45 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(_) => return rejected(),
         }
+        // Known replay above needs no new spectator/name read. An unresolved
+        // original attempt likewise keeps its original numeric observation.
+        let native_health_observations = if states
+            .pending_native
+            .iter()
+            .any(|marker| marker.is_for(actor, session))
+        {
+            Vec::new()
+        } else {
+            let prepared = match self.capture_native_health_names(&runtime) {
+                Ok(prepared) => prepared,
+                Err(()) => return NativeCastDispatch::Pending,
+            };
+            let read = if prepared.requires_sql() {
+                drop(states);
+                drop(runtime);
+                let read = self
+                    .read_prepared_native_health_names(permit, prepared)
+                    .await;
+                runtime = self.runtime.lock().await;
+                states = self.states.spell_states.lock().await;
+                if runtime.player_control_facts(actor, session).is_err()
+                    || runtime.owner_fence().is_err()
+                    || runtime.content_pin().server_artifact_digest() != native.source_digest()
+                {
+                    return NativeCastDispatch::Pending;
+                }
+                read
+            } else {
+                prepared.unread() // No SQL and no lock churn for ordinary frames.
+            };
+            match self.seal_native_health_observations(&runtime, read) {
+                Ok(observations) => observations,
+                // Only the captured frame/owner authority mismatch is fatal
+                // here. Missing names leave no proof; an actually selected
+                // HealthForgotten target fails at numeric qualification.
+                Err(()) => return NativeCastDispatch::Pending,
+            }
+        };
         let marker_intent: NativeMarkerIntent = (*intent, rune, parameter.clone(), legacy.clone());
         // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
         let retained = match states
@@ -2518,9 +2576,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             writer,
             Some((runtime, states, objects)),
             parameter_output,
+            native_health_observations,
         );
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,writer,guards,parameter_output)=ctx;
+            let (owner,access,writer,guards,parameter_output,native_health_observations)=ctx;
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
@@ -2593,6 +2652,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let training_occurrence=BuildOccurrence::from_bytes(nonce(b"oteryn:native-cast-training:v1",actor,session,command_id,&[]))
                         .map_err(|_|DurabilityError::Unavailable)?;
+                    owned.set_native_health_observations(native_health_observations.clone());
+                    // W11 only: immutable current Quest/vocation DATA for native
+                    // source health callbacks; payment/cast routing is unchanged.
+                    super::super::soul_war_callbacks::publish_command_source(
+                        &mut tx,&authority,active,room,runtime,states,actor,now.get()).await?;
                     let prepared_result=if native_companion_item_cast::direct_applicable(spell) {
                         native_companion_item_cast::prepare_direct(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),parameter.as_ref(),attack_target,&mut draw).await
@@ -2886,9 +2950,35 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
             let mut attack=owner.states.attack.lock().await;
-            // Phase 2: no awaited work, allocation, new random draw or fallible branch.
-            let mut attempt=window.install();
-            let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // Prepare hit metadata before the physical install; this last fallible span
+            // still borrows the retained original attempt, including the exact Rune use.
+            let (attempt,batch)={
+                let mut cache=attack.kills().1.lock().map_err(|_|DurabilityError::Unavailable)?;
+                let source=if window.attempt().rune.is_some() {
+                    match spell.carrier {
+                        crate::spell::Carrier::Rune {item,..}=>content.item_policy_for_source_id(item)
+                            .and_then(|policy|super::super::quest_hits::queue::direct_damage_target(&window.attempt().prepared.batch().effects)
+                                .and_then(|(target,ordinal)|runtime.companion_snapshot(target).ok().map(|snapshot|
+                                    (target,ordinal,policy.record().production_definition.production_key.as_str(),snapshot.state.policy.definition_key.clone())))),
+                        _=>None,
+                    }
+                } else {None};
+                let mut hits=if let Some((target,ordinal,item,creature))=&source {
+                    Some(cache.hits.prepare(&runtime,actor,*target,command,*ordinal,creature,item,Some(spell.key.as_str()))
+                        .map_err(|_|DurabilityError::Unavailable)?)
+                } else {None};
+                // Phase 2: no awaited work, allocation, new random draw or fallible branch.
+                let mut attempt=window.install();
+                let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+                if batch.applied && let (Some(hits),Some((target,ordinal,item,creature)))=(&mut hits,&source)
+                    && batch.effects.iter().any(|effect|effect.target==*target && effect.sub_ordinal==*ordinal
+                        && effect.health.is_some_and(|health|health.committed_health_loss().is_some()))
+                    && let Ok(Some(witness))=runtime.borrow_exact_actor_commit()
+                        .committed_hit_for_bound_attacker(*target,actor,command,*ordinal) {
+                    hits.capture(witness,creature,item,Some(spell.key.as_str()));
+                }
+                (attempt,batch)
+            };
             if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
@@ -2896,7 +2986,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 attempt.prepared.batch(),&batch,attempt.prepared.party.as_ref());
             if let Some(at) = attempt.prepared.batch().now_us && batch.applied {
                 for effect in &batch.effects {
-                    if effect.health.is_some_and(|h| h.applied && h.health_after < h.health_before)
+                    if effect.health.is_some_and(|h| h.committed_health_loss().is_some())
                         && let Ok(snapshot) = runtime.companion_snapshot_including_dead(effect.target)
                         && snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar {
                         states.prey_activity(&runtime, actor, session, super::super::prey::PreyActivity {
@@ -2915,7 +3005,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
-        let (_, _, writer, guards, _) = context;
+        let (_, _, writer, guards, _, _) = context;
         drop(guards);
         let mut states = self.states.spell_states.lock().await;
         let (leftover, parked) = writer.finish();
@@ -2928,6 +3018,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             leftover,
             parked,
         );
+        drop(states);
+        let _ = self.drain_native_quest_hits().await;
         match result {
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,

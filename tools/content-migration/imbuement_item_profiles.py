@@ -127,8 +127,9 @@ def complete_boots(root, generated, profile_path, manifest_path, order, canonica
     """Later shop/loot cohorts add boots after the original three Item profiles.
 
     Fill only their missing imbuement allowance, from the same pinned item donors.
-    Canary adds Swiftness to boots of haste and Vibrancy to depth calcei; retain
-    those explicit Canary differences rather than inheriting Crystal's omissions.
+    Canary adds Swiftness to boots of haste and Vibrancy to depth calcei. Galthen
+    loot boots use Canary's tier three families, not Crystal's OT tier ten.
+    Retain these explicit donor differences, as their existing owners require.
     """
     raw = (root / CANARY).read_bytes()
     if hashlib.sha256(raw).hexdigest() != CANARY_SHA256:
@@ -143,6 +144,8 @@ def complete_boots(root, generated, profile_path, manifest_path, order, canonica
             expected = {'slot_count': 1, 'families': {'PARALYSIS_REMOVAL': '3'}}
         elif item == 13997:
             expected = {'slot_count': 1, 'families': {}}
+        elif item in (44648, 44649):
+            expected = {'slot_count': 1, 'families': {'INCREASE_SPEED': '10'}}
         if crystal['records'].get(str(item)) != expected:
             raise ValueError(f'IMBUEMENT_BOOT_CROSS_CHECK {item}')
     for record in document['records']:

@@ -1,8 +1,10 @@
 """Six retained Rotten Blood Item facts keep source identity and loader defaults."""
+import hashlib
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 import questpc2_rotten_item_facts as tool
 
 
@@ -52,3 +54,42 @@ class RottenItemFactsTests(unittest.TestCase):
             for group in ('container', 'charges', 'temporal'):
                 self.assertEqual(row['semantics'][group], {'state': 'NOT_APPLICABLE'})
         self.assertEqual(facts, json.loads((root / tool.OUTPUT).read_text()))
+
+    def test_historical_and_approved_successor_bindings_preserve_exact_facts(self):
+        root = Path(__file__).resolve().parents[3]
+        binding_path = root / tool.shared.BINDINGS
+        current = binding_path.read_bytes()
+        predecessor = tool.shared.historical_binding_bytes(current, tool.shared.BINDINGS_SHA)
+        self.assertNotEqual(current, predecessor)
+        self.assertEqual(hashlib.sha256(predecessor).hexdigest(), tool.shared.BINDINGS_SHA)
+        expected = json.loads((root / tool.OUTPUT).read_bytes())
+        read_bytes = Path.read_bytes
+        for label, raw in (('historical', predecessor), ('approved_successor', current)):
+            with self.subTest(binding_table=label):
+                def selected_read(path, replacement=raw):
+                    return replacement if path == binding_path else read_bytes(path)
+
+                with patch.object(Path, 'read_bytes', selected_read):
+                    self.assertEqual(tool.capture(root), expected)
+
+    def test_unapproved_binding_changes_remain_refused(self):
+        root = Path(__file__).resolve().parents[3]
+        binding_path = root / tool.shared.BINDINGS
+        current = binding_path.read_bytes()
+        read_bytes = Path.read_bytes
+        # Include unrelated history, both Rotten cohorts and the approved addition.
+        for external_id in ('3031', '43501', '43961', '48227'):
+            with self.subTest(external_id=external_id):
+                document = json.loads(current)
+                row = next(row for row in document['bindings']
+                           if row['external_id'] == external_id)
+                row['source_revision'] = '0' * 40
+                changed = (json.dumps(document, sort_keys=True, separators=(',', ':'),
+                                      ensure_ascii=False) + '\n').encode()
+
+                def selected_read(path, replacement=changed):
+                    return replacement if path == binding_path else read_bytes(path)
+
+                with patch.object(Path, 'read_bytes', selected_read):
+                    with self.assertRaisesRegex(ValueError, 'Item binding table digest mismatch'):
+                        tool.capture(root)

@@ -239,6 +239,12 @@ fn admit_native_bindings(
             }
         }
     }
+    lowered.catalogue =
+        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::completion_sets::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::arena_completion::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     Ok(lowered)
 }
 
@@ -251,6 +257,12 @@ pub(super) fn lower_embedded_quest_state(
         super::native_kill_goals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::kill_objectives::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::lions_rock::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::world_change_journals::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::last_creep_native::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::elvenbane::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::world_callbacks::extend(
@@ -278,11 +290,15 @@ pub(super) fn lower_embedded_quest_state(
     lowered.catalogue =
         super::rotten_blood::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
+        super::rotten_blood::area_icons::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
+        super::soul_war::source_items::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    lowered.catalogue =
         super::dark_trails::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
         super::isle_of_evil::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue =
-        super::native_kills::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+        super::source_deaths::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.catalogue = super::timers::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
     lowered.source_tracks.insert(
         super::rotten_blood::ACCESS_TRACK.into(),
@@ -297,6 +313,14 @@ pub(super) fn lower_embedded_quest_state(
     for callback in super::fire_feathered_native::callbacks()
         .into_iter()
         .chain(super::shared_world_progress::callbacks())
+        .chain(super::last_creep_native::callbacks().map_err(QuestLoadError::Json)?)
+        .chain(super::world_callbacks::load().map_err(QuestLoadError::Json)?)
+        .filter(|callback| {
+            !callback
+                .sources
+                .iter()
+                .any(|source| source.starts_with("oteryn-authored:"))
+        })
     {
         for storage in callback.storage {
             lowered
@@ -305,8 +329,14 @@ pub(super) fn lower_embedded_quest_state(
                 .or_insert_with(|| callback.sources.join(";"));
         }
     }
+    let before_npc_rewards = lowered.catalogue.clone();
     lowered.catalogue = super::npc_rules::extend(lowered.catalogue, &lowered.source_tracks)
         .map_err(QuestLoadError::Json)?;
+    super::reward_callbacks::retain_outfit_reward_predecessor(
+        before_npc_rewards,
+        &mut lowered.catalogue,
+    )
+    .map_err(QuestLoadError::Json)?;
     // Complete NPC reward activations and counters before validating native goals.
     lowered.catalogue =
         super::reward_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
@@ -343,9 +373,18 @@ pub(super) fn lower_embedded_quest_state(
             }
         }
     }
+    restrict_runtime_scope(lowered, content_revision)
+}
+
+fn restrict_runtime_scope(
+    mut lowered: LoweredQuestState,
+    content_revision: &str,
+) -> Result<LoweredQuestState, QuestLoadError> {
     // Preserve source captures and their counts; only the production catalogue
     // and its executable bindings are filtered by the owner's target scope.
     let npc_legacy = std::mem::take(&mut lowered.catalogue.npc_legacy);
+    let mut predecessors = std::mem::take(&mut lowered.catalogue.predecessors);
+    predecessors.retain(|quest, _| super::in_runtime_scope(quest));
     lowered.catalogue = QuestStateCatalogue::new(
         content_revision,
         lowered
@@ -365,6 +404,7 @@ pub(super) fn lower_embedded_quest_state(
     )
     .map_err(QuestLoadError::Catalogue)?;
     lowered.catalogue.npc_legacy = npc_legacy;
+    lowered.catalogue.predecessors = predecessors;
     lowered
         .source_tracks
         .retain(|key, _| lowered.catalogue.track(key).is_some());
@@ -506,6 +546,69 @@ mod tests {
     }
 
     #[test]
+    fn runtime_scope_preserves_only_admitted_predecessors() -> Result<(), String> {
+        const MARLIN: &str = "oteryn:quest.marlin_trophy_quest";
+        const DAWNPORT: &str = "oteryn:quest.dawnport_quest";
+        let mut lowered = parse_quest_state(EMBEDDED, "scope-predecessors")
+            .map_err(|error| format!("{error:?}"))?;
+        let cases = [
+            (QUEST, [1u8; 32]),
+            (MARLIN, [2u8; 32]),
+            (DAWNPORT, [3u8; 32]),
+        ];
+        for (quest, hash) in cases {
+            assert!(lowered.catalogue.definition_hash(quest).is_some());
+            lowered.catalogue.predecessors.insert(
+                quest.into(),
+                vec![super::super::NpcDefinitionPredecessor {
+                    hash,
+                    defaults: BTreeMap::new(),
+                }],
+            );
+        }
+        let expected = lowered.catalogue.predecessors.clone();
+        let scoped = restrict_runtime_scope(lowered, "scope-predecessors")
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(scoped.catalogue.predecessors.len(), 2);
+        for (quest, hash) in cases {
+            let defaults =
+                super::super::npc_rules::legacy_defaults(scoped.catalogue(), quest, &hash);
+            if quest == DAWNPORT {
+                assert!(defaults.is_none());
+                assert!(!scoped.catalogue.predecessors.contains_key(quest));
+                assert!(scoped.catalogue.definition_hash(quest).is_none());
+                assert!(
+                    scoped
+                        .catalogue
+                        .tracks
+                        .values()
+                        .all(|track| track.quest != quest)
+                );
+                assert!(
+                    scoped
+                        .catalogue
+                        .transitions
+                        .values()
+                        .all(|rule| rule.quest != quest)
+                );
+            } else {
+                assert!(defaults.ok_or("retained predecessor")?.is_empty());
+                assert_eq!(
+                    scoped.catalogue.predecessors.get(quest),
+                    expected.get(quest)
+                );
+                let mut invalid = hash;
+                invalid[0] ^= 1;
+                assert!(
+                    super::super::npc_rules::legacy_defaults(scoped.catalogue(), quest, &invalid)
+                        .is_none()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn owner_scope_excludes_dawnport_from_runtime_state_and_callbacks() -> Result<(), String> {
         let loaded =
             load_embedded_quest_state("owner-scope").map_err(|error| format!("{error:?}"))?;
@@ -529,6 +632,31 @@ mod tests {
         );
         let registries = [
             crate::quest::world_callbacks::EMBEDDED,
+            // QMECH source cohorts retain their separate registration owners.
+            include_str!("../../../../../content/quests/world-callbacks/children-grease.json"),
+            include_str!("../../../../../content/quests/world-callbacks/engenc2-cults.json"),
+            include_str!("../../../../../content/quests/world-callbacks/ice-islands-seals.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m07-dreamer-levers.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m07-lion-offerings.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m07-machinery-burn.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/m07-machinery-catapults.json"
+            ),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/m07-machinery-repairs.json"
+            ),
+            include_str!("../../../../../content/quests/world-callbacks/m07-machinery-wheels.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m07-realm-trial.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m07-too-hot-columns.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m09-treasure.json"),
+            include_str!("../../../../../content/quests/world-callbacks/m39-stories.json"),
+            include_str!("../../../../../content/quests/world-callbacks/oramond-native-roots.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qm48-mammoth.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qready1-clocks.json"),
+            include_str!("../../../../../content/quests/world-callbacks/qready1-crafts.json"),
+            include_str!(
+                "../../../../../content/quests/world-callbacks/questpc5-nomads-cabinet.json"
+            ),
             // Accepted main83acbdac3 source cohorts remain independently enumerated.
             include_str!(
                 "../../../../../content/quests/world-callbacks/l6-ancient-instruments.json"
@@ -542,6 +670,7 @@ mod tests {
             include_str!("../../../../../content/quests/shared-outfit-callbacks.json"),
             include_str!("../../../../../content/quests/authored-world-callbacks.json"),
             include_str!("../../../../../content/quests/questpc7-world-callbacks.json"),
+            include_str!("../../../../../content/quests/world-callbacks/feaster-phase-routes.json"),
             include_str!("../../../../../content/quests/questl2-djinn-world.json"),
         ];
         let mut expected = std::collections::BTreeSet::new();
@@ -607,6 +736,83 @@ mod tests {
             assert!(expected.insert(format!("oteryn:quest-callback/elvenbane/{suffix}")));
         }
         assert_eq!(expected.len() - before_elvenbane, 2);
+        let before_qmech_native = expected.len();
+        for suffix in [
+            "barbarian-test-mead",
+            "dreamers-challenge-carrot-entry",
+            "dreamers-challenge-death-ring-reset",
+            "dreamers-challenge-fire-bug-ignite",
+            "engenc2/nomads-land-window",
+            "engitem-ice-seal-0-0",
+            "engitem-ice-seal-0-1",
+            "engitem-ice-seal-0-2",
+            "engitem-ice-seal-1-0",
+            "engitem-ice-seal-1-1",
+            "engitem-ice-seal-1-2",
+            "engitem-ice-seal-2-0",
+            "engitem-ice-seal-2-1",
+            "engitem-ice-seal-2-2",
+            "goblin-merchant-elevator-lower",
+            "goblin-merchant-elevator-upper",
+            "last-creep-native-blightwalker",
+            "last-creep-native-carniphila",
+            "last-creep-native-exit",
+            "last-creep-native-lost-soul",
+            "last-creep-native-mutated-rat",
+            "last-creep-native-nightstalker",
+            "last-creep-native-pharaoh",
+            "last-creep-native-quara-hydromancer",
+            "last-creep-native-return",
+            "last-creep-native-start",
+            "last-creep-native-zombie",
+            "m02/nomads-land/window",
+            "m44-lions-amphora-0",
+            "m44-lions-amphora-1",
+            "m44-lions-amphora-2",
+            "m44-lions-amphora-3",
+            "m44-lions-amphora-4",
+            "m44-lions-amphora-5",
+            "m44-lions-amphora-6",
+            "m44-lions-amphora-7",
+            "m44-lions-flower-0",
+            "m44-lions-flower-1",
+            "m44-lions-flower-2",
+            "m44-lions-flower-3",
+            "m44-lions-flower-4",
+            "m44-lions-flower-5",
+            "m44-lions-flower-6",
+            "m44-lions-flower-7",
+            "qn1-children-lever-0/ordinary",
+            "qn1-children-lever-0/solved",
+            "qn1-children-lever-1/ordinary",
+            "qn1-children-lever-1/solved",
+            "qn1-children-lever-2/ordinary",
+            "qn1-children-lever-2/solved",
+            "qn1-children-lever-3/ordinary",
+            "qn1-children-lever-3/solved",
+            "qn1-children-lever-4/ordinary",
+            "qn1-children-lever-4/solved",
+            "rotten-blood/prepare-chagorz",
+            "rotten-blood/prepare-ichgahal",
+            "rotten-blood/prepare-murcion",
+            "rotten-blood/prepare-vemiath",
+            "srv7-reliable-ram",
+            "uneasy-alliance-crystal",
+            "worldchg-m31/fire_from_the_earth/volcano",
+            "worldchg-m31/fury_gates/dungeon",
+            "worldchg-m31/fury_gates/egress",
+            "worldchg-m31/fury_gates/entry",
+            "worldchg-m31/fury_gates/seal",
+            "worldchg-m31/grimvale/island",
+            "worldchg-m31/grimvale/survey",
+            "worldchg-m31/hive_outpost/outpost",
+            "worldchg-m31/hive_outpost/survey",
+            "worldchg-m31/insectoid_invasion/incursion",
+            "worldchg-m31/kingsday/royal-visit",
+        ] {
+            assert!(expected.insert(format!("oteryn:quest-callback/{suffix}")));
+        }
+        assert_eq!(expected.len() - before_qmech_native, 71);
         assert_eq!(
             callbacks
                 .into_iter()

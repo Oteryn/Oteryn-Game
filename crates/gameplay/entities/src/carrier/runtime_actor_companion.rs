@@ -55,12 +55,22 @@ pub struct CompanionSnapshot {
 /// the actor's incarnation and combat occurrence history; its definition identity changes.
 /// The source encounter owns its callback replay and timer; this is not appearance.
 #[derive(Debug)]
+struct PreparedNativeHealthMetadata {
+    health_callback: Option<Arc<oteryn_gameplay_content::content::native_soul_war_callbacks::QualifiedSoulWarHealthPolicy>>,
+    mirror_births: Option<Arc<super::soul_war_health::MirrorBirthCatalogue>>,
+    death_events: Option<Arc<oteryn_gameplay_content::content::native_creature_death_events::QualifiedNativeDeathEvents>>,
+}
+#[derive(Debug)]
 pub struct PreparedCreatureProfileTransformation {
     expected: CompanionSnapshot,
     content: (WorldId, u64, [[u8; 32]; 4], LocalPosition),
     resulting: CompanionSnapshot,
     replacement: Box<CompanionState>,
     target_identity: Arc<[u8]>,
+    health_metadata: PreparedNativeHealthMetadata,
+    registered_source: bool,
+    splinter_due_us: Option<u64>,
+    restored_splinter_death: Option<Arc<super::native_xml_spawns::RestoredSplinterDeath>>,
 }
 impl ChannelRuntimeV1 {
     fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
@@ -77,28 +87,78 @@ impl ChannelRuntimeV1 {
             p.entry_start(),
         )
     }
+    fn prepare_native_health_metadata(
+        &self,
+        policy: &CompiledCreaturePolicy,
+    ) -> Result<PreparedNativeHealthMetadata, CarrierError> {
+        let health_callback = self
+            .companion_policies
+            .as_ref()
+            .and_then(|table| {
+                table.soul_war_health_policy(&policy.definition_key, &policy.definition_revision)
+            })
+            .map(|policy| Arc::new(policy.clone()));
+        if oteryn_gameplay_content::content::native_soul_war_callbacks::requires_health_policy(
+            &policy.definition_key,
+        ) && health_callback.is_none()
+        {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        let death_events = self.companion_policies.as_ref().and_then(|table| {
+            table.native_death_events(&policy.definition_key, &policy.definition_revision)
+        });
+        if oteryn_gameplay_content::content::native_creature_death_events::requires_native_death_events(
+            &policy.definition_key,
+        ) && death_events.is_none() {
+            return Err(CarrierError::InvalidSpawnDefinition);
+        }
+        let mirror_births = health_callback
+            .as_deref()
+            .filter(|callback| callback.kind() == oteryn_gameplay_content::content::native_soul_war_callbacks::SoulWarHealthCallbackKind::MirrorImage)
+            .map(|_| {
+                let table = self.companion_policies.as_deref().ok_or(CarrierError::InvalidCreatureTarget)?;
+                super::soul_war_health::MirrorBirthCatalogue::from_installed(table, self.content.server_artifact_digest()).map(Arc::new)
+            })
+            .transpose()?;
+        Ok(PreparedNativeHealthMetadata {
+            health_callback,
+            mirror_births,
+            death_events,
+        })
+    }
     pub fn prepare_creature_profile_transformation(
         &self,
         expected: &CompanionSnapshot,
         new_definition_key: &str,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        self.prepare_creature_profile_transformation_inner(expected, new_definition_key, false)
+    }
+    fn prepare_creature_profile_transformation_inner(
+        &self,
+        expected: &CompanionSnapshot,
+        new_definition_key: &str,
+        registered_source: bool,
     ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
         self.assert_actor_spell_unreserved(expected.actor)?;
         self.validate_companion_snapshot(expected)?;
         let old_policy = self.companion_policy(&expected.state.policy.definition_key)?;
         let policy = self.companion_policy(new_definition_key)?;
         if old_policy.as_ref() != expected.state.policy.as_ref()
-            || !self.matches_live_creature_identity(
-                expected.actor,
-                old_policy.definition_key.as_bytes(),
-            )
+            || (!registered_source
+                && !self.matches_live_creature_identity(
+                    expected.actor,
+                    old_policy.definition_key.as_bytes(),
+                ))
             || policy.definition_key != new_definition_key
             || expected.state.policy.is_familiar
             || policy.is_familiar
-            || expected.health <= 0
+            || expected.health < 0
+            || (!registered_source && expected.health == 0)
             || expected.health > policy.maximum_health
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
+        let health_metadata = self.prepare_native_health_metadata(&policy)?;
         let target_identity = Arc::from(copy_bounded_binding(policy.definition_key.as_bytes())?);
         let mut resulting = expected.clone();
         resulting.maximum_health = policy.maximum_health;
@@ -114,7 +174,104 @@ impl ChannelRuntimeV1 {
             replacement: Box::new(resulting.state.clone()),
             resulting,
             target_identity,
+            health_metadata,
+            registered_source,
+            splinter_due_us: None,
+            restored_splinter_death: None,
         })
+    }
+    /// Soul War's queued source phase may still find a registered HP-zero
+    /// Megalomania before its separate queued onDeath removes it.
+    pub fn prepare_soul_war_megalomania_profile_change(
+        &self,
+        expected: &CompanionSnapshot,
+        new_definition_key: &str,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        let megalomania = |key: &str| {
+            matches!(
+                key,
+                "oteryn:creature.goshnar_s_megalomania_purple"
+                    | "oteryn:creature.goshnar_s_megalomania_green"
+                    | "oteryn:creature.goshnar_s_megalomania_blue"
+            )
+        };
+        if !matches!(
+            self.binding.runtime_scope,
+            RuntimeScopeRefV1::Instance { .. }
+        ) || !megalomania(&expected.state.policy.definition_key)
+            || !megalomania(new_definition_key)
+            || expected.state.master.is_some()
+            || !self.source_creature_is_registered(expected.actor)?
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let old_metadata = self.prepare_native_health_metadata(&expected.state.policy)?;
+        if !old_metadata
+            .health_callback
+            .as_ref()
+            .is_some_and(|p| p.is_empowered_boss())
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        if expected.health == 0 {
+            self.carrier
+                .committed_lethal_receipt_inner(&self.continuity, expected.actor.0)?;
+        }
+        let mut prepared =
+            self.prepare_creature_profile_transformation_inner(expected, new_definition_key, true)?;
+        // Monster:setType(..., false) preserves both current and maximum HP.
+        prepared.resulting.maximum_health = expected.maximum_health;
+        Ok(prepared)
+    }
+
+    /// Hatred's four source forms use setType's restoreHealth=true explicitly.
+    /// The caller separately proves the exact source-family whitelist/current Instance.
+    pub(super) fn prepare_restoring_soul_war_burning_transformation(
+        &self,
+        expected: &CompanionSnapshot,
+        new_definition_key: &str,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        let mut prepared =
+            self.prepare_creature_profile_transformation(expected, new_definition_key)?;
+        if prepared.resulting.maximum_health != 15_000
+            || prepared.resulting.state.policy.base_speed != 0
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        prepared.resulting.health = prepared.resulting.maximum_health;
+        prepared.resulting.state.creation_speed_delta = 0;
+        prepared.replacement.creation_speed_delta = 0;
+        Ok(prepared)
+    }
+    /// Crystal Lesser onSpawn schedules this one exact ID after 120s. Its
+    /// setType(true) restores 4000 HP but never calls Greater's onSpawn.
+    pub fn prepare_soul_war_splinter_profile_change(
+        &self,
+        expected: &CompanionSnapshot,
+        due_us: u64,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        if expected.state.policy.definition_key != "oteryn:creature.lesser_splinter_of_madness"
+            || expected.state.master.is_some()
+            || expected.maximum_health != 4000
+            || self.soul_war_splinter_due_us(expected.actor)? != Some(due_us)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let restored = self.prepare_restored_splinter_death(expected, due_us)?;
+        let mut prepared = self.prepare_creature_profile_transformation_inner(
+            expected,
+            "oteryn:creature.greater_splinter_of_madness",
+            true,
+        )?;
+        if prepared.resulting.maximum_health != 4000 {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        prepared.resulting.health = 4000;
+        prepared.resulting.state.creation_speed_delta = 0;
+        prepared.replacement.creation_speed_delta = 0;
+        prepared.splinter_due_us = Some(due_us);
+        prepared.restored_splinter_death = restored;
+        Ok(prepared)
     }
     pub fn commit_creature_profile_transformation(
         &mut self,
@@ -127,6 +284,17 @@ impl ChannelRuntimeV1 {
             );
         }
         self.validate_companion_snapshot(&prepared.expected)?;
+        if prepared.registered_source
+            && !self.source_creature_is_registered(prepared.expected.actor)?
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        if let Some(due_us) = prepared.splinter_due_us
+            && self.prepare_restored_splinter_death(&prepared.expected, due_us)?
+                != prepared.restored_splinter_death
+        {
+            return Err(CarrierError::PlanConflict);
+        }
         let policy = self.companion_policy(&prepared.resulting.state.policy.definition_key)?;
         if policy.as_ref() != prepared.resulting.state.policy.as_ref() {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
@@ -138,6 +306,7 @@ impl ChannelRuntimeV1 {
         let replacement = prepared.replacement;
         let Slot::CreatureOccupied {
             companion,
+            health,
             spell_combat,
             target_identity,
             ..
@@ -147,7 +316,14 @@ impl ChannelRuntimeV1 {
         };
         *target_identity = prepared.target_identity;
         *companion = Some(replacement);
+        *health = prepared.resulting.health;
         spell_combat.maximum_health = prepared.resulting.maximum_health;
+        spell_combat.soul_war_health = prepared.health_metadata.health_callback;
+        spell_combat.mirror_births = prepared.health_metadata.mirror_births;
+        spell_combat.native_death_events = prepared.health_metadata.death_events;
+        if let Some(original) = prepared.restored_splinter_death {
+            spell_combat.restored_splinter_death = Some(original);
+        }
         Ok(prepared.resulting)
     }
 }
@@ -273,6 +449,9 @@ impl PreparedCompanionSpawn {
         &self.state.policy
     }
 }
+
+#[path = "runtime_actor_companion/native_birth.rs"]
+pub(super) mod native_birth;
 
 impl ChannelRuntimeV1 {
     #[allow(clippy::too_many_arguments)]
@@ -512,34 +691,14 @@ impl ChannelRuntimeV1 {
         prepared: &mut PreparedCompanionSpawn,
     ) -> Result<(), CarrierError> {
         self.validate_companion_spawn(prepared)?;
-        let index = self
-            .carrier
-            .validate_ref(&self.continuity, prepared.actor.0)?;
-        if matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
-            return Ok(());
-        }
-        let Slot::VacantReusable { next_free, .. } = self.carrier.slots[index] else {
-            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
-        };
-        let entry = u32::try_from(index).map_err(|_| {
-            oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow
-        })?;
-        let planned = prepared
-            .planned
-            .take()
-            .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?;
-        self.carrier.slots[index] = Slot::CreatureReserved {
-            generation: prepared.actor.0.actor_local_generation.0,
-            owner: prepared.owner,
-            session: prepared.session,
-            planned,
-        };
-        self.carrier.free_head = next_free;
-        // VIS-3 (Codex 4178855592): within the capacity reserved at bootstrap; the install keeps
-        // the entry, so the installed companion is in the census.
-        self.carrier.occupied.push(entry);
-        Ok(())
+        self.reserve_planned_creature_slot(
+            prepared.actor,
+            prepared.owner,
+            prepared.session,
+            &mut prepared.planned,
+        )
     }
+
     /// Only a definite durable rollback may call this on the same sealed preparation.
     /// No Drop implementation speculates that an ambiguous COMMIT rolled back.
     pub fn rollback_companion_spawn(
@@ -547,27 +706,34 @@ impl ChannelRuntimeV1 {
         prepared: &PreparedCompanionSpawn,
     ) -> Result<(), CarrierError> {
         self.validate_companion_spawn(prepared)?;
-        let index = self
-            .carrier
-            .validate_ref(&self.continuity, prepared.actor.0)?;
-        if !matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
-            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
-        }
-        let free = u32::try_from(index).map_err(|_| {
-            oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow
-        })?;
-        self.carrier.slots[index] = Slot::VacantReusable {
-            generation: prepared.actor.0.actor_local_generation.0,
-            next_free: self.carrier.free_head,
-        };
-        self.carrier.free_head = Some(free);
-        self.carrier.unindex_occupied(free);
-        Ok(())
+        self.release_planned_creature_slot(prepared.actor, prepared.owner, prepared.session)
     }
+
+    fn reserve_planned_creature_slot(
+        &mut self,
+        actor: ExactActorRef,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        planned: &mut Option<Box<Slot>>,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .reserve_planned_creature_slot(&self.continuity, actor, owner, session, planned)
+    }
+    fn release_planned_creature_slot(
+        &mut self,
+        actor: ExactActorRef,
+        owner: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .release_planned_creature_slot(&self.continuity, actor, owner, session)
+    }
+
     pub fn install_companion_spawn(
         &mut self,
         mut prepared: PreparedCompanionSpawn,
     ) -> Result<ExactActorRef, CarrierError> {
+        let order = self.carrier.next_tile_entry_order()?;
         self.reserve_companion_spawn(&mut prepared)?;
         let index = self
             .carrier
@@ -582,7 +748,48 @@ impl ChannelRuntimeV1 {
             unreachable!("validated exact companion reservation must remain reserved");
         };
         self.carrier.slots[index] = *planned;
+        self.carrier.install_tile_entry_order(index, order);
         Ok(prepared.actor)
+    }
+    /// Immutable attached HEALTHCHANGE data; callers still need their ordinary
+    /// current combat/HP authority and exact target snapshot.
+    pub fn native_health_event(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<
+        Option<
+            &oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeHealthEvent,
+        >,
+        CarrierError,
+    > {
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied {
+            companion: Some(companion),
+            ..
+        } = &self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        let table = self
+            .companion_policies
+            .as_ref()
+            .ok_or(CarrierError::InvalidCreatureTarget)?;
+        if table.source_digest() != self.content_pin().server_artifact_digest() {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        let policy = table.native_health_event(
+            &companion.policy.definition_key,
+            &companion.policy.definition_revision,
+        );
+        if policy.is_none()
+            && oteryn_gameplay_content::content::native_monster_callbacks::requires_native_health_event(
+                &companion.policy.definition_key,
+            )
+        {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        Ok(policy)
     }
     pub fn install_companion_policies(
         &mut self,
@@ -649,6 +856,11 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.assert_actor_spell_unreserved(actor)?;
         let policy = self.companion_policy(definition_key)?;
+        let PreparedNativeHealthMetadata {
+            health_callback,
+            mirror_births,
+            death_events,
+        } = self.prepare_native_health_metadata(&policy)?;
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied {
             health,
@@ -668,6 +880,9 @@ impl ChannelRuntimeV1 {
                 && *health > 0
                 && *health <= spell_combat.maximum_health
             {
+                spell_combat.soul_war_health = health_callback;
+                spell_combat.mirror_births = mirror_births;
+                spell_combat.native_death_events = death_events;
                 Ok(())
             } else {
                 Err(CarrierError::InvalidCreatureHealth)
@@ -705,12 +920,18 @@ impl ChannelRuntimeV1 {
         };
         if let Some(existing) = companion {
             return if existing.as_ref() == &state {
+                spell_combat.soul_war_health = health_callback;
+                spell_combat.mirror_births = mirror_births;
+                spell_combat.native_death_events = death_events;
                 Ok(())
             } else {
                 Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)
             };
         }
         *companion = Some(Box::new(state));
+        spell_combat.soul_war_health = health_callback;
+        spell_combat.mirror_births = mirror_births;
+        spell_combat.native_death_events = death_events;
         Ok(())
     }
     pub fn companion_snapshot(
@@ -1017,6 +1238,7 @@ impl ChannelRuntimeV1 {
             familiar_defense: None,
             policy: policy.clone(),
         });
+        let order = self.carrier.next_tile_entry_order()?;
         let actor = self.carrier.admit_creature(
             &self.continuity,
             ActorState(0),
@@ -1049,6 +1271,7 @@ impl ChannelRuntimeV1 {
             });
             *companion = Some(state);
         }
+        self.carrier.install_tile_entry_order(index, order);
         Ok(ExactActorRef(actor))
     }
     pub fn compare_assign_companion(
@@ -1243,6 +1466,74 @@ impl ChannelRuntimeV1 {
                 floor: destination.floor,
             },
         )?;
+        Ok(())
+    }
+}
+
+impl ChannelActorCarrier {
+    /// Shared physical reservation for companion and source-qualified native births.
+    /// Callers finish all payload/source validation before invoking this primitive.
+    pub(in crate::carrier) fn reserve_planned_creature_slot(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ExactActorRef,
+        owner: ExactActorRef,
+        session: GameSessionId,
+        planned: &mut Option<Box<Slot>>,
+    ) -> Result<(), CarrierError> {
+        self.player_slot_index(continuity, owner.0, session)?;
+        let index = self.validate_ref(continuity, actor.0)?;
+        if matches!(&self.slots[index], Slot::CreatureReserved { generation, owner: current_owner, session: current_session, .. }
+            if *generation == actor.0.actor_local_generation.0 && *current_owner == owner && *current_session == session)
+        {
+            return Ok(());
+        }
+        let Slot::VacantReusable {
+            generation,
+            next_free,
+        } = self.slots[index]
+        else {
+            return Err(CarrierError::PlanConflict);
+        };
+        if generation.checked_add(1) != Some(actor.0.actor_local_generation.0)
+            || self.free_head.and_then(|head| usize::try_from(head).ok()) != Some(index)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let entry = u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        let payload = planned.take().ok_or(CarrierError::PlanConflict)?;
+        self.slots[index] = Slot::CreatureReserved {
+            generation: actor.0.actor_local_generation.0,
+            owner,
+            session,
+            planned: payload,
+        };
+        self.free_head = next_free;
+        self.occupied.push(entry);
+        Ok(())
+    }
+
+    pub(in crate::carrier) fn release_planned_creature_slot(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ExactActorRef,
+        owner: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<(), CarrierError> {
+        self.player_slot_index(continuity, owner.0, session)?;
+        let index = self.validate_ref(continuity, actor.0)?;
+        if !matches!(&self.slots[index], Slot::CreatureReserved { generation, owner: current_owner, session: current_session, .. }
+            if *generation == actor.0.actor_local_generation.0 && *current_owner == owner && *current_session == session)
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let free = u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        self.slots[index] = Slot::VacantReusable {
+            generation: actor.0.actor_local_generation.0,
+            next_free: self.free_head,
+        };
+        self.free_head = Some(free);
+        self.unindex_occupied(free);
         Ok(())
     }
 }
@@ -2341,5 +2632,188 @@ mod tests {
         let replay = runtime.stage_spell_batch(&batch).unwrap();
         assert!(!runtime.commit_spell_batch(replay).unwrap().applied);
         assert_eq!(runtime.companion_snapshot(actor).unwrap(), original);
+    }
+    #[test]
+    fn srx3_applied_creature_damage_clears_canonical_actor_invisibility_and_preserves_replay() {
+        use super::super::runtime_actor_spell_types::{
+            OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+        };
+        use {
+            oteryn_gameplay_domain::domain::condition::ConditionValues,
+            oteryn_gameplay_foundation::foundation::condition::{
+                ApplicationFacts, ConditionDefinition, ConditionSourceKind,
+            },
+        };
+        let (mut runtime, owner, session) = owner();
+        let actor = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([8; 32]);
+        let invisible = ConditionDefinition::new(
+            "source.monster.invisible",
+            1,
+            ConditionValues::Invisible {
+                duration_ms: 200_000,
+            },
+        )
+        .unwrap();
+        let light = ConditionDefinition::new(
+            "source.monster.light",
+            1,
+            ConditionValues::Light {
+                level: 4,
+                duration_ms: 200_000,
+            },
+        )
+        .unwrap();
+        let install = |runtime: &mut ChannelRuntimeV1, tag: u8, now: u64| {
+            use super::super::runtime_actor_conditions::{
+                ActorConditionTransition, ConditionSource,
+            };
+            let facts = ApplicationFacts {
+                now,
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: &root,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                    [tag; 16],
+                ),
+            };
+            let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+            let plan = runtime
+                .prepare_actor_condition(
+                    actor,
+                    None,
+                    ActorConditionTransition::ApplyBatch {
+                        definitions: &[invisible.clone(), light.clone()],
+                        source: ConditionSource {
+                            actor,
+                            session: None,
+                            kind: ConditionSourceKind::SelfUse,
+                        },
+                        immunities: &[],
+                        facts,
+                    },
+                    now,
+                )
+                .unwrap();
+            assert!(runtime.commit_actor_condition(&plan, now).unwrap());
+        };
+        install(&mut runtime, 1, 1_000);
+        let batch = OwnerCombatBatch {
+            caster: owner,
+            attacker: oteryn_gameplay_foundation::foundation::CharacterId::decode(&id(5)).unwrap(),
+            current_lease_generation: 1,
+            command: oteryn_gameplay_foundation::foundation::CommandRef::new(
+                session,
+                oteryn_gameplay_foundation::foundation::CommandId::new(1).unwrap(),
+            ),
+            occurrence: SpellOccurrenceBinding {
+                id: "source-monster-drain-health".into(),
+                revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]
+                    .map(str::to_owned),
+            },
+            binding: b"source.monster.drainHealth.invisible".to_vec(),
+            anchor: None,
+            now_us: None,
+            now_ms: 100,
+            effects: vec![OwnerCombatEffect {
+                target: actor,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: "creature:rat".into(),
+                    magnitude: 3,
+                },
+            }],
+            deferred: None,
+        };
+        use super::super::runtime_actor_conditions::{ActorConditionTransition, ConditionSource};
+        let pending_facts = ApplicationFacts {
+            now: 2_000,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: false,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([3; 16]),
+        };
+        let pending = runtime
+            .prepare_actor_condition(
+                actor,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &invisible,
+                    source: ConditionSource {
+                        actor,
+                        session: None,
+                        kind: ConditionSourceKind::SelfUse,
+                    },
+                    immunities: &[],
+                    facts: pending_facts,
+                },
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000),
+            )
+            .unwrap();
+        let prepared = runtime.stage_spell_batch(&batch).unwrap();
+        assert!(
+            runtime
+                .actor_conditions(actor, None)
+                .unwrap()
+                .invisible_at(1000)
+        );
+        assert!(runtime.commit_spell_batch(prepared).unwrap().applied);
+        assert!(
+            !runtime
+                .actor_conditions(actor, None)
+                .unwrap()
+                .invisible_at(1000)
+        );
+        assert!(
+            runtime
+                .actor_conditions(actor, None)
+                .unwrap()
+                .get(oteryn_gameplay_domain::domain::condition::ConflictKey::Light)
+                .is_some(),
+            "incoming damage preserves unrelated canonical conditions"
+        );
+        assert!(
+            runtime
+                .commit_actor_condition(
+                    &pending,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000)
+                )
+                .is_err(),
+            "an old condition plan cannot resurrect invisibility after damage"
+        );
+        install(&mut runtime, 2, 100_001);
+        let original = runtime.actor_conditions(actor, None).unwrap().clone();
+        let replay = runtime.stage_spell_batch(&batch).unwrap();
+        assert!(!runtime.commit_spell_batch(replay).unwrap().applied);
+        assert_eq!(runtime.actor_conditions(actor, None).unwrap(), &original);
+    }
+    mod native_birth {
+        include!("runtime_actor_companion/tests/native_birth.rs");
+    }
+    mod soul_war_profile {
+        include!("runtime_actor_companion/tests/soul_war_profile.rs");
+    }
+    mod source_death_phase {
+        include!("runtime_actor_companion/tests/source_death_phase.rs");
     }
 }

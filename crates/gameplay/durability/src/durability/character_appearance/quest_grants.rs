@@ -2,19 +2,64 @@
 //! The caller has already fenced and locked the granting Character and accepted its Quest
 //! transition in this same transaction. A recorded grant does not manufacture a catalogue:
 //! selection still requires an admitted, explicit grant mapping compatible with its provenance.
+use crate::content::native_gameplay::NativeGameplayState;
 use crate::domain::CharacterId;
+use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, UnlockFact};
 use crate::durability::DurabilityError;
+use oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
 
+/// Both NPC and world rewards use the admitted generation's explicit mappings.
+pub(crate) fn outfit_compatible(
+    native: &NativeGameplayState,
+    reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+) -> bool {
+    let Some(cosmetics) = native.cosmetics() else {
+        return false;
+    };
+    reward.addons <= 3
+        && (0..=2).all(|addon| {
+            if addon != 0 && reward.addons & (1 << (addon - 1)) == 0 {
+                return true;
+            }
+            let key = reward.grant_key(addon);
+            let target = if addon == 0 {
+                EarnedCosmetic::Outfit(&reward.outfit)
+            } else {
+                EarnedCosmetic::Addon(&reward.outfit, addon)
+            };
+            (match reward.sex {
+                None => cosmetics.earned_unlock(&key, PROVENANCE, target),
+                Some(sex) => cosmetics.earned_unlock_for_sex(
+                    &key,
+                    PROVENANCE,
+                    target,
+                    match sex {
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Female => {
+                            crate::domain::appearance::Sex::Female
+                        }
+                        oteryn_gameplay_quests::quest::reward_callbacks::CreationSex::Male => {
+                            crate::domain::appearance::Sex::Male
+                        }
+                    },
+                ),
+            }) == UnlockFact::Compatible
+        })
+}
+
 /// The canonical mapping was checked against the current native generation before
 /// entering this transaction. All selected bits and the base share the quest receipt.
-pub(crate) async fn grant_callback_outfit(
+pub(crate) async fn grant_content_outfit(
     tx: &mut Transaction<'_, Postgres>,
     character: CharacterId,
     occurrence: &[u8],
     reward: &oteryn_gameplay_quests::quest::reward_callbacks::OutfitReward,
+    native: &NativeGameplayState,
 ) -> Result<Vec<String>, DurabilityError> {
+    if occurrence.is_empty() || occurrence.len() > 4096 || !outfit_compatible(native, reward) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     let account: sqlx::types::Uuid = sqlx::query_scalar(
         "SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
     )
@@ -41,9 +86,9 @@ pub(crate) async fn grant_callback_outfit(
         id.copy_from_slice(&digest[..16]);
         id[6] = (id[6] & 15) | 0x80;
         id[8] = (id[8] & 63) | 0x80;
-        sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) VALUES(encode($1,'hex')::uuid,$2,$3,$4,encode($5,'hex')::uuid,'quest',$6)")
-            .bind(id.as_slice()).bind(account).bind(&key).bind(oteryn_gameplay_quests::quest::reward_callbacks::PROVENANCE).bind(character.as_bytes().as_slice()).bind(event).execute(&mut **tx).await?;
-        sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,encode($3,'hex')::uuid)").bind(account).bind(&key).bind(id.as_slice()).execute(&mut **tx).await?;
+        if sqlx::query("INSERT INTO game_account_appearance_unlock_receipts(grant_occurrence_id,account_id,unlock_key,content_revision,granting_character_id,source_kind,source_event_id) VALUES(encode($1,'hex')::uuid,$2,$3,$4,encode($5,'hex')::uuid,'quest',$6)")
+            .bind(id.as_slice()).bind(account).bind(&key).bind(PROVENANCE).bind(character.as_bytes().as_slice()).bind(event).execute(&mut **tx).await?.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
+        if sqlx::query("INSERT INTO game_account_appearance_unlocks(account_id,unlock_key,grant_occurrence_id) VALUES($1,$2,encode($3,'hex')::uuid)").bind(account).bind(&key).bind(id.as_slice()).execute(&mut **tx).await?.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
         granted.push(key);
     }
     Ok(granted)

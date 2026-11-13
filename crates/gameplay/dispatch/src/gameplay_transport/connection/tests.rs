@@ -35,6 +35,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 #[path = "tests/support.rs"]
 mod support;
 
+#[path = "tests/source_positions.rs"]
+mod source_positions;
 #[path = "tests/spell_catalog.rs"]
 mod spell_catalog;
 use support::*;

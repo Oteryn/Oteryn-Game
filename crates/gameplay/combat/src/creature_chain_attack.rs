@@ -127,6 +127,19 @@ struct Cast<S: ChainSource> {
     start: SemanticTimeMicros,
     receipts: Vec<Result<S::Outcome, AttackError>>,
 }
+impl<S: ChainSource> Cast<S> {
+    fn next_due(&self) -> Option<SemanticTimeMicros> {
+        let target = self.targets.get(self.next)?;
+        if self.next == 0 {
+            Some(self.start)
+        } else {
+            self.start
+                .get()
+                .checked_add(target.delay)
+                .map(SemanticTimeMicros::from_micros)
+        }
+    }
+}
 struct Memo {
     issuer: ExactActorRef,
     entry: usize,
@@ -568,6 +581,7 @@ impl<S: ChainSource> ChainOwner<S> {
             Some(fence),
             None,
             clock,
+            clock.now(),
             |runtime, fence, stamp, pulse, from, now| {
                 Self::apply_due_pulse(
                     runtime, fence, stamp, vitals, damage, world, map, pulse, from, now,
@@ -593,6 +607,7 @@ impl<S: ChainSource> ChainOwner<S> {
             None,
             Some(stamp),
             clock,
+            clock.now(),
             |runtime, fence, stamp, pulse, from, now| {
                 Self::apply_due_pulse(
                     runtime, fence, stamp, vitals, damage, world, map, pulse, from, now,
@@ -610,6 +625,39 @@ impl<S: ChainSource> ChainOwner<S> {
         vitals: &mut dyn PlayerLethalVitals,
         damage: &D,
         clock: &impl OwnerClock,
+        readers: F,
+    ) -> ChainPulseResults<S::Outcome>
+    where
+        D: ChainDamage<S>,
+        F: FnMut(
+            &S,
+            &ProfileAbilityProposal,
+            GameSessionId,
+            TilePosition,
+            RuntimeWorkStamp,
+        ) -> Option<(Box<D::World<'a>>, Box<dyn ChainMapFacts + 'a>)>,
+    {
+        self.run_due_current_through_with(
+            runtime,
+            stamp,
+            vitals,
+            damage,
+            clock,
+            clock.now(),
+            readers,
+        )
+    }
+    /// Select original step deadlines through the cutoff without replacing the
+    /// current execution clock used by combat facts and committed effects.
+    #[allow(clippy::too_many_arguments)]
+    pub fn run_due_current_through_with<'a, D, F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &D,
+        clock: &impl OwnerClock,
+        through: SemanticTimeMicros,
         mut readers: F,
     ) -> ChainPulseResults<S::Outcome>
     where
@@ -627,6 +675,7 @@ impl<S: ChainSource> ChainOwner<S> {
             None,
             Some(stamp),
             clock,
+            through,
             |runtime, fence, stamp, pulse, from, now| {
                 let (mut world, mut map) =
                     readers(&pulse.source, &pulse.proposal, pulse.session, from, stamp)
@@ -652,6 +701,7 @@ impl<S: ChainSource> ChainOwner<S> {
         mut fence: Option<&mut ScopeRuntimeFence>,
         supplied_stamp: Option<RuntimeWorkStamp>,
         clock: &impl OwnerClock,
+        through: SemanticTimeMicros,
         mut apply: F,
     ) -> ChainPulseResults<S::Outcome>
     where
@@ -686,9 +736,20 @@ impl<S: ChainSource> ChainOwner<S> {
             .try_reserve_exact(self.casts.len())
             .map_err(|_| AttackError::LedgerFull)?;
         let current = current_fence(runtime, fence.as_deref())?;
-        let fired = self
-            .timers
-            .drain_due(clock, current, |a| runtime.contains_live_creature(a));
+        let casts = &self.casts;
+        let fired = self.timers.drain_due_matching(
+            clock,
+            current,
+            |a| runtime.contains_live_creature(a),
+            |family, step| {
+                casts.iter().any(|cast| {
+                    cast.entry as u8 == family.0
+                        && cast.token == step.cast
+                        && cast.next == usize::from(step.step)
+                        && cast.next_due().is_some_and(|due| due <= through)
+                })
+            },
+        );
         for timer in fired {
             let Some(index) = self.casts.iter().position(|c| {
                 c.token == timer.occurrence.cast && c.next == usize::from(timer.occurrence.step)
@@ -781,20 +842,18 @@ impl<S: ChainSource> ChainOwner<S> {
     }
     /// Actual next-step deadline metadata; reading it grants no callback authority.
     pub fn next_due_time(&self) -> Option<SemanticTimeMicros> {
-        self.casts
-            .iter()
-            .filter_map(|cast| {
-                let target = cast.targets.get(cast.next)?;
-                if cast.next == 0 {
-                    Some(cast.start)
-                } else {
-                    cast.start
-                        .get()
-                        .checked_add(target.delay)
-                        .map(SemanticTimeMicros::from_micros)
-                }
-            })
-            .min()
+        self.casts.iter().filter_map(Cast::next_due).min()
+    }
+    /// Original next-step metadata, refusing a retired runtime owner.
+    pub fn next_due_time_current(
+        &self,
+        runtime: &ChannelRuntimeV1,
+    ) -> Result<Option<SemanticTimeMicros>, AttackError> {
+        let fence = current_fence(runtime, None)?;
+        if !self.current(runtime, fence) {
+            return Err(AttackError::StaleOwner);
+        }
+        Ok(self.next_due_time())
     }
     /// Exact frozen next recipients with source metadata for fresh owner-fact reads.
     /// Only `run_due` can produce the sealed pulse that permits damage execution.

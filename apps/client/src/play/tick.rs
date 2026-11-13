@@ -23,6 +23,9 @@ impl PlayView {
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
+                    if let Some(scope) = &pushed.activity_scope {
+                        link.scope_presented(scope.session);
+                    }
                     self.enqueue(pushed.sounds);
                 }
                 PlayEvent::Combat(report) => self.apply_combat(report),
@@ -33,6 +36,14 @@ impl PlayView {
         }
         link.cyclopedia_atlas_pump();
         self.present_cyclopedia_discovery(link);
+        self.project_arena_hazards(link, std::time::Instant::now())
+            .map_err(|_error| UNAVAILABLE)?;
+        link.arena_refresh(std::time::Instant::now());
+        let marks_changed = super::feature_local_minimap::state::lock(&self.minimap)
+            .replace_quest_markers(&link.quest_panel().state.log.map_marks);
+        if marks_changed {
+            self.rebuild().map_err(|_error| UNAVAILABLE)?;
+        }
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;
         self.advance_presentation(std::time::Instant::now())
             .map_err(|_error| UNAVAILABLE)?;

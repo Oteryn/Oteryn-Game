@@ -39,6 +39,61 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r['npc']:r['cell'] for r in actual},expected)
         self.assertTrue(all(r['provenance'] for r in actual))
 
+    def test_m38_swan_keeps_the_exact_stationary_source_anchor(self):
+        actual = [r['declaration'] for r in self.records
+                  if r['declaration']['npc'] == 'oteryn:npc.a_swan']
+        self.assertEqual(len(actual), 1)
+        self.assertEqual(actual[0]['cell'], {'x': 33185, 'y': 31732, 'floor': 7})
+        self.assertIn('placements-00000-00055.json', self.files)
+        candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())['candidates']
+                         if c['identity']['key'] == 'oteryn:npc.a_swan')
+        self.assertEqual(candidate['movement']['walk_interval_ms'], 0)
+        self.assertTrue(all(p['definition_sha256'] in
+                           {v['sha256'] for v in candidate['provenance'].values()}
+                           for p in actual[0]['provenance']))
+
+    def test_m31_king_keeps_the_reviewed_royal_source_cell(self):
+        rows = [r['declaration'] for r in self.records
+                if r['declaration']['npc'] == 'oteryn:npc.king_tibianus']
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['cell'], {'x': 32311, 'y': 32172, 'floor': 6})
+        self.assertEqual(rows[0]['direction'], 'north')
+        self.assertEqual({p['origin'] for p in rows[0]['provenance']}, {'canary', 'crystal'})
+
+    def test_m31_lumberjack_contacts_keep_distinct_source_provenance(self):
+        expected = {
+            'oteryn:npc.chip': {'x': 32418, 'y': 31702, 'floor': 7},
+            'oteryn:npc.queen_eloise': {'x': 32314, 'y': 31754, 'floor': 7},
+        }
+        actual = {r['declaration']['npc']: r['declaration'] for r in self.records
+                  if r['declaration']['npc'] in expected}
+        self.assertEqual(set(actual), set(expected))
+        for key, cell in expected.items():
+            self.assertEqual(actual[key]['cell'], cell)
+            self.assertEqual(actual[key]['direction'], 'north')
+        chip = actual['oteryn:npc.chip']['provenance']
+        self.assertEqual(len(chip), 1)
+        self.assertEqual(chip[0]['origin'], 'native_wiki_br')
+        self.assertEqual(chip[0]['url'], 'https://www.tibiawiki.com.br/wiki/Chip')
+        self.assertEqual(chip[0]['revid'], 416548)
+        self.assertEqual(chip[0]['source_sha256'],
+                         '8f569e3cda079c69cd1d118410c86fceef07cb1bcc77f488d2829f3d601a3402')
+        self.assertEqual({p['origin'] for p in actual['oteryn:npc.queen_eloise']['provenance']},
+                         {'canary', 'crystal'})
+
+    def test_m38_mistrock_keeps_the_native_beregar_contact_anchor(self):
+        actual = [r['declaration'] for r in self.records
+                  if r['declaration']['npc'] == 'oteryn:npc.maris_mistrock']
+        self.assertEqual(len(actual), 1)
+        self.assertEqual(actual[0]['cell'], {'x': 32640, 'y': 31437, 'floor': 7})
+        candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())['candidates']
+                         if c['identity']['key'] == 'oteryn:npc.maris_mistrock')
+        self.assertEqual(candidate['placements'][0]['position'],
+                         {'x': 32640, 'y': 31437, 'z': 7})
+        self.assertTrue(all(p['definition_sha256'] in
+                           {v['sha256'] for v in candidate['provenance'].values()}
+                           for p in actual[0]['provenance']))
+
     def test_only_scoped_admitted_npcs(self):
         scope = set(json.loads(cp.SCOPE.read_text())["npcs"])
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})

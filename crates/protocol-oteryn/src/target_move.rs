@@ -60,9 +60,15 @@ pub fn decode_target_move_intent(payload: &[u8]) -> Result<TargetMoveIntent, Wor
         0x10 if read_varint(payload, &mut cursor).map_err(|_| malformed())? == 1 => {
             TargetMoveIntent::Stop
         }
-        0x1a => TargetMoveIntent::Turn(crate::world_spatial::decode_step_intent(
-            read_bytes(payload, &mut cursor).map_err(|_| malformed())?,
-        )?),
+        0x1a => {
+            let direction = crate::world_spatial::decode_step_intent(
+                read_bytes(payload, &mut cursor).map_err(|_| malformed())?,
+            )?;
+            if direction.is_diagonal() {
+                return Err(malformed());
+            }
+            TargetMoveIntent::Turn(direction)
+        }
         0x22 => TargetMoveIntent::Follow(
             crate::attack::decode_attack_target_intent(
                 read_bytes(payload, &mut cursor).map_err(|_| malformed())?,

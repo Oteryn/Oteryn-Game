@@ -25,6 +25,8 @@ pub(super) fn entities(
             .ok_or(CarrierError::WrongScope)?;
         let movement = runtime.read_house_movement(entry.actor, entry_session)?;
         entities.push(world_spatial::ChannelEntity {
+            source_icons:
+                oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
             display_name: None,
             health_percent: 100,
             direction: direction(movement.facing()),
@@ -44,6 +46,8 @@ pub(super) fn entities(
             .house_hireling_entities(observer, session)?
             .into_iter()
             .map(|entry| world_spatial::ChannelEntity {
+                source_icons:
+                    oteryn_protocol_oteryn::world_spatial_entities::NativeCreatureIcons::default(),
                 display_name: None,
                 health_percent: 100,
                 direction: direction(Some(entry.direction)),

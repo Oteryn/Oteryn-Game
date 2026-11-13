@@ -4,8 +4,7 @@ use oteryn_client_ui::quest_log::{QuestSort, quest_row_query, quest_rows};
 #[test]
 fn sorted_filtered_quest_selection_sends_the_displayed_server_id() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
-    let visible = QuestLog {
-        view: Some(QuestLogView::Line(QuestLine {
+    let visible = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::Line(QuestLine {
             quest_index: 1,
             completed: false,
             missions: vec![],
@@ -24,8 +23,7 @@ fn sorted_filtered_quest_selection_sends_the_displayed_server_id() -> Result<(),
         command_id: 1,
         status: oteryn_client_runtime::CommandStatus::Accepted,
         server_sequence: 1,
-        payload: encode_quest_log(&QuestLog {
-            view: Some(QuestLogView::List(vec![
+        payload: encode_quest_log(&QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![
                 QuestListEntry {
                     quest_index: 1,
                     completed: false,
@@ -83,8 +81,7 @@ fn journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor() -
         revision: Some(0),
         ..Default::default()
     });
-    let log = QuestLog {
-        view: Some(QuestLogView::List(vec![
+    let log = QuestLog { map_marks: Vec::new(), view: Some(QuestLogView::List(vec![
             QuestListEntry {
                 quest_index: 1,
                 completed: false,

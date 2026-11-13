@@ -226,6 +226,7 @@ async fn shop(
     world: &BundleWorld,
     npcs: &oteryn_world_bundle::npc::Table,
 ) -> TestResult {
+    let basis = spatial_basis::current(client)?;
     use oteryn_dev_client::client_runtime::npc_shop as runtime;
     use oteryn_protocol_oteryn::{npc_service as wire, npc_shop as shop};
     let npc = npcs
@@ -248,7 +249,7 @@ async fn shop(
                     && npc.placements.iter().any(|p| {
                         entity.position.x == i32::from(p.x)
                             && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
+                            && entity.position.floor == basis.floor(p.floor)
                     })
             })
         })

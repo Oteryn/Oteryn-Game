@@ -3,7 +3,9 @@ use super::{QuestEffectKind, QuestTransition, reward_callbacks, world_callbacks}
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
+mod resolved_world;
 mod shared_world;
+pub use resolved_world::validate_resolved_world;
 
 struct Owner {
     transition: QuestTransition,
@@ -49,13 +51,17 @@ fn registry() -> Result<&'static Registry, String> {
                 let protect = reward_callbacks::gated_binding(&callback)?.is_some();
                 add(
                     reward_callbacks::primary_transition(&callback)?,
-                    false,
+                    callback.world_claim.is_some(),
                     protect,
                 )?;
             }
+            for transition in super::completion_sets::mint_transitions()? {
+                add(transition, false, true)?;
+            }
             let shared_world = shared_world::catalogue()?;
             for callback in world_callbacks::load()? {
-                let protect = world_callbacks::gated_binding(&callback)?.is_some();
+                let protect = world_callbacks::gated_binding(&callback)?.is_some()
+                    || callback.operation_count() > 0;
                 let transition = if callback.key == super::rotten_blood::SACRIFICE {
                     super::rotten_blood::altar_transition()
                 } else if let Some(operation) = shared_world.transition(&callback.key) {
@@ -67,12 +73,28 @@ fn registry() -> Result<&'static Registry, String> {
             }
             // Native death writes share tracks with bound NPC trial stages.
             // Their specialised writer already requires an exact native-death proof.
-            for counter in super::native_kills::COUNTERS {
-                add(counter.transition(), false, true)?;
+            for counter in super::native_kills::registered_counters()? {
+                // The complete exact transition still owns the gate proof.
+                // Its EQ1/SET1 authored predecessor is a no-op, not a new
+                // writer authority over the predecessor's own preparation.
+                add(counter.transition(), false, false)?;
             }
+            // M24 source deaths may share questline tracks with existing NPC
+            // stages. Register the exact canonical operation; the writer also
+            // requires its independently fenced native-death context.
+            for rule in super::source_deaths::rules().map_err(str::to_owned)? {
+                add(rule.transition()?, false, false)?;
+            }
+            // Kesar's real final report shares the mission track protected by
+            // Fugue's native kill. Only its complete gated operation may finish it.
+            add(super::hero_of_bounac::transition(), false, true)?;
+            add(super::arena_completion::transition()?, false, true)?;
             for recipe in super::timers::RECIPES {
                 add(recipe.transition(), false, true)?;
             }
+            registry.protected_tracks.extend(
+                super::native_kills::registered_counters()?.map(|counter| counter.track.into()),
+            );
             Ok(registry)
         })
         .as_ref()
@@ -82,6 +104,12 @@ fn registry() -> Result<&'static Registry, String> {
 /// Bound owners must use their exact canonical operation. Removing the binding
 /// does not release ownership of a protected track to the weaker generic writer.
 pub fn validate(transition: &QuestTransition, world_context: bool) -> Result<(), String> {
+    if transition.quest == super::arena_completion::QUEST
+        && transition.completes
+        && transition != &super::arena_completion::transition()?
+    {
+        return Err("arena completion requires its native owner".into());
+    }
     let registry = registry()?;
     if let Some(owner) = registry.owners.get(&transition.key) {
         if transition != &owner.transition || (owner.world && !world_context) {
@@ -121,30 +149,27 @@ pub fn validate_for_catalogue(
     if let Some(bindings) = &catalogue.authored_bindings {
         for quest in &bindings.source.quests {
             for stage in &quest.stages {
-                let callback = match &stage.trigger {
-                    super::authored_bindings::Trigger::MapUse { callback }
-                    | super::authored_bindings::Trigger::StepIn { callback } => callback,
-                    _ => continue,
-                };
-                let mut expected = world_callbacks::primary_transition(callback)?;
-                expected.completes = stage.completes;
-                if expected.key == transition.key {
-                    return if world_context && transition == &expected {
+                if stage.is_native_encounter() {
+                    continue;
+                }
+                if let Some(expected) = stage
+                    .transitions(&quest.quest)?
+                    .into_iter()
+                    .find(|expected| expected.key == transition.key)
+                {
+                    let world = matches!(
+                        stage.trigger,
+                        super::authored_bindings::Trigger::MapUse { .. }
+                            | super::authored_bindings::Trigger::StepIn { .. }
+                    );
+                    return if world == world_context && transition == &expected {
                         Ok(())
                     } else {
-                        Err("authored world operation or physical context mismatch".into())
+                        Err("authored operation or physical context mismatch".into())
                     };
                 }
-                if world_callbacks::gated_binding(callback)?.is_some() {
-                    protected.extend(
-                        expected
-                            .effects
-                            .iter()
-                            .filter(|effect| changes(effect.effect))
-                            .map(|effect| effect.track.clone()),
-                    );
-                }
             }
+            protected.extend(quest.tracks.iter().map(|track| track.key.clone()));
         }
     }
     if transition
@@ -176,8 +201,46 @@ mod tests {
                 "{}",
                 callback.key
             );
-            validate(transition, false)?;
+            validate(transition, callback.world_claim.is_some())?;
+            if callback.world_claim.is_some() {
+                assert!(
+                    validate(transition, false).is_err(),
+                    "World claim requires its registered context: {}",
+                    callback.key
+                );
+            }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn kesar_final_report_keeps_exact_gate_and_rejects_stripped_aliases() -> Result<(), String> {
+        let source = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        let original = source
+            .catalogue()
+            .transition(super::super::hero_of_bounac::COMPLETE)
+            .ok_or("canonical Kesar final report")?;
+        assert_eq!(original, &super::super::hero_of_bounac::transition());
+        validate_for_catalogue(source.catalogue(), original, false)?;
+
+        let mut changed = original.clone();
+        changed.effects[0].from = super::super::QuestComparison::Any;
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.effects[0].effect = QuestEffectKind::Set(6);
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.completes = false;
+        assert!(validate(&changed, false).is_err());
+        let mut changed = original.clone();
+        changed.key.push_str("-alias");
+        assert!(validate(&changed, false).is_err());
+        changed.effects.remove(0);
+        assert!(
+            validate(&changed, false).is_err(),
+            "stripping the mission gate cannot open Augustin's door"
+        );
         Ok(())
     }
 
@@ -217,7 +280,7 @@ mod tests {
 
     #[test]
     fn native_deaths_keep_their_exact_registered_counter_operation() -> Result<(), String> {
-        for counter in super::super::native_kills::COUNTERS {
+        for counter in super::super::native_kills::counters() {
             let original = counter.transition();
             validate(&original, false)?;
             let mut changed = original.clone();
@@ -371,6 +434,39 @@ mod tests {
             .ok_or("fluid source callback")?;
         // Fluid preparation keeps its ordinary Set(0), rather than a specialized increment.
         validate(&world_callbacks::primary_transition(&fluid)?, true)?;
+        Ok(())
+    }
+    #[test]
+    fn galthen_native_targets_stay_protected_without_owning_authored_predecessors()
+    -> Result<(), String> {
+        for stage in ["s5", "s8"] {
+            let key = format!(
+                "oteryn:quest-transition/chosen-source/adventures_of_galthen_quest/{stage}"
+            );
+            let counter =
+                super::super::native_kills::counter(&key).ok_or("selected Galthen counter")?;
+            let canonical = counter.transition();
+            super::validate(&canonical, false)?;
+            let mut setup = canonical.clone();
+            setup.key = format!("oteryn:quest-transition/fixture/galthen-predecessor-{stage}");
+            setup.effects = vec![super::super::QuestEffect {
+                track: counter.gate.into(),
+                from: super::super::QuestComparison::Eq(0),
+                effect: super::super::QuestEffectKind::Set(1),
+            }];
+            super::validate(&setup, false)?;
+            setup.effects[0].track = counter.track.into();
+            assert!(
+                super::validate(&setup, false).is_err(),
+                "unbound aliases cannot write a native kill counter"
+            );
+            let mut stripped = canonical;
+            stripped.effects.remove(0);
+            assert!(
+                super::validate(&stripped, false).is_err(),
+                "canonical name cannot strip its predecessor proof"
+            );
+        }
         Ok(())
     }
 }

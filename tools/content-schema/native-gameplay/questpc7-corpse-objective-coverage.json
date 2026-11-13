@@ -1,0 +1,489 @@
+{
+  "schema": 1,
+  "objective_document": "content/quests/questpc7-death-objectives.json",
+  "objectives": [
+    {
+      "objective": "oteryn:quest-death/questpc7-hidden-charlatan",
+      "creature": "oteryn:creature.corym_charlatan",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17445",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-hidden-skirmisher",
+      "creature": "oteryn:creature.corym_skirmisher",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17446",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-hidden-vanguard",
+      "creature": "oteryn:creature.corym_vanguard",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17454",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-hydra-guardian",
+      "creature": "oteryn:creature.hydra",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6048",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-hero-construct",
+      "creature": "oteryn:creature.glooth_golem",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i20972",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-hero-maxxen",
+      "creature": "oteryn:creature.professor_maxxen",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i21910",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-plagirath",
+      "creature": "oteryn:creature.plagirath",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-zamulosh",
+      "creature": "oteryn:creature.zamulosh",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-mazoran",
+      "creature": "oteryn:creature.mazoran",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-razzagorn",
+      "creature": "oteryn:creature.razzagorn",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-ragiaz",
+      "creature": "oteryn:creature.ragiaz",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-tarbaz",
+      "creature": "oteryn:creature.tarbaz",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-shulgrax",
+      "creature": "oteryn:creature.shulgrax",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22495",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-ferumbras-ferumbras_mortal_shell",
+      "creature": "oteryn:creature.ferumbras_mortal_shell",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6078",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-count_vlarkorth",
+      "creature": "oteryn:creature.count_vlarkorth",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-duke_krule",
+      "creature": "oteryn:creature.duke_krule",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-earl_osam",
+      "creature": "oteryn:creature.earl_osam",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-lord_azaram",
+      "creature": "oteryn:creature.lord_azaram",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-sir_baeloc",
+      "creature": "oteryn:creature.sir_baeloc",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-sir_nictros",
+      "creature": "oteryn:creature.sir_nictros",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31599",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-king_zelos",
+      "creature": "oteryn:creature.king_zelos",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31611",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grave-scarlett_etzel",
+      "creature": "oteryn:creature.scarlett_etzel",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i31453",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-werewolf",
+      "creature": "oteryn:creature.werewolf",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18099",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-werebear",
+      "creature": "oteryn:creature.werebear",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22010",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-wereboar",
+      "creature": "oteryn:creature.wereboar",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22066",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-feroxa",
+      "creature": "oteryn:creature.feroxa",
+      "corpse": null,
+      "disposition": "closed",
+      "reason": "source profile declares no corpse"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-bloodback",
+      "creature": "oteryn:creature.bloodback",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i27718",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-darkfang",
+      "creature": "oteryn:creature.darkfang",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i18099",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-sharpclaw",
+      "creature": "oteryn:creature.sharpclaw",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i22067",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-black_vixen",
+      "creature": "oteryn:creature.black_vixen",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i27714",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-grimvale-werehyaena",
+      "creature": "oteryn:creature.werehyaena",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i33821",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-anomaly",
+      "creature": "oteryn:creature.anomaly",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23564",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-rupture",
+      "creature": "oteryn:creature.rupture",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23564",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-realityquake",
+      "creature": "oteryn:creature.realityquake",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23567",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "XML temporal/capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-eradicator",
+      "creature": "oteryn:creature.eradicator",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23564",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-outburst",
+      "creature": "oteryn:creature.outburst",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i23564",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-heart-world_devourer",
+      "creature": "oteryn:creature.world_devourer",
+      "corpse": null,
+      "disposition": "closed",
+      "reason": "source profile declares no corpse"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-lloyd",
+      "creature": "oteryn:creature.lloyd",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i24927",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "fresh explicit capacity absent"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-lady_tenebris",
+      "creature": "oteryn:creature.lady_tenebris",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i6560",
+        "revision": "definition-r1"
+      },
+      "disposition": "closed",
+      "reason": "client kind conflict"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-the_enraged_thorn_knight",
+      "creature": "oteryn:creature.the_enraged_thorn_knight",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i111",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-soul_of_dragonking_zyrtarch",
+      "creature": "oteryn:creature.soul_of_dragonking_zyrtarch",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25065",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-the_time_guardian",
+      "creature": "oteryn:creature.the_time_guardian",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i25085",
+        "revision": "definition-r1"
+      },
+      "disposition": "qualify",
+      "reason": "exact source decay closure"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-forgotten-the_last_lore_keeper",
+      "creature": "oteryn:creature.the_last_lore_keeper",
+      "corpse": null,
+      "disposition": "closed",
+      "reason": "source profile declares no corpse"
+    },
+    {
+      "objective": "oteryn:quest-death/questpc7-goblin-stalkers",
+      "creature": "oteryn:creature.marsh_stalker",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i17428",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    },
+    {
+      "objective": "oteryn:quest-death/authored-smith-guardian",
+      "creature": "oteryn:creature.giant_spider",
+      "corpse": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i5977",
+        "revision": "definition-r1"
+      },
+      "disposition": "existing",
+      "reason": "retained existing native profile owner"
+    }
+  ]
+}

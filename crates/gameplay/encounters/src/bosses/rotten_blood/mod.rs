@@ -4,6 +4,19 @@
 //! resulting chain geometry and produces room-scoped damage consequences atomically.
 
 pub mod area_icons;
+pub mod bakragore_think;
+pub mod chagorz_think;
+pub mod elder_bloodjaw_think;
+pub mod ichgahal_think;
+pub mod murcion_think;
+pub mod mushroom_think;
+pub mod native_bloodjaw;
+pub mod native_mushroom;
+pub mod native_pillar;
+pub mod native_wave_spawn;
+pub mod pillar_of_dark_energy_think;
+pub mod summon_wave;
+pub mod vemiath_think;
 
 const GLOOM_INITIAL_RANGE_TILES: u16 = 3;
 const GLOOM_JUMP_RANGE_TILES: u16 = 6;

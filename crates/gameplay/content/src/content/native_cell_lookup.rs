@@ -107,6 +107,16 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
     ) -> Result<bool, StaticCellEngineError> {
         Err(StaticCellEngineError::Unqualified)
     }
+    /// Exact loaded base tile census, supplied only by the real bundle owner.
+    /// Other ports cannot qualify a pinned activity source scene.
+    fn source_capture_cell_count(&self) -> Option<usize> {
+        None
+    }
+    fn source_bases(
+        &self,
+    ) -> Option<&super::project::native_spell_world::QualifiedBundleSourceBases> {
+        None
+    }
     fn same_index(&self, other: &dyn BundleCollisionLookup) -> bool;
     /// A bounded read-only template, or fresh map state for an already allocated Instance.
     fn activity_region(
@@ -114,6 +124,16 @@ pub trait BundleCollisionLookup: std::fmt::Debug + std::any::Any + Send + Sync {
         _bounds: [i32; 6],
         _instance: Option<[u8; 16]>,
         _start: [i32; 3],
+    ) -> Option<BundleCollisionIndex> {
+        None
+    }
+    /// Exact already-qualified rectangle plus one independently proven source exit.
+    fn activity_region_with_exit(
+        &self,
+        _bounds: [i32; 6],
+        _instance: Option<[u8; 16]>,
+        _start: [i32; 3],
+        _exit: LogicalCell,
     ) -> Option<BundleCollisionIndex> {
         None
     }
@@ -139,6 +159,16 @@ impl BundleCollisionIndex {
         start: [i32; 3],
     ) -> Option<Self> {
         self.0.activity_region(bounds, instance, start)
+    }
+    pub fn activity_region_with_exit(
+        &self,
+        bounds: [i32; 6],
+        instance: Option<[u8; 16]>,
+        start: [i32; 3],
+        exit: LogicalCell,
+    ) -> Option<Self> {
+        self.0
+            .activity_region_with_exit(bounds, instance, start, exit)
     }
     pub fn for_activity_instance(&self, instance: [u8; 16]) -> Option<Self> {
         self.0.for_activity_instance(instance)

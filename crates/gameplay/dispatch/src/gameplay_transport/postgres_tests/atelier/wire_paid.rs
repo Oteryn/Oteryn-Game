@@ -681,6 +681,7 @@ fn scenario(case: Case) -> TestResult {
                     &owner,
                     capabilities,
                 )
+                .await
             } else {
                 SelectedCapabilities::select(owner.offered_capabilities(), capabilities)
             }

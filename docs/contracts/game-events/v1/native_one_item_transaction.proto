@@ -698,7 +698,7 @@ message OneItemNpcTradeV1 {
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using
 // command's CommandRef, which is the cause's identity.
 message OneItemUseCauseV1 {
-  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 328 MountTaming (burn), 470 HirelingLamp, 471 HirelingFood (burn)
+  uint32 kind = 1; // 1 Food, 2 Potion, 3 PickRefine (one-unit output), 4 RottenEssence, 5 SoulWarSourceUse (Sorrow/MortalEssence/CleansedSanity), 328 MountTaming (burn), 470 HirelingLamp, 471 HirelingFood (burn)
   string content_revision = 6;
   string ruleset_revision = 7;
   string sim_revision = 8;
@@ -737,6 +737,7 @@ message OneItemUseV1 {
   bool flask_missing = 12;
   optional uint64 source_inbox_ordinal = 13; // positive; HirelingLamp cause 470 only
   optional string house_key = 14; // required470, optional471; world_id + key name the House; channel_id is origin provenance
+  optional bytes instance_id = 15; // SRX-3 source essence cause4; exactly16-byte UUIDv7; channel_id empty and house_key absent
 }
 
 // D1230 closed material-free ForgeCause::DustLimit. Exactly one Character dust debit

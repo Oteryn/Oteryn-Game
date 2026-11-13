@@ -225,7 +225,10 @@ impl<S: SessionStream> Session<S> {
                     chat::DELTA_TYPE_CHAT_LINE_V1 => {
                         match chat_extended::decode_line(delta.payload, &self.selected_capabilities)?
                         {
-                            chat_extended::Decoded::Line { line, extra } => {
+                            chat_extended::Decoded::Line { mut line, extra } => {
+                                if crate::presentation::native_basis(self) {
+                                    crate::presentation::project_legacy_chat(&mut line)?;
+                                }
                                 line_extra = Some(extra);
                                 SessionEvent::ChatLine(applied(
                                     server_sequence,
@@ -243,6 +246,13 @@ impl<S: SessionStream> Session<S> {
                                 ))
                             }
                         }
+                    }
+                    oteryn_protocol_oteryn::native_map_cues::DELTA_TYPE_NATIVE_MAP_CHAT_LINE_V1 => {
+                        if !crate::presentation::native_basis(self) {
+                            return Err(SessionError::SessionUnusable);
+                        }
+                        let line = guild_chat::decode_native_line(delta.payload, &self.selected_capabilities)?;
+                        SessionEvent::ChatLine(applied(server_sequence, base_revision, new_revision, line))
                     }
                     oteryn_protocol_oteryn::vip_presence::DELTA_TYPE_VIP_PRESENCE_V1 => {
                         use oteryn_protocol_oteryn::vip_presence as wire;

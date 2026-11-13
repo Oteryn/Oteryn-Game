@@ -1,27 +1,135 @@
 //! Native scheduled player-targeted attacks from every admitted creature's source closure.
 //! Timing, chance, damage, replay and lethal consequences stay in their existing owners.
+mod smelly_reader;
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy, ProfileAbilityProposal};
 use crate::creature_damage_spell::{SpellCombatFacts, SpellSource, SpellWorldReader};
 use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeWorkStamp};
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+pub(super) use smelly_reader::prepare_smelly_reader;
 use std::collections::BTreeMap;
 
-mod composed;
+pub(super) mod composed;
 mod timers;
 
-struct CurrentTarget<'native> {
+enum SourceDraw {
+    Callback(
+        oteryn_gameplay_content::content::native_monster_callbacks::QualifiedNativeCallbackStage,
+    ),
+    Omrafir(crate::content::native_omrafir::QualifiedOmrafirBeamStage),
+}
+pub(in crate::gameplay_transport) struct CurrentTarget<'native> {
     native: &'native NativeGameplayState,
+    source_draw: Option<SourceDraw>,
+    retained_caster: Option<oteryn_gameplay_entities::NativeRetainedCallbackCaster>,
     stamp: RuntimeWorkStamp,
-    players: Vec<(ExactActorRef, GameSessionId)>,
+    pub(super) players: Vec<(ExactActorRef, GameSessionId)>,
     issuer: ExactActorRef,
     element: Option<String>,
     facing: Facing,
     facts: Vec<SpellCombatFacts>,
     tiles: BTreeMap<(i32, i32, i16), Option<bool>>,
+    source_damage: Vec<(
+        ExactActorRef,
+        crate::gameplay_transport::soul_war_callbacks::QualifiedThirdTaintPolicy,
+    )>,
 }
 
+impl CurrentTarget<'_> {
+    pub(in crate::gameplay_transport) fn event_players(&self) -> &[(ExactActorRef, GameSessionId)] {
+        &self.players
+    }
+
+    pub(super) fn source_visual_positions(&self) -> Vec<MovementLocalPosition> {
+        self.tiles
+            .iter()
+            .filter_map(|(&(x, y, floor), allowed)| {
+                (*allowed == Some(true)).then_some(MovementLocalPosition { x, y, floor })
+            })
+            .collect()
+    }
+}
 impl SpellWorldReader for CurrentTarget<'_> {
+    fn source_damage_draw(
+        &mut self,
+        minimum: u32,
+        maximum: u32,
+        draw: u64,
+        target: Option<ExactActorRef>,
+    ) -> Result<Option<u32>, crate::creature_auto_attack::AttackError> {
+        let Some(stage) = &self.source_draw else {
+            return Ok(None);
+        };
+        let (source_minimum, source_maximum, per_target) = match stage {
+            SourceDraw::Callback(stage) => (
+                stage.minimum(),
+                stage.maximum(),
+                matches!(
+                    stage.parent().entry().creature.key.as_str(),
+                    "oteryn:creature.gaz_haragoth"
+                        | "oteryn:creature.lady_tenebris"
+                        | "oteryn:creature.eruption_of_destruction"
+                ),
+            ),
+            SourceDraw::Omrafir(stage) => (stage.minimum(), stage.maximum(), false),
+        };
+        if minimum != source_minimum || maximum != source_maximum {
+            return Err(crate::creature_auto_attack::AttackError::InvalidSource);
+        }
+        if target.is_some() && !per_target {
+            return Ok(None);
+        }
+        oteryn_gameplay_domain::domain::source_normal_draw::source_normal_draw(
+            draw, minimum, maximum,
+        )
+        .map(Some)
+        .ok_or(crate::creature_auto_attack::AttackError::InvalidSource)
+    }
+    fn source_combat_component_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        issuer: ExactActorRef,
+        target: ExactActorRef,
+        magnitude: u32,
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Option<u32> {
+        if stamp != self.stamp || issuer != self.issuer {
+            return None;
+        }
+        let policy = &self
+            .source_damage
+            .iter()
+            .find(|(actor, _)| *actor == target)?
+            .1;
+        let result = match (&self.retained_caster, &self.source_draw) {
+            (Some(caster), Some(SourceDraw::Callback(stage))) => {
+                policy.apply_retained(runtime, issuer, target, now, magnitude, caster, stage)
+            }
+            (None, None)
+                if self.element.as_deref() == Some("life_drain")
+                    && runtime
+                        .companion_snapshot_including_dead(issuer)
+                        .is_ok_and(|source| {
+                            source.state.policy.definition_key == "oteryn:creature.mushroom"
+                        }) =>
+            {
+                policy.apply_registered_mushroom(runtime, issuer, target, now, magnitude)
+            }
+            _ => policy.apply(runtime, issuer, target, now, magnitude),
+        };
+        #[cfg(test)]
+        if result.is_none()
+            && matches!(&self.source_draw,Some(SourceDraw::Callback(stage)) if stage.parent().entry().creature.key == "oteryn:creature.foam_stalker")
+        {
+            eprintln!(
+                "SRX3_RETAINED_FOAM_COMPONENT refused exact_live_lookup={} registered={:?} raw={magnitude}",
+                runtime.borrow_exact_actor_lookup().contains(issuer),
+                runtime.source_creature_is_registered(issuer)
+            );
+        }
+        result
+    }
     fn native_gameplay<'a>(
         &'a self,
         runtime: &ChannelRuntimeV1,
@@ -81,7 +189,8 @@ impl SpellWorldReader for CurrentTarget<'_> {
 }
 
 // Same-transaction strong World membership; never authorize party membership from the actor cache.
-type ReferenceParties = BTreeMap<[u8; 16], Vec<(MovementLocalPosition, u32)>>;
+pub(in crate::gameplay_transport) type ReferenceParties =
+    BTreeMap<[u8; 16], Vec<(MovementLocalPosition, u32)>>;
 pub(crate) async fn read_reference_parties(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
@@ -168,7 +277,7 @@ pub(crate) async fn read_reference_parties(
 // Runtime, Item transaction and player states stay locked from these independent reads
 // through execution. Each pulse uses facts for its own source, target and current owner stamp.
 #[allow(clippy::too_many_arguments)]
-pub(super) async fn execute(
+pub(super) async fn execute_proposals(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
     attack: &mut ChannelAttackStates,
@@ -179,7 +288,8 @@ pub(super) async fn execute(
     parties: &ReferenceParties,
     now: u64,
     charms: &crate::content::charm_source::CanonicalCharmCatalogue,
-) {
+    native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
+) -> Result<(), ()> {
     for proposal in proposals {
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack {
             continue;
@@ -187,10 +297,20 @@ pub(super) async fn execute(
         let Some(parent_source) = source_for(runtime, native, proposal) else {
             if let Some(source) = composed::source_for(runtime, native, proposal) {
                 composed::execute(
-                    runtime, states, attack, room, native, map, &source, proposal, parties, now,
+                    runtime,
+                    states,
+                    attack,
+                    room,
+                    native,
+                    map,
+                    &source,
+                    proposal,
+                    parties,
+                    now,
                     charms,
+                    native_health_names,
                 )
-                .await;
+                .await?;
             }
             continue;
         };
@@ -209,34 +329,49 @@ pub(super) async fn execute(
         {
             continue;
         }
-        let Ok(stamp) = runtime.issue_owner_work() else {
-            return;
-        };
-        let Some(mut reader) = prepare_reader(
+        let stamp = runtime.issue_owner_work().map_err(|_| ())?;
+        let reader = prepare_source_reader_checked(
             runtime,
             states,
             attack,
             room,
             native,
             map,
-            source,
+            SourceShape::Spell(source),
             proposal,
             parties,
             now,
             stamp,
             source.chain.is_some(),
             None,
+            None,
         )
-        .await
-        else {
-            continue;
+        .await;
+        let mut reader = match reader {
+            Ok(reader) => reader,
+            Err(PreparationError::Unavailable) => return Err(()),
+            Err(PreparationError::Refused) => {
+                // This branch has not published HP. An aborted/lost read is not
+                // a known source refusal that may consume the retained proposal.
+                if !map.validate_transaction(runtime).await {
+                    return Err(());
+                }
+                continue;
+            }
         };
         if source.chain.is_some() {
-            let Some(mut facts) =
+            let prepared =
                 timers::prepare_chain_map(runtime, map, &reader, proposal, stamp, attack, now)
-                    .await
-            else {
-                continue;
+                    .await;
+            let mut facts = match prepared {
+                Ok(facts) => facts,
+                Err(PreparationError::Unavailable) => return Err(()),
+                Err(PreparationError::Refused) => {
+                    if !map.validate_transaction(runtime).await {
+                        return Err(());
+                    }
+                    continue;
+                }
             };
             if states.monster_chains.is_none() {
                 states.monster_chains =
@@ -310,10 +445,78 @@ pub(super) async fn execute(
             }
         }
     }
-    timers::drain(
-        runtime, states, attack, room, native, map, parties, now, charms,
-    )
-    .await;
+    Ok(())
+}
+
+pub(in crate::gameplay_transport) fn record_native_player_hit(
+    runtime: &ChannelRuntimeV1,
+    attack: &mut ChannelAttackStates,
+    source: Option<ExactActorRef>,
+    target: ExactActorRef,
+    session: GameSessionId,
+    hit: &crate::player_lethal::PlayerDamageReceipt,
+    now: u64,
+) {
+    if hit.applied == 0 {
+        return;
+    }
+    if let Some(source) = source {
+        attack.kills().boss_damage_received(
+            runtime,
+            source,
+            target,
+            session,
+            u64::from(hit.applied),
+            hit.vitals_revision,
+        );
+    }
+    attack.record_hit_taken(
+        runtime,
+        target,
+        session,
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+    );
+}
+
+fn native_source_profiles<'a>(
+    native: &NativeGameplayState,
+    record: &'a crate::content::native_gameplay::CreatureProfileRecord,
+    source_overlay: bool,
+) -> Option<std::borrow::Cow<'a, [crate::content::ProjectV2AuthoringProfile]>> {
+    let profiles = &record.attack_definitions.as_ref()?.profiles;
+    let soul_war = source_overlay
+        .then(|| native.soul_war_source_attacks(&record.profile.target))
+        .flatten();
+    let omrafir = native.omrafir_source_attacks(&record.profile.target);
+    let Some(behavior) = soul_war
+        .as_ref()
+        .map(|source| source.behavior())
+        .or_else(|| omrafir.as_ref().map(|source| source.behavior()))
+    else {
+        return Some(std::borrow::Cow::Borrowed(profiles));
+    };
+    // Project only the sealed complete source schedule. Original Creature,
+    // Ability, Effect, Formula and record bodies remain byte-for-byte native.
+    // Their actual restored entry index therefore reaches their existing
+    // constructor, RNG and replay owner without rewriting the proposal.
+    let reference = &record.behavior.as_ref()?.target;
+    let mut positions = profiles
+        .iter()
+        .enumerate()
+        .filter(|(_, profile)| profile.target == *reference);
+    let (index, profile) = positions.next()?;
+    if positions.next().is_some()
+        || !matches!(
+            profile.data,
+            crate::content::ProjectV2AuthoringProfileData::Behavior(_)
+        )
+    {
+        return None;
+    }
+    let mut projected = profiles.clone();
+    projected[index].data =
+        crate::content::ProjectV2AuthoringProfileData::Behavior(behavior.clone());
+    Some(std::borrow::Cow::Owned(projected))
 }
 
 fn source_for(
@@ -336,17 +539,25 @@ fn source_for(
             && record.profile.target.revision == creature.state.policy.definition_revision
     })?;
     let definitions = record.attack_definitions.as_ref()?;
+    let profiles = native_source_profiles(
+        native,
+        record,
+        matches!(
+            runtime.binding().runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ),
+    )?;
     SpellSource::from_native(
         &record.profile.target,
         proposal.entry_index,
         &definitions.records,
-        &definitions.profiles,
+        &profiles,
         native.source_digest(),
     )
     .ok()
 }
 
-fn record_hits(
+pub(super) fn record_hits(
     runtime: &ChannelRuntimeV1,
     attack: &mut ChannelAttackStates,
     source: Option<ExactActorRef>,
@@ -354,23 +565,12 @@ fn record_hits(
     outcome: crate::creature_damage_spell::SpellOutcome,
     now: u64,
 ) {
-    let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
     for (target, hit) in outcome.targets {
         if let Ok(hit) = hit
             && let Some(damage) = hit.damage.filter(|damage| damage.applied > 0)
             && let Some((_, session)) = players.iter().find(|(actor, _)| *actor == target)
         {
-            if let Some(source) = source {
-                attack.kills().boss_damage_received(
-                    runtime,
-                    source,
-                    target,
-                    *session,
-                    u64::from(damage.applied),
-                    damage.vitals_revision,
-                );
-            }
-            attack.record_hit_taken(runtime, target, *session, semantic_now);
+            record_native_player_hit(runtime, attack, source, target, *session, &damage, now);
         }
     }
 }
@@ -450,8 +650,8 @@ async fn prepare_reader<'native>(
     stamp: RuntimeWorkStamp,
     chain_candidates: bool,
     chain_origin: Option<MovementLocalPosition>,
-) -> Option<CurrentTarget<'native>> {
-    prepare_source_reader(
+) -> Result<CurrentTarget<'native>, PreparationError> {
+    prepare_source_reader_checked(
         runtime,
         states,
         attack,
@@ -465,12 +665,13 @@ async fn prepare_reader<'native>(
         stamp,
         chain_candidates,
         chain_origin,
+        None,
     )
     .await
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn prepare_composed_reader<'native>(
+pub(super) async fn prepare_composed_reader<'native>(
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
     attack: &mut ChannelAttackStates,
@@ -497,8 +698,17 @@ async fn prepare_composed_reader<'native>(
         stamp,
         false,
         None,
+        None,
     )
     .await
+}
+
+// A known blocked/absent source cell can complete a proposal as a refusal.
+// Missing current DATA or a lost transaction must retain it before any HP write.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PreparationError {
+    Refused,
+    Unavailable,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -516,45 +726,121 @@ async fn prepare_source_reader<'native>(
     stamp: RuntimeWorkStamp,
     chain_candidates: bool,
     chain_origin: Option<MovementLocalPosition>,
+    callback: Option<&oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan>,
 ) -> Option<CurrentTarget<'native>> {
+    prepare_source_reader_checked(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        source,
+        proposal,
+        parties,
+        now,
+        stamp,
+        chain_candidates,
+        chain_origin,
+        callback,
+    )
+    .await
+    .ok()
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn prepare_source_reader_checked<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: SourceShape<'_>,
+    proposal: &ProfileAbilityProposal,
+    parties: &ReferenceParties,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+    chain_candidates: bool,
+    chain_origin: Option<MovementLocalPosition>,
+    callback: Option<&oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan>,
+) -> Result<CurrentTarget<'native>, PreparationError> {
+    let retained = callback.is_some_and(|plan| {
+        matches!((plan.retained_caster(),plan.native_stage()),(Some(caster),Some(stage))
+            if caster.matches_stage(runtime,proposal.issuer,stage))
+    });
+    if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key().as_bytes())
+        && !retained
+    {
+        return Err(PreparationError::Refused);
+    }
     let record = native
         .creature_profiles()
         .records
         .iter()
-        .find(|record| record.profile.target.key == source.creature_key())?;
+        .find(|record| record.profile.target.key == source.creature_key())
+        .ok_or(PreparationError::Refused)?;
     let Ok(census) = runtime.positioned_melee_census() else {
-        return None;
+        return Err(PreparationError::Refused);
     };
     let (Ok(from), Ok(to)) = (
         runtime.read_actor_position(proposal.issuer),
         runtime.read_actor_position(proposal.target),
     ) else {
-        return None;
+        return Err(PreparationError::Refused);
     };
-    let from = from.position();
-    let to = to.position();
-    let facing = states
-        .monster_melee
-        .creature_ai
-        .state(proposal.issuer)
-        .map(|state| match state.attack_facing() {
-            crate::movement::CardinalStep::North => Facing::North,
-            crate::movement::CardinalStep::East
-            | crate::movement::CardinalStep::NorthEast
-            | crate::movement::CardinalStep::SouthEast => Facing::East,
-            crate::movement::CardinalStep::South => Facing::South,
-            crate::movement::CardinalStep::West
-            | crate::movement::CardinalStep::NorthWest
-            | crate::movement::CardinalStep::SouthWest => Facing::West,
-        })?;
+    let anchor = match callback {
+        Some(plan) => plan
+            .anchor_position(runtime)
+            .map_err(|_| PreparationError::Refused)?,
+        None => None,
+    };
+    let physical_facing = from.facing();
+    let from = anchor.unwrap_or(from.position());
+    let to = anchor.unwrap_or(to.position());
+    let scheduled_facing = || {
+        states
+            .monster_melee
+            .creature_ai
+            .state(proposal.issuer)
+            .map(|state| match state.attack_facing() {
+                crate::movement::CardinalStep::North => Facing::North,
+                crate::movement::CardinalStep::East
+                | crate::movement::CardinalStep::NorthEast
+                | crate::movement::CardinalStep::SouthEast => Facing::East,
+                crate::movement::CardinalStep::South => Facing::South,
+                crate::movement::CardinalStep::West
+                | crate::movement::CardinalStep::NorthWest
+                | crate::movement::CardinalStep::SouthWest => Facing::West,
+            })
+    };
+    let canonical_facing = physical_facing.map(|facing| match facing {
+        crate::foundation::MovementFacing::North => Facing::North,
+        crate::foundation::MovementFacing::East => Facing::East,
+        crate::foundation::MovementFacing::South => Facing::South,
+        crate::foundation::MovementFacing::West => Facing::West,
+    });
+    let facing = if retained {
+        // The actual AI scheduler may have forgotten the dead actor. Its
+        // registered canonical pose remains authoritative; create no new think.
+        canonical_facing
+            .or_else(scheduled_facing)
+            .ok_or(PreparationError::Refused)?
+    } else {
+        let scheduled = scheduled_facing().ok_or(PreparationError::Refused)?;
+        canonical_facing.unwrap_or(scheduled)
+    };
     let (Ok(center), Ok(mut cast_tiles)) = (
         source.cast_center(from, to, Some(facing)),
         source.target_tiles(from, to, Some(facing)),
     ) else {
-        return None;
+        return Err(PreparationError::Refused);
     };
     if chain_candidates {
-        let chain = source.spell()?.chain.as_ref()?;
+        let chain = source
+            .spell()
+            .and_then(|spell| spell.chain.as_ref())
+            .ok_or(PreparationError::Refused)?;
         let reach = i64::from(chain.range_tiles) * i64::from(chain.max_targets);
         cast_tiles = census
             .iter()
@@ -577,7 +863,8 @@ async fn prepare_source_reader<'native>(
         area_sight_origin(from, center)
     } else {
         Some(chain_origin.unwrap_or(from))
-    })?;
+    })
+    .ok_or(PreparationError::Refused)?;
     let mut tiles = BTreeMap::new();
     for (x, y, floor) in cast_tiles {
         let at = MovementLocalPosition { x, y, floor };
@@ -608,44 +895,42 @@ async fn prepare_source_reader<'native>(
         // Sight excludes its endpoints. An area needs the actual current tile too:
         // ground, PZ, floor changes and Item blockers come from the same transaction.
         let area_tile = if area {
-            map.read(runtime, at).await
+            map.read(runtime, at)
+                .await
+                .ok_or(PreparationError::Unavailable)?
         } else {
-            Some(true)
+            true
         };
         map.read_sight(runtime, sight_origin, at).await;
-        let allowed = room
-            .movement_cells()
-            .spell_tiles()
-            .lookup(
-                room.movement_cells().scope(),
-                crate::content::LogicalCell {
-                    x,
-                    y,
-                    z: i32::from(at.floor),
-                },
-            )
-            .is_ok_and(|tile| !tile.flags().protection_zone && !tile.flags().floor_change);
-        let sight = crate::durability::native_world_read::source_sight_steps(sight_origin, at)
-            .ok()
-            .and_then(|steps| {
-                steps
-                    .iter()
-                    .all(|(at, exempt)| *exempt || map.view().known(*at))
-                    .then(|| {
-                        area_tile.map(|admitted| {
-                            admitted && allowed && map.view().sight(sight_origin, at)
-                        })
-                    })
-                    .flatten()
-            });
-        tiles.insert((x, y, at.floor), sight);
+        let allowed = match room.movement_cells().spell_tiles().lookup(
+            room.movement_cells().scope(),
+            crate::content::LogicalCell {
+                x,
+                y,
+                z: i32::from(at.floor),
+            },
+        ) {
+            Ok(tile) => !tile.flags().protection_zone && !tile.flags().floor_change,
+            Err(crate::content::SpellTileLookupError::Absent) => false,
+            Err(_) => return Err(PreparationError::Unavailable),
+        };
+        let steps = crate::durability::native_world_read::source_sight_steps(sight_origin, at)
+            .map_err(|_| PreparationError::Refused)?;
+        if steps
+            .iter()
+            .any(|(at, exempt)| !*exempt && !map.view().known(*at))
+        {
+            return Err(PreparationError::Unavailable);
+        }
+        let sight = area_tile && allowed && map.view().sight(sight_origin, at);
+        tiles.insert((x, y, at.floor), Some(sight));
     }
     if !map.validate_transaction(runtime).await {
-        return None;
+        return Err(PreparationError::Unavailable);
     }
     let mut players = Vec::new();
     let mut facts = Vec::new();
-    let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+    let mut source_damage = Vec::new();
     for (target, _, session) in &census {
         let Some(session) = *session else {
             continue;
@@ -666,23 +951,12 @@ async fn prepare_source_reader<'native>(
         {
             continue;
         }
-        let tile = |position: MovementLocalPosition| {
-            room.movement_cells().spell_tiles().lookup(
-                room.movement_cells().scope(),
-                crate::content::LogicalCell {
-                    x: position.x,
-                    y: position.y,
-                    z: i32::from(position.floor),
-                },
-            )
-        };
-        let (Ok(issuer_tile), Ok(target_tile)) = (tile(from), tile(to)) else {
-            continue;
-        };
         let Some(state) = states.get(runtime, *target, session) else {
             continue;
         };
-        if state.vitals().health == 0 {
+        if callback
+            .is_some_and(|plan| !plan.permits_player_vocation(state.character_facts().vocation))
+        {
             continue;
         }
         let Ok(invisible) = state.owned_invisible_at(now) else {
@@ -693,89 +967,67 @@ async fn prepare_source_reader<'native>(
         else {
             continue;
         };
-        let Some(protected) =
-            attack.creature_target_protection(runtime, *target, session, semantic_now)
-        else {
-            continue;
-        };
-        use crate::content::ReferenceResistanceKind as Kind;
-        let kind = match source.element() {
-            Some("earth") => Some(Kind::Earth),
-            Some("death") => Some(Kind::Death),
-            Some("energy") => Some(Kind::Energy),
-            Some("ice") => Some(Kind::Ice),
-            Some("fire") => Some(Kind::Fire),
-            Some("holy") => Some(Kind::Holy),
-            Some("physical") => Some(Kind::Physical),
-            Some("life_drain") => Some(Kind::LifeDrain),
-            Some("mana_drain") => Some(Kind::ManaDrain),
-            Some("drowning") => Some(Kind::Drown),
-            // Crystal src/items/functions/item/item_parse.cpp:528-536 excludes Undefined from
-            // absorbpercentall, and defines no specific Undefined item absorb.
-            // Keep the source element for HP delivery without inventing elemental absorption.
-            Some("undefined") | None => None,
-            _ => continue,
-        };
-        let protection = kind.and_then(|kind| state.equipped_element_protection(kind));
-        let Ok(base_speed) = u16::try_from(state.owned_base_speed()) else {
-            continue;
-        };
-        facts.push(SpellCombatFacts {
-            attack: AttackFacts {
-                issuer: proposal.issuer,
-                target: *target,
-                session,
-                revision: state.revision(),
-                visible: !invisible || behavior.targeting.sense_invisible,
-                issuer_pz: issuer_tile.flags().protection_zone,
-                target_pz: target_tile.flags().protection_zone,
-                issuer_protected: false,
-                target_protected: protected,
-                defense: 0,
-                armor: state.equipped_armor(),
-                player_level: state.character_facts().level,
-                reference_level_party_lowest: source
-                    .reference_level_overrides()
-                    .iter()
-                    .find(|area| {
-                        crate::creature_auto_attack::reference_level_area_contains(area, from)
-                            && crate::creature_auto_attack::reference_level_area_contains(area, to)
-                    })
-                    .and_then(|area| {
-                        parties
-                            .get(&target.placement_identity())
-                            .and_then(|members| {
-                                members
-                                    .iter()
-                                    .filter(|(position, _)| {
-                                        crate::creature_auto_attack::reference_level_area_contains(
-                                            area, *position,
-                                        )
-                                    })
-                                    .map(|(_, level)| *level)
-                                    .min()
+        let party_lowest = source
+            .reference_level_overrides()
+            .iter()
+            .find(|area| {
+                crate::creature_auto_attack::reference_level_area_contains(area, from)
+                    && crate::creature_auto_attack::reference_level_area_contains(area, to)
+            })
+            .and_then(|area| {
+                parties
+                    .get(&target.placement_identity())
+                    .and_then(|members| {
+                        members
+                            .iter()
+                            .filter(|(position, _)| {
+                                crate::creature_auto_attack::reference_level_area_contains(
+                                    area, *position,
+                                )
                             })
-                    }),
-            },
-            multiplier_ppm: 1_000_000,
-            equipment_protection: protection,
-            immune: false,
-            // Player equipment suppressions are already installed in this state's
-            // ConditionStore by the equipment owner. Players have no creature-type
-            // intrinsic immunities; the existing store applies its suppression policy.
-            condition_policy: Some(CurrentConditionPolicy {
-                immunities: Vec::new(),
-                base_speed,
-            }),
-        });
+                            .map(|(_, level)| *level)
+                            .min()
+                    })
+            });
+        let Some((current, policy)) = current_player_combat_facts(
+            runtime,
+            states,
+            attack,
+            room,
+            proposal.issuer,
+            *target,
+            session,
+            now,
+            source.element(),
+            !invisible || behavior.targeting.sense_invisible,
+            party_lowest,
+        ) else {
+            continue;
+        };
+        facts.push(current);
+        source_damage.push((*target, policy));
         players.push((*target, session));
     }
     // Preserve the spell owner's bound after selecting the actual area, not the Channel roster.
-    if (players.is_empty() && !source.allows_empty_players()) || players.len() > 64 {
-        return None;
+    if (players.is_empty() && callback.is_none() && !source.allows_empty_players())
+        || players.len() > 64
+    {
+        return Err(PreparationError::Refused);
     }
-    Some(CurrentTarget {
+    Ok(CurrentTarget {
         native,
+        retained_caster: callback.and_then(|plan| plan.retained_caster()).cloned(),
+        source_draw: callback
+            .and_then(|plan| plan.native_stage())
+            .cloned()
+            .map(SourceDraw::Callback)
+            .or_else(|| match &source {
+                SourceShape::Composed(source) => source
+                    .omrafir_beam_stage()
+                    .cloned()
+                    .map(SourceDraw::Omrafir),
+                _ => None,
+            }),
         stamp,
         players,
         issuer: proposal.issuer,
@@ -783,6 +1035,285 @@ async fn prepare_source_reader<'native>(
         facing,
         facts,
         tiles,
+        source_damage,
+    })
+}
+
+/// Shared current facts for a normal Creature spell or an explicit native event.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual source/target, current owners, selection and reference-party facts remain independent"
+)]
+fn current_player_combat_facts(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    issuer: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    element: Option<&str>,
+    visible: bool,
+    party_lowest: Option<u32>,
+) -> Option<(
+    SpellCombatFacts,
+    crate::gameplay_transport::soul_war_callbacks::QualifiedThirdTaintPolicy,
+)> {
+    if states.get(runtime, target, session)?.vitals().health == 0 {
+        return None;
+    }
+    current_registered_player_combat_facts(
+        runtime,
+        states,
+        attack,
+        room,
+        issuer,
+        target,
+        session,
+        now,
+        element,
+        visible,
+        party_lowest,
+    )
+}
+
+/// Direct source Combat also reaches a registered HP0 target before its removal.
+/// This reads current identity and protection; it does not authorize a new hit.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "actual source/target, current owners, selection and reference-party facts remain independent"
+)]
+fn current_registered_player_combat_facts(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    issuer: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    element: Option<&str>,
+    visible: bool,
+    party_lowest: Option<u32>,
+) -> Option<(
+    SpellCombatFacts,
+    crate::gameplay_transport::soul_war_callbacks::QualifiedThirdTaintPolicy,
+)> {
+    let from = runtime.read_actor_position(issuer).ok()?.position();
+    let to = runtime.read_actor_position(target).ok()?.position();
+    let tile = |position: MovementLocalPosition| {
+        room.movement_cells().spell_tiles().lookup(
+            room.movement_cells().scope(),
+            crate::content::LogicalCell {
+                x: position.x,
+                y: position.y,
+                z: i32::from(position.floor),
+            },
+        )
+    };
+    let issuer_tile = tile(from).ok()?;
+    let target_tile = tile(to).ok()?;
+    let state = states.get(runtime, target, session)?;
+    let protected = attack.creature_target_protection(
+        runtime,
+        target,
+        session,
+        oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now),
+    )?;
+    use crate::content::ReferenceResistanceKind as Kind;
+    let kind = match element {
+        Some("earth") => Some(Kind::Earth),
+        Some("death") => Some(Kind::Death),
+        Some("energy") => Some(Kind::Energy),
+        Some("ice") => Some(Kind::Ice),
+        Some("fire") => Some(Kind::Fire),
+        Some("holy") => Some(Kind::Holy),
+        Some("physical") => Some(Kind::Physical),
+        Some("life_drain") => Some(Kind::LifeDrain),
+        Some("mana_drain") => Some(Kind::ManaDrain),
+        Some("drowning") => Some(Kind::Drown),
+        // Undefined has no source-specific or absorbpercentall protection.
+        Some("undefined") | None => None,
+        _ => return None,
+    };
+    let facts = SpellCombatFacts {
+        attack: AttackFacts {
+            issuer,
+            target,
+            session,
+            revision: state.revision(),
+            visible,
+            issuer_pz: issuer_tile.flags().protection_zone,
+            target_pz: target_tile.flags().protection_zone,
+            issuer_protected: false,
+            target_protected: protected,
+            defense: 0,
+            armor: state.equipped_armor(),
+            player_level: state.character_facts().level,
+            reference_level_party_lowest: party_lowest,
+        },
+        multiplier_ppm: 1_000_000,
+        equipment_protection: kind.and_then(|kind| state.equipped_element_protection(kind)),
+        immune: false,
+        condition_policy: Some(CurrentConditionPolicy {
+            immunities: Vec::new(),
+            base_speed: u16::try_from(state.owned_base_speed()).ok()?,
+        }),
+    };
+    Some((
+        facts,
+        crate::gameplay_transport::soul_war_callbacks::source_third_taint_policy(
+            states, runtime, issuer, target, now,
+        )?,
+    ))
+}
+
+/// The actual native event selects explicit spectator IDs, not AI visibility or sight.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "source event facts retain the existing runtime, target protection and physical map owners"
+)]
+pub(in crate::gameplay_transport) async fn prepare_mushroom_reader<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: &crate::creature_damage_spell::native_event::MushroomThinkSource,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+) -> Option<CurrentTarget<'native>> {
+    if !source.current(runtime) {
+        return None;
+    }
+    let issuer = source.actor();
+    let from = runtime.read_actor_position(issuer).ok()?.position();
+    let mut players = Vec::new();
+    let mut facts = Vec::new();
+    let mut source_damage = Vec::new();
+    let mut tiles = BTreeMap::new();
+    for (target, _, session) in runtime.positioned_melee_census().ok()? {
+        let Some(session) = session else {
+            continue;
+        };
+        let to = runtime.read_actor_position(target).ok()?.position();
+        if to.floor != from.floor
+            || i64::from(to.x).abs_diff(i64::from(from.x)) > 3
+            || i64::from(to.y).abs_diff(i64::from(from.y)) > 3
+            || states.is_dead(target)
+        {
+            continue;
+        }
+        if states.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return None;
+        }
+        map.read(runtime, to).await?;
+        let (current, policy) = current_player_combat_facts(
+            runtime,
+            states,
+            attack,
+            room,
+            issuer,
+            target,
+            session,
+            now,
+            Some("life_drain"),
+            true,
+            None,
+        )?;
+        tiles.insert((to.x, to.y, to.floor), Some(true));
+        players.push((target, session));
+        facts.push(current);
+        source_damage.push((target, policy));
+    }
+    if players.len() > 64 || !map.validate_transaction(runtime).await {
+        return None;
+    }
+    Some(CurrentTarget {
+        native,
+        source_draw: None,
+        retained_caster: None,
+        stamp,
+        players,
+        issuer,
+        element: Some("life_drain".into()),
+        facing: Facing::North,
+        facts,
+        tiles,
+        source_damage,
+    })
+}
+
+/// Reads the callback's actual AI target. The caller validates this same map
+/// transaction after source preparation and before the synchronous HP commit.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the source callback retains its actual boss, target, room and physical map owner"
+)]
+pub(in crate::gameplay_transport) async fn prepare_rotten_massive_reader<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    source: &crate::creature_damage_spell::native_event::rotten_massive::RottenMassiveSource,
+    target: ExactActorRef,
+    session: GameSessionId,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+) -> Option<CurrentTarget<'native>> {
+    use crate::player_lethal::PlayerLethalVitals;
+    let (health, _, _) = states.source_player_health_including_dead(runtime, target, session)?;
+    if !source.current(runtime)
+        || (health > 0
+            && (states.has_pending_spell_commit(target, session)
+                || runtime.assert_actor_spell_unreserved(target).is_err()))
+    {
+        return None;
+    }
+    let issuer = source.actor();
+    let from = runtime.read_actor_position(issuer).ok()?.position();
+    let to = runtime.read_actor_position(target).ok()?.position();
+    map.read(runtime, from).await?;
+    map.read(runtime, to).await?;
+    // Agony uses these actual protection/identity facts, but skips elemental
+    // equipment blocking in its source-qualified damage preparation. HP0 still
+    // needs the same canCombat facts for the source visual and continuation.
+    let fact_element = if source.kind().element() == "agony" {
+        "undefined"
+    } else {
+        "energy"
+    };
+    let (current, policy) = current_registered_player_combat_facts(
+        runtime,
+        states,
+        attack,
+        room,
+        issuer,
+        target,
+        session,
+        now,
+        Some(fact_element),
+        true,
+        None,
+    )?;
+    Some(CurrentTarget {
+        native,
+        source_draw: None,
+        retained_caster: None,
+        stamp,
+        players: vec![(target, session)],
+        issuer,
+        element: Some(source.kind().element().into()),
+        facing: Facing::North,
+        facts: vec![current],
+        tiles: BTreeMap::from([((to.x, to.y, to.floor), Some(true))]),
+        source_damage: vec![(target, policy)],
     })
 }
 
@@ -807,6 +1338,91 @@ fn area_sight_origin(
         y: center.y.checked_add(sy)?,
         floor: center.floor,
     })
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "same current physical read with an owner-sealed source stage"
+)]
+pub(super) async fn prepare_callback_reader<'native>(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &'native NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    plan: &oteryn_gameplay_encounters::bosses::source_callbacks::source_callback_cast::CallbackStagePlan,
+    parties: &ReferenceParties,
+    now: u64,
+    stamp: RuntimeWorkStamp,
+) -> Option<CurrentTarget<'native>> {
+    prepare_source_reader(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        SourceShape::Spell(plan.source()),
+        plan.proposal(),
+        parties,
+        now,
+        stamp,
+        false,
+        None,
+        Some(plan),
+    )
+    .await
+}
+
+/// Original pending deadlines from the actual current windup and chain owners.
+pub(in crate::gameplay_transport) fn next_source_due_time(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+) -> Result<Option<u64>, ()> {
+    let windup = states
+        .monster_spells
+        .next_windup_due_time_current(runtime)
+        .map_err(|_| ())?;
+    let chain = states
+        .monster_chains
+        .as_ref()
+        .map(|owner| owner.next_due_time_current(runtime))
+        .transpose()
+        .map_err(|_| ())?
+        .flatten();
+    Ok(windup.into_iter().chain(chain).map(|due| due.get()).min())
+}
+
+/// The arbiter limits original deadlines; fresh Map/combat facts and committed
+/// effects use the independent actual execution time.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) async fn drain_due_through(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    attack: &mut ChannelAttackStates,
+    room: &QualifiedNativeEntryRoom,
+    native: &NativeGameplayState,
+    map: &mut CurrentMonsterMap<'_, '_>,
+    parties: &ReferenceParties,
+    through: u64,
+    execution_now: u64,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
+) -> Result<(), ()> {
+    let _ = next_source_due_time(runtime, states)?;
+    timers::drain_through(
+        runtime,
+        states,
+        attack,
+        room,
+        native,
+        map,
+        parties,
+        through,
+        execution_now,
+        charms,
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -835,5 +1451,115 @@ mod tests {
             area_sight_origin(at(i32::MIN, i32::MIN), at(i32::MAX, i32::MAX)),
             Some(at(i32::MAX - 1, i32::MAX - 1)),
         );
+    }
+    #[test]
+    fn srx3_source_overlay_preserves_original_damage_body_at_restored_index()
+    -> Result<(), Box<dyn std::error::Error>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), String> {
+                let world = crate::content::native_gameplay_test_world_id()
+                    .map_err(|error| format!("{error:?}"))?;
+                let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../../content/spells.manifest.json");
+                let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                    world, &manifest,
+                );
+                let mut checked = 0;
+                for slug in [
+                    "goshnar_s_cruelty",
+                    "goshnar_s_megalomania_green",
+                    "goshnar_s_megalomania_purple",
+                    "goshnar_s_megalomania_blue",
+                    "omrafir",
+                ] {
+                    let key = format!("oteryn:creature.{slug}");
+                    let record = native
+                        .creature_profiles()
+                        .records
+                        .iter()
+                        .find(|record| record.profile.target.key == key)
+                        .ok_or("actual source creature")?;
+                    let restored_behavior = native
+                        .soul_war_source_attacks(&record.profile.target)
+                        .map(|source| source.behavior().clone())
+                        .or_else(|| {
+                            native
+                                .omrafir_source_attacks(&record.profile.target)
+                                .map(|source| source.behavior().clone())
+                        })
+                        .ok_or("actual sealed source overlay")?;
+                    let definitions = record
+                        .attack_definitions
+                        .as_ref()
+                        .ok_or("actual native closure")?;
+                    let crate::content::ProjectV2AuthoringProfileData::Behavior(original) =
+                        &record.behavior.as_ref().ok_or("actual behavior")?.data
+                    else {
+                        return Err("behavior family".into());
+                    };
+                    let profiles = native_source_profiles(&native, record, true)
+                        .ok_or("current source constructor profiles")?;
+                    let mut found = false;
+                    for (before_index, entry) in original.attacks.iter().enumerate() {
+                        let Some(source_index) = restored_behavior
+                            .attacks
+                            .iter()
+                            .position(|restored| restored == entry)
+                        else {
+                            return Err("source slot disappeared".into());
+                        };
+                        // Cruelty inserts at the END: its five original slots
+                        // remain in place. Green/Purple/Blue have real shifted
+                        // originals and exercise the displaced-index regression.
+                        if source_index == before_index && slug != "goshnar_s_cruelty" {
+                            continue;
+                        }
+                        if let Ok(before) = SpellSource::from_native(
+                            &record.profile.target,
+                            before_index,
+                            &definitions.records,
+                            &definitions.profiles,
+                            native.source_digest(),
+                        ) {
+                            let after = SpellSource::from_native(
+                                &record.profile.target,
+                                source_index,
+                                &definitions.records,
+                                &profiles,
+                                native.source_digest(),
+                            )
+                            .map_err(|error| {
+                                format!("displaced original {slug} {source_index}: {error:?}")
+                            })?;
+                            assert_eq!(
+                                after.ability, before.ability,
+                                "restored source index must retain original executable ability"
+                            );
+                            assert_eq!(
+                                after.entry_index, source_index,
+                                "retain actual source index for RNG, occurrence and replay"
+                            );
+                            assert_eq!(
+                                (after.minimum, after.maximum, after.element, after.area),
+                                (before.minimum, before.maximum, before.element, before.area)
+                            );
+                            found = true;
+                            break;
+                        }
+                    }
+                    if !found {
+                        return Err(format!(
+                            "no retained original damage spell after restored {slug} slot"
+                        ));
+                    }
+                    checked += 1;
+                }
+                assert_eq!(checked, 5);
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "source constructor test thread panicked")??;
+        Ok(())
     }
 }

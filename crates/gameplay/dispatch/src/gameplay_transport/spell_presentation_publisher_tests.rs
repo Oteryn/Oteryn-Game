@@ -712,3 +712,91 @@ fn w18_house_decoration_effects_follow_current_house_custody_and_hide_channel_cu
         "matching coordinates cannot leak House speech"
     );
 }
+
+#[test]
+fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced() {
+    let (runtime, actor, other, session) = runtime();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(a, _, _)| *a == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let chat = crate::gameplay_transport::chat_intent::ChatRuntime::default();
+    let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1);
+    chat.admit(session, "Quest Speaker", now);
+    chat.admit(other_session, "Observer", now);
+    chat.publish_quest_speech(&runtime, actor, other_session, "forged");
+    assert!(chat.drain(session).is_empty());
+    assert!(chat.drain(other_session).is_empty());
+    for speech in [
+        "Due to being extra greasy, the leavers can now be moved.".to_owned(),
+        "🦋".repeat(255),
+    ] {
+        chat.publish_quest_speech(&runtime, actor, session, &speech);
+        for listener in [session, other_session] {
+            let lines = chat.drain(listener);
+            assert_eq!(lines.len(), 1);
+            assert!(matches!(
+                &lines[0],
+                oteryn_protocol_oteryn::chat::ChatLine::Local {
+                    mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::MonsterSay,
+                    speaker, speaker_name, text, ..
+                } if speaker.identity == actor.placement_identity()
+                    && speaker.generation.get() == actor.actor_local_generation()
+                    && speaker_name == "Quest Speaker"
+                    && text == &speech
+            ));
+            let encoded = oteryn_protocol_oteryn::chat::encode_chat_line(&lines[0]).unwrap();
+            assert_eq!(
+                oteryn_protocol_oteryn::chat::decode_chat_line(&encoded).unwrap(),
+                lines[0]
+            );
+        }
+    }
+    chat.publish_quest_speech(&runtime, actor, session, &"🦋".repeat(256));
+    assert!(chat.drain(session).is_empty());
+    assert!(chat.drain(other_session).is_empty());
+}
+
+#[test]
+fn qm46_quest_speech_is_public_player_monster_say_and_session_fenced_lane_1() {
+    let (runtime, actor, other, session) = runtime();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(a, _, _)| *a == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let chat = crate::gameplay_transport::chat_intent::ChatRuntime::default();
+    let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1);
+    chat.admit(session, "Quest Speaker", now);
+    chat.admit(other_session, "Observer", now);
+    chat.publish_quest_speech(&runtime, actor, other_session, "forged");
+    assert!(chat.drain(session).is_empty());
+    assert!(chat.drain(other_session).is_empty());
+    chat.publish_quest_speech(
+        &runtime,
+        actor,
+        session,
+        "Due to being extra greasy, the leavers can now be moved.",
+    );
+    for listener in [session, other_session] {
+        let lines = chat.drain(listener);
+        assert_eq!(lines.len(), 1);
+        assert!(matches!(
+            &lines[0],
+            oteryn_protocol_oteryn::chat::ChatLine::Local {
+                mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::MonsterSay,
+                speaker, speaker_name, text, ..
+            } if speaker.identity == actor.placement_identity()
+                && speaker.generation.get() == actor.actor_local_generation()
+                && speaker_name == "Quest Speaker"
+                && text == "Due to being extra greasy, the leavers can now be moved."
+        ));
+    }
+}

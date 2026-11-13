@@ -1,13 +1,14 @@
 """No-network source binding, readiness and committed-batch schema tests."""
 import copy
 import json
-import unittest
 import subprocess
 import sys
 import tempfile
-from unittest.mock import patch
+import unittest
 from collections import Counter
 from pathlib import Path
+from unittest.mock import patch
+
 import jsonschema
 import quest_tree_authoring as tool
 
@@ -29,9 +30,11 @@ class QuestTreeTests(unittest.TestCase):
             records = build(*args, **kwargs)
             records[0]['definition']['requirements']['min_level'] += 1
             return records
-        with patch.object(tool, 'build_records', side_effect=changed):
-            with self.assertRaisesRegex(ValueError, 'changes frozen SOURCE cores'):
-                amendment.verify_source_view(root)
+        with (
+            patch.object(tool, 'build_records', side_effect=changed),
+            self.assertRaisesRegex(ValueError, 'changes frozen SOURCE cores'),
+        ):
+            amendment.verify_source_view(root)
 
     def test_itemhold_receipt_refresh_preserves_all_other_approved_fields(self):
         import amend_itemhold_source_receipt as amendment
@@ -53,9 +56,12 @@ class QuestTreeTests(unittest.TestCase):
         source = {d['identity']['key']: d for d in tool.claim_catalogue(root)}
         expected = {
             'oteryn:reward-claim.kv.draconia1': ['item'],
+            'oteryn:reward-claim.kv.fireaxe1': ['item'],
+            'oteryn:reward-claim.kv.goblintemple2': ['item'],
             'oteryn:reward-claim.kv.ornamentedshield': ['item', 'source'],
             'oteryn:reward-claim.kv.present_box': ['item'],
             'oteryn:reward-claim.kv.triangletower': ['item'],
+            'oteryn:reward-claim.quest.u7_9.dreamers_challenge.chests_wine': ['item'],
         }
         self.assertEqual({k for k, d in source.items() if '_source_hold_categories' in d}, set(expected))
         for key, categories in expected.items():
@@ -65,6 +71,15 @@ class QuestTreeTests(unittest.TestCase):
                 self.assertEqual(source[key]['data_holds'], [{
                     'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
                     'item': 'oteryn:item.tibia.i3083', 'placement_index': 0,
+                    'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
+                }])
+            elif key.endswith('.draconia1'):
+                # Crystal 201189f8 data-global/startup/tables/chest.lua:748-756
+                # grants an ice rapier, not an axe. Its historical SOURCE hold
+                # remains distinct from live admission (items.xml:8546-8559).
+                self.assertEqual(source[key]['data_holds'], [{
+                    'category': 'item', 'code': 'ITEM_SEMANTICS_MISSING',
+                    'item': 'oteryn:item.tibia.i3284', 'placement_index': 0,
                     'reason': 'waiting', 'reward_field': 'items', 'reward_index': 0,
                 }])
             else:

@@ -1,0 +1,284 @@
+{
+  "schema": 1,
+  "tracks": [
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/programme",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 6,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/signs",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/odours",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 4,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/captures",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/urine",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 1,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/trunks",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 3,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    },
+    {
+      "key": "oteryn:quest-progress/questpc7/goblin/stalkers",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "initial": -1,
+      "min": -1,
+      "max": 5,
+      "writable": true,
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34"
+      ]
+    }
+  ],
+  "callbacks": [
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-capture-1",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guardcatcher"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17669",
+      "creature_target": "oteryn:creature.adventurer",
+      "capture_creature": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17669",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17669",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The adventurer returns to guarding Rafzan."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#Guardian_Angel_-_Kind_Of: three successful Adventurers; Guardcatcher disappears on the third success"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-capture-2",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guardcatcher"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17669",
+      "creature_target": "oteryn:creature.adventurer",
+      "capture_creature": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 2
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17669",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17669",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "The adventurer returns to guarding Rafzan."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#Guardian_Angel_-_Kind_Of: three successful Adventurers; Guardcatcher disappears on the third success"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-capture-3",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "guardcatcher"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17669",
+      "creature_target": "oteryn:creature.adventurer",
+      "capture_creature": true,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0,
+          "preserve": true
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/captures",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 3
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17669",
+          "count": 1
+        }
+      ],
+      "give": null,
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You have convinced three adventurers. The guardcatcher disappears."
+      ],
+      "sources": [
+        "canonical:content/quests/definitions/quests-00100-00199.json:1#/records/51/definition:sha256:9a5f4881519fd2fa25e5efa3bab1adab7fccc968f1273a64025e3dfa72689155",
+        "crystal:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/npc/rafzan.lua:73-90:sha256:9b5f6c4439671329c654c4333f73559235d63d7d61059e152de65ac28c066f34",
+        "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#Guardian_Angel_-_Kind_Of: three successful Adventurers; Guardcatcher disappears on the third success"
+      ]
+    },
+    {
+      "key": "oteryn:quest-reward/questpc7-goblin-slug-sample",
+      "quest": "oteryn:quest.goblin_merchant_quest",
+      "npc": "oteryn:npc.rafzan",
+      "keywords": [
+        "perfume gatherer"
+      ],
+      "topic": 0,
+      "next_topic": 0,
+      "carried_item": "oteryn:item.tibia.i17670",
+      "creature_target": "oteryn:creature.slug",
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/programme",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 0
+        },
+        {
+          "track": "oteryn:quest-progress/questpc7/goblin/odours",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        }
+      ],
+      "take": [
+        {
+          "item": "oteryn:item.tibia.i17670",
+          "count": 1
+        }
+      ],
+      "give": {
+        "item": "oteryn:item.tibia.i17672",
+        "count": 1,
+        "contents": []
+      },
+      "outfit": null,
+      "achievement": null,
+      "reply": [
+        "You collect the smell of a freshly slain slug."
+      ],
+      "sources": [
+        "https://www.tibiawiki.com.br/wiki/Goblin_Merchant_Quest#The_Perfume_Gatherer",
+        "https://www.tibiawiki.com.br/wiki/Perfume_Gatherer"
+      ],
+      "corpse_target": {
+        "appearance": 12526,
+        "maximum_age_ms": 10000
+      }
+    }
+  ]
+}

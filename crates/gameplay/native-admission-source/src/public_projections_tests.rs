@@ -372,6 +372,13 @@ fn highscores_outside_the_contract_are_refused() {
     zero.level = 0;
     assert!(refused(vec![zero]));
     assert!(refused(vec![row(1, 1, "Al\"dric")]));
+    for category in [14, 17] {
+        let mut drome = highscores(vec![row(1, 1, "Aa")]);
+        drome.category = category;
+        assert!(encode_highscores(AUTHORITY, &drome).is_ok());
+        drome.filter = 6;
+        assert!(encode_highscores(AUTHORITY, &drome).is_err());
+    }
     for (category, filter) in [(0, 0), (13, 0), (15, 0), (18, 0), (255, 0), (1, 6)] {
         let mut snapshot = highscores(vec![]);
         snapshot.category = category;

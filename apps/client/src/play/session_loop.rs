@@ -14,6 +14,42 @@ use tokio::sync::mpsc::UnboundedReceiver;
 const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 pub use super::stepper::Stepper;
+
+fn publish_scope_transition<T: Stepper>(
+    error: &oteryn_session::SessionError,
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+    modal: &mut super::feature_0450_server_modal::protocol::Driver,
+) -> bool {
+    if matches!(
+        error,
+        oteryn_session::SessionError::ScopeChanged
+            | oteryn_session::SessionError::ActivityScopeChanged
+    ) {
+        // Publish the destination and discard unsent source actions through the
+        // same scope barrier, whether a command or an automatic query saw it.
+        publish(session, outbox, held);
+        modal.reset_scope(session.feature_selected(450));
+        true
+    } else {
+        false
+    }
+}
+
+fn initialize<T: Stepper>(
+    session: &T,
+    outbox: &Outbox,
+) -> Result<(), oteryn_session::SessionError> {
+    super::session_initialize::initialize(session, outbox)?;
+    outbox.cast_control_initialize(session.server_mechanic_selected(290));
+    outbox.cast_consent_initialize(session.server_mechanic_selected(292));
+    outbox.cast_chat_initialize(
+        session.server_mechanic_selected(290) && session.server_mechanic_selected(291),
+    );
+    Ok(())
+}
+
 /// Initializes the live map, sends commands and services session liveness.
 pub async fn run_session<T: Stepper>(
     session: T,
@@ -31,12 +67,19 @@ pub async fn run_session<T: Stepper>(
 
 pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     mut session: T,
-    mut commands: UnboundedReceiver<PlayCommand>,
+    commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
     mut modal: super::feature_0450_server_modal::protocol::Driver,
 ) {
     outbox.performance_reset();
-    if !session_initialize::initialize(&session, &outbox) {
+    let personal_marks_selected = session.feature_selected(451);
+    if personal_marks_selected {
+        outbox.personal_map_marks_initialize();
+    }
+    let commands = std::sync::Arc::new(std::sync::Mutex::new(commands));
+    outbox.scope_receiver(&commands);
+    if let Err(error) = initialize(&session, &outbox) {
+        outbox.end(public_class(&error));
         return;
     }
     if let Some(command) = outbox.returner_initial_request() {
@@ -46,6 +89,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         }
     }
     let mut held = Vec::new();
+    let mut personal_marks_refresh = std::time::Instant::now();
     loop {
         match modal.poll(&mut session).await {
             Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
@@ -55,12 +99,49 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             Ok(None) => {}
             Err(error) => {
+                if publish_scope_transition(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    continue;
+                }
                 outbox.end(public_class(&error));
                 return;
             }
         }
+        if personal_marks_selected && std::time::Instant::now() >= personal_marks_refresh {
+            let command = oteryn_client_ui::personal_map_marks::request();
+            match session.feature(&command).await {
+                Ok(result) => {
+                    if let Err(error) = outbox.personal_map_marks_result(&result) {
+                        outbox.end(public_class(&error));
+                        return;
+                    }
+                    publish(&mut session, &outbox, &mut held);
+                }
+                Err(error) => {
+                    if publish_scope_transition(
+                        &error,
+                        &mut session,
+                        &outbox,
+                        &mut held,
+                        &mut modal,
+                    ) {
+                        personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            personal_marks_refresh = std::time::Instant::now() + Duration::from_secs(5);
+        }
+
+        if outbox.scope_needs_initialize()
+            && let Err(error) = initialize(&session, &outbox)
+        {
+            outbox.end(public_class(&error));
+            return;
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
-            outbox.death_command(&mut commands), session, outbox, held, publish;
+            outbox.scope_command(&commands), session, outbox, held, publish;
             Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {
                 Ok(result) => {
                     outbox.hud_stamina_result(&result);
@@ -70,13 +151,16 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Err(error) => error,
             },
             Ok(PlayCommand::SupportDelivery(command, path)) => {
-                if session.feature_selected(command.capability) {
-                    match session.feature(&command).await {
-                        Ok(result) => crate::support_delivery::acknowledge(&path, &command, &result),
-                        Err(error) => { outbox.end(public_class(&error)); return; }
-                    }
+                if !session.feature_selected(command.capability) {
+                    continue;
                 }
-                continue;
+                match session.feature(&command).await {
+                    Ok(result) => {
+                        crate::support_delivery::acknowledge(&path, &command, &result);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
             },
             Ok(PlayCommand::Feature(command)) => {
                 let started = std::time::Instant::now();
@@ -420,16 +504,10 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Err(error) => error,
             },
         };
-        if matches!(ended, oteryn_session::SessionError::ActivityScopeChanged) {
-            // A shared activity moves every participant, including one awaiting a source
-            // command. Never replay queued source actions against the fresh destination.
-            publish(&mut session, &outbox, &mut held);
+        if publish_scope_transition(&ended, &mut session, &outbox, &mut held, &mut modal) {
             continue;
         }
         outbox.end(public_class(&ended));
         return;
     }
 }
-
-#[path = "session_initialize.rs"]
-mod session_initialize;

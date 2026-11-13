@@ -51,7 +51,9 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 type StoredResult<T> = std::result::Result<T, DurabilityError>;
 
-pub use oteryn_gameplay_progression::proficiency_modification::{ProficiencyModificationUsage, proficiency_shaping_key};
+pub use oteryn_gameplay_progression::proficiency_modification::{
+    ProficiencyModificationUsage, proficiency_shaping_key,
+};
 
 /// The dust entry's identities, fixed by the occurrence so every retry reuses them: UUIDv7
 /// values with the occurrence's timestamp and a digest of the occurrence and a role label.
@@ -504,7 +506,8 @@ pub(in crate::durability) async fn load_track_modifications(
     .bind(character.as_bytes().as_slice())
     .fetch_all(&mut **tx)
     .await?;
-    let mut tracks = std::collections::BTreeMap::<String, [Option<ProficiencyModifiedPerk>; 2]>::new();
+    let mut tracks =
+        std::collections::BTreeMap::<String, [Option<ProficiencyModifiedPerk>; 2]>::new();
     for row in rows {
         let slot = usize::from(small(row.try_get("slot")?)?);
         let target = tracks

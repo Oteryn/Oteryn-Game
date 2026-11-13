@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::map::view::MapFacts;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_gameplay_quests::quest::world_callbacks::Position;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 
@@ -689,6 +690,55 @@ async fn third(
             .map_err(debug)?
             .is_empty()
     );
+    let unrelated = {
+        let mut runtime = owner.runtime.lock().await;
+        owner
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .ok_or("native population policies")?
+            .install_companion_policies(&mut runtime)
+            .map_err(debug)?;
+        let mut actors = Vec::new();
+        let health = runtime
+            .companion_policy("oteryn:creature.rat")
+            .map_err(debug)?
+            .maximum_health;
+        for offset in 0..4_097 {
+            let actor = runtime
+                .admit_encounter_actor(
+                    "oteryn:creature.rat",
+                    health,
+                    crate::foundation::MovementLocalPosition {
+                        x: 1_000 + offset,
+                        y: 1_000,
+                        floor: 5,
+                    },
+                )
+                .map_err(debug)?;
+            runtime
+                .install_creature_policy(actor, "oteryn:creature.rat")
+                .map_err(debug)?;
+            actors.push(actor);
+        }
+        assert_eq!(
+            runtime.current_live_creature_census().map_err(debug)?,
+            actors
+        );
+        assert!(runtime.current_live_creature_candidates(4096).is_err());
+        actors
+    };
+    let puzzle_creatures = |runtime: &crate::foundation::ChannelRuntimeV1|
+     -> TestResult<Vec<crate::foundation::ExactActorRef>> {
+        let mut actors = runtime.current_live_creature_census().map_err(debug)?;
+        let total = actors.len();
+        actors.retain(|actor| !unrelated.contains(actor));
+        assert_eq!(
+            total - actors.len(),
+            unrelated.len(),
+            "every exact unrelated live actor survives the source puzzle"
+        );
+        Ok(actors)
+    };
     assert_eq!(
         use_source(owner, admitted, lever, 0).await?,
         UseDisposition::Committed
@@ -712,13 +762,7 @@ async fn third(
     set_clock(owner, spawn_at - 100_000)?;
     owner.drain_quest_encounter_deadlines().await;
     assert!(
-        owner
-            .runtime
-            .lock()
-            .await
-            .current_live_creature_candidates(4096)
-            .map_err(debug)?
-            .is_empty(),
+        puzzle_creatures(&*owner.runtime.lock().await)?.is_empty(),
         "no early native ghoul"
     );
     assert!(ladder(owner, stairs)?.is_none());
@@ -726,9 +770,7 @@ async fn third(
     owner.drain_quest_encounter_deadlines().await;
     let ghoul = {
         let runtime = owner.runtime.lock().await;
-        let monsters = runtime
-            .current_live_creature_candidates(4096)
-            .map_err(debug)?;
+        let monsters = puzzle_creatures(&runtime)?;
         assert_eq!(monsters.len(), 1);
         let ghoul = monsters[0];
         let native = runtime.companion_snapshot(ghoul).map_err(debug)?;
@@ -825,6 +867,7 @@ async fn third(
         assert!(!runtime.contains_live_creature(ghoul));
         assert!(!runtime.contains_live_creature(inside));
         assert!(runtime.contains_live_creature(outside));
+        assert_eq!(puzzle_creatures(&runtime)?, vec![outside]);
         assert!(
             runtime.read_actor_position(guest).is_ok(),
             "source cleanup leaves players inside its rectangle"
@@ -844,6 +887,10 @@ async fn third(
         "cleanup/reset adds no reward, kill or quest write"
     );
     owner.drain_quest_encounter_deadlines().await;
+    assert_eq!(
+        puzzle_creatures(&*owner.runtime.lock().await)?,
+        vec![outside]
+    );
     assert_eq!(
         sql_state(h).await?,
         after_climb,

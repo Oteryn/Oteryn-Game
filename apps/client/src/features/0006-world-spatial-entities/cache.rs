@@ -11,6 +11,9 @@ struct Assets {
     sheets: SpriteSheets,
 }
 
+type ItemCacheKey = (u16, u32, i32, i32, i16);
+type ItemDrawCache = BTreeMap<ItemCacheKey, Option<Vec<Draw>>>;
+
 #[derive(Clone, Default)]
 pub(super) struct PresentationCache {
     assets: Option<Arc<Mutex<Assets>>>,
@@ -18,6 +21,7 @@ pub(super) struct PresentationCache {
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
     outfits: BTreeMap<(u32, u32), Vec<Draw>>,
+    items: ItemDrawCache,
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
@@ -41,6 +45,7 @@ impl PresentationCache {
         self.glyphs.clear();
         self.outfits.clear();
         self.visuals.clear();
+        self.items.clear();
         self.image = None;
         self.packed_cells = 0;
     }
@@ -105,7 +110,7 @@ impl PresentationCache {
             return draws.clone();
         }
         // Bound even negative cache entries when appearances change over a long session.
-        if self.outfits.len() >= 1024 {
+        if self.outfits.len() + self.items.len() >= 1024 {
             return marker();
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
@@ -135,6 +140,65 @@ impl PresentationCache {
             })
             .unwrap_or_else(marker);
         self.outfits.insert(key, draws.clone());
+        draws
+    }
+
+    pub(super) fn item(
+        &mut self,
+        appearance: std::num::NonZeroU16,
+        position: oteryn_session::ActorPosition,
+        count: u32,
+    ) -> Option<Vec<Draw>> {
+        let key = (
+            appearance.get(),
+            count,
+            position.x,
+            position.y,
+            position.floor,
+        );
+        if let Some(draws) = self.items.get(&key) {
+            return draws.clone();
+        }
+        // Same presentation-cache budget as outfits; this never hides a target.
+        if self.outfits.len() + self.items.len() >= 1024 {
+            return None;
+        }
+        let resolved = self.assets.as_ref().and_then(|assets| {
+            let mut assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
+            let Assets { index, sheets } = &mut *assets;
+            let mut placement = oteryn_client_assets::Placement::at(
+                position.x,
+                position.y,
+                i32::from(position.floor),
+            );
+            placement.count = count;
+            let entry = index
+                .resolve(sheets, u32::from(appearance.get()), placement)
+                .ok()?;
+            if entry.cells.is_empty() {
+                return None;
+            }
+            entry
+                .cells
+                .iter()
+                .map(|cell| {
+                    sheets
+                        .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)
+                        .ok()
+                        .map(|rgba| ([cell.offset_x, cell.offset_y], rgba))
+                })
+                .collect::<Option<Vec<_>>>()
+        });
+        let draws = resolved.and_then(|cells| {
+            if self.count() + cells.len() > oteryn_renderer::world::MAX_CELLS {
+                return None;
+            }
+            cells
+                .into_iter()
+                .map(|(offset, rgba)| self.append(&rgba).map(|cell| Draw { cell, offset }))
+                .collect()
+        });
+        self.items.insert(key, draws.clone());
         draws
     }
 

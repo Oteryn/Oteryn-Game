@@ -132,7 +132,26 @@
       },
       "slot_count": 1
     },
+    "44648": {
+      "families": {
+        "INCREASE_SPEED": "10"
+      },
+      "slot_count": 1
+    },
+    "44649": {
+      "families": {
+        "INCREASE_SPEED": "10"
+      },
+      "slot_count": 1
+    },
     "50240": {
+      "families": {
+        "INCREASE_SPEED": "3",
+        "PARALYSIS_REMOVAL": "3"
+      },
+      "slot_count": 1
+    },
+    "50291": {
       "families": {
         "INCREASE_SPEED": "3",
         "PARALYSIS_REMOVAL": "3"

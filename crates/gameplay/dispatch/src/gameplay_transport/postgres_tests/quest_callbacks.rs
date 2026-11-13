@@ -156,83 +156,100 @@ fn source_world_position_rows(
     rows: &[(u16, u16)],
     native: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, y, uid)| {
+                let appearance = rows
+                    .iter()
+                    .find(|(row, _)| row == y)
+                    .map_or(appearance, |(_, appearance)| *appearance);
+                (*x, *y, chest.2, *uid, appearance)
+            })
+            .collect::<Vec<_>>(),
+        height,
+        west,
+        prefix,
+        native,
+    )
+}
+
+/// Preserve each source chest's position, UID and individual appearance.
+pub(super) fn source_world_objects(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial(
+        chest,
+        &choices
+            .iter()
+            .map(|(x, y, uid, appearance)| (*x, *y, chest.2, *uid, *appearance))
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Source endpoints may occupy different floors of the same immutable map.
+pub(super) fn source_world_spatial(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, i8, u16, u16)],
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_spatial_layout(chest, choices, 1, 2, &[], None)
+}
+
+fn source_world_spatial_layout(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16, i8, u16, u16)],
+    height: u16,
+    west: u16,
+    prefix: &[u16],
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
     data.manifest.palette.truncate(1);
-    data.manifest.palette.push(bundle::PaletteEntry {
-        key: format!("oteryn:terrain.tibia.i{appearance}"),
-        family: bundle::Family::Terrain,
-        id: 1,
-        terrain: Some(bundle::Terrain {
-            kind: bundle::TerrainKind::Common,
-            walkable: None,
-            ground_speed: None,
-            blocks_projectile: None,
-        }),
-    });
-    if let Some(native) = native {
+    let appearances: std::collections::BTreeSet<_> = choices
+        .iter()
+        .map(|c| c.4)
+        .chain(prefix.iter().copied())
+        .collect();
+    let mut palettes = std::collections::BTreeMap::new();
+    for appearance in appearances {
+        let id = u32::try_from(data.manifest.palette.len())?;
+        palettes.insert(appearance, id);
+        data.manifest.palette.push(bundle::PaletteEntry {
+            key: format!("oteryn:terrain.tibia.i{appearance}"),
+            family: bundle::Family::Terrain,
+            id,
+            terrain: Some(bundle::Terrain {
+                kind: bundle::TerrainKind::Common,
+                walkable: None,
+                ground_speed: None,
+                blocks_projectile: None,
+            }),
+        });
+    }
+    let door_palette = if let Some(native) = native {
         let reference = native
             .item_index()
             .and_then(|index| {
                 index.definition_ref("Item", "oteryn:item.tibia.i5113", "definition-r1")
             })
             .ok_or("native reward door definition")?;
+        let palette = u32::try_from(data.manifest.palette.len())?;
         data.manifest.palette.push(bundle::PaletteEntry {
             key: "oteryn:item.tibia.i5113".into(),
             family: bundle::Family::Item,
             id: reference.get() - 1,
             terrain: None,
         });
-    }
-    for appearance in prefix {
-        data.manifest.palette.push(bundle::PaletteEntry {
-            key: format!("oteryn:terrain.tibia.i{appearance}"),
-            family: bundle::Family::Terrain,
-            id: u32::try_from(data.manifest.palette.len()).map_err(debug)?,
-            terrain: Some(bundle::Terrain {
-                blocks_projectile: None,
-                kind: bundle::TerrainKind::Common,
-                walkable: None,
-                ground_speed: None,
-            }),
-        });
-    }
-    let mut row_palettes = Vec::new();
-    for (row, row_appearance) in rows {
-        let key = format!("oteryn:terrain.tibia.i{row_appearance}");
-        let palette = if let Some(index) = data
-            .manifest
-            .palette
-            .iter()
-            .position(|entry| entry.key == key)
-        {
-            u32::try_from(index).map_err(debug)?
-        } else {
-            let id = u32::try_from(data.manifest.palette.len()).map_err(debug)?;
-            data.manifest.palette.push(bundle::PaletteEntry {
-                key,
-                family: bundle::Family::Terrain,
-                id,
-                terrain: Some(bundle::Terrain {
-                    blocks_projectile: None,
-                    kind: bundle::TerrainKind::Common,
-                    walkable: None,
-                    ground_speed: None,
-                }),
-            });
-            id
-        };
-        row_palettes.push((*row, palette));
-    }
-    for (_, y, _) in choices {
-        if !row_palettes.iter().any(|(row, _)| row == y) {
-            row_palettes.push((*y, 1));
-        }
-    }
-    let row_palettes = row_palettes.as_slice();
+        Some(palette)
+    } else {
+        None
+    };
     let ground = || sector::Item {
         palette: 0,
         depth: 0,
@@ -240,48 +257,53 @@ fn source_world_position_rows(
     };
     let min_x = choices
         .iter()
-        .map(|(x, _, _)| x.saturating_sub(2))
+        .map(|(x, _, _, _, _)| x.saturating_sub(2))
         .min()
         .ok_or("source choices")?
         .min(chest.0 - west);
     let max_x = choices
         .iter()
-        .map(|(x, _, _)| *x)
+        .map(|(x, _, _, _, _)| *x)
         .max()
         .ok_or("source choices")?
         .max(chest.0);
     let min_y = choices
         .iter()
-        .map(|(_, y, _)| *y)
+        .map(|(_, y, _, _, _)| *y)
         .min()
         .ok_or("source choices")?
         .min(chest.1);
     let max_y = choices
         .iter()
-        .map(|(_, y, _)| *y)
+        .map(|(_, y, _, _, _)| *y)
         .max()
         .ok_or("source choices")?
         .max(chest.1 + height - 1);
+    let floors: std::collections::BTreeSet<_> = choices
+        .iter()
+        .map(|c| c.2)
+        .chain(std::iter::once(chest.2))
+        .collect();
     data.manifest.world = bundle::Extent {
         min_x,
         min_y,
         max_x: max_x + 1,
-        max_y: (max_y + 1).max(chest.1 + height),
-        floors: vec![chest.2],
+        max_y: max_y + 1,
+        floors: floors.iter().copied().collect(),
     };
-    let tiles = (min_y..(max_y + 1).max(chest.1 + height))
-        .flat_map(|y| {
-            (min_x..=max_x).map(move |x| sector::Tile {
-                x,
-                y,
-                flags: 0,
-                house: 0,
-                zones: Vec::new(),
-                items: if native.is_some() && x == chest.0 - 1 && y == chest.1 {
+    let mut grouped = std::collections::BTreeMap::<(i8, u16, u16), Vec<sector::Tile>>::new();
+    for floor in floors {
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let items = if let Some(palette) = door_palette
+                    && floor == chest.2
+                    && x == chest.0 - 1
+                    && y == chest.1
+                {
                     vec![
                         ground(),
                         sector::Item {
-                            palette: 2,
+                            palette,
                             depth: 0,
                             attrs: sector::Attrs {
                                 action: Some(10102),
@@ -289,19 +311,18 @@ fn source_world_position_rows(
                             },
                         },
                     ]
-                } else if let Some((_, _, unique)) = choices
+                } else if let Some((_, _, _, unique, appearance)) = choices
                     .iter()
-                    .find(|(placed, py, _)| (*placed, *py) == (x, y))
-                    && let Some((_, row_palette)) = row_palettes.iter().find(|(row, _)| *row == y)
+                    .find(|(px, py, pf, _, _)| (*px, *py, *pf) == (x, y, floor))
                 {
                     std::iter::once(ground())
-                        .chain(prefix.iter().enumerate().map(|(index, _)| sector::Item {
-                            palette: u32::try_from(index + 2).expect("bounded fixture prefix"),
+                        .chain(prefix.iter().map(|appearance| sector::Item {
+                            palette: palettes[appearance],
                             depth: 0,
                             attrs: sector::Attrs::default(),
                         }))
                         .chain(std::iter::once(sector::Item {
-                            palette: *row_palette,
+                            palette: palettes[appearance],
                             depth: 0,
                             attrs: sector::Attrs {
                                 unique: (*unique != 0).then_some(*unique),
@@ -311,24 +332,25 @@ fn source_world_position_rows(
                         .collect()
                 } else {
                     vec![ground()]
-                },
-            })
-        })
-        .collect::<Vec<_>>();
-    // The Demon Helmet source chest is one tile from a sector boundary; its
-    // approach tiles belong to the neighbouring sector. Preserve every tile's
-    // actual sector rather than assigning the whole fixture to the chest sector.
-    let mut grouped = std::collections::BTreeMap::<(u16, u16), Vec<sector::Tile>>::new();
-    for tile in tiles {
-        grouped
-            .entry((tile.x / 32, tile.y / 32))
-            .or_default()
-            .push(tile);
+                };
+                grouped
+                    .entry((floor, x / 32, y / 32))
+                    .or_default()
+                    .push(sector::Tile {
+                        x,
+                        y,
+                        flags: 0,
+                        house: 0,
+                        zones: Vec::new(),
+                        items,
+                    });
+            }
+        }
     }
     let mut sectors = grouped
         .into_iter()
-        .map(|((sx, sy), tiles)| bundle::Sector {
-            floor: chest.2,
+        .map(|((floor, sx, sy), tiles)| bundle::Sector {
+            floor,
             sx,
             sy,
             tiles,
@@ -388,6 +410,12 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         .ok_or("quests")?
         .iter()
         .flat_map(|quest| quest["chests"].as_array().into_iter().flatten())
+        .chain(
+            manifest["native_authored_claims"]
+                .as_array()
+                .into_iter()
+                .flatten(),
+        )
         .filter(|chest| chest["status"] != "not_playable")
         .map(|chest| chest["claim"].as_str().ok_or("claim"))
         .collect::<Result<_, _>>()?;

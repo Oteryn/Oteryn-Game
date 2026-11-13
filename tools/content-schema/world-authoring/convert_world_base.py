@@ -1184,14 +1184,32 @@ def build(
     qready2_chest_bindings.overlay_outputs(
         out, capture_bytes=blobs.get(qready2_chest_bindings.CAPTURE)
     )
+    import qready1_clock_landmarks
+
+    qready1_clock_landmarks.overlay_outputs(out)
     import quest_chest_bindings
 
     quest_chest_bindings.overlay_outputs(out)
     if quest_access_bindings.CAPTURE not in blobs:
+        import engclaim_placements
+
+        engclaim_placements.overlay_outputs(out)
         import quest_startup_bindings
 
         access = json.loads((ROOT / quest_access_bindings.CAPTURE).read_bytes())
         quest_startup_bindings.overlay_outputs(out, supplied_by=access["bindings"])
+    import npcfix2_shared_sources
+
+    npcfix2_shared_sources.overlay_outputs(out)
+    if quest_access_bindings.CAPTURE not in blobs:
+        import last_creep_arena
+
+        last_creep_arena.overlay_outputs(out, ROOT)
+    import m01c_key_doors
+
+    m01c_key_doors.overlay_outputs(
+        out, capture_bytes=blobs.get(m01c_key_doors.CAPTURE.as_posix())
+    )
     return out
 
 
@@ -1240,17 +1258,27 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
     replace = summary.get("replace", {})
     rework = summary.get("edron", {})
     drafted = summary.get("draft", {})
+    authored = summary.get("source", {}).get("last_creep_native", {})
+    from engclaim_placements import donor_delta as engclaim_delta
+    from npcfix2_shared_sources import donor_delta as shared_source_delta
+    from qready1_clock_landmarks import donor_delta
+
+    authored_clock_items = donor_delta(summary)
 
     def count(row: dict, key: str) -> int:
         return row.get(key, 0)
 
     return {
         "items": totals["items"]
+        - authored_clock_items
+        - engclaim_delta(summary)
+        - shared_source_delta(summary)
         - count(fill, "items_added")
         - count(replace, "items_added")
         - count(rework, "items_added")
         - count(rework, "replaced_items_added")
         - count(drafted, "items_added")
+        - count(authored, "items_added")
         - count(drafted, "replaced_items_added")
         + count(replace, "items_removed")
         + count(rework, "replaced_items_removed")
@@ -1258,7 +1286,8 @@ def world_otbm_totals(totals: dict, summary: dict) -> dict:
         "tiles": totals["tiles"]
         - count(fill, "tiles_added")
         - count(rework, "tiles_added")
-        - count(drafted, "tiles_added"),
+        - count(drafted, "tiles_added")
+        - count(authored, "tiles_added"),
     }
 
 

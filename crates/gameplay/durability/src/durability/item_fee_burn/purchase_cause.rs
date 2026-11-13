@@ -35,7 +35,8 @@ impl FeeBurnCause {
             }
             Self::HirelingService { occurrence, .. } => occurrence,
             Self::Forge { occurrence, .. } => occurrence,
-            Self::QuestRewardPayment { occurrence, .. } | Self::QuestAccessPurchase { occurrence }
+            Self::QuestRewardPayment { occurrence, .. }
+            | Self::QuestAccessPurchase { occurrence }
             | Self::PreyListReroll { occurrence, .. }
             | Self::PreyPickAgain { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
@@ -105,15 +106,25 @@ impl FeeBurnCause {
                 Ok(())
             }
             Self::QuestAccessPurchase { .. } => Ok(()),
-            Self::QuestRewardPayment { callback, gold, .. } if callback.starts_with("oteryn:quest-reward/") && callback.len() <= 128 && (1..=1_000_000_000_000).contains(gold) => Ok(()),
-            Self::HirelingService { service, .. } if service.starts_with("oteryn:service.hireling.") => Ok(()),
-            Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => Ok(()),
+            Self::QuestRewardPayment { callback, gold, .. }
+                if callback.starts_with("oteryn:quest-reward/")
+                    && callback.len() <= 128
+                    && (1..=1_000_000_000_000).contains(gold) =>
+            {
+                Ok(())
+            }
+            Self::HirelingService { service, .. }
+                if service.starts_with("oteryn:service.hireling.") =>
+            {
+                Ok(())
+            }
+            Self::PreyListReroll { slot: 1..=3, .. } | Self::PreyPickAgain { slot: 1..=3, .. } => {
+                Ok(())
+            }
             Self::GemReveal { .. }
             | Self::GemSwitchDomain { .. }
             | Self::GemGradeUp { .. }
-            | Self::GemReshape { .. } => {
-                Ok(())
-            }
+            | Self::GemReshape { .. } => Ok(()),
             Self::MarketFee { offer, .. } => {
                 check_uuid_v7(offer).map_err(|_| FeeBurnError::InvalidInput)
             }
@@ -150,7 +161,11 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
-            Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 { service_key: self.key().into(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
+            Self::ArenaEntry { occurrence } => FeeBurnCauseV1::ArenaEntry(OneItemNpcPurchaseV1 {
+                service_key: self.key().into(),
+                occurrence: occurrence.to_vec(),
+                atelier_proof: Vec::new(),
+            }),
             Self::BosstiarySlot { occurrence } => {
                 FeeBurnCauseV1::BosstiarySlot(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),
@@ -170,12 +185,37 @@ impl FeeBurnCause {
                     proof: proof.clone(),
                 })
             }
-            Self::QuestAccessPurchase { occurrence } => FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
-                service_key:self.key().into(),occurrence:occurrence.to_vec(),atelier_proof:Vec::new(),
+            Self::QuestAccessPurchase { occurrence } => {
+                FeeBurnCauseV1::QuestAccessPurchase(OneItemNpcPurchaseV1 {
+                    service_key: self.key().into(),
+                    occurrence: occurrence.to_vec(),
+                    atelier_proof: Vec::new(),
+                })
+            }
+            Self::HirelingService {
+                service,
+                occurrence,
+            } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 {
+                service_key: service.clone(),
+                occurrence: occurrence.to_vec(),
+                atelier_proof: Vec::new(),
             }),
-            Self::QuestRewardPayment { callback, occurrence, gold, include_bank } => FeeBurnCauseV1::QuestRewardPayment(
-                super::super::item_fee_burn_audit::OneItemQuestRewardPaymentV1 { purchase: Some(OneItemNpcPurchaseV1 { service_key: callback.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }), fee_gold_units: *gold, include_bank: *include_bank }),
-            Self::HirelingService { service, occurrence } => FeeBurnCauseV1::HirelingService(OneItemNpcPurchaseV1 { service_key: service.clone(), occurrence: occurrence.to_vec(), atelier_proof: Vec::new() }),
+            Self::QuestRewardPayment {
+                callback,
+                occurrence,
+                gold,
+                include_bank,
+            } => FeeBurnCauseV1::QuestRewardPayment(
+                super::super::item_fee_burn_audit::OneItemQuestRewardPaymentV1 {
+                    purchase: Some(OneItemNpcPurchaseV1 {
+                        service_key: callback.clone(),
+                        occurrence: occurrence.to_vec(),
+                        atelier_proof: Vec::new(),
+                    }),
+                    fee_gold_units: *gold,
+                    include_bank: *include_bank,
+                },
+            ),
             Self::PreyListReroll { occurrence, .. } | Self::PreyPickAgain { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

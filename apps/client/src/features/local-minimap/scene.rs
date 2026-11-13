@@ -114,6 +114,26 @@ impl Scene {
                     self.sprites
                         .push(&view, self.world.atlas(), cell, MARKER_CELL)?;
                 }
+                if map.quest_markers.iter().any(|m| {
+                    // Capability 451 owns the icon when both delivery paths contain it.
+                    !map.quest_marks.0.iter().any(|mark| {
+                        i32::from(mark.x) == m.x
+                            && i32::from(mark.y) == m.y
+                            && i16::from(mark.floor) == m.floor
+                    }) && m.floor == floor
+                        && (0..map.zoom).contains(&m.x.saturating_sub(tx))
+                        && (0..map.zoom).contains(&m.y.saturating_sub(ty))
+                }) {
+                    let at = view.tile_to_screen(cell);
+                    // Cross icon, distinct from a user marker's solid cell.
+                    for (offset, size) in [([0.0, 1.0], [4.0, 2.0]), ([1.0, 0.0], [2.0, 4.0])] {
+                        self.sprites.push_quad(QuadInstance {
+                            position: [at[0] + offset[0], at[1] + offset[1]],
+                            size,
+                            uv: color_uv(180),
+                        })?;
+                    }
+                }
                 if let Some(marker) = map.markers.iter().find(|m| {
                     m.floor == floor
                         && (0..map.zoom).contains(&m.x.saturating_sub(tx))
@@ -128,6 +148,7 @@ impl Scene {
                 }
             }
         }
+        self.draw_personal_map_marks(&map)?;
         if map.floor == self.minimap_floor {
             let cell = TileCoord::new(
                 self.own.x.saturating_sub(map.x).div_euclid(map.zoom) + 15,

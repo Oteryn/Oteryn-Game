@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "quests": [
+    {
+      "quest": "oteryn:quest.authored.a_pirate_s_death_to_me",
+      "recipe_sha256": "ebcd35f30ea2da42d6ba20d1aa40503d2bdbf87af74ca872bccfb3fd6c544fe8",
+      "tracks": [
+        {
+          "key": "oteryn:quest-progress/authored/a_pirate_s_death_to_me/s1",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 1
+        }
+      ],
+      "stages": [
+        {
+          "key": "s1",
+          "completes": false,
+          "trigger": {
+            "kind": "npc_dialogue",
+            "callback": {
+              "key": "oteryn:quest-reward/native-talk/a-pirates-death-to-me/s1",
+              "quest": "oteryn:quest.authored.a_pirate_s_death_to_me",
+              "npc": "oteryn:npc.smaralda",
+              "keywords": [
+                "torch mark"
+              ],
+              "topic": 0,
+              "next_topic": 0,
+              "storage": [
+                {
+                  "track": "oteryn:quest-progress/authored/a_pirate_s_death_to_me/s1",
+                  "minimum": 0,
+                  "maximum": 0,
+                  "set": 1
+                }
+              ],
+              "take": [],
+              "give": null,
+              "outfit": null,
+              "achievement": null,
+              "reply": [
+                "Your soul mark is Torch. Capture five spectral pirates, then board their vessel."
+              ],
+              "sources": [
+                "content/quests/definitions/quests-00200-00299.json: chosen recipe s1",
+                "https://tibia.fandom.com/index.php?curid=50861&oldid=1184996",
+                "https://tibia.fandom.com/index.php?curid=50864&oldid=1050342"
+              ]
+            }
+          }
+        }
+      ],
+      "sources": [
+        "content/quests/definitions/quests-00200-00299.json: chosen recipe s1",
+        "https://tibia.fandom.com/index.php?curid=50861&oldid=1184996",
+        "https://tibia.fandom.com/index.php?curid=50864&oldid=1050342"
+      ]
+    }
+  ]
+}

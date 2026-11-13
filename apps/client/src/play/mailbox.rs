@@ -12,6 +12,8 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 mod activity_scope;
+mod diagonal;
+mod own_identity;
 
 /// What the session task reports to the shell.
 #[derive(Debug)]
@@ -35,8 +37,10 @@ pub enum PlayEvent {
 pub struct Pushed {
     /// A committed activity switch invalidates the source view's queued actions.
     pub scope_changed: bool,
+    pub activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
     pub served_channel: Option<Option<oteryn_client_runtime::channel_list::ServedChannel>>,
     pub world_weather: Option<oteryn_session::world_weather::WorldWeather>,
+    pub personal_map_marks: Option<oteryn_client_ui::personal_map_marks::PersonalMapMarks>,
     pub world_clock: Option<oteryn_session::world_clock::WorldClock>,
     pub achievements: Vec<oteryn_client_ui::achievement_notices::AchievementEarned>,
     pub sounds: Vec<super::SoundCue>,
@@ -50,6 +54,8 @@ pub struct Pushed {
     pub server_messages: ServerMessageInbox,
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
+    /// The current own actor identity, replaced across activity handoffs.
+    pub own_identity: Option<[u8; 16]>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
     pub appearances: Option<Vec<oteryn_session::VisibleAppearance>>,
@@ -67,7 +73,14 @@ pub struct Pushed {
 impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
+        if newer.activity_scope.is_some() {
+            *self = Self::default();
+        }
+        if newer.scope_changed {
+            self.personal_map_marks = None;
+        }
         self.scope_changed |= newer.scope_changed;
+        self.activity_scope = newer.activity_scope.or(self.activity_scope.take());
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
             newer.visuals,
@@ -83,8 +96,10 @@ impl Pushed {
         self.served_channel = newer.served_channel.or(self.served_channel);
         self.world_clock = newer.world_clock.or(self.world_clock);
         self.world_weather = newer.world_weather.or(self.world_weather);
+        self.personal_map_marks = newer.personal_map_marks.or(self.personal_map_marks.take());
         self.map = newer.map.or(self.map.take());
         self.own = newer.own.or(self.own);
+        self.own_identity = newer.own_identity.or(self.own_identity);
         self.entities = newer.entities.or(self.entities.take());
         self.appearances = newer.appearances.or(self.appearances.take());
         self.server_messages.append(newer.server_messages);
@@ -127,6 +142,12 @@ pub(super) struct Mailbox {
     pub(super) custom_hotkey_feedback: Option<String>,
     pub(super) battle_lists: super::feature_0017_attack::view::BattleListsState,
     pub(super) diagonal_movement_selected: bool,
+    pub(super) own_actor_identity: Option<[u8; 16]>,
+    pub(super) activity_scope: Option<oteryn_session::activity_scope::ActivityScopeSnapshot>,
+    pub(super) scope_pending: bool,
+    pub(super) scope_initialize: bool,
+    pub(super) command_receiver: std::sync::Weak<Mutex<UnboundedReceiver<PlayCommand>>>,
+    pub(super) diagonal_selected: bool,
     pub(super) target_move_selected: bool,
     pub(super) movement_turn: Option<StepDir>,
     pub(super) creature_push_selected: bool,

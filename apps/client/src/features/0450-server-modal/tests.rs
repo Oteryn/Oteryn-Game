@@ -99,6 +99,34 @@ impl Stepper for Peer {
         Ok(None)
     }
 }
+
+#[test]
+fn scope_reset_closes_source_answers_and_allows_a_fresh_destination_query()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let mut driver = Driver::new(true);
+            let source_sender = driver.sender.clone();
+            assert!(ui::query(&mut driver.panel).is_some());
+            assert!(driver.panel.pending.is_some());
+            driver.reset_scope(true);
+            assert!(source_sender.is_closed());
+            assert!(driver.panel.pending.is_none());
+            assert!(driver.next_query > Instant::now());
+
+            let mut peer = Peer::default();
+            driver.next_query = Instant::now();
+            assert_eq!(driver.poll(&mut peer).await?, None);
+            assert_eq!(
+                driver.panel.active.as_ref().map(|dialog| dialog.id),
+                Some(73)
+            );
+            assert!(driver.panel.pending.is_none());
+            Ok::<(), Box<dyn std::error::Error>>(())
+        })
+}
 #[test]
 fn server_modal_session_caller_delivers_inline_image_and_exact_answer_ack()
 -> Result<(), Box<dyn std::error::Error>> {

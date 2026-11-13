@@ -1,10 +1,10 @@
 //! Command-retained banker and native item-use conversion of carried coins only.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::assert_current_equipment_in_transaction;
+use super::character_progression::CurrentCharacterGameplayFence;
 use super::db::begin_type2_transaction;
 use super::item_loop_move::{ItemLoopContent, carried_weight};
 use super::item_mint::TypedDefinitionRef;
-use super::character_progression::CurrentCharacterGameplayFence;
 use super::item_timed_state::{
     self, TimedCheckpointRequest, TimedDefinitionFacts, TimedExpiryRequest, TimedWriteError,
 };
@@ -18,7 +18,9 @@ use crate::domain::{
     timed_item::{ExpireReason, TimedValues},
 };
 use crate::foundation::CommandRef;
-use oteryn_gameplay_economy::coin_exchange::{CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use};
+use oteryn_gameplay_economy::coin_exchange::{
+    CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use,
+};
 use serde_json::{Value, json};
 use sqlx::Row;
 
@@ -48,8 +50,17 @@ pub enum CoinConverter {
 }
 
 impl CoinConverter {
-    fn id(self) -> [u8; 16] { match self { Self::Gold(id) | Self::Magic(id) => id } }
-    fn code(self) -> i16 { match self { Self::Gold(_) => 1, Self::Magic(_) => 2 } }
+    fn id(self) -> [u8; 16] {
+        match self {
+            Self::Gold(id) | Self::Magic(id) => id,
+        }
+    }
+    fn code(self) -> i16 {
+        match self {
+            Self::Gold(_) => 1,
+            Self::Magic(_) => 2,
+        }
+    }
 }
 
 fn code(exchange: CoinExchange) -> i16 {
@@ -454,7 +465,10 @@ async fn qualify_converter(
     exchange: CoinExchange,
 ) -> Result<Option<ConverterCharge>, DurabilityError> {
     if matches!(tool, CoinConverter::Magic(_))
-        && !matches!(exchange, CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal)
+        && !matches!(
+            exchange,
+            CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal
+        )
     {
         return Ok(None);
     }
@@ -478,12 +492,21 @@ async fn qualify_converter(
     if &stored != definition {
         return Ok(None);
     }
-    let charge = match item_timed_state::load_timed_state(tx, &tool.id()).await.map_err(timed_error)? {
-        None => facts.full.charges().map(|charges| ConverterCharge { revision: 0, charges }),
+    let charge = match item_timed_state::load_timed_state(tx, &tool.id())
+        .await
+        .map_err(timed_error)?
+    {
+        None => facts.full.charges().map(|charges| ConverterCharge {
+            revision: 0,
+            charges,
+        }),
         Some(state) if state.deadline_at.is_none() => state
             .values
             .and_then(|values| values.charges())
-            .map(|charges| ConverterCharge { revision: state.revision, charges }),
+            .map(|charges| ConverterCharge {
+                revision: state.revision,
+                charges,
+            }),
         Some(_) => None,
     };
     Ok(charge.filter(|charge| charge.charges >= 1))
@@ -501,7 +524,9 @@ async fn spend_converter(
     let ids = sqlx::query("SELECT uuid_send(game_character_uuid_v7()) AS tx,uuid_send(game_character_uuid_v7()) AS event,floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS now")
         .fetch_one(&mut ***tx).await?;
     let id = |column: &str| -> Result<[u8; 16], DurabilityError> {
-        ids.try_get::<Vec<u8>, _>(column)?.try_into().map_err(|_| DurabilityError::InvalidStoredState)
+        ids.try_get::<Vec<u8>, _>(column)?
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)
     };
     let transaction_id = id("tx")?;
     if charge.charges > 1 {
@@ -510,10 +535,13 @@ async fn spend_converter(
             expected_revision: charge.revision,
             transaction_id,
             definition: facts.clone(),
-            values: TimedValues::new(Some(charge.charges - 1), None).map_err(|_| DurabilityError::InvalidStoredState)?,
+            values: TimedValues::new(Some(charge.charges - 1), None)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
         };
         item_timed_state::validate_checkpoint(&checkpoint).map_err(timed_error)?;
-        item_timed_state::write_checkpoint(tx, fence.character_id, &checkpoint).await.map_err(timed_error)?;
+        item_timed_state::write_checkpoint(tx, fence.character_id, &checkpoint)
+            .await
+            .map_err(timed_error)?;
         return Ok(());
     }
     let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
@@ -525,8 +553,12 @@ async fn spend_converter(
         character_lease_generation: fence.character_lease_generation,
         runtime_scope: fence.runtime_scope,
         scope_ownership_generation: fence.scope_ownership_generation,
-        expected_character_revision: CharacterRevision::new(revision.parse().map_err(|_| DurabilityError::InvalidStoredState)?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        expected_character_revision: CharacterRevision::new(
+            revision
+                .parse()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .map_err(|_| DurabilityError::InvalidStoredState)?,
     };
     let expiry = TimedExpiryRequest {
         item_instance_id: tool.id(),
@@ -541,7 +573,9 @@ async fn spend_converter(
     };
     item_timed_state::validate_expiry(&expiry).map_err(timed_error)?;
     let tuple = tx.tuple();
-    item_timed_state::write_expiry(tx, &gameplay, &expiry, tuple).await.map_err(timed_error)?;
+    item_timed_state::write_expiry(tx, &gameplay, &expiry, tuple)
+        .await
+        .map_err(timed_error)?;
     Ok(())
 }
 
@@ -616,7 +650,8 @@ async fn plan<C: ItemLoopContent>(
         let selected = source.is_none_or(|id| item_id == id);
         if coin == Some(initial.input.0) && selected {
             if source.is_some() {
-                let selected = qualify_item_use(initial.input.0, count, ExchangeUse::Coin, usize::MAX, true);
+                let selected =
+                    qualify_item_use(initial.input.0, count, ExchangeUse::Coin, usize::MAX, true);
                 if amount != 1 || !selected.is_ok_and(|p| p.exchange == initial) {
                     return refuse(ExchangeRefusal::InvalidAmount);
                 }

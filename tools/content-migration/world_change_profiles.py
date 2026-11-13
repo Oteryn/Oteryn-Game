@@ -1,11 +1,12 @@
 """Admit the closed, source-normalized world-change item family through the native provider."""
+import copy
 import hashlib
 import json
 
 from native_profile_composition import encode_native_profile
 
 PATH = "tools/content-schema/native-gameplay/world-change-item-profiles.json"
-IDS = frozenset({3583, 3990, 4103, 4104, 5963, 12059, 12060, 12061, 12062, 12063, 12065, 12077, 12368, 12369, 13853, 13854, 13855, 13856, 13974, 13976, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 14074, 14163, 14164, 14255, 21752, 21803, 21804, 21805, 21812, 21893, 21894, 21895, 21896})
+IDS = frozenset({4103, 4104, 2576, 12059, 12060, 13853, 13854, 13855, 13856, 12065, 12063, 12061, 12062, 21803, 21804, 12077, 21805, 22059, 21812, 22074, 5963, 12368, 12369, 14163, 14164, 21893, 21894, 21895, 21896, 3990, 13974, 13976, 14255, 14018, 14020, 14051, 14052, 14053, 14054, 14055, 14064, 21752, 14074, 3583})
 SCHEMA = "OTERYN_NATIVE_WORLD_CHANGE_ITEM_PROFILES/v1"
 XML_SHA256 = "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
 APPEARANCES_SHA256 = "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2"
@@ -30,7 +31,7 @@ def validate(overlay):
         portable = number in {12077, 12369, 13974, 13976, 14018, 14020,
                               14051, 14052, 14053, 14054, 14055, 14255,
                               21752, 21803, 21804, 21805, 21812}
-        portable = portable or number in {3583,3990,4103,4104}
+        portable = portable or number in {3583,3990,4103,4104,22074}
         movable = portable or number in {13854,13855,13856,21894,21895,21896}
         stack = "StackCapable" if number in {3583,14052,14053,14054} else "NonStackable"
         solid = number in {14074, 14163}
@@ -80,6 +81,40 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         # policy only when the World-change custody facts agree; retain its
         # presentation, trade facts and provenance unchanged.
         existing = present[key]
+        if key in {"oteryn:item.tibia.i2576", "oteryn:item.tibia.i22074"}:
+            if sum(current["production_definition"]["production_key"] == key
+                   for current in document["records"]) != 1:
+                raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            if key == "oteryn:item.tibia.i2576":
+                # SourceGate owns this exact carpet; QuickLoot may already have
+                # added its independently qualified canonical taxonomy.
+                expected = copy.deepcopy(row)
+                if "taxonomy" in existing.get("authoring", {}):
+                    taxonomy = json.loads((root / "content/items/taxonomy/items.json").read_bytes())
+                    matches = [entry for entry in taxonomy["records"]
+                               if entry.get("target", {}).get("key") == key]
+                    if (len(matches) != 1 or matches[0]["target"] != {
+                            "family": "Item", "key": key, "revision": "definition-r1"}):
+                        raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+                    expected["authoring"]["taxonomy"] = copy.deepcopy(matches[0]["source_taxonomy"])
+            else:
+                # QENGINE owns the carried trap. Reproduce that owner's full
+                # record and require agreement with every World custody fact.
+                import qengine_reward_item_profiles
+                qualified = qengine_reward_item_profiles.capture(root, item_ids={22074})["records"]
+                if len(qualified) != 1:
+                    raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+                expected = qualified[0]
+                if (any(expected[field] != row[field] for field in (
+                        "production_definition", "production_binding", "production_binding_qualification", "admission"))
+                        or any(expected["semantics"][group] != row["semantics"][group]
+                               for group in ("physical", "stack", "container", "temporal", "charges"))
+                        or any(field not in expected["attributes"] or expected["attributes"][field] != value
+                               for field, value in row["attributes"].items())):
+                    raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            if existing != expected:
+                raise ValueError("WORLD_CHANGE_ITEM_PROFILE_DUPLICATE")
+            continue
         if (key != "oteryn:item.tibia.i12369"
                 or existing["production_definition"] != row["production_definition"]
                 or existing["admission"] != row["admission"]

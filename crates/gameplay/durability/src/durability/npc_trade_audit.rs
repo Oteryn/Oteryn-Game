@@ -203,10 +203,16 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
         effect_work_units: 3 * whole
             + 2 * (burns - whole)
             + 2 * minted
-            + 2 * u64::from(value.bank_debit.is_some()) + 2 * children
+            + 2 * u64::from(value.bank_debit.is_some())
+            + 2 * children
             + u64::from(value.house_furniture_kit.is_some())
-            + u64::from(value.fluid_subtype.is_some_and(|subtype| subtype != 0)
-                && value.cause.as_ref().is_some_and(|cause| cause.side == SIDE_BUY)),
+            + u64::from(
+                value.fluid_subtype.is_some_and(|subtype| subtype != 0)
+                    && value
+                        .cause
+                        .as_ref()
+                        .is_some_and(|cause| cause.side == SIDE_BUY),
+            ),
         events: 1,
     }
 }
@@ -344,7 +350,9 @@ mod yeo;
 
 pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     if value.fluid_subtype.is_some_and(|subtype| subtype > 20)
-        || value.full_charges.is_some_and(|charges| !(1..=65535).contains(&charges))
+        || value
+            .full_charges
+            .is_some_and(|charges| !(1..=65535).contains(&charges))
         || (value.fluid_subtype.is_some() && value.full_charges.is_some())
     {
         return Err(AuditError::InvalidInput);

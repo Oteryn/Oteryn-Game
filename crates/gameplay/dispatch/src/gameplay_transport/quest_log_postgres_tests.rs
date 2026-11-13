@@ -35,6 +35,19 @@ fn scenario() -> TestResult {
         let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
             .map_err(debug)?;
         let loaded = oteryn_gameplay_quests::quest::log::loader::load_embedded_quest_log(&lowered)?;
+        // Journal indexes belong to this content generation, so adding an
+        // earlier canonical quest can move A Father's Burden away from zero.
+        let father_index = u32::try_from(
+            loaded
+                .content
+                .catalogues()
+                .next()
+                .ok_or("active journal catalogue")?
+                .quests()
+                .iter()
+                .position(|quest| quest.key == "oteryn:quest.a_father_s_burden_quest")
+                .ok_or("A Father's Burden journal")?,
+        )?;
         owner.quest_log_content = Some(QuestLogLines::new(loaded.content).ok_or("line bounds")?);
         owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
         dependencies.initialize(&owner).await;
@@ -113,10 +126,14 @@ fn scenario() -> TestResult {
             )
             .ok_or("selection")?;
             let mut framed = Vec::new();
-            for (command_id, query) in
-                [QuestLogQuery::List, QuestLogQuery::Quest { quest_index: 0 }]
-                    .into_iter()
-                    .enumerate()
+            for (command_id, query) in [
+                QuestLogQuery::List,
+                QuestLogQuery::Quest {
+                    quest_index: father_index,
+                },
+            ]
+            .into_iter()
+            .enumerate()
             {
                 let query = encode_quest_log_query(&query).map_err(debug)?;
                 let command = oteryn_protocol_oteryn::encode_client_command(
@@ -157,8 +174,8 @@ fn scenario() -> TestResult {
             assert_eq!(journals.len(), usize::from(selected));
             if selected {
                 assert!(journals[0].view.is_none());
-                assert!(lists.iter().any(|log| matches!(&log.view, Some(QuestLogView::List(quests)) if quests.iter().any(|quest| quest.quest_index == 0))));
-                assert!(lists.iter().any(|log| matches!(&log.view, Some(QuestLogView::Line(line)) if line.quest_index == 0 && line.missions.iter().any(|mission| mission.name == "The Birthday Presents" && mission.text.len() == 121))));
+                assert!(lists.iter().any(|log| matches!(&log.view, Some(QuestLogView::List(quests)) if quests.iter().any(|quest| quest.quest_index == father_index))));
+                assert!(lists.iter().any(|log| matches!(&log.view, Some(QuestLogView::Line(line)) if line.quest_index == father_index && line.missions.iter().any(|mission| mission.name == "The Birthday Presents" && mission.text.len() == 121))));
             } else {
                 assert!(lists.is_empty());
             }

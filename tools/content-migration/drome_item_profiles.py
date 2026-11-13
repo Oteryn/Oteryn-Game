@@ -161,7 +161,8 @@ def capture(crystal: Path, root: Path = ROOT) -> dict:
     index = source.xml_index(xml)
     if not set(ITEM_IDS) <= index.keys():
         _fail("pool", "MISSING_XML")
-    binding_raw = (root / BINDINGS_PATH).read_bytes()
+    from build_spell_item_identities import historical_binding_bytes
+    binding_raw = historical_binding_bytes((root / BINDINGS_PATH).read_bytes(), BINDINGS_SHA)
     bindings = source.binding_index(binding_raw, expected_sha=BINDINGS_SHA)
     objects = source.engine_items.load_appearance_objects(appearances)
     physical = {r["server_item_id"]: r for r in source.policies(appearances, xml, set(ITEM_IDS))}
@@ -190,7 +191,11 @@ def admit(root: Path, generated: dict[str, bytes], profile_path: str,
           manifest_path: str, order, canonical) -> None:
     """Join the ordinary registration pipeline; preserve agreeing richer profiles."""
     raw_bindings = (root / BINDINGS_PATH).read_bytes()
-    if hashlib.sha256(raw_bindings).hexdigest() != BINDINGS_SHA:
+    sys.path.insert(0, str(ROOT / "tools/content-schema/native-gameplay"))
+    from build_spell_item_identities import historical_binding_bytes
+    try:
+        historical_binding_bytes(raw_bindings, BINDINGS_SHA)
+    except ValueError:
         _fail("bindings", "BINDING_DIGEST")
     bindings = {row["external_id"]: row for row in json.loads(raw_bindings)["bindings"]}
     incoming = validate_overlay(json.loads((root / PATH).read_bytes()), bindings)

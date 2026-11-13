@@ -200,6 +200,7 @@ impl CreatureAiTable {
                 },
             );
             entry.sequence = sequence;
+            state.read_physical_facing(current.issuer.facing());
             state.update_attack_facing(position, target_position);
             if plan.is_ok_and(|plan| !plan.native_melee_selected.is_empty()) {
                 selected.push(state.actor);

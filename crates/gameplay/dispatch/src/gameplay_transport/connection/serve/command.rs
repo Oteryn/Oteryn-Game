@@ -25,6 +25,13 @@ where
         buffered_original,
         received_at,
     } = input;
+    // Also fence direct/previously buffered dispatch; this is before integrity,
+    // command reservation, replay acknowledgement or any owner invocation.
+    match command_session_matches(&frame, session.admitted, session.require_session_binding) {
+        Ok(false) => return Ok(()),
+        Ok(true) => {}
+        Err(error) => return Err(close(stream, session.admitted, error).await),
+    }
     let command = match decode_wire_envelope(&frame) {
         Err(error) => return Err(close(stream, session.admitted, error).await),
         Ok(envelope) if envelope.connection_generation() != session.generation => {
@@ -275,6 +282,10 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                session
+                    .commands
+                    .buffer_step(command)
+                    .ok_or(ServeEnd::Disconnected)?;
                 // Pacing throttled this input; the buffered original is charged only once.
                 session
                     .integrity

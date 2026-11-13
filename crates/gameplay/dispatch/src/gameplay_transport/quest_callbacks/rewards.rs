@@ -66,6 +66,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let id = CommandId::new(command.command_id).ok()?;
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
+            additional_items: Vec::new(),
             command: CommandRef::new(command.game_session_id, id),
             claim: TypedDefinitionRef {
                 family: "RewardClaim".into(),

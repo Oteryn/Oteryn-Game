@@ -1,5 +1,6 @@
 import copy
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -7,6 +8,22 @@ import encounter_loot_item_admissions as loot
 
 
 class EncounterLootAdmissionTests(unittest.TestCase):
+    def test_unrelated_historical_binding_change_remains_refused(self):
+        binding_path = loot.ROOT / loot.BINDINGS
+        document = json.loads(binding_path.read_bytes())
+        unrelated = next(row for row in document['bindings'] if row['external_id'] == '3031')
+        self.assertNotIn(3031, loot.IDS)
+        unrelated['source_revision'] = '0' * 40
+        changed = (json.dumps(document, sort_keys=True, separators=(',', ':')) + '\n').encode()
+        read_bytes = Path.read_bytes
+
+        def changed_read(path):
+            return changed if path == binding_path else read_bytes(path)
+
+        with patch.object(Path, 'read_bytes', changed_read):
+            with self.assertRaisesRegex(ValueError, 'Item binding table digest mismatch'):
+                loot.facts()
+
     def test_client_only_objects_cannot_invent_stack_or_container_limits(self):
         self.assertTrue(loot.client_only_custody_supported({'flags': {'flags.take': True}}))
         for flags in ({'flags.take': True, 'flags.container': True},

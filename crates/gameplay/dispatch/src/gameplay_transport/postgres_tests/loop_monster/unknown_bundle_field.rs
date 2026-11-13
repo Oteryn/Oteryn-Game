@@ -198,7 +198,9 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
         owner.active_generation = Some(active);
         owner.movement_cells = deps.room.movement_cells().into();
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
+        let health_names = owner.read_native_health_names(&permit).await.map_err(debug)?;
         let mut runtime = deps.runtime.lock().await;
+        let native_health_names = owner.seal_native_health_names(&runtime, health_names).map_err(debug)?;
         let mut states = owner.states.spell_states.lock().await;
         let creature = crate::content::ProjectV2DefinitionRef {
             family: crate::content::ProjectV2Family::Creature,
@@ -233,7 +235,8 @@ fn unknown_bundle_creature_and_player_tiles_keep_owner_ticks_running() -> TestRe
                         &permit,
                         &revisions,
                         &[],
-                        now
+                        now,
+                        &native_health_names,
                     )
                     .await
                     .is_ok(),

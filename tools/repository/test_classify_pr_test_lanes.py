@@ -508,6 +508,188 @@ def test_large_pr_fallback(module):
     print("Large PR fallback PASS: exact Git trees recover complete changed-file evidence")
 
 
+def scope_pull(count, head="a" * 40, base="b" * 40):
+    return {
+        "state": "open",
+        "head": {"sha": head, "repo": {"full_name": "Oteryn/Oteryn-Game"}},
+        "base": {"ref": "main", "sha": base},
+        "changed_files": count,
+    }
+
+
+def run_scope(before, after, records=(), *, expected_head="a" * 40):
+    """Execute the production scope body; replace only its API and output boundary."""
+    import urllib.request
+
+    gate = (ROOT / ".github/workflows/merge-gate.yml").read_text(encoding="utf-8")
+    block = gate.split("  scope:\n", 1)[1].split("  lanes:\n", 1)[0]
+    script = textwrap.dedent(block.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
+    pull_url = "https://api.github.com/repos/Oteryn/Oteryn-Game/pulls/42"
+    compare_url = (
+        "https://api.github.com/repos/Oteryn/Oteryn-Game/compare/"
+        f"{before['base']['sha']}...{expected_head}?per_page=1"
+    )
+    pulls = iter((before, after))
+    requests = []
+
+    def response(request, *, timeout):
+        assert timeout == 30
+        requests.append(request.full_url)
+        if request.full_url == pull_url:
+            return io.StringIO(json.dumps(next(pulls)))
+        assert request.full_url == compare_url, request.full_url
+        return io.StringIO(json.dumps({"files": records}))
+
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "output"
+        env = {
+            "REPOSITORY": "Oteryn/Oteryn-Game", "EVENT_PR_NUMBER": "42",
+            "EVENT_PR_HEAD_SHA": expected_head, "GH_TOKEN": "fixture",
+            "GITHUB_OUTPUT": str(output),
+        }
+        errors = io.StringIO()
+        code = 0
+        with patch.dict(os.environ, env, clear=True), patch.object(
+            urllib.request, "urlopen", side_effect=response,
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
+            try:
+                exec(compile(script, "merge-gate:scope", "exec"), {})
+            except SystemExit as error:
+                code = error.code
+        wire = output.read_text(encoding="utf-8") if output.exists() else ""
+    return code, wire, errors.getvalue(), requests
+
+
+def test_scope_stable_small_pr():
+    pull = scope_pull(1)
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    code, wire, errors, requests = run_scope(pull, pull, records)
+    assert code == 0 and not errors, (code, errors)
+    outputs = dict(line.split("=", 1) for line in wire.splitlines())
+    assert outputs == {
+        "pr_number": "42", "target_sha": "a" * 40, "base_sha": "b" * 40,
+        "file_count": "1", "file_records": json.dumps(records, separators=(",", ":")),
+        "complete": "true",
+    }, outputs
+    assert len(requests) == 3 and requests[0] == requests[2], requests
+    assert f"/compare/{'b' * 40}...{'a' * 40}?per_page=1" in requests[1], requests
+    print("Scope stable small PR PASS: exact immutable comparison records remain complete")
+
+
+def test_scope_file_count_drift(module):
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        git(root, "init", "-q")
+        git(root, "config", "user.email", "ci@example.invalid")
+        git(root, "config", "user.name", "CI")
+        (root / "README.md").write_text("base\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "base")
+        base = git(root, "rev-parse", "HEAD")
+        for name in (".github/workflows/merge-gate.yml", "docs/note.md"):
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("changed\n", encoding="utf-8")
+        git(root, "add", ".")
+        git(root, "commit", "-qm", "candidate")
+        head = git(root, "rev-parse", "HEAD")
+        git(root, "checkout", "-q", base)
+        old_cwd = os.getcwd()
+        os.chdir(root)
+        try:
+            for first, second in ((2974, 2975), (2975, 2974), (1, 2), (2, 1),
+                                  (300, 301), (301, 300), (0, 2), (2, 0)):
+                records = [{"filename": f"docs/api-only-{index}.md", "status": "modified"}
+                           for index in range(first if first <= 300 else 0)]
+                code, wire, errors, requests = run_scope(
+                    scope_pull(first, head, base), scope_pull(second, head, base), records,
+                    expected_head=head,
+                )
+                assert code == 0, (first, second, errors)
+                outputs = dict(line.split("=", 1) for line in wire.splitlines())
+                assert outputs["complete"] == "false" and outputs["file_records"] == "[]", outputs
+                assert outputs["target_sha"] == head and outputs["base_sha"] == base, outputs
+                assert outputs["file_count"] == str(first), outputs
+                assert requests[0] == requests[-1] and len(requests) == (3 if first <= 300 else 2), requests
+                if first == 0:
+                    metadata = root / "zero-count-metadata.json"
+                    metadata.write_text(json.dumps(fixture()), encoding="utf-8")
+                    lane_output = root / "zero-count-lanes-output"
+                    lane_output.write_text("", encoding="utf-8")
+                    env = {
+                        "ENUMERATION_COMPLETE": outputs["complete"],
+                        "CHANGED_FILE_RECORDS": outputs["file_records"],
+                        "CHANGED_FILE_COUNT": outputs["file_count"],
+                        "EXPECTED_HEAD": outputs["target_sha"],
+                        "GITHUB_OUTPUT": str(lane_output),
+                        "GITHUB_EVENT_NAME": "pull_request",
+                    }
+                    run = subprocess.run(
+                        [sys.executable, str(MODULE), str(metadata)], cwd=root,
+                        env=dict(os.environ, **env), capture_output=True, text=True, check=False,
+                    )
+                    assert run.returncode == 0, run
+                    lanes = dict(line.split("=", 1) for line in lane_output.read_text().splitlines())
+                    assert lanes == {
+                        "rust": "true", "windows": "true", "atlas_fullworld": "true",
+                        "server_qualification": "true", "world_bundle": "true",
+                        "surface": "unknown", "reason": "classifier-or-metadata-failure",
+                        "routing_health": "degraded",
+                    }, lanes
+                    continue
+                with patch.dict(os.environ, {
+                    "ENUMERATION_COMPLETE": outputs["complete"],
+                    "CHANGED_FILE_RECORDS": outputs["file_records"],
+                    "CHANGED_FILE_COUNT": outputs["file_count"],
+                    "EXPECTED_HEAD": outputs["target_sha"],
+                }):
+                    files, count, complete = module.pr_file_records()
+                assert complete is True and count == 2, (files, count, complete)
+                assert {item["filename"] for item in files} == {
+                    ".github/workflows/merge-gate.yml", "docs/note.md",
+                }, files
+                result = classify(module, files)
+                assert result["rust"] is True and result["windows"] is True, result
+        finally:
+            os.chdir(old_cwd)
+    print("Scope count drift PASS: seven positive-first transitions recover exact Git; zero-first selects FULL")
+
+
+def test_scope_invalid_file_counts():
+    invalid = (-1, None, "1", 1.5, True, False)
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    for phase in ("before", "after"):
+        for value in invalid:
+            before, after = scope_pull(1), scope_pull(1)
+            target = before if phase == "before" else after
+            target["changed_files"] = value
+            code, wire, errors, _ = run_scope(before, after, records)
+            assert code == 1 and wire == "", (phase, value, code, wire, errors)
+            assert "invalid" in errors, (phase, value, errors)
+        before, after = scope_pull(1), scope_pull(1)
+        del (before if phase == "before" else after)["changed_files"]
+        code, wire, errors, _ = run_scope(before, after, records)
+        assert code == 1 and wire == "" and "invalid" in errors, (phase, code, wire, errors)
+    print("Scope invalid counts PASS: both reads reject negative/missing/null/string/float/bool without outputs")
+
+
+def test_scope_identity_drift():
+    records = [{"filename": "docs/note.md", "status": "modified"}]
+    changes = (
+        {"state": "closed"},
+        {"head": {"sha": "c" * 40, "repo": {"full_name": "Oteryn/Oteryn-Game"}}},
+        {"head": {"sha": "a" * 40, "repo": {"full_name": "fork/Game"}}},
+        {"base": {"ref": "main", "sha": "c" * 40}},
+        {"base": {"ref": "other", "sha": "b" * 40}},
+    )
+    for second_count in (1, 2):
+        for change in changes:
+            after = dict(scope_pull(second_count), **change)
+            code, wire, errors, _ = run_scope(scope_pull(1), after, records)
+            assert code == 1 and wire == "", (second_count, change, code, wire, errors)
+    print("Scope identity fences PASS: five identity changes fail with stable or drifting counts and no outputs")
+
+
 def test_scope_count_drift(module):
     """Mutable counts cannot block exact heads or authorize stale narrowed lanes."""
     import urllib.request
@@ -941,7 +1123,11 @@ def main() -> int:
     test_documentation_fast_path(module)
     test_candidate_modes(module)
     test_large_pr_fallback(module)
+    test_scope_file_count_drift(module)
     test_scope_count_drift(module)
+    test_scope_identity_drift()
+    test_scope_invalid_file_counts()
+    test_scope_stable_small_pr()
     test_aggregate()
     test_server_qualification(module)
     test_world_bundle(module)

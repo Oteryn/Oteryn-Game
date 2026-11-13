@@ -1,5 +1,5 @@
 //! Catalogue-scoped counter views; retained counter declarations keep their existing bytes.
-use super::{COUNTERS, Counter};
+use super::Counter;
 use crate::quest::{QuestStateCatalogue, authored_bindings::Trigger};
 use std::collections::BTreeMap;
 
@@ -13,6 +13,8 @@ pub struct CounterRef<'a> {
     pub gate_value: i64,
     pub minimum: i64,
     pub maximum: i64,
+    pub death_area: Option<crate::quest::authored_bindings::kills::DeathArea>,
+    pub encounter_source: Option<&'a str>,
 }
 
 impl Counter {
@@ -23,9 +25,11 @@ impl Counter {
             quest: self.quest,
             track: self.track,
             gate: self.gate,
-            gate_value: 1,
+            gate_value: self.gate_value(),
             minimum: 0,
             maximum: self.maximum,
+            death_area: None,
+            encounter_source: None,
         }
     }
 }
@@ -80,7 +84,7 @@ pub fn active_for(catalogue: &QuestStateCatalogue, tracks: &BTreeMap<String, i64
 }
 
 pub fn tracks_creature_for(catalogue: &QuestStateCatalogue, creature: &str) -> bool {
-    COUNTERS.iter().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
+    super::counters().any(|counter|counter.creature==creature && catalogue.transition(counter.transition).is_some())
         || catalogue.authored_bindings().is_some_and(|bindings|bindings.quests.iter().any(|quest|
             quest.stages.iter().any(|stage|matches!(&stage.trigger,Trigger::Kill {counter} if counter.creature==creature))))
 }

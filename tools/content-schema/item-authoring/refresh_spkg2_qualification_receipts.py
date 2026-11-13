@@ -19,7 +19,7 @@ from historical_world_owner_context import GROUND, MARKER, SUGAR_GROUND, origina
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools/content-migration"))
 
-from source_relocations import current_path
+from source_relocations import current_path, read_pinned
 
 HERE = "tools/content-schema/item-authoring/"
 RECIPES = (
@@ -113,7 +113,11 @@ def digest(data):
 def refresh_pin(root, path, previous):
     raw = (root / current_path(path)).read_bytes()
     actual = digest(raw)
-    if actual != previous and path not in ALLOWED:
+    if (
+        actual != previous
+        and path not in ALLOWED
+        and read_pinned(root, path, previous) != raw
+    ):
         raise ValueError(f"unqualified input change: {path}")
     return actual, len(raw)
 
@@ -125,6 +129,7 @@ def refresh_list(root, pins, additional_owner_inputs=()):
         if "bytes" in pin:
             pin["bytes"] = size
     if any(pin["path"] == MARKER for pin in pins):
+        existing = {pin["path"] for pin in pins}
         for path in (
             "content/world/terrain/" + GROUND,
             "content/world/terrain/" + SUGAR_GROUND,
@@ -133,8 +138,11 @@ def refresh_list(root, pins, additional_owner_inputs=()):
             "tools/content-schema/world-object-authoring/sugar_room.py",
             "tools/content-schema/world-object-authoring/samples/sugar-room-source-flags.json",
         ):
+            if path in existing:
+                continue
             raw = (root / path).read_bytes()
             pins.append({"path": path, "sha256": digest(raw), "bytes": len(raw)})
+            existing.add(path)
 
 
 def refresh(

@@ -1,6 +1,11 @@
 //! Native keypad diagonals; the caller gates these bindings on the negotiated profile.
 use oteryn_client_domain::movement::StepDir;
 use oteryn_input_actions::{ButtonState, Modifiers, NormalizedInputEvent};
+
+#[path = "view.rs"]
+mod view;
+pub use keypad_step as step;
+pub use view::facing;
 pub fn default_diagonal_binding() {}
 pub fn keypad_step(events: &[NormalizedInputEvent], selected: bool) -> Option<StepDir> {
     if !selected {

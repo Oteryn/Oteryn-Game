@@ -17,6 +17,7 @@ import re
 import sys
 
 import seasonal_raids
+import feroxa_raid
 from pathlib import Path
 from xml.parsers import expat
 
@@ -427,7 +428,7 @@ def lua_sugar(source: dict, creatures: dict[str, bool]) -> dict:
 
 
 def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict,
-                  creatures: dict[str, bool], placements: dict) -> list[dict]:
+                  creatures: dict[str, bool], placements: dict, root: Path = ROOT) -> list[dict]:
     wiki = {r["key"]: r for r in evidence["records"]}
     wiki_bosses = {slug(name) for r in wiki.values() for name in r["facts"]["boss"]["value"]}
     donor_bosses = source_bosses(sources)
@@ -502,6 +503,15 @@ def build_records(sources: dict[str, dict], evidence: dict, reconciliation: dict
                   "wiki_records": identities, "sources": refs, "schedule": schedule,
                   "variant_group": f"raid-group:{Path(path).parent.name}.{group}" if group else None,
                   "variants": [variant], "end": {"kind": "until_reset", "despawn_after_ms": None}, "inactive_reasons": []}
+        if key == "raid:edron.feroxa":
+            # Crystal 9f5a72c data-global/lib/quests/grimvale.lua:46-48:
+            # the spawned boss has twenty hours, independently of server save.
+            # The retained Lua occurrence owns its absolute timeline and exact
+            # boss position; the XML capture remains preserved as source evidence.
+            record["variants"] = [feroxa_raid.variant(root, area_anchor)]
+            record["requires_world_change"] = {"key": "grimvale", "variant": "full_moon"}
+            record["end"] = {"kind": "boss_death_or_timeout", "despawn_after_ms": 20 * 60 * 60 * 1000}
+            record["end_source"] = "crystalserver:9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d:data-global/lib/quests/grimvale.lua:46-48"
         if key == "raid:furyfate.furyosa":
             # Accepted EVENTS-WORLD-1 W6/W10:343permille entry availability also gates this raid.
             record["requires_world_change"] = {"key": "fury_gates", "variant": None}
@@ -578,7 +588,7 @@ def outputs(root: Path, *, register: bool = True) -> dict[str, bytes]:
     sources = verified_sources(load(root, CAPTURE))
     evidence = json.loads(staged[EVIDENCE])
     records = build_records(sources, evidence, load(root, f"{EVIDENCE_DIR}/raid-source-reconciliation.json"),
-                            creature_catalogue(root), load(root, PLACEMENTS))
+                            creature_catalogue(root), load(root, PLACEMENTS), root)
     if (root / seasonal_raids.CAPTURE).is_file():
         records.extend(seasonal_raids.records(root, qualify, bind_area, citation, creature_catalogue(root), load(root, PLACEMENTS)))
         records.sort(key=lambda record: record["key"])

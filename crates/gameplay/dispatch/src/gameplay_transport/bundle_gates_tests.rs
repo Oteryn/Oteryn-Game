@@ -50,6 +50,34 @@ const COMBAT_ENABLE: Gate = Gate::Open {
 
 const INVENTORY: &[Entry] = &[
     Entry {
+        gate: "spatial wire projection",
+        plan: "spatial wire projection",
+        accessor: "gate_wire_position",
+        key: "",
+        state: Gate::AllocatedOpen { task: "SRX-3" },
+        calls: &[
+            (
+                "gameplay_transport/postgres_tests/srx3_primal_death_cutoff.rs",
+                1,
+            ),
+            ("gameplay_transport/wire_position.rs", 1),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/native_cue_offer.rs", 2),
+            ("gameplay_transport/native_activity.rs", 1),
+            ("gameplay_transport/soulpit/scene.rs", 2),
+            (
+                "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/endgame_entry.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            (
+                "gameplay_transport/rotten_blood_callbacks/advanced/footprints.rs",
+                1,
+            ),
+        ],
+    },
+    Entry {
         gate: "attack target",
         plan: "player attack target",
         accessor: "gate_attack_target",
@@ -110,6 +138,10 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/activity_runtime.rs", 1),
             ("gameplay_transport/native_combat_cast.rs", 2),
             ("gameplay_transport/rune_use_bridge/revision.rs", 1),
+            // SRX-3: install the same source-qualified combat room and read Soulpit terrain.
+            ("gameplay_transport/serving.rs", 1),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/soulpit/owner_runtime.rs", 1),
         ],
     },
     Entry {
@@ -141,9 +173,20 @@ const INVENTORY: &[Entry] = &[
             pr: 2036,
         },
         calls: &[
-            ("gameplay_transport/monster_ai_cycle.rs", 1),
+            // Composed native callbacks retain the existing open monster gate.
+            ("gameplay_transport/primal_callbacks/normal.rs", 1),
+            ("gameplay_transport/kill_reward.rs", 1),
+            ("gameplay_transport/raid_live_world/feroxa_map.rs", 1),
+            ("gameplay_transport/primal_callbacks.rs", 3),
+            ("gameplay_transport/soul_war_cloak_blood.rs", 1),
+            ("gameplay_transport/monster_ai_cycle.rs", 5),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/m26_rotten_wave_production.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 1),
             // Primal cadence uses the actual activated Source combat seam.
             (
                 "gameplay_transport/postgres_tests/primal_menace_native.rs",
@@ -160,6 +203,46 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/reaudit_arena_lifecycle.rs",
                 1,
             ),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            (
+                "gameplay_transport/monster_profile_cycle/native_callbacks/death_items.rs",
+                1,
+            ),
+            ("gameplay_transport/native_activity.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_greed_retention.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
+            // The Outburst diagnostic requalifies its current source context before reading it.
+            (
+                "gameplay_transport/postgres_tests/srx3_native_source_cast.rs",
+                1,
+            ),
+            ("gameplay_transport/postgres_tests/srx3_primal.rs", 1),
+            ("gameplay_transport/postgres_tests/srx3_rotten_portal.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_soul_war_attacks.rs",
+                2,
+            ),
+            ("gameplay_transport/soul_war_callbacks/entry.rs", 1),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/death.rs",
+                1,
+            ),
+            (
+                "gameplay_transport/soul_war_callbacks/megalomania/phases/timer.rs",
+                1,
+            ),
+            ("gameplay_transport/soul_war_callbacks/taint_five.rs", 1),
+            ("gameplay_transport/soul_war_world.rs", 1),
+            ("gameplay_transport/soul_war_world_raid.rs", 1),
+            ("gameplay_transport/source_death.rs", 1),
+            ("gameplay_transport/source_death/heart.rs", 1),
+            ("gameplay_transport/spite_global.rs", 1),
         ],
     },
     Entry {
@@ -241,6 +324,24 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/field_removal.rs", 1),
             ("gameplay_transport/field_step_ingress.rs", 2),
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+            // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.
+            ("gameplay_transport/primal_callbacks.rs", 2),
+            // SRX-3 source/current-owner reads; gate semantics remain unchanged.
+            ("gameplay_transport/boss_activity/source_extra.rs", 1),
+            ("gameplay_transport/outburst_entry.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/srx3_megalomania_step.rs",
+                2,
+            ),
+            (
+                "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+                1,
+            ),
+            ("gameplay_transport/primal_entry.rs", 1),
+            ("gameplay_transport/rotten_blood_entry.rs", 1),
+            ("gameplay_transport/soul_war_entry.rs", 1),
+            ("gameplay_transport/spite_step.rs", 3),
+            ("gameplay_transport/spite_step/megalomania.rs", 1),
         ],
     },
     Entry {
@@ -266,7 +367,14 @@ const INVENTORY: &[Entry] = &[
         state: Gate::Closed {
             owners: &["MAP-CUTOVER-1c"],
         },
-        calls: &[("gameplay_transport/source_item_cycle.rs", 1)],
+        calls: &[
+            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/m26_static_instance.rs",
+                1,
+            ),
+            ("gameplay_transport/source_item_cycle.rs", 1),
+        ],
     },
     // The door overlay, step blocking, `use_object` and the chase step's and a creature push's
     // door blocking serve a bundle World from `bundle_map`.
@@ -747,6 +855,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                     assert_eq!(entry.key, "creature_appearance");
                     continue;
                 }
+                if task == "SRX-3" {
+                    assert_eq!(entry.accessor, "gate_wire_position");
+                    assert_eq!(entry.key, "");
+                    continue;
+                }
                 if task == "TK-W19" {
                     assert_eq!(entry.accessor, "gate_ground_item_action");
                     assert_eq!(entry.key, "");
@@ -883,10 +996,15 @@ impl<'ast> Visit<'ast> for Constructions<'ast> {
 /// owners in `mod.rs`, its one production construction in `serve.rs`, the shared test
 /// constructor and explicit fixture room overrides.
 const CONSTRUCTIONS: &[(&str, usize)] = &[
+    ("gameplay_transport/postgres_tests/m25_ahau_exit.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_nomads_use.rs", 1),
+    ("gameplay_transport/postgres_tests/engenc2_cults.rs", 1),
     // Qualified activity content inherits the origin gate, checked below.
-    ("gameplay_transport/activity_content.rs", 2),
-    // ActivityRuntimeAssets owns or borrows the selected pair without widening its gates.
+    ("gameplay_transport/activity_content.rs", 3),
+    // Scoped activity assets explicitly withhold qualification, checked below.
     ("gameplay_transport/activity_runtime.rs", 2),
+    // Compatibility return type only; exact delegation is checked below.
+    ("gameplay_transport/effective_rooms.rs", 1),
     ("gameplay_transport/composed_test_owner.rs", 2),
     ("gameplay_transport/item_use/item_use_postgres_tests.rs", 1),
     (
@@ -906,6 +1024,20 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/atelier/wire_paid.rs", 1),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.
     ("gameplay_transport/postgres_tests/boss_activity.rs", 3),
+    // Primal's test-only source scene binds its actual pinned qualified/combat room.
+    (
+        "gameplay_transport/postgres_tests/boss_activity/primal.rs",
+        1,
+    ),
+    // Movement fixtures bind only their actual pinned Bundle combat view.
+    ("gameplay_transport/postgres_tests/echo_warden.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/browse_field/fixture.rs",
+        2,
+    ),
+    ("gameplay_transport/postgres_tests/creature_push.rs", 1),
+    ("gameplay_transport/postgres_tests/cyclopedia.rs", 3),
+    ("gameplay_transport/postgres_tests/dawnport_trial.rs", 1),
     // Q6's condition-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/condition_potions.rs", 1),
     // W05d's native Cake tile fixture supplies combat only, never qualification.
@@ -925,6 +1057,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         1,
     ),
     ("gameplay_transport/postgres_tests/item_seed_planting.rs", 1),
+    ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
+    (
+        "gameplay_transport/postgres_tests/m26_static_instance.rs",
+        2,
+    ),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     ("gameplay_transport/postgres_tests/newhaven_corruptor.rs", 1),
     (
@@ -945,6 +1082,11 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
         "gameplay_transport/postgres_tests/primal_menace_native.rs",
         1,
     ),
+    // The proficiency fixture binds its Bundle combat view and withholds qualification.
+    (
+        "gameplay_transport/postgres_tests/proficiency_modification.rs",
+        1,
+    ),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     // QUESTPC4 source callback and reset fixtures bind their explicit source room.
     (
@@ -959,17 +1101,14 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     // S10 source NPC fixtures supply combat only; qualified room remains None.
     ("gameplay_transport/postgres_tests/s10_travel.rs", 1),
     ("gameplay_transport/postgres_tests/s10_wandering.rs", 1),
+    // Soul War's Bundle fixture supplies combat only, never qualification.
+    ("gameplay_transport/postgres_tests/soul_war.rs", 1),
     // I14 special-potion fixture supplies only combat; its qualified room stays None.
     ("gameplay_transport/postgres_tests/special_potions.rs", 1),
     // Soulpit's production owner and PG fixture both withhold qualification.
     ("gameplay_transport/soulpit/content.rs", 2),
     (
         "gameplay_transport/postgres_tests/soulpit_shared_entry/native.rs",
-        2,
-    ),
-    // SRVGAP2: the Primal chain PG proof binds its activated source combat room only.
-    (
-        "gameplay_transport/postgres_tests/srvgap2_primal_chain.rs",
         2,
     ),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
@@ -981,6 +1120,38 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
+    // SRX-3 fixture room bindings; production Bundle closure is asserted separately.
+    ("gameplay_transport/postgres_tests/hireling_lifecycle.rs", 1),
+    (
+        "gameplay_transport/postgres_tests/srx3_activity_source_fixture.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_claustrophobic.rs",
+        1,
+    ),
+    // The published BundleWorld corpse fixture supplies only its original combat room.
+    (
+        "gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_area_think.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_rotten_callbacks.rs",
+        2,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soul_war_world_entrance.rs",
+        1,
+    ),
+    (
+        "gameplay_transport/postgres_tests/srx3_soulpit_native.rs",
+        1,
+    ),
+    ("gameplay_transport/postgres_tests/srx3_spite_global.rs", 1),
 ];
 
 #[test]
@@ -1058,11 +1229,22 @@ fn an_activity_instance_preserves_the_origin_room_gate() {
     let mut constructions = Constructions::default();
     constructions.visit_file(&content);
     assert!(
-        matches!(constructions.0.as_slice(), [call]
-            if matches!(&*call.func,syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
-                && call.args.len() == 2
-                && call.args.first().is_some_and(|arg| named_expr(arg,"room"))
-                && call.args.last().is_some_and(inherits_origin_qualification)),
+        matches!(constructions.0.as_slice(), [source, inherited]
+            if matches!(&*source.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && source.args.len() == 2
+                && matches!(source.args.first(), Some(syn::Expr::Call(clone))
+                    if matches!(&*clone.func, syn::Expr::Path(path)
+                        if path_name(&path.path) == "std::sync::Arc::clone")
+                        && clone.args.len() == 1
+                        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+                            if reference.mutability.is_none()
+                                && named_expr(&reference.expr, "owned_room")))
+                && matches!(source.args.last(), Some(syn::Expr::Lit(literal))
+                    if matches!(&literal.lit, syn::Lit::Bool(value) if !value.value))
+                && matches!(&*inherited.func, syn::Expr::Path(path) if path_name(&path.path).ends_with("SeamRooms::owned"))
+                && inherited.args.len() == 2
+                && inherited.args.first().is_some_and(|arg| named_expr(arg, "room"))
+                && inherited.args.last().is_some_and(inherits_origin_qualification)),
         "activity content must inherit the origin room gate; qualifying a template cannot open unrelated bundle gates"
     );
 }
@@ -1199,6 +1381,29 @@ fn cake_bundle_fixture_keeps_its_qualified_room_closed() {
 }
 
 #[test]
+fn poor_soul_bundle_fixture_keeps_only_its_original_combat_room() {
+    let fixture =
+        parse_source("src/gameplay_transport/postgres_tests/srx3_poor_soul_world_corpse.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&fixture);
+    assert!(matches!(constructions.0.as_slice(), [call]
+        if matches!(&*call.func, syn::Expr::Path(path)
+            if path_name(&path.path).ends_with("SeamRooms::new"))
+        && call.args.len() == 2
+        && matches!(call.args.first(), Some(syn::Expr::Path(path))
+            if path.path.is_ident("None"))
+        && matches!(call.args.iter().nth(1), Some(syn::Expr::Call(some))
+            if matches!(&*some.func, syn::Expr::Path(path) if path.path.is_ident("Some"))
+            && some.args.len() == 1
+            && matches!(some.args.first(), Some(syn::Expr::Reference(reference))
+                if reference.mutability.is_none()
+                && matches!(&*reference.expr, syn::Expr::Field(field)
+                    if matches!(&field.member, syn::Member::Named(name) if name == "room")
+                    && matches!(&*field.base, syn::Expr::Path(path)
+                        if path.path.is_ident("scene")))))));
+}
+
+#[test]
 fn qualification_guard_rejects_unconditional_or_inverted_bundle_room()
 -> Result<(), Box<dyn std::error::Error>> {
     let correct = syn::parse_str::<syn::Expr>("bundle.is_none().then_some(&qualified_room)")?;
@@ -1211,6 +1416,82 @@ fn qualification_guard_rejects_unconditional_or_inverted_bundle_room()
     ] {
         let candidate = syn::parse_str::<syn::Expr>(wrong)?;
         assert!(!withholds_from_a_bundle(&candidate), "{wrong}");
+    }
+    Ok(())
+}
+
+/// An independently owned source Bundle has no qualified entry-world room.
+/// Its shared map owner may supply combat, never generic casting or House gates.
+#[test]
+fn a_source_instance_effective_room_constructs_only_none_some_combat() {
+    // Source runtimes now use the canonical shared Activity owner. Its owned
+    // room closes qualification; the separate inherited-owner path must retain
+    // exactly its origin's qualification rather than opening it unconditionally.
+    let source = parse_source("src/gameplay_transport/activity_content.rs");
+    let mut constructions = Constructions::default();
+    constructions.visit_file(&source);
+    assert_eq!(
+        constructions.0.len(),
+        2,
+        "exact source and inherited owned rooms"
+    );
+    let source = constructions.0[0];
+    assert!(matches!(&*source.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(source.args.len(), 2);
+    assert!(
+        matches!(source.args.iter().nth(1), Some(syn::Expr::Lit(value))
+        if matches!(value.lit, syn::Lit::Bool(ref flag) if !flag.value))
+    );
+    assert!(matches!(source.args.first(), Some(syn::Expr::Call(clone))
+        if matches!(&*clone.func, syn::Expr::Path(path)
+            if path_name(&path.path) == "std::sync::Arc::clone")
+        && clone.args.len() == 1
+        && matches!(clone.args.first(), Some(syn::Expr::Reference(reference))
+            if reference.mutability.is_none()
+            && matches!(&*reference.expr, syn::Expr::Path(path)
+                if path.path.is_ident("owned_room")))));
+    let inherited = constructions.0[1];
+    assert!(matches!(&*inherited.func, syn::Expr::Path(path)
+        if path_name(&path.path).ends_with("SeamRooms::owned")));
+    assert_eq!(inherited.args.len(), 2);
+    assert!(
+        inherited
+            .args
+            .iter()
+            .nth(1)
+            .is_some_and(inherits_origin_qualification)
+    );
+}
+
+/// Compatibility names must not introduce a second room or movement owner.
+#[test]
+fn source_room_compatibility_accessors_delegate_to_canonical_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    let source = parse_source("src/gameplay_transport/effective_rooms.rs");
+    let [syn::Item::Impl(block)] = source.items.as_slice() else {
+        return Err("source room aliases must contain only their owner impl".into());
+    };
+    assert!(block.trait_.is_none() && block.unsafety.is_none());
+    assert!(matches!(&*block.self_ty, syn::Type::Path(path)
+        if path_name(&path.path) == "super::ComposedFreshAdmission"));
+    assert_eq!(block.items.len(), 2);
+    for (item, (alias, canonical)) in block.items.iter().zip([
+        ("effective_movement_cells", "movement_cells"),
+        ("effective_rooms", "rooms"),
+    ]) {
+        let syn::ImplItem::Fn(function) = item else {
+            return Err("source room aliases may only declare delegate functions".into());
+        };
+        assert_eq!(function.sig.ident, alias);
+        let [syn::Stmt::Expr(syn::Expr::MethodCall(call), None)] = function.block.stmts.as_slice()
+        else {
+            return Err("source room aliases must directly return the canonical owner".into());
+        };
+        assert_eq!(call.method, canonical);
+        assert!(call.args.is_empty() && call.attrs.is_empty() && call.turbofish.is_none());
+        assert!(matches!(&*call.receiver, syn::Expr::Path(path)
+            if path.path.is_ident("self")));
     }
     Ok(())
 }

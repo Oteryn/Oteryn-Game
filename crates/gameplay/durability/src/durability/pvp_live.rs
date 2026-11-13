@@ -269,14 +269,14 @@ async fn record_harm_in_transaction(
             .bind(id.as_slice()).bind(facts.attacker.as_slice()).bind(unjustified).bind(facts.relation.target_aggressor_of_actor || facts.same_party).execute(&mut **tx).await?;
     }
     if !facts.same_party {
-    sqlx::query("DELETE FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target IN(SELECT target FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND (until_at<=clock_timestamp() OR attacker_placement<>$2 OR scope_generation<>$3::text::numeric) ORDER BY until_at LIMIT 64 FOR UPDATE)")
+        sqlx::query("DELETE FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target IN(SELECT target FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND (until_at<=clock_timestamp() OR attacker_placement<>$2 OR scope_generation<>$3::text::numeric) ORDER BY until_at LIMIT 64 FOR UPDATE)")
         .bind(facts.attacker.as_slice()).bind(facts.actor_placement.as_slice()).bind(authority.scope_generation().to_string()).execute(&mut **tx).await?;
-    let full:bool=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid)>=64 AND NOT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid)")
+        let full:bool=sqlx::query_scalar("SELECT (SELECT count(*) FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid)>=64 AND NOT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid)")
         .bind(facts.attacker.as_slice()).bind(facts.target.as_slice()).fetch_one(&mut **tx).await?;
-    if full {
-        return Err(refused());
-    }
-    sqlx::query("INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '70 seconds',$3::text::numeric,$4,$5) ON CONFLICT(attacker,target) DO UPDATE SET until_at=GREATEST(game_character_pvp_aggression.until_at,EXCLUDED.until_at),scope_generation=EXCLUDED.scope_generation,attacker_placement=EXCLUDED.attacker_placement,target_placement=EXCLUDED.target_placement")
+        if full {
+            return Err(refused());
+        }
+        sqlx::query("INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '70 seconds',$3::text::numeric,$4,$5) ON CONFLICT(attacker,target) DO UPDATE SET until_at=GREATEST(game_character_pvp_aggression.until_at,EXCLUDED.until_at),scope_generation=EXCLUDED.scope_generation,attacker_placement=EXCLUDED.attacker_placement,target_placement=EXCLUDED.target_placement")
         .bind(facts.attacker.as_slice()).bind(facts.target.as_slice()).bind(authority.scope_generation().to_string()).bind(facts.actor_placement.as_slice()).bind(facts.target_placement.as_slice()).execute(&mut **tx).await?;
     }
     sqlx::query("INSERT INTO game_character_pvp_harm(game_session_id,command_id,ordinal,victim,attacker,binding,damage,unjustified,field_occurrence) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9)")

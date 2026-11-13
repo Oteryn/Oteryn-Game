@@ -118,6 +118,7 @@ fn content() -> QuestLogLines {
 
 fn source(facts: Facts, version: u64) -> QuestLogSource {
     QuestLogSource {
+        map_marks: Vec::new(),
         content: content(),
         copy: Arc::new(facts),
         version,
@@ -274,7 +275,7 @@ fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
     let mut continuity = QuestLogContinuity::FRESH;
     // No copy: an empty domain at revision 1.
     let (state, domain) =
-        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable)
+        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
             .expect("snapshot");
     assert_eq!(domain.to, 1);
     assert!(domain.payload.is_empty());
@@ -283,13 +284,14 @@ fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
     continuity.tracked = TrackedQuests::new(&[RATS_INDEX]).expect("tracked");
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]);
     let (state, domain) =
-        QuestLogState::snapshot(&mut continuity, changed(facts, 5)).expect("snapshot");
+        QuestLogState::snapshot(&mut continuity, changed(facts, 5), false).expect("snapshot");
     assert_eq!(domain.to, 2);
     assert_eq!(continuity.revision, 2);
     assert_eq!(state.version(), Some(5));
     assert_eq!(
         shown(&domain),
         QuestLog {
+            map_marks: Vec::new(),
             view: None,
             tracked: vec![rats_line("Hunt the rats.", false)],
         }
@@ -299,8 +301,9 @@ fn the_snapshot_has_no_view_and_the_carried_tracked_quests() {
 #[test]
 fn list_and_quest_queries_send_the_whole_domain() {
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) = QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable)
-        .expect("snapshot");
+    let (mut state, _) =
+        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
+            .expect("snapshot");
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 2)]);
     let listed = state
         .query(
@@ -356,8 +359,9 @@ fn list_and_quest_queries_send_the_whole_domain() {
 #[test]
 fn track_replaces_the_set_and_refuses_unlisted_or_eleven_quests() {
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) = QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable)
-        .expect("snapshot");
+    let (mut state, _) =
+        QuestLogState::snapshot(&mut continuity, QuestLogObservation::Unavailable, false)
+            .expect("snapshot");
     let facts = Facts::with(&[(RATS_START, 1), (TOMB_START, 2)]);
     let track = |indexes: &[u32]| QuestLogQuery::Track {
         quest_indexes: indexes.to_vec(),
@@ -412,7 +416,7 @@ fn a_changed_copy_sends_a_delta_only_when_the_domain_changes() {
     continuity.tracked = TrackedQuests::new(&[RATS_INDEX]).expect("tracked");
     let at = |stage| Facts::with(&[(RATS_START, 1), (RATS_STAGE, stage)]);
     let (mut state, snapshot) =
-        QuestLogState::snapshot(&mut continuity, changed(at(1), 1)).expect("snapshot");
+        QuestLogState::snapshot(&mut continuity, changed(at(1), 1), false).expect("snapshot");
     // Unchanged or unavailable: nothing.
     for observation in [
         QuestLogObservation::Unchanged,
@@ -481,10 +485,16 @@ mod connection {
         bytes
     }
 
-    const OFFERED: &[OfferedCapability] = &[OfferedCapability {
-        id: CAPABILITY_QUEST_LOG_V1,
-        requires: &[],
-    }];
+    const OFFERED: &[OfferedCapability] = &[
+        OfferedCapability {
+            id: CAPABILITY_QUEST_LOG_V1,
+            requires: &[],
+        },
+        OfferedCapability {
+            id: 451,
+            requires: &[],
+        },
+    ];
 
     /// The Channel owner as the quest log sees it: one copy at version 1, the copy a receipt
     /// commits after the first read (version 2), and the reads made.
@@ -493,6 +503,7 @@ mod connection {
         version: RefCell<u64>,
         receipt: RefCell<Option<Facts>>,
         reads: RefCell<Vec<Option<u64>>>,
+        map_marks: Vec<oteryn_protocol_oteryn::quest_log::QuestMapMark>,
     }
 
     impl QuestAuthority {
@@ -502,6 +513,7 @@ mod connection {
                 version: RefCell::new(1),
                 receipt: RefCell::new(None),
                 reads: RefCell::new(Vec::new()),
+                map_marks: Vec::new(),
             }
         }
     }
@@ -544,7 +556,11 @@ mod connection {
             let observation = match self.facts.borrow().clone() {
                 None => QuestLogObservation::Unavailable,
                 Some(_) if since == Some(version) => QuestLogObservation::Unchanged,
-                Some(facts) => changed(facts, version),
+                Some(facts) => {
+                    let mut source = source(facts, version);
+                    source.map_marks.clone_from(&self.map_marks);
+                    QuestLogObservation::Changed(source)
+                }
             };
             if let Some(next) = self.receipt.borrow_mut().take() {
                 *self.facts.borrow_mut() = Some(next);
@@ -682,12 +698,80 @@ mod connection {
 
     fn list_view() -> QuestLog {
         QuestLog {
+            map_marks: Vec::new(),
             view: Some(QuestLogView::List(vec![QuestListEntry {
                 quest_index: RATS_INDEX,
                 completed: false,
             }])),
             tracked: Vec::new(),
         }
+    }
+
+    #[test]
+    fn personal_markers_dispatch_requires_capability_451_for_snapshot_query_and_list_only()
+    -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), String> {
+                run(async {
+                    for selected_marks in [false, true] {
+                        let mut authority = QuestAuthority::new(Some(listed()));
+                        authority
+                            .map_marks
+                            .push(oteryn_protocol_oteryn::quest_log::QuestMapMark {
+                                x: 31948,
+                                y: 31924,
+                                floor: -7,
+                                text: "Treasure".into(),
+                            });
+                        let supported = if selected_marks {
+                            &[16, 451][..]
+                        } else {
+                            &[16][..]
+                        };
+                        let (end, frames) = serve(
+                            &authority,
+                            session(selected(supported))?,
+                            &[
+                                query(1, &QuestLogQuery::List)?,
+                                query(2, &QuestLogQuery::ListOnly)?,
+                            ],
+                        )
+                        .await?;
+                        let marks = if selected_marks {
+                            authority.map_marks.clone()
+                        } else {
+                            Vec::new()
+                        };
+                        let initial = QuestLog {
+                            map_marks: marks.clone(),
+                            ..QuestLog::default()
+                        };
+                        let listed = QuestLog {
+                            map_marks: marks,
+                            ..list_view()
+                        };
+                        let mut expected = snapshot(Some((1, &initial)));
+                        expected.push(result(1, 1, CommandStatus::Accepted));
+                        expected.push(delta(2, 2, &listed));
+                        expected.push(encode_command_result(
+                            1,
+                            3,
+                            2,
+                            CommandStatus::Accepted,
+                            &oteryn_protocol_oteryn::quest_log::encode_quest_log(&listed)
+                                .map_err(|e| format!("{e:?}"))?,
+                        )?);
+                        assert_eq!(frames, expected);
+                        assert_eq!(ended(end)?.quest_log.revision, 2);
+                    }
+                    Ok(())
+                })
+                .map_err(|e| e.to_string())
+            })?
+            .join()
+            .map_err(|_| "marker dispatch thread panicked")?
+            .map_err(Into::into)
     }
 
     #[test]
@@ -824,6 +908,7 @@ mod connection {
             )
             .await?;
             let tracked = QuestLog {
+                map_marks: Vec::new(),
                 view: list_view().view,
                 tracked: vec![rats_line("Hunt the rats.", false)],
             };
@@ -853,6 +938,7 @@ mod connection {
             )
             .await?;
             let reconnect = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: tracked.tracked.clone(),
             };
@@ -878,10 +964,12 @@ mod connection {
                 ..selected(&[CAPABILITY_QUEST_LOG_V1])
             };
             let before = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: vec![rats_line("Hunt the rats.", false)],
             };
             let after = QuestLog {
+                map_marks: Vec::new(),
                 view: None,
                 tracked: vec![rats_line("Hunt the rats.", true)],
             };
@@ -921,8 +1009,8 @@ mod connection {
 fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
     let facts = Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]);
     let mut continuity = QuestLogContinuity::FRESH;
-    let (mut state, _) =
-        QuestLogState::snapshot(&mut continuity, changed(facts.clone(), 1)).expect("snapshot");
+    let (mut state, _) = QuestLogState::snapshot(&mut continuity, changed(facts.clone(), 1), false)
+        .expect("snapshot");
     state
         .query(
             &mut continuity,
@@ -937,7 +1025,7 @@ fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
     let sent = state.sent.clone();
     let view = state.view;
     let version = state.version;
-    let bytes = QuestLogState::list_only(changed(facts.clone(), 2)).expect("list");
+    let bytes = QuestLogState::list_only(changed(facts.clone(), 2), false).expect("list");
     let log = decode_quest_log(&bytes).expect("valid");
     assert!(
         matches!(log.view, Some(QuestLogView::List(ref list)) if list.iter().any(|q| q.quest_index == RATS_INDEX))
@@ -953,5 +1041,54 @@ fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
             .expect("refresh")
             .is_none()
     );
-    assert!(QuestLogState::list_only(QuestLogObservation::Unavailable).is_none());
+    assert!(QuestLogState::list_only(QuestLogObservation::Unavailable, false).is_none());
+}
+
+#[test]
+fn personal_markers_require_negotiation_on_every_quest_log_projection() {
+    for include_map_marks in [false, true] {
+        let mut source = source(Facts::with(&[(RATS_START, 1)]), 1);
+        source
+            .map_marks
+            .push(oteryn_protocol_oteryn::quest_log::QuestMapMark {
+                x: 31948,
+                y: 31924,
+                floor: -7,
+                text: "Treasure".into(),
+            });
+        let mut continuity = QuestLogContinuity::FRESH;
+        let observation = || QuestLogObservation::Changed(source.clone());
+        let (mut state, snapshot) =
+            QuestLogState::snapshot(&mut continuity, observation(), include_map_marks)
+                .expect("snapshot");
+        let expected = if include_map_marks {
+            source.map_marks.clone()
+        } else {
+            Vec::new()
+        };
+        assert_eq!(shown(&snapshot).map_marks, expected);
+        let queried = state
+            .query(&mut continuity, &QuestLogQuery::List, observation())
+            .expect("query")
+            .expect("domain");
+        assert_eq!(shown(&queried).map_marks, expected);
+        let list = QuestLogState::list_only(observation(), include_map_marks).expect("list-only");
+        assert_eq!(decode_quest_log(&list).expect("log").map_marks, expected);
+        source.version += 1;
+        source.map_marks[0].text = "Updated treasure".into();
+        let refreshed = state
+            .refresh(
+                &mut continuity,
+                QuestLogObservation::Changed(source.clone()),
+            )
+            .expect("refresh");
+        if include_map_marks {
+            assert_eq!(
+                shown(&refreshed.expect("marker delta")).map_marks,
+                source.map_marks
+            );
+        } else {
+            assert!(refreshed.is_none());
+        }
+    }
 }

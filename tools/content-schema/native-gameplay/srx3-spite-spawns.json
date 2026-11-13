@@ -1,0 +1,132 @@
+[
+  {
+    "position": [
+      33851,
+      31870,
+      7
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.poor_soul",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 36787
+  },
+  {
+    "position": [
+      33738,
+      31599,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.symbol_of_hatred",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177650
+  },
+  {
+    "position": [
+      33748,
+      31599,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.symbol_of_hatred",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177653
+  },
+  {
+    "position": [
+      33738,
+      31632,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.weeping_soul",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177816
+  },
+  {
+    "position": [
+      33704,
+      31634,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.necromantic_focus",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177830
+  },
+  {
+    "position": [
+      33716,
+      31634,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.necromantic_focus",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177833
+  },
+  {
+    "position": [
+      33748,
+      31634,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.weeping_soul",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177836
+  },
+  {
+    "position": [
+      33712,
+      31635,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.lesser_splinter_of_madness",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177848
+  },
+  {
+    "position": [
+      33744,
+      31636,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 10,
+    "creature_key": "oteryn:creature.spiteful_spitter",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 177858
+  },
+  {
+    "position": [
+      33485,
+      32333,
+      14
+    ],
+    "radius": 1,
+    "respawn_seconds": 60,
+    "creature_key": "oteryn:creature.bone_capsule",
+    "source_path": "data-global/world/world-monster.xml",
+    "source_sha256": "f90e82203a112c9068d4ed123e3e5bb4c1b9743f2c2d3bcb12039ac8ebd9ad4e",
+    "line": 182951
+  }
+]

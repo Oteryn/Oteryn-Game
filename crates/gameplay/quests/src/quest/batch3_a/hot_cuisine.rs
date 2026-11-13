@@ -89,6 +89,12 @@ impl HotCuisineProgram {
             .map_err(Clone::clone)
     }
 
+    /// Source confirmation topics admitted by this immutable recipe document.
+    #[must_use]
+    pub fn is_recipe_topic(&self, topic: i32) -> bool {
+        self.recipes.iter().any(|recipe| recipe.topic == topic)
+    }
+
     /// Preview proposes a source branch; only the locked inventory can admit it.
     pub fn optimistic_inventory(
         &self,
@@ -161,6 +167,22 @@ impl HotCuisineProgram {
         hasher.finalize().into()
     }
 
+    /// M17: decode both current and saved dates from the owner's UTC epoch.
+    /// M42's production cooking dispatch uses this instead of a caller-made year.
+    pub fn calendar_snapshot_utc(
+        &self,
+        input: &NpcRuleInput<'_>,
+    ) -> Result<HotCuisineCalendar, NpcRuleError> {
+        self.calendar_snapshot(input, |seconds| {
+            crate::quest::npc_rules::NpcUtcCalendar::from_epoch(seconds)
+                .ok()
+                .map(|date| YearMonth {
+                    year: date.year,
+                    month: date.month,
+                })
+        })
+    }
+
     pub fn calendar_snapshot(
         &self,
         input: &NpcRuleInput<'_>,
@@ -193,7 +215,11 @@ impl HotCuisineProgram {
         input: &NpcRuleInput<'_>,
         calendar: &HotCuisineCalendar,
     ) -> Result<Option<NpcRulePlan>, NpcRuleError> {
-        if input.npc != NPC || input.trigger != NpcRuleTrigger::Say {
+        if input.npc != NPC
+            || input.trigger != NpcRuleTrigger::Say
+            || input.level < 35
+            || !input.premium_current
+        {
             return Ok(None);
         }
         let Some(recipe) = self
@@ -203,9 +229,15 @@ impl HotCuisineProgram {
         else {
             return Ok(None);
         };
+        // Crystal 201189f data-global/npc/jean_pierre.lua:154-157,687:
+        // the annual bonus belongs to the transaction's UTC year, not a
+        // caller-supplied calendar projection with an otherwise matching month.
+        let current = input.utc_calendar()?;
         if generic.document.quest != QUEST
             || !calendar.current.is_valid()
             || calendar.current.month != input.calendar_month
+            || calendar.current.year != current.year
+            || calendar.current.month != current.month
         {
             return Err(NpcRuleError::Invalid("Hot Cuisine snapshot".into()));
         }
@@ -237,8 +269,14 @@ impl HotCuisineProgram {
         let permitted = can_cook(calendar.current, last_date, bonus_year, bonus_used);
         let mut effects = Vec::new();
         let mut inventory_guards = Vec::new();
+        let mut completes = false;
         if permitted {
             let current_dish = read(&self.current_dish_track)?;
+            // The retained source dish-choice branch sets this before its topic.
+            // A mismatched topic cannot charge one recipe and grant another dish.
+            if current_dish != i64::from(recipe.index) {
+                return Ok(None);
+            }
             let ingredient_recipe = self
                 .recipes
                 .iter()
@@ -267,6 +305,7 @@ impl HotCuisineProgram {
                 .checked_add(1)
                 .ok_or_else(|| NpcRuleError::Arithmetic("Hot Cuisine cook count".into()))?;
             let mut all_twice = true;
+            let mut all_once = true;
             for candidate in &self.recipes {
                 let count = if candidate.index == recipe.index {
                     cooked_after
@@ -274,7 +313,9 @@ impl HotCuisineProgram {
                     read(&candidate.cook_count_track)?
                 };
                 all_twice &= count >= 2;
+                all_once &= count >= 1;
             }
+            completes = first_completion && recipe.completes_menu && all_once;
             effects.push(set(&recipe.last_track, input.now_epoch_seconds));
             effects.push(set(&recipe.cook_count_track, cooked_after));
             if spends_bonus(calendar.current, last_date) {
@@ -317,6 +358,7 @@ impl HotCuisineProgram {
         if permitted {
             selected.guards.extend(inventory_guards);
             selected.effects = effects;
+            selected.completes = completes;
             selected.effects.push(NpcRuleEffect::SetTopic { value: 0 });
             selected.reply = recipe.reply.clone();
             selected.inventory_failure_reply = self.missing_ingredients_reply.clone();
@@ -359,6 +401,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         npc: NPC.into(),
         trigger: NpcRuleTrigger::Say,
         keywords: vec!["yes".into()],
+        match_player_name: false,
         exclude_keywords: ["cook", "recipe", "menu", "apprentice"]
             .map(String::from)
             .to_vec(),
@@ -370,6 +413,7 @@ fn native_rule(recipe: &Recipe, guards: Vec<NpcRuleGuard>) -> NpcRule {
         effects: Vec::new(),
         continue_matching: false,
         inventory_failure_reply: Vec::new(),
+        completes: false,
         sources: recipe.sources.clone(),
     }
 }

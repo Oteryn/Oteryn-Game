@@ -22,10 +22,40 @@ class WorldChangeItemProfiles(unittest.TestCase):
 
     def test_committed_overlay_reproduces_exact_pinned_sources(self):
         self.assertEqual(builder.OUTPUT.read_bytes(), builder.encoded(self.document))
-        self.assertEqual(len(admission.validate(self.document)), 41)
+        self.assertEqual(len(admission.validate(self.document)), 44)
         self.assertEqual(self.document["reserved_ids_excluded"], [12064])
         self.assertNotIn("oteryn:item.tibia.i12064", {
             row["production_definition"]["production_key"] for row in self.document["records"]})
+
+    def test_m31_royal_carpet_is_walkable_without_portable_custody(self):
+        key = 'oteryn:item.tibia.i2576'
+        records = {r['production_definition']['production_key']: r for r in self.document['records']}
+        self.assertIn(key, records)
+        record = records[key]
+        self.assertFalse(record['attributes']['blocks_movement'])
+        self.assertFalse(record['attributes']['blocks_projectile'])
+        self.assertEqual(record['admission']['legal_destinations'], ['Ground'])
+        physical = record['semantics']['physical']['value']
+        self.assertEqual(physical['movable'], {'state': 'KNOWN', 'value': False})
+        self.assertEqual(physical['pickupable'], {'state': 'KNOWN', 'value': False})
+        row = next(r for r in self.document['source_rows'] if r['id'] == 2576)
+        self.assertEqual(row['xml_name'], 'red carpet')
+        self.assertFalse(row['projected_physical']['block_solid'])
+        self.assertFalse(row['projected_physical']['block_pathfind'])
+
+    def test_feroxa_trap_states_keep_exact_source_custody_and_have_no_invented_decay(self):
+        records = {row["production_definition"]["production_key"]: row
+                   for row in self.document["records"]}
+        for number, portable, weight in [(22059, False, 0), (22074, True, 2200)]:
+            row = records[f"oteryn:item.tibia.i{number}"]
+            self.assertEqual(row["admission"], {
+                "materializable": True, "stack_class": "NonStackable",
+                "legal_destinations": ["CharacterInventory", "Ground"] if portable else ["Ground"]})
+            self.assertEqual(row["semantics"]["physical"]["value"], {
+                "weight": {"state": "KNOWN", "value": weight},
+                "movable": {"state": "KNOWN", "value": portable},
+                "pickupable": {"state": "KNOWN", "value": portable}})
+            self.assertEqual(row["semantics"]["temporal"], {"state": "NOT_APPLICABLE"})
 
     def test_names_ground_speeds_and_tool_portability_come_from_sources(self):
         rows = {row["id"]: row for row in self.document["source_rows"]}
@@ -191,7 +221,7 @@ class WorldChangeItemProfiles(unittest.TestCase):
             else:
                 admission.admit(builder.ROOT, generated, "items", "manifest", order, canonical)
                 records = json.loads(generated["items"])["records"]
-                self.assertEqual(len(records), 41)
+                self.assertEqual(len(records), 44)
                 self.assertEqual(next(row for row in records if row["production_definition"] == wolf["production_definition"]), wolf)
 
     def test_existing_registry_admission_regenerates_manifest_and_rejects_duplicate(self):
@@ -200,11 +230,161 @@ class WorldChangeItemProfiles(unittest.TestCase):
                      "manifest": canonical({"item_profiles": {"sha256": "before"}})}
         order = lambda row: row["production_definition"]["production_key"]
         admission.admit(builder.ROOT, generated, "items", "manifest", order, canonical)
-        self.assertEqual(len(json.loads(generated["items"])["records"]), 41)
+        self.assertEqual(len(json.loads(generated["items"])["records"]), 44)
         self.assertEqual(json.loads(generated["manifest"])["item_profiles"]["sha256"],
                          hashlib.sha256(generated["items"]).hexdigest())
         with self.assertRaisesRegex(ValueError, "WORLD_CHANGE_ITEM_PROFILE_DUPLICATE"):
             admission.admit(builder.ROOT, generated, "items", "manifest", order, canonical)
+
+
+class WorldChangeEarlierOwners(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import qengine_reward_item_profiles as qengine
+        import quick_loot_item_profiles as quick_loot
+        import source_gate_item_profiles as source_gate
+
+        cls.qengine = qengine
+        cls.profile = source_gate.PROFILE
+        cls.manifest = source_gate.MANIFEST
+        cls.canonical = staticmethod(lambda value: (
+            json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
+        cls.order = staticmethod(lambda row: row["production_definition"]["production_key"])
+        generated = {
+            cls.profile: cls.canonical({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": []}),
+            cls.manifest: (builder.ROOT / cls.manifest).read_bytes(),
+        }
+        source_gate.admit(builder.ROOT, generated, cls.canonical)
+        cls.bare_source_gate = dict(generated)
+        cls.qualified = qengine.capture(builder.ROOT, item_ids={22074})
+        qengine.admit_records(builder.ROOT, generated, cls.profile, cls.manifest,
+                             cls.order, cls.canonical, cls.qualified["records"])
+        quick_loot.admit(builder.ROOT, generated, cls.profile, cls.manifest,
+                        cls.order, cls.canonical)
+        qengine.admit_records(builder.ROOT, generated, cls.profile, cls.manifest,
+                             cls.order, cls.canonical, cls.qualified["records"])
+        cls.prefix = generated
+        cls.taxonomy_path = builder.ROOT / "content/items/taxonomy/items.json"
+        cls.taxonomy = json.loads(cls.taxonomy_path.read_bytes())
+
+    def test_real_source_gate_quick_loot_and_qengine_owners_are_preserved(self):
+        from unittest.mock import patch
+
+        for source, expected_capture_calls in ((self.bare_source_gate, 0), (self.prefix, 1)):
+            with self.subTest(qengine=bool(expected_capture_calls)):
+                generated = dict(source)
+                before = {row["production_definition"]["production_key"]: row
+                          for row in json.loads(generated[self.profile])["records"]}
+                with patch.object(self.qengine, "capture", wraps=self.qengine.capture) as capture:
+                    admission.admit(builder.ROOT, generated, self.profile, self.manifest,
+                                    self.order, self.canonical)
+                self.assertEqual(capture.call_count, expected_capture_calls)
+                if expected_capture_calls:
+                    capture.assert_called_once_with(builder.ROOT, item_ids={22074})
+                rows = json.loads(generated[self.profile])["records"]
+                after = {row["production_definition"]["production_key"]: row for row in rows}
+                self.assertEqual(len(rows), len(set(before) | {
+                    f"oteryn:item.tibia.i{number}" for number in admission.IDS}))
+                self.assertEqual(set(after), set(before) | {
+                    f"oteryn:item.tibia.i{number}" for number in admission.IDS})
+                for key, row in before.items():
+                    self.assertEqual(after[key], row)
+                self.assertEqual(json.loads(generated[self.manifest])["item_profiles"]["sha256"],
+                                 hashlib.sha256(generated[self.profile]).hexdigest())
+
+    def test_prior_owner_drift_and_duplicate_keys_refuse_without_writes(self):
+        from unittest.mock import patch
+
+        changes = {
+            "binding": lambda row: row["production_binding"].update(source_revision="unqualified"),
+            "revision": lambda row: row["production_definition"].update(revision_ref="definition-r2"),
+            "custody": lambda row: row["admission"].update(legal_destinations=[]),
+            "known_weight": lambda row: row["semantics"]["physical"]["value"]["weight"].update(value=1),
+            "blocking": lambda row: row["attributes"].update(blocks_movement=True),
+            "extra_property": lambda row: row["attributes"].update(unqualified_world_attribute=True),
+            "missing_property": lambda row: row["attributes"].pop("has_height"),
+            "wrong_taxonomy": lambda row: row["authoring"].update(taxonomy={"primary": "Unqualified"}),
+            "null_taxonomy": lambda row: row["authoring"].update(taxonomy=None),
+            "extra_authoring": lambda row: row["authoring"].update(unqualified_world_field=True),
+        }
+        for number in (2576, 22074):
+            for name in (*changes, "duplicate"):
+                with self.subTest(number=number, mutation=name):
+                    generated = dict(self.prefix)
+                    document = json.loads(generated[self.profile])
+                    row = next(row for row in document["records"]
+                               if row["production_definition"]["production_key"] == f"oteryn:item.tibia.i{number}")
+                    if name == "duplicate":
+                        document["records"].append(copy.deepcopy(row))
+                    else:
+                        changes[name](row)
+                    generated[self.profile] = self.canonical(document)
+                    before = dict(generated)
+                    with patch.object(self.qengine, "capture", return_value=copy.deepcopy(self.qualified)):
+                        with self.assertRaisesRegex(ValueError, "WORLD_CHANGE_ITEM_PROFILE_DUPLICATE"):
+                            admission.admit(builder.ROOT, generated, self.profile, self.manifest,
+                                            self.order, self.canonical)
+                    self.assertEqual(generated, before)
+
+    def test_carpet_taxonomy_requires_one_exact_canonical_identity(self):
+        from unittest.mock import patch
+
+        read_bytes = Path.read_bytes
+        for mutation in ("missing", "duplicate", "family", "revision"):
+            with self.subTest(mutation=mutation):
+                taxonomy = copy.deepcopy(self.taxonomy)
+                selected = next(row for row in taxonomy["records"]
+                                if row["target"]["key"] == "oteryn:item.tibia.i2576")
+                if mutation == "missing":
+                    taxonomy["records"].remove(selected)
+                elif mutation == "duplicate":
+                    taxonomy["records"].append(copy.deepcopy(selected))
+                elif mutation == "family":
+                    selected["target"]["family"] = "Creature"
+                else:
+                    selected["target"]["revision"] = "definition-r2"
+                encoded = self.canonical(taxonomy)
+                def read(path):
+                    return encoded if path == self.taxonomy_path else read_bytes(path)
+                generated = dict(self.prefix)
+                before = dict(generated)
+                with patch.object(Path, "read_bytes", read):
+                    with self.assertRaisesRegex(ValueError, "WORLD_CHANGE_ITEM_PROFILE_DUPLICATE"):
+                        admission.admit(builder.ROOT, generated, self.profile, self.manifest,
+                                        self.order, self.canonical)
+                self.assertEqual(generated, before)
+
+    def test_qengine_projection_cannot_override_world_identity_or_custody(self):
+        from unittest.mock import patch
+
+        mutations = {
+            "identity": lambda row: row["production_definition"].update(revision_ref="definition-r2"),
+            "binding": lambda row: row["production_binding"].update(source_revision="unqualified"),
+            "admission": lambda row: row["admission"].update(materializable=False),
+            **{group: (lambda row, group=group: row["semantics"].update({group: {"state": "UNKNOWN"}}))
+               for group in ("physical", "stack", "container", "temporal", "charges")},
+            **{field: (lambda row, field=field: row["attributes"].update({field: "unqualified"}))
+               for field in ("speed_bonus", "blocks_movement", "blocks_projectile", "immovable_block_solid",
+                             "has_height", "field_replaceable", "field_condition", "rune_consumption", "spell_augments")},
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(mutation=name):
+                packet = copy.deepcopy(self.qualified)
+                row, = packet["records"]
+                mutate(row)
+                generated = dict(self.prefix)
+                document = json.loads(generated[self.profile])
+                prior = next(record for record in document["records"]
+                             if record["production_definition"]["production_key"] == "oteryn:item.tibia.i22074")
+                prior.clear()
+                prior.update(copy.deepcopy(row))
+                generated[self.profile] = self.canonical(document)
+                before = dict(generated)
+                with patch.object(self.qengine, "capture", return_value=packet):
+                    with self.assertRaisesRegex(ValueError, "WORLD_CHANGE_ITEM_PROFILE_DUPLICATE"):
+                        admission.admit(builder.ROOT, generated, self.profile, self.manifest,
+                                        self.order, self.canonical)
+                self.assertEqual(generated, before)
 
 
 if __name__ == "__main__":

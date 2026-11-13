@@ -87,6 +87,7 @@ fn fixture() -> Result<Capture, BoxError> {
     };
     let list = |entries: &[(u32, bool)]| -> Result<Vec<u8>, BoxError> {
         quest_log::encode_quest_log(&quest_log::QuestLog {
+            map_marks: Vec::new(),
             view: Some(quest_log::QuestLogView::List(
                 entries
                     .iter()

@@ -266,7 +266,7 @@ def legacy_uid_checks(records: list) -> list[dict]:
             source = placement["source_binding"]
             position = source["project_position"]
             where = (claim["identity"]["key"], position["x"], position["y"], position["z"])
-            for ref in source["legacy_unique_ids"]:
+            for ref in ([] if claim.get("definition_profile") == "native_authored_v1" else source["legacy_unique_ids"]):
                 bindings.setdefault((ref["server"], ref["unique_id"]), set()).add(where)
     return [
         {"reason": "duplicate legacy unique id", "server": server, "unique_id": uid,
@@ -279,6 +279,11 @@ def legacy_uid_checks(records: list) -> list[dict]:
 def chest_transitions() -> set[str]:
     """The keys of the chest transitions the QuestState lowering constructed."""
     return {
+        TRANSITION_PREFIX + marker + "/chest"
+        for rule in load_json(ROOT / "content/quests/claim-sets.json").values()
+        if not rule.get("mint_only", False)
+        for group in rule["groups"] for marker in group
+    } | {
         t["key"]
         for quest in load_json(ROOT / QUEST_STATE_REL)["quests"]
         for t in quest["transitions"]
@@ -549,10 +554,13 @@ def committed_errors() -> list[str]:
     source_claims = load_json(ROOT / CLAIMS_REL)["claims"]
     from reward_claim_variant_authoring import PROFILE, stack_normalization_checks
     from reward_claim_variant_authoring import validate as validate_variants
-    plain = [r for r in records if r['definition'].get('definition_profile') != PROFILE]
+    plain = [r for r in records if r['definition'].get('definition_profile') not in (PROFILE, 'native_authored_v1')]
     variants = [r for r in records if r['definition'].get('definition_profile') == PROFILE]
     items = load_items()
-    errors = validate(plain, items, index["source_checks"], source_claims)
+    import engclaim_native
+    native = [r for r in records if r['definition'].get('definition_profile') == 'native_authored_v1']
+    errors = [] if native == engclaim_native.records()[0] else ['M34 authored allocation drift']
+    errors += validate(plain, items, index["source_checks"], source_claims)
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
@@ -589,6 +597,8 @@ def generate() -> dict[str, str]:
     family_index = json.loads(outputs[INDEX_PATH])
     family_index['variant_source_checks'] = legacy_uid_checks(records) + stack_normalization_checks()
     outputs[INDEX_PATH] = compact(family_index)
+    import engclaim_native
+    records += engclaim_native.extend_outputs(outputs, compact)
     names = ("project", "manifest", "content.lock")
     docs = [load_json(ROOT / f"content/{name}.json") for name in names]
     for name, doc in zip(

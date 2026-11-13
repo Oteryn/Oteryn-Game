@@ -110,6 +110,7 @@ mod tests {
             runtime_scope_ownership_generation: 7,
             world_reset: None,
             ground_container_entry: None,
+            arena_reset: None,
             activity_retirement: Some(OneItemActivityRetirementV1 {
                 world_id: id(1),
                 instance_id: id(2),

@@ -38,6 +38,7 @@ pub(super) enum Case {
     OneHit,
     PzContention,
     Eqmod2,
+    EngencHits,
     ForgeReplay,
     ForgeFree,
     ForgeIdle,
@@ -331,7 +332,9 @@ async fn scenario(
         if x == 2 && !matches!(task_board_case, Case::TaskBoardOrdered) {
             continue;
         }
-        let key = if matches!(task_board_case, Case::TaskBoardOrdered) {
+        let key = if matches!(case, Case::EngencHits) {
+            "oteryn:creature.party_skeleton"
+        } else if matches!(task_board_case, Case::TaskBoardOrdered) {
             "oteryn:creature.rat"
         } else {
             key
@@ -601,6 +604,9 @@ async fn scenario(
     }
     if matches!(case, Case::Eqmod2) {
         return super::equipment_mods::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(case, Case::EngencHits) {
+        return super::engenc_ordinary_hits::qualify(&mut owner, h, &players).await;
     }
     if matches!(task_board_case, Case::CharmBless) {
         return super::srx2_charm_consumers::bless(&mut owner, h, &players).await;

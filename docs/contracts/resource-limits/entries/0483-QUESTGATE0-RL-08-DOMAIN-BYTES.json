@@ -3,17 +3,17 @@
   "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md",
   "resource": "Encoded QuestLogV1 (domain 16 snapshot and delta payload)",
   "unit": "bytes",
-  "hard_maximum": 180268,
+  "hard_maximum": 249900,
   "configurable_range": {
-    "minimum": 180268,
-    "maximum": 180268
+    "minimum": 249900,
+    "maximum": 249900
   },
   "failure_category": "CAPACITY_EXCEEDED",
-  "allocation_impact": "The view (the list, at most 10,240 bytes, or one line) and 10 tracked lines, each element at most 4 + 16,384 bytes: 11 x 16,388 = 180,268, within the FND-02 delta (262,144) and snapshot chunk (524,288) bounds.",
+  "allocation_impact": "The view (the list, at most 10,240 bytes, or one line) and 10 tracked lines, each element at most 4 + 16,384 bytes: 11 x 16,388 + 256 Cross marker elements x 272 = 249,900, within the FND-02 delta (262,144) and snapshot chunk (524,288) bounds.",
   "client_visible": true,
   "boundary_tests": [
-    "max=180268: a worst-case view and ten worst-case tracked lines encode to exactly 180,268 bytes and decode",
-    "max+1=180269: a payload one byte over fails closed before parsing"
+    "max=249900: a worst-case view and ten worst-case tracked lines and 256 maximum-size Cross markers encode to exactly 249,900 bytes and decode",
+    "max+1=249901: a payload one byte over fails closed before parsing"
   ],
   "consumers": [
     "crates/protocol-oteryn/src/quest_log.rs MAX_QUEST_LOG_BYTES",

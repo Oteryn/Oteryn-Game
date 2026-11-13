@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/content-schema/native-gameplay'))
 import build_source_item_profiles as source
 import grizzly_shop_profiles as accepted
+from build_spell_item_identities import historical_binding_bytes
 
 IDS = {3060, 3063, 3284, 3306, 3364, 3366, 3414, 5954, 7368, 7382, 7393}
 XML = 'imports/canary/items-xml/items.xml'
@@ -38,6 +39,8 @@ def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
     raw = {}
     for path, digest in [(XML, XML_SHA), (CLIENT, CLIENT_SHA), (BINDINGS, BINDINGS_SHA)]:
         raw[path] = (root / path).read_bytes()
+        if path == BINDINGS:
+            raw[path] = historical_binding_bytes(raw[path], BINDINGS_SHA)
         if hashlib.sha256(raw[path]).hexdigest() != digest:
             raise ValueError('ENCOUNTER_LOOT_SOURCE_PIN')
     if xml_override is not None:
@@ -49,7 +52,7 @@ def facts(root=ROOT, ids=None, *, allow_containers=False, xml_override=None):
     xml = source.xml_index(raw[XML])
     objects = source.engine_items.load_appearance_objects(raw[CLIENT])
     physical = {r['server_item_id']: r for r in source.policies(raw[CLIENT], raw[XML], ids)}
-    bindings = source.binding_index(raw[BINDINGS])
+    bindings = source.binding_index(raw[BINDINGS], expected_sha=BINDINGS_SHA)
     result = {}
     for item in sorted(ids):
         profile = source.profile(item, xml[item], objects[item], physical[item], bindings, None)

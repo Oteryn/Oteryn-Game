@@ -9,6 +9,26 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(in super::super) fn bundle(
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false)
+}
+
+pub(in super::super) fn bundle_with_pillars(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, true, false)
+}
+
+pub(in super::super) fn bundle_with_pillar_floors(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+    bundle_layout(native, false, true)
+}
+
+fn bundle_layout(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    with_pillars: bool,
+    pillar_floors_only: bool,
+) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::writer::{Extent, Sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle_with_item_ids(
         ("oteryn:item.tibia.i2854", 0),
@@ -24,6 +44,22 @@ pub(in super::super) fn bundle(
     bundle.manifest.palette[0].key = ground.into();
     bundle.manifest.palette[0].family = oteryn_world_bundle::bundle::Family::Item;
     bundle.manifest.palette[0].id = reference.get() - 1;
+    for source in [1841, 5022] {
+        let key = format!("oteryn:item.tibia.i{source}");
+        let reference = native
+            .item_index()
+            .and_then(|index| index.definition_ref("Item", &key, "definition-r1"))
+            .ok_or("arena item reference")?;
+        bundle
+            .manifest
+            .palette
+            .push(oteryn_world_bundle::writer::PaletteEntry {
+                key,
+                family: oteryn_world_bundle::bundle::Family::Item,
+                id: reference.get() - 1,
+                terrain: None,
+            });
+    }
     bundle.manifest.world = Extent {
         min_x: 32160,
         min_y: 31045,
@@ -37,7 +73,7 @@ pub(in super::super) fn bundle(
         .map(|&(x, y)| (x, y, 7))
         .chain([donor::KICK, donor::REWARD_ROOM])
     {
-        for dx in -5..=5 {
+        for dx in -6..=5 {
             for dy in -5..=5 {
                 let at = ((x + dx) as u16, (y + dy) as u16, -z as i8);
                 let mut tile = bundle.sectors[0].tiles[0].clone();
@@ -45,6 +81,51 @@ pub(in super::super) fn bundle(
                 tile.y = at.1;
                 tiles.insert(at, tile);
             }
+        }
+    }
+    // M51 source pillars and portal Item facts, without changing production
+    // definitions. Crystal svargrond_arena.lua:25-115,207-246.
+    if with_pillars {
+        let pillar_palette = u32::try_from(
+            bundle
+                .manifest
+                .palette
+                .iter()
+                .position(|entry| entry.key == "oteryn:item.tibia.i1841")
+                .ok_or("pillar palette")?,
+        )?;
+        for number in 1..=10 {
+            let layout = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout();
+            let [x, y, floor] = layout.pillar;
+            let at = (u16::try_from(x)?, u16::try_from(y)?, i8::try_from(floor)?);
+            let tile = tiles.entry(at).or_insert_with(|| {
+                let mut tile = bundle.sectors[0].tiles[0].clone();
+                tile.x = at.0;
+                tile.y = at.1;
+                tile
+            });
+            tile.items.push(oteryn_world_bundle::sector::Item {
+                palette: pillar_palette,
+                depth: 0,
+                attrs: Default::default(),
+            });
+        }
+    }
+    // Crystal svargrond_arena.lua:235-244 recreates absent pillars on real floors.
+    // Their definition facts remain available, but no pillar is placed in the base.
+    if pillar_floors_only {
+        for number in 1..=10 {
+            let [x, y, floor] = oteryn_gameplay_quests::quest::barbarian_arena::Pit::new(number)
+                .ok_or("source pit")?
+                .layout()
+                .pillar;
+            let at = (u16::try_from(x)?, u16::try_from(y)?, i8::try_from(floor)?);
+            let mut tile = bundle.sectors[0].tiles[0].clone();
+            tile.x = at.0;
+            tile.y = at.1;
+            tiles.insert(at, tile);
         }
     }
     let mut sectors = std::collections::BTreeMap::<(i8, u16, u16), Sector>::new();
@@ -168,12 +249,16 @@ pub(in super::super) fn runtime_at(
 }
 
 pub(in super::super) async fn equip_sword(h: &super::Harness) -> TestResult {
+    equip_weapon(h, "oteryn:item.tibia.i3271").await
+}
+
+pub(in super::super) async fn equip_weapon(h: &super::Harness, item_key: &str) -> TestResult {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3271','definition-r1',1,1,encode($3,'hex')::uuid)")
-        .bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(211).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$4,'definition-r1',1,1,encode($3,'hex')::uuid)")
+        .bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(211).as_slice()).bind(item_key).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,6,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(id(41).as_slice()).bind(id(210).as_slice()).bind(id(42).as_slice()).bind(id(212).as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;

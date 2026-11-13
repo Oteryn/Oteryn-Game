@@ -45,6 +45,19 @@ pub(super) struct State {
 
 #[cfg(test)]
 impl NpcConversations {
+    pub(in crate::gameplay_transport) fn fixture_quest_topic(
+        &self,
+        session: GameSessionId,
+    ) -> Result<u16, String> {
+        let sessions = self.sessions.lock().map_err(|_| "sessions")?;
+        Ok(sessions
+            .get(&session)
+            .ok_or("session")?
+            .quest_dialogue
+            .topic
+            .number)
+    }
+
     pub(in crate::gameplay_transport) fn fixture_interrupt_quest_dialogue_commit(
         &self,
         session: GameSessionId,
@@ -61,6 +74,21 @@ impl NpcConversations {
 }
 
 impl State {
+    pub(super) fn has_pending_value(&self) -> bool {
+        self.pending.is_some()
+    }
+
+    pub(super) fn retire_for_source(&mut self, context: &Context) -> bool {
+        if self.has_pending_value() {
+            return false;
+        }
+        // Retire this conversation's quote, never another NPC/generation's.
+        if self.context.as_ref() == Some(context) || self.reward_request.as_ref() == Some(context) {
+            self.restart_topic();
+        }
+        true
+    }
+
     pub(super) fn restart_topic(&mut self) {
         // An unresolved writer retains its confirmation until reconciliation.
         if self.pending.is_none() {
@@ -94,6 +122,19 @@ pub(super) struct Step {
     next_topic: Option<Topic>,
     transition: Option<String>,
     reply: Vec<String>,
+    failure_reply: Vec<String>,
+    refused: bool,
+}
+
+impl Step {
+    pub(super) fn with_failure_reply(mut self, lines: Vec<String>) -> Self {
+        self.failure_reply = lines;
+        self
+    }
+    pub(super) fn with_refusal(mut self, refused: bool) -> Self {
+        self.refused = refused;
+        self
+    }
 }
 
 #[derive(Clone)]
@@ -145,6 +186,8 @@ pub(super) fn prepare(
         next_topic: choice.next_topic,
         transition: choice.transition,
         reply: choice.reply,
+        failure_reply: Vec::new(),
+        refused: false,
     })
 }
 
@@ -278,6 +321,9 @@ pub(super) async fn apply(
             return rejected();
         }
         state.apply_topic(step.context, step.next_topic);
+        if step.refused {
+            rendered.disposition = NpcIntentDisposition::Rejected;
+        }
         return rendered;
     };
     let (Some(item_fence), Ok(id), Some(catalogue)) = (
@@ -368,18 +414,15 @@ pub(super) async fn apply(
             reply: step.reply.clone(),
         });
     }
-    let value_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
-        .ok()
-        .is_some_and(|callbacks| callbacks.iter().any(|c| c.key == request.transition_key));
-    let fee_payment = if oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
+    let reward_callback = oteryn_gameplay_quests::quest::reward_callbacks::load_for(catalogue)
         .ok()
         .and_then(|callbacks| {
             callbacks
                 .into_iter()
                 .find(|c| c.key == request.transition_key)
-        })
-        .is_some_and(|c| c.fee.is_some())
-    {
+        });
+    let value_callback = reward_callback.is_some();
+    let fee_payment = if reward_callback.as_ref().is_some_and(|c| c.fee.is_some()) {
         match super::endgame::prepare_reward_fee(admission, command, fence).await {
             Ok(payment) => Some(payment),
             Err(outcome) => {
@@ -413,6 +456,8 @@ pub(super) async fn apply(
                 fee_payment: fee_payment.as_ref(),
                 actor_conditions: actor_conditions.as_ref(),
                 carried_use: None,
+                creature_use: None,
+                peer_use: None,
             },
             &admission.premium_coordinator,
         )
@@ -433,6 +478,7 @@ pub(super) async fn apply(
     if value_callback && let Err(error) = &outcome {
         eprintln!("quest reward commit: {error:?}");
     }
+    let newly_committed = matches!(&outcome, Ok(QuestTransitionOutcome::Committed(_)));
     match outcome {
         Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => {
             #[cfg(test)]
@@ -453,6 +499,17 @@ pub(super) async fn apply(
                 .refresh_level_up_vitals(actor, command.game_session_id)
                 .await;
             let runtime = admission.runtime.lock().await;
+            if newly_committed && let Some(callback) = &reward_callback {
+                super::magic_effects::publish(
+                    admission,
+                    &runtime,
+                    actor,
+                    command,
+                    &intent,
+                    &step.context,
+                    &callback.magic_effects,
+                );
+            }
             publish_committed_reply(
                 admission.states.npc_conversations.current_npc(
                     &admission.states.chat,
@@ -470,7 +527,29 @@ pub(super) async fn apply(
         )) => unknown(),
         _ => {
             finish(admission, command.game_session_id, false);
-            rejected()
+            if step.failure_reply.is_empty() {
+                return rejected();
+            }
+            let mut rendered = reply(
+                &admission.states.chat,
+                command.game_session_id,
+                &step.context,
+                &intent,
+                step.failure_reply,
+            );
+            rendered.disposition = NpcIntentDisposition::Rejected;
+            let runtime = admission.runtime.lock().await;
+            publish_committed_reply(
+                admission.states.npc_conversations.current_npc(
+                    &admission.states.chat,
+                    &runtime,
+                    actor,
+                    command.game_session_id,
+                    &intent,
+                ),
+                &step.context,
+                rendered,
+            )
         }
     }
 }

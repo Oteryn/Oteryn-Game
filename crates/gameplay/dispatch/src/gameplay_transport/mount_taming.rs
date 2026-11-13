@@ -1,4 +1,6 @@
 //! MOUNTTAME: existing USE -> carried item -> current creature -> fenced durable attempt.
+pub(super) mod quest_objects;
+
 use super::{
     ComposedFreshAdmission,
     connection::{UseCommand, UseOutcome},
@@ -50,6 +52,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         item_target: Option<ItemKey>,
         visible: bool,
     ) -> Result<Option<UseOutcome>, ()> {
+        if intent.use_with_map_item.is_some() {
+            let corpse = match item_target {
+                Some(ItemKey::Instance(id)) => Some(id),
+                _ => None,
+            };
+            if let Some(result) = self
+                .use_carried_quest_item(actor, command, &intent, source, corpse)
+                .await?
+            {
+                return Ok(Some(result));
+            }
+        }
+        if intent.use_with_map_item.is_some()
+            && let Some(result) = self
+                .use_carried_quest_item_with_target(actor, command, &intent, source, item_target)
+                .await?
+        {
+            return Ok(Some(result));
+        }
+        if let Some(result) = self
+            .use_quest_tool_object(actor, command, &intent, source)
+            .await?
+        {
+            return Ok(Some(result));
+        }
         match self
             .tame(actor, command, intent, source, item_target, visible)
             .await
@@ -58,6 +85,100 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(Some(disposition)) => Ok(Some(outcome(disposition))),
             Err(None) => Err(()),
         }
+    }
+
+    /// Carried quest tools use the registered World receipt and exact selected custody.
+    async fn use_quest_tool_object(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: &UseIntent,
+        source: Option<ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
+            &intent.use_with_map_item
+        else {
+            return Ok(None);
+        };
+        let source = match (&intent.target, source) {
+            (UseTarget::Item(_), Some(ItemKey::Instance(item))) => Some(item),
+            (UseTarget::ItemByDefinition(_), None) => None,
+            _ => return Ok(None),
+        };
+        let Some(map) = self.bundle_map() else {
+            return Ok(None);
+        };
+        let view = super::world_map::MapViewSource {
+            overlay: &map.overlay,
+            facts: &map.facts,
+            content_generation: self
+                .active_generation
+                .ok_or(())?
+                .identity()
+                .client_artifact_digest(),
+            reset_epoch: self.reset_epoch,
+        };
+        let Ok(resolved) = super::world_map::resolve_map_target(&view, target, |_| None::<()>)
+        else {
+            return Ok(None);
+        };
+        let callbacks = self.callback_content();
+        let Some(callback) = callbacks.iter().find(|callback| {
+            quest_objects::accepts(callback)
+                && super::quest_callbacks::matches(map, callback, resolved.placement_key)
+        }) else {
+            return Ok(None);
+        };
+        let Some(required) = &callback.item_on_target else {
+            return Err(());
+        };
+        let Some(fence) = command.item_fence else {
+            return Ok(Some(outcome(UseDisposition::Rejected)));
+        };
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
+        let selected = inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .find(|entry| {
+                entry.item.definition.production_key == required.item
+                    && quest_objects::matches_source(
+                        &intent.target,
+                        source,
+                        entry.item.item_instance_id,
+                        self.active_generation
+                            .and_then(crate::content::ActiveGeneration::native_gameplay)
+                            .and_then(|native| native.item_index())
+                            .and_then(|index| {
+                                index.definition_ref(
+                                    &entry.item.definition.family,
+                                    &entry.item.definition.production_key,
+                                    &entry.item.definition.revision_ref,
+                                )
+                            }),
+                    )
+            });
+        let Some(selected) = selected else {
+            return Ok(Some(outcome(UseDisposition::NothingToUse)));
+        };
+        let intent =
+            oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent).map_err(|_| ())?;
+        Ok(self
+            .use_quest_callback_with_tool(
+                actor,
+                command,
+                map,
+                target,
+                required
+                    .selected_instance
+                    .then_some((selected.item.item_instance_id, intent)),
+            )
+            .await)
     }
 
     async fn tame(

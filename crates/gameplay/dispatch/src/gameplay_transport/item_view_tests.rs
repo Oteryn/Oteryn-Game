@@ -486,8 +486,9 @@ fn spatial_objects_get_handles_and_lose_them_on_leaving() {
     let handles: Vec<_> = entities
         .iter()
         .map(|entity| match entity.detail {
-            EntityDetail::Object { item_handle, .. } => item_handle,
-            EntityDetail::Actor { .. } => None,
+            EntityDetail::Object { item_handle, .. }
+            | EntityDetail::ObjectWithAppearance { item_handle, .. } => item_handle,
+            EntityDetail::Actor { .. } | EntityDetail::ActorWithIcons { .. } => None,
         })
         .collect();
     assert_eq!(handles, [Some(handle(1)), Some(handle(2))]);
@@ -916,7 +917,8 @@ mod connection {
             entity: EntityRef {
                 identity: ExactActorRef::transport_fixture(world_id, channel_id)
                     .placement_identity(),
-                generation: 0,
+                generation: ExactActorRef::transport_fixture(world_id, channel_id)
+                    .actor_local_generation(),
             },
             position,
             detail: EntityDetail::Actor {

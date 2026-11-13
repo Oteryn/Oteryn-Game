@@ -104,6 +104,18 @@ fn scenario_with_outfit(qualify_outfit: bool) -> TestResult {
             .movement_cells(room.movement_cells())
             .map_err(|error| format!("Rotten progression bundle movement cells: {error:?}"))?;
         let frame = bundle.frame_binding_digest(world);
+        let room = room
+            .bundle_view(
+                cells.clone(),
+                frame,
+                bundle.map_revision_digest(),
+                crate::content::NativeEntryStart {
+                    x: 2,
+                    y: 11,
+                    floor: 7,
+                },
+            )
+            .ok_or("Rotten progression bundle view")?;
         let channel_pin = ChannelContentPin::from_activation(
             world,
             pin.activation_sequence(),
@@ -663,11 +675,11 @@ async fn kill_key(
         let row = rewards.row(creature_key).map_err(debug)?;
         assert_eq!(
             row.corpse_item,
-            crate::combat::LootDefinitionRef::new(
+            Some(crate::combat::LootDefinitionRef::new(
                 "Item",
                 "oteryn:item.tibia.i39530",
                 "definition-r1"
-            )
+            ))
         );
         assert_eq!(row.xp_amount.get(), 0);
         assert!(
@@ -685,11 +697,11 @@ async fn kill_key(
             .ok_or("admitted empty Bakragore corpse")?;
         assert_eq!(
             corpse.corpse_item,
-            crate::combat::LootDefinitionRef::new(
+            Some(crate::combat::LootDefinitionRef::new(
                 "Item",
                 "oteryn:item.tibia.i44012",
                 "definition-r1"
-            )
+            ))
         );
         assert!(
             corpse.loot_table.entries.is_empty(),
@@ -862,7 +874,13 @@ async fn kill_key(
                 );
             } else if empty_bakragore {
                 let row = entry.row.as_ref().ok_or("queued empty Bakragore corpse")?;
-                assert_eq!(row.corpse_item.production_key, "oteryn:item.tibia.i44012");
+                assert_eq!(
+                    row.corpse_item
+                        .as_ref()
+                        .ok_or("queued Bakragore physical body")?
+                        .production_key,
+                    "oteryn:item.tibia.i44012"
+                );
                 assert!(row.loot_table.entries.is_empty());
                 assert!(
                     entry.bosstiary_only.is_none(),
@@ -912,9 +930,14 @@ async fn kill_key(
         if empty_bakragore {
             let (corpses, children): (i64, i64) = sqlx::query_as("SELECT count(*), (SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances parent ON parent.item_instance_id=e.parent_item_instance_id WHERE parent.definition_production_key='oteryn:item.tibia.i44012') FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i44012'").fetch_one(&h.pool).await?;
             assert_eq!(corpses, 1, "the admitted Bakragore body materializes once");
-            assert_eq!(children, 0, "no unavailable private loot enters the physical corpse");
+            assert_eq!(
+                children, 0,
+                "no unavailable private loot enters the physical corpse"
+            );
         } else {
-            eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
+            eprintln!(
+                "ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible"
+            );
         }
     }
     let before_replay = progression_receipts(h).await?;

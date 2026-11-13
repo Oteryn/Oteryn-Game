@@ -135,10 +135,7 @@ impl SessionAppearance {
                         == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
             {
                 let reference = self.bindings.get(&entity.entity)?.appearance_ref;
-                let oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor {
-                    appearance_ref,
-                    ..
-                } = &mut entity.detail
+                let (oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor { appearance_ref, .. } | oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::ActorWithIcons { appearance_ref, .. }) = &mut entity.detail
                 else {
                     return None;
                 };

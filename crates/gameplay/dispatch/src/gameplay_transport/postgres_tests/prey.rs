@@ -362,20 +362,32 @@ fn scenario() -> TestResult {
             .await?,
             0
         );
-        // A creature without a loot row is an empty table within the PREY-0 R4 budget and
-        // selectable. Oversized tables stay explicit content refusals, never skipped bonus
-        // rolls; no preyable creature on this world has one (draw.rs unit tests cover it).
-        assert!(native.reward_table().row("oteryn:creature.hydra").is_err());
+        // Hydra's newly qualified 16-entry loot table exceeds PREY-0 R4's seven-entry
+        // budget. Keep that refusal separate from the empty-table selection below.
+        assert!(native
+            .reward_table()
+            .row("oteryn:creature.hydra")
+            .map_err(debug)?
+            .loot_table
+            .entries
+            .len() > 7);
+        // This exact source creature is prey-eligible but declares no corpse. Its explicit
+        // physical-reward refusal is an empty PREY table, not a fabricated loot profile.
+        const EMPTY_REWARD: &str = "oteryn:creature.moonspawn_juggernaut";
+        assert_eq!(
+            native.reward_table().row(EMPTY_REWARD).err(),
+            Some(crate::content::creature_reward::NoSettlementReason::CorpseItemMissing),
+        );
         let any = wire::encode_request(&wire::Request::SelectAny {
             slot: 1,
-            creature: "oteryn:creature.hydra".into(),
+            creature: EMPTY_REWARD.into(),
         })
         .map_err(debug)?;
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &any)]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
         let chosen = wire::decode_reply(&values[0].1).map_err(debug)?;
-        assert_eq!(chosen.slots[0].selected, "oteryn:creature.hydra");
+        assert_eq!(chosen.slots[0].selected, EMPTY_REWARD);
         assert_eq!(chosen.wildcard_balance, 7);
         // Each expiry checkpoints the selected race's real activity, then debits atomically.
         let mut hunt_now = 121 * 60_000_000;
@@ -392,7 +404,7 @@ fn scenario() -> TestResult {
                 CommandStatus::Accepted
             );
             consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-                "oteryn:creature.hydra", &mut hunt_now).await;
+                EMPTY_REWARD, &mut hunt_now).await;
             let before: i16 = sqlx::query_scalar("SELECT balance FROM game_account_prey_wildcards")
                 .fetch_one(&h.pool)
                 .await?;
@@ -450,7 +462,7 @@ fn scenario() -> TestResult {
         );
         // The retained AUTO_REROLL now has no cards: expiry clears it and draws a list.
         consume_120_minutes(&owner, deps.actor, admitted.game_session_id,
-            "oteryn:creature.hydra", &mut hunt_now).await;
+            EMPTY_REWARD, &mut hunt_now).await;
         assert!(owner.flush_prey(admitted.game_session_id).await);
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &query)]).await?;

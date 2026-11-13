@@ -34,7 +34,7 @@ fn spawn(creature_key: &'static str, placement: Placement) -> IchgahalEffect {
 
 #[test]
 fn first_think_fires_a_wave_of_three_random_mushrooms_and_draws_the_next_interval() {
-    assert_eq!(Ichgahal_KEY, "oteryn:creature.ichgahal");
+    assert_eq!(ICHGAHAL_KEY, "oteryn:creature.ichgahal");
     let mut owner = IchgahalThinkOwner::default();
     let effects = owner
         .think(&facts(), || 8_500)

@@ -1,9 +1,9 @@
 //! Production Primal region, qualified template, native cadence/death and durable return.
 use super::fixture::{Harness, debug, id};
+use super::srx3_activity_source_fixture::{SourceScene, install_scene};
 use super::{Dependencies, TestResult};
-use crate::content::channel_content_pin::ChannelContentPin;
-use crate::content::native_gameplay::NativeGameplayInput;
-use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityReturnReason};
+use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
+use crate::durability::activity_handoff::ActivityReturnReason;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
@@ -15,9 +15,9 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::FirstEntryOutcome;
+use crate::gameplay_transport::item_fence_of;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batch_kills};
 use crate::gameplay_transport::native_activity::NativeActivityOutcome;
-use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as rules;
 use oteryn_protocol_oteryn::boss_encounter as wire;
 use std::time::{Duration, Instant};
@@ -30,36 +30,28 @@ fn srvgap2_primal_production_entry_cadence_death_settlement_and_return() -> Test
 async fn scenario(admin: String) -> TestResult {
     let started = Instant::now();
     super::reset();
-    let h = Harness::create_with_admission_seed(admin, "srvgap2_primal_chain", true, false).await?;
-    let evidence = super::house_transfer::RecoverySource::start(&h).await?;
-    super::house_transfer::prepare_owned_session(&h).await?;
-    let world = super::fixture::fence(1)?.runtime_scope.world_id();
-    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../content/spells.manifest.json");
-    let mut input = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
-    // Rebind only the harness's historical Character interpretation. Keep every
-    // production creature, source region, hook, room policy and reward unchanged.
-    input
-        .build_training
-        .as_mut()
-        .ok_or("training")?
-        .content_revision = "content-1".into();
-    let (controller, source_pin) =
-        crate::content::native_gameplay::test_support::try_activate_input(world, &input)
-            .map_err(debug)?;
-    let active = controller.active().ok_or("active production content")?;
+    // Qualify the real source scene before creating short-lived admission proofs.
+    let (scene, activation_pin) = SourceScene::new_with_activation(
+        PinnedActivitySourceRoom::Primal,
+        MovementLocalPosition {
+            x: 33548,
+            y: 32752,
+            floor: 14,
+        },
+    )?;
+    let active = scene
+        .controller
+        .active()
+        .ok_or("active production content")?;
     let native = active
         .native_gameplay()
         .ok_or("native production content")?;
-    let room = source_pin.qualified_room().clone();
-    let candidate = crate::content::bosses::activity_template::captured_boss_levers()
-        .map_err(debug)?
-        .into_iter()
-        .find(|row| row.creature_key.as_deref() == Some(rules::PRIMAL_MENACE_KEY))
-        .ok_or("Primal source candidate")?;
-    let template = controller
-        .qualify_activity_template(&room, &room, "content-1", &candidate)
+    let template = active
+        .qualify_primal_activity_template(&scene.room, "content-1")
         .map_err(debug)?;
+    let h = Harness::create_with_admission_seed(admin, "srvgap2_primal_chain", true, false).await?;
+    let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+    super::house_transfer::prepare_owned_session(&h).await?;
     assert_eq!(
         (
             template.minimum_level(),
@@ -69,19 +61,9 @@ async fn scenario(admin: String) -> TestResult {
         (500, 1, 60)
     );
     let lever = *template.lever_positions().first().ok_or("source lever")?;
-    let pin = source_pin.into_channel_pin();
-    let pin = ChannelContentPin::from_activation(
-        world,
-        pin.activation_sequence(),
-        pin.server_artifact_digest(),
-        pin.client_artifact_digest(),
-        pin.frame_binding_digest(),
-        pin.map_revision_digest(),
-        (lever.x, lever.y, i16::try_from(lever.z)?),
-    );
     let deps = Dependencies::with_content_and_capacity(
-        pin.clone(),
-        room,
+        scene.pin.clone(),
+        scene.room.clone(),
         native.spell_book().clone(),
         64,
     )?;
@@ -93,8 +75,7 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?;
     let mut owner = deps.owner(&h, &authority);
     owner.evidence = &evidence.evidence;
-    owner.active_generation = Some(active);
-    owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
+    install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Primal)?;
     // A qualified level-500 participant, with the actual native progression policy.
     let progression = native
         .progression()
@@ -195,14 +176,22 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .remember(admitted)
         .map_err(|_| "remember origin")?;
-    super::boss_activity::issue_content_and_reset(&h, &pin).await?;
-    ActivityHandoffOwner::new(h.root.clone())
-        .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
-        .await?;
-    owner
-        .activity_runtimes
-        .register_template(&template)
-        .map_err(|_| "register source template")?;
+    // Activation uses the accepted source artifact pin; runtime movement uses
+    // scene.pin's actual source-room frame. Admission owns catalogue publication.
+    let map_revision = crate::map::overlay::map_revision(
+        owner
+            .bundle_map()
+            .ok_or("actual source bundle map")?
+            .overlay
+            .base(),
+    );
+    super::boss_activity::issue_content_and_reset_with_runtime_pin(
+        &h,
+        &activation_pin,
+        &scene.pin,
+        &map_revision,
+    )
+    .await?;
     let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
     let (_, reply, barrier) = super::boss_activity::exchange_command(
@@ -404,9 +393,13 @@ async fn scenario(admin: String) -> TestResult {
     let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
         return Err("actual corpse Instance".into());
     };
+    let corpse = rewards
+        .corpse_item
+        .as_ref()
+        .ok_or("actual source Primal corpse")?;
     assert_eq!(sqlx::query_scalar::<_,i64>(
         "SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.instance_id=encode($1,'hex')::uuid AND g.channel_id IS NULL AND i.definition_production_key=$2")
-        .bind(instance_id.as_slice()).bind(&rewards.corpse_item.production_key).fetch_one(&h.pool).await?,1,
+        .bind(instance_id.as_slice()).bind(&corpse.production_key).fetch_one(&h.pool).await?,1,
         "the source corpse is durably placed in this exact Instance");
     // Wait for the real durable source deadline; never shorten the captured policy.
     tokio::time::timeout(Duration::from_secs(90), async {

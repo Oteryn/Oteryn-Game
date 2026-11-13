@@ -31,6 +31,16 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "bloodjaw_target_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "current_owner"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
+    },
+    {
       "event": "command_guard_failed",
       "level": "info",
       "span": false,
@@ -110,7 +120,7 @@
     },
     {
       "event": "control_loss_reconcile_pending",
-      "level": "info",
+      "level": "warn",
       "span": false,
       "fields": [
         "stage"
@@ -161,6 +171,27 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "native_owner_turn",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "phase",
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3056 test-only (cfg(test)): finite native profile boundary observations for actual pinned Primal/Bakragore rooms. Phase and class are static source tokens only; no identifiers, numeric clocks, payloads or raw errors. No production logging or authority is added."
+    },
+    {
+      "event": "rotten_wave_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "current_owner"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
       "event": "logout_busy",
@@ -238,6 +269,17 @@
       "note": "NBEOF-2: closed-schema stage and failure kind after holder retry exhaustion or a non-retryable durability failure."
     },
     {
+      "event": "source_death_pending",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase",
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3056 test-only diagnostic output: retained copied-death execution or ACK boundary; phase/class are closed source tokens. heart_fence absent records the existing recipient skip, not a new failure. No identifiers, payloads, SQL or raw errors. Diagnostic only; all outcomes and retained retries unchanged."
+    },
+    {
       "event": "spell_cast_condition_gated",
       "level": "info",
       "span": false,
@@ -270,6 +312,14 @@
       "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },
     {
+      "event": "step_rejected_field_pass_return",
+      "level": "warn",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "NBROUTE: returning the unused field-step pass failed; reject movement without identities, payloads or raw errors."
+    },
+    {
       "event": "step_rejected_holder_busy",
       "level": "info",
       "span": false,
@@ -287,9 +337,11 @@
     },
     {
       "event": "step_rejected_movement",
-      "level": "info",
+      "level": "warn",
       "span": false,
-      "fields": [],
+      "fields": [
+        "kind"
+      ],
       "codes": [],
       "note": "Node boot step rejection evidence (NBROUTE, #3076)."
     },

@@ -365,6 +365,18 @@ impl DurabilityRoot {
                     receipt
                         .execute(&mut *tx)
                         .await?;
+                    // M51, Crystal201189f svargrond_arena.lua:259-313:
+                    // committed death ends this exact shared-pit occupancy. The
+                    // fenced Character root serializes later admissions; replay
+                    // returned above and cannot release a subsequent run.
+                    if let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope {
+                        sqlx::query("DELETE FROM game_svargrond_pit_leases WHERE character_id=encode($1,'hex')::uuid AND game_session_id=encode($2,'hex')::uuid AND world_id=encode($3,'hex')::uuid AND channel_id=encode($4,'hex')::uuid AND scope_generation=$5::text::numeric")
+                            .bind(fence.character_id.as_bytes().as_slice())
+                            .bind(fence.game_session_id.as_bytes().as_slice())
+                            .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+                            .bind(fence.scope_ownership_generation.get().to_string())
+                            .execute(&mut *tx).await?;
+                    }
                     if let Err(error) =
                         super::super::pvp_death_consequences::apply_pvp_death_in_transaction(
                             &mut tx,

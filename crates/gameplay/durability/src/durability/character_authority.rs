@@ -827,6 +827,8 @@ pub(super) async fn account_security(
 // invalid row; chain continuity and latest state are joined by Character revision.
 // Keep the composite arm aligned with the installed progression consistency guard.
 // Its Premium and Prey descendants must not also appear as separate arms.
+// The migration-expanded view includes premium, Cyclopedia, Atelier, Hazard, Prey,
+// home town, Primal, Soul War, Rotten Blood and Arena receipts exactly once.
 // Keep the additive view aligned with game_character_progression_consistency_guard.
 // It includes premium and prey receipts, so neither may be repeated as another arm.
 // Each arm names the first violating row it finds (LOGDBG-C): the receipt family, a closed

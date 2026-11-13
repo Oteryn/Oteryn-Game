@@ -133,10 +133,13 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::presentation::CAPABILITY_ITEM_EFFECTS_V1,
     skill_display::CAPABILITY_SKILL_DISPLAY_V1,
     world_spatial::CAPABILITY_DIAGONAL_MOVEMENT_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_CREATURE_ICONS_V1,
     potion_durations::CAPABILITY_POTION_DURATIONS_V1,
     death_protection::CAPABILITY_DEATH_PROTECTION_V1,
     party::CAPABILITY_PARTY_MEMBER_EFFECTS_V1,
     mechanics_status::CAPABILITY_MECHANICS_STATUS_V1,
+    oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1,
+    oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_NATIVE_OBJECT_APPEARANCE_V1,
     property_services::house_rotation::CAPABILITY_HOUSE_FURNITURE_ROTATION_V1,
     oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
     oteryn_protocol_oteryn::imbuement_details::CAPABILITY_IMBUEMENT_DETAILS_V1,
@@ -364,6 +367,12 @@ mod native_advertisement_tests {
     #[test]
     fn native_advertisement_is_bootstrap_encodable_and_dependency_closed()
     -> Result<(), FoundationProtocolError> {
+        assert!(
+            CLIENT_SUPPORTED_CAPABILITIES
+                .windows(2)
+                .all(|pair| pair[0] < pair[1]),
+            "native capabilities must be strictly ascending without duplicates"
+        );
         let id = |last: u8| {
             let mut bytes = [1; 16];
             bytes[6] = 0x70;

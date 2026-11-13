@@ -68,10 +68,10 @@ pub fn panel_text(panel: &ArenaPanel) -> String {
             8 => tr!("Inventory full"),
             _ => tr!("Unknown result"),
         };
-        let phase = if reply.phase == 0 {
-            tr!("Idle")
-        } else {
-            tr!("Active")
+        let phase = match reply.phase {
+            1 => tr!("Preparation"),
+            2 => tr!("Fighting"),
+            _ => tr!("Idle"),
         };
         let rank = if reply.rank == 0 {
             tr!("Unranked").to_owned()
@@ -96,6 +96,42 @@ pub fn panel_text(panel: &ArenaPanel) -> String {
     }
     if panel.pending.is_some() {
         text.push_str(tr!("Waiting for the server\r\n"));
+    }
+    if panel.hazards.selected != [0, 0] {
+        text.push_str("Selected modifiers: ");
+        for (index, id) in panel.hazards.selected.iter().enumerate() {
+            if index != 0 {
+                text.push_str(", ");
+            }
+            text.push_str(match id {
+                1 => "Somersault",
+                2 => "Going Down With Me",
+                3 => "Exploding Corpses",
+                4 => "That Escalated Quickly",
+                5 => "The Floor is Lava",
+                6 => "Beam me Up!",
+                7 => "Tanked Up",
+                8 => "Sown Sorrow",
+                9 => "Bad Roots",
+                _ => "Unknown modifier",
+            });
+        }
+        text.push_str("\r\n");
+    }
+    for hazard in &panel.hazards.entries {
+        let label = match hazard.kind {
+            oteryn_client_runtime::arena::DromeHazardKind::Lava => {
+                "The Floor is Lava: red tile warning"
+            }
+            oteryn_client_runtime::arena::DromeHazardKind::Beam => "Beam me Up: blue tile warning",
+            oteryn_client_runtime::arena::DromeHazardKind::Tanked => {
+                "Tanked Up: purple tile warning"
+            }
+            oteryn_client_runtime::arena::DromeHazardKind::Sorrow => "Sown Sorrow: green seed",
+            oteryn_client_runtime::arena::DromeHazardKind::Roots => "Bad Roots: brown seed",
+        };
+        text.push_str(label);
+        text.push_str("\r\n");
     }
     if let Some(feedback) = panel.feedback {
         text.push_str(feedback);

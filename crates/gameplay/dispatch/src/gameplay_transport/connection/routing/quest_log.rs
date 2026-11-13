@@ -33,7 +33,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     .observe_quest_log(actor, admitted.game_session_id, None)
                     .await;
                 if query == oteryn_protocol_oteryn::quest_log::QuestLogQuery::ListOnly {
-                    return Some(match QuestLogState::list_only(observation) {
+                    return Some(match QuestLogState::list_only(observation,
+                        admitted.continuity.selected_capabilities.contains(
+                            oteryn_protocol_oteryn::personal_map_marks::CAPABILITY_PERSONAL_MAP_MARKS_V1)) {
                         Some(payload) => {
                             Dispatch::Reply(crate::foundation::CommandStatus::Accepted, payload)
                         }

@@ -33,6 +33,7 @@ fn snapshot(seed: u8, active: &[u8], revision: u64) -> TaskSnapshot {
         active_tasks: active.to_vec(),
         native_counters: vec![],
         active_goals: Vec::new(),
+        source_objectives: vec![],
     }
 }
 
@@ -186,9 +187,11 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
             snapshot(3, &[1], 12),
         ],
         deaths: Vec::new(),
+        hits: Default::default(),
+        encounters: Vec::new(),
     };
     let original_party = party(1, &[1, 2], true);
-    let original = cache.remember(actor(70), id(71), |snapshots| {
+    let original = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(original_party.clone()),
             id(1),
@@ -202,7 +205,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
     cache.sessions[0] = snapshot(1, &[1], 20);
     let mut later_party = party(1, &[1, 2, 3], true);
     later_party.revision = Some(2);
-    let replay = cache.remember(actor(70), id(71), |snapshots| {
+    let replay = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(later_party.clone()),
             id(1),
@@ -216,7 +219,7 @@ fn grizzly_party_join_or_task_start_after_death_never_changes_delayed_or_replaye
     assert_eq!(replay.source, Some(original_party));
     assert_eq!(cache.deaths.len(), 1);
     // A genuinely later death sees both changes, under a different occurrence.
-    let next = cache.remember(actor(72), id(73), |snapshots| {
+    let next = cache.remember(actor(72), id(73), |snapshots, _| {
         freeze(Some(later_party), id(1), true, "crocodile", snapshots)
     });
     assert_eq!(credited(&next), vec![id(1), id(2), id(3)]);
@@ -228,8 +231,10 @@ fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
         guardians: Vec::new(),
         sessions: vec![snapshot(1, &[1], 10)],
         deaths: Vec::new(),
+        hits: Default::default(),
+        encounters: Vec::new(),
     };
-    let original = cache.remember(actor(70), id(71), |snapshots| {
+    let original = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(party(1, &[], false)),
             id(1),
@@ -239,7 +244,7 @@ fn grizzly_death_preserves_original_run_revision_across_cancel_and_restart() {
         )
     });
     cache.sessions[0] = snapshot(1, &[1], 30);
-    let replay = cache.remember(actor(70), id(71), |snapshots| {
+    let replay = cache.remember(actor(70), id(71), |snapshots, _| {
         freeze(
             Some(party(1, &[], false)),
             id(1),
@@ -295,4 +300,72 @@ fn grizzly_invalid_revision_or_excess_active_tasks_fail_closed() {
         .recipients
         .is_empty()
     );
+}
+
+#[test]
+fn qn5_grimvale_area_uses_frozen_victim_position_and_retains_first_capture() -> Result<(), String> {
+    let lowered = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("qn5-area")
+        .map_err(|e| format!("{e:?}"))?;
+    let mut observed = snapshot(1, &[], 10);
+    observed.native_counters = capture_native(
+        lowered.catalogue(),
+        &std::collections::BTreeMap::from([("oteryn:quest-progress/qn5/grimvale-entry".into(), 1)]),
+    );
+    let mut active: Vec<_> = observed
+        .native_counters
+        .iter()
+        .map(|counter| counter.transition.as_str())
+        .collect();
+    active.sort_unstable();
+    // QUESTPC3's two source death routes begin at zero. Neither species may
+    // receive the werewolf credit tested below; keep the complete exact census.
+    assert_eq!(
+        active,
+        [
+            "oteryn:quest-transition/native-kills/m01c-ancient-aucar-ahau",
+            "oteryn:quest-transition/native-kills/m01c-decaying-defender-bakragore",
+            "oteryn:quest-transition/native-kills/qn5-grimvale-werewolves",
+        ]
+    );
+    let snapshots = [observed];
+    let capture = |position: Option<[i32; 3]>| {
+        freeze_at(
+            Some(party(1, &[], false)),
+            id(1),
+            true,
+            "oteryn:creature.werewolf",
+            position.map(|[x, y, floor]| crate::foundation::MovementLocalPosition {
+                x,
+                y,
+                floor: i16::try_from(floor).expect("fixture floor"),
+            }),
+            &snapshots,
+        )
+    };
+    for position in [
+        None,
+        Some([33384, 31539, 10]),
+        Some([33493, 31539, 10]),
+        Some([33420, 31531, 10]),
+        Some([33420, 31620, 10]),
+        Some([33420, 31539, 9]),
+        Some([33420, 31539, 12]),
+    ] {
+        assert!(
+            capture(position).native.is_empty(),
+            "outside/missing lethal coordinates cannot enter s2"
+        );
+    }
+    for position in [[33385, 31532, 10], [33492, 31619, 11], [33420, 31539, 10]] {
+        assert_eq!(capture(Some(position)).native.len(), 1);
+    }
+    let mut cache = GrizzlyCaptureCache::default();
+    let first = cache.remember(actor(1), id(22), |_, _| capture(Some([33420, 31539, 10])));
+    let replay = cache.remember(actor(1), id(22), |_, _| capture(Some([0, 0, 0])));
+    assert_eq!(
+        first, replay,
+        "later movement cannot rewrite eligibility of a queued death"
+    );
+    assert_eq!(replay.native.len(), 1);
+    Ok(())
 }

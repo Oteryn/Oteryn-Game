@@ -173,8 +173,23 @@ class QuestStateLoweringTests(unittest.TestCase):
         self.assertEqual(payload['counts']['chest_bindings']['bound'], [
             'quest/u7_8/the_shattered_isles/dragahs_spellbook', 'quest/u8_4/the_hidden_city_of_beregar/firewalker_boots'])
         self.assertEqual(payload['counts']['chest_bindings']['unbound'], [])
-        chest = [t['key'] for q in payload['quests'] for t in q['transitions'] if t['source']['owner'] == 'chest']
-        self.assertEqual(len(chest), 2)
+        chest = [t for q in payload['quests'] for t in q['transitions'] if t['source']['owner'] == 'chest']
+        canary = [t for t in chest if t['source'].get('servers') == ['canary']]
+        self.assertEqual({t['key'] for t in canary}, {
+            'oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest',
+            'oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest',
+        })
+        self.assertEqual(len(canary), 2)
+        native = [t for t in chest if t['source'].get('basis') == 'OTERYN_STANDALONE_ONCE_CLAIM_COMPLETION']
+        self.assertEqual({t['key'] for t in native}, {
+            'oteryn:quest-transition/kv/adoreduh/chest',
+            'oteryn:quest-transition/kv/barbarianaxe1/chest',
+            'oteryn:quest-transition/kv/battleaxe/chest',
+            'oteryn:quest-transition/kv/bloodherb/chest',
+            'oteryn:quest-transition/kv/captain_iglues/chest',
+        })
+        self.assertTrue(all(t['completes'] for t in native))
+        self.assertEqual(len(chest), 7)
 
     def test_committed_lowering_is_current_and_has_no_source_store_key(self):
         files = tool.expected(ROOT)

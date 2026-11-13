@@ -108,45 +108,75 @@ impl DurabilityRoot {
                     return Err(DurabilityError::InvalidStoredState);
                 }
             }
-            // An absent row already means the pinned default. Materialization and repeated
-            // citizenship are no-ops; an actual choice is one Character semantic transaction.
-            if town != before {
-                let state = sqlx::query(
-                    "SELECT character_revision::text,profile_revision,ruleset_revision,content_revision \
-                     FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE"
-                ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
-                    .ok_or(DurabilityError::InvalidStoredState)?;
-                if numeric_u64(&state, "character_revision")? != root.revision || !state_matches_root(&state, &root)
-                { return Err(DurabilityError::InvalidStoredState); }
-                let next = root.revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
-                if sqlx::query(
-                    "INSERT INTO game_character_home_town_receipts(character_id,game_session_id,connection_generation,character_lease_generation,scope_ownership_generation,town_before,town_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) \
-                     SELECT s.character_id,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,$6,$7,s.character_revision,$8::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision FROM game_character_progression_state s WHERE s.character_id=encode($1,'hex')::uuid"
-                ).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
-                    .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
-                    .bind(fence.scope_ownership_generation.get().to_string()).bind(before).bind(town).bind(next.to_string())
-                    .execute(&mut *tx).await?.rows_affected() != 1
-                { return Err(DurabilityError::InvalidStoredState); }
-                for query in [
-                    "UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
-                    "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
-                ] {
-                    if sqlx::query(query).bind(fence.character_id.as_bytes().as_slice()).bind(next.to_string())
-                        .bind(root.revision.to_string()).execute(&mut *tx).await?.rows_affected() != 1
-                    { return Err(DurabilityError::InvalidStoredState); }
-                }
-            }
-            let town: i32 = sqlx::query_scalar(
-                "SELECT game_character_home_town_write(encode($1,'hex')::uuid, \
-                 encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,$6)"
-            ).bind(fence.character_id.as_bytes().as_slice())
-                .bind(fence.game_session_id.as_bytes().as_slice())
-                .bind(fence.connection_generation.get().to_string())
-                .bind(fence.character_lease_generation.to_string())
-                .bind(fence.scope_ownership_generation.get().to_string())
-                .bind(town).fetch_one(&mut *tx).await?;
+            let town = write_in_transaction(&mut tx, fence, &root, before, town).await?;
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(town as u32))
         })).await?
     }
+}
+
+/// The existing citizenship receipt/revision writer, also used by Anna's atomic arrival.
+/// Caller holds the current Character root under the gameplay fence.
+pub(super) async fn write_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    root: &super::character_progression::FencedCharacterRoot,
+    before: i32,
+    town: i32,
+) -> Result<i32, DurabilityError> {
+    // An absent row already means the pinned default. Materialization and repeated
+    // citizenship are no-ops; an actual choice is one Character semantic transaction.
+    if town != before {
+        let state = sqlx::query(
+        "SELECT character_revision::text,profile_revision,ruleset_revision,content_revision \
+         FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE"
+    ).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
+        .ok_or(DurabilityError::InvalidStoredState)?;
+        if numeric_u64(&state, "character_revision")? != root.revision
+            || !state_matches_root(&state, root)
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let next = root
+            .revision
+            .checked_add(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if sqlx::query(
+        "INSERT INTO game_character_home_town_receipts(character_id,game_session_id,connection_generation,character_lease_generation,scope_ownership_generation,town_before,town_after,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision) \
+         SELECT s.character_id,encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,$6,$7,s.character_revision,$8::text::numeric,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision FROM game_character_progression_state s WHERE s.character_id=encode($1,'hex')::uuid"
+    ).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
+        .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string())
+        .bind(fence.scope_ownership_generation.get().to_string()).bind(before).bind(town).bind(next.to_string())
+        .execute(&mut **tx).await?.rows_affected() != 1
+    { return Err(DurabilityError::InvalidStoredState); }
+        for query in [
+            "UPDATE game_character_roots SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
+            "UPDATE game_character_progression_state SET character_revision=$2::text::numeric WHERE character_id=encode($1,'hex')::uuid AND character_revision=$3::text::numeric",
+        ] {
+            if sqlx::query(query)
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(next.to_string())
+                .bind(root.revision.to_string())
+                .execute(&mut **tx)
+                .await?
+                .rows_affected()
+                != 1
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
+    }
+    let town: i32 = sqlx::query_scalar(
+        "SELECT game_character_home_town_write(encode($1,'hex')::uuid, \
+     encode($2,'hex')::uuid,$3::text::numeric,$4::text::numeric,$5::text::numeric,$6)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(fence.game_session_id.as_bytes().as_slice())
+    .bind(fence.connection_generation.get().to_string())
+    .bind(fence.character_lease_generation.to_string())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(town)
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok(town)
 }

@@ -104,13 +104,34 @@ class NativeWorldCompletion(unittest.TestCase):
         class Completed(Exception):
             pass
 
+        canonical_outputs = []
+
+        def canonical_writer(command):
+            if "--canonicalize-root" not in command:
+                return
+            self.assertEqual(command[:8], [
+                "cargo", "run", "--locked", "-p", "oteryn-game-server", "--example",
+                "materialize_content_world_project_v2", "--",
+            ])
+            source = Path(command[command.index("--canonicalize-root") + 1])
+            output = Path(command[command.index("--output-root") + 1])
+            self.assertEqual(source, self.repo / "content/world")
+            self.assertFalse(output.exists())
+            # The real writer emits exactly the managed package, not the caller's
+            # unmanaged sibling. Keep production's strict output-set assertion live.
+            for locator in canonical.DOCUMENTS:
+                self.write(output / locator, (source / locator).read_bytes())
+            canonical_outputs.append(output)
+
         def measured():
             self.assertEqual(len(self.calls), 1)
+            self.assertEqual(len(canonical_outputs), 1)
             raise Completed
 
         with patch.object(sys, "argv", ["regenerate_content.py"]), \
                 patch.object(regenerate, "ROOT", self.repo), \
-                patch.object(regenerate, "run"), \
+                patch.object(regenerate, "WORLD", self.repo / "content/world"), \
+                patch.object(regenerate, "run", side_effect=canonical_writer), \
                 patch.object(regenerate, "refresh_quest_callback_proof"), \
                 patch.object(regenerate, "materialize_world"), \
                 patch.object(regenerate, "refresh_source_cohort_extent", side_effect=measured), \

@@ -35,3 +35,37 @@ observable to other players, and is the explicit C17b requirement of SRV6.
 
 The native client's world-view rendering is owned by C04. The client registration
 for this capability declares that rendering unsupported until C04 implements it.
+
+Capability372 `NATIVE_CREATURE_ICONS_V1` extends the existing entity entry with
+repeated field14 native icons. Each nested entry requires category(field1),
+icon ID(field2) and uint16 count(field3), including an explicit zero. The complete
+visible list has at most three entries; order and duplicate icon IDs are
+preserved. A new full entity observation without icons removes the old list.
+There is no new command or domain. Without372, field14 is rejected and encoders
+omit it, preserving legacy bytes.
+
+Source-qualified values are Quests category0 on players: RedCross2(count0..111),
+ArrowUp17(count1..100), Hazard22(nonzero uint16 count); Modifications category1 on creatures:
+ReducedHealth6(count1/5/15), ReducedHealthExclamation7(count0). These are pinned
+Crystal `201189f` native definitions, with Soulpit selection from
+`src/creatures/monsters/monster.cpp:2341–2348` and
+`src/creatures/creatures_definitions.hpp:1470–1483`. The server retains source
+keys for independently updated Rotten Blood modifiers, sorts those keys and
+publishes the first three current icons. Client duplicate IDs remain distinct;
+a count of zero is visible and never means removal.
+
+General `hazard` points use nonzero uint16 counts in pinned Crystal
+`src/creatures/players/player.cpp:5573–5583` (Canary same path:5628–5638);
+`data/libs/systems/hazard.lua:163` publishes the selected level and Crystal
+`data-global/scripts/systems/hazard_primal.lua:1–5` (Canary
+`data-otservbr-global/scripts/systems/hazard_primal.lua:1–5`) permits level12.
+The native count ABI is uint16 in Crystal `src/creatures/creatures_definitions.hpp:1549–1557`.
+Rotten Blood's distinct `rotten-hazard` source key remains limited to
+1..4 by its gameplay owner. That regional limit does not narrow the general
+wire icon. Both Hazard22 entries may coexist under separate source keys.
+
+Native presentation uses the existing glyph atlas to display ordered labels and
+counts beside the actor name (or alone when the name is absent). This is a
+presentation difference: it displays authoritative native icon IDs/counts
+without inventing an official icon sprite identity. Both RedCross entries are
+shown, including count0; a full update without icons clears their labels.

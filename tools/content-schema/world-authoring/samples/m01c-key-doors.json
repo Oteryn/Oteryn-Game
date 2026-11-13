@@ -1,0 +1,86 @@
+{
+  "schema": "OTERYN_M01C_KEY_DOOR_CAPTURE/v1",
+  "source": {
+    "repository": "zimbadev/crystalserver",
+    "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "classification": "OTS_HYPOTHESIS_ONLY",
+    "files": [
+      {
+        "path": "data-global/startup/tables/door_key.lua",
+        "sha256": "e5368703030072fcb400980274408ee2cbcfa51a6bf7d435da3dc2c9fcd2438b"
+      },
+      {
+        "path": "data-global/lib/core/storages.lua",
+        "sha256": "9e7edb4f311cd62424f129526e95e32c4b455e74755599197de629d3e5e63160"
+      }
+    ]
+  },
+  "bindings": [
+    {
+      "position": [
+        32675,
+        31649,
+        10
+      ],
+      "key_number": 3012,
+      "item": null,
+      "door_table_line": 70,
+      "storage_line": 344
+    },
+    {
+      "position": [
+        32676,
+        31671,
+        10
+      ],
+      "key_number": 3012,
+      "item": null,
+      "door_table_line": 70,
+      "storage_line": 344
+    },
+    {
+      "position": [
+        32398,
+        31804,
+        8
+      ],
+      "key_number": 3520,
+      "item": null,
+      "door_table_line": 106,
+      "storage_line": 350
+    },
+    {
+      "position": [
+        32400,
+        31788,
+        8
+      ],
+      "key_number": 3520,
+      "item": null,
+      "door_table_line": 106,
+      "storage_line": 350
+    },
+    {
+      "position": [
+        32400,
+        31789,
+        8
+      ],
+      "key_number": 3520,
+      "item": null,
+      "door_table_line": 106,
+      "storage_line": 350
+    },
+    {
+      "position": [
+        32824,
+        31969,
+        8
+      ],
+      "key_number": 5010,
+      "item": null,
+      "door_table_line": 168,
+      "storage_line": 368
+    }
+  ]
+}

@@ -234,9 +234,10 @@ pub(super) async fn assert_mint(
         .reward_table()
         .row(&policy.definition_key)
         .map_err(debug)?;
-    assert_eq!(definition.family, row.corpse_item.family);
-    assert_eq!(definition.production_key, row.corpse_item.production_key);
-    assert_eq!(definition.revision_ref, row.corpse_item.revision_ref);
+    let expected_corpse = row.corpse_item.as_ref().ok_or("native corpse definition")?;
+    assert_eq!(definition.family, expected_corpse.family);
+    assert_eq!(definition.production_key, expected_corpse.production_key);
+    assert_eq!(definition.revision_ref, expected_corpse.revision_ref);
     let source = mint.source.ok_or("native corpse source")?;
     assert_eq!(source.loot_purpose_key, purpose);
     assert_eq!(source.draw_ordinal, 0);

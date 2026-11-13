@@ -391,6 +391,45 @@ def outputs(
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
     if include_qualified:
+        import activity_static
+
+        static_files = activity_static.outputs()
+        for name in activity_static.SHARDS.values():
+            files[name] = static_files[name]
+        files[activity_static.REGISTRY] = static_files[activity_static.REGISTRY]
+        # The qualified restore target keeps its original base ordinal. Apply
+        # only that record; published neighbours must not hide base-source drift.
+        restore = next(
+            row["catalogue_record"]
+            for row in json.loads(static_files[activity_static.REGISTRY])["records"]
+            if row["source_item_id"] == 23049
+        )
+        restore_path = "content/world/terrain/terrain-05500-05999.json"
+        base_shard = json.loads(files[restore_path])
+        matches = [
+            i
+            for i, row in enumerate(base_shard["records"])
+            if row["identity"]["key"] == restore["identity"]["key"]
+        ]
+        if len(matches) != 1:
+            raise ValueError("Anomaly restore target lost its original base ordinal")
+        previous = base_shard["records"][matches[0]]
+        if (
+            previous["identity"] != restore["identity"]
+            or previous["provenance"]["source_item_id"] != 23049
+            or previous["provenance"]["source"]["profile"]
+            != "crystal_ff7ede5_item_definition_v1"
+        ):
+            raise ValueError("unreviewed Anomaly base source body")
+        base_shard["records"][matches[0]] = restore
+        files[restore_path] = world_objects.canonical_bytes(base_shard) + b"\n"
+        for directory in ["terrain", "objects"]:
+            name = f"content/world/{directory}/index.json"
+            index = json.loads(files[name])
+            index["notes"] += activity_static.NOTE
+            files[name] = (
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+            ).encode()
         import soulpit_static
 
         files[soulpit_static.SHARD] = soulpit_static.outputs()[soulpit_static.SHARD]
@@ -405,6 +444,46 @@ def outputs(
         files[sugar_room.SHARD] = sugar_room.outputs()[sugar_room.SHARD]
         index = json.loads(files[index_path])
         index["notes"] += sugar_room.MARKER_NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
+    if include_qualified:
+        import qm50_ground
+
+        files[qm50_ground.SHARD] = qm50_ground.outputs()[qm50_ground.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += qm50_ground.MARKER_NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
+        import elemental_ground
+
+        files[elemental_ground.SHARD] = elemental_ground.output()
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += elemental_ground.NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
+        import feroxa_static
+
+        files[feroxa_static.SHARD] = feroxa_static.outputs()[feroxa_static.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += feroxa_static.NOTE
+        files[index_path] = (
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        ).encode()
+        import engnpc2_ram_world
+
+        files[engnpc2_ram_world.SHARD] = engnpc2_ram_world.outputs()[
+            engnpc2_ram_world.SHARD
+        ]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += engnpc2_ram_world.NOTE
+        index["notes"] = activity_static.compose_terrain_notes(index["notes"])
         files[index_path] = (
             json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
@@ -454,6 +533,9 @@ def official_shards():
 
 
 def qualified_shards():
+    import activity_static
+    import feroxa_static
+
     return {
         path
         for relative in (
@@ -462,7 +544,12 @@ def qualified_shards():
             "content/world/terrain/terrain-08613-08613.json",
             "content/world/terrain/terrain-08614-08692.json",
             "content/world/terrain/terrain-08614-08668.json",
+            "content/world/terrain/terrain-08693-08693.json",
+            "content/world/terrain/terrain-08749-08749.json",
+            "content/world/terrain/terrain-08750-08750.json",
             "content/world/objects/objects-12917-12931.json",
+            *activity_static.SHARDS.values(),
+            feroxa_static.SHARD,
         )
         if (path := ROOT / relative).exists()
     }

@@ -153,6 +153,7 @@ async fn prepare_items(
             .map_err(|error| format!("qualification Item {key}: {error:?}"))?;
         let request = RewardClaimMintRequest {
             backpack_outputs: false,
+            additional_items: Vec::new(),
             // Reserved fixture ids cannot collide with the client's low command ids.
             command: crate::foundation::CommandRef::new(
                 current.current_game_session_id(),

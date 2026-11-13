@@ -185,6 +185,21 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             y: i32::from(chest.position.1),
             floor: -i16::from(chest.position.2),
         };
+        deps.combat_room = Some(
+            activated
+                .qualified_room()
+                .bundle_view(
+                    cells.clone(),
+                    activated.frame_binding().digest(),
+                    world.map_revision_digest(),
+                    crate::content::NativeEntryStart {
+                        x: at.x,
+                        y: at.y,
+                        floor: at.floor,
+                    },
+                )
+                .ok_or("qualified source reward Bundle room")?,
+        );
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,

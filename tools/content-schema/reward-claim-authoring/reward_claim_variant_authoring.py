@@ -33,6 +33,7 @@ def canonical_schema(root):
             'items': {'type': 'object', 'additionalProperties': False,
                 'required': ['appearance_tibia_id', 'source_binding', 'reward'], 'properties': {
                     'appearance_tibia_id': {'type': 'integer', 'minimum': 1},
+                    'quest_transition': {'type': 'string', 'pattern': '^oteryn:quest-transition/'},
                     'source_binding': {'type': 'object', 'additionalProperties': False,
                         'required': ['project_position', 'legacy_unique_ids'], 'properties': {
                             'project_position': {'$ref': '#/$defs/position'},
@@ -206,6 +207,10 @@ def derive_definitions(packet, items, stack_problem, root=Path(__file__).resolve
                 if len(grants) != 1:
                     raise ValueError('ambiguous canonical Achievement grant')
                 p['achievement_grant'] = copy.deepcopy(grants[0]['grant_request'])
+            from reward_claim_authoring import chest_transitions
+            transition = "oteryn:quest-transition/" + source["identity"]["key"].split("reward-claim/", 1)[1] + "/chest"
+            if transition in chest_transitions():
+                p["quest_transition"] = transition
             placements.append(p)
         marker = source['identity']['key'].split(':reward-claim/', 1)[1].replace('/', '.')
         definition = {'identity': {'key': 'oteryn:reward-claim.' + marker, 'revision': 'reward-claim-r1'},

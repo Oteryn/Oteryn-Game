@@ -16,6 +16,9 @@ pub const SNAPSHOT_TYPE_WORLD_SPATIAL_V1: u32 = 1;
 /// result with [`StepDisposition::TooEarly`] and the `step_wait_ms` pacing receipt
 /// (STEP-PACE-WIRE-0), and owns no command type or domain.
 pub const CAPABILITY_PACED_MOVEMENT_V1: u32 = 13;
+/// M40: eight-way steps and the corresponding three-times pacing receipt.
+pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 371;
+pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 
 /// First-child semantic bounds (#642 packet 5853255180).
 pub const MAX_STEP_INTENT_BYTES: usize = 4;
@@ -26,9 +29,6 @@ pub const MAX_STEP_RESULT_BYTES: usize = 4;
 pub const MAX_PACED_STEP_RESULT_BYTES: usize = 8;
 /// The largest `step_wait_ms`: the step-speed table maximum (speed 10, ground speed 1000).
 pub const MAX_STEP_WAIT_MS: u32 = 111_150;
-/// Opt-in eight-neighbour native movement; cardinal facing/state payloads remain unchanged.
-pub const CAPABILITY_DIAGONAL_MOVEMENT_V1: u32 = 371;
-pub const MAX_DIAGONAL_STEP_WAIT_MS: u32 = MAX_STEP_WAIT_MS * 3;
 /// A `MOVED` step duration is a whole number of server beats.
 pub const STEP_WAIT_BEAT_MS: u32 = 50;
 pub const MAX_WORLD_SPATIAL_PAYLOAD_BYTES: usize = 64;
@@ -53,6 +53,20 @@ pub enum StepDirection {
 }
 
 impl StepDirection {
+    #[must_use]
+    pub const fn delta(self) -> (i32, i32) {
+        match self {
+            Self::North => (0, -1),
+            Self::East => (1, 0),
+            Self::South => (0, 1),
+            Self::West => (-1, 0),
+            Self::NorthEast => (1, -1),
+            Self::SouthEast => (1, 1),
+            Self::SouthWest => (-1, 1),
+            Self::NorthWest => (-1, -1),
+        }
+    }
+    #[must_use]
     pub const fn is_diagonal(self) -> bool {
         matches!(
             self,
@@ -60,6 +74,10 @@ impl StepDirection {
         )
     }
 }
+
+#[cfg(test)]
+#[path = "world_spatial/m40_diagonal_tests.rs"]
+mod m40_diagonal_tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepDisposition {
@@ -211,9 +229,9 @@ pub fn encode_step_result(disposition: StepDisposition) -> Vec<u8> {
 fn check_step_result(
     result: StepResult,
     paced: bool,
-    diagonals: bool,
+    diagonal: bool,
 ) -> Result<(), WorldSpatialError> {
-    let maximum = if diagonals {
+    let maximum = if diagonal {
         MAX_DIAGONAL_STEP_WAIT_MS
     } else {
         MAX_STEP_WAIT_MS
@@ -241,21 +259,31 @@ pub fn encode_step_result_paced(
     result: StepResult,
     paced: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    encode_step_result_profile(result, paced, false)
+    encode_step_result_with_diagonal(result, paced, false)
 }
 
-pub fn encode_step_result_profile(
+/// A larger receipt is valid only for a session that selected diagonal movement.
+pub fn encode_step_result_with_diagonal(
     result: StepResult,
     paced: bool,
-    diagonals: bool,
+    diagonal: bool,
 ) -> Result<Vec<u8>, WorldSpatialError> {
-    check_step_result(result, paced, diagonals)?;
+    check_step_result(result, paced, diagonal)?;
     let mut output = encode_step_result(result.disposition);
     if result.step_wait_ms != 0 {
         push_tag(&mut output, 2, 0);
         push_varint(&mut output, u64::from(result.step_wait_ms));
     }
     Ok(output)
+}
+
+/// The negotiated main profile shares the exact same bounded receipt codec.
+pub fn encode_step_result_profile(
+    result: StepResult,
+    paced: bool,
+    diagonals: bool,
+) -> Result<Vec<u8>, WorldSpatialError> {
+    encode_step_result_with_diagonal(result, paced, diagonals)
 }
 
 /// The command type 1 result of a session without capability 13: `TOO_EARLY` and field 2 fail
@@ -290,6 +318,15 @@ pub fn decode_step_result_profile(
     payload: &[u8],
     paced: bool,
     diagonals: bool,
+) -> Result<StepResult, WorldSpatialError> {
+    decode_step_result_receipt_with_diagonal(payload, paced, diagonals)
+}
+
+/// Decode the negotiated receipt without widening the legacy paced contract.
+pub fn decode_step_result_receipt_with_diagonal(
+    payload: &[u8],
+    paced: bool,
+    diagonal: bool,
 ) -> Result<StepResult, WorldSpatialError> {
     let maximum = if paced {
         MAX_PACED_STEP_RESULT_BYTES
@@ -328,7 +365,7 @@ pub fn decode_step_result_profile(
         disposition,
         step_wait_ms,
     };
-    check_step_result(result, paced, diagonals)?;
+    check_step_result(result, paced, diagonal)?;
     Ok(result)
 }
 
@@ -672,7 +709,7 @@ mod tests {
         for bad in [
             &[][..],                       // missing direction
             &[0x08, 0x00][..],             // zero enum
-            &[0x08, 0x05][..],             // unknown enum
+            &[0x08, 0x09][..],             // unknown enum
             &[0x08, 0x01, 0x08, 0x02][..], // repeated field
             &[0x10, 0x01][..],             // unknown field
             &[0x08][..],                   // truncated
@@ -990,6 +1027,27 @@ mod tests {
         assert_eq!(limit("MOVE-RL-03"), Some(1));
         // VIS-2 re-decided MOVE-RL-11 (D87): 256 entities per snapshot or delta.
         assert_eq!(limit("MOVE-RL-11"), Some(256));
+    }
+    #[test]
+    fn qn6_diagonal_step_values_round_trip() {
+        for value in 5..=8 {
+            let bytes = [8, value];
+            assert_eq!(
+                decode_step_intent(&bytes),
+                Err(WorldSpatialError::Malformed)
+            );
+            assert_eq!(
+                decode_step_intent_selected(&[], &bytes),
+                Err(WorldSpatialError::Malformed)
+            );
+            let direction = decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &bytes);
+            assert!(direction.is_ok(), "diagonal {value} must be admitted");
+            if let Ok(direction) = direction {
+                assert_eq!(encode_step_intent(direction), bytes);
+            }
+        }
+        assert!(decode_step_intent(&[8, 9]).is_err());
+        assert!(decode_step_intent_selected(&[CAPABILITY_DIAGONAL_MOVEMENT_V1], &[8, 9]).is_err());
     }
 }
 

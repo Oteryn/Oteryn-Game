@@ -3,6 +3,10 @@ mod own_actor;
 use super::*;
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn own_identity(&self) -> Option<[u8; 16]> {
+        self.world_entities()
+            .map(|entities| *entities.own_identity())
+    }
     fn hotkey_own_actor(&self) -> Option<WorldSpatialEntity> {
         own_actor::get(self)
     }

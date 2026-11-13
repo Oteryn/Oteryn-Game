@@ -29,6 +29,7 @@ const _: () = assert!(
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    drome_hazards: Vec<drome_hazards::GroundWarning>,
     minimap: bool,
     floor_separator: u8,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
@@ -52,6 +53,7 @@ pub struct Scene {
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    object_draws: Vec<(oteryn_session::ActorPosition, u32, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
     name_visibility: [bool; 3],
     name_marks: bool,
@@ -106,6 +108,7 @@ impl Scene {
             }])
             .collect();
         let mut scene = Self {
+            drome_hazards: Vec::new(),
             minimap: false,
             floor_separator: 0,
             minimap_state: None,
@@ -128,6 +131,7 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            object_draws: Vec::new(),
             names: Vec::new(),
             name_visibility: [true; 3],
             name_marks: true,
@@ -236,6 +240,7 @@ impl Scene {
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let atlas = self.atlas();
         let (mut sprites, dimmed) = self.world_sprites()?;
+        self.draw_drome_hazards(&mut sprites, atlas)?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let scale = f32::from(self.label_scale) / 100.0;
@@ -316,3 +321,10 @@ mod visual_scene;
 
 #[path = "features/0019-world-light/scene.rs"]
 mod floor_lighting;
+
+#[path = "features/0170-arena/scene.rs"]
+mod drome_hazards;
+pub(crate) use drome_hazards::GroundWarning;
+
+#[path = "features/0451-personal-map-marks/scene.rs"]
+mod personal_map_marks;

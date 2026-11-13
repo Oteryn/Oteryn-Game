@@ -223,3 +223,30 @@ fn only_a_known_floor_change_other_than_none_blocks_a_spawn() -> TestResult {
     assert!(!registry.floor_change_of("nowhere"));
     Ok(())
 }
+
+#[test]
+fn qn5_feroxa_retained_decoration_resolves_as_fixed_source_border() -> TestResult {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let raw = std::fs::read(root.join("content/world/terrain/terrain-08748-08748.json"))?;
+    let mut registry = Registry::default();
+    registry.add_catalogue("Terrain", &raw)?;
+    registry.seal()?;
+    assert_eq!(
+        registry.resolve("oteryn:terrain.tibia.i13841"),
+        Resolution::Resolved(Family::Terrain, 0)
+    );
+    assert_eq!(
+        registry.resolve("oteryn:item.tibia.i13841"),
+        Resolution::Unknown
+    );
+    let terrain = registry
+        .terrain_of("oteryn:terrain.tibia.i13841")?
+        .ok_or("source border")?;
+    assert_eq!(
+        terrain.kind,
+        oteryn_world_bundle_compiler::bundle::TerrainKind::Border
+    );
+    assert_eq!(terrain.walkable, Some(true));
+    assert_eq!(terrain.blocks_projectile, Some(false));
+    Ok(())
+}

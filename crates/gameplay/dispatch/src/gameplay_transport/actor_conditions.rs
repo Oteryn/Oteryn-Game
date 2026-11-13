@@ -423,7 +423,7 @@ impl std::fmt::Debug for NativeSecondaryMemo {
 impl ChannelSpellStates {
     // Keep native_composite_conditions ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn native_composite_conditions(
+    pub(in crate::gameplay_transport) fn native_composite_conditions(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
@@ -514,6 +514,9 @@ impl ChannelSpellStates {
         let mut next = before.clone();
         let mut primary = None;
         if let Some(amount) = magnitude {
+            let amount = runtime
+                .soul_war_hatred_player_primary(source, amount)
+                .ok()?;
             let (successor, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
                 runtime, target, &next, amount, kind, facts.now,
             )
@@ -576,6 +579,7 @@ impl ChannelSpellStates {
             (magnitude, receipt, damage_text)
         {
             let memo = NativeSourceMemo {
+                source_primary: Some((source, magnitude)),
                 actor: target,
                 session,
                 occurrence: damage_text,
@@ -1345,6 +1349,24 @@ impl ChannelSpellStates {
 mod appearance_atomic;
 
 impl crate::creature_area_heal::AreaHealStates for ChannelSpellStates {
+    fn commit_source_area_heal_and_paralysis_removal_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        content: [u8; 32],
+        heal: &[(ExactActorRef, String, u64, u64)],
+        cure: &[ExactActorRef],
+        now: u64,
+        stamp: RuntimeWorkStamp,
+    ) -> Result<
+        Vec<crate::foundation::OwnerDamageResult>,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
+        let current = runtime.owner_fence()?;
+        if !current_owner(runtime, current, stamp) {
+            return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
+        }
+        runtime.commit_source_creature_heal_and_cure(content, heal, cure, now)
+    }
     fn commit_source_area_heal_and_paralysis_removal(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1469,6 +1491,7 @@ impl ChannelSpellStates {
             occurrence: text,
             magnitude,
             kind: None,
+            source_primary: None,
             receipt,
         };
         if let Some(index) = old {
