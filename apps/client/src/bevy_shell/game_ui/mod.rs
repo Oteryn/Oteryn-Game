@@ -4,12 +4,15 @@ mod chat;
 mod feature_dialogs;
 mod hud;
 mod inventory;
+mod item_details;
 mod journal;
 pub(super) mod minimap;
 pub(super) mod modal;
+mod npc_shop;
 pub(super) mod options;
 mod projection;
 pub(super) use projection::project;
+mod trade;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -173,6 +176,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let minimap = region(&mut commands);
     let equipment = region(&mut commands);
     let containers = region(&mut commands);
+    let trade_dock = region(&mut commands);
+    commands.entity(trade_dock).insert(trade::TradeDock);
     let battle = region(&mut commands);
     let skills = region(&mut commands);
     let vip = region(&mut commands);
@@ -187,7 +192,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .add_children(&[battle, skills, vip, analyzers]);
     commands
         .entity(inventory)
-        .add_children(&[toolbar, minimap, equipment, containers]);
+        .add_children(&[toolbar, minimap, equipment, trade_dock, containers]);
     commands.insert_resource(GameRegions {
         vitals,
         minimap,
@@ -222,7 +227,10 @@ pub(super) fn install(app: &mut App) {
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
+    item_details::install(app);
     minimap::install(app);
+    npc_shop::install(app);
+    trade::install(app);
     app.add_systems(
         Update,
         (
