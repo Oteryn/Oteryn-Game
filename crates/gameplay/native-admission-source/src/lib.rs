@@ -4,6 +4,7 @@ pub mod account_characters;
 pub mod account_closure;
 pub mod bazaar;
 pub mod character_commands;
+pub mod character_services_v2;
 pub mod coins;
 pub mod descriptor;
 pub mod http1_mtls;
