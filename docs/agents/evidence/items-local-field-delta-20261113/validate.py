@@ -265,6 +265,44 @@ def followup1260(source_path=None):
         assert matched==36
 
 
+def seven_potions(source_path=None, packet=None):
+    p = packet or load(HERE, "seven-potions-live.json")
+    assert p["current_counts"] == dict(COMPLETE=2216, PARTIAL=664, UNRECONCILED=27, total=2907)
+    records = p["records"]
+    assert len(records) == 7 and {r["observation_key"] for r in records} == {f"saved1853:new:{i}" for i in range(7)}
+    assert sum(r["NPC_quote_count"] for r in records) == 178
+    proofs = {r["file"]:r for r in p["private_image_manifest"]}
+    source = None
+    if source_path:
+        raw = json.loads(source_path.read_text(encoding="utf8"))
+        cols = [c["values"] if c["encoding"] == "LITERAL" else [c["dictionary"][i] for i in c["indices"]] for c in raw["columns"]]
+        source = {r["raw_tuple_sha256"]:r for r in [dict(zip(raw["field_order"],v)) for v in zip(*cols)]}
+    for i,r in enumerate(records):
+        assert r["previous_state"] == "PARTIAL" and r["current_state"] == "COMPLETE"
+        assert not r["server_identity_authority_added"]
+        assert r["NPC_quote_count"] == [33,33,26,1,33,26,26][i] == len(r["NPC_quotes"])
+        assert r["basic_copied_literal_fields"]["Weight:"] == ["2.90 oz","3.10 oz","3.50 oz","2.90 oz","3.10 oz","3.10 oz","3.10 oz"][i]
+        assert r["Sell_To_observed_empty"] == (i != 3) and r["Buy_From_observed_empty"] == (i == 3)
+        assert r["panel_coverage"]["both_panels_independently_attempted_to_scroll_down"]
+        assert r["panel_coverage"]["selected_card_proof"] in proofs and r["panel_coverage"]["terminal_proof"] in proofs
+        for q in r["NPC_quotes"]:
+            assert q["private_proof"] in proofs and proofs[q["private_proof"]]["sha256"] == q["private_proof_sha256"]
+            assert q["currency_literal"] == ("Favour" if q["NPC"] == "Minzy" else "gp")
+            assert q["panel"] == ("Sell To" if i == 3 else "Buy From")
+            expected = [8,19,51,None,31,37,35][i] if q["NPC"] == "Minzy" else [108,254,650,500,379,488,488][i]
+            assert q["price"] == expected
+            if source:
+                s = source[q["raw_tuple_sha256"]]
+                assert s["npc_name"] == q["NPC"] and s["location"] == q["location"]
+                assert s["buy_price_raw" if i == 3 else "sale_price_raw"] == q["price"]
+    previous = {r["observation_key"]:r for r in csv.DictReader((HERE/"all-visible-after1260.csv").open(encoding="utf8",newline=""))}
+    current = list(csv.DictReader((HERE/"all-visible-after-seven-potions.csv").open(encoding="utf8",newline="")))
+    assert len(current) == len(previous) == 2907
+    assert {k:sum(r["ALL_VISIBLE_state"] == k for r in current) for k in ["COMPLETE","PARTIAL","UNRECONCILED"]} == dict(COMPLETE=2216, PARTIAL=664, UNRECONCILED=27)
+    changed = {r["observation_key"] for r in current if r != previous[r["observation_key"]]}
+    assert changed == {r["observation_key"] for r in records}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-dir", type=Path)
@@ -283,6 +321,15 @@ def main():
     night_collection()
     npc_recovery(args.npc_source)
     followup1260(args.npc_source)
+    seven_potions(args.npc_source)
+    bad = copy.deepcopy(load(HERE, "seven-potions-live.json"))
+    next(q for q in bad["records"][0]["NPC_quotes"] if q["NPC"] == "Minzy")["currency_literal"] = "gp"
+    try:
+        seven_potions(args.npc_source, bad)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("Favour-to-gp substitution was accepted")
     stale = copy.deepcopy(rec)
     stale["image_receipts"][24]["selected_card_name"] = "empty potion flask"
     try:
@@ -306,7 +353,7 @@ def main():
         raise AssertionError(f"Negative control {n} was accepted")
     if args.source_dir:
         sources(args.source_dir, data[0], data[2])
-    print("PASS:6470 appearances/6228 types;all1260 processed;current ALL2209/671/27;historical1992 recovery retained;6 negative controls"
+    print("PASS:6470 appearances/6228 types;seven live potion reads;current ALL2216/664/27;178 quotes;7 negative controls"
           + ("; pinned-source reproduction" if args.source_dir else ""))
 
 

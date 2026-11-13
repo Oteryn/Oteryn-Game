@@ -12,6 +12,11 @@
       "sha256": "c2cbd64024f83361f3ea1c19b23cf4be79fc625e480acc5aa629ae9c7c0ac373"
     },
     {
+      "file": "all-visible-after-seven-potions.csv",
+      "bytes": 328619,
+      "sha256": "42688d3cf5f23eeb4cc84c7372a289dfc80048be0ea782be3a31acf8ea5be4b6"
+    },
+    {
       "file": "appearance-field-coverage.json",
       "bytes": 941440,
       "sha256": "0bb7c836ef54bd86a00433c4bc94374b2ec174497edc91665151d10909998b98"
@@ -120,6 +125,16 @@
       "file": "saved1853-proof-reconciliation.json",
       "bytes": 66781,
       "sha256": "5c18111d9d2f15cb49d705e3d43e677694a436442861aaa04ba0f1a646cd27cf"
+    },
+    {
+      "file": "seven-potions-live.json",
+      "bytes": 202714,
+      "sha256": "3797c08d60b3ae2a7da885a1e5e9f9b7ee87e6efc1c1ad5dcb7b87a60d3cfbd4"
+    },
+    {
+      "file": "seven-potions-summary.json",
+      "bytes": 2615,
+      "sha256": "853491ed74c206781920dd278656eb18bff3b43be9d3b7e4388523fcfc52533c"
     },
     {
       "file": "source-receipts.json",

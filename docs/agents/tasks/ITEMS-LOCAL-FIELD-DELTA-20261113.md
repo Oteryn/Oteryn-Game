@@ -70,6 +70,14 @@ Legs/Others promotion, fixed20-field requirement or automatic GUI recapture.
 
 ## Validation
 
+AUTHORING resumed from08163265317dd4f02ffe488b5c78c134966aa697 under
+allocation6865748389 for exactly seven authorized live potion reads. Basic copied;
+both NPC pane ends checked;178 quotes reconciled with saved full frames, local
+OCR candidates, paired source literals and native review. Current2216complete/
+664partial/27unreconciled. Earlier no-GUI boundaries below are historical scopes.
+No purchase/combat/other-card read/runtime edit. Working Kasm threaded decoder
+leftOFF after repeated frame decoding errors. UI lease released to coordinator.
+
 AUTHORING continued under allocation6864845684 from3bed3db094. All1260 remaining
 records processed using existing files only; final snapshot2209complete/
 671partial/27unreconciled of2907.562 newly closed.514 archive differences

@@ -1,6 +1,27 @@
 # All-category local item field delta
 
-**Latest continuation:2209 complete,671 partial,27 unreconciled =2907 scoped
+**Current result:2216 complete,664 partial,27 unreconciled =2907 scoped observation records.**
+`seven-potions-summary.json`, `seven-potions-live.json` and
+`all-visible-after-seven-potions.csv` supersede previous counts. Exactly the seven
+previously missing1853 potion NPC tails were read in the live client under
+allocation6865748389. All178 visible offers are retained (177 Buy From, one Sell To).
+Basic text was copied through the actual context menu; NPC panes were not copyable,
+so full frames, local batch OCR, paired source literals and native review were used.
+The source-assisted full residences are distinguished from ellipsized UI spellings.
+No purchase, combat, other-card collection or server-identity admission occurred.
+The remaining664 cases are256 panel/geometry qualifications and408 literal/currency
+qualifications;27 historical/query cases remain separately unresolved.
+
+The optimization benchmark starts at22:04:05.811Z after earlier collection work.
+It records77 saved full frames, nine orientation/end views and four local contact
+sheets shown to the model. Timed capture batches total20.887s; timed OCR runs take
+36.871s for77 frames and9.747s for18 frames; candidate comparison takes1.406s.
+Data-ready wall time is409.046s, including orchestration and proof repair. This is
+not an end-to-end benchmark of seven fresh cards, network latency or token usage.
+Initial mis-scaled clip files were rejected; corrected full frames use new names.
+Private PNGs/OCR remain outside Git. The packet retains hashes and bounded method.
+
+**Previous offline continuation:2209 complete,671 partial,27 unreconciled =2907 scoped
 observation records.** `followup1260-summary.json` and
 `all-visible-after1260.csv` supersede the earlier counts below. All1260 prior
 partial/unreconciled positions were processed:562 became complete,671 remain

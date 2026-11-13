@@ -1,0 +1,85 @@
+{
+  "classification": "DERIVED_SOURCE_QUALIFIED_OBSERVATIONS",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6865748389",
+  "scope": "Exactly the seven previously saved1853 first-view cards. No purchases, transactions, combat, other-card collection or runtime edits.",
+  "current_counts": {
+    "COMPLETE": 2216,
+    "PARTIAL": 664,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "previous_counts": {
+    "COMPLETE": 2209,
+    "PARTIAL": 671,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "benchmark": {
+    "start_utc": "2026-11-13T22:04:05.811Z",
+    "scope": "Pipeline optimization from seventh-card selection through evidence completion; earlier collection excluded",
+    "saved_frames": 77,
+    "model_frames": 9,
+    "capture_batches": [
+      {
+        "name": "ultimate-spirit",
+        "frames": 16,
+        "elapsed_ms": 4614.128899998963
+      },
+      {
+        "name": "strong-mana-proof-repair",
+        "frames": 20,
+        "elapsed_ms": 5649.707299999893
+      },
+      {
+        "name": "superior-mana-proof-repair",
+        "frames": 20,
+        "elapsed_ms": 5625.3789000064135
+      },
+      {
+        "name": "supreme-health-proof-repair",
+        "frames": 18,
+        "elapsed_ms": 4997.7082000002265
+      }
+    ],
+    "clarification_frames": 4,
+    "capture_finished_utc": "2026-11-13T22:06:21.765Z",
+    "model_visual_total": 13,
+    "UI_finished_utc": "2026-11-13T22:06:21.765Z",
+    "data_ready_utc": "2026-11-13T22:10:54.857315+00:00",
+    "data_ready_elapsed_seconds": 409.046315,
+    "OCR_timed_runs": [
+      {
+        "elapsed_seconds": 36.87077880000288,
+        "processed_frames": 77,
+        "cached_frames": 81
+      },
+      {
+        "elapsed_seconds": 9.74745239999902,
+        "processed_frames": 18,
+        "cached_frames": 158
+      }
+    ],
+    "compare_seconds": 1.4063767999978154,
+    "qualifier": "Wall-clock benchmark starts after six initial selections; includes proof repair and orchestration, not a benchmark of collecting seven fresh cards or model token count. UI input/capture batch timings exclude between-call reasoning."
+  },
+  "closed_keys": [
+    "saved1853:new:0",
+    "saved1853:new:1",
+    "saved1853:new:2",
+    "saved1853:new:3",
+    "saved1853:new:4",
+    "saved1853:new:5",
+    "saved1853:new:6"
+  ],
+  "NPC_quotes": 178,
+  "NPC_quote_panels": {
+    "Buy From": 177,
+    "Sell To": 1
+  },
+  "remaining_primary_groups_disjoint": {
+    "PANEL_END_OR_GEOMETRY_PROOF_NOT_QUALIFIED": 256,
+    "VISIBLE_TEXT_CURRENCY_OR_LITERAL_CROSSCHECK_HELD": 408,
+    "TARGETED_QUERY5": 5,
+    "HISTORICAL_PILOT22": 22
+  }
+}
