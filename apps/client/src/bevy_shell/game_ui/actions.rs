@@ -1,5 +1,6 @@
 //! Source-sized action rows; assignment and activation stay with the existing owner.
 use super::super::{owner::HostOwner, ui::Skins};
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use crate::play::BarGesture;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui_bevy as source;
@@ -189,10 +190,14 @@ fn button(
 
 fn activate(
     event: On<Activate>,
+    guard: ModalGuard,
     controls: Query<(&ActionControl, &Generation)>,
     owner: NonSend<HostOwner>,
     mut editor: ResMut<editor::EditorState>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok((control, generation)) = controls.get(event.entity) else {
         return;
     };

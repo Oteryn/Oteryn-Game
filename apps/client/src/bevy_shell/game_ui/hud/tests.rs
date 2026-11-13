@@ -189,3 +189,50 @@ fn analyser_selection_uses_retained_session_counters() -> TestResult {
     assert_eq!(panel.kills, 23);
     Ok(())
 }
+
+#[test]
+fn inventory_modal_blocks_prior_battle_focus_enter_and_direct_activation() -> TestResult {
+    use bevy::input::keyboard::{Key, KeyboardInput};
+    use bevy::input_focus::{FocusCause, FocusedInput, InputFocus};
+    for keyboard in [true, false] {
+        let (mut app, mut commands, _outbox) = app()?;
+        app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+        super::super::modal::install(&mut app);
+        let button = app
+            .world_mut()
+            .query::<(Entity, &HudAction)>()
+            .iter(app.world())
+            .find_map(|(entity, action)| {
+                matches!(action.command, Command::Attack(_)).then_some(entity)
+            })
+            .ok_or("battle row")?;
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(button, FocusCause::Navigated);
+        app.world_mut()
+            .spawn((super::super::GameModal, Node::default(), GlobalZIndex(80)));
+        if keyboard {
+            let window = app.world_mut().spawn_empty().id();
+            let key = KeyboardInput {
+                key_code: KeyCode::Enter,
+                logical_key: Key::Enter,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window,
+            };
+            app.world_mut()
+                .trigger(FocusedInput::new(button, key, window));
+            app.world_mut().flush();
+        } else {
+            app.world_mut().trigger(Activate { entity: button });
+        }
+        assert!(
+            commands.try_recv().is_err(),
+            "background battle input escaped the local modal fence"
+        );
+        app.update();
+        assert_eq!(app.world().resource::<InputFocus>().get(), None);
+    }
+    Ok(())
+}

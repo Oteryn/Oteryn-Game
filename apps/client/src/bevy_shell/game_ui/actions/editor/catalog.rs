@@ -1,5 +1,6 @@
 //! A bounded search/picker over the current server catalogue, retaining display identity.
 use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 
 const PAGE: usize = 12;
 #[derive(Component)]
@@ -114,10 +115,14 @@ pub(super) fn project(
 
 fn choose(
     event: On<Activate>,
+    guard: ModalGuard,
     choices: Query<&Choice>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<EditorState>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok(choice) = choices.get(event.entity) else {
         return;
     };

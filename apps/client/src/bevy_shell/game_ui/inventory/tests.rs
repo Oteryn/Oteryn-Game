@@ -311,3 +311,67 @@ fn split_buttons_dispatch_selected_count_once_and_reject_an_old_prompt() -> Test
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -> TestResult {
+    use bevy::asset::AssetPlugin;
+    use bevy::ecs::system::RunSystemOnce;
+    let (link, mut commands, outbox) = play_channel();
+    let item = entry(7, 3)?;
+    inventory(&outbox, vec![item]);
+    outbox.push(vec![SessionEvent::ContainerViews(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 0,
+        new_revision: 1,
+        value: Default::default(),
+    })]);
+    let owner = host(link)?;
+    let slot = Slot {
+        generation: owner.generation(),
+        location: Location::Inventory,
+        item: Some(item),
+        destination: Some(ItemMoveDestination::MainBackpack),
+    };
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(owner)
+        .init_resource::<InventoryUi>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.update();
+    let outside = app
+        .world_mut()
+        .spawn(Control::Open(slot))
+        .observe(activate)
+        .id();
+    app.world_mut()
+        .run_system_once(move |mut commands: Commands, skins: Res<Skins>| {
+            dialogs::context(&mut commands, &skins, slot, Vec2::ZERO)
+        })
+        .map_err(|error| format!("context menu fixture: {error:?}"))?;
+    app.world_mut().trigger(Activate { entity: outside });
+    assert!(
+        commands.try_recv().is_err(),
+        "background open escaped the context menu"
+    );
+    let child = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            (entity != outside && matches!(control, Control::Open(_))).then_some(entity)
+        })
+        .ok_or("context Open")?;
+    app.world_mut().trigger(Activate { entity: child });
+    assert_eq!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ContainerView(
+            oteryn_session::container_tree::ContainerViewIntent::Open {
+                handle: item.handle,
+                replace_view: None
+            }
+        )
+    );
+    Ok(())
+}

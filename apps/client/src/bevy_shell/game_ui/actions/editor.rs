@@ -1,5 +1,6 @@
 //! Assignment edits call the retained local owners; no native platform dialog is opened.
 use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use crate::play::{BarAction, ItemUseMode, PassiveAbility};
 use bevy::{
     input_focus::{
@@ -240,24 +241,28 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
 
 fn activate(
     event: On<Activate>,
+    guard: ModalGuard,
     edits: Query<&Edit>,
     fields: Query<(&Field, &EditableText)>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<EditorState>,
     mut focus: ResMut<InputFocus>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok(action) = edits.get(event.entity) else {
         return;
     };
     let Some((slot, generation)) = state.selected else {
         return;
     };
+    if owner.modal_active() || generation != owner.generation() {
+        return;
+    }
     if matches!(action, Edit::Close) {
         state.selected = None;
         focus.clear();
-        return;
-    }
-    if owner.modal_active() || generation != owner.generation() {
         return;
     }
     let Some(play) = &owner.play else {
@@ -360,18 +365,12 @@ pub(super) fn project(
     mut descriptions: Query<&mut Text, (With<Description>, Without<Feedback>)>,
     mut feedback: Query<&mut Text, (With<Feedback>, Without<Description>)>,
     mut focus: ResMut<InputFocus>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
 ) {
     if state.active()
         && (owner.play.is_none()
             || state
                 .selected
-                .is_some_and(|(_, generation)| generation != owner.generation())
-            || (!owner
-                .play
-                .as_ref()
-                .is_some_and(|play| play.link.server_modal_active())
-                && keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))))
+                .is_some_and(|(_, generation)| generation != owner.generation()))
     {
         state.selected = None;
         focus.clear();
@@ -439,6 +438,27 @@ pub(super) fn project(
     }
 }
 
+fn keyboard(
+    guard: ModalGuard,
+    roots: Query<Entity, With<EditorRoot>>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<EditorState>,
+    mut focus: ResMut<InputFocus>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+) {
+    if state.active()
+        && keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        && !owner
+            .play
+            .as_ref()
+            .is_some_and(|play| play.link.server_modal_active())
+        && roots.iter().any(|entity| guard.allows(entity))
+    {
+        state.selected = None;
+        focus.clear();
+    }
+}
 pub(super) fn install(app: &mut App) {
+    app.add_systems(Update, keyboard.before(project));
     app.add_systems(Update, catalog::project.after(project));
 }

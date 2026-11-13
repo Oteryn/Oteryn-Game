@@ -1,6 +1,7 @@
 use super::super::GameModal;
 use super::view::{Projection, label};
 use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use oteryn_client_ui_bevy as source;
 pub(super) fn button(
     commands: &mut Commands,
@@ -165,9 +166,13 @@ pub(super) fn split(commands: &mut Commands, skins: &Skins, prompt: Prompt, coun
 struct MenuScrim;
 fn dismiss_menu(
     event: On<bevy::picking::events::PointerClick>,
+    guard: ModalGuard,
     scrims: Query<(), With<MenuScrim>>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if scrims.contains(event.entity) {
         ui.menu = None;
     }

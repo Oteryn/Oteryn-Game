@@ -1,5 +1,6 @@
 //! Source-skinned HUD over the retained admitted session owners.
 use super::super::{owner::HostOwner, ui::Skins};
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use bevy::{prelude::*, ui::InteractionDisabled, ui_widgets::Activate};
 use oteryn_client_ui::{battle::Action, vip::Intent};
 use oteryn_client_ui_bevy as source;
@@ -196,7 +197,15 @@ fn button(
     commands.entity(entity).add_child(caption);
     entity
 }
-fn activate(event: On<Activate>, actions: Query<&HudAction>, owner: NonSend<HostOwner>) {
+fn activate(
+    event: On<Activate>,
+    guard: ModalGuard,
+    actions: Query<&HudAction>,
+    owner: NonSend<HostOwner>,
+) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok(action) = actions.get(event.entity) else {
         return;
     };

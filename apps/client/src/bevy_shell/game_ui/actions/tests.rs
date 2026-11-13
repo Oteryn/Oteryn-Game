@@ -34,6 +34,7 @@ pub(super) fn fixture() -> Result<
         Startup,
         (crate::bevy_shell::ui::setup, super::super::setup).chain(),
     );
+    app.add_systems(Update, super::super::project);
     install(&mut app);
     app.update();
     Ok((app, commands))
@@ -287,6 +288,27 @@ fn native_drop_swaps_only_unlocked_slots_then_casts_new_binding() -> TestResult 
             enabled: true,
             locked: false,
         });
+    super::super::modal::install(&mut app);
+    let modal = app
+        .world_mut()
+        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(80)))
+        .id();
+    app.world_mut().trigger(drop());
+    let original = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .spell_slot_labels();
+    assert!(original[0].contains("71"));
+    assert!(
+        !original[1].contains("71"),
+        "background drop changed the binding behind the modal"
+    );
+    app.world_mut().entity_mut(modal).despawn();
+    app.update();
     app.world_mut().trigger(drop());
     assert!(
         app.world()
@@ -315,5 +337,43 @@ fn native_drop_swaps_only_unlocked_slots_then_casts_new_binding() -> TestResult 
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
     );
+    Ok(())
+}
+
+#[test]
+fn inventory_modal_blocks_prior_action_slot_focus_enter_and_direct_activation() -> TestResult {
+    use bevy::input::keyboard::{Key, KeyboardInput};
+    use bevy::input_focus::{FocusCause, FocusedInput, InputFocus};
+    for keyboard in [true, false] {
+        let (mut app, mut commands) = fixture()?;
+        app.add_plugins(bevy::ui_widgets::ButtonPlugin);
+        super::super::modal::install(&mut app);
+        let button = slot(&mut app, 0)?;
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(button, FocusCause::Navigated);
+        app.world_mut()
+            .spawn((super::super::GameModal, Node::default(), GlobalZIndex(80)));
+        if keyboard {
+            let window = app.world_mut().spawn_empty().id();
+            let key = KeyboardInput {
+                key_code: KeyCode::Enter,
+                logical_key: Key::Enter,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window,
+            };
+            app.world_mut()
+                .trigger(FocusedInput::new(button, key, window));
+            app.world_mut().flush();
+        } else {
+            app.world_mut().trigger(Activate { entity: button });
+        }
+        assert!(
+            commands.try_recv().is_err(),
+            "background cast escaped the local modal fence"
+        );
+    }
     Ok(())
 }

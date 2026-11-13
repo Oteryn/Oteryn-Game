@@ -1,14 +1,19 @@
 //! Upstream Bevy drop events route to the existing locked-row swap owner.
 use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use bevy::picking::{events::PointerDragDrop, pointer::PointerButton};
 
 pub(super) fn drop_slot(
     event: On<PointerDragDrop>,
+    guard: ModalGuard,
     slots: Query<(&ActionControl, &Generation)>,
     items: Query<&super::super::ItemDragSource>,
     owner: NonSend<HostOwner>,
     editor: Res<editor::EditorState>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if event.button != PointerButton::Primary || owner.modal_active() || editor.active() {
         return;
     }

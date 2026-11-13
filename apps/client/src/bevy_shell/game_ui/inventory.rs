@@ -1,5 +1,6 @@
 //! Authoritative equipment and container presentation; the retained PlayLink owns all commands.
 use super::super::{owner::HostOwner, ui::Skins};
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::inventory::movement::DragItem;
 use oteryn_session::{ItemEntry, ItemMoveDestination, item_movement::EquipmentSlot};
@@ -142,10 +143,14 @@ pub(super) fn install(app: &mut App) {
 }
 fn activate(
     event: On<Activate>,
+    guard: ModalGuard,
     controls: Query<&Control>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if let Ok(control) = controls.get(event.entity) {
         actions::choose(*control, &owner, &mut ui);
     }

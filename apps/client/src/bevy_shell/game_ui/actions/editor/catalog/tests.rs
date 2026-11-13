@@ -125,6 +125,15 @@ fn stale_catalogue_choice_cannot_assign_unobserved_spell() -> Result<(), Box<dyn
         })
         .observe(choose)
         .id();
+    // Keep the stale choice inside the visible editor so the catalogue identity
+    // check, rather than the modal perimeter, is the rejection exercised here.
+    let root = app
+        .world_mut()
+        .query_filtered::<Entity, With<CatalogRoot>>()
+        .iter(app.world())
+        .next()
+        .ok_or("catalogue root")?;
+    app.world_mut().entity_mut(root).add_child(button);
     app.world_mut().trigger(Activate { entity: button });
     assert!(
         app.world()

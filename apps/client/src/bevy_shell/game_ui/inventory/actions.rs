@@ -1,6 +1,9 @@
 use super::*;
+use crate::bevy_shell::game_ui::modal::ModalGuard;
 use bevy::picking::events::{PointerClick, PointerDragDrop, PointerDragStart};
 pub(super) fn escape(
+    guard: ModalGuard,
+    overlays: Query<Entity, (With<super::super::GameModal>, With<super::view::Projection>)>,
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
@@ -11,7 +14,8 @@ pub(super) fn escape(
         .play
         .as_ref()
         .is_some_and(|play| play.link.server_modal_active());
-    if keys.just_pressed(KeyCode::Escape) && !server_modal {
+    let allowed = guard.allows_focus(None) || overlays.iter().any(|entity| guard.allows(entity));
+    if keys.just_pressed(KeyCode::Escape) && !server_modal && allowed {
         ui.menu = None;
         if let Some(play) = &owner.play {
             if play.link.item_movement().prompt.is_some() {
@@ -36,10 +40,14 @@ pub(super) fn escape(
 }
 pub(super) fn select(
     event: On<Activate>,
+    guard: ModalGuard,
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if ui.prompt.is_none()
         && ui.menu.is_none()
         && let Ok(slot) = slots.get(event.entity)
@@ -49,12 +57,16 @@ pub(super) fn select(
 }
 pub(super) fn click(
     event: On<PointerClick>,
+    guard: ModalGuard,
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     scale: Res<UiScale>,
     windows: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     use bevy::picking::pointer::PointerButton;
     if ui.prompt.is_some() {
         return;
@@ -96,10 +108,14 @@ pub(super) fn click(
 }
 pub(super) fn drag_start(
     event: On<PointerDragStart>,
+    guard: ModalGuard,
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if event.button == bevy::picking::pointer::PointerButton::Primary
         && ui.prompt.is_none()
         && ui.menu.is_none()
@@ -110,10 +126,14 @@ pub(super) fn drag_start(
 }
 pub(super) fn drag_drop(
     event: On<PointerDragDrop>,
+    guard: ModalGuard,
     slots: Query<&Slot>,
     owner: NonSend<HostOwner>,
     mut ui: ResMut<InventoryUi>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     if event.button != bevy::picking::pointer::PointerButton::Primary {
         return;
     }
