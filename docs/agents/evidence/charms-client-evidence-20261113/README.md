@@ -101,6 +101,13 @@ runtime proof. These priorities are not new runtime findings.
 
 ## Private evidence and validation
 
+The subsequent [both-Discord pass](discord-research-comparison.md) adds actual
+UI research from Tibia Analysers and Kusnier's server: ten bounded result
+windows, six dated message contexts, and five invalid queries explicitly
+excluded. It identifies the historical Cleanse immunity-slot conflict without
+promoting it to a current Global measurement. Run `validate_discord_research.py`
+and its `--test` mode as well; no original chat/media is redistributed.
+
 The successor [public research comparison](public-research-comparison.md) and
 `public-research-source-matrix.json` add17 public/owner-supplied source locators,
 five bounded mechanic comparisons and nine current-main source receipts.

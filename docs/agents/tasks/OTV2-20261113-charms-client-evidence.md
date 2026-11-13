@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: codex-charms-evidence-publication
 created_at: 2026-11-13T10:44:41Z
-updated_at: 2026-11-13T11:36:11Z
+updated_at: 2026-11-13T11:51:18Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/charms-client-evidence-20261113/
@@ -78,6 +78,13 @@ original image/asset redistribution, deployment and merge.
 
 ## Implementation / findings
 
+AUTHORING resumed for the owner's explicit both-Discord read/research request.
+Live PR readback is OPEN/draft at `6fc9600b8a849af85936bd7485d13ea89263afbe`;
+main remains `3e168ce6afe374485da20ee0ac13d3749558e2f8`. This sole writer keeps
+the same owned paths and extends the same PR forward. The bounded Discord pass
+records actual UI observations and context, including invalid concatenated
+queries excluded from absence conclusions. No game/runtime/review scope added.
+
 AUTHORING resumed for the owner-authorized bounded public-source research
 successor, after live OPEN/draft PR readback at
 `f9ebce83c0540948b7e456170716e7e8ef952aec` and unchanged main
@@ -103,6 +110,9 @@ for this worker.
 - Sixteen evidence control/negative tests: PASS on successor authoring tree.
 - Public-source matrix:17 locators, five comparisons, nine source blobs rehashed;
   four research boundary tests PASS. No mechanic authority/status promotion.
+- Both-Discord successor: ten bounded result windows, six dated/permalinked
+  contexts, five invalid queries excluded; four additional boundary tests PASS.
+  Packet/public-research validation and129 governance tests rerun PASS.
 - `python tools/agents/validate_governance.py`: PASS.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
 - `git diff --check`: PASS.
@@ -115,3 +125,9 @@ The public-research successor is frozen after its local checks; publication
 readback and exact Git head are retained in the coordinator's external report.
 The historical/current evidence distinction and unresolved interaction fields
 remain explicit. Return to AUTHORING is required before any further update.
+
+The both-Discord successor is likewise frozen after local checks, including
+review of the actual changed-file list and derived findings. Invalid query
+attempts do not support absence conclusions. Independent review remains
+uncompleted; exact successor CI/publication readback belongs to the external
+coordinator report, not to predecessor check results.
