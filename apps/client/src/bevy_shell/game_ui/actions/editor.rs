@@ -118,7 +118,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_child(description);
     for (index, caption) in [
         "Search spells by name or words",
-        "Carried item definition",
+        "Drag an object onto an unlocked action slot to assign it.",
         "Text",
         "Keyboard chord",
     ]
@@ -138,6 +138,11 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                     width: percent(100.),
                     height: px(24.),
                     min_height: px(24.),
+                    display: if index == 1 {
+                        Display::None
+                    } else {
+                        Display::Flex
+                    },
                     ..default()
                 },
             ))
@@ -403,11 +408,20 @@ pub(super) fn project(
                     focus.set(entity, FocusCause::Navigated);
                 }
             }
+            let object = matches!(
+                owner.settings.preferences.bar_actions.0.get(&slot),
+                Some(BarAction::Use { .. } | BarAction::Equip { .. })
+            );
             let description = owner
                 .play
                 .as_ref()
                 .and_then(|play| play.link.spell_slot_tooltips().get(slot).cloned())
                 .unwrap_or_default();
+            let description = if object {
+                "Object appearance unavailable.".into()
+            } else {
+                description
+            };
             for mut text in &mut descriptions {
                 text.0 = format!("Slot {}\n{}", slot + 1, description);
             }

@@ -6,6 +6,8 @@ use oteryn_client_ui_bevy as source;
 
 mod dragdrop;
 mod editor;
+#[cfg(test)]
+mod item_drag_tests;
 mod projection;
 #[cfg(test)]
 mod tests;

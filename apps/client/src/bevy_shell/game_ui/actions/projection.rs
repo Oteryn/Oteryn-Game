@@ -107,6 +107,11 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
     }
     for (slot, mut text) in &mut ui.labels {
         let value = labels.get(slot.0).map(String::as_str).unwrap_or("");
+        let object = matches!(
+            owner.settings.preferences.bar_actions.0.get(&slot.0),
+            Some(crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. })
+        );
+        let value = if object { "Object" } else { value };
         let compact = value
             .lines()
             .map(|line| line.chars().take(6).collect::<String>())
@@ -157,7 +162,14 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
         .hovered
         .iter()
         .find_map(|(interaction, control)| match control {
-            ActionControl::Slot(slot) if interaction.get() => tips.get(*slot),
+            ActionControl::Slot(slot) if interaction.get() => {
+                Some(match owner.settings.preferences.bar_actions.0.get(slot) {
+                    Some(
+                        crate::play::BarAction::Use { .. } | crate::play::BarAction::Equip { .. },
+                    ) => "Object appearance unavailable.",
+                    _ => tips.get(*slot).map(String::as_str).unwrap_or(""),
+                })
+            }
             _ => None,
         })
         .map_or(String::new(), |tip| tip.replace('\n', "  "));
