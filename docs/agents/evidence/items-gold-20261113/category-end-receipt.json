@@ -1,0 +1,99 @@
+{
+  "classification": "PROVEN_OBSERVED_SHORT_CATEGORY_AND_ROOT_RECOVERY",
+  "category": "Gold",
+  "source_receipt": {
+    "filename": "category-completion.json",
+    "bytes": 710,
+    "sha256": "02fb4d410e664eabe75ed9ff38299e1c372d3667405dc7c30eb344bcdcb45923"
+  },
+  "captured_records": 3,
+  "captured_physical_ui_range": [
+    1,
+    3
+  ],
+  "ordinals": [
+    1,
+    2,
+    3
+  ],
+  "origin_stability_checks": 2,
+  "end_stability_checks_before": 2,
+  "end_stability_checks_after": 2,
+  "all_entries_visible_in_origin_frame": true,
+  "no_scrollbar_geometry_inferred": true,
+  "end_proof_receipts": [
+    {
+      "filename": "list-bootstrap-recovery-v2-resume-0000.png",
+      "bytes": 151585,
+      "sha256": "d602fc1bb0c0c571a2e20350f908f1d27327b453a881578dfbdec646da99c5ab",
+      "private_source_key": "items-sequence-gold/list-bootstrap-recovery-v2-resume-0000.png"
+    },
+    {
+      "filename": "short-list-end-after.png",
+      "bytes": 152499,
+      "sha256": "ccbf7578f4799cef488ad44c0b796ec50a5a8baa8c4f8ece4d68bacf200a5194",
+      "private_source_key": "items-sequence-gold/short-list-end-after.png"
+    }
+  ],
+  "native_selection_receipt": {
+    "filename": "gold-selected-observed.png",
+    "bytes": 151585,
+    "sha256": "d602fc1bb0c0c571a2e20350f908f1d27327b453a881578dfbdec646da99c5ab"
+  },
+  "historical_reader_qualification": "PENDING_SNAPSHOT_PRESERVED_UNCHANGED",
+  "current_native_reader_receipt": {
+    "filename": "gold-basic-1-3-reviewed-private.json",
+    "bytes": 8835,
+    "sha256": "c735fe9b3d4e73b0e10e653dc1d97b50ea85b2667ea635792260f6e4373035a5"
+  },
+  "V2_recovery": {
+    "source_receipt": {
+      "filename": "gold-short-collection-recovery-v2-result.json",
+      "bytes": 670,
+      "sha256": "b3dcd2c6e981dd5f7c629002d06129603e93913a8e01d48a8983d02263f80f41"
+    },
+    "status": "GOLD_CAPTURE_COMPLETE_KNOWN_WORLD_VERIFIED",
+    "cards": 3,
+    "gaps": [],
+    "journal_receipt": {
+      "filename": "gold-short-collection-recovery-v2-journal.json",
+      "bytes": 161,
+      "sha256": "39bff569b689e00620f2ca1420ca11c590a6ba14275311251f4341a91fef8bc7"
+    },
+    "journal_stage": "POST_END_CONFIRMED",
+    "capture_attempts": 3,
+    "index_sha256": "22be1ae8c71edf91c5dec16eca831545b2afb8f780961734d84c119ffbf0a49a",
+    "closed_world_proof_receipt": {
+      "filename": "gold-recovery-v2-closed-world.png",
+      "bytes": 1509520,
+      "sha256": "55b624f0c2691284ff3211398773276dc4211e5439b5fccb690d5f49969e4725"
+    },
+    "historical_reader_qualification_pending": true
+  },
+  "private_local_collector_repair": {
+    "source_receipt": {
+      "filename": "basic-no-ocr-resize-repair-20261113.json",
+      "bytes": 769,
+      "sha256": "e23b5167024647089d5df5f4fe15e6488356e24d93f6a6523a1a841eea0298ab"
+    },
+    "old_sha256": "0cf7a4cea17d67f00e3736415f5c4f6d039cec47c103dba33bab3e8a5c408d91",
+    "new_sha256": "83f7639bebf13496740b0f7e85a1b5c69d5f337b215139d0b135092396258432",
+    "prior_index_exists": false,
+    "prior_card_pngs": 0,
+    "compile": "PASS",
+    "historical_actual_recovery": "PENDING",
+    "V1_failed_journal_receipt": {
+      "filename": "gold-short-collection-journal.json",
+      "bytes": 271,
+      "sha256": "3aefb79ddb4733d592efb73496334675428c96b2fd788aa93da8370aecc92397"
+    },
+    "V1_failed_result_receipt": {
+      "filename": "gold-short-collection-result.json",
+      "bytes": 160,
+      "sha256": "63107944e30cbb483b146b1686660ea74855369810a250b1ca2e1dfad00b28b9"
+    },
+    "scope": "Private explicit OCR fallback skips unused resize and emits candidate empty/confidence0; real OCR path unchanged, empty-crop guard retained. No Game production code change.",
+    "qualification": "V1 PIL resize failed before any index/card PNG persistence; Root proved no persisted data before qualified V2 capture. Historical V1 error and repair PENDING snapshot retained; V2 journal/result separately qualify actual recovery."
+  },
+  "overall_static_audit_complete": false
+}

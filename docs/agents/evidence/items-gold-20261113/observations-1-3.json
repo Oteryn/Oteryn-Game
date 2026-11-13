@@ -1,0 +1,180 @@
+{
+  "schema": "OTERYN_COMPACT_PRIVATE_ITEMS_OBSERVATIONS/v1",
+  "classification": "PROVEN",
+  "category": "Gold",
+  "client": "Tibia Test Server15.33.dd0955",
+  "source_receipt": {
+    "filename": "gold-basic-1-3-reviewed-private.json",
+    "bytes": 8835,
+    "sha256": "c735fe9b3d4e73b0e10e653dc1d97b50ea85b2667ea635792260f6e4373035a5"
+  },
+  "coverage": {
+    "records": 3,
+    "first_physical_ui_ordinal": 1,
+    "last_physical_ui_ordinal": 3,
+    "saved_basic_pages": 3,
+    "missing_physical_ordinals_in_cutoff": [],
+    "category_end_observed": true,
+    "animation_qualified": false,
+    "full_trade_lists_qualified": false
+  },
+  "identity_boundary": "Names, graphics, capture IDs, physical ordinals and displayed coin numbers do not establish serverID or currency identity.",
+  "field_export_policy": {
+    "non_narrative_basic_literals": "EXPORTED_EXACTLY",
+    "display_facts": "EXPORTED_EXACTLY_CLIENT_DISPLAY_ONLY_NOT_INTRINSIC_SOURCE_BINDINGS",
+    "Description": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+    "private_text_receipts": 0,
+    "private_display_layout_receipts": 0,
+    "no_full_repository_narrative_parity_claim": true
+  },
+  "private_png_hash_checks": 12,
+  "items": [
+    {
+      "capture_key": "items-sequence-gold:1",
+      "capture_id": 1,
+      "ui_entry_ordinal": 1,
+      "fullName": "crystal coin",
+      "properties": {
+        "Weight": "0.10 oz"
+      },
+      "not_displayed_in_basic": [
+        "Description",
+        "Tradeable In Market"
+      ],
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-gold/cards/00001-name.png",
+          "sha256": "37bbe77c89b216893946393a43133c73b1237e7fdc3a776821f9566b0db628b1"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-gold/cards/00001-name-hover.png",
+          "sha256": "17d60e9724bb80140e3549ca52c433af47efecca79ec18a860c274bf7f3fa794"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-gold/cards/00001-basic-top.png",
+          "sha256": "503c8573aa579ca18c7948e9716555da1666c51ded93f974ec04479576ddf1fa"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-gold/cards/00001-icon.png",
+          "sha256": "4ec1d0593c547ae32e3a2d3c98576d16484da4de60cd03d9cdb3e6f9453eaaa0"
+        }
+      ],
+      "name_hash_is_item_identity": false,
+      "display_facts": {
+        "average_market_price_display_number": "0",
+        "resulting_value_display_number": "10,000",
+        "display_suffix": "gold-colored coin glyph",
+        "loot_value_source_selected": "NPC Buy Value",
+        "skip_when_quick_looting_checked": false
+      },
+      "basic_field_presence": {
+        "Weight": "OBSERVED_VALUE",
+        "Description": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+        "Tradeable In Market": "ABSENT_FROM_OBSERVED_BASIC_FIELDS"
+      },
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-gold:2",
+      "capture_id": 2,
+      "ui_entry_ordinal": 2,
+      "fullName": "gold coin",
+      "properties": {
+        "Weight": "0.01 oz"
+      },
+      "not_displayed_in_basic": [
+        "Description",
+        "Tradeable In Market"
+      ],
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-gold/cards/00002-name.png",
+          "sha256": "214f452472726711bd27eb72ec90f3e5f7cb7b6f7efd252623fb660d27f207a0"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-gold/cards/00002-name-hover.png",
+          "sha256": "68a457f80f26d10b2d7af32476ff7a756e741336ab3123e347bb4624041acd8c"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-gold/cards/00002-basic-top.png",
+          "sha256": "808eaf98b4a08a2d48ec1f70762b7c339ea036bc0577b76ed31dcc656aaa41c8"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-gold/cards/00002-icon.png",
+          "sha256": "8fdfb31f8651ef7208d5d685774d0f349d5061674564833167c3e353038fd3b0"
+        }
+      ],
+      "name_hash_is_item_identity": false,
+      "display_facts": {
+        "average_market_price_display_number": "0",
+        "resulting_value_display_number": "1",
+        "display_suffix": "gold-colored coin glyph",
+        "loot_value_source_selected": "NPC Buy Value",
+        "skip_when_quick_looting_checked": true
+      },
+      "basic_field_presence": {
+        "Weight": "OBSERVED_VALUE",
+        "Description": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+        "Tradeable In Market": "ABSENT_FROM_OBSERVED_BASIC_FIELDS"
+      },
+      "saved_basic_pages": 1
+    },
+    {
+      "capture_key": "items-sequence-gold:3",
+      "capture_id": 3,
+      "ui_entry_ordinal": 3,
+      "fullName": "platinum coin",
+      "properties": {
+        "Weight": "0.10 oz"
+      },
+      "not_displayed_in_basic": [
+        "Description",
+        "Tradeable In Market"
+      ],
+      "proofs": [
+        {
+          "role": "name_image",
+          "private_source_key": "items-sequence-gold/cards/00003-name.png",
+          "sha256": "db8d79c8901f2cd33d781319535395d9ae1ecc44142b1132bdb22742e48010ec"
+        },
+        {
+          "role": "name_hover_image",
+          "private_source_key": "items-sequence-gold/cards/00003-name-hover.png",
+          "sha256": "30f1083f14d8ceb094d2047f2b44b92bec862e556a5da8c74c83fdb5857d5a1d"
+        },
+        {
+          "role": "basic_top_image",
+          "private_source_key": "items-sequence-gold/cards/00003-basic-top.png",
+          "sha256": "398dd361cc9721bff0fcc5fb8ed93e85354787f2917b1abd42eb40f2ad728a10"
+        },
+        {
+          "role": "icon_image",
+          "private_source_key": "items-sequence-gold/cards/00003-icon.png",
+          "sha256": "54d1f1e5f3240af153acb2f2e6f1d85909273af311ce9b0f459803b02b267c64"
+        }
+      ],
+      "name_hash_is_item_identity": false,
+      "display_facts": {
+        "average_market_price_display_number": "0",
+        "resulting_value_display_number": "100",
+        "display_suffix": "gold-colored coin glyph",
+        "loot_value_source_selected": "NPC Buy Value",
+        "skip_when_quick_looting_checked": false
+      },
+      "basic_field_presence": {
+        "Weight": "OBSERVED_VALUE",
+        "Description": "ABSENT_FROM_OBSERVED_BASIC_FIELDS",
+        "Tradeable In Market": "ABSENT_FROM_OBSERVED_BASIC_FIELDS"
+      },
+      "saved_basic_pages": 1
+    }
+  ]
+}
