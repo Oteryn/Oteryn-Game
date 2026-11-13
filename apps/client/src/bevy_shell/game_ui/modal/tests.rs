@@ -262,3 +262,47 @@ fn equal_global_nested_panels_win_independently_of_archetype_iteration_order() -
     assert!(!permits(&mut app, unrelated)?);
     Ok(())
 }
+
+#[test]
+fn upstream_computed_paint_order_wins_over_headless_root_indices() -> TestResult {
+    use bevy::ui::{ComputedStackIndex, UiStack};
+    let mut app = App::new();
+    let first = app
+        .world_mut()
+        .spawn((
+            GameModal,
+            Node::default(),
+            GlobalZIndex(80),
+            ComputedStackIndex(1),
+        ))
+        .id();
+    let second = app
+        .world_mut()
+        .spawn((
+            GameModal,
+            Node::default(),
+            GlobalZIndex(80),
+            ComputedStackIndex(0),
+        ))
+        .id();
+    // UiStack is Bevy's back-to-front output, not an entity allocation order.
+    app.insert_resource(UiStack {
+        uinodes: vec![second, first],
+        ..default()
+    });
+    assert!(permits(&mut app, first)?);
+    assert!(!permits(&mut app, second)?);
+    // A reordered upstream stack changes the permitted root without changing entity ids.
+    app.world_mut()
+        .get_mut::<ComputedStackIndex>(first)
+        .ok_or("first")?
+        .0 = 0;
+    app.world_mut()
+        .get_mut::<ComputedStackIndex>(second)
+        .ok_or("second")?
+        .0 = 1;
+    app.world_mut().resource_mut::<UiStack>().uinodes = vec![first, second];
+    assert!(permits(&mut app, second)?);
+    assert!(!permits(&mut app, first)?);
+    Ok(())
+}
