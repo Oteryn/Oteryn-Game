@@ -44,6 +44,7 @@ struct State {
     seen: Option<MarketPanel>,
     selected: Option<Ware>,
     root: Option<Entity>,
+    body: Option<Entity>,
     pending: Option<(Action, Entity, Entity)>,
 }
 pub(super) fn install(app: &mut App) {
@@ -117,11 +118,12 @@ fn project(
     if focus.get().is_some_and(|entity| fields.contains(entity)) {
         focus.clear();
     }
-    if let Some(root) = state.root.take() {
-        commands.entity(root).despawn();
-    }
     let revision = state.key.map_or(0, |key| key.revision.wrapping_add(1));
     if state.key.is_none_or(|key| key.generation != generation) {
+        if let Some(root) = state.root.take() {
+            commands.entity(root).despawn();
+        }
+        state.body = None;
         state.selected = panel
             .details
             .items
@@ -147,10 +149,16 @@ fn project(
     };
     state.key = Some(key);
     state.pending = None;
-    state.root = Some(widgets::build(
+    let root = *state
+        .root
+        .get_or_insert_with(|| widgets::build(&mut commands, &skin, overlay));
+    if let Some(body) = state.body.take() {
+        commands.entity(body).despawn();
+    }
+    state.body = Some(widgets::render(
         &mut commands,
         &skin,
-        overlay,
+        root,
         key,
         &panel,
         state.selected.as_ref(),

@@ -4,14 +4,7 @@ use bevy::{
     text::TextCursorStyle,
     ui_widgets::{ScrollArea, TextInput},
 };
-pub(super) fn build(
-    commands: &mut Commands,
-    skin: &Skins,
-    parent: Entity,
-    key: Key,
-    panel: &MarketPanel,
-    selected: Option<&Ware>,
-) -> Entity {
+pub(super) fn build(commands: &mut Commands, skin: &Skins, parent: Entity) -> Entity {
     let root = commands
         .spawn((
             crate::bevy_shell::window_drag::DraggableDialog,
@@ -39,6 +32,27 @@ pub(super) fn build(
         .id();
     commands.entity(parent).add_child(root);
     source::dialog_caption(commands, root, "Market", skin.font.clone());
+    root
+}
+pub(super) fn render(
+    commands: &mut Commands,
+    skin: &Skins,
+    frame: Entity,
+    key: Key,
+    panel: &MarketPanel,
+    selected: Option<&Ware>,
+) -> Entity {
+    let root = commands
+        .spawn(Node {
+            width: percent(100.),
+            flex_grow: 1.,
+            min_height: px(0.),
+            flex_direction: FlexDirection::Column,
+            row_gap: px(8.),
+            ..default()
+        })
+        .id();
+    commands.entity(frame).add_child(root);
     let content = commands
         .spawn(Node {
             width: percent(100.),
