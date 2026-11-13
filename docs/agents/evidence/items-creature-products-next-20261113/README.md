@@ -1,8 +1,8 @@
 # Ongoing Creature Products evidence, 13 November 2026
 
 This is an AUTHORING evidence stream for physical Cyclopedia rows135 onward.
-The initial qualified cutoff is247:113 rows, with no missing ordinal inside this
-cutoff. The category and overall static Cyclopedia audit remain PARTIAL.
+The current qualified cutoff is500:366 rows, with no missing ordinal inside
+135–500. The category and overall static Cyclopedia audit remain PARTIAL.
 Later captures are not automatically qualified or included. This one draft can
 receive a later coherent reader batch; it is not a PR per100 rows.
 
@@ -13,24 +13,34 @@ Frozen census [PR3150](https://github.com/Oteryn/Oteryn-Game/pull/3150) is uncha
 
 ## Qualified observations and custody
 
-`observations-135-247.json` retains all non-narrative Basic field literals from
-113 manually reviewed cards in Tibia Test Server15.33.dd0955. Its452 relative
-PNG keys and SHA256 were checked against private Ubuntu bytes. Images, private
+`observations-135-247.json` and `observations-248-500.json` retain all
+non-narrative Basic field literals from366 qualified cards in Tibia Test Server
+15.33.dd0955. The earlier452 private PNG hash checks are retained;1013 hashes
+for the new253-row packet were checked now, yielding1465 proof receipts. Images, private
 audit/internal metadata, access configuration and credentials are not exported.
 Source JSON remains immutable privately; its exact hash identifies the input.
 
-Sixteen Description values remain observed1:1 in the private source. The repo
+Fifty-four Description values remain observed1:1 in the private sources. The repo
 explicitly retains their UTF8 SHA256, byte and character lengths with state
 `OBSERVED_VALUE_RETAINED_PRIVATELY`. This is an export/custody statement, not
 UNKNOWN, NOT_APPLICABLE, absent, empty or zero. `field_export_policy` distinguishes
-literal exported fields from privately retained narrative text. Full repository
+literal exported fields from privately retained narrative text. The new packet
+also seals38 ordered description-display-line arrays with canonical UTF8 JSON
+hashes, line counts and lengths; their text is not exported. Full repository
 literal-text parity is not claimed. All other emitted Basic literals are intact.
+
+The248–500 packet binds three immutable reader inputs:95 rows248–342,98 rows
+343–440 and60 rows441–500. It explicitly reuses95 earlier native reads and adds
+158 new reads;254 saved Basic pages were qualified across these inputs. Fresh
+proof hashing is not a claim of manually rereading all253 cards during assembly.
 
 Physical UI ordinal and capture ID are different observations. Same-name
 chitinous mouth rows163/164 and dark bell rows222/223 remain separate, including
 their differing observed weights. A name, picture, appearance ID, Cyclopedia ID
 or source namespace does not establish serverID or native definition reference.
-Trade pagination, animation, instance state and complete category coverage remain
+Frozen claw rows352/353 and head rows434/435 also remain separate observations.
+Armor1/head/Classification4 at315, finger at352 and extra slot at393 remain
+exact observed literals. Trade pagination, animation, instance state and complete category coverage remain
 unqualified. Missing fields are not inferred zero, false or N/A.
 
 ## Two repaired capture gaps
@@ -61,14 +71,20 @@ three selected profile inputs (73 receipts). It compares Weight and Tradeable
 In Market; other non-narrative fields remain facts without speculative conversion.
 Weights use the pinned inspection formatter's hundredths-of-ounce convention.
 
-There are92 single-name,13 unmatched-name and eight multiple-name observations.
+There are306 single-name,37 unmatched-name and23 multiple-name observations.
 Even a unique match remains `UNQUALIFIED_NAME_CORRESPONDENCE`. Candidate field
-comparisons yield202 equal,20 unknown/unqualified and eight different values.
+comparisons yield664 equal,51 unknown/unqualified and17 different values.
 The differences include cross-comparisons between the same-name mouth/bell
-variants; they are not eight proven Item defects. All name candidates are retained
+variants; they are not17 proven Item defects. All name candidates are retained
 without selecting an ID from name, graphic, weight or ordinal. Literal source
 states, selected membership and admission flags remain separate from runtime
 admission or executable behavior. No content fixes are inferred from this packet.
+
+`uncompared-field-backlog.json` explicitly retains Armor (row315), Body Position
+(rows315/352/393) and Classification (row315) as not source-compared. Exact
+source/projection routes must be qualified before expanding comparison; no
+formulas, units or identity bindings are guessed. Private descriptions/display
+layouts are not semantic source comparisons. Full Basic semantic parity is not claimed.
 
 ## Validation and continuation
 

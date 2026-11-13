@@ -111,7 +111,17 @@ if __name__=='__main__':
     if args.check:assert json.loads(path.read_text())==result,'Source candidate comparison drift'
     else:
         path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
-        paths=sorted(HERE.glob('observations-*.json'))+[HERE/'gap-correction.json',path]
+        packets=[json.loads(p.read_text())for p in sorted(HERE.glob('observations-*.json'))]
+        field_rows=collections.defaultdict(list)
+        for packet in packets:
+            for item in packet['items']:
+                for field in item['properties']:
+                    if field not in ('Weight','Tradeable In Market'):field_rows[field].append(item['ui_entry_ordinal'])
+        backlog={'classification':'UNCOMPARED_OBSERVED_FIELDS','fields':[{'field':field,'observations':len(ordinals),'physical_ordinals':ordinals,'source_route_status':'NOT_YET_QUALIFIED_FOR_COMPARISON'}for field,ordinals in sorted(field_rows.items())],
+            'private_narrative_receipts':sum('description_receipt'in item for packet in packets for item in packet['items']),
+            'boundary':'These fields are retained literally but have not been source-compared. Private Description values and display layouts are hash/length receipts only, not semantic comparisons. No full Basic semantic parity claim.'}
+        (HERE/'uncompared-field-backlog.json').write_text(json.dumps(backlog,indent=2)+'\n')
+        paths=sorted(HERE.glob('observations-*.json'))+[HERE/'gap-correction.json',HERE/'uncompared-field-backlog.json',path]
         integrity={'files':{p.name:{'bytes':len(p.read_bytes()),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}for p in paths}}
         (HERE/'packet-integrity.json').write_text(json.dumps(integrity,indent=2)+'\n')
     print(json.dumps(result['counts']))
