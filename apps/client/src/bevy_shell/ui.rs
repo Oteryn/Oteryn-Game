@@ -43,6 +43,8 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    Market,
+    Party,
     Quests,
     Spells,
     Login,
@@ -58,6 +60,8 @@ impl Control {
     pub fn id(self) -> &'static str {
         match self {
             Self::Options => "shell.options",
+            Self::Market => "shell.market",
+            Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
             Self::Login => "shell.sign_in",
@@ -161,6 +165,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
+        (Control::Market, "Market", 80.),
+        (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
     ] {
@@ -366,6 +372,8 @@ fn activate(
             && matches!(
                 control,
                 Control::Options
+                    | Control::Market
+                    | Control::Party
                     | Control::Quests
                     | Control::Spells
                     | Control::Login
@@ -376,6 +384,8 @@ fn activate(
         }
         match control {
             Control::Options => owner.open_graphics(),
+            Control::Market => super::game_ui::open_market(&mut owner),
+            Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::Login => owner.request_login(),
@@ -560,7 +570,10 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if matches!(control, Some(Control::Quests | Control::Spells)) {
+        } else if matches!(
+            control,
+            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+        ) {
             node.display = if playing {
                 Display::Flex
             } else {

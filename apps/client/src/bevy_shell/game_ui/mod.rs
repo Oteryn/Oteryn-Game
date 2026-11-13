@@ -9,10 +9,12 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 mod item_details;
 mod journal;
+mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
 mod npc_shop;
 pub(super) mod options;
+pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
@@ -183,6 +185,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let trade_dock = region(&mut commands);
     commands.entity(trade_dock).insert(trade::TradeDock);
     let battle = region(&mut commands);
+    let party_dock = region(&mut commands);
+    commands.entity(party_dock).insert(party::PartyDock);
     let skills = region(&mut commands);
     let vip = region(&mut commands);
     let analyzers = region(&mut commands);
@@ -193,7 +197,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(main).add_children(&[world, bars, chat]);
     commands
         .entity(panels)
-        .add_children(&[battle, skills, vip, analyzers]);
+        .add_children(&[battle, party_dock, skills, vip, analyzers]);
     commands
         .entity(inventory)
         .add_children(&[toolbar, minimap, equipment, trade_dock, containers]);
@@ -232,8 +236,10 @@ pub(super) fn install(app: &mut App) {
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
+    market::install(app);
     minimap::install(app);
     npc_shop::install(app);
+    party::install(app);
     quick_loot::install(app);
     trade::install(app);
     app.add_systems(
@@ -253,4 +259,15 @@ pub(super) fn open_quests(owner: &mut HostOwner) {
 }
 pub(super) fn open_spells(owner: &mut HostOwner) {
     journal::open_spells(owner);
+}
+
+pub(super) fn open_market(owner: &mut HostOwner) {
+    market::open(owner);
+}
+pub(super) fn open_party(owner: &mut HostOwner) {
+    if !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        play.link.open_party();
+    }
 }

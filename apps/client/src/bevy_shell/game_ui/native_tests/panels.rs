@@ -14,6 +14,14 @@ pub(super) fn configure(
         generation: 2,
     };
     match panel.to_str() {
+        Some("market") => {
+            market(link, outbox)?;
+            Ok(Some("Buy offers"))
+        }
+        Some("party") => {
+            party(link, outbox)?;
+            Ok(Some("Fixture member"))
+        }
         Some("vip") => {
             use oteryn_input_actions::{
                 ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent,
@@ -111,4 +119,195 @@ pub(super) fn configure(
         }
         _ => Err("unknown native panel fixture".into()),
     }
+}
+
+fn market(link: &PlayLink, outbox: &Outbox) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::market::{market, market_details as wire};
+    outbox.bevy_market_initialize(true);
+    link.market_set_open(true);
+    let catalogue = wire::Query::Catalogue {
+        filter: wire::Filter::default(),
+        page: 0,
+    };
+    market_reply(
+        link,
+        outbox,
+        &catalogue,
+        &wire::Reply::Catalogue {
+            items: vec![wire::Ware {
+                definition: 42,
+                name: "Fixture sword".into(),
+                categories: vec!["Swords".into()],
+                vocations: Some(vec![2]),
+                level: Some(30),
+                forge_class: Some(2),
+                depot_units: 4,
+            }],
+            categories: vec!["Swords".into(), "Shields".into()],
+            page: 0,
+            has_next: false,
+        },
+    )?;
+    let summary = |price| wire::PriceSummary {
+        trades: 1,
+        units: 2,
+        minimum: Some(price),
+        maximum: Some(price),
+        average: Some(price),
+    };
+    let rows = [(1, 100), (2, 120)]
+        .into_iter()
+        .map(|(side, price)| {
+            let mut offer = [7; 16];
+            offer[0] = side;
+            offer[6] = 0x70;
+            offer[8] = 0x80;
+            market::MarketRow {
+                offer,
+                definition: 42,
+                side,
+                amount: 2,
+                price,
+                state: 1,
+                anonymous: true,
+            }
+        })
+        .collect();
+    market_reply(
+        link,
+        outbox,
+        &wire::Query::Book {
+            definition: 42,
+            page: 0,
+        },
+        &wire::Reply::Book {
+            definition: 42,
+            page: 0,
+            rows,
+            has_next: false,
+            statistics: wire::Statistics {
+                buy: summary(100),
+                sell: summary(120),
+                definition: 42,
+                since_us: 1,
+                as_of_us: 2592000000001,
+                trades: 2,
+                units: 4,
+                minimum: Some(100),
+                maximum: Some(120),
+                average: Some(110),
+            },
+        },
+    )?;
+    let panel = link.market_panel();
+    if panel.details.pending.is_some()
+        || panel.definition != 42
+        || panel.rows.len() != 2
+        || panel
+            .details
+            .statistics
+            .as_ref()
+            .is_none_or(|stats| stats.trades != 2)
+        || panel
+            .details
+            .items
+            .first()
+            .is_none_or(|ware| ware.name != "Fixture sword")
+    {
+        return Err("native market fixture did not reach its retained book owner".into());
+    }
+    Ok(())
+}
+fn market_reply(
+    link: &PlayLink,
+    outbox: &Outbox,
+    query: &oteryn_client_runtime::market::market_details::Query,
+    reply: &oteryn_client_runtime::market::market_details::Reply,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::{
+        market::{market, market_details as wire},
+        raw_feature::FeatureCommand,
+    };
+    if !link.market_query(query.clone()) {
+        return Err("native market fixture query refused".into());
+    }
+    let command = FeatureCommand {
+        capability: market::CAPABILITY_MARKET_V1,
+        kind: wire::COMMAND_TYPE_MARKET_DETAILS,
+        payload: wire::encode_query(query)
+            .map_err(|error| format!("native market query: {error:?}"))?,
+    };
+    outbox.bevy_market_reply(
+        &command,
+        &oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: wire::encode_reply(reply)
+                .map_err(|error| format!("native market reply: {error:?}"))?,
+        },
+    );
+    Ok(())
+}
+fn party(link: &PlayLink, outbox: &Outbox) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::party::{PartyResponse, party};
+    outbox.bevy_party_selected(true, true, "Fixture leader");
+    link.open_party();
+    let member = |handle, name: &str, leader, expires_at| party::PartyEntry {
+        handle,
+        name: name.into(),
+        leader,
+        expires_at,
+        list: vec![],
+        party_spell_remaining_ms: None,
+    };
+    let view = party::PartyResult {
+        disposition: party::PartyDisposition::Ok,
+        shared_xp_enabled: true,
+        members: vec![
+            member(1, "Fixture leader", true, 0),
+            member(2, "Fixture member", false, 0),
+        ],
+        invitations: vec![member(3, "Fixture inviter", false, 4_000_000_000)],
+    };
+    outbox.bevy_party_response(&PartyResponse {
+        status: oteryn_session::CommandStatus::Accepted,
+        operation: party::encode_party_result(&party::PartyResult::refused(
+            party::PartyDisposition::Ok,
+        ))
+        .map_err(|error| format!("native party operation: {error:?}"))?,
+        view: Some(
+            party::encode_party_result(&view)
+                .map_err(|error| format!("native party view: {error:?}"))?,
+        ),
+    });
+    let panel = link.party_panel();
+    if !panel.open || panel.pending.is_some() || panel.state.as_ref() != Some(&view) {
+        return Err("native party fixture did not reach its retained roster owner".into());
+    }
+    Ok(())
+}
+
+#[test]
+fn market_and_party_capture_fixtures_reach_accepted_retained_owners()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    market(&link, &outbox)?;
+    assert_eq!(link.market_panel().rows.len(), 2);
+    assert!(link.market_panel().details.pending.is_none());
+    let (link, _commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    party(&link, &outbox)?;
+    assert_eq!(
+        link.party_panel()
+            .state
+            .as_ref()
+            .ok_or("party state")?
+            .members
+            .len(),
+        2
+    );
+    assert!(link.party_panel().pending.is_none());
+    Ok(())
 }

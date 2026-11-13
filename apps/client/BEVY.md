@@ -70,7 +70,14 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
-- **Ctrl+V:** VIP contacts. Add/Edit/Remove use the existing server requests.
+- **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
+  is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+Shift+G:** Party List and its existing membership actions. The world
+  context menu exposes Party and an invitation for a visible player, subject to
+  confirmed party state and server authority.
+
+Market and Party also have buttons on the gameplay toolbar.
 
 Ctrl+V in a focused text field remains the native paste action. Click an exposed
 world area to leave a text field before using a gameplay shortcut. Map/item drag

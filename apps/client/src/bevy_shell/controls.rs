@@ -84,6 +84,14 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::market::open_key(&routed) {
+            play.link.market_set_open(true);
+            return;
+        }
+        if oteryn_client_ui::party::open_key(&routed) {
+            play.link.open_party();
+            return;
+        }
         play.view.cursor_spell_input(&routed);
         if let Some(direction) = crate::input::arrow_step(&routed) {
             play.view.arrow(direction);

@@ -1,5 +1,8 @@
 //! Generation-bound Bevy presentation for existing logout and world-context owners.
-use super::owner::{HostOwner, Phase};
+use super::{
+    game_ui::party,
+    owner::{HostOwner, Phase},
+};
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
@@ -21,13 +24,18 @@ struct Request {
 }
 enum Content {
     Logout,
-    Context(Menu),
+    Context {
+        menu: Option<Menu>,
+        party: Option<Box<party::Target>>,
+    },
 }
 #[derive(Clone, Copy, Component)]
 enum Choice {
     Cancel,
     Logout,
     Context(usize),
+    Invite,
+    Party,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -60,10 +68,11 @@ impl HostOwner {
             .play
             .as_ref()
             .and_then(|play| play.view.world_context(tile, &play.link));
-        if self.phase == Phase::Playing
-            && let Some(menu) = menu
-        {
-            self.dialogs.open(self.generation(), Content::Context(menu));
+        // Capture the player before opening our own modal, which correctly blocks new world input.
+        let party = party::context(self, tile).map(Box::new);
+        if self.phase == Phase::Playing && (menu.is_some() || party.is_some()) {
+            self.dialogs
+                .open(self.generation(), Content::Context { menu, party });
         }
     }
     fn choose_dialog(&mut self, id: u64, choice: Choice) -> bool {
@@ -79,21 +88,45 @@ impl HostOwner {
             return false;
         };
         self.pointer_context_closed();
-        if request.generation != self.generation() || self.phase != Phase::Playing {
+        if request.generation != self.generation()
+            || self.phase != Phase::Playing
+            || self.play.is_none()
+        {
             return false;
         }
-        let Some(play) = &mut self.play else {
-            return false;
-        };
         match (request.content, choice) {
             (_, Choice::Cancel) => true,
-            (Content::Logout, Choice::Logout) => {
+            (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
                 true
-            }
-            (Content::Context(menu), Choice::Context(index)) => {
+            }),
+            (
+                Content::Context {
+                    menu: Some(menu), ..
+                },
+                Choice::Context(index),
+            ) => self.play.as_ref().is_some_and(|play| {
                 menu.entries.get(index).is_some_and(|(_, action)| {
                     play.view.world_context_choose(&play.link, &menu, *action)
+                })
+            }),
+            (
+                Content::Context {
+                    party: Some(target),
+                    ..
+                },
+                Choice::Invite,
+            ) => party::invite(self, &target),
+            (Content::Context { party: Some(_), .. }, Choice::Party) => {
+                if self.modal_active() {
+                    return false;
+                }
+                self.play.as_ref().is_some_and(|play| {
+                    if play.view.gameplay_input_blocked(&play.link) {
+                        return false;
+                    }
+                    play.link.open_party();
+                    true
                 })
             }
             _ => false,
@@ -236,7 +269,7 @@ fn project(
     *panel = Some(window);
     let title = match request.content {
         Content::Logout => "Logout",
-        Content::Context(_) => "Actions",
+        Content::Context { .. } => "Actions",
     };
     source::dialog_caption(&mut commands, window, title, skin.font.clone());
     match &request.content {
@@ -257,8 +290,9 @@ fn project(
                 Choice::Logout,
             );
         }
-        Content::Context(menu) => {
-            for (index, (label, _)) in menu.entries.iter().enumerate() {
+        Content::Context { menu, party } => {
+            for (index, (label, _)) in menu.iter().flat_map(|menu| menu.entries.iter()).enumerate()
+            {
                 button(
                     &mut commands,
                     &skin,
@@ -266,6 +300,42 @@ fn project(
                     request.id,
                     label,
                     Choice::Context(index),
+                );
+            }
+            if let Some(target) = party {
+                if let Some(name) = target.name() {
+                    let label = commands
+                        .spawn(source::text(name, source::font(skin.font.clone(), false)))
+                        .insert((
+                            TextLayout::default(),
+                            Node {
+                                width: percent(100.),
+                                ..default()
+                            },
+                        ))
+                        .id();
+                    commands.entity(window).add_child(label);
+                }
+                let invite = button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Invite to Party",
+                    Choice::Invite,
+                );
+                if !target.invite_enabled() {
+                    commands
+                        .entity(invite)
+                        .insert(bevy::ui::InteractionDisabled);
+                }
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Party",
+                    Choice::Party,
                 );
             }
         }
@@ -379,10 +449,19 @@ mod tests {
                 oteryn_client_runtime::world_interaction::Action::Look,
             )],
         };
-        host.dialogs.open(host.generation(), Content::Context(menu));
+        host.dialogs.open(
+            host.generation(),
+            Content::Context {
+                menu: Some(menu),
+                party: None,
+            },
+        );
         let id = host.dialogs.pending.as_ref().ok_or("context")?.id;
         assert!(!host.choose_dialog(id, Choice::Context(0)));
         assert!(commands.try_recv().is_err());
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod party_tests;
