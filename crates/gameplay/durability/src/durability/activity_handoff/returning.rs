@@ -326,6 +326,7 @@ pub(super) async fn return_in_transaction(
         tx,
         root,
         super::entry::SuccessorSession {
+            terminal_security_return: matches!(r.reason, ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. }),
             source: r.source,
             destination: r.destination_game_session_id,
             decision: r.return_id,

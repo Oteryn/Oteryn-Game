@@ -763,6 +763,11 @@ async fn case(h: &Harness) -> TestResult {
     assert_eq!(after,before,"expired recovery must not consume its grant");
     let pending = lose_ack(&owner, outside, false).await?;
     assert_ne!(pending.game_session_id, outside.game_session_id);
+    let generations: Vec<(Option<String>,bool)>=sqlx::query_as("SELECT admission_security_generation::text,security_revoked FROM game_durability_reconnect_sessions WHERE account_id=encode($1,'hex')::uuid ORDER BY character_lease_generation")
+        .bind(super::fixture::id(40).as_slice()).fetch_all(&h.pool).await?;
+    assert!(generations.len()>=4,"real house entry/exit and another entry must all have successors");
+    assert!(generations.iter().all(|(generation,revoked)|generation.as_deref()==Some("1") && !revoked),"every house successor inherits the original admission generation");
+
     assert_eq!(
         pending
             .item_fence

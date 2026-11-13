@@ -647,5 +647,10 @@ pub(super) async fn assert_security_revocation(
         .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(reason,if lost {11}else{10});
     assert_eq!(destination_state,3,"forced return must also terminalize its successor");
+    let (generation,revoked):(Option<String>,bool)=sqlx::query_as("SELECT d.admission_security_generation::text,d.security_revoked FROM game_activity_runtime_returns r JOIN game_durability_reconnect_sessions d ON d.game_session_id=r.destination_game_session_id WHERE r.source_game_session_id=encode($1,'hex')::uuid")
+        .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(generation.as_deref(),Some("1"),"forced activity successor retains the admission cut");
+    assert!(revoked,"terminal security state is inherited by the return successor");
+
     Ok(())
 }

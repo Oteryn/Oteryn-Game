@@ -175,6 +175,9 @@ impl ActivityHandoffOwner {
             if current.started || current.has_owning_loss || !candidate.same_handoff(&current) {
                 return Err(DurabilityError::Unavailable);
             }
+            let revoked: bool = sqlx::query_scalar("SELECT game_security_session_revoked(encode($1,'hex')::uuid)")
+                .bind(current.current_session.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            if revoked { return Err(DurabilityError::Unavailable); }
             let audit = verified.audit();
             let subject = RecoveryEvidenceSubject::new(&audit.account_id, &audit.signing.key_id)?;
             let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")

@@ -47,7 +47,9 @@ BEGIN
             RAISE EXCEPTION 'security revoked reconnect';
         END IF;
     ELSE
-        IF NEW.admission_security_generation IS NOT NULL AND EXISTS(
+        -- Terminal activity cleanup inherits a captured marker before closing its successor.
+        -- The controller-update fence above still refuses every marked successor.
+        IF NOT NEW.security_revoked AND NEW.admission_security_generation IS NOT NULL AND EXISTS(
             SELECT 1 FROM public.game_security_revocation_floors f WHERE f.account_id=NEW.account_id
             AND f.native_security_generation>NEW.admission_security_generation) THEN
             RAISE EXCEPTION 'security generation revoked';

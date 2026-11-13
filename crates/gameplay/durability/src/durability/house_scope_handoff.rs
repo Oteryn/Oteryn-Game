@@ -1171,6 +1171,8 @@ pub async fn commit_house_entry_in_transaction(
     let destination_lease = source_lease
         .checked_add(1)
         .ok_or(DurabilityError::InvalidStoredState)?;
+    let (admission_generation, security_revoked) = super::platform_streams::session_security_lineage(tx, record.source_game_session_id).await?;
+    if security_revoked { return Err(HouseHandoffError::AuthorityRejected); }
     // The house session awaits its transport (HOUSE-RUNTIME-1 binds the actor): reconnectable,
     // first control-loss epoch, generation one, at the house scope generation.
     sqlx::query(
@@ -1179,11 +1181,11 @@ pub async fn commit_house_entry_in_transaction(
           runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
           runtime_scope_house_key, origin_channel_id, control_loss_epoch, \
           original_grace_deadline, predecessor_generation, character_lease_generation, \
-          scope_ownership_generation, current_generation, current_transport_ref, session_state) \
+          scope_ownership_generation, current_generation, current_transport_ref, session_state, admission_security_generation, security_revoked) \
          VALUES (encode($1,'hex')::uuid, $2::uuid, encode($3,'hex')::uuid, \
                  encode($4,'hex')::uuid, 2, encode($4,'hex')::uuid, NULL, encode($5,'hex')::uuid, \
                  $6, encode($7,'hex')::uuid, 1, $8, 1, $9::text::numeric(20,0), \
-                 $10::text::numeric(20,0), 1, NULL, 1)",
+                 $10::text::numeric(20,0), 1, NULL, 1, $11::text::numeric, $12)",
     )
     .bind(commit.destination_game_session_id.as_bytes().as_slice())
     .bind(account)
@@ -1195,6 +1197,7 @@ pub async fn commit_house_entry_in_transaction(
     .bind(grace_deadline)
     .bind(destination_lease.to_string())
     .bind(house_generation.to_string())
+    .bind(admission_generation.to_string()).bind(security_revoked)
     .execute(&mut **tx)
     .await?;
     let committed = sqlx::query(

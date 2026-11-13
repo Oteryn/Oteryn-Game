@@ -141,6 +141,14 @@ async fn known(
         .await
 }
 
+/// Inherit the immutable admission cut and captured terminal security state under the session lock.
+pub(crate) async fn session_security_lineage(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    session: crate::foundation::GameSessionId,
+) -> Result<(u64, bool), DurabilityError> {
+    security_revocation::lineage(tx, session).await
+}
+
 /// Evaluate against the database clock after the deciding transaction has acquired its locks.
 pub(crate) async fn revocation_fresh_in_transaction(
     tx: &mut sqlx::PgConnection,

@@ -258,9 +258,14 @@ async fn apply(
         .await
         .map_err(|_| DurabilityError::Unavailable)?;
         commit_session_use(tx, character, session, ack.transfer, revision).await?;
-        sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) VALUES(encode($1,'hex')::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,$6,1,$7::text::numeric,$8::text::numeric,1,$9,2)")
+        let (admission_generation, security_revoked) =
+            super::platform_streams::session_security_lineage(tx, fence.game_session_id).await?;
+        if security_revoked {
+            return Err(DurabilityError::Unavailable);
+        }
+        sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state,admission_security_generation,security_revoked) VALUES(encode($1,'hex')::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,$6,1,$7::text::numeric,$8::text::numeric,1,$9,2,$10::text::numeric,$11)")
             .bind(ack.session.as_slice()).bind(&account).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(request.origin.as_bytes().as_slice())
-            .bind(now).bind(ack.lease_generation.to_string()).bind(ack.scope_generation.to_string()).bind(request.transport.to_bytes().as_slice()).execute(&mut **tx).await?;
+            .bind(now).bind(ack.lease_generation.to_string()).bind(ack.scope_generation.to_string()).bind(request.transport.to_bytes().as_slice()).bind(admission_generation.to_string()).bind(security_revoked).execute(&mut **tx).await?;
     } else {
         match commit_house_entry_in_transaction(
             tx,
