@@ -1,0 +1,96 @@
+name: Integration shards (manual)
+
+# Runs the two integration-test legs of the merge-group gate (integration-heavy and
+# integration-rest) on a chosen branch or commit before it reaches main. The merge-group gate
+# itself stays push/merge_group only; this workflow is read-only and qualifies nothing.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch name or full 40-character commit SHA to test
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: integration-shards-dispatch-${{ inputs.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Integration shards / ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [integration-heavy, integration-rest]
+    steps:
+      - name: Validate requested ref
+        shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          [[ "$REQUESTED_REF" =~ ^[A-Za-z0-9._/-]{1,200}$ ]]
+          [[ "$REQUESTED_REF" != -* ]]
+
+      - name: Check out requested ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.99.1 --profile minimal
+
+      # Restore only: this run never writes a cache entry that main or the queue could read.
+      - name: Restore trimmed Cargo cache from protected main
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Normalize source mtimes for the restored Cargo cache
+        run: python tools/repository/normalize_cargo_mtimes.py
+
+      # Same pinned cargo-nextest release and fallback as the merge-group gate.
+      - name: Install pinned cargo-nextest
+        env:
+          NEXTEST_VERSION: 0.9.146
+          NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/cargo-nextest.tar.gz"
+          mkdir -p "$RUNNER_TEMP/nextest-bin"
+          if curl --proto '=https' --tlsv1.2 -fsSL --retry 8 --retry-delay 15 --retry-all-errors --retry-max-time 150 --connect-timeout 30 -o "$archive" \
+            "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-${NEXTEST_VERSION}/cargo-nextest-${NEXTEST_VERSION}-x86_64-unknown-linux-gnu.tar.gz"; then
+            echo "${NEXTEST_SHA256}  ${archive}" | sha256sum -c -
+            tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
+          else
+            echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
+            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
+          fi
+          echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
+
+      - name: Test workspace integration targets
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
+          mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
+          test "${#shard_args[@]}" -gt 0
+          cargo +1.99.1 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
