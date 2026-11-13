@@ -837,14 +837,46 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         _ => None,
     };
     let world_event_outcomes = t94::material(platform, endpoint.clone(), &roots, &client)?;
+    let (intent_chain, intent_key) = match &platform.bootstrap_intents {
+        None => (client.clone(), client_key),
+        Some(intents) => {
+            let chain = certificates(&secret(
+                "platform.bootstrap_intents.client_certificate_file",
+                &intents.client_certificate_file,
+                MAX_PEM_BYTES,
+            )?)
+            .map_err(|_| invalid("platform.bootstrap_intents.client_certificate_file"))?;
+            let key = private_key(
+                "platform.bootstrap_intents.client_key_file",
+                &secret(
+                    "platform.bootstrap_intents.client_key_file",
+                    &intents.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            // Same issuer and compiled endpoint; refuse reuse of the evidence key.
+            let spki = |chain: &[rustls::pki_types::CertificateDer<'_>]| {
+                chain
+                    .first()
+                    .and_then(|leaf| rustls::server::ParsedCertificate::try_from(leaf).ok())
+                    .map(|parsed| parsed.subject_public_key_info().as_ref().to_vec())
+            };
+            let own = spki(&chain).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            let evidence = spki(&client).ok_or_else(|| invalid("platform.bootstrap_intents"))?;
+            if own == evidence {
+                return Err(invalid("platform.bootstrap_intents"));
+            }
+            (chain, key)
+        }
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
         platform.peer_name.clone(),
         platform.peer_name.clone(),
         roots.clone(),
-        client.clone(),
-        client_key,
+        intent_chain,
+        intent_key,
     )
     .map_err(|_| invalid("platform"))?;
     let descriptor = DescriptorRegistration {
