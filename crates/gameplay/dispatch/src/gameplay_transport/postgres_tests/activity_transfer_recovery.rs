@@ -150,6 +150,17 @@ async fn case(h: &Harness) -> TestResult {
     );
     assert_eq!(counts(h).await?, before);
 
+    // Entry was fresh at exactly 30 seconds; the deciding callback advances
+    // the injected clock while the recovery transaction already owns its locks.
+    let facts = verified(h, &entered.evidence, &candidate, 249).await?;
+    let clock = super::security_revocation::RecoveryExpiryClock::install(h, facts.verified_at()).await?;
+    let expired = owner.recover_transfer(&authority, &h.node,
+        candidate.clone().with_security_revocation_freshness(true), facts,
+        transport, clock.check.clone()).await;
+    clock.finish(h).await?;
+    assert!(matches!(expired, Err(crate::durability::DurabilityError::Unavailable)), "expired activity recovery must not issue control");
+    assert_eq!(counts(h).await?, before, "expired recovery leaves every ledger unchanged");
+
     let recovered = owner
         .recover_transfer(
             &authority,

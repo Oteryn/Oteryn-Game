@@ -1,4 +1,4 @@
-//! N009/N014: Game pulls Platform's sanction and loyalty streams (`PLATFORM_SANCTION_LOYALTY_EXPORT_V1`,
+//! N009/N014/P1-a: Game pulls Platform's sanction, loyalty and security-revocation streams (`PLATFORM_SANCTION_LOYALTY_EXPORT_V1`,
 //! owner decision 2026-11-11) over private `/internal/v1` mutual TLS, built by the shared Platform
 //! client builder ([`crate::premium::client`]). Each stream has its own client identity, never the
 //! Premium one and never the other stream's. Platform never calls Game SQL.
@@ -6,19 +6,29 @@
 //! Each enabled stream has one task: it reads the durable cursor, requests the next page after
 //! it, checks the page and projects it with the cursor in one transaction
 //! ([`DurabilityRoot::apply_platform_stream_page`]). A full page is followed at once; a short one
-//! waits [`IDLE_POLL`]; a failure backs off like the Premium pull. Both streams are off unless
+//! waits [`IDLE_POLL`]; a failure backs off like the Premium pull. All streams are off unless
 //! their variable is `true`, and an enabled stream needs its own identity.
 use crate::durability::DurabilityRoot;
 use crate::durability::platform_streams::{
-    LoyaltySnapshot, PageCounts, PageOutcome, PlatformStream, SanctionDecision, StreamPage,
+    LoyaltySnapshot, PageCounts, PageOutcome, PlatformStream, SanctionDecision, SecurityRevocation,
+    StreamPage,
 };
 use crate::premium::client::{
     ClientConfigError, IDENTITY_VAR, PLATFORM_CA_VAR, PULL_TIMEOUT, PremiumClientConfig,
     PullFailure, URL_VAR, platform_http, post_json,
 };
 use oteryn_protocol_oteryn::sanction_record as wire;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+pub const SECURITY_REVOCATION_STREAM_PATH: &str =
+    "/internal/v1/identity/security-revocations/stream/read";
+pub const SECURITY_REVOCATIONS_ENABLED_VAR: &str =
+    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_ENABLED";
+pub const SECURITY_REVOCATION_IDENTITY_VAR: &str =
+    "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM";
+const SECURITY_REQUEST_SCHEMA: &str = "oteryn.security_revocation_stream_request.v1";
+const SECURITY_PAGE_SCHEMA: &str = "oteryn.security_revocation_stream_page.v1";
 
 pub const SANCTION_STREAM_PATH: &str = "/internal/v1/support/sanctions/stream/read";
 pub const LOYALTY_STREAM_PATH: &str = "/internal/v1/products-entitlements/loyalty-snapshots/stream";
@@ -51,9 +61,27 @@ pub fn request_body(stream: PlatformStream, after: Option<&str>, limit: usize) -
     if !(1..=MAX_LIMIT).contains(&limit) || after.is_some_and(|cursor| !valid_cursor(cursor)) {
         return None;
     }
+    if stream == PlatformStream::SecurityRevocations {
+        if after.is_some_and(|cursor| !security_cursor(cursor)) {
+            return None;
+        }
+        #[derive(Serialize)]
+        struct Request<'a> {
+            schema: &'static str,
+            after: Option<&'a str>,
+            limit: usize,
+        }
+        return serde_json::to_vec(&Request {
+            schema: SECURITY_REQUEST_SCHEMA,
+            after,
+            limit,
+        })
+        .ok();
+    }
     let schema = match stream {
         PlatformStream::Sanctions => SANCTION_REQUEST_SCHEMA,
         PlatformStream::Loyalty => LOYALTY_REQUEST_SCHEMA,
+        PlatformStream::SecurityRevocations => SECURITY_REQUEST_SCHEMA,
     };
     serde_json::to_vec(&serde_json::json!({
         "schema": schema,
@@ -112,13 +140,77 @@ struct LoyaltyItemJson {
     platform_revision: i64,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct SecurityPageJson {
+    schema: String,
+    items: Vec<SecurityItemJson>,
+    next_cursor: Option<String>,
+}
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct SecurityItemJson {
+    revocation_id: String,
+    account_id: String,
+    native_security_generation: i64,
+    cause: i16,
+    effective_at_ms: i64,
+}
+fn security_cursor(cursor: &str) -> bool {
+    cursor
+        .strip_prefix("v1:")
+        .and_then(|n| n.parse::<u64>().ok().map(|value| value.to_string() == n))
+        .unwrap_or(false)
+}
+fn uuid_v7(text: &str) -> Option<[u8; 16]> {
+    let id = uuid(text)?;
+    (id[6] >> 4 == 7 && id[8] & 0xc0 == 0x80).then_some(id)
+}
+
 /// Decode and check one page asked for with `limit`. Any record outside the export shape refuses
 /// the whole page: nothing of it is projected and the cursor stays.
 pub fn decode_page(stream: PlatformStream, raw: &[u8], limit: usize) -> Option<Page> {
-    if raw.len() > MAX_PAGE_BYTES {
+    if raw.len() > MAX_PAGE_BYTES || !(1..=MAX_LIMIT).contains(&limit) {
         return None;
     }
     let (records, count, next_cursor) = match stream {
+        PlatformStream::SecurityRevocations => {
+            let page: SecurityPageJson = serde_json::from_slice(raw).ok()?;
+            if page.schema != SECURITY_PAGE_SCHEMA
+                || serde_json::to_vec(&page).ok()?.as_slice() != raw
+                || page
+                    .next_cursor
+                    .as_deref()
+                    .is_some_and(|cursor| !security_cursor(cursor))
+            {
+                return None;
+            }
+            let count = page.items.len();
+            let items = page
+                .items
+                .into_iter()
+                .map(|item| {
+                    if item.native_security_generation <= 0
+                        || item.effective_at_ms <= 0
+                        || !(1..=4).contains(&item.cause)
+                    {
+                        return None;
+                    }
+                    Some(SecurityRevocation {
+                        revocation_id: uuid_v7(&item.revocation_id)?,
+                        account_id: uuid_v7(&item.account_id)?,
+                        native_security_generation: item.native_security_generation,
+                        cause: item.cause,
+                        effective_at_ms: item.effective_at_ms,
+                    })
+                })
+                .collect::<Option<Vec<_>>>()?;
+            (
+                StreamPage::SecurityRevocations(items),
+                count,
+                page.next_cursor,
+            )
+        }
         PlatformStream::Sanctions => {
             let page: SanctionPageJson = serde_json::from_slice(raw).ok()?;
             if page.schema != SANCTION_PAGE_SCHEMA {
@@ -309,6 +401,7 @@ impl StreamPuller {
         let path = match stream {
             PlatformStream::Sanctions => SANCTION_STREAM_PATH,
             PlatformStream::Loyalty => LOYALTY_STREAM_PATH,
+            PlatformStream::SecurityRevocations => SECURITY_REVOCATION_STREAM_PATH,
         };
         let endpoint = origin
             .join(path)
@@ -320,10 +413,15 @@ impl StreamPuller {
         })
     }
 
-    /// The pullers the environment enables; none when both variables are unset or `false`.
+    /// The pullers the environment enables; none when all variables are unset or `false`.
     /// An enabled stream without its own valid identity, or with one another Platform client
     /// of this node presents, is a configuration error and starts no puller.
     pub fn from_env() -> Result<Vec<Self>, ClientConfigError> {
+        Self::from_lookup(|key| std::env::var_os(key))
+    }
+    fn from_lookup(
+        lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    ) -> Result<Vec<Self>, ClientConfigError> {
         let mut streams = Vec::new();
         for (stream, enable_var, identity_var) in [
             (
@@ -332,12 +430,17 @@ impl StreamPuller {
                 SANCTION_IDENTITY_VAR,
             ),
             (
+                PlatformStream::SecurityRevocations,
+                SECURITY_REVOCATIONS_ENABLED_VAR,
+                SECURITY_REVOCATION_IDENTITY_VAR,
+            ),
+            (
                 PlatformStream::Loyalty,
                 LOYALTY_ENABLED_VAR,
                 LOYALTY_IDENTITY_VAR,
             ),
         ] {
-            if enabled(enable_var, std::env::var_os(enable_var))? {
+            if enabled(enable_var, lookup(enable_var))? {
                 streams.push((stream, identity_var));
             }
         }
@@ -345,14 +448,15 @@ impl StreamPuller {
             return Ok(Vec::new());
         }
         let read = |var: &'static str| {
-            std::env::var_os(var)
+            lookup(var)
                 .and_then(|path| std::fs::read(path).ok())
                 .ok_or(ClientConfigError::Invalid(var))
         };
-        let origin = std::env::var(STREAMS_URL_VAR)
-            .map_err(|_| ClientConfigError::Invalid(STREAMS_URL_VAR))?;
+        let origin = lookup(STREAMS_URL_VAR)
+            .and_then(|v| v.into_string().ok())
+            .ok_or(ClientConfigError::Invalid(STREAMS_URL_VAR))?;
         let platform_ca_pem = read(STREAMS_PLATFORM_CA_VAR)?;
-        let premium_identity = match std::env::var_os(IDENTITY_VAR) {
+        let premium_identity = match lookup(IDENTITY_VAR) {
             Some(_) => Some(read(IDENTITY_VAR)?),
             None => None,
         };
@@ -384,6 +488,7 @@ impl StreamPuller {
         match self.stream {
             PlatformStream::Sanctions => "sanctions",
             PlatformStream::Loyalty => "loyalty",
+            PlatformStream::SecurityRevocations => "security_revocations",
         }
     }
 }
@@ -426,7 +531,17 @@ async fn pull_once(
         .map_err(|_| Failure::Store)?
     {
         PageOutcome::Advanced(counts) => {
-            if counts != PageCounts::default() {
+            if puller.stream == PlatformStream::SecurityRevocations {
+                oteryn_error_codes::emit(
+                    "oteryn-game-server",
+                    &oteryn_error_codes::Line::new(
+                        oteryn_error_codes::Level::Info,
+                        "social",
+                        "security_revocation_stream_page",
+                    )
+                    .field("result", oteryn_error_codes::FieldValue::Token("applied")),
+                );
+            } else if counts != PageCounts::default() {
                 event(&format!(
                     "event=platform_stream_page stream={} applied={} replayed={} stale={} skipped={}",
                     puller.name(),
@@ -458,13 +573,29 @@ async fn run(
             }
             Ok(Step::Wait) => {
                 attempt = 0;
-                IDLE_POLL
+                if puller.stream == PlatformStream::SecurityRevocations {
+                    Duration::from_secs(5)
+                } else {
+                    IDLE_POLL
+                }
             }
             Err(failure) => {
-                event(&format!(
-                    "event=platform_stream_failed stream={} reason={failure:?}",
-                    puller.name()
-                ));
+                if puller.stream == PlatformStream::SecurityRevocations {
+                    oteryn_error_codes::emit(
+                        "oteryn-game-server",
+                        &oteryn_error_codes::Line::new(
+                            oteryn_error_codes::Level::Warn,
+                            "social",
+                            "security_revocation_stream_failed",
+                        )
+                        .field("result", oteryn_error_codes::FieldValue::Token("failed")),
+                    );
+                } else {
+                    event(&format!(
+                        "event=platform_stream_failed stream={} reason={failure:?}",
+                        puller.name()
+                    ));
+                }
                 let retry_after = match failure {
                     Failure::Pull(pull) => pull.retry_after(),
                     Failure::Store | Failure::Malformed => None,
@@ -498,6 +629,9 @@ impl PlatformStreams {
                     let name = match puller.stream {
                         PlatformStream::Sanctions => "platform_sanction_stream",
                         PlatformStream::Loyalty => "platform_loyalty_stream",
+                        PlatformStream::SecurityRevocations => {
+                            "platform_security_revocation_stream"
+                        }
                     };
                     oteryn_task_supervisor::spawn_supervised_with_heartbeat(
                         name,

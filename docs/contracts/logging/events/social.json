@@ -34,6 +34,26 @@
       ],
       "codes": [],
       "note": "Platform stream page applied."
+    },
+    {
+      "event": "security_revocation_stream_failed",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "result"
+      ],
+      "codes": [],
+      "note": "P1-a failed stream read; current play continues. Contains no credential or identity."
+    },
+    {
+      "event": "security_revocation_stream_page",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "result"
+      ],
+      "codes": [],
+      "note": "P1-a successfully applied page, including empty. Contains no credential or identity."
     }
   ]
 }

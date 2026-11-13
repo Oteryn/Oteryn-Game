@@ -206,7 +206,7 @@ pub(super) async fn assert_offline_death(
     Ok(())
 }
 
-async fn train_and_kill(
+pub(super) async fn train_and_kill(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,

@@ -6,6 +6,8 @@
 //! after, so two pullers never both advance it; the loser's page rolls back as `Superseded`. Every
 //! record projects through its revisioned function (migrations 2800, 2803), so a replayed or
 //! reordered record never moves a projection backwards.
+mod security_revocation;
+
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::{DurabilityError, DurabilityRoot};
 
@@ -14,6 +16,7 @@ use super::{DurabilityError, DurabilityRoot};
 pub enum PlatformStream {
     Sanctions = 1,
     Loyalty = 2,
+    SecurityRevocations = 3,
 }
 
 impl PlatformStream {
@@ -46,11 +49,34 @@ pub struct LoyaltySnapshot {
     pub platform_revision: i64,
 }
 
+/// One immutable Platform account-security revocation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SecurityRevocation {
+    pub revocation_id: [u8; 16],
+    pub account_id: [u8; 16],
+    pub native_security_generation: i64,
+    pub cause: i16,
+    pub effective_at_ms: i64,
+}
+/// Owner-approved maximum successful-read age for reconnect, in milliseconds.
+pub const SECURITY_REVOCATION_FRESHNESS_MS: i64 = 30_000;
+pub fn security_revocation_read_fresh(
+    enabled: bool,
+    last_read_ms: Option<i64>,
+    now_ms: i64,
+) -> bool {
+    !enabled
+        || last_read_ms.is_some_and(|last| {
+            now_ms >= last && now_ms.saturating_sub(last) <= SECURITY_REVOCATION_FRESHNESS_MS
+        })
+}
+
 /// One pulled page.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StreamPage {
     Sanctions(Vec<SanctionDecision>),
     Loyalty(Vec<LoyaltySnapshot>),
+    SecurityRevocations(Vec<SecurityRevocation>),
 }
 
 impl StreamPage {
@@ -58,6 +84,7 @@ impl StreamPage {
         match self {
             Self::Sanctions(_) => PlatformStream::Sanctions,
             Self::Loyalty(_) => PlatformStream::Loyalty,
+            Self::SecurityRevocations(_) => PlatformStream::SecurityRevocations,
         }
     }
 }
@@ -114,7 +141,68 @@ async fn known(
         .await
 }
 
+/// Inherit the immutable admission cut and captured terminal security state under the session lock.
+pub(crate) async fn session_security_lineage(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    session: crate::foundation::GameSessionId,
+) -> Result<(Option<u64>, bool), DurabilityError> {
+    security_revocation::lineage(tx, session).await
+}
+
+/// Evaluate against the database clock after the deciding transaction has acquired its locks.
+pub(crate) async fn revocation_fresh_in_transaction(
+    tx: &mut sqlx::PgConnection,
+) -> Result<bool, DurabilityError> {
+    let (last,now):(Option<i64>,i64)=sqlx::query_as("SELECT floor(extract(epoch FROM advanced_at)*1000)::bigint,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_platform_stream_cursors WHERE stream=3")
+        .fetch_one(tx).await?;
+    Ok(security_revocation_read_fresh(true, last, now))
+}
+
 impl DurabilityRoot {
+    /// Freshness uses the same millisecond database clock as the locked controller decision.
+    pub async fn security_revocation_read_fresh_now(&self) -> Result<bool, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let fresh = revocation_fresh_in_transaction(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(fresh)
+                })
+            })
+            .await
+    }
+    /// A captured revocation survives stream outages and disabling the puller.
+    pub async fn security_session_revoked(
+        &self,
+        session: crate::foundation::GameSessionId,
+    ) -> Result<bool, DurabilityError> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let revoked = sqlx::query_scalar(
+                        "SELECT game_security_session_revoked(encode($1,'hex')::uuid)",
+                    )
+                    .bind(session.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(revoked)
+                })
+            })
+            .await
+    }
+    /// Last committed successful page read, including empty pages. Failed reads leave it intact.
+    pub async fn security_revocation_last_read_ms(&self) -> Result<Option<i64>, DurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            let last=sqlx::query_scalar("SELECT floor(extract(epoch FROM advanced_at)*1000)::bigint FROM game_platform_stream_cursors WHERE stream=3")
+                .fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;
+            Ok(last)
+        })).await
+    }
     /// The stored resume cursor of `stream`; `None` before its first page.
     pub async fn platform_stream_cursor(
         &self,
@@ -148,6 +236,9 @@ impl DurabilityRoot {
             .run(move |holder, deadline| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    if page.stream() == PlatformStream::SecurityRevocations {
+                        super::db::lock_admission_relations(&mut tx).await?;
+                    }
                     let stream = page.stream().key();
                     let stored: Option<String> = sqlx::query_scalar(CURSOR_SQL)
                         .bind(stream)
@@ -158,6 +249,11 @@ impl DurabilityRoot {
                     }
                     let mut counts = PageCounts::default();
                     match &page {
+                        StreamPage::SecurityRevocations(items) => {
+                            for item in items {
+                                counts.count(security_revocation::apply(&mut tx, item).await?)?;
+                            }
+                        }
                         StreamPage::Sanctions(items) => {
                             for item in items {
                                 if !known(&mut tx, &item.account_id, item.character_id.as_ref())

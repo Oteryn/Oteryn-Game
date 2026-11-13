@@ -70,6 +70,11 @@ pub async fn serve_gameplay(
         test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
+            security_revocation_stream_enabled: crate::platform_streams::enabled(
+                crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR,
+                std::env::var_os(crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR),
+            )
+            .unwrap_or(true),
             casts,
             bulletin_source: config.bulletin_source,
             gameplay_idle_policy: owners.gameplay_idle_policy,

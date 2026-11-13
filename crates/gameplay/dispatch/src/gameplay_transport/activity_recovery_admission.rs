@@ -392,7 +392,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .recover_transfer(
                 self.character,
                 self.holder,
-                candidate,
+                candidate.with_security_revocation_freshness(
+                    self.states.security_revocation_stream_enabled,
+                ),
                 verified,
                 attempt.transport,
                 capabilities.current_check(),
