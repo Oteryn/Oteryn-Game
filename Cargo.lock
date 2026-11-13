@@ -3363,6 +3363,7 @@ version = "0.1.0"
 dependencies = [
  "aws-lc-rs",
  "base64 0.22.1",
+ "oteryn-error-codes",
  "oteryn-gameplay-combat",
  "oteryn-gameplay-content",
  "oteryn-gameplay-domain",

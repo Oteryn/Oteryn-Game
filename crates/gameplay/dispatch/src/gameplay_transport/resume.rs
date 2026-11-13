@@ -862,6 +862,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<CompleteReconnectOutcomeV1, AdmissionRefusal> {
         loop {
             let unissued = match store
+                .clone()
+                .with_security_revocation_freshness(self.states.security_revocation_stream_enabled)
                 .apply_registered_complete_reconnect(
                     self.holder,
                     request.clone(),

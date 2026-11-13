@@ -792,9 +792,26 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .refresh_account_held(self.root, self.holder, &account)
                 .await
                 .map_err(|_| ())?;
-            let result = ActivityHandoffOwner::new(self.root.clone())
-                .return_participant(self.character, self.holder, attempt.request.clone())
-                .await;
+            let owner = ActivityHandoffOwner::new(self.root.clone());
+            let result = if matches!(attempt.request.reason, ActivityReturnReason::Death { .. })
+                && matches!(
+                    attempt.trigger_reason,
+                    ActivityReturnReason::StaffKick { .. }
+                        | ActivityReturnReason::StaffKickLost { .. }
+                ) {
+                owner
+                    .return_forced_death(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        attempt.trigger_reason,
+                    )
+                    .await
+            } else {
+                owner
+                    .return_participant(self.character, self.holder, attempt.request.clone())
+                    .await
+            };
             evidence.release().await.map_err(|_| ())?;
             let result = result.map_err(|_| ())?;
             match result {

@@ -34,6 +34,8 @@ pub mod fresh {
 
     pub struct Source {
         pub now: i64,
+        /// The revocation case issues a genuinely signed new-generation grant.
+        pub security_generation: u64,
         pub current: FreshCurrentEvidence,
         pub rows: Vec<AdmissionAuthorityPublicationChangeV1>,
         key: SigningKey,
@@ -239,6 +241,7 @@ pub mod fresh {
         pub(crate) fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
             let mut source = Self {
                 now,
+                security_generation: 1,
                 key: SigningKey::from_bytes(&[31; 32]),
                 rows: vec![],
                 current,
@@ -410,6 +413,7 @@ pub mod fresh {
             }
             payload["scope_ownership_generation"] =
                 self.current.scope_ownership_generation.to_string().into();
+            payload["account_security_generation"] = self.security_generation.to_string().into();
             payload["iat"] = now.into();
             payload["nbf"] = now.into();
             payload["exp"] = (now + 10).into();
