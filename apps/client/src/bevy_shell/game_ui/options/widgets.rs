@@ -71,7 +71,7 @@ pub(super) fn setup(
         .id();
     let nav = commands
         .spawn((
-            Navigation,
+            Name::new("options.navigation.frame"),
             ScrollArea,
             source::frame(skins.inset.clone(), [1.; 4]),
             Node {
@@ -88,6 +88,20 @@ pub(super) fn setup(
             },
         ))
         .id();
+    let navigation = commands
+        .spawn((
+            Navigation,
+            Node {
+                width: percent(100.),
+                min_height: px(0.),
+                flex_shrink: 0.,
+                flex_direction: FlexDirection::Column,
+                row_gap: px(5.),
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(nav).add_child(navigation);
     let right = commands
         .spawn((
             source::frame(skins.inset.clone(), [1.; 4]),

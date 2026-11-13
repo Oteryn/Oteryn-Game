@@ -1,9 +1,14 @@
 use super::*;
-pub(super) const MAIN: [Row; 2] = [
+pub(super) const MAIN: [Row; 3] = [
     check!(
         "misc.logout",
         "Ask Before Logging Out",
         miscellaneous.confirm_logout
+    ),
+    check!(
+        "misc.exit",
+        "Ask Before Exiting",
+        miscellaneous.confirm_exit
     ),
     check!(
         "misc.connection",

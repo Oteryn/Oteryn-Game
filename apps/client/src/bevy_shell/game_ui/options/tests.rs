@@ -250,3 +250,62 @@ fn active_options_escape_does_not_require_a_focused_child() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn ask_before_exit_checkbox_round_trips_through_the_existing_settings_owner() -> TestResult {
+    struct Directory(std::path::PathBuf);
+    impl Drop for Directory {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let directory = Directory(std::env::temp_dir().join(format!(
+        "bevy-options-exit-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    )));
+    std::fs::create_dir_all(&directory.0)?;
+    let path = directory.0.join("preferences.json");
+    let mut app = app(Page::Misc, Some(path.clone()))?;
+    let checkbox = app
+        .world_mut()
+        .spawn(Control::Check("misc.exit"))
+        .observe(toggle)
+        .id();
+    app.world_mut().trigger(ValueChange {
+        source: checkbox,
+        value: false,
+        is_final: true,
+    });
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .ok_or("draft")?
+            .miscellaneous
+            .confirm_exit
+    );
+    let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: ok });
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .preferences_draft()
+            .is_none()
+    );
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .settings
+            .preferences
+            .miscellaneous
+            .confirm_exit
+    );
+    assert!(
+        !crate::play::SettingsState::new(Some(path))
+            .preferences
+            .miscellaneous
+            .confirm_exit
+    );
+    Ok(())
+}

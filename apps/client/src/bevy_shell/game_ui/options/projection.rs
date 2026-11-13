@@ -1,19 +1,19 @@
 use super::*;
 use bevy::ecs::system::SystemParam;
+// These role filters keep the independently mutable ECS widget queries disjoint.
+type FeedbackRole = (
+    With<Feedback>,
+    Without<NumberCaption>,
+    Without<ChoiceCaption>,
+);
+type DialogRole = (With<OptionsDialog>, Without<ChoicePopup>, Without<Thumb>);
+type PopupRole = (Without<OptionsDialog>, Without<Thumb>);
+type ThumbRole = (Without<OptionsDialog>, Without<ChoicePopup>);
 #[derive(SystemParam)]
 pub(super) struct Captions<'w, 's> {
     numbers: Query<'w, 's, (&'static NumberCaption, &'static mut Text)>,
     choices: Query<'w, 's, (&'static ChoiceCaption, &'static mut Text), Without<NumberCaption>>,
-    feedback: Query<
-        'w,
-        's,
-        &'static mut Text,
-        (
-            With<Feedback>,
-            Without<NumberCaption>,
-            Without<ChoiceCaption>,
-        ),
-    >,
+    feedback: Query<'w, 's, &'static mut Text, FeedbackRole>,
 }
 use bevy::ui::{Checked, InteractionDisabled};
 use bevy::ui_widgets::{SliderRange, SliderValue};
@@ -30,9 +30,9 @@ pub(super) fn project(
     navigation: Query<Entity, With<Navigation>>,
     bodies: Query<Entity, With<PageBody>>,
     controls: Query<(Entity, &Control, Option<&SliderValue>)>,
-    mut dialogs: Query<&mut Node, (With<OptionsDialog>, Without<ChoicePopup>, Without<Thumb>)>,
-    mut popups: Query<(&ChoicePopup, &mut Node), (Without<OptionsDialog>, Without<Thumb>)>,
-    mut thumbs: Query<(&Thumb, &mut Node), (Without<OptionsDialog>, Without<ChoicePopup>)>,
+    mut dialogs: Query<&mut Node, DialogRole>,
+    mut popups: Query<(&ChoicePopup, &mut Node), PopupRole>,
+    mut thumbs: Query<(&Thumb, &mut Node), ThumbRole>,
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut captions: Captions<'_, '_>,
     mut held: Local<Option<(u64, Page, bool)>>,
