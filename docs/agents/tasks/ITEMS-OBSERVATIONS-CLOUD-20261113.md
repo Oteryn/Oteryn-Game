@@ -4,11 +4,11 @@
 task_id: ITEMS-OBSERVATIONS-CLOUD-20261113
 title: Retain partial Item observations and qualified source gaps
 mode: AUDIT
-status: implementing
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/items-observations-cloud-20261113
-pr: null
+pr: 3152
 base_sha: 5efd67da164ac9dc33c8c066434b228cebb86c2b
 head_sha: null
 final_head_sha: null
@@ -32,8 +32,8 @@ external_repositories: []
 
 Retain Creature Products Basic1–134,33 Armors Basic requalifications and176
 initial trade-panel observations with qualified recapture gaps and a reproducible
-name-candidate source comparison. This completes a bounded evidence-authoring
-slice, not complete client inventory or semantic parity.
+name-candidate source comparison. This is a partial evidence checkpoint; overall static Cyclopedia audit
+remains unfinished. No complete client inventory or semantic parity claim.
 
 ## Architecture and source of truth
 
@@ -105,6 +105,8 @@ Worker does not trigger paid review. Return exact-head review packet to lead.
 
 ## PR and closeout
 
-Draft publication pending. No merge authorization or CI-green claim.
-Archive this record in final authoring commit after PR number is known;
-freeze only after remote exact-head readback.
+Draft PR: https://github.com/Oteryn/Oteryn-Game/pull/3152.
+Overall audit status: PARTIAL; all remaining static Cyclopedia tabs still need
+qualification. This active task record remains waiting and is not archived.
+No merge authorization or CI-green claim. Freeze this partial candidate only
+after remote exact-head readback.
