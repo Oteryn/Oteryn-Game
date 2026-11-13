@@ -350,3 +350,12 @@ mod wheel_presentation_gated;
 #[cfg(test)]
 #[path = "e2e_c16d.rs"]
 mod e2e_c16d;
+
+#[test]
+fn preadm_admission_debug_redacts_grant() -> Result<(), BoxError> {
+    let value = admission()?;
+    let debug = format!("{value:?}");
+    assert!(debug.contains("[REDACTED]"));
+    assert!(!debug.contains(&format!("{:?}", value.admission_material)));
+    Ok(())
+}
