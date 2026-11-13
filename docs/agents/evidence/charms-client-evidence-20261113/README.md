@@ -101,6 +101,12 @@ runtime proof. These priorities are not new runtime findings.
 
 ## Private evidence and validation
 
+The [filtered Wound follow-up](discord-wound-context.md) corrects the depth of
+the earlier Discord search: actual query/filter state and two full-context
+reads distinguish Crypt Strike armor penetration from weapon physical pierce.
+`discord-wound-context.json` preserves four records and three source receipts;
+the current flags are source comparisons, not reproduced Global defects.
+
 The [primary-video comparison](primary-video-comparison.md) adds actual
 Itexo/Alytreta frame observations and six bounded cases, including four
 two-target arithmetic samples and a30HP-loss/258HP-heal historical example.

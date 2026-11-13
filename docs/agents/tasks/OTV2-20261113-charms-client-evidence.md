@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: codex-charms-evidence-publication
 created_at: 2026-11-13T10:44:41Z
-updated_at: 2026-11-13T12:07:36Z
+updated_at: 2026-11-13T12:11:50Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/charms-client-evidence-20261113/
@@ -78,6 +78,12 @@ original image/asset redistribution, deployment and merge.
 
 ## Implementation / findings
 
+AUTHORING resumed for one owner-corrected filtered Wound/pierce follow-up.
+Fresh live OPEN/draft head `26b6dfd11d47abe0f2a0b67e76a19408d7fca1e6` and
+unchanged main were checked; same sole writer and owned paths. Two selected
+message contexts were actually opened. This small documentation successor
+preserves Crypt Strike versus weapon-pierce distinction and query/filter scope.
+
 AUTHORING resumed for owner-authorized Itexo/Alytreta primary-video analysis.
 Fresh live OPEN/draft head is `df294e419b806df827b75e91d06153fb2076dbb2`;
 main remains `3e168ce6afe374485da20ee0ac13d3749558e2f8`, same sole publication
@@ -124,6 +130,9 @@ for this worker.
 - Primary-video successor: six cases, four numeric AoE matches, five source
   blobs rehashed; four new boundary tests PASS. Existing packet/Discord checks,
   governance validator and129 governance tests rerun PASS.
+- Filtered Wound follow-up: four dated records, two opened context windows;
+  three blobs rehashed and Wound/Carnage flags re-derived. No new runtime tests
+  warranted for this documentation-only addition. Governance/diff checks PASS.
 - `python tools/agents/validate_governance.py`: PASS.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
 - `git diff --check`: PASS.
@@ -146,3 +155,6 @@ coordinator report, not to predecessor check results.
 Primary-video authoring is now frozen after the focused arithmetic and source
 checks. Original transcripts/media remain private. Historical observations do
 not qualify current Global rules, exact tie rounding, or a full timer trace.
+
+Filtered Wound follow-up is frozen after source-flag/hash and governance checks.
+Further filtered synonym research requires return to AUTHORING.
