@@ -101,6 +101,13 @@ runtime proof. These priorities are not new runtime findings.
 
 ## Private evidence and validation
 
+The [primary-video comparison](primary-video-comparison.md) adds actual
+Itexo/Alytreta frame observations and six bounded cases, including four
+two-target arithmetic samples and a30HP-loss/258HP-heal historical example.
+`validate_primary_video.py --repository .` reproduces the source arithmetic and
+rehashes five blobs; `--test` rejects numeric substitutions, tie-rounding and
+timer-trace overclaims. This does not qualify current Global combat behavior.
+
 The subsequent [both-Discord pass](discord-research-comparison.md) adds actual
 UI research from Tibia Analysers and Kusnier's server: ten bounded result
 windows, six dated message contexts, and five invalid queries explicitly

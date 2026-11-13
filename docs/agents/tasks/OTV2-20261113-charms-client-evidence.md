@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: codex-charms-evidence-publication
 created_at: 2026-11-13T10:44:41Z
-updated_at: 2026-11-13T11:51:18Z
+updated_at: 2026-11-13T12:07:36Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/charms-client-evidence-20261113/
@@ -78,6 +78,14 @@ original image/asset redistribution, deployment and merge.
 
 ## Implementation / findings
 
+AUTHORING resumed for owner-authorized Itexo/Alytreta primary-video analysis.
+Fresh live OPEN/draft head is `df294e419b806df827b75e91d06153fb2076dbb2`;
+main remains `3e168ce6afe374485da20ee0ac13d3749558e2f8`, same sole publication
+writer and owned paths. This successor adds observed frames/caption provenance,
+six bounded comparisons and reproduced source arithmetic, without game input.
+The earlier Discord pass remains explicitly shallow/non-exhaustive; its
+first-window review cannot substitute for targeted filtered/context research.
+
 AUTHORING resumed for the owner's explicit both-Discord read/research request.
 Live PR readback is OPEN/draft at `6fc9600b8a849af85936bd7485d13ea89263afbe`;
 main remains `3e168ce6afe374485da20ee0ac13d3749558e2f8`. This sole writer keeps
@@ -113,6 +121,9 @@ for this worker.
 - Both-Discord successor: ten bounded result windows, six dated/permalinked
   contexts, five invalid queries excluded; four additional boundary tests PASS.
   Packet/public-research validation and129 governance tests rerun PASS.
+- Primary-video successor: six cases, four numeric AoE matches, five source
+  blobs rehashed; four new boundary tests PASS. Existing packet/Discord checks,
+  governance validator and129 governance tests rerun PASS.
 - `python tools/agents/validate_governance.py`: PASS.
 - `python -m unittest discover -s tools/agents/tests`: PASS, 129 tests.
 - `git diff --check`: PASS.
@@ -131,3 +142,7 @@ review of the actual changed-file list and derived findings. Invalid query
 attempts do not support absence conclusions. Independent review remains
 uncompleted; exact successor CI/publication readback belongs to the external
 coordinator report, not to predecessor check results.
+
+Primary-video authoring is now frozen after the focused arithmetic and source
+checks. Original transcripts/media remain private. Historical observations do
+not qualify current Global rules, exact tie rounding, or a full timer trace.
