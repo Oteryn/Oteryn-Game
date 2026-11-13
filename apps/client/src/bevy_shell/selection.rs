@@ -1,6 +1,9 @@
 //! Shared desktop character picker over server-owned rows and the existing selector callback.
 mod bridge;
-use super::owner::HostOwner;
+use super::{
+    game_ui::{GameModal, modal::ModalGuard},
+    owner::HostOwner,
+};
 use crate::character_selection::SelectionAction;
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
@@ -65,6 +68,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     });
     commands.spawn((
         Picker,
+        GameModal,
         GlobalZIndex(200),
         Node {
             position_type: PositionType::Absolute,
@@ -346,9 +350,13 @@ fn add_button(
 fn activate(
     event: On<Activate>,
     choices: Query<(&Target, Has<InteractionDisabled>)>,
+    guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<PickerState>,
 ) {
+    if !guard.allows(event.entity) {
+        return;
+    }
     let Ok((target, disabled)) = choices.get(event.entity) else {
         return;
     };
@@ -413,8 +421,14 @@ fn activate(
 /// Escape replies through the same request identity as the Cancel button.
 pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    roots: Query<Entity, With<Picker>>,
+    guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
 ) {
+    if !roots.iter().any(|entity| guard.allows(entity)) {
+        keys.clear();
+        return;
+    }
     if keys.read().any(|key| {
         key.key_code == KeyCode::Escape
             && key.state == bevy::input::ButtonState::Pressed

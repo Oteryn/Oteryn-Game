@@ -11,6 +11,7 @@ fn picker_buttons_return_server_channel_through_existing_callback()
 -> Result<(), Box<dyn std::error::Error>> {
     let (bridge, callback) = SelectionBridge::new();
     let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.miscellaneous.confirm_exit = true;
     owner.selection = bridge;
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
@@ -20,6 +21,15 @@ fn picker_buttons_return_server_channel_through_existing_callback()
         .insert_non_send(owner)
         .add_systems(Startup, setup)
         .add_systems(Update, (poll, project).chain());
+    app.add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, keyboard);
+    crate::bevy_shell::game_ui::modal::install(&mut app);
+    crate::bevy_shell::exit::install(&mut app);
+    let window = app
+        .world_mut()
+        .spawn((Window::default(), bevy::window::PrimaryWindow))
+        .id();
     app.update();
     let worker = thread::spawn(move || {
         callback(
@@ -69,6 +79,39 @@ fn picker_buttons_return_server_channel_through_existing_callback()
     assert_eq!(
         app.world().resource::<InputFocus>().get(),
         Some(initial_play)
+    );
+    app.world_mut()
+        .write_message(bevy::window::WindowCloseRequested { window });
+    app.update();
+    let blocked_play = find(&mut app, false)?;
+    app.world_mut().trigger(Activate {
+        entity: blocked_play,
+    });
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .selection
+            .pending()
+            .is_some(),
+        "foreground quit confirmation fences direct Play activation"
+    );
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window,
+        });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .selection
+            .pending()
+            .is_some(),
+        "quit Escape must not cancel the underlying selector callback"
     );
     let channel = find(&mut app, true)?;
     app.world_mut().trigger(Activate { entity: channel });

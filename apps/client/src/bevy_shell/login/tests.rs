@@ -270,3 +270,75 @@ fn opening_and_reopening_form_preserves_upstream_editor_styles() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn exit_confirmation_fences_login_keyboard_and_native_activate() -> TestResult {
+    use bevy::{
+        asset::AssetPlugin,
+        input::{
+            ButtonState,
+            keyboard::{Key, KeyboardInput},
+        },
+        window::{PrimaryWindow, WindowCloseRequested},
+    };
+    let mut host = HostOwner::new(None)?;
+    host.settings.preferences.miscellaneous.confirm_exit = true;
+    host.request_login();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(host)
+        .add_systems(Startup, (super::super::ui::setup, setup).chain())
+        .add_systems(Update, (keyboard, project).chain());
+    super::super::game_ui::modal::install(&mut app);
+    super::super::exit::install(&mut app);
+    let window = app
+        .world_mut()
+        .spawn((Window::default(), PrimaryWindow))
+        .id();
+    app.update();
+    let cancel = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| matches!(control, LoginControl::Cancel).then_some(entity))
+        .ok_or("login cancel")?;
+    app.world_mut()
+        .write_message(WindowCloseRequested { window });
+    app.update();
+    app.world_mut().trigger(Activate { entity: cancel });
+    assert!(
+        app.world().non_send::<HostOwner>().login.visible,
+        "direct Activate behind quit confirmation must be fenced"
+    );
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert!(
+        app.world().non_send::<HostOwner>().login.visible,
+        "one Escape cancels quit, preserving the underlying login form"
+    );
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert!(
+        !app.world().non_send::<HostOwner>().login.visible,
+        "next Escape reaches the exposed login form"
+    );
+    Ok(())
+}

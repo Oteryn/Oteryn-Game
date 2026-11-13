@@ -1,5 +1,9 @@
 //! Shared connection form. Only the existing native-login owner validates and saves settings.
-use super::{owner::HostOwner, ui::Skins};
+use super::{
+    game_ui::{GameModal, modal::ModalGuard},
+    owner::HostOwner,
+    ui::Skins,
+};
 use crate::native_login::{LoginForm, LoginSettings};
 use bevy::{
     input_focus::{
@@ -102,6 +106,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let modal = commands
         .spawn((
             LoginDialog,
+            GameModal,
             GlobalZIndex(150),
             Node {
                 position_type: PositionType::Absolute,
@@ -237,10 +242,11 @@ fn read_fields(owner: &mut HostOwner, fields: &Query<(&LoginField, &EditableText
 fn activate(
     event: On<Activate>,
     controls: Query<&LoginControl>,
+    guard: ModalGuard,
     fields: Query<(&LoginField, &EditableText)>,
     mut owner: NonSendMut<HostOwner>,
 ) {
-    if !owner.login.visible || owner.selection.pending().is_some() {
+    if !guard.allows(event.entity) || !owner.login.visible || owner.selection.pending().is_some() {
         return;
     }
     if let Ok(control) = controls.get(event.entity) {
@@ -260,9 +266,15 @@ pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     fields: Query<(&LoginField, &EditableText)>,
     focus: Res<InputFocus>,
+    dialogs: Query<Entity, With<LoginDialog>>,
+    guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
 ) {
     if !owner.login.visible || owner.selection.pending().is_some() {
+        keys.clear();
+        return;
+    }
+    if !dialogs.iter().any(|entity| guard.allows(entity)) {
         keys.clear();
         return;
     }
