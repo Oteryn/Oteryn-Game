@@ -2,6 +2,7 @@
 mod audio;
 mod audit;
 mod controls;
+mod exit;
 mod game_ui;
 mod gameplay_dialogs;
 mod input;
@@ -10,6 +11,7 @@ mod owner;
 mod scene;
 mod selection;
 mod ui;
+mod window_drag;
 
 use bevy::{
     asset::AssetPlugin,
@@ -93,6 +95,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             })
             .set(ImagePlugin::default_nearest())
             .set(WindowPlugin {
+                close_when_requested: false,
                 primary_window: Some(Window {
                     title: "Oteryn — Bevy host (opt-in)".into(),
                     resolution: (1024, 720).into(),
@@ -161,6 +164,8 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     gameplay_dialogs::install(&mut app);
     game_ui::install(&mut app);
     audio::install(&mut app);
+    exit::install(&mut app);
+    window_drag::install(&mut app);
     app
 }
 

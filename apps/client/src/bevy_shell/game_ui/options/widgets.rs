@@ -34,6 +34,7 @@ pub(super) fn setup(
     // OptionsMenuDialog.qml: width685, pagepreferredheight470, leftcontent115+2*(2+5).
     let panel = commands
         .spawn((
+            crate::bevy_shell::window_drag::DraggableDialog,
             TabGroup {
                 order: 1,
                 modal: true,

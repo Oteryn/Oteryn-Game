@@ -117,6 +117,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .id();
     let panel = commands
         .spawn((
+            super::window_drag::DraggableDialog,
             bevy::ui_widgets::ScrollArea,
             TabGroup {
                 order: 2,

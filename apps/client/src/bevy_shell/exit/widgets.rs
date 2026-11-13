@@ -49,6 +49,7 @@ pub(super) fn project(
     };
     let panel = commands
         .spawn((
+            crate::bevy_shell::window_drag::DraggableDialog,
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             TabGroup {
                 order: 220,

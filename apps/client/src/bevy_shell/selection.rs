@@ -141,6 +141,7 @@ pub(super) fn project(
         commands.entity(root).despawn_children();
         let panel = commands
             .spawn((
+                super::window_drag::DraggableDialog,
                 TabGroup {
                     order: 5,
                     modal: true,

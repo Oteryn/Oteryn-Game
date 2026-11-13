@@ -187,6 +187,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .id();
     let panel = commands
         .spawn((
+            super::window_drag::DraggableDialog,
             TabGroup {
                 order: 1,
                 modal: true,
