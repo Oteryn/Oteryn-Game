@@ -20,8 +20,21 @@ use oteryn_session::{SessionEvent, WorldSpatialEntity};
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
+/// Actual step replies observed by this view, never inferred from input or position.
+#[cfg(feature = "bevy-shell")]
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub(crate) struct StepReceipt {
+    reply_count: u64,
+    command_id: u64,
+    result_server_sequence: u64,
+    accepted: bool,
+    moved: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct PlayView {
+    #[cfg(feature = "bevy-shell")]
+    last_step: Option<StepReceipt>,
     shared_frontend: bool,
     game_notifications: feature_local_game_notifications::state::State,
     touch: feature_0233_touch_controls::state::State,
@@ -140,3 +153,8 @@ mod tests;
 #[cfg(test)]
 #[path = "screenshots_live_tests.rs"]
 mod screenshots_live_tests;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+pub(crate) fn audit_step_reply(outbox: &Outbox, outcome: oteryn_session::StepOutcome) {
+    outbox.stepped(outcome);
+}

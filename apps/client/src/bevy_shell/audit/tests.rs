@@ -291,3 +291,132 @@ fn full_options_bounds_win_over_legacy_graphics_and_hide_legacy_footer() -> Test
     assert!(controls.iter().any(|entry| entry["id"] == "options.apply"));
     Ok(())
 }
+
+#[test]
+fn step_receipt_requires_an_actual_reply_and_resets_with_the_play_view() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_renderer::TileCoord;
+    use oteryn_session::{
+        ActorPosition, AppliedDelta, CommandStatus, SessionEvent, StepDisposition, StepOutcome,
+        WorldSpatialObservation,
+    };
+    let (mut app, path) = app()?;
+    let (link, _commands, outbox) = play_channel();
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            view: PlayView::new(TileCoord::new(100, 100), 0, &[])?,
+            link,
+        });
+        owner.phase = Phase::Playing;
+    }
+    let before = read(&mut app, &path)?;
+    assert!(
+        before["play_observation"].is_object(),
+        "playing needs an observation"
+    );
+    assert_eq!(
+        before["play_observation"]["generation"],
+        before["generation"]
+    );
+    assert!(before["play_observation"]["last_step"].is_null());
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .arrow(crate::input::StepDir::North);
+        owner.poll([720, 528]);
+    }
+    outbox.push(vec![SessionEvent::WorldSpatial(AppliedDelta {
+        server_sequence: 10,
+        base_revision: 1,
+        new_revision: 2,
+        value: WorldSpatialObservation {
+            content_generation: [0; 32],
+            actor_position: ActorPosition {
+                x: 101,
+                y: 100,
+                floor: 0,
+            },
+        },
+    })]);
+    app.world_mut().non_send_mut::<HostOwner>().poll([720, 528]);
+    let pushed = read(&mut app, &path)?;
+    assert_eq!(
+        pushed["play_observation"]["map_center"],
+        serde_json::json!([101, 100, 0])
+    );
+    assert!(pushed["play_observation"]["last_step"].is_null());
+    for (index, (status, disposition, accepted, moved)) in [
+        (
+            CommandStatus::Rejected,
+            StepDisposition::Rejected,
+            false,
+            false,
+        ),
+        (
+            CommandStatus::Accepted,
+            StepDisposition::Blocked,
+            true,
+            false,
+        ),
+        (CommandStatus::Accepted, StepDisposition::Moved, true, true),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        crate::play::audit_step_reply(
+            &outbox,
+            StepOutcome {
+                command_id: 40 + index as u64,
+                status,
+                disposition,
+                result_server_sequence: 50 + index as u64,
+                world_spatial_delta: moved.then_some(AppliedDelta {
+                    server_sequence: 60 + index as u64,
+                    base_revision: 2,
+                    new_revision: 3,
+                    value: WorldSpatialObservation {
+                        content_generation: [0; 32],
+                        actor_position: ActorPosition {
+                            x: 102,
+                            y: 100,
+                            floor: 0,
+                        },
+                    },
+                }),
+                world_object_overlay_delta: None,
+                gate_message_id: None,
+            },
+        );
+        app.world_mut().non_send_mut::<HostOwner>().poll([720, 528]);
+        let snapshot = read(&mut app, &path)?;
+        assert_eq!(
+            snapshot["play_observation"]["last_step"],
+            serde_json::json!({
+                "reply_count": index + 1,
+                "command_id": 40 + index,
+                "result_server_sequence": 50 + index,
+                "accepted": accepted,
+                "moved": moved,
+            })
+        );
+    }
+    let (link, _commands, _outbox) = play_channel();
+    app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: PlayView::new(TileCoord::new(200, 200), 0, &[])?,
+        link,
+    });
+    let replaced = read(&mut app, &path)?;
+    assert!(replaced["play_observation"]["last_step"].is_null());
+    assert_eq!(
+        replaced["play_observation"]["map_center"],
+        serde_json::json!([200, 200, 0])
+    );
+    app.world_mut().non_send_mut::<HostOwner>().play = None;
+    assert!(read(&mut app, &path)?["play_observation"].is_null());
+    Ok(())
+}

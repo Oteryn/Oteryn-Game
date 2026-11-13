@@ -19,6 +19,8 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            #[cfg(feature = "bevy-shell")]
+            last_step: None,
             shared_frontend: false,
             game_notifications: Default::default(),
             touch: Default::default(),

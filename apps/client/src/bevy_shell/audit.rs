@@ -61,6 +61,12 @@ struct TextMetrics {
     visible: bool,
 }
 #[derive(Serialize)]
+struct PlayObservation {
+    generation: u64,
+    map_center: (i32, i32, i16),
+    last_step: Option<crate::play::StepReceipt>,
+}
+#[derive(Serialize)]
 struct Snapshot<'a> {
     schema: &'static str,
     update: u64,
@@ -71,6 +77,7 @@ struct Snapshot<'a> {
     login_feedback: &'a str,
     selection_pending: bool,
     character_scoped: bool,
+    play_observation: Option<PlayObservation>,
     accepted: GraphicsDraft,
     draft: Option<GraphicsDraft>,
     feedback: &'a str,
@@ -208,6 +215,11 @@ pub(super) fn write(
         login_feedback: owner.login.form.message(),
         selection_pending: owner.selection.pending().is_some(),
         character_scoped: owner.settings.character_scope().is_some(),
+        play_observation: owner.play.as_ref().map(|play| PlayObservation {
+            generation: owner.generation(),
+            map_center: play.view.map_center(),
+            last_step: play.view.step_receipt(),
+        }),
         accepted: owner.accepted(),
         draft: owner.draft(),
         feedback: &owner.settings.feedback,
