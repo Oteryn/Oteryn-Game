@@ -14,6 +14,11 @@ pub(super) fn configure(
         generation: 2,
     };
     match panel.to_str() {
+        Some("quick-loot") => {
+            outbox.bevy_quick_loot_selected(true);
+            link.discovery_open(98);
+            Ok(Some("Loot containers"))
+        }
         Some("npc-shop") => {
             outbox.bevy_npc_shop_supported();
             outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
