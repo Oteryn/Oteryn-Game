@@ -1,0 +1,170 @@
+[
+  {
+    "class": "Amphibic",
+    "ui_total": 11,
+    "ui_known": 11,
+    "canonical_bestiary_count": 11,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Aquatic",
+    "ui_total": 40,
+    "ui_known": 32,
+    "canonical_bestiary_count": 40,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Bird",
+    "ui_total": 18,
+    "ui_known": 12,
+    "canonical_bestiary_count": 19,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Construct",
+    "ui_total": 36,
+    "ui_known": 32,
+    "canonical_bestiary_count": 36,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Demon",
+    "ui_total": 43,
+    "ui_known": 31,
+    "canonical_bestiary_count": 43,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Dragon",
+    "ui_total": 20,
+    "ui_known": 17,
+    "canonical_bestiary_count": 19,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Elemental",
+    "ui_total": 29,
+    "ui_known": 19,
+    "canonical_bestiary_count": 25,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Extra Dimensional",
+    "ui_total": 12,
+    "ui_known": 11,
+    "canonical_bestiary_count": 12,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Fey",
+    "ui_total": 20,
+    "ui_known": 20,
+    "canonical_bestiary_count": 20,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Giant",
+    "ui_total": 18,
+    "ui_known": 15,
+    "canonical_bestiary_count": 15,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Human",
+    "ui_total": 102,
+    "ui_known": 76,
+    "canonical_bestiary_count": 95,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Humanoid",
+    "ui_total": 96,
+    "ui_known": 83,
+    "canonical_bestiary_count": 96,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Inkborn",
+    "ui_total": 22,
+    "ui_known": 13,
+    "canonical_bestiary_count": 22,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Lycanthrope",
+    "ui_total": 15,
+    "ui_known": 15,
+    "canonical_bestiary_count": 15,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Magical",
+    "ui_total": 58,
+    "ui_known": 50,
+    "canonical_bestiary_count": 57,
+    "proof": "bestiary-entry.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Mammal",
+    "ui_total": 78,
+    "ui_known": 63,
+    "canonical_bestiary_count": 72,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Plant",
+    "ui_total": 20,
+    "ui_known": 12,
+    "canonical_bestiary_count": 20,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Reptile",
+    "ui_total": 39,
+    "ui_known": 38,
+    "canonical_bestiary_count": 38,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Slime",
+    "ui_total": 13,
+    "ui_known": 11,
+    "canonical_bestiary_count": 14,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Undead",
+    "ui_total": 94,
+    "ui_known": 67,
+    "canonical_bestiary_count": 93,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  },
+  {
+    "class": "Vermin",
+    "ui_total": 61,
+    "ui_known": 49,
+    "canonical_bestiary_count": 62,
+    "proof": "bestiary-categories-page2.png",
+    "status": "POPULATION_COMPARISON_ONLY_NOT_ONE_TO_ONE_IDENTITIES"
+  }
+]

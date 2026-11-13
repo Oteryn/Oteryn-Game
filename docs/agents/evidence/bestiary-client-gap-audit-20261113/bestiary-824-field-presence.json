@@ -1,0 +1,15 @@
+{
+  "denominator": 824,
+  "counts": {
+    "health": 824,
+    "experience": 824,
+    "speed": 824,
+    "armor": 824,
+    "mitigation": 824,
+    "resistances": 773,
+    "locations": 823,
+    "loot_reference": 774,
+    "presentation_reference": 824
+  },
+  "boundary": "Presence in canonical source, not proof of runtime admission or current UI equality"
+}

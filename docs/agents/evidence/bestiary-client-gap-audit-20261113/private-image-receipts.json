@@ -1,0 +1,251 @@
+{
+  "classification": "PRIVATE_SOURCE_RECEIPTS_NO_IMAGE_BYTES",
+  "private_windows_directory": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113",
+  "images": [
+    {
+      "path": "bestiary-categories-page2.png",
+      "bytes": 1482204,
+      "sha256": "842480f02b7694986a08f881d1459ccaa18e2568e81859d4cffa8f8484699faa"
+    },
+    {
+      "path": "bestiary-entry.png",
+      "bytes": 1496317,
+      "sha256": "64fa6ca80fcf4e3a998084cb5d0e9b7d83a4b7ee3c2c8f67b5ef3592c4029470"
+    },
+    {
+      "path": "cyclopedia-open.png",
+      "bytes": 1464367,
+      "sha256": "d38277ff6b399e3c6978e769467f39b47d26279e496b7fc778e9c564228bfa2b"
+    },
+    {
+      "path": "initial-desktop.jpg",
+      "bytes": 1558647,
+      "sha256": "4ad755d575dbf3dd60cc86b7aa5867a1d45ed27aa52fbad5c6bae5c6774e175f"
+    },
+    {
+      "path": "menu-tooltip.png",
+      "bytes": 1554963,
+      "sha256": "ca94fc4eb68339d9bdc7d3228293a1c4b781010b39aaa9a0b824e17a12f77132"
+    },
+    {
+      "path": "menu-tooltip2.png",
+      "bytes": 1552529,
+      "sha256": "6358a4106b1f80fa42adfdbf5996b922a1730999566cf76c7b1830e3c15e26c8"
+    },
+    {
+      "path": "nomad-search.png",
+      "bytes": 1472715,
+      "sha256": "975233ce75243611337bae16348efe004f73e2a9e7eb7fec0c5175acb1308d17"
+    },
+    {
+      "path": "omega-full-query.png",
+      "bytes": 1482564,
+      "sha256": "0f2e21ad1169a4e90050fe83d7ff87e67353618c7220b4290f1dfab8672308b1"
+    },
+    {
+      "path": "omega-results-fresh.png",
+      "bytes": 1482005,
+      "sha256": "abb037af3efad5e69ea24d80ec41947c4c78f4573a181c1bc0df56e916e3e5ae"
+    },
+    {
+      "path": "omega-results.png",
+      "bytes": 1480813,
+      "sha256": "acbe8f122715c306f2eecbc2529c2d3bb5477f4a0de5830daf8e71804fc4028f"
+    },
+    {
+      "path": "omega-search.png",
+      "bytes": 1482705,
+      "sha256": "5035f33e003b90a0e57ac7964b28963bfe06561f2ae98122f3080ea15fac7772"
+    },
+    {
+      "path": "omega-typed.png",
+      "bytes": 1481136,
+      "sha256": "817d9d5ceda37116f18fdeb83f12e0410c383c200cc42f3451d87b4f2e34b5f9"
+    },
+    {
+      "path": "rat-control-query.png",
+      "bytes": 1518480,
+      "sha256": "8f11b2bd1d1c20c1852b506096b05fd5516ed76a12f86a43732cecc142bd7d5a"
+    },
+    {
+      "path": "rat-detail.png",
+      "bytes": 1509950,
+      "sha256": "038a893611a034770ccaccc234c54e0a168bb574329bc7f175b16ce3a8141150"
+    },
+    {
+      "path": "rat-locations-bottom.png",
+      "bytes": 1511343,
+      "sha256": "8714854001e425c5c71b3a60f45ad60444223ce6164f979e058c2cbd8bda3ef5"
+    },
+    {
+      "path": "rat-locations-contact-up.png",
+      "bytes": 86457,
+      "sha256": "8c7d2a8ae9f1492ee59fdb937bf673c23b718700d82374622b91ef8a88cf13d7"
+    },
+    {
+      "path": "rat-locations-contact.png",
+      "bytes": 86638,
+      "sha256": "04023ed263eef8ab4a07724c65a691f9fb2d89bd2e782b713fb1c00f01bd4d02"
+    },
+    {
+      "path": "rat-locations-segment3.png",
+      "bytes": 1509901,
+      "sha256": "81f81bb19997d08ff65248532689f6f6bdf6a761b9438a12df505d40d05d5ba4"
+    },
+    {
+      "path": "rat-locations-segment4.png",
+      "bytes": 1509106,
+      "sha256": "6daae53164159bfe91329eccd3847d209c0395a8bd50740dbc1e4b36e84a213a"
+    },
+    {
+      "path": "rat-locations-segment5.png",
+      "bytes": 1511005,
+      "sha256": "7a55abc576d0346937513db5bb5db582d93024401f858b3b2db9960ad095298a"
+    },
+    {
+      "path": "rat-locations-segment6.png",
+      "bytes": 1509220,
+      "sha256": "a6a5820b7e8ba43a878abf498c88c7a78ffe869768f9cc07a17c86557d9b210c"
+    },
+    {
+      "path": "rat-locations-up1.png",
+      "bytes": 1510106,
+      "sha256": "9d699c96adde692d697fdbb7275ef485879ca36ae65cb0b42db75d191d73df16"
+    },
+    {
+      "path": "rat-locations-up2.png",
+      "bytes": 1511798,
+      "sha256": "75885dc3dbab93d9694f68dafb2c2b667e80759373d6a40ecf7b6bef6073ab41"
+    },
+    {
+      "path": "rat-locations-up3.png",
+      "bytes": 1509255,
+      "sha256": "106b2b29ac98ec82440be1801c6a49b9c35504de2185ff5f1f523c0a2956c297"
+    },
+    {
+      "path": "rat-locations-up4.png",
+      "bytes": 1508791,
+      "sha256": "be02d81e7ee2022aceefbbf91bf1200de502c466e4a1282c3f5b2452cbaafcd5"
+    },
+    {
+      "path": "rat-locations-up5.png",
+      "bytes": 1510083,
+      "sha256": "603e24bdcc0afb55474c4d5c375e9abdfa2574760bd6e928b47619e891db535d"
+    },
+    {
+      "path": "rat-locations-up6.png",
+      "bytes": 1509955,
+      "sha256": "94c208f7a369d2f355e2e6b9f4ccd3f84c59d38fedbb8fa82bcf946e09989a29"
+    },
+    {
+      "path": "rat-physical-tooltip.png",
+      "bytes": 1512006,
+      "sha256": "78340081033ece83238e3146bbf35e991c104be0726a652f131746452c1bee92"
+    },
+    {
+      "path": "rat-tooltip-armor.png",
+      "bytes": 1509633,
+      "sha256": "e7a196edc3811c0558c31169bd61d6ed76aebc78e91f0f7a7f5e3435f080509d"
+    },
+    {
+      "path": "rat-tooltip-attack_mode.png",
+      "bytes": 1508973,
+      "sha256": "e97ddf69920891a99559ea584c607bd570a7f341b56aa1ecfce3438a46be9768"
+    },
+    {
+      "path": "rat-tooltip-charm_points.png",
+      "bytes": 1509062,
+      "sha256": "adb1d48e5f08ea2f6e90bf62c339a34bb1976afbc29c5e5a1ab758f4d5b15a84"
+    },
+    {
+      "path": "rat-tooltip-cheese-item.png",
+      "bytes": 1508954,
+      "sha256": "764a2cf5f4bb92811ada4d2e5b79ba9d23a759a3f14e3554abd9567746537906"
+    },
+    {
+      "path": "rat-tooltip-contact.png",
+      "bytes": 361512,
+      "sha256": "9273e083114861ed60363652e544405839feaa3998b5332409940415e8b29066"
+    },
+    {
+      "path": "rat-tooltip-contact2.png",
+      "bytes": 501445,
+      "sha256": "be2a062aa24c94231fe55fb6275cf0c10b5d9b18291e2b380caffdb9826bf65c"
+    },
+    {
+      "path": "rat-tooltip-death.png",
+      "bytes": 1509462,
+      "sha256": "82635559dba388f7bab5f0b114252af8ee37ea5334f7836bd627894cd7989383"
+    },
+    {
+      "path": "rat-tooltip-difficulty.png",
+      "bytes": 1510191,
+      "sha256": "e8cb166b089433866061902fc0530fef3cf95e8f693124080404b0a863ef3ce3"
+    },
+    {
+      "path": "rat-tooltip-earth.png",
+      "bytes": 1509955,
+      "sha256": "85b7ee99c79e0a43933e046e61a6b0fca531c62c8977d5fb94bded97255fd1f5"
+    },
+    {
+      "path": "rat-tooltip-energy.png",
+      "bytes": 1509021,
+      "sha256": "0573298f66f33698949ffd5f5525b9c07525a63fa5c2ac9ea3f04c59d1c78502"
+    },
+    {
+      "path": "rat-tooltip-fire.png",
+      "bytes": 1510862,
+      "sha256": "ca5ba1733235999be192f2e95f1c10cb0a37bf27f62f07741473d36fd09b19a5"
+    },
+    {
+      "path": "rat-tooltip-gold-item.png",
+      "bytes": 1508361,
+      "sha256": "a47f10952843330005203804a4ade800ca301bf6abb9c133dca9f6fca0bfdf6b"
+    },
+    {
+      "path": "rat-tooltip-healing.png",
+      "bytes": 1509514,
+      "sha256": "f9e9487eba031010dc4100921ae70fe3a12decfb4720dff59479b8c59b0a8f32"
+    },
+    {
+      "path": "rat-tooltip-holy.png",
+      "bytes": 1510782,
+      "sha256": "5c53c08949e2de7f253ea3231021117c2df6c5d4222d549d09e9041f8ff73c95"
+    },
+    {
+      "path": "rat-tooltip-ice.png",
+      "bytes": 1508731,
+      "sha256": "34dd8d457845af7e655164d13f08182b66bc5335a6fc3b0d8904372d33c7cc8f"
+    },
+    {
+      "path": "rat-tooltip-kill_threshold.png",
+      "bytes": 1507995,
+      "sha256": "f9bfef5cd2ed88b21be51295a13928fa79fd4a2ad749beddfae54d5738bc0fd4"
+    },
+    {
+      "path": "rat-tooltip-loot_gold.png",
+      "bytes": 1508509,
+      "sha256": "76c859815ead3e36c93b01cdd12c1ceaaba66084a9645bfdb44c0e9a09d7684e"
+    },
+    {
+      "path": "rat-tooltip-mitigation.png",
+      "bytes": 1510206,
+      "sha256": "b09a2f19a44b24be0350c5b21f7cee68f65b82874648ed08f650f5257c7dd1c8"
+    },
+    {
+      "path": "rat-tooltip-occurrence.png",
+      "bytes": 1509000,
+      "sha256": "63039ace6b01a7584dae23963043c278fe1cec8708dd082c40b0fc3f0b9316b1"
+    },
+    {
+      "path": "rat-tooltip-threshold2.png",
+      "bytes": 1510774,
+      "sha256": "6e77547ad26bf2d8ed290d41c964c81c431a918f4ff6ea6c8c1a0e8cfe2e6bc7"
+    },
+    {
+      "path": "rat-tooltip-threshold3.png",
+      "bytes": 1510661,
+      "sha256": "b03cae9a3fff59484af0d1700151d8dc38e64a3f7e39fe4e581a34e4d721b560"
+    }
+  ]
+}
