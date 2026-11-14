@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    CyclopediaMap,
     BossDifficulty,
     BossRewardChest,
     AnimusMastery,
@@ -65,6 +66,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::BossDifficulty => "shell.boss_difficulty",
             Self::BossRewardChest => "shell.boss_reward_chest",
             Self::AnimusMastery => "shell.animus_mastery",
@@ -174,6 +176,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::CyclopediaMap, "Cyclopedia", 90.),
         (Control::BossDifficulty, "Boss difficulty", 120.),
         (
             Control::BossRewardChest,
@@ -393,7 +396,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -406,6 +409,7 @@ fn activate(
             return;
         }
         match control {
+            Control::CyclopediaMap => super::game_ui::cyclopedia_map::open(&mut owner),
             Control::BossDifficulty => super::game_ui::boss_difficulty::open(&owner),
             Control::BossRewardChest => super::game_ui::open_boss_reward_chest(&mut owner),
             Control::AnimusMastery => super::game_ui::animus_mastery::open(&owner),
@@ -602,7 +606,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

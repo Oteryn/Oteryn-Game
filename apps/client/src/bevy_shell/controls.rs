@@ -91,6 +91,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::cyclopedia_map::open_key(&routed) {
+            super::game_ui::cyclopedia_map::open(self);
+            return;
+        }
         if oteryn_client_ui::boss_difficulty::open_key(&routed) {
             super::game_ui::boss_difficulty::open(self);
             return;
