@@ -761,7 +761,7 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
     async fn prepare_v2(&self, family:crate::native_admission_source::public_projections::v2::Family) -> std::result::Result<(),()> {
         if family == crate::native_admission_source::public_projections::v2::Family::CharacterAchievements {
-            self.root.sync_public_achievement_catalogue(self.authority).await.map_err(|_|())?;
+            while !self.root.sync_public_achievement_catalogue_page(self.authority).await.map_err(|_|())? { tokio::task::yield_now().await; }
         }
         Ok(())
     }

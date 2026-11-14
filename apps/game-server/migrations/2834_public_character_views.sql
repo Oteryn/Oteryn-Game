@@ -32,7 +32,7 @@ GRANT SELECT ON game_public_v2_outfit_proofs TO oteryn_game_runtime,oteryn_game_
 GRANT SELECT ON game_public_v2_character_baselines TO oteryn_game_runtime,oteryn_game_control;
 
 -- Account-leading lookup for achievement fan-out (built only while stopped).
-CREATE INDEX game_public_v2_character_account ON game_character_roots(account_id,character_id) WHERE lifecycle=1;
+CREATE INDEX game_public_v2_character_account ON game_character_roots USING hash(account_id) WHERE lifecycle=1;
 CREATE TABLE game_public_v2_achievement_cuts (
  account_id UUID PRIMARY KEY, last_xid xid8 NOT NULL
 );
@@ -40,7 +40,6 @@ CREATE TABLE game_public_v2_catalogue_refresh (
  singleton BOOLEAN PRIMARY KEY CHECK(singleton), last_character UUID
 );
 REVOKE ALL ON game_public_v2_achievement_cuts,game_public_v2_catalogue_refresh FROM PUBLIC;
-
 
 CREATE FUNCTION game_public_v2_write_outfit_proof(c UUID,o UUID,k TEXT,p INTEGER[],a SMALLINT)
  RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -209,7 +208,7 @@ CREATE TRIGGER public_v2_catalogue AFTER INSERT OR UPDATE ON game_public_v2_achi
  FOR EACH ROW EXECUTE FUNCTION game_public_v2_catalogue_source();
 
 CREATE FUNCTION game_public_v2_catalogue_refresh_page() RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE after_character UUID; c RECORD; last_seen UUID; captured INTEGER:=0;
+DECLARE page_size CONSTANT INTEGER:=16; after_character UUID; c RECORD; last_seen UUID; captured INTEGER:=0;
 BEGIN
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
  PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
@@ -217,15 +216,15 @@ BEGIN
  IF NOT FOUND THEN RETURN true; END IF;
  FOR c IN SELECT DISTINCT subject FROM (
   (SELECT character_id::text AS subject FROM (SELECT character_id FROM game_character_roots
-    WHERE character_id>coalesce(after_character,'00000000-0000-0000-0000-000000000000'::uuid) ORDER BY character_id LIMIT 16) r)
+    WHERE character_id>coalesce(after_character,'00000000-0000-0000-0000-000000000000'::uuid) ORDER BY character_id LIMIT page_size) r)
   UNION ALL
   (SELECT subject FROM game_public_v2_heads WHERE family='character_achievements' AND world_id=''
-    AND subject>coalesce(after_character::text,'') ORDER BY subject LIMIT 16)
- ) subjects ORDER BY subject LIMIT 16 LOOP
+    AND subject>coalesce(after_character::text,'') ORDER BY subject LIMIT page_size)
+ ) subjects ORDER BY subject LIMIT page_size LOOP
   PERFORM game_public_v2_character_capture(c.subject::uuid,'character_achievements');
   last_seen:=c.subject::uuid; captured:=captured+1;
  END LOOP;
- IF captured<16 THEN
+ IF captured<page_size THEN
   DELETE FROM game_public_v2_catalogue_refresh WHERE singleton;
   UPDATE game_public_v2_character_baselines SET complete=true WHERE family='character_achievements';
   RETURN true;

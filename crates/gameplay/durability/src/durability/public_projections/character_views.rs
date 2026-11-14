@@ -32,6 +32,12 @@ impl super::DurabilityRoot {
     pub async fn sync_public_achievement_catalogue(
         &self, authority: &super::ReconciledCharacterAuthority<'_, '_>,
     ) -> super::Result<()> {
+        if self.sync_public_achievement_catalogue_page(authority).await? { Ok(()) }
+        else { Err(super::CharacterAuthorityError::from(DurabilityError::Unavailable)) }
+    }
+    pub(super) async fn sync_public_achievement_catalogue_page(
+        &self, authority: &super::ReconciledCharacterAuthority<'_, '_>,
+    ) -> super::Result<bool> {
         let recovery = authority.record_for(self)?;
         let (revision, entries) = catalogue()?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
@@ -39,15 +45,16 @@ impl super::DurabilityRoot {
             super::assert_recovery_fence(&mut tx, &recovery).await?;
             sqlx::query("SELECT 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE")
                 .fetch_one(&mut *tx).await?;
-    // An identical compiled catalogue does not re-touch subjects or change observations.
-    sqlx::query("INSERT INTO game_public_v2_achievement_catalogue(singleton,revision,entries) VALUES(true,$1,$2) ON CONFLICT(singleton) DO UPDATE SET revision=EXCLUDED.revision,entries=EXCLUDED.entries WHERE (game_public_v2_achievement_catalogue.revision,game_public_v2_achievement_catalogue.entries) IS DISTINCT FROM (EXCLUDED.revision,EXCLUDED.entries)")
-        .bind(revision).bind(entries).execute(&mut *tx).await?;
+            let actual:Option<(String,serde_json::Value)>=sqlx::query_as("SELECT revision,entries FROM game_public_v2_achievement_catalogue WHERE singleton").fetch_optional(&mut *tx).await?;
+            if actual.as_ref().is_none_or(|(r,e)| r!=&revision || e!=&entries) {
+                sqlx::query("INSERT INTO game_public_v2_achievement_catalogue(singleton,revision,entries) VALUES(true,$1,$2) ON CONFLICT(singleton) DO UPDATE SET revision=EXCLUDED.revision,entries=EXCLUDED.entries WHERE (game_public_v2_achievement_catalogue.revision,game_public_v2_achievement_catalogue.entries) IS DISTINCT FROM (EXCLUDED.revision,EXCLUDED.entries)").bind(revision).bind(entries).execute(&mut *tx).await?;
+            }
             // Catalogue updates leave coverage incomplete until every bounded page
             // (including retained suppressions) has been captured under this revision.
             let complete: bool = sqlx::query_scalar("SELECT game_public_v2_catalogue_refresh_page()")
                 .fetch_one(&mut *tx).await?;
             super::commit_semantic_transaction(tx, deadline).await?;
-            if complete { Ok(Ok(())) } else { Ok(Err(super::CharacterAuthorityError::from(DurabilityError::Unavailable))) }
+            Ok(Ok(complete))
         })).await?
     }
 }

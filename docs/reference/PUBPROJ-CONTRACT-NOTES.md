@@ -491,3 +491,20 @@ Coverage stays incomplete, with completeness held at zero, until the last page
 commits. All character-view capture families take the catalogue SHARE lock
 before their subject lock. Deferred earned-fact events fan out once per account
 transaction, using an account-leading roots index and the final committed cut.
+
+Final P3 review: refresh pages use named SQL `page_size = 16`; preparation
+processes incomplete pages back to back, yielding between transactions without
+an IDLE delay. The expected rate is 16 divided by mean bounded-pass duration in
+seconds, rather than 16/s: for example 100 completed passes/s gives 1,600
+subjects/s, approximately 62.5 seconds for 100k subjects. This is a capacity
+calculation, not a measured production guarantee; normal pass deadlines and
+foreground preference remain in force. The fan-out index is hash(account_id),
+so it supplies equality lookup without competing with world-cut ordering.
+
+The same-account/two-character gameplay scenario is excluded by migration 0002's
+`game_durability_one_nonterminal_session_per_account` unique index (states 1/2).
+`character_progression::assert_fenced_root` takes the matching current session
+FOR SHARE, checking its character, account, connection/session and lease fences;
+`assert_gameplay_fence` uses that check before bestiary/progression mutations.
+The lock prevents retiring that session and admitting another character while
+its gameplay transaction is still active. No account-lock change is made here.
