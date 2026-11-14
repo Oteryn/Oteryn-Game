@@ -73,7 +73,11 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::SupportDelivery(command, path)) => {
                 if session.feature_selected(command.capability) {
                     match session.feature(&command).await {
-                        Ok(result) => crate::support_delivery::acknowledge(&path, &command, &result),
+                        Ok(result) => {
+                            #[cfg(feature = "bevy-shell")]
+                            outbox.support_evidence_reply(&path, &command, &result);
+                            crate::support_delivery::acknowledge(&path, &command, &result);
+                        },
                         Err(error) => { outbox.end(public_class(&error)); return; }
                     }
                 }
