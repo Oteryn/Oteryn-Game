@@ -2,6 +2,7 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+mod guild;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
