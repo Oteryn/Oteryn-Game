@@ -423,109 +423,168 @@ pub(super) fn paralyse_creature(
     matches!(runtime.commit_actor_condition(&plan, time), Ok(true))
 }
 
-/// Committed native source damage; caller suppresses receipt replay before entering.
 #[allow(clippy::too_many_arguments)]
-pub(in crate::gameplay_transport) fn incoming_conditions(
-    states: &mut ChannelSpellStates,
-    runtime: &mut ChannelRuntimeV1,
+pub(in crate::gameplay_transport) fn evaluate_incoming_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    base_damage: u32,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    evaluate_event_category(
+        states,
+        runtime,
+        catalogue,
+        root,
+        target,
+        session,
+        race,
+        occurrence,
+        CharmHookEvent::IncomingCreatureHit {
+            base_damage: u64::from(base_damage),
+        },
+        category,
+        source_alive,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn evaluate_event_category(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    root: &GameplayDecisionRoot,
+    target: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    occurrence: DecisionOccurrenceId,
+    event: CharmHookEvent,
+    category: oteryn_gameplay_progression::charm_effects::CharmCategory,
+    source_alive: bool,
+) -> Vec<CharmOutcome> {
+    use oteryn_gameplay_progression::charm_effects::{
+        CharmEvaluationInput, evaluate_charm_hook_category,
+    };
+    let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
+        return Vec::new();
+    };
+    let Some(state) = states.charm_state(runtime, target, session) else {
+        return Vec::new();
+    };
+    // Void Inversion owns the minor slot. Another minor has no mana-drain hook;
+    // do not let the evaluator's legacy mana event draw its health-hit effect.
+    if matches!(event, CharmHookEvent::IncomingManaDrain { .. }) {
+        let Ok(assignments) =
+            oteryn_gameplay_progression::charm_effects::CharmStateRead::assignments_for_race(
+                state, race,
+            )
+        else {
+            return Vec::new();
+        };
+        if !assignments.iter().any(|assignment| {
+            catalogue
+                .charm(&assignment.charm_key)
+                .is_some_and(|definition| {
+                    definition.effect().hook()
+                        == oteryn_gameplay_progression::charm_effects::CharmHook::IncomingManaDrain
+                })
+        }) {
+            return Vec::new();
+        }
+    }
+    evaluate_charm_hook_category(
+        &CharmEvaluationInput {
+            character: *lease.character_id().as_bytes(),
+            race_key: race,
+            decision_root: root,
+            occurrence,
+            event,
+        },
+        state,
+        catalogue,
+        Some(category),
+        source_alive,
+    )
+    .unwrap_or_default()
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn prepare_incoming(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
     catalogue: &dyn CharmCatalogueRead,
     root: &GameplayDecisionRoot,
     source: ExactActorRef,
     target: ExactActorRef,
     session: GameSessionId,
-    magnitude: u32,
-    source_revision: u64,
-    occurrence_text: &str,
-    now: u64,
-    mana: bool,
-) {
-    let Ok(creature) = runtime.companion_snapshot(source) else {
-        return;
-    };
-    if magnitude == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
-        return;
+    base_damage: u32,
+    text: &str,
+    identity: Option<DecisionOccurrenceId>,
+) -> Option<(DecisionOccurrenceId, String, u32)> {
+    let creature = runtime.companion_snapshot(source).ok()?;
+    if base_damage == 0 || creature.state.master.is_some() || creature.state.policy.is_familiar {
+        return None;
     }
+    let race = creature.state.policy.definition_key.clone();
     let digest = Sha256::new()
         .chain_update(b"oteryn.charm.source.v1")
-        .chain_update(occurrence_text.as_bytes())
+        .chain_update(text.as_bytes())
         .finalize();
     let mut bytes = [0; 16];
     bytes.copy_from_slice(&digest[..16]);
-    let occurrence = DecisionOccurrenceId::from_bytes(bytes);
-    let event = if mana {
-        CharmHookEvent::IncomingManaDrain {
-            mana_drained: u64::from(magnitude),
-        }
-    } else {
-        CharmHookEvent::IncomingCreatureHit {
-            base_damage: u64::from(magnitude),
-        }
-    };
-    let outcomes = evaluate(
+    let occurrence = identity.unwrap_or_else(|| DecisionOccurrenceId::from_bytes(bytes));
+    let major = evaluate_incoming_category(
         states,
         runtime,
         catalogue,
+        root,
         target,
         session,
-        &creature.state.policy.definition_key,
-        root,
+        &race,
         occurrence,
-        event,
+        base_damage,
+        oteryn_gameplay_progression::charm_effects::CharmCategory::Major,
+        true,
     );
-    for outcome in &outcomes {
-        match effect(outcome) {
-            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) if !mana => {
-                let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+    let amount = major
+        .iter()
+        .find_map(|outcome| match effect(outcome) {
+            Some(CharmEffectOutcome::ReflectDamage { damage, amount }) => {
+                let draw = oteryn_simulation_determinism::deterministic_decision_u64(
                     root,
                     occurrence,
                     "charm.parry-armor",
                     0,
-                ) else {
-                    continue;
-                };
-                let Some(amount) = damage_amount(runtime, source, damage, amount, draw)
-                    .filter(|amount| *amount > 0)
-                else {
-                    continue;
-                };
-                let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
-                    continue;
-                };
-                // One bounded stream per source/reflector/session. The native HP successor
-                // revision is strictly increasing, independently fencing this exact receipt.
-                let mut stream = b"charm-parry-source:".to_vec();
-                stream.extend_from_slice(session.as_bytes());
-                if let Ok(result) = runtime.commit_source_damage(
-                    source,
-                    target,
-                    session,
-                    &stream,
-                    source_revision,
-                    amount,
-                    now / 1000,
-                ) && result.applied
-                {
-                    states.analyser.impact_amount(
-                        target,
-                        session,
-                        u64::try_from(result.health_before.saturating_sub(result.health_after))
-                            .unwrap_or(0),
-                        Some(super::super::analyser::charm_element(damage.element)),
-                    );
-                    if result.health_after == 0 {
-                        states.equipment_reflection_kills.push((
-                            source,
-                            crate::combat::CapturedRewardPrincipal {
-                                character: lease.character_id(),
-                                lease_generation: lease.generation(),
-                                actor: target,
-                                session,
-                            },
-                            now,
-                        ));
-                    }
-                }
+                )
+                .ok()?;
+                damage_amount(runtime, source, damage, amount, draw)
             }
+            _ => None,
+        })
+        .unwrap_or(0);
+    Some((occurrence, race, amount))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn apply_incoming_minor(
+    states: &mut ChannelSpellStates,
+    runtime: &mut ChannelRuntimeV1,
+    root: &GameplayDecisionRoot,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    session: GameSessionId,
+    occurrence: DecisionOccurrenceId,
+    now: u64,
+    outcomes: &[CharmOutcome],
+) {
+    for outcome in outcomes {
+        match effect(outcome) {
             Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
                 paralyse_creature(
                     runtime,

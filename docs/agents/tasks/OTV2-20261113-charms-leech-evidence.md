@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone task writer
 created_at: 2026-11-13T20:38:46Z
-updated_at: 2026-11-14T00:25:15Z
+updated_at: 2026-11-14T12:31:13Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/combat-rules/src/resolution/equipped_offence.rs
@@ -50,6 +50,32 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat/source_vitals.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_incoming.rs
   - docs/agents/evidence/OTV2-20261114-charms-runtime-completion.md
+  - crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/actor_charm_cleanse_tests.rs
+  - crates/gameplay/entities/src/carrier/runtime_actor_conditions.rs
+  - crates/gameplay/foundation/src/foundation/condition.rs
+  - crates/gameplay/foundation/src/foundation/condition_tests.rs
+  - docs/agents/tasks/CHARM-CLEANSE-HEX-20261113.md
+  - crates/gameplay/dispatch/src/gameplay_transport/attack/player_block.rs
+  - crates/gameplay/entities/src/carrier/equipment_reflection.rs
+  - crates/gameplay/entities/src/carrier/runtime_actor_spell.rs
+  - crates/gameplay/entities/src/carrier/runtime_actor_spell_types.rs
+  - crates/gameplay/entities/src/carrier/runtime_actor_spell/staging.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/native_combat_cast/outgoing_charms.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_outgoing.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_incoming_order.rs
+  - crates/gameplay/spell/src/spell/actor_conditions.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/spell_periodic.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/monster_combat_states.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/spell_timer_callbacks.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/spell_strike_callbacks.rs
+  - crates/gameplay/spell/src/spell/delayed_execution.rs
+  - crates/gameplay/spell/src/spell/ordinary_timer.rs
+  - crates/gameplay/combat/src/ability/creature_bite.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx2_charm_consumers.rs
+  - crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_composed_tests.rs
+  - crates/gameplay/spell/src/creature_damage_spell/composed.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -175,3 +201,57 @@ Combat/progression/spell library tests passed: 551 / 0 failures / 0 ignored.
 Governance validator and 129 governance tests passed. New full-dispatch native
 Dodge tests were compiled, not executed on the memory-constrained VPS; their
 actual CI execution is a required open gate. No final completion/merge claim.
+
+## Owner-PC continuation and recovered exact-head CI evidence
+
+On the renewed full-repair/PC/Docker instruction, AUTHORING resumed in #3183
+comment 6875497955. Fresh GitHub and Git remote reads both confirmed d583f02a;
+the preceding chat's statement that publication could not be confirmed was
+incorrect. No duplicate publish or history replacement was performed.
+
+The interrupted PC worktree is preserved on local recovery branch
+`recovery/charms-pc-interrupted-20261114`, including its uncommitted patch.
+The canonical workspace is `/home/mole/oteryn-charms-complete-20261114`.
+Current main `3e9e3eb8756acec917b92101de42ba50dca45355` was merged forward,
+then exact Cleanse/Hex source head `8382ce41514c415996216d85d4d12a9e9a0e8070`
+from #3176 was merged as an existing implementation dependency. The result is
+`e2be8f9d0bcec4c6c1c2da9d72b0027302712147`. No write to #3176's branch.
+
+The lead alone commits/publishes. Two isolated code-writing helpers repair
+confirmed outgoing and incoming defects on disjoint paths; their drafts are
+not completion/review evidence. Real current-owner and PostgreSQL tests are
+required before their code is qualified. The original independent round one
+is not repeated; the allowed final delta review remains reserved for the
+completed combined candidate. No protected integration or deployment selected.
+
+The complete logs for PostgreSQL run 43535792273 on d583f02a were downloaded
+and exact test names inspected. All 24 PostgreSQL partitions passed, including
+both new native Dodge regressions. The workflow's red status was its separate
+Node boot qualification (job 132264343834), with 13 failed rows / 12 roots.
+That result is not waived or relabelled as a green complete workflow.
+
+G4 trace now confirms additional delayed numerical omissions: native strike
+qualification (`native_combat_cast/prepare.rs::prepare_strike_due`) and ordinary
+chain qualification (`ordinary_combat.rs::prepare_due`) do not select assigned
+Low Blow/Savage Blow; `ChannelSpellStates::commit_due_combat` does not stage the
+retained charm/item Leech inputs. These are implementation work, not a global
+parity assumption or a claim that the direct-cast repair covers due callbacks.
+
+## Recovered worker integration — 2026-11-14
+
+The isolated incoming writer has completed its 17-file bounded patch. Lead inspected
+the physical reflection transaction, native attack/condition adapters, category/liveness
+evaluator and tick path. All worker execution claims are being rerun independently.
+The exact worker base is e2be8f9d0bcec4c6c1c2da9d72b0027302712147. No worker is
+active in the incoming workspace. Outgoing implementation remains isolated until its
+Cripple canonical-condition bridge and final focused PostgreSQL verification complete.
+
+## Incoming-order verified publication increment
+
+The lead independently reran 34 focused cases on byte-identical source and the
+same e2be8f9d committed base: 6 incoming-order, 14 source-tick, 2 Cleanse/Hex,
+2 native Dodge and 10 real PostgreSQL charm consumers, all passed. Strict Clippy
+on all five changed packages passed on the lead tree, as did formatting and
+governance (129 unittest cases). The concrete evidence and assertion-contract
+changes are in the runtime completion report. Publication remains AUTHORING
+progress; outgoing, secondary and delayed repairs and final qualification remain.

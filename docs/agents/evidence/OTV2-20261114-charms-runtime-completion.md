@@ -103,3 +103,85 @@ The 551 runtime tests are the three named smaller libraries, not the new full
 dispatch regressions. The latter have compiled successfully but still require
 actual execution on CI. The PC RED, VPS resource-aborted full-test builds and
 these passing checks are kept separate; none is relabelled as another result.
+
+## Recovered execution evidence on the published d583f02a head
+
+The renewed owner-PC continuation inspected the complete archived logs for
+run **43535792273**, bound to `d583f02a2a158097ec55c09f37b6c3499e1e6f59`.
+Both build legs and all **24 PostgreSQL partitions passed**. Exact executed
+new tests, not merely names from a list:
+
+- Partition 20: `all25_native_dodge_cancels_real_source_spells_mana_and_attached_conditions`,
+  PASS, 24.461 s, 2026-11-14T01:00:31Z.
+- Partition 16: `all25_native_dodge_cancels_melee_before_block_and_retains_replay`,
+  PASS, 3.900 s, 2026-11-14T01:02:12Z.
+- The actual PostgreSQL charm consumer tests for Cleanse, Fatal Hold, Numb, Carnage,
+  Cripple, Bless, Adrenaline, Void Inversion and Parry passed in those partitions.
+- Both partial/full-harmony Outburst cases passed; the previously failing
+  `player_death_nested_maximum_501_item_reset_makes_bounded_atomic_progress`
+  also passed (partition 18, 48.328 s). This run does not establish the root
+  cause of that older failure.
+
+The overall workflow was NOT green: its separate **Node boot** job
+132264343834 failed with 13 failed rows / 12 root groups, including
+S16a/oressa-reachable, W20b/light-cast-mana, S13a/solo-refusal,
+S13b/solo-zero-charge, S08/earned-levels, P21/player-acquisition,
+P19/influenced-selection-combat and C20d/away-from-temple. The full log is
+retained outside the source tree and is not treated as a charm-test failure
+or waived as an infrastructure flake.
+
+The d583f02a publication and test results are therefore confirmed. This
+supersedes only the earlier missing-execution and publication uncertainty,
+not the open G1/G3/G4 mechanisms or final exact-candidate review requirement.
+
+## Existing Cleanse/Hex dependency composition
+
+The owner-PC continuation forward-merged current main at
+`3e9e3eb8756acec917b92101de42ba50dca45355` and exact #3176 head
+`8382ce41514c415996216d85d4d12a9e9a0e8070`, without modifying either remote
+branch. Cleanse now uses that existing single-selection canonical/player
+condition-store composition and its Hex immunity tests, rather than another
+independently reimplemented cleanse. Local composed-owner verification is
+recorded separately from d583f02a's earlier CI. No deployment or main merge.
+
+## Incoming-order implementation and independent PC verification
+
+The recovered incoming patch is now integrated on the lead branch after the exact
+main and Cleanse/Hex dependency merges. Lead compared all 17 Rust file contents
+byte-for-byte with the isolated verification workspace at the same committed base
+`e2be8f9d0bcec4c6c1c2da9d72b0027302712147` and reran the tests personally.
+
+Implemented: raw pre-player-defense Parry input; post-mitigation, pre-shield hit
+gate; atomic existing physical-source/player-vitals composition; major/minor
+selection in accepted category and source-liveness order; defensive source ticks
+with exact provenance, no-source and Agony exclusion; native/composed Dodge; and
+retained source replay after a Parry kill. Native melee retains its actual held
+session behavior. Cleanse uses the imported canonical/player single-selection
+Hex implementation rather than another condition store.
+
+Independent exact-source results (absolute PC cargo wrapper, local Docker PG):
+
+| Filter | Passed | Failed | Evidence scope |
+|---|---:|---:|---|
+| `incoming_order_` | 6 | 0 | actual source owners and refusal/replay |
+| `owned_source_tick_tests` | 14 | 0 | existing native tick owners |
+| `actor_charm_cleanse_tests` | 2 | 0 | composed canonical/player Cleanse/Hex |
+| `all25_native_dodge_` | 2 | 0 | actual native spells/melee |
+| `srx2_charm` | 10 | 0 | real PostgreSQL and combat consumers |
+
+The PostgreSQL output contains actual database transaction events; no missing-route
+early return is counted. The combined 34 cases are focused checks, not a full
+workspace total. Strict `clippy --all-features --all-targets -- -D warnings` passed
+on the canonical source for combat/entities/progression/spell/dispatch. Both
+format checks, diff and governance passed; governance unittest suite: 129 OK.
+
+Two old assertions were updated to the accepted incoming-order contract, not
+relaxed: mana-only Numb/Adrenaline now require exactly zero speed contribution;
+Bless/Parry requires no source HP mutation during read-only reflection preparation
+and the same source death after the actual joined hit. The underlying positive
+health-hit minor tests and lethal/death replay assertions remain.
+
+Remaining before full completion: outgoing direct/native/rune effects including
+Cripple's canonical condition bridge, secondary-auto critical consumer, delayed
+source integration, final exact-head independent review and repository CI/Node
+boot. This commit is a meaningful implementation increment, not task closure.

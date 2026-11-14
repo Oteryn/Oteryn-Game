@@ -175,7 +175,107 @@ impl PlayerHitKind {
     }
 }
 
+/// Existing source-owned secondary admission, carried into the single incoming commit.
+pub struct SourceHitConditions<'a> {
+    pub definitions: &'a [crate::foundation::ConditionDefinition],
+    pub facts: &'a crate::foundation::ApplicationFacts<'a>,
+    pub immunities: &'a [crate::foundation::ConditionType],
+    pub fence: Option<&'a crate::foundation::ScopeRuntimeFence>,
+    pub stamp: crate::foundation::RuntimeWorkStamp,
+}
+
+/// Native reflection metadata; keeps source-none and physical-only equipment rules intact.
+pub struct SourceHitEquipment<'a> {
+    /// Native bites reflect Parry first and retain the elite source damage response.
+    pub native_bite: bool,
+    pub magnitude: u32,
+    pub element: Option<&'a str>,
+    pub stream: &'a [u8],
+}
+
 pub trait PlayerLethalVitals {
+    /// Read-only post-mitigation gate for components of one admitted source occurrence.
+    #[allow(clippy::too_many_arguments)]
+    fn source_hit_gate(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        magnitude: u32,
+        _kind: PlayerHitKind,
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<bool> {
+        Some(magnitude > 0)
+    }
+
+    /// Source's original health roll and admitted magnitude meet at the existing player owner.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_source_incoming_hit(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        _base_damage: u32,
+        _charm_occurrence: Option<oteryn_simulation_determinism::DecisionOccurrenceId>,
+        kind: PlayerHitKind,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        conditions: Option<SourceHitConditions<'_>>,
+        equipment: Option<SourceHitEquipment<'_>>,
+    ) -> Option<PlayerDamageReceipt> {
+        if let Some(equipment) = equipment
+            && !self.reflect_equipment_damage(
+                runtime,
+                source,
+                target,
+                session,
+                equipment.element,
+                equipment.magnitude,
+                equipment.stream,
+                now,
+            )
+        {
+            return None;
+        }
+        if let Some(c) = conditions {
+            match c.fence {
+                Some(fence) => self.apply_typed_composite_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    magnitude,
+                    kind,
+                    occurrence,
+                    source,
+                    c.definitions,
+                    c.facts,
+                    c.immunities,
+                    fence,
+                    c.stamp,
+                ),
+                None => self.apply_typed_composite_attack_damage_current(
+                    runtime,
+                    target,
+                    session,
+                    magnitude,
+                    kind,
+                    occurrence,
+                    source,
+                    c.definitions,
+                    c.facts,
+                    c.immunities,
+                    c.stamp,
+                ),
+            }
+        } else {
+            self.apply_source_typed_attack_damage(
+                runtime, source, target, session, magnitude, kind, occurrence, now,
+            )
+        }
+    }
+
     /// Read-only defensive selection after independent source/target admission.
     /// The source owner retains its cancellation in the occurrence receipt before
     /// returning; no synthetic zero-damage HP/MP receipt is manufactured.

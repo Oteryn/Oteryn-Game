@@ -429,7 +429,7 @@ impl ChannelSpellStates {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn native_composite_conditions(
         &mut self,
-        runtime: &mut ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         occurrence: &str,
@@ -1419,18 +1419,20 @@ impl ChannelSpellStates {
                 .finalize();
             let mut identity = [0; 16];
             identity.copy_from_slice(&digest[..16]);
-            super::super::attack::charm_combat::evaluate(
+            super::super::attack::charm_combat::evaluate_event_category(
                 self,
                 runtime,
                 catalogue,
+                root,
                 target,
                 session,
                 &snapshot.state.policy.definition_key,
-                root,
                 DecisionOccurrenceId::from_bytes(identity),
                 CharmHookEvent::IncomingManaDrain {
                     mana_drained: u64::from(magnitude),
                 },
+                oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                true,
             )
             .iter()
             .any(|outcome| {
@@ -1479,22 +1481,6 @@ impl ChannelSpellStates {
             self.source_mana[index] = memo;
         } else {
             self.source_mana.push(memo);
-        }
-        if !inverted && receipt.applied > 0 {
-            super::super::attack::charm_combat::incoming_conditions(
-                self,
-                runtime,
-                catalogue,
-                root,
-                source,
-                target,
-                session,
-                receipt.applied,
-                receipt.vitals_revision,
-                occurrence,
-                now.get(),
-                true,
-            );
         }
         Some(receipt)
     }

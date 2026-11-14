@@ -1246,3 +1246,293 @@ fn monster_composed_bounds_recipients_in_the_cast_area_and_uses_actual_creature_
         "a replay cannot recalculate the target response"
     );
 }
+
+#[test]
+fn incoming_order_composed_dodge_cancels_primary_and_player_callback_and_replays() {
+    std::thread::Builder::new()
+        .name("incoming-composed-dodge".into())
+        .stack_size(64 << 20)
+        .spawn(|| {
+            let (mut runtime, mut states, source, catalog, proposal, mut world, fence, stamp, _) =
+                setup_at(
+                    "the_source_of_corruption",
+                    1,
+                    "the_souldespoiler",
+                    10_000,
+                    None,
+                    10_000,
+                );
+            qualify_hazard_monster(
+                &mut runtime,
+                proposal.issuer,
+                "oteryn:creature.the_source_of_corruption",
+            );
+            let character = crate::foundation::CharacterId::decode(world.session.as_bytes())
+                .expect("character");
+            runtime
+                .bind_attacker_lease(
+                    proposal.target,
+                    world.session,
+                    crate::foundation::CharacterLease::new(character, 1).expect("lease"),
+                )
+                .expect("principal");
+            let before = states
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+                .expect("player")
+                .clone();
+            let mut owner = ComposedOwner::default();
+            let result = states
+                .with_source_charm_test(
+                    &mut runtime,
+                    proposal.issuer,
+                    proposal.target,
+                    world.session,
+                    "dodge",
+                    |runtime, vitals| {
+                        owner.execute(
+                            runtime,
+                            &fence,
+                            stamp,
+                            vitals,
+                            &catalog,
+                            &source,
+                            &proposal,
+                            &mut world,
+                            SemanticTimeMicros::from_micros(1),
+                        )
+                    },
+                )
+                .expect("composed source cast");
+            assert!(
+                result
+                    .branches
+                    .iter()
+                    .any(|(_, actor, _)| *actor == proposal.target)
+            );
+            assert!(
+                result
+                    .branches
+                    .iter()
+                    .filter(|(_, actor, _)| *actor == proposal.target)
+                    .all(|(_, _, receipt)| matches!(receipt, Ok(BranchReceipt::Zero)))
+            );
+            assert_eq!(
+                states.read_owned_player_state_test_snapshot(
+                    &runtime,
+                    proposal.target,
+                    world.session
+                ),
+                Some(&before)
+            );
+            let replay = states
+                .with_source_charm_test(
+                    &mut runtime,
+                    proposal.issuer,
+                    proposal.target,
+                    world.session,
+                    "parry",
+                    |runtime, vitals| {
+                        owner.execute(
+                            runtime,
+                            &fence,
+                            stamp,
+                            vitals,
+                            &catalog,
+                            &source,
+                            &proposal,
+                            &mut world,
+                            SemanticTimeMicros::from_micros(2),
+                        )
+                    },
+                )
+                .expect("retained source occurrence");
+            assert_eq!(result, replay);
+            assert_eq!(
+                states.read_owned_player_state_test_snapshot(
+                    &runtime,
+                    proposal.target,
+                    world.session
+                ),
+                Some(&before)
+            );
+        })
+        .expect("thread")
+        .join()
+        .expect("scenario");
+}
+
+#[test]
+fn incoming_order_composed_callback_uses_whole_occurrence_and_source_armor_once() {
+    std::thread::Builder::new()
+        .name("incoming-composed-parry".into())
+        .stack_size(64 << 20)
+        .spawn(|| {
+            use sha2::{Digest, Sha256};
+            let (mut runtime, mut states, source, catalog, proposal, mut world, fence, stamp, _) =
+                setup_at(
+                    "the_source_of_corruption",
+                    1,
+                    "the_souldespoiler",
+                    10_000,
+                    None,
+                    10_000,
+                );
+            qualify_hazard_monster(
+                &mut runtime,
+                proposal.issuer,
+                "oteryn:creature.the_source_of_corruption",
+            );
+            let character = crate::foundation::CharacterId::decode(world.session.as_bytes())
+                .expect("character");
+            runtime
+                .bind_attacker_lease(
+                    proposal.target,
+                    world.session,
+                    crate::foundation::CharacterLease::new(character, 1).expect("lease"),
+                )
+                .expect("principal");
+            let before = runtime.companion_snapshot(proposal.issuer).expect("source");
+            let mut owner = ComposedOwner::default();
+            let result = states
+                .with_source_charm_test(
+                    &mut runtime,
+                    proposal.issuer,
+                    proposal.target,
+                    world.session,
+                    "parry",
+                    |runtime, vitals| {
+                        owner.execute(
+                            runtime,
+                            &fence,
+                            stamp,
+                            vitals,
+                            &catalog,
+                            &source,
+                            &proposal,
+                            &mut world,
+                            SemanticTimeMicros::from_micros(1),
+                        )
+                    },
+                )
+                .expect("composed source cast");
+            let callback_damage: u32 = result
+                .branches
+                .iter()
+                .filter(|(_, actor, _)| *actor == proposal.target)
+                .filter_map(|(_, _, receipt)| match receipt {
+                    Ok(BranchReceipt::PlayerDamage(receipt)) => Some(receipt.applied),
+                    _ => None,
+                })
+                .sum();
+            assert!(
+                callback_damage > 0,
+                "real source callback must contribute health damage"
+            );
+            // Resolve the pinned callback's original roll independently of the player receipt.
+            let native: serde_json::Value =
+                serde_json::from_str(SOURCE_BODIES).expect("native closure");
+            let mut callback_original = 0u32;
+            for (index, callback) in native["abilities"][&source.ability.key]["callbacks"]
+                .as_array()
+                .expect("callbacks")
+                .iter()
+                .enumerate()
+            {
+                if callback["heal"] == false && callback["filter"]["kind"] == "Players" {
+                    let text = format!(
+                        "{}:callback:{index}:{}",
+                        proposal.occurrence.id().as_str(),
+                        hex(&proposal.target.placement_identity())
+                    );
+                    let digest = Sha256::new()
+                        .chain_update(proposal.occurrence.id().as_str().as_bytes())
+                        .chain_update(text.as_bytes())
+                        .finalize();
+                    let mut identity = [0; 16];
+                    identity.copy_from_slice(&digest[..16]);
+                    let draw = oteryn_simulation_determinism::deterministic_decision_u64(
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([1; 32]),
+                        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(identity),
+                        "source_callback_health",
+                        index as u64,
+                    )
+                    .expect("native draw");
+                    callback_original +=
+                        u32::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                            draw,
+                            callback["minimum"].as_i64().expect("minimum"),
+                            callback["maximum"].as_i64().expect("maximum"),
+                        ))
+                        .expect("native magnitude");
+                }
+            }
+            assert!(
+                callback_original == callback_damage,
+                "untyped callback raw {callback_original}, player receipt {callback_damage}"
+            );
+            let primary = source.primary_source().expect("primary source");
+            let facts = world
+                .combat(
+                    &runtime,
+                    proposal.issuer,
+                    proposal.target,
+                    world.session,
+                    primary.element.as_deref(),
+                    stamp,
+                )
+                .expect("current target facts");
+            let multiplier = crate::creature_auto_attack::monster_reference_level_damage_multiplier(
+                primary.reference_level,
+                &primary.reference_level_overrides,
+                before.position,
+                &facts.attack,
+            );
+            let original = u32::try_from(
+                u64::from(result.primary.as_ref().expect("primary").requested)
+                    * u64::from(multiplier)
+                    / u64::from(crate::creature_auto_attack::DAMAGE_MULTIPLIER_SCALE),
+            )
+            .expect("source reference scaling")
+            .checked_add(callback_original)
+            .expect("health sum");
+            let text = format!(
+                "{}:target:{}",
+                proposal.occurrence.id().as_str(),
+                hex(&proposal.target.placement_identity())
+            );
+            let digest = Sha256::new()
+                .chain_update(b"oteryn.charm.source.v1")
+                .chain_update(text.as_bytes())
+                .finalize();
+            let mut identity = [0; 16];
+            identity.copy_from_slice(&digest[..16]);
+            let draw = oteryn_simulation_determinism::deterministic_decision_u64(
+                &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                ),
+                oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(identity),
+                "charm.parry-armor",
+                0,
+            )
+            .expect("armor draw");
+            let expected = oteryn_gameplay_combat_rules::resolution::player_armor_mitigated(
+                oteryn_gameplay_combat_rules::attack::AttackConstants::checked_in()
+                    .expect("constants"),
+                original,
+                before.state.policy.armor.expect("source armor"),
+                draw,
+            );
+            let after = runtime
+                .companion_snapshot(proposal.issuer)
+                .expect("source")
+                .health;
+            assert_eq!(
+                before.health - after,
+                i64::from(expected),
+                "one Parry on the whole original health occurrence, with source armor once"
+            );
+        })
+        .expect("thread")
+        .join()
+        .expect("scenario");
+}

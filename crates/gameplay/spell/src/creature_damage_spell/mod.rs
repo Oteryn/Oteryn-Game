@@ -1125,6 +1125,8 @@ pub struct PreparedPlayerTarget {
     session: GameSessionId,
     facts: SpellCombatFacts,
     amount: u32,
+    base_damage: u32,
+    dodge: Option<bool>,
     blocked: bool,
     hazard_critical: bool,
     child_id: DecisionOccurrenceId,
@@ -1414,6 +1416,9 @@ impl DamageSpellOwner {
             return Err(AttackError::ContentChanged);
         }
         if !runtime.matches_live_creature_identity(proposal.issuer, source.creature_key.as_bytes())
+            && !runtime
+                .companion_snapshot_including_dead(proposal.issuer)
+                .is_ok_and(|snapshot| snapshot.state.policy.definition_key == source.creature_key)
         {
             return Err(AttackError::StaleIssuer);
         }
@@ -1474,8 +1479,10 @@ impl DamageSpellOwner {
                 .map_err(|_| AttackError::InvalidPlan)?,
         )
         .into();
-        self.casts
-            .retain(|m| runtime.contains_live_creature(m.issuer));
+        self.casts.retain(|m| {
+            runtime.contains_live_creature(m.issuer)
+                || runtime.companion_snapshot_including_dead(m.issuer).is_ok()
+        });
         let index = self.casts.iter().position(|m| {
             m.issuer == proposal.issuer && m.list == source.list && m.entry == source.entry_index
         });
@@ -1494,6 +1501,10 @@ impl DamageSpellOwner {
             if now <= m.at {
                 return Err(AttackError::NotDue);
             }
+        }
+        // A retained exact incarnation may replay after Parry killed it; it cannot cast anew.
+        if !runtime.contains_live_creature(proposal.issuer) {
+            return Err(AttackError::StaleIssuer);
         }
         if index.is_none() {
             if self.casts.len() >= 64 * 16 {
@@ -1977,6 +1988,10 @@ impl DamageSpellOwner {
             .positioned_actor_census()
             .map_err(|_| AttackError::StaleTarget)?;
         let root = GameplayDecisionRoot::from_bytes(source.content_digest);
+        let mut cancelled = Vec::new();
+        cancelled
+            .try_reserve(64)
+            .map_err(|_| AttackError::LedgerFull)?;
         let mut targets = Vec::new();
         targets
             .try_reserve(census.len().min(64))
@@ -2078,8 +2093,28 @@ impl DamageSpellOwner {
                 id.copy_from_slice(&bytes[..16]);
                 // Keep the existing recipient bound after current geometry and
                 // protection selection, independent of distant Channel actors.
-                if targets.len() >= 64 {
+                if targets.len() + cancelled.len() >= 64 {
                     return Err(AttackError::LedgerFull);
+                }
+                if let Some(session) = session {
+                    let occurrence = format!(
+                        "{}:target:{}",
+                        proposal.occurrence.id().as_str(),
+                        hex(&actor.placement_identity())
+                    );
+                    if vitals.dodge_source_attack(
+                        runtime,
+                        proposal.issuer,
+                        *actor,
+                        *session,
+                        &occurrence,
+                    ) {
+                        if cancelled.len() >= 64 {
+                            return Err(AttackError::LedgerFull);
+                        }
+                        cancelled.push(*actor);
+                        continue;
+                    }
                 }
                 targets.push(crate::player_lethal::SourceAppearanceTarget {
                     actor: *actor,
@@ -2098,6 +2133,8 @@ impl DamageSpellOwner {
                 });
             }
         }
+        cancelled.sort_by_key(|actor| actor.placement_identity());
+        cancelled.dedup();
         targets.sort_by_key(|t| t.actor.placement_identity());
         targets.dedup_by_key(|t| t.actor.placement_identity());
         let receipts = if targets.is_empty() {
@@ -2136,6 +2173,16 @@ impl DamageSpellOwner {
                     }),
                 )
             })
+            .chain(cancelled.into_iter().map(|actor| {
+                (
+                    actor,
+                    Ok(SpellTargetOutcome {
+                        damage: None,
+                        mana: None,
+                        condition_only_applied: false,
+                    }),
+                )
+            }))
             .collect();
         Ok(SpellOutcome {
             delayed_cast: None,
@@ -2454,6 +2501,8 @@ impl DamageSpellOwner {
                 session,
                 facts,
                 amount: hazard.amount,
+                base_damage: requested_for_player,
+                dodge: None,
                 blocked,
                 hazard_critical: hazard.critical,
                 child_id,
@@ -2499,6 +2548,8 @@ impl DamageSpellOwner {
             session,
             facts,
             amount,
+            base_damage,
+            dodge,
             blocked,
             hazard_critical,
             child_id,
@@ -2508,7 +2559,9 @@ impl DamageSpellOwner {
             // CHARM4-INCOMING-EFFECT-ORDER-V1: cancellation precedes every
             // mutation, reflection and attached effect. The source owner retains
             // this actual no-effect outcome, so retry cannot select a new result.
-            if vitals.dodge_source_attack(runtime, proposal.issuer, target, session, &occurrence) {
+            if dodge.unwrap_or_else(|| {
+                vitals.dodge_source_attack(runtime, proposal.issuer, target, session, &occurrence)
+            }) {
                 result.targets.push((
                     target,
                     Ok(SpellTargetOutcome {
@@ -2519,7 +2572,8 @@ impl DamageSpellOwner {
                 ));
                 continue;
             }
-            if source.element.as_deref() != Some("mana_drain")
+            if (blocked || amount == 0)
+                && source.element.as_deref() != Some("mana_drain")
                 && !vitals.reflect_equipment_damage(
                     runtime,
                     proposal.issuer,
@@ -2655,15 +2709,25 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_source_typed_attack_damage(
+                vitals.apply_source_incoming_hit(
                     runtime,
                     proposal.issuer,
                     target,
                     session,
                     amount,
+                    base_damage,
+                    None,
                     crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
                     &occurrence,
                     now,
+                    None,
+                    Some(crate::player_lethal::SourceHitEquipment {
+                        native_bite: false,
+                        magnitude: amount,
+                        element: source.element.as_deref(),
+                        stream: format!("spell:{:?}:{}", source.list, source.entry_index)
+                            .as_bytes(),
+                    }),
                 )
             } else {
                 let policy = facts
@@ -2680,39 +2744,32 @@ impl DamageSpellOwner {
                     decision_root: &root,
                     occurrence: child_id,
                 };
-                match fence {
-                    Some(fence) => vitals.apply_typed_composite_attack_damage(
-                        runtime,
-                        target,
-                        session,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_element(
-                            source.element.as_deref(),
-                        ),
-                        &occurrence,
-                        proposal.issuer,
-                        &source.conditions,
-                        &af,
-                        &policy.immunities,
+                vitals.apply_source_incoming_hit(
+                    runtime,
+                    proposal.issuer,
+                    target,
+                    session,
+                    amount,
+                    base_damage,
+                    None,
+                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
+                    &occurrence,
+                    now,
+                    Some(crate::player_lethal::SourceHitConditions {
+                        definitions: &source.conditions,
+                        facts: &af,
+                        immunities: &policy.immunities,
                         fence,
                         stamp,
-                    ),
-                    None => vitals.apply_typed_composite_attack_damage_current(
-                        runtime,
-                        target,
-                        session,
-                        amount,
-                        crate::player_lethal::PlayerHitKind::from_element(
-                            source.element.as_deref(),
-                        ),
-                        &occurrence,
-                        proposal.issuer,
-                        &source.conditions,
-                        &af,
-                        &policy.immunities,
-                        stamp,
-                    ),
-                }
+                    }),
+                    Some(crate::player_lethal::SourceHitEquipment {
+                        native_bite: false,
+                        magnitude: amount,
+                        element: source.element.as_deref(),
+                        stream: format!("spell:{:?}:{}", source.list, source.entry_index)
+                            .as_bytes(),
+                    }),
+                )
             };
             if hazard_critical && receipt.is_some() {
                 runtime

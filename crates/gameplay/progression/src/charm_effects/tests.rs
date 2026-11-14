@@ -1619,3 +1619,44 @@ fn global_leech_projection_returns_only_passive_rate_for_the_assigned_race() {
         .is_empty()
     );
 }
+
+#[test]
+fn charm_effect_incoming_minor_uses_post_parry_liveness_without_changing_draws() {
+    let catalogue = forced_catalogue();
+    let event = input(CharmHookEvent::IncomingCreatureHit { base_damage: 321 }, 1);
+    for name in ["numb", "adrenaline_burst", "cleanse"] {
+        let key = format!("oteryn:charm.{name}");
+        let state = State::with(RACE, &[("oteryn:charm.parry", 3), (&key, 3)]);
+        let major = evaluate_charm_hook_category(
+            &event,
+            &state,
+            &catalogue,
+            Some(CharmCategory::Major),
+            true,
+        )
+        .expect("major");
+        assert_eq!(major.len(), 1);
+        let minor = evaluate_charm_hook_category(
+            &event,
+            &state,
+            &catalogue,
+            Some(CharmCategory::Minor),
+            false,
+        )
+        .expect("minor");
+        assert_eq!(minor.len(), 1);
+        if name == "numb" {
+            assert_eq!(minor[0].result, CharmResult::NoLivingTarget);
+        } else {
+            let living = evaluate_charm_hook_category(
+                &event,
+                &state,
+                &catalogue,
+                Some(CharmCategory::Minor),
+                true,
+            )
+            .expect("living minor");
+            assert_eq!(minor, living);
+        }
+    }
+}
