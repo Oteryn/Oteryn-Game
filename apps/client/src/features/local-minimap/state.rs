@@ -3,6 +3,9 @@ use oteryn_session::world_map::WorldMapViewSnapshot;
 use serde::{Deserialize, Serialize};
 #[path = "transfer.rs"]
 mod transfer;
+#[cfg(feature = "bevy-shell")]
+#[path = "editor.rs"]
+pub(crate) mod editor;
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{self, Read},
@@ -38,6 +41,8 @@ struct Saved {
 }
 #[derive(Debug)]
 pub struct Minimap {
+    #[cfg(feature = "bevy-shell")]
+    editor: editor::Editor,
     pub cells: BTreeMap<(i16, i32, i32), u8>,
     pub markers: Vec<Marker>,
     pub x: i32,
@@ -59,6 +64,8 @@ pub struct Minimap {
 impl Default for Minimap {
     fn default() -> Self {
         Self {
+            #[cfg(feature = "bevy-shell")]
+            editor: editor::Editor::default(),
             cells: BTreeMap::new(),
             markers: Vec::new(),
             x: 0,
@@ -365,3 +372,7 @@ mod play_persistence;
 #[cfg(test)]
 #[path = "tests/e2e_n07d.rs"]
 mod e2e_n07d;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/editor.rs"]
+mod editor_tests;

@@ -39,6 +39,7 @@ pub(super) fn activate(
                     | Control::ContainerSorting
                     | Control::Options
                     | Control::Market
+                    | Control::MinimapMarkers
                     | Control::Party
                     | Control::PlayerReport
                     | Control::Prey
@@ -90,6 +91,7 @@ pub(super) fn activate(
             Control::HouseBrowsing => game_ui::house_browsing::open(&mut owner),
             Control::GuildWars => game_ui::open_guild_wars(&owner),
             Control::Market => game_ui::open_market(&mut owner),
+            Control::MinimapMarkers => game_ui::minimap_markers::open(&mut owner),
             Control::Party => game_ui::open_party(&mut owner),
             Control::PlayerReport => game_ui::player_report_report::open(&mut owner),
             Control::Prey => game_ui::open_prey(&mut owner),
