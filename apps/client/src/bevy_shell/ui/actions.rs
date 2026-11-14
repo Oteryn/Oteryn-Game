@@ -27,6 +27,7 @@ pub(super) fn activate(
                     | Control::HouseMoveOut
                     | Control::HousePodium
                     | Control::HouseTransfer
+                    | Control::InputProfiles
                     | Control::HouseBrowsing
                     | Control::GuildhallLeadership
                     | Control::GuildWars
@@ -89,6 +90,7 @@ pub(super) fn activate(
             Control::HouseTransfer => game_ui::house_transfer::open(&owner),
             Control::HouseBrowsing => game_ui::house_browsing::open(&mut owner),
             Control::GuildWars => game_ui::open_guild_wars(&owner),
+            Control::InputProfiles => game_ui::input_profiles::open(&mut owner),
             Control::Market => game_ui::open_market(&mut owner),
             Control::Party => game_ui::open_party(&mut owner),
             Control::PlayerReport => game_ui::player_report_report::open(&mut owner),
