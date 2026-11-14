@@ -57,9 +57,12 @@ fn response(outbox: &Outbox, request: prey::Request, reply: &prey::Reply) -> Res
     Ok(())
 }
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
+    fixture_selected(true)
+}
+fn fixture_selected(selected: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
     link.use_shared_frontend();
-    outbox.bevy_prey_initialize(true);
+    outbox.bevy_prey_initialize(selected);
     let event = oteryn_input_actions::NormalizedInputEvent::Key {
         code: oteryn_input_actions::KeyCode::new(19)?,
         state: oteryn_input_actions::ButtonState::Pressed,
@@ -67,11 +70,15 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         repeat: false,
     };
     assert!(link.prey_input(&[event]));
-    assert!(matches!(
-        commands.try_recv()?,
-        PlayCommand::Prey(prey::Request::Query)
-    ));
-    response(&outbox, prey::Request::Query, &reply())?;
+    if selected {
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Prey(prey::Request::Query)
+        ));
+        response(&outbox, prey::Request::Query, &reply())?;
+    } else {
+        assert!(commands.try_recv().is_err());
+    }
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -124,6 +131,8 @@ fn prey_window_shows_server_slots_only() -> ResultTest {
         .collect::<Vec<_>>()
         .join("\n");
     for expected in [
+        "Manual",
+        "Select any (5 cards)",
         "Slot 1",
         "Locked",
         "Inactive",
@@ -169,6 +178,15 @@ fn prey_actions_are_slot_bound_and_confirm_paid() -> ResultTest {
         assert!(commands.try_recv().is_err());
         assert_eq!(panel(&app)?, before);
         app.world_mut().flush();
+        let cancel = caption_button(&mut app, "Cancel")?;
+        app.world_mut().trigger(Activate { entity: cancel });
+        assert!(app.world().resource::<State>().confirmation.is_none());
+        assert!(commands.try_recv().is_err());
+        assert_eq!(panel(&app)?, before);
+        app.update();
+        let propose = control(&mut app, Some(intent.clone()), true, None)?;
+        app.world_mut().trigger(Activate { entity: propose });
+        app.world_mut().flush();
         let confirm = control(&mut app, Some(intent), false, None)?;
         app.world_mut().trigger(Activate { entity: confirm });
         app.world_mut().trigger(Activate { entity: confirm });
@@ -180,6 +198,48 @@ fn prey_actions_are_slot_bound_and_confirm_paid() -> ResultTest {
         response(&outbox, request, &reply())?;
         app.update();
     }
+    let editor = app
+        .world_mut()
+        .query::<(Entity, &CreatureField)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 2).then_some(entity))
+        .ok_or("creature editor")?;
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(editor)
+        .ok_or("editable")?
+        .editor_mut()
+        .set_text("oteryn:creature.bear");
+    let select_any = control(
+        &mut app,
+        Some(Intent::SelectAny {
+            slot: 2,
+            creature: String::new(),
+        }),
+        true,
+        None,
+    )?;
+    app.world_mut().trigger(Activate { entity: select_any });
+    assert!(commands.try_recv().is_err());
+    app.world_mut().flush();
+    let intent = Intent::SelectAny {
+        slot: 2,
+        creature: "oteryn:creature.bear".into(),
+    };
+    let confirm = control(&mut app, Some(intent), false, None)?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    let PlayCommand::Prey(request) = commands.try_recv()? else {
+        return Err("select any request".into());
+    };
+    assert_eq!(
+        request,
+        prey::Request::SelectAny {
+            slot: 2,
+            creature: "oteryn:creature.bear".into()
+        }
+    );
+    assert_eq!(panel(&app)?.confirmed, Some(reply()));
+    response(&outbox, request, &reply())?;
+    app.update();
     let offers = Intent::OfferedToday {
         slot: 2,
         after: String::new(),
@@ -226,6 +286,7 @@ fn prey_actions_are_slot_bound_and_confirm_paid() -> ResultTest {
 }
 #[test]
 fn prey_actions_rejected_when_session_replaced_or_slot_changed() -> ResultTest {
+    unavailable_close(false)?;
     let (mut app, mut commands, outbox) = fixture()?;
     let controls = app
         .world_mut()
@@ -287,5 +348,138 @@ fn prey_actions_rejected_when_session_replaced_or_slot_changed() -> ResultTest {
     assert!(commands.try_recv().is_err());
     app.update();
     assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+fn unavailable_close(escape: bool) -> ResultTest {
+    let (mut app, mut commands, _outbox) = fixture_selected(false)?;
+    app.update();
+    assert!(!panel(&app)?.selected);
+    if escape {
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: KeyCode::Escape,
+                logical_key: bevy::input::keyboard::Key::Escape,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+    } else {
+        let close = control(&mut app, None, false, None)?;
+        app.world_mut().trigger(Activate { entity: close });
+    }
+    assert!(!panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+#[test]
+fn prey_close_and_escape_allow_unavailable_and_pending() -> ResultTest {
+    unavailable_close(false)?;
+    unavailable_close(true)?;
+    {
+        let (mut app, mut commands, _outbox) = fixture()?;
+        let refresh = control(&mut app, Some(Intent::Refresh), false, None)?;
+        app.world_mut().trigger(Activate { entity: refresh });
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Prey(prey::Request::Query)
+        ));
+        escape_key(&mut app);
+        app.update();
+        assert!(!panel(&app)?.open);
+        assert_eq!(panel(&app)?.pending, Some(prey::Request::Query));
+        assert!(app.world().resource::<State>().root.is_none());
+        assert!(commands.try_recv().is_err());
+    }
+    for escape in [false, true] {
+        let (mut app, mut commands, _outbox) = fixture()?;
+        let refresh = control(&mut app, Some(Intent::Refresh), false, None)?;
+        app.world_mut().trigger(Activate { entity: refresh });
+        assert!(matches!(
+            commands.try_recv()?,
+            PlayCommand::Prey(prey::Request::Query)
+        ));
+        let pending = panel(&app)?.pending;
+        if escape {
+            let higher = app
+                .world_mut()
+                .spawn((GameModal, GlobalZIndex(220), Node::default()))
+                .id();
+            escape_key(&mut app);
+            app.update();
+            assert!(panel(&app)?.open);
+            app.world_mut().entity_mut(higher).despawn();
+            app.update();
+            escape_key(&mut app);
+            app.update();
+        } else {
+            let close = control(&mut app, None, false, None)?;
+            app.world_mut().trigger(Activate { entity: close });
+        }
+        assert!(!panel(&app)?.open);
+        assert_eq!(panel(&app)?.pending, pending);
+        app.update();
+        assert!(app.world().resource::<State>().root.is_none());
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+fn escape_key(app: &mut App) {
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+}
+
+fn caption_button(app: &mut App, label: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    let root = app.world().resource::<State>().root.ok_or("root")?;
+    app.world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            (text.0 == label
+                && app
+                    .world()
+                    .get::<ChildOf>(parent.parent())
+                    .is_some_and(|p| p.parent() == root))
+            .then_some(parent.parent())
+        })
+        .ok_or("caption button absent".into())
+}
+
+#[test]
+fn prey_toolbar_is_playing_only_and_opens_the_owner() -> ResultTest {
+    let (mut app, mut commands, _outbox) = fixture_selected(false)?;
+    app.add_systems(Update, crate::bevy_shell::ui::project_toolbar);
+    let close = control(&mut app, None, false, None)?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+    app.update();
+    let toolbar = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(e, c)| matches!(c, crate::bevy_shell::ui::Control::Prey).then_some(e))
+        .ok_or("Prey toolbar")?;
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::Flex
+    );
+    app.world_mut().trigger(Activate { entity: toolbar });
+    assert!(panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
+    app.world_mut().non_send_mut::<HostOwner>().close();
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::None
+    );
     Ok(())
 }

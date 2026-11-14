@@ -16,6 +16,7 @@ mod npc_shop;
 pub(super) mod options;
 pub(super) mod party;
 mod prey;
+pub(super) use prey::open as open_prey;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
