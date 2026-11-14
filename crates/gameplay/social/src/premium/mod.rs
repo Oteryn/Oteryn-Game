@@ -141,6 +141,8 @@ pub struct PullTicket(u64);
 
 #[derive(Debug, Clone, Default)]
 struct AccountView {
+    profile_b_hint_revision: u64,
+    profile_b_wake: Option<std::sync::Weak<tokio::sync::Notify>>,
     fence: Option<PremiumFenceView>,
     /// A snapshot was fenced or replayed at the high water in this process.
     proven: bool,
@@ -200,12 +202,69 @@ pub enum IngestOutcome {
 
 #[derive(Debug, Default)]
 pub struct PremiumConsumer {
+    profile_b:
+        std::sync::OnceLock<std::sync::Arc<crate::platform_streams::profile_b::runtime::Refresher>>,
     accounts: Mutex<HashMap<[u8; 16], AccountView>>,
     /// Ingest tickets, increasing across accounts and `release`.
     tickets: AtomicU64,
 }
 
 impl PremiumConsumer {
+    pub fn install_profile_b(
+        &self,
+        refresher: std::sync::Arc<crate::platform_streams::profile_b::runtime::Refresher>,
+    ) {
+        let _ = self.profile_b.set(refresher);
+    }
+    pub fn profile_b_known_accounts(&self) -> Vec<[u8; 16]> {
+        self.lock().keys().copied().collect()
+    }
+    pub fn profile_b_admit(&self, account: [u8; 16]) {
+        if let Some(refresher) = self.profile_b.get() {
+            refresher.admit(account);
+        }
+    }
+    pub fn profile_b_current(&self, account: [u8; 16], product: &str, version: u64) -> bool {
+        self.profile_b.get().is_some_and(|r| {
+            r.consumer()
+                .current(&snapshot::canonical_uuid(account), product, version)
+        })
+    }
+    pub fn profile_b_release(&self, account: [u8; 16]) {
+        if let Some(refresher) = self.profile_b.get() {
+            refresher.release(account);
+        }
+    }
+    pub fn profile_b_register_wake(
+        &self,
+        account: [u8; 16],
+        wake: &std::sync::Arc<tokio::sync::Notify>,
+    ) {
+        self.update(account, |v| {
+            v.profile_b_wake = Some(std::sync::Arc::downgrade(wake))
+        });
+    }
+    /// B2 never creates a view or proves Premium. A higher floor closes every shared gate.
+    pub fn profile_b_hint(&self, account: [u8; 16], revision: u64) {
+        let mut accounts = self.lock();
+        if let Some(view) = accounts.get_mut(&account) {
+            let accepted = view
+                .fence
+                .as_ref()
+                .map_or(0, |f| f.latest.lifecycle_revision);
+            if revision > view.profile_b_hint_revision.max(accepted) {
+                view.profile_b_hint_revision = revision;
+                if let Some(wake) = view
+                    .profile_b_wake
+                    .as_ref()
+                    .and_then(std::sync::Weak::upgrade)
+                {
+                    wake.notify_one();
+                }
+            }
+        }
+    }
+
     /// Load the durable fence and semantic conflict of `account_id`, before any Premium read at
     /// admission. An account already in memory keeps its view.
     pub async fn load(
@@ -213,10 +272,12 @@ impl PremiumConsumer {
         root: &DurabilityRoot,
         account_id: [u8; 16],
     ) -> Result<(), DurabilityError> {
-        let PremiumAccountRecord { fence, conflicting } =
-            root.load_premium_fence(account_id).await?;
+        self.lock().entry(account_id).or_default();
+        let (PremiumAccountRecord { fence, conflicting }, hint) =
+            root.load_premium_with_profile_b_hint(account_id).await?;
         self.update(account_id, |view| {
             merge(view, fence);
+            view.profile_b_hint_revision = view.profile_b_hint_revision.max(hint);
             view.conflicting |= conflicting;
         });
         Ok(())
@@ -258,6 +319,7 @@ impl PremiumConsumer {
         nonce: &str,
         body: &[u8],
     ) -> IngestOutcome {
+        self.lock().entry(account_id).or_default();
         let evidence = match snapshot::validate(body, account_id, nonce) {
             Ok(evidence) => evidence,
             Err(SnapshotFailure::Malformed) => {
@@ -274,21 +336,24 @@ impl PremiumConsumer {
                 };
             }
         };
-        let Ok(outcome) = root.accept_premium_evidence(&evidence).await else {
+        let Ok((outcome, hint)) = root.accept_premium_with_profile_b_hint(&evidence).await else {
             self.update(account_id, |view| view.quarantine(ticket));
             return IngestOutcome::FenceUnavailable;
         };
-        self.update(account_id, |view| match outcome.clone() {
-            PremiumFenceOutcome::Accepted(fence) | PremiumFenceOutcome::Replayed(fence) => {
-                view.prove(ticket, fence);
-            }
-            PremiumFenceOutcome::Stale(fence) => {
-                merge(view, Some(fence));
-                view.fail_pull(ticket);
-            }
-            PremiumFenceOutcome::Conflict(fence) => {
-                merge(view, Some(fence));
-                view.conflicting = true;
+        self.update(account_id, |view| {
+            view.profile_b_hint_revision = view.profile_b_hint_revision.max(hint);
+            match outcome.clone() {
+                PremiumFenceOutcome::Accepted(fence) | PremiumFenceOutcome::Replayed(fence) => {
+                    view.prove(ticket, fence);
+                }
+                PremiumFenceOutcome::Stale(fence) => {
+                    merge(view, Some(fence));
+                    view.fail_pull(ticket);
+                }
+                PremiumFenceOutcome::Conflict(fence) => {
+                    merge(view, Some(fence));
+                    view.conflicting = true;
+                }
             }
         });
         match outcome {
@@ -435,6 +500,9 @@ fn classify(view: Option<&AccountView>, now: Option<TrustedNow>) -> PremiumClass
     }
     if e.state == EntitlementState::NotYetEffective {
         return PremiumClass::NotYetEffective;
+    }
+    if view.profile_b_hint_revision > e.lifecycle_revision {
+        return PremiumClass::StaleWithinBound;
     }
     // Benefit ends at `refresh_after` without newer accepted evidence (PREM-P §8.2).
     if now.is_some_and(|now| now.upper_us >= e.refresh_after_us) {
