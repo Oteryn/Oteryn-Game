@@ -83,6 +83,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Party
                     | Control::Quests
                     | Control::WeaponProficiency
+                    | Control::Bosstiary(_)
                     | Control::Spells
             )
         ) {

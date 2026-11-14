@@ -96,6 +96,13 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::boss_encounter::open_key(&routed)
+            || oteryn_client_ui::boss_encounter::cooldowns_key(&routed)
+        {
+            let cooldowns = oteryn_client_ui::boss_encounter::cooldowns_key(&routed);
+            super::game_ui::bosstiary::toggle(self, cooldowns);
+            return;
+        }
         if oteryn_client_ui::hireling::open_key(&routed) {
             super::game_ui::hireling_services::toggle(self);
             return;

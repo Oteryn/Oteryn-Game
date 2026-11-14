@@ -3,6 +3,7 @@ mod actions;
 pub(super) mod appearance;
 pub(super) mod boss_difficulty;
 mod boss_reward_chest;
+pub(super) mod bosstiary;
 pub(super) mod cast_chat;
 pub(super) mod cast_control;
 pub(super) use boss_reward_chest::open as open_boss_reward_chest;
@@ -100,6 +101,7 @@ pub(super) fn install(app: &mut App) {
     bestiary::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);
+    bosstiary::install(app);
     browse_field::install(app);
     cast_chat::install(app);
     cast_control::install(app);

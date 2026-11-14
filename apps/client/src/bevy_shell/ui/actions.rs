@@ -46,6 +46,7 @@ pub(super) fn activate(
                     | Control::Training
                     | Control::Store
                     | Control::WeaponProficiency
+                    | Control::Bosstiary(_)
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -84,6 +85,9 @@ pub(super) fn activate(
             Control::Training => game_ui::training::open(&owner),
             Control::Store => game_ui::store::open(&mut owner),
             Control::WeaponProficiency => game_ui::weapon_proficiency::open(&owner),
+            Control::Bosstiary(cooldowns) => {
+                game_ui::bosstiary::toggle(&mut owner, *cooldowns)
+            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
