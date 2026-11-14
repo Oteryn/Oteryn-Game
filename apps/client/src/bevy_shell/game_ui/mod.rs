@@ -2,6 +2,7 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+mod guild_wars;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -233,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    guild_wars::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
@@ -259,6 +261,10 @@ pub(super) fn open_quests(owner: &mut HostOwner) {
 }
 pub(super) fn open_spells(owner: &mut HostOwner) {
     journal::open_spells(owner);
+}
+
+pub(super) fn open_guild_wars(owner: &HostOwner) {
+    guild_wars::open(owner);
 }
 
 pub(super) fn open_market(owner: &mut HostOwner) {
