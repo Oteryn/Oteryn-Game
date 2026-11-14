@@ -1,7 +1,7 @@
 //! Source-derived primitives only; actions edit the production owner's transient draft.
 mod actions;
-use super::owner::HostOwner;
-pub(super) use actions::Control;
+mod toolbar;
+use super::owner::{GraphicsDraft, HostOwner};
 use actions::activate;
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
@@ -11,6 +11,7 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 use std::path::Path;
+pub(super) use toolbar::project_toolbar;
 
 const SKIN: &str = "images/skin/classic/";
 const FILES: [&str; 7] = [
@@ -42,6 +43,99 @@ pub(super) struct Skins {
     pub(super) frame: Handle<Image>,
     pub(super) inset: Handle<Image>,
     pub(super) font: Handle<Font>,
+}
+#[derive(Component, Clone, Copy, Debug)]
+pub(super) enum Control {
+    Appearance,
+    CastChat,
+    Cast,
+    ExivaSettings,
+    HouseMoveOut,
+    GuildhallLeadership,
+    CyclopediaTrackers,
+    CyclopediaMap,
+    BossDifficulty,
+    BossRewardChest,
+    AnimusMastery,
+    BrowseField,
+    ContainerSorting,
+    Options,
+    HirelingServices,
+    FurnitureRotation,
+    HouseTransfer,
+    HouseBrowsing,
+    GuildWars,
+    Market,
+    Party,
+    PlayerReport,
+    Quests,
+    Spells,
+    StatusDetails,
+    StaffTools,
+    WorldEvent,
+    TeamFinder,
+    Training,
+    Store,
+    Login,
+    CancelLogin,
+    Fullscreen,
+    Vsync,
+    IntegerScaling,
+    Apply,
+    Ok,
+    Cancel,
+}
+impl Control {
+    pub fn id(self) -> &'static str {
+        match self {
+            Self::Appearance => "shell.appearance",
+            Self::CastChat => "shell.cast_chat",
+            Self::Cast => "shell.cast_control",
+            Self::ExivaSettings => "shell.exiva_settings",
+            Self::HouseMoveOut => "shell.house_move_out",
+            Self::GuildhallLeadership => "shell.guildhall_leadership",
+            Self::CyclopediaTrackers => "shell.cyclopedia_trackers",
+            Self::CyclopediaMap => "shell.cyclopedia_map",
+            Self::BossDifficulty => "shell.boss_difficulty",
+            Self::BossRewardChest => "shell.boss_reward_chest",
+            Self::AnimusMastery => "shell.animus_mastery",
+            Self::BrowseField => "shell.browse_field",
+            Self::ContainerSorting => "shell.container_sorting",
+            Self::Options => "shell.options",
+            Self::HirelingServices => "shell.hireling_services",
+            Self::FurnitureRotation => "shell.furniture_rotation",
+            Self::HouseTransfer => "shell.house_transfer",
+            Self::HouseBrowsing => "shell.house_browsing",
+            Self::GuildWars => "shell.guild_wars",
+            Self::Market => "shell.market",
+            Self::Party => "shell.party",
+            Self::PlayerReport => "shell.player_report",
+            Self::Quests => "shell.quests",
+            Self::Spells => "shell.spells",
+            Self::StatusDetails => "shell.status_details",
+            Self::StaffTools => "shell.staff_tools",
+            Self::WorldEvent => "shell.world_event",
+            Self::TeamFinder => "shell.team_finder",
+            Self::Training => "shell.training",
+            Self::Store => "shell.store",
+            Self::Login => "shell.sign_in",
+            Self::CancelLogin => "shell.cancel_sign_in",
+            Self::Fullscreen => "graphics.fullscreen",
+            Self::Vsync => "graphics.vsync",
+            Self::IntegerScaling => "graphics.integer_scaling",
+            Self::Apply => "graphics.apply",
+            Self::Ok => "graphics.ok",
+            Self::Cancel => "graphics.cancel",
+        }
+    }
+    fn checked(self, draft: GraphicsDraft) -> bool {
+        match self {
+            Self::Fullscreen => draft.fullscreen,
+            Self::Vsync => draft.vsync,
+            Self::IntegerScaling => draft.integer_scaling,
+            _ => false,
+        }
+    }
 }
 #[derive(Component)]
 pub(super) struct ShellToolbar;
@@ -472,103 +566,6 @@ pub(super) fn keyboard(
             && !key.repeat
         {
             owner.cancel();
-        }
-    }
-}
-
-/// Keep admission controls outside the in-game HUD once play is installed.
-// One disjoint query changes the toolbar, status and admission button nodes together.
-#[allow(clippy::type_complexity)]
-pub(super) fn project_toolbar(
-    mut commands: Commands,
-    owner: NonSend<HostOwner>,
-    regions: Query<Entity, With<super::game_ui::ToolbarRegion>>,
-    mut nodes: Query<
-        (
-            Entity,
-            &mut Node,
-            Has<ShellToolbar>,
-            Has<Status>,
-            Option<&Control>,
-            Option<&ChildOf>,
-        ),
-        Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
-    >,
-) {
-    let playing = owner.play.is_some();
-    let staff = super::game_ui::staff_tools::toolbar_visible(&owner);
-    for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
-        if toolbar {
-            if playing {
-                if let Ok(region) = regions.single() {
-                    if parent.is_none_or(|parent| parent.parent() != region) {
-                        commands.entity(entity).insert(ChildOf(region));
-                    }
-                    node.position_type = PositionType::Relative;
-                    node.width = percent(100.);
-                    node.max_width = percent(100.);
-                    node.overflow = Overflow::clip();
-                    node.top = Val::Auto;
-                    node.bottom = Val::Auto;
-                    node.left = Val::Auto;
-                    node.right = Val::Auto;
-                }
-            } else {
-                if parent.is_some() {
-                    commands.entity(entity).remove::<ChildOf>();
-                }
-                node.position_type = PositionType::Absolute;
-                node.width = Val::Auto;
-                node.max_width = Val::Auto;
-                node.top = px(8.);
-                node.bottom = Val::Auto;
-                node.left = px(8.);
-                node.right = px(8.);
-            }
-        } else if matches!(
-            control,
-            Some(
-                Control::Appearance
-                    | Control::StatusDetails
-                    | Control::CastChat
-                    | Control::Cast
-                    | Control::StaffTools
-                    | Control::PlayerReport
-                    | Control::WorldEvent
-                    | Control::ExivaSettings
-                    | Control::TeamFinder
-                    | Control::Training
-                    | Control::HirelingServices
-                    | Control::FurnitureRotation
-                    | Control::HouseMoveOut
-                    | Control::HouseTransfer
-                    | Control::HouseBrowsing
-                    | Control::GuildhallLeadership
-                    | Control::GuildWars
-                    | Control::CyclopediaTrackers
-                    | Control::CyclopediaMap
-                    | Control::BossDifficulty
-                    | Control::BossRewardChest
-                    | Control::AnimusMastery
-                    | Control::BrowseField
-                    | Control::ContainerSorting
-                    | Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
-            )
-        ) {
-            node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
-                Display::Flex
-            } else {
-                Display::None
-            };
-        } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
-            node.display = if playing {
-                Display::None
-            } else {
-                Display::Flex
-            };
         }
     }
 }
