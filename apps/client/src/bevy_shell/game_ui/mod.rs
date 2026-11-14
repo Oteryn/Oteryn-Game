@@ -2,8 +2,8 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
-mod hud;
 pub(super) mod house_transfer;
+mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
@@ -234,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    house_transfer::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);

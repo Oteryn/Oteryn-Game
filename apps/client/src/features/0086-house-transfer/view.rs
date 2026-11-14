@@ -95,6 +95,9 @@ impl crate::play::Outbox {
         self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
     }
 }
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/bound.rs"]
+mod bound_tests;
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
