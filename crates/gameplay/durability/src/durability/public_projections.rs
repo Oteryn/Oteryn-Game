@@ -5,6 +5,7 @@
 //! Every read runs under the reconciled Character authority, so a restored or
 //! unreconciled store never publishes. Each call is one semantic transaction.
 
+pub(crate) mod character_views;
 pub mod daily_kills;
 pub mod house_catalogue;
 mod online_sessions;
@@ -758,6 +759,13 @@ pub struct PublicProjectionsStore<'r, 'a, 'f, 's> {
 }
 
 impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
+    async fn prepare_v2(&self, family:crate::native_admission_source::public_projections::v2::Family) -> std::result::Result<(),()> {
+        if family == crate::native_admission_source::public_projections::v2::Family::CharacterAchievements {
+            while !self.root.sync_public_achievement_catalogue_page(self.authority).await.map_err(|_|())? { tokio::task::yield_now().await; }
+        }
+        Ok(())
+    }
+
     async fn next_v2(&self, family:crate::native_admission_source::public_projections::v2::Family, held:&[String]) -> std::result::Result<Option<crate::native_admission_source::public_projections::v2::Snapshot>,()> {
         self.root.next_public_v2(self.authority,family,held).await.map_err(|_|())
     }

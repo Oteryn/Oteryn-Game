@@ -45,6 +45,18 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "character_services_projection",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "operation",
+        "result",
+        "ms"
+      ],
+      "codes": [],
+      "note": "Private service-state delivery: bounded operation/result/timing only; no subjects, names, payloads or identities."
+    },
+    {
       "event": "game_journal_stalled",
       "level": "warn",
       "span": false,
@@ -64,7 +76,7 @@
         "alarms"
       ],
       "codes": [],
-      "note": "A definite public projection refusal held publication."
+      "note": "A definite v1/v2 public projection refusal held publication for 300 s; bounded family and alarm count only, no subject or payload."
     },
     {
       "event": "public_projections",

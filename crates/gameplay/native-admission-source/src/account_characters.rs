@@ -580,7 +580,7 @@ fn log(operation: &str, class: &str, elapsed: Duration) {
 }
 
 /// `work`, or `None` once `budget` has passed on `clock`.
-async fn within<C: ReportClock, T>(
+pub(super) async fn within<C: ReportClock, T>(
     clock: &C,
     budget: Duration,
     work: impl Future<Output = T>,

@@ -108,11 +108,12 @@ async fn lock(
     let Some(capacity) = capacity else {
         return Ok(Effect::Pending);
     };
-    let escrow_count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM game_character_roots WHERE account_id=$1::uuid")
-            .bind(escrow)
-            .fetch_one(&mut **tx)
-            .await?;
+    let escrow_count: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_character_live_roots WHERE account_id=$1::uuid",
+    )
+    .bind(escrow)
+    .fetch_one(&mut **tx)
+    .await?;
     if u64::try_from(escrow_count).map_err(|_| DurabilityError::InvalidStoredState)? >= capacity {
         return Ok(Effect::Rejected("CHAR_CMD_ACCOUNT_CHARACTER_LIMIT"));
     }
@@ -379,13 +380,10 @@ pub(super) async fn obligation(
     tx: &mut Tx<'_>,
     character: &str,
 ) -> Result<Option<&'static str>, DurabilityError> {
-    if sqlx::query(
-        "SELECT 1 FROM game_house_ownership WHERE owner_character_id=$1::uuid LIMIT 1 FOR SHARE",
-    )
-    .bind(character)
-    .fetch_optional(&mut **tx)
-    .await?
-    .is_some()
+    if sqlx::query_scalar::<_, bool>("SELECT game_character_service_has_house($1::uuid)")
+        .bind(character)
+        .fetch_one(&mut **tx)
+        .await?
     {
         return Ok(Some("CHAR_CMD_HOUSING_NOT_PREPARED"));
     }
