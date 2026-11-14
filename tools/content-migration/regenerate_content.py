@@ -715,7 +715,7 @@ def main() -> int:
         if not args.no_stage:
             run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
         # Refresh the bundle pin last; the input digest is a staged-tree diagnostic only.
-        run(["cargo", "+1.99.1", "run", "--locked", "--release", "-p", "oteryn-world-bundle-compiler", "--", "pin-refresh", "."])
+        run(["cargo", "+1.100.0", "run", "--locked", "--release", "-p", "oteryn-world-bundle-compiler", "--", "pin-refresh", "."])
         if not args.no_stage:
             run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
     print("Derived content regenerated. Review `git status` and commit.")

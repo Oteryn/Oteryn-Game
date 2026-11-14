@@ -66,14 +66,12 @@ impl PlayView {
             }
             return true;
         }
-        if !oteryn_client_ui::minimap::editor_key(events) {
-            return false;
-        }
+        let edit = oteryn_client_ui::minimap::editor_key(events);
         #[cfg(windows)]
-        if !self.shared_frontend {
+        if edit && !self.shared_frontend {
             native::open(self.minimap.clone(), (self.own.x, self.own.y, self.floor));
         }
-        true
+        edit
     }
 }
 #[cfg(windows)]

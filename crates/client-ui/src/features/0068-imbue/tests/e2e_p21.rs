@@ -129,21 +129,18 @@ fn e2e_p21_replays_imbuement_window_and_refusal() -> Result<(), Error> {
         text.lines().next(),
         Some(format!("{slots} slots; clear cost: {clear} gold").as_str())
     );
-    for index in 0..offers {
+    for (index, offer) in shown.offers.iter().enumerate() {
         let line = value(&expected, &format!("offer_{index}"))?;
         let parts: Vec<&str> = line.split(',').collect();
         let [family, tier, gold, premium] = parts.as_slice() else {
             return Err(format!("offer_{index} malformed: {line}").into());
         };
         assert_eq!(
-            (
-                shown.offers[index].family.to_string(),
-                shown.offers[index].tier.to_string()
-            ),
+            (offer.family.to_string(), offer.tier.to_string()),
             (family.to_string(), tier.to_string())
         );
-        assert_eq!(shown.offers[index].gold.to_string(), *gold);
-        let name = family_name(shown.offers[index].family);
+        assert_eq!(offer.gold.to_string(), *gold);
+        let name = family_name(offer.family);
         let suffix = if *premium == "true" { " (premium)" } else { "" };
         let success = if success_selected {
             let percent: u8 = value(&expected, &format!("offer_{index}_success"))?.parse()?;

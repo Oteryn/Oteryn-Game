@@ -51,7 +51,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -61,9 +61,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
@@ -71,19 +71,19 @@ jobs:
       - name: Qualify every raw FX/audio import case
         run: |
           set -euo pipefail
-          cargo +1.99.1 test --locked -p oteryn-game-server --test integration_rest content_item_fx_audio_raw:: 2>&1 | tee "$RUNNER_TEMP/content-item-fx-audio-raw.log"
+          cargo +1.100.0 test --locked -p oteryn-game-server --test integration_rest content_item_fx_audio_raw:: 2>&1 | tee "$RUNNER_TEMP/content-item-fx-audio-raw.log"
           grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/content-item-fx-audio-raw.log"
 
       - name: Qualify every World reward-claim binding case
         run: |
           set -euo pipefail
-          cargo +1.99.1 test --locked -p oteryn-game-server --test integration_rest world_reward_claims_binding:: 2>&1 | tee "$RUNNER_TEMP/world-reward-claims-binding.log"
+          cargo +1.100.0 test --locked -p oteryn-game-server --test integration_rest world_reward_claims_binding:: 2>&1 | tee "$RUNNER_TEMP/world-reward-claims-binding.log"
           grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/world-reward-claims-binding.log"
 
       - name: Qualify the complete seal inventory and its negative cases
         run: |
           set -euo pipefail
-          cargo +1.99.1 test --locked -p oteryn-game-server --test sealed_impl_allowlist 2>&1 | tee "$RUNNER_TEMP/sealed-impl-allowlist.log"
+          cargo +1.100.0 test --locked -p oteryn-game-server --test sealed_impl_allowlist 2>&1 | tee "$RUNNER_TEMP/sealed-impl-allowlist.log"
           grep -Eq '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$RUNNER_TEMP/sealed-impl-allowlist.log"
 
   offline_death_postgres:
@@ -134,7 +134,7 @@ jobs:
           echo "PostgreSQL server_version_num=$version"
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -144,9 +144,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
@@ -155,7 +155,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$OTERYN_TEST_POSTGRES_ADMIN_URL"
-          cargo +1.99.1 test --locked -p oteryn-gameplay-dispatch --lib \
+          cargo +1.100.0 test --locked -p oteryn-gameplay-dispatch --lib \
             'gameplay_transport::monk_save::postgres_tests::boss_activity::boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger' \
             -- --exact --nocapture 2>&1 | tee "$RUNNER_TEMP/offline-death-retry-postgres.log"
           grep -Fq 'BOSS_ACTIVITY_STATE_AND_REPLAY POSTGRES_CASE_COMPLETED' "$RUNNER_TEMP/offline-death-retry-postgres.log"
