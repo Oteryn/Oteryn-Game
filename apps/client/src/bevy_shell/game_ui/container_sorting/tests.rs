@@ -177,3 +177,36 @@ fn container_sorting_toolbar_and_shortcut_open_and_close() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn container_sorting_keyboard_rejects_replaced_session_and_modal() -> TestResult {
+    use bevy::input::keyboard::{Key, KeyboardInput};
+    let (mut app, mut commands) = fixture()?;
+    let (link, mut replacement_commands, _) = play_channel();
+    link.container_sorting_test_initialize()?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    let escape = || KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    };
+    app.world_mut().write_message(escape());
+    app.update();
+    assert!(owner_snapshot(&app)?.panel.open);
+    app.world_mut().non_send_mut::<HostOwner>().open_graphics();
+    assert!(app.world().non_send::<HostOwner>().modal_active());
+    app.world_mut().write_message(escape());
+    app.update();
+    assert!(owner_snapshot(&app)?.panel.open);
+    assert!(commands.try_recv().is_err());
+    assert!(replacement_commands.try_recv().is_err());
+    Ok(())
+}

@@ -96,6 +96,7 @@ impl PlayLink {
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if !std::sync::Arc::ptr_eq(&self.mailbox, &expected.session)
+            || self.commands.is_closed()
             || mailbox.inventory_shutdown
             || mailbox.custom_hotkeys_ended
             || mailbox.server_modal.is_active()

@@ -96,7 +96,7 @@ fn keyboard(
     keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
 ) {
     for event in events.read() {
         if event.state != ButtonState::Pressed || event.repeat {
@@ -116,23 +116,28 @@ fn keyboard(
             {
                 let snapshot = play.link.container_sorting_snapshot();
                 if snapshot.panel.open {
-                    let _ = play
-                        .link
-                        .container_sorting_dispatch_bound(&snapshot, Kind::Close);
+                    close(&owner, &mut state);
                 } else if !play.link.server_modal_active() {
                     play.link.container_sort_open();
                 }
             }
         } else if event.key_code == KeyCode::Escape
             && state.overlay.is_some_and(|overlay| guard.allows(overlay))
-            && let Some(play) = &owner.play
         {
-            let snapshot = play.link.container_sorting_snapshot();
-            let _ = play
-                .link
-                .container_sorting_dispatch_bound(&snapshot, Kind::Close);
+            close(&owner, &mut state);
         }
     }
+}
+fn close(owner: &HostOwner, state: &mut State) {
+    let Some((generation, snapshot, _)) = &state.shown else {
+        return;
+    };
+    let control = Control {
+        generation: *generation,
+        snapshot: snapshot.clone(),
+        kind: Action::Owner(Kind::Close),
+    };
+    perform(owner, state, &control);
 }
 fn project(
     mut commands: Commands,

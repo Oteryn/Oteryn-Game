@@ -141,3 +141,17 @@ fn container_sorting_window_registered() {
     assert!(modules.contains("container_sorting::install(app)"));
     assert!(toolbar.contains("shell.container_sorting"));
 }
+
+#[test]
+fn container_sorting_rejects_closed_dispatcher_without_state_change() -> TestResult {
+    let (link, commands, _) = play_channel();
+    initialize(&link)?;
+    let snapshot = link.container_sorting_snapshot();
+    drop(commands);
+    assert!(!link.container_sorting_dispatch_bound(
+        &snapshot,
+        ContainerSortingControl::Sort { confirmed: true },
+    ));
+    assert_eq!(snapshot, link.container_sorting_snapshot());
+    Ok(())
+}
