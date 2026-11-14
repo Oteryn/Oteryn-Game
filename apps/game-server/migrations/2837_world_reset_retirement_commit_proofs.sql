@@ -1,9 +1,10 @@
 -- MAX501: full, bounded cohort proofs; no authority predicate is omitted.
 -- Cache entries are private TEMP rows, cleared on commit. Every dependency
--- invalidates them before AND after INSERT/UPDATE/DELETE/TRUNCATE. A fresh
--- PostgreSQL visibility snapshot fences commits made by another transaction.
+-- invalidates them before AND after INSERT/UPDATE/DELETE/TRUNCATE. PostgreSQL
+-- snapshots plus atomic per-World writer heads fence unlocked
+-- eligibility facts, excluding unrelated Worlds/databases and locked Item facts.
 -- Both original proofs remain private fallbacks and retain their row locks.
--- A visibility change disables cohort batching until the next dependency write,
+-- A relevant World-fence change disables batching until the next own write,
 -- so a busy cluster cannot amplify work into repeated 501-row proof scans.
 DO $inventory$
 DECLARE expected RECORD;
@@ -12,7 +13,10 @@ BEGIN
  ('game_world_reset_item_proven(uuid)','70badec65d197d39df1eaa9bd76e8132414564a3a9b8a4283fea97fe28614e47'),
  ('game_world_reset_drained(uuid,numeric)','37a0a513317d41b3e370ad16afe09e7bf256d19dd7257611bb3e0dc805221828'),
  ('game_player_death_retirement_entry_proven(uuid)','5f440f088aeda2b6f3c262c4e844bbc168ef2bb346151abc548c26490b8df854'),
- ('game_node_registration_history_valid()','d978836a48bba0c830c16fc328ad6590ebd6c400b5d543472bd94cb1fdb0f963')) AS v(signature,source_sha256) LOOP
+ ('game_node_registration_history_valid()','d978836a48bba0c830c16fc328ad6590ebd6c400b5d543472bd94cb1fdb0f963'),
+ ('game_item_instance_guard()','5cfab2acfadeac9485fb3c34030eaf736f516fd65ea243e2a0d16538df4a3b37'),
+ ('game_item_instance_change_proven()','0cbf6bf2ff48d19d20ac22270baad366860d4bae05731e3dc7112fd7379a1374'),
+ ('game_player_death_retire_entries(uuid[],uuid[],uuid[],uuid[],bigint[],text[],bytea[],smallint[],uuid,numeric,uuid,uuid,smallint,uuid,bigint,uuid,numeric,smallint,text,numeric,bytea,bytea,uuid,numeric,bigint,text,bigint)','661b438db2416ce293a2caf43437f69e36137de09a83cf0b24681896fd34a55a')) AS v(signature,source_sha256) LOOP
   IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(expected.signature)
    AND encode(sha256(convert_to(prosrc,'UTF8')),'hex')=expected.source_sha256
    AND proowner=current_user::regrole) THEN
@@ -20,6 +24,31 @@ BEGIN
   END IF;
  END LOOP;
 END $inventory$;
+-- Receipts are permanent. Restrict discovery to the current transaction/root
+-- rather than scanning all historical retirements. xid8 has a btree opclass.
+CREATE INDEX game_world_reset_retire_receipts_cohort
+ ON game_item_decay_retire_receipts(created_xact_id,world_id,reset_epoch,ground_root_item_instance_id)
+ WHERE cause_kind='WORLD_RESET';
+
+-- One latest committed writer per backend TEMP namespace and World, not an append-only
+-- retirement history. PostgreSQL reuses these namespaces with backend slots;
+-- two live backends cannot own the same TEMP namespace. Each backend serializes
+-- its own transactions, so replacing its row cannot hide a committed write.
+CREATE TABLE game_world_reset_proof_writers (
+ temp_namespace OID NOT NULL CHECK(temp_namespace<>0), world_id UUID, write_xact_id XID8 NOT NULL,
+ UNIQUE NULLS NOT DISTINCT(temp_namespace,world_id)
+);
+CREATE INDEX game_world_reset_proof_writers_world ON game_world_reset_proof_writers(world_id,temp_namespace);
+REVOKE ALL ON game_world_reset_proof_writers FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+CREATE FUNCTION game_world_reset_proof_visibility(p_world UUID)
+RETURNS TABLE(visibility_snapshot TEXT,write_fence TEXT)
+LANGUAGE SQL VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+ SELECT pg_current_snapshot()::text,
+  coalesce(string_agg(temp_namespace::text||':'||coalesce(world_id::text,'*')||':'||write_xact_id::text,',' ORDER BY temp_namespace,world_id NULLS FIRST),'')
+ FROM game_world_reset_proof_writers WHERE world_id=p_world OR world_id IS NULL
+$$;
+REVOKE ALL ON FUNCTION game_world_reset_proof_visibility(UUID) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+
 CREATE OR REPLACE FUNCTION game_world_reset_items_proven_set(p_item UUID) RETURNS UUID[]
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $setproof$
 DECLARE r0 game_item_decay_retire_receipts%ROWTYPE; j game_world_reset_jobs%ROWTYPE; ids UUID[]; proven UUID[]; drain_ok BOOLEAN; root_item_id UUID;
@@ -45,6 +74,11 @@ BEGIN
  END LOOP;
  SELECT * INTO j FROM game_world_reset_jobs WHERE world_id=r0.world_id AND reset_epoch=r0.reset_epoch FOR UPDATE;
  IF NOT FOUND THEN RETURN ARRAY[]::UUID[]; END IF;
+ -- Production already holds these locks (death_contents.rs / ground_admission.rs).
+ -- Reassert them so even a direct owner probe cannot cache unlocked Item facts.
+ -- Deleted custody rows are locked by this transaction; new custody/parent
+ -- references need FK KEY SHARE on these Items, conflicting with FOR UPDATE.
+ PERFORM 1 FROM game_item_instances WHERE item_instance_id=ANY(ids) ORDER BY item_instance_id FOR UPDATE;
  drain_ok:=game_world_reset_drained(r0.world_id,r0.reset_epoch);
  SELECT coalesce(array_agg(r.item_instance_id),ARRAY[]::UUID[]) INTO proven
  FROM game_item_decay_retire_receipts r
@@ -146,14 +180,24 @@ BEGIN
  IF to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') IS NULL THEN
   CREATE TEMP TABLE game_world_reset_proof_cache_state_v1 (
    kind SMALLINT PRIMARY KEY CHECK(kind IN(1,2)), xact_id XID8 NOT NULL,
-   visibility_snapshot TEXT NOT NULL, item_id UUID, world_id UUID, reset_epoch NUMERIC, proven_items UUID[] CHECK(cardinality(proven_items)<=501), batch_allowed BOOLEAN NOT NULL DEFAULT true
+   visibility_snapshot TEXT COLLATE "C" NOT NULL, write_fence TEXT COLLATE "C" NOT NULL, item_id UUID, world_id UUID, reset_epoch NUMERIC, proven_items UUID[] CHECK(cardinality(proven_items)<=501), batch_allowed BOOLEAN NOT NULL DEFAULT true
   ) ON COMMIT DELETE ROWS;
   REVOKE ALL ON pg_temp.game_world_reset_proof_cache_state_v1 FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
  ELSIF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') AND relpersistence='t' AND relowner=current_user::regrole) THEN
   RAISE EXCEPTION 'untrusted World reset proof cache' USING ERRCODE='42501';
  END IF;
+ IF to_regclass('pg_temp.game_world_reset_proof_writer_v1') IS NULL THEN
+  CREATE TEMP TABLE game_world_reset_proof_writer_v1(xact_id XID8 NOT NULL,world_id UUID,UNIQUE NULLS NOT DISTINCT(xact_id,world_id)) ON COMMIT DELETE ROWS;
+  REVOKE ALL ON pg_temp.game_world_reset_proof_writer_v1 FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+ ELSIF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('pg_temp.game_world_reset_proof_writer_v1') AND relpersistence='t' AND relowner=current_user::regrole) THEN
+  RAISE EXCEPTION 'untrusted World reset writer marker' USING ERRCODE='42501';
+ END IF;
 END $$;
 REVOKE ALL ON FUNCTION game_world_reset_proof_cache_init() FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+-- Item/custody rows are protected by the retirement's Item FOR UPDATE locks,
+-- deletion locks and FK key-share conflicts. Receipt/evidence rows are immutable
+-- or current-xid-owned. Registration history is fenced by its existing counter
+-- FOR SHARE lock. They need OWN-write invalidation, not cross-session logging.
 CREATE OR REPLACE FUNCTION game_world_reset_proof_cache_invalidate() RETURNS trigger
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
 BEGIN
@@ -164,6 +208,49 @@ BEGIN
  RETURN NULL;
 END $$;
 REVOKE ALL ON FUNCTION game_world_reset_proof_cache_invalidate() FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+CREATE FUNCTION game_world_reset_proof_touch_world(p_world UUID) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE xid XID8:=pg_current_xact_id();
+BEGIN
+ PERFORM game_world_reset_proof_cache_init();
+ IF NOT EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_writer_v1 WHERE xact_id=xid AND world_id IS NOT DISTINCT FROM p_world) THEN
+  -- Only this backend owns this TEMP namespace. Other sessions never contend
+  -- for its head row. The head and World facts become visible in one commit.
+  INSERT INTO game_world_reset_proof_writers VALUES(pg_my_temp_schema(),p_world,xid)
+   ON CONFLICT(temp_namespace,world_id) DO UPDATE SET write_xact_id=EXCLUDED.write_xact_id;
+  INSERT INTO pg_temp.game_world_reset_proof_writer_v1 VALUES(xid,p_world);
+ END IF;
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_proof_touch_world(UUID) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
+CREATE FUNCTION game_world_reset_proof_world_change() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE old_world UUID; new_world UUID;
+BEGIN
+ IF TG_OP='TRUNCATE' THEN
+  -- NULL is an all-Worlds fence, only for a whole-table truncate.
+  PERFORM game_world_reset_proof_touch_world(NULL); RETURN NULL;
+ END IF;
+ IF TG_TABLE_NAME='game_durability_admission_runtime_guards' THEN
+  IF TG_OP='UPDATE' AND (NEW.scope_key,NEW.ready,NEW.ownership_generation) IS NOT DISTINCT FROM (OLD.scope_key,OLD.ready,OLD.ownership_generation) THEN RETURN NULL; END IF;
+  IF TG_OP IN('UPDATE','DELETE') THEN SELECT world_id INTO old_world FROM game_runtime_scope_assignments WHERE scope_key=OLD.scope_key; END IF;
+  IF TG_OP IN('UPDATE','INSERT') THEN SELECT world_id INTO new_world FROM game_runtime_scope_assignments WHERE scope_key=NEW.scope_key; END IF;
+ ELSE
+  IF TG_OP='UPDATE' THEN
+   IF TG_TABLE_NAME='game_durability_reconnect_sessions' THEN
+    IF (NEW.world_id,NEW.session_state) IS NOT DISTINCT FROM (OLD.world_id,OLD.session_state) THEN RETURN NULL; END IF;
+   END IF;
+   IF TG_TABLE_NAME='game_runtime_scope_assignments' THEN
+    IF (NEW.scope_key,NEW.scope_kind,NEW.world_id,NEW.channel_id,NEW.state,NEW.ownership_generation,NEW.holder_node_id,NEW.holder_registration_revision) IS NOT DISTINCT FROM (OLD.scope_key,OLD.scope_kind,OLD.world_id,OLD.channel_id,OLD.state,OLD.ownership_generation,OLD.holder_node_id,OLD.holder_registration_revision) THEN RETURN NULL; END IF;
+   END IF;
+  END IF;
+  IF TG_OP IN('UPDATE','DELETE') THEN old_world:=OLD.world_id; END IF;
+  IF TG_OP IN('UPDATE','INSERT') THEN new_world:=NEW.world_id; END IF;
+ END IF;
+ IF old_world IS NOT NULL THEN PERFORM game_world_reset_proof_touch_world(old_world); END IF;
+ IF new_world IS NOT NULL AND new_world IS DISTINCT FROM old_world THEN PERFORM game_world_reset_proof_touch_world(new_world); END IF;
+ RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION game_world_reset_proof_world_change() FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
 
 CREATE OR REPLACE FUNCTION public.game_world_reset_drained_uncached(p_world uuid, p_epoch numeric)
  RETURNS boolean
@@ -187,38 +274,41 @@ $function$
 ;
 REVOKE ALL ON FUNCTION game_world_reset_drained_uncached(uuid,numeric) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
 CREATE OR REPLACE FUNCTION public.game_world_reset_drained(p_world uuid, p_epoch numeric)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
-AS $function$
-DECLARE snap TEXT; xid XID8; proven BOOLEAN;
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE snap TEXT; fence TEXT; xid XID8; proven BOOLEAN; cached RECORD;
 BEGIN
- -- A row callback inside a multi-row write must observe every preceding row.
- -- Statement invalidators bracket those writes; only their outer COMMIT callbacks
- -- (or direct, non-trigger calls) can reuse a proof between statements.
- IF pg_trigger_depth()>0 AND (pg_trigger_depth()<>1 OR current_query()<>'COMMIT') THEN
+ -- Row callbacks within writes and WITH HOLD materialization cannot cache.
+ IF pg_trigger_depth()>0 AND (pg_trigger_depth()<>1 OR current_query()<>'COMMIT' OR EXISTS(SELECT 1 FROM pg_cursors WHERE is_holdable)) THEN
   RETURN game_world_reset_drained_uncached(p_world,p_epoch);
  END IF;
  xid:=pg_current_xact_id();
  SELECT pg_current_snapshot()::text INTO snap;
  IF to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') IS NOT NULL
  AND EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') AND relpersistence='t' AND relowner=current_user::regrole) THEN
-  IF EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_cache_state_v1 c
-   WHERE c.kind=1 AND c.xact_id=xid AND c.visibility_snapshot=snap AND c.world_id=p_world AND c.reset_epoch=p_epoch) THEN RETURN TRUE; END IF;
+  SELECT c.* INTO cached FROM pg_temp.game_world_reset_proof_cache_state_v1 c
+   WHERE c.kind=1 AND c.xact_id=xid AND c.world_id=p_world AND c.reset_epoch=p_epoch;
+  IF FOUND THEN
+   IF cached.visibility_snapshot COLLATE "C"=snap COLLATE "C" THEN RETURN TRUE; END IF;
+   SELECT * INTO snap,fence FROM game_world_reset_proof_visibility(p_world);
+   IF cached.write_fence COLLATE "C"=fence COLLATE "C" THEN
+    UPDATE pg_temp.game_world_reset_proof_cache_state_v1 SET visibility_snapshot=snap WHERE kind=1;
+    RETURN TRUE;
+   END IF;
+  END IF;
  END IF;
+ -- Capture BEFORE the proof: never label older facts with a newer writer fence.
+ IF fence IS NULL THEN SELECT * INTO snap,fence FROM game_world_reset_proof_visibility(p_world); END IF;
  proven:=game_world_reset_drained_uncached(p_world,p_epoch);
  IF proven THEN
   PERFORM game_world_reset_proof_cache_init();
-  INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1(kind,xact_id,visibility_snapshot,item_id,world_id,reset_epoch)
-   VALUES(1,xid,snap,NULL,p_world,p_epoch)
+  INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1(kind,xact_id,visibility_snapshot,write_fence,item_id,world_id,reset_epoch)
+   VALUES(1,xid,snap,fence,NULL,p_world,p_epoch)
    ON CONFLICT(kind) DO UPDATE SET xact_id=EXCLUDED.xact_id,visibility_snapshot=EXCLUDED.visibility_snapshot,
-    item_id=EXCLUDED.item_id,world_id=EXCLUDED.world_id,reset_epoch=EXCLUDED.reset_epoch;
+    write_fence=EXCLUDED.write_fence,item_id=EXCLUDED.item_id,world_id=EXCLUDED.world_id,reset_epoch=EXCLUDED.reset_epoch;
  END IF;
  RETURN proven;
-END
-$function$
-;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.game_world_reset_item_proven_uncached(p_item uuid)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -287,51 +377,55 @@ END $function$
 ;
 REVOKE ALL ON FUNCTION game_world_reset_item_proven_uncached(uuid) FROM PUBLIC,oteryn_game_runtime,oteryn_game_control;
 CREATE OR REPLACE FUNCTION public.game_world_reset_item_proven(p_item uuid)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'pg_catalog', 'public', 'pg_temp'
-AS $function$
-DECLARE snap TEXT; xid XID8; proven BOOLEAN; items UUID[]; allow_batch BOOLEAN:=true;
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE snap TEXT; fence TEXT; xid XID8; proven BOOLEAN; items UUID[]; allow_batch BOOLEAN:=true; cached RECORD; scope_world UUID; scope_epoch NUMERIC;
 BEGIN
- -- Row-trigger calls during writes cannot reuse statement-bracketed proofs.
- IF pg_trigger_depth()>0 AND (pg_trigger_depth()<>1 OR current_query()<>'COMMIT') THEN
+ IF pg_trigger_depth()>0 AND (pg_trigger_depth()<>1 OR current_query()<>'COMMIT' OR EXISTS(SELECT 1 FROM pg_cursors WHERE is_holdable)) THEN
   RETURN game_world_reset_item_proven_uncached(p_item);
  END IF;
  xid:=pg_current_xact_id();
  SELECT pg_current_snapshot()::text INTO snap;
  IF to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') IS NOT NULL
  AND EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') AND relpersistence='t' AND relowner=current_user::regrole) THEN
-  SELECT c.batch_allowed AND c.visibility_snapshot=snap INTO allow_batch
-   FROM pg_temp.game_world_reset_proof_cache_state_v1 c WHERE c.kind=2 AND c.xact_id=xid;
-  allow_batch:=coalesce(allow_batch,true);
-  IF EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_cache_state_v1 c
-   WHERE c.kind=2 AND c.xact_id=xid AND c.visibility_snapshot=snap AND p_item=ANY(c.proven_items)) THEN RETURN TRUE; END IF;
+  SELECT c.* INTO cached FROM pg_temp.game_world_reset_proof_cache_state_v1 c WHERE c.kind=2 AND c.xact_id=xid;
+  IF FOUND THEN
+   allow_batch:=cached.batch_allowed;
+   IF p_item=ANY(cached.proven_items) THEN
+    IF cached.visibility_snapshot COLLATE "C"=snap COLLATE "C" THEN
+    IF p_item=ANY(cached.proven_items) THEN RETURN TRUE; END IF;
+   ELSE
+    SELECT * INTO snap,fence FROM game_world_reset_proof_visibility(cached.world_id);
+    IF cached.write_fence COLLATE "C"=fence COLLATE "C" THEN
+     -- An unrelated commit changed the global snapshot, not this World
+     -- or its locked/immutable authority facts. Retain the proven cohort and advance only its snapshot.
+     UPDATE pg_temp.game_world_reset_proof_cache_state_v1 SET visibility_snapshot=snap WHERE kind=2;
+     IF p_item=ANY(cached.proven_items) THEN RETURN TRUE; END IF;
+    ELSE
+     allow_batch:=false;
+    END IF;
+   END IF;
+   END IF;
+  END IF;
  END IF;
- IF NOT EXISTS(SELECT 1 FROM game_item_decay_retire_receipts
-  WHERE item_instance_id=p_item AND cause_kind='WORLD_RESET' AND created_xact_id=xid) THEN
-  RETURN FALSE;
- END IF;
+ SELECT world_id,reset_epoch INTO scope_world,scope_epoch FROM game_item_decay_retire_receipts
+  WHERE item_instance_id=p_item AND cause_kind='WORLD_RESET' AND created_xact_id=xid;
+ IF NOT FOUND THEN RETURN FALSE; END IF;
+ IF fence IS NULL THEN SELECT * INTO snap,fence FROM game_world_reset_proof_visibility(scope_world); END IF;
  IF allow_batch THEN items:=game_world_reset_items_proven_set(p_item); END IF;
  proven:=p_item=ANY(items);
  IF proven IS NOT TRUE THEN
-  -- Preserve the original error and ambiguous-row selection behavior. After a
-  -- visibility change use bounded single-item proofs, never repeatedly scan a
-  -- whole cohort while unrelated concurrent transactions keep committing.
   proven:=game_world_reset_item_proven_uncached(p_item);
   items:=NULL; allow_batch:=false;
  END IF;
  IF proven THEN
   PERFORM game_world_reset_proof_cache_init();
-  INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1(kind,xact_id,visibility_snapshot,item_id,world_id,reset_epoch,proven_items,batch_allowed)
-   VALUES(2,xid,snap,p_item,NULL,NULL,items,allow_batch)
+  INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1(kind,xact_id,visibility_snapshot,write_fence,item_id,world_id,reset_epoch,proven_items,batch_allowed)
+   VALUES(2,xid,snap,fence,p_item,scope_world,scope_epoch,items,allow_batch)
    ON CONFLICT(kind) DO UPDATE SET xact_id=EXCLUDED.xact_id,visibility_snapshot=EXCLUDED.visibility_snapshot,
-    item_id=EXCLUDED.item_id,world_id=EXCLUDED.world_id,reset_epoch=EXCLUDED.reset_epoch,proven_items=EXCLUDED.proven_items,batch_allowed=EXCLUDED.batch_allowed;
+    write_fence=EXCLUDED.write_fence,item_id=EXCLUDED.item_id,world_id=EXCLUDED.world_id,reset_epoch=EXCLUDED.reset_epoch,proven_items=EXCLUDED.proven_items,batch_allowed=EXCLUDED.batch_allowed;
  END IF;
  RETURN proven;
-END
-$function$
-;
+END $$;
 CREATE TRIGGER game_world_reset_proof_cache_before BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_item_decay_retire_receipts FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
 CREATE TRIGGER game_world_reset_proof_cache_after AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_item_decay_retire_receipts FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
 CREATE TRIGGER game_world_reset_proof_cache_before BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_world_reset_jobs FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
@@ -380,6 +474,19 @@ CREATE TRIGGER game_world_reset_proof_cache_before BEFORE INSERT OR UPDATE OR DE
 CREATE TRIGGER game_world_reset_proof_cache_after AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_player_death_retirement_edges FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
 CREATE TRIGGER game_world_reset_proof_cache_before BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_player_death_item_records FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
 CREATE TRIGGER game_world_reset_proof_cache_after AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON game_player_death_item_records FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_cache_invalidate();
+
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_world_reset_jobs FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_world_reset_jobs FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_world_reset_active FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_world_reset_active FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_world_reset_channels FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_world_reset_channels FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_runtime_scope_assignments FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_runtime_scope_assignments FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_durability_admission_runtime_guards FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_durability_admission_runtime_guards FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_change AFTER INSERT OR UPDATE OR DELETE ON game_durability_reconnect_sessions FOR EACH ROW EXECUTE FUNCTION game_world_reset_proof_world_change();
+CREATE TRIGGER game_world_reset_world_truncate AFTER TRUNCATE ON game_durability_reconnect_sessions FOR EACH STATEMENT EXECUTE FUNCTION game_world_reset_proof_world_change();
 
 -- Keep the ordered per-child writer, but reserve its already-frozen inputs in one statement.
 DO $change$
