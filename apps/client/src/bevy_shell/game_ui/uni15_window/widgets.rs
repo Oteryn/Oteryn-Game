@@ -10,6 +10,7 @@ pub(super) fn build(
     commands: &mut Commands,
     skins: &Skins,
     generation: u64,
+    revision: u64,
     model: &oteryn_client_ui::mail::Panel,
 ) -> Entity {
     let overlay = commands
@@ -56,7 +57,7 @@ pub(super) fn build(
     for (index, label) in [
         "Selected item",
         "Selected mailbox (for posting)",
-        "Text (include recipient address for mail)",
+        "Text (include recipient address for mail; maximum 7,996 UTF-8 bytes)",
     ]
     .iter()
     .enumerate()
@@ -109,9 +110,13 @@ pub(super) fn build(
     ] {
         let mut button = commands.spawn((
             source::button(skins.buttons.clone(), 80.),
-            Control { generation, intent },
+            Control {
+                generation,
+                revision,
+                intent,
+            },
         ));
-        if model.pending || !model.selected {
+        if intent.is_some() && (model.pending || !model.selected) {
             button.insert(InteractionDisabled);
         }
         let button = button.observe(activate).id();
