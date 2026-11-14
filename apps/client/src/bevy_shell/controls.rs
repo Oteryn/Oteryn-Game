@@ -70,8 +70,7 @@ impl HostOwner {
             }
             return;
         }
-        if play.link.house_rotation_toggle_input_bound(&routed)
-            || play.link.quest_input(&routed)
+        if play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)

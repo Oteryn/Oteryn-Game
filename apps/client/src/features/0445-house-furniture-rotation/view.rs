@@ -151,16 +151,6 @@ mod bound {
             panel.open = true;
             oteryn_client_ui::house_furniture_rotation::request(panel, command.payload)
         }
-        pub(crate) fn house_rotation_toggle_input_bound(
-            &self,
-            events: &[oteryn_input_actions::NormalizedInputEvent],
-        ) -> bool {
-            if !oteryn_client_ui::house_furniture_rotation::open_key(events) {
-                return false;
-            }
-            self.house_rotation_dispatch_bound(&self.house_rotation_binding(), BoundAction::Toggle);
-            true
-        }
     }
 }
 #[cfg(feature = "bevy-shell")]

@@ -286,6 +286,17 @@ fn furniture_rotation_window_registered() -> TestResult {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
+    assert!(
+        !panel(&app)?.open,
+        "furniture rotation has no Bevy shortcut"
+    );
+    while let Ok(command) = commands.try_recv() {
+        if let PlayCommand::Feature(command) = command {
+            assert_ne!(command.capability, 445);
+        }
+    }
+    app.world_mut().trigger(Activate { entity: toolbar });
+    app.update();
     assert!(panel(&app)?.open);
     let _ = request(&mut commands)?;
     for key in [KeyCode::ControlLeft, KeyCode::AltLeft, KeyCode::ShiftLeft] {
@@ -297,6 +308,20 @@ fn furniture_rotation_window_registered() -> TestResult {
         .write_message(bevy::input::keyboard::KeyboardInput {
             key_code: KeyCode::KeyF,
             logical_key: bevy::input::keyboard::Key::Character("F".into()),
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert!(
+        panel(&app)?.open,
+        "the former shortcut must not close the window"
+    );
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
             state: bevy::input::ButtonState::Pressed,
             text: None,
             repeat: false,

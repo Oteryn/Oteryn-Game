@@ -169,7 +169,6 @@ fn activate(
     }
 }
 fn keyboard(
-    keys: Res<ButtonInput<KeyCode>>,
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
@@ -183,12 +182,8 @@ fn keyboard(
         events.clear();
         return;
     }
-    let shortcut = keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-        && keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight])
-        && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-        && !keys.any_pressed([KeyCode::SuperLeft, KeyCode::SuperRight]);
     if events.read().any(|event| {
-        (event.key_code == KeyCode::Escape || shortcut && event.key_code == KeyCode::KeyF)
+        event.key_code == KeyCode::Escape
             && event.state == bevy::input::ButtonState::Pressed
             && !event.repeat
     }) && let Some((key, _)) = &state.snapshot
