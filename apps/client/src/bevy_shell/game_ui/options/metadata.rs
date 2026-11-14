@@ -18,10 +18,15 @@ pub(super) enum Page {
     UiSounds,
     Misc,
     Gameplay,
+    SettingsTransfer,
+    MinimapTransfer,
+    Help,
+    Language,
+    Screenshots,
 }
 impl Page {
     pub const BASIC_NAV: [Self; 1] = [Self::Basic];
-    pub const ADVANCED: [Self; 13] = [
+    pub const ADVANCED: [Self; 18] = [
         Self::Controls,
         Self::Interface,
         Self::Hud,
@@ -35,6 +40,11 @@ impl Page {
         Self::UiSounds,
         Self::Misc,
         Self::Gameplay,
+        Self::SettingsTransfer,
+        Self::MinimapTransfer,
+        Self::Help,
+        Self::Language,
+        Self::Screenshots,
     ];
     pub const fn label(self) -> &'static str {
         match self {
@@ -52,6 +62,11 @@ impl Page {
             Self::UiSounds => "UI Sounds",
             Self::Misc => "Misc.",
             Self::Gameplay => "Gameplay",
+            Self::SettingsTransfer => "Settings transfer",
+            Self::MinimapTransfer => "Minimap transfer",
+            Self::Help => "Help",
+            Self::Language => "Language",
+            Self::Screenshots => "Screenshots",
         }
     }
     pub const fn child(self) -> bool {
@@ -164,6 +179,11 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::UiSounds => &sound::UI,
         Page::Misc => &miscellaneous::MAIN,
         Page::Gameplay => &miscellaneous::GAMEPLAY,
+        Page::SettingsTransfer
+        | Page::MinimapTransfer
+        | Page::Help
+        | Page::Language
+        | Page::Screenshots => &[],
     }
 }
 const BASIC: [Row; 7] = [

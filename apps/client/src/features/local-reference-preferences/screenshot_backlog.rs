@@ -9,6 +9,7 @@ use std::{
 };
 #[derive(Default)]
 pub(in super::super) struct ScreenshotRuntime {
+    pub(super) generation: Option<u64>,
     frames: VecDeque<(Instant, Pixels)>,
     last_frame: Option<Instant>,
     last_query: Option<Instant>,
@@ -50,7 +51,9 @@ impl SettingsState {
         let preferences = self.preferences.screenshots.effective();
         let runtime = &mut self.screenshot_runtime;
         if link.is_none() || runtime.game_only != Some(preferences.game_only) {
+            let generation = runtime.generation;
             *runtime = ScreenshotRuntime::default();
+            runtime.generation = generation;
             runtime.game_only = Some(preferences.game_only);
         }
         if let Some(link) = link {

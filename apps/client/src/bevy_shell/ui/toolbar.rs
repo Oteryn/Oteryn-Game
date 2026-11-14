@@ -99,6 +99,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::PrivateChannels
                     | Control::Quests
                     | Control::RaidSchedule
+                    | Control::SettingsTools
                     | Control::SkillsConfig
                     | Control::Spells
                     | Control::StaffTools

@@ -75,6 +75,7 @@ mod projection;
 pub(super) use projection::project;
 mod quick_loot;
 pub(super) mod raid_schedule;
+pub(super) mod settings_tools;
 pub(super) mod skills_config;
 pub(super) mod staff_tools;
 pub(super) mod status_details;
@@ -188,6 +189,7 @@ pub(super) fn install(app: &mut App) {
     private_channels::install(app);
     quick_loot::install(app);
     raid_schedule::install(app);
+    settings_tools::install(app);
     skills_config::install(app);
     staff_tools::install(app);
     status_details::install(app);

@@ -92,3 +92,21 @@ pub const WINDOW_ACTIONS: &[(&str, &str)] = &[
     ("0016-quest-log-open", "Quest log"),
     ("0007-chat-keybindings", "Chat"),
 ];
+
+impl super::SettingsState {
+    /// The existing store alone selects the backup associated with this character scope.
+    pub fn settings_backup_path(&self) -> Option<std::path::PathBuf> {
+        self.store.as_ref().map(|store| store.backup_path())
+    }
+}
+
+#[cfg(test)]
+mod settings_tools_tests {
+    #[test]
+    fn settings_tools_backup_target_comes_from_existing_store() {
+        let path = std::env::temp_dir().join("settings-tools-backup-target.json");
+        let state = super::super::SettingsState::new(Some(path.clone()));
+        assert_eq!(state.settings_backup_path(), Some(path.with_extension("backup.json")));
+        assert!(super::super::SettingsState::new(None).settings_backup_path().is_none());
+    }
+}

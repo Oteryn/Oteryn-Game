@@ -99,7 +99,15 @@ pub(super) fn project(
         }
         for parent in &bodies {
             commands.entity(parent).despawn_children();
-            widgets::page(&mut commands, parent, state.page, &skins, &checks, draft);
+            widgets::page(
+                &mut commands,
+                parent,
+                state.page,
+                &skins,
+                &checks,
+                draft,
+                generation,
+            );
         }
         *held = Some(target);
     }

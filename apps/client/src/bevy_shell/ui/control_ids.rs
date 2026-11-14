@@ -50,6 +50,7 @@ impl Control {
             Self::Prey => "shell.prey",
             Self::PrivateChannels => "shell.private_channels",
             Self::Quests => "shell.quests",
+            Self::SettingsTools => "shell.settings_tools",
             Self::SkillsConfig => "shell.skills_config",
             Self::RaidSchedule => "shell.raid_schedule",
             Self::Spells => "shell.spells",

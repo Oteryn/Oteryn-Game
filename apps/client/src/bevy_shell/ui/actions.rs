@@ -70,6 +70,7 @@ pub(super) fn activate(
                     | Control::Arena
                     | Control::CyclopediaCharacter
                     | Control::FurnitureWrapping
+                    | Control::SettingsTools
                     | Control::SkillsConfig
                     | Control::Login
                     | Control::CancelLogin
@@ -131,6 +132,7 @@ pub(super) fn activate(
             Control::Arena => game_ui::arena::toggle(&owner),
             Control::CyclopediaCharacter => super::open_cyclopedia_character(owner),
             Control::FurnitureWrapping => game_ui::furniture_wrapping::toggle(&mut owner),
+            Control::SettingsTools => game_ui::settings_tools::open(&mut owner),
             Control::SkillsConfig => super::open_skills_config(owner),
             Control::TaskBoard => {
                 if let Some(play) = &owner.play {
