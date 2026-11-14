@@ -173,7 +173,7 @@ fn player_report_window_shows_server_data_only() -> Result<(), Box<dyn std::erro
 #[test]
 fn player_report_window_registered() {
     let registry = include_str!("../../../bevy_shell/game_ui/mod.rs");
-    let toolbar = include_str!("../../../bevy_shell/ui.rs");
+    let toolbar = include_str!("../../../bevy_shell/ui/control_ids.rs");
     assert!(registry.contains("player_report_report::install(app)"));
     assert!(toolbar.contains("shell.player_report"));
 }

@@ -103,7 +103,7 @@ fn staff_tools_rejected_when_session_replaced_or_target_changed() -> TestResult 
 #[test]
 fn staff_tools_window_registered() -> TestResult {
     assert!(include_str!("../mod.rs").contains("staff_tools::install(app)"));
-    assert!(include_str!("../../ui.rs").contains("shell.staff_tools"));
+    assert!(include_str!("../../ui/control_ids.rs").contains("shell.staff_tools"));
     let (mut app, _commands, outbox) = fixture()?;
     outbox.bevy_staff_panel(Panel {
         open: false,

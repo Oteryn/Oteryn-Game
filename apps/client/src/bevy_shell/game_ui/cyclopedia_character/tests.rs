@@ -87,7 +87,7 @@ fn cyclopedia_character_window_shows_server_data_only() -> Result {
 #[test]
 fn cyclopedia_character_window_registered() -> Result {
     assert!(include_str!("../mod.rs").contains("cyclopedia_character::install(app)"));
-    assert!(include_str!("../../ui.rs").contains("shell.cyclopedia_character"));
+    assert!(include_str!("../../ui/control_ids.rs").contains("shell.cyclopedia_character"));
     assert!(include_str!("../../ui.rs").contains("cyclopedia_character::toggle"));
     let mut owner = HostOwner::new(None)?;
     let (link, mut commands, outbox) = play_channel();

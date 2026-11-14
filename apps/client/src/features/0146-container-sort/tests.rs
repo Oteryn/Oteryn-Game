@@ -136,7 +136,7 @@ fn container_sorting_rejected_when_session_replaced_or_target_changed() -> TestR
 #[test]
 fn container_sorting_window_registered() {
     let modules = include_str!("../../bevy_shell/game_ui/mod.rs");
-    let toolbar = include_str!("../../bevy_shell/ui.rs");
+    let toolbar = include_str!("../../bevy_shell/ui/control_ids.rs");
     assert!(modules.contains("mod container_sorting;"));
     assert!(modules.contains("container_sorting::install(app)"));
     assert!(toolbar.contains("shell.container_sorting"));

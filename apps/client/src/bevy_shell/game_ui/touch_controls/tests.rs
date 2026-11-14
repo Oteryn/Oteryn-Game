@@ -80,7 +80,7 @@ fn touch_controls_rejected_when_session_replaced_or_target_changed()
 #[test]
 fn touch_controls_window_registered() {
     assert!(include_str!("../mod.rs").contains("touch_controls::install(app)"));
-    assert!(include_str!("../../ui.rs").contains("Self::TouchControls =>"));
+    assert!(include_str!("../../ui/control_ids.rs").contains("Self::TouchControls =>"));
     assert!(include_str!("../../ui/toolbar.rs").contains("Control::TouchControls"));
     assert!(include_str!("../../ui/actions.rs").contains("touch_controls::open"));
 }

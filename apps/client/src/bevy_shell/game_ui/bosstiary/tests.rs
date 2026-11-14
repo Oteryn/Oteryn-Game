@@ -287,7 +287,7 @@ fn bosstiary_rejected_when_session_replaced_or_target_changed() -> Result {
 #[test]
 fn bosstiary_window_registered() -> Result {
     assert!(include_str!("../mod.rs").contains("bosstiary::install(app)"));
-    assert!(include_str!("../../ui.rs").contains("shell.bosstiary"));
+    assert!(include_str!("../../ui/control_ids.rs").contains("shell.bosstiary"));
     let (mut app, _commands, _outbox) = fixture()?;
     assert!(snapshot(&app)?.panel.open);
     let entity = app
