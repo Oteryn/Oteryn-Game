@@ -91,6 +91,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::animus_mastery::open_key(&routed) {
+            super::game_ui::animus_mastery::open(self);
+            return;
+        }
         if oteryn_client_ui::browse_field::open_key(&routed)
             && !routed.iter().any(|event| {
                 matches!(event,

@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    AnimusMastery,
     BrowseField,
     ContainerSorting,
     Options,
@@ -62,6 +63,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::AnimusMastery => "shell.animus_mastery",
             Self::BrowseField => "shell.browse_field",
             Self::ContainerSorting => "shell.container_sorting",
             Self::Options => "shell.options",
@@ -173,6 +175,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
+        (Control::AnimusMastery, "Animus Mastery (Ctrl+A)", 140.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
@@ -380,7 +383,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -393,6 +396,7 @@ fn activate(
             return;
         }
         match control {
+            Control::AnimusMastery => super::game_ui::animus_mastery::open(&owner),
             Control::BrowseField => super::game_ui::browse_field::open(&owner),
             Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
             Control::Options => owner.open_graphics(),
@@ -585,7 +589,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
