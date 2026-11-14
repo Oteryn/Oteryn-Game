@@ -91,6 +91,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Arena
                     | Control::CyclopediaCharacter
                     | Control::FurnitureWrapping
+                    | Control::SkillsConfig
                     | Control::Spells
             )
         ) {

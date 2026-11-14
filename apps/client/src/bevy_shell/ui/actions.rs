@@ -54,6 +54,7 @@ pub(super) fn activate(
                     | Control::Arena
                     | Control::CyclopediaCharacter
                     | Control::FurnitureWrapping
+                    | Control::SkillsConfig
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -102,6 +103,7 @@ pub(super) fn activate(
             Control::Arena => game_ui::arena::toggle(&owner),
             Control::CyclopediaCharacter => game_ui::cyclopedia_character::toggle(&owner),
             Control::FurnitureWrapping => game_ui::furniture_wrapping::toggle(&mut owner),
+            Control::SkillsConfig => game_ui::skills_config::open(&owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),

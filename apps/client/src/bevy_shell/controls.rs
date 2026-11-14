@@ -80,6 +80,7 @@ impl HostOwner {
             || play.link.daily_boost_input(&routed)
             || play.link.daily_reward_input(&routed)
             || play.link.spell_catalog_input(&routed)
+            || play.link.loyalty_skills_input(&routed)
             || play.link.mail_open_input(&routed)
             || play.link.raid_schedule_input(&routed)
             || play.link.notices_input(&routed)

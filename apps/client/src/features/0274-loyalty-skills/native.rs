@@ -237,11 +237,7 @@ fn run(
                     205 => candidate.progress = SendMessageW(progress, BM_GETCHECK, 0, 0) == 1,
                     _ => continue,
                 }
-                if candidate.valid() && candidate != state.preferences {
-                    state.preferences = candidate;
-                    state.dirty = true;
-                    state.edit = crate::play::feature_0017_attack::view::next_edit();
-                }
+                state.set_preferences(candidate);
             }
             let layout = &mailbox.skills_layout;
             let widget = layout

@@ -76,6 +76,7 @@ pub(super) enum Control {
     Party,
     PlayerReport,
     Quests,
+    SkillsConfig,
     RaidSchedule,
     Spells,
     WeaponProficiency,
@@ -129,6 +130,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::PlayerReport => "shell.player_report",
             Self::Quests => "shell.quests",
+            Self::SkillsConfig => "shell.skills_config",
             Self::RaidSchedule => "shell.raid_schedule",
             Self::Spells => "shell.spells",
             Self::WeaponProficiency => "shell.weapon_proficiency",
@@ -278,6 +280,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::PlayerReport, "Reports (Ctrl+Alt+R)", 170.),
         (Control::Quests, "Quest Log", 80.),
+        (Control::SkillsConfig, "Skills", 100.),
         (Control::RaidSchedule, "Raid schedule", 100.),
         (Control::Spells, "Spellbook", 80.),
         (
