@@ -29,14 +29,21 @@ impl PlayView {
     }
 
     pub(in crate::play) fn place(&mut self, position: ActorPosition) {
-        if self.floor != position.floor {
+        // Spatial positions carry the legacy floor (surface 7); a live map view keeps its native
+        // floor (`-z`, surface -7), or the map and minimap stop drawing after the first step.
+        let floor = if self.live_map {
+            position.floor.saturating_abs().saturating_neg()
+        } else {
+            position.floor
+        };
+        if self.floor != floor {
             self.inputs.retain(|input| {
                 !matches!(input, crate::play::Input::TargetWalk(target)
-                    if target.floor != position.floor)
+                    if target.floor != floor)
             });
         }
         self.own = TileCoord::new(position.x, position.y);
-        self.floor = position.floor;
+        self.floor = floor;
     }
 }
 

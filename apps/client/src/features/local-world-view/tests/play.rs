@@ -280,6 +280,22 @@ fn surface_and_deep_windows_draw_every_server_visible_floor() -> Result<(), Batc
 }
 
 #[test]
+fn a_legacy_floor_step_keeps_the_native_live_map_floor_drawn() -> Result<(), BatchError> {
+    // Steps carry the legacy floor (surface 7); the live map is on its native floor (-7).
+    let mut map = live_snapshot(100);
+    map.header.origin.floor = -7;
+    map.tiles[0].position.floor = -7;
+    let mut view = view()?;
+    hide_minimap(&mut view)?;
+    view.set_live_map(&map)?;
+    let drawn = view.scene().sprites().len();
+    view.apply(&moved_to(101, 200, 7))?;
+    assert_eq!(view.scene().sprites().len(), drawn);
+    assert_eq!(view.map_center(), (101, 200, -7));
+    Ok(())
+}
+
+#[test]
 fn replacement_snapshot_discards_overlapping_old_tiles_before_later_deltas()
 -> Result<(), BatchError> {
     let mut initial = live_snapshot(100);
