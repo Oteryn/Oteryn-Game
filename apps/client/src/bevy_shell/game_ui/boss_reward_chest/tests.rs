@@ -282,33 +282,56 @@ fn boss_reward_chest_window_registered() -> Result {
     assert!(panel(&app)?.open);
     toggle(&mut app);
     assert!(!panel(&app)?.open);
-    let mut keyboard = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-    keyboard.press(KeyCode::ControlLeft);
-    keyboard.press(KeyCode::ShiftLeft);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyA,
-            logical_key: bevy::input::keyboard::Key::Character("a".into()),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
-    app.update();
+    owner_shortcut(&mut app)?;
     assert!(panel(&app)?.open);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyA,
-            logical_key: bevy::input::keyboard::Key::Character("a".into()),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
-    app.update();
+    owner_shortcut(&mut app)?;
     assert!(!panel(&app)?.open);
     toggle(&mut app);
     click(&mut app, Kind::Close)?;
     assert!(!panel(&app)?.open);
+    Ok(())
+}
+
+fn owner_shortcut(app: &mut App) -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(30)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    assert!(oteryn_client_ui::boss_rewards::open_key(
+        std::slice::from_ref(&event)
+    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), false);
+    app.update();
+    Ok(())
+}
+#[test]
+fn boss_reward_chest_ordinal_validation_stays_with_owner() -> Result {
+    let (mut app, mut commands, _outbox) = fixture()?;
+    toggle(&mut app);
+    draft(&mut app, &"09".repeat(16), "1001");
+    click(&mut app, Kind::Request(Intent::Take))?;
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Kind::Confirm)?;
+    assert!(commands.try_recv().is_err());
+    assert!(!panel(&app)?.pending);
+    Ok(())
+}
+#[test]
+fn boss_reward_chest_invalid_target_uses_owner_feedback() -> Result {
+    let (mut app, mut commands, _outbox) = fixture()?;
+    toggle(&mut app);
+    draft(&mut app, "", "1");
+    click(&mut app, Kind::Request(Intent::Browse))?;
+    assert_eq!(
+        app.world().resource::<State>().feedback,
+        tr!("Enter a valid nonzero death id and reward ordinal")
+    );
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

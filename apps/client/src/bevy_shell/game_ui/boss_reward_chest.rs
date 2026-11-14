@@ -49,7 +49,6 @@ struct State {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());
 }
@@ -72,26 +71,14 @@ pub(in crate::bevy_shell) fn open(owner: &mut HostOwner) {
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     state: Res<State>,
 ) {
     for event in events
         .read()
         .filter(|e| e.state == bevy::input::ButtonState::Pressed && !e.repeat)
     {
-        if event.key_code == KeyCode::KeyA
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-            && !keys.pressed(KeyCode::AltLeft)
-            && !keys.pressed(KeyCode::AltRight)
-            && !keys.pressed(KeyCode::SuperLeft)
-            && !keys.pressed(KeyCode::SuperRight)
-            && guard.allows_focus(state.root)
-        {
-            open(&mut owner);
-        }
         if event.key_code == KeyCode::Escape
             && let Some(root) = state.root
             && guard.allows(root)
@@ -282,10 +269,8 @@ fn activate(
     };
     let death = parse_death(&death_text);
     let ordinal = ordinal_text.trim().parse::<u16>().ok();
-    if intent != Intent::CollectAll && death.is_none()
-        || intent == Intent::Take && !ordinal.is_some_and(|n| (1..=1000).contains(&n))
-    {
-        state.feedback = "Enter a valid nonzero death id and reward ordinal.".into();
+    if intent != Intent::CollectAll && death.is_none() {
+        state.feedback = tr!("Enter a valid nonzero death id and reward ordinal").into();
         state.dirty = true;
         return;
     }

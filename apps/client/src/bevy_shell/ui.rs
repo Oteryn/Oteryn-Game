@@ -164,7 +164,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::BossRewardChest, "Boss rewards", 110.),
+        (
+            Control::BossRewardChest,
+            "Boss rewards (Ctrl+Shift+A)",
+            210.,
+        ),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
@@ -546,6 +550,7 @@ pub(super) fn project_toolbar(
         Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
     >,
 ) {
+    use Control::{BossRewardChest, Market, Party, Quests, Spells};
     let playing = owner.play.is_some();
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
@@ -577,13 +582,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(
-                Control::BossRewardChest
-                    | Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
-            )
+            Some(BossRewardChest | Market | Party | Quests | Spells)
         ) {
             node.display = if playing {
                 Display::Flex
