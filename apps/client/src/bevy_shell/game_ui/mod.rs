@@ -15,6 +15,7 @@ pub(super) mod modal;
 mod npc_shop;
 pub(super) mod options;
 pub(super) mod party;
+pub(super) mod player_report_report;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
@@ -240,6 +241,7 @@ pub(super) fn install(app: &mut App) {
     minimap::install(app);
     npc_shop::install(app);
     party::install(app);
+    player_report_report::install(app);
     quick_loot::install(app);
     trade::install(app);
     app.add_systems(
