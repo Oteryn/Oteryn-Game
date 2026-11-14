@@ -169,7 +169,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
-        (Control::PlayerReport, "Player reports", 150.),
+        (Control::PlayerReport, "Reports (Ctrl+Alt+R)", 170.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
     ] {

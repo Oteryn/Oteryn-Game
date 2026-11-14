@@ -58,11 +58,12 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, state: &State, panel:
         commands,
         skin,
         root,
-        "Ctrl+Alt+F12 opens reports; Escape closes.",
+        "Ctrl+Alt+R opens reports; Escape closes.",
     );
     let values = state
         .confirmation
         .as_ref()
+        .map(|(_, fields)| fields)
         .or(state.draft.as_ref())
         .unwrap_or(&panel.fields);
     for (index, (label, value)) in [
@@ -104,28 +105,28 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, state: &State, panel:
         let field = field.id();
         commands.entity(root).add_child(field);
     }
-    if state.confirmation.is_some() {
-        text(
-            commands,
-            skin,
-            root,
-            "Confirm this exact bug report. Send queues it for support.",
-        );
+    if let Some((kind, _)) = &state.confirmation {
+        let (message, action, caption) = if *kind == Kind::Bug {
+            (
+                "Confirm this exact bug report. Send queues it for support.",
+                Action::ConfirmBug,
+                "Confirm bug report",
+            )
+        } else {
+            (
+                "Confirm this exact violation report. Send queues it for review.",
+                Action::ConfirmViolation,
+                "Confirm violation",
+            )
+        };
+        text(commands, skin, root, message);
+        button(commands, skin, root, state, action, caption, panel);
         button(
             commands,
             skin,
             root,
             state,
-            Action::ConfirmBug,
-            "Confirm bug report",
-            panel,
-        );
-        button(
-            commands,
-            skin,
-            root,
-            state,
-            Action::CancelBug,
+            Action::CancelConfirmation,
             "Back",
             panel,
         );

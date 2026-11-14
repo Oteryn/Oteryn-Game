@@ -26,7 +26,8 @@ enum Action {
     Owner(Kind),
     ReviewBug,
     ConfirmBug,
-    CancelBug,
+    ConfirmViolation,
+    CancelConfirmation,
 }
 #[derive(Resource, Default)]
 struct State {
@@ -34,7 +35,7 @@ struct State {
     generation: u64,
     revision: u64,
     overlay: Option<Entity>,
-    confirmation: Option<[String; 5]>,
+    confirmation: Option<(Kind, [String; 5])>,
     draft: Option<[String; 5]>,
     dirty: bool,
     pending: Option<(Entity, Control)>,
@@ -121,18 +122,34 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control, fields: [Stri
         return;
     }
     match control.kind {
-        Action::ReviewBug => {
+        Action::ReviewBug | Action::Owner(Kind::SendViolation) => {
+            let kind = if control.kind == Action::ReviewBug {
+                Kind::Bug
+            } else {
+                Kind::SendViolation
+            };
             state.draft = Some(fields.clone());
-            state.confirmation = Some(fields);
+            state.confirmation = Some((kind, fields));
         }
-        Action::CancelBug => state.confirmation = None,
-        Action::ConfirmBug => {
-            if state.confirmation.as_ref() != Some(&fields) {
+        Action::CancelConfirmation => state.confirmation = None,
+        Action::ConfirmBug | Action::ConfirmViolation => {
+            let kind = if control.kind == Action::ConfirmBug {
+                Kind::Bug
+            } else {
+                Kind::SendViolation
+            };
+            if state
+                .confirmation
+                .as_ref()
+                .is_none_or(|(saved_kind, saved_fields)| {
+                    *saved_kind != kind || saved_fields != &fields
+                })
+            {
                 return;
             }
             if play
                 .link
-                .player_report_dispatch_bound(expected, fields, Kind::Bug)
+                .player_report_dispatch_bound(expected, fields, kind)
             {
                 state.confirmation = None;
             }
@@ -210,27 +227,14 @@ fn finish(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
-    keys: Res<ButtonInput<KeyCode>>,
 ) {
     for event in events
         .read()
         .filter(|e| e.state == bevy::input::ButtonState::Pressed && !e.repeat)
     {
-        if event.key_code == KeyCode::F12
-            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight])
-            && !keys.any_pressed([
-                KeyCode::ShiftLeft,
-                KeyCode::ShiftRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ])
-            && guard.allows_focus(None)
-        {
-            open(&mut owner);
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && state.overlay.is_some_and(|e| guard.allows(e))
             && let Some(snapshot) = &state.snapshot
         {

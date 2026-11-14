@@ -20,7 +20,6 @@ fn fixture()
         .init_asset::<Font>()
         .init_asset::<Image>()
         .init_resource::<InputFocus>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -148,22 +147,33 @@ fn player_report_toolbar_and_shortcut_open_and_close_window() -> TestResult {
             .is_some()
     );
     click(&mut app, Action::Owner(Kind::Close))?;
-    // Exercise the actual Bevy shortcut system.
+    // Exercise the owner chord through the shared normalized input router.
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(21)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    assert!(oteryn_client_ui::player_report::open_key(
+        std::slice::from_ref(&event)
+    ));
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), true);
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .player_report_panel()
+            .open
+    );
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::AltLeft);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::F12,
-            logical_key: bevy::input::keyboard::Key::F12,
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
     app.update();
     assert!(
         app.world_mut()
@@ -172,5 +182,54 @@ fn player_report_toolbar_and_shortcut_open_and_close_window() -> TestResult {
             .next()
             .is_some()
     );
+    Ok(())
+}
+
+#[test]
+fn player_report_violation_requires_confirmation() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        *text = EditableText::new(match field.0 {
+            0 | 1 => "0",
+            2 => "Reported",
+            4 => "Actual evidence",
+            _ => "",
+        });
+    }
+    click(&mut app, Action::Owner(Kind::ReviewViolation))?;
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Action::Owner(Kind::SendViolation))?;
+    assert!(
+        commands.try_recv().is_err(),
+        "Send violation must open confirmation without dispatching"
+    );
+    let confirm = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Confirm violation").then_some(parent.parent()))
+        .ok_or("violation confirmation missing")?;
+    let modal = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(999), Node::default()))
+        .id();
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(commands.try_recv().is_err());
+    app.world_mut().entity_mut(modal).despawn();
+    app.update();
+    app.world_mut().trigger(Activate { entity: confirm });
+    let PlayCommand::Feature(sent) = commands.try_recv()? else {
+        return Err("feature command".into());
+    };
+    let request = oteryn_client_runtime::player_report::decode_player_report_request(&sent.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(request.target, "Reported");
+    assert_eq!(request.comment, "Actual evidence");
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
