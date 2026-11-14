@@ -140,8 +140,13 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
-    fn activity_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    /// Holder unavailability/deadline refuses this command; every other error
+    /// means the admitted authority was lost and still closes the connection.
+    fn activity_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
     fn activity_scope_snapshot(
         &self,
@@ -150,8 +155,11 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
-    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    fn house_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
     fn observe_house_map(
         &self,

@@ -51,6 +51,11 @@ pub struct Reentry {
 }
 
 impl Reentry {
+    /// Whether native admission is pending, including a queued training character.
+    pub fn is_entering(&self) -> bool {
+        self.state == EntryState::Entering
+    }
+
     pub fn take_bulletin(&mut self) -> Option<String> {
         self.bulletin.take()
     }

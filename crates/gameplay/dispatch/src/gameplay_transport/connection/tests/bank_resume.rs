@@ -5,6 +5,7 @@ struct RetainedBankOutcomeFixture {
     replacement_steps: RefCell<usize>,
     unknown: bool,
     closed_gate: bool,
+    guard_deferred: bool,
 }
 impl FreshAdmissionAuthority for RetainedBankOutcomeFixture {
     async fn enter_input(&self, _session: GameSessionId) -> Option<InputPermit<'_>> {
@@ -12,6 +13,16 @@ impl FreshAdmissionAuthority for RetainedBankOutcomeFixture {
             None
         } else {
             Some(InputPermit::ungated())
+        }
+    }
+    async fn house_transfer_input(
+        &self,
+        _: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
+        if self.guard_deferred {
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        } else {
+            Ok(())
         }
     }
     async fn admit(
@@ -61,41 +72,44 @@ fn original_bank_command_precedes_replacement_text_npc_and_command_type()
             ),
             (999, b"".as_slice()),
         ] {
-            let authority = RetainedBankOutcomeFixture {
-                commands: RefCell::new(Vec::new()),
-                replacement_steps: RefCell::new(0),
-                unknown: false,
-                closed_gate: false,
-            };
-            let mut command = Vec::new();
-            scalar(&mut command, 1, 1);
-            scalar(&mut command, 2, u64::from(kind));
-            bytes(&mut command, 4, payload);
-            let (end, frames) = drive_session(
-                &authority,
-                resumed_positioned()?,
-                &[envelope(7, RESUMED_GENERATION, &command)],
-            )
-            .await?;
-            assert_eq!(*authority.replacement_steps.borrow(), 0);
-            assert_eq!(authority.commands.borrow().len(), 1);
-            assert_eq!(authority.commands.borrow()[0].command_id, 1);
-            assert_eq!(
-                authority.commands.borrow()[0].game_session_id,
-                GameSessionId::decode(&SESSION)?
-            );
-            let mut expected = baseline_at(RESUMED_GENERATION);
-            expected.push(encode_command_result(
-                RESUMED_GENERATION,
-                1,
-                1,
-                CommandStatus::Accepted,
-                &encode_npc_intent_result(NpcIntentDisposition::Ok),
-            )?);
-            assert_eq!(frames, expected);
-            assert!(
-                matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
-            );
+            for guard_deferred in [false, true] {
+                let authority = RetainedBankOutcomeFixture {
+                    commands: RefCell::new(Vec::new()),
+                    replacement_steps: RefCell::new(0),
+                    unknown: false,
+                    closed_gate: false,
+                    guard_deferred,
+                };
+                let mut command = Vec::new();
+                scalar(&mut command, 1, 1);
+                scalar(&mut command, 2, u64::from(kind));
+                bytes(&mut command, 4, payload);
+                let (end, frames) = drive_session(
+                    &authority,
+                    resumed_positioned()?,
+                    &[envelope(7, RESUMED_GENERATION, &command)],
+                )
+                .await?;
+                assert_eq!(*authority.replacement_steps.borrow(), 0);
+                assert_eq!(authority.commands.borrow().len(), 1);
+                assert_eq!(authority.commands.borrow()[0].command_id, 1);
+                assert_eq!(
+                    authority.commands.borrow()[0].game_session_id,
+                    GameSessionId::decode(&SESSION)?
+                );
+                let mut expected = baseline_at(RESUMED_GENERATION);
+                expected.push(encode_command_result(
+                    RESUMED_GENERATION,
+                    1,
+                    1,
+                    CommandStatus::Accepted,
+                    &encode_npc_intent_result(NpcIntentDisposition::Ok),
+                )?);
+                assert_eq!(frames, expected);
+                assert!(
+                    matches!(end,ConnectionEnd::AdmittedThenDisconnected(admitted) if admitted.continuity.next_command_id==2)
+                );
+            }
         }
         Ok(())
     })
@@ -110,6 +124,7 @@ fn unresolved_original_bank_work_never_sequences_a_replacement_command()
             replacement_steps: RefCell::new(0),
             unknown: true,
             closed_gate: false,
+            guard_deferred: false,
         };
         let (end, frames) = drive_session(
             &authority,
@@ -139,6 +154,7 @@ fn closed_input_gate_holds_unclassified_original_bank_command() -> Result<(), Bo
             replacement_steps: RefCell::new(0),
             unknown: false,
             closed_gate: true,
+            guard_deferred: false,
         };
         let (end, frames) = drive_session(
             &authority,
@@ -174,6 +190,7 @@ fn fresh_session_first_command_skips_retained_bank_lookup() -> Result<(), Box<dy
                 replacement_steps: RefCell::new(0),
                 unknown: true,
                 closed_gate,
+                guard_deferred: false,
             };
             let (end, frames) = drive_session(
                 &authority,

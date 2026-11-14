@@ -40,8 +40,7 @@ impl PlayLink {
             tr!("Skill progress — Ctrl+Alt+Shift+K"),
             |mailbox| &mut mailbox.skill_progress,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).skill_progress.open = true;
         }
         true

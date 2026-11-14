@@ -36,6 +36,9 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.depot.open || m.depot_shutdown {

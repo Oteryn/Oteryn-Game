@@ -48,6 +48,9 @@ fn wide(value: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         m.player_trade.show_requested = false;
@@ -339,6 +342,9 @@ unsafe fn control(
 }
 
 pub(in crate::play) fn context_menu(link: &PlayLink, partner: oteryn_session::EntityRef) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     if !link.player_trade_panel().selected {
         return;
     }

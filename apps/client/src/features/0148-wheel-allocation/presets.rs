@@ -88,9 +88,10 @@ pub(in crate::play) fn open_shared(
         }
     }
     #[cfg(windows)]
-    open_window(shared, commands);
-    #[cfg(not(windows))]
-    {
+    if !lock(shared).shared_frontend {
+        open_window(shared, commands);
+    }
+    if cfg!(not(windows)) || lock(shared).shared_frontend {
         let _ = commands;
         lock(shared).wheel.presets_open = true;
     }

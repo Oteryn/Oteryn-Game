@@ -30,6 +30,8 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     minimap: bool,
+    #[cfg(feature = "bevy-shell")]
+    minimap_quads: std::ops::Range<usize>,
     floor_separator: u8,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
@@ -107,6 +109,8 @@ impl Scene {
             .collect();
         let mut scene = Self {
             minimap: false,
+            #[cfg(feature = "bevy-shell")]
+            minimap_quads: 0..0,
             floor_separator: 0,
             minimap_state: None,
             minimap_floor: -7,
@@ -258,8 +262,14 @@ impl Scene {
         sprites.lighting.opacity.clear();
         sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
+        #[cfg(feature = "bevy-shell")]
+        let start = self.sprites.instances().len();
         if self.minimap {
             self.draw_minimap()?;
+        }
+        #[cfg(feature = "bevy-shell")]
+        {
+            self.minimap_quads = start..self.sprites.instances().len();
         }
         Ok(())
     }
@@ -290,6 +300,12 @@ impl Scene {
     #[must_use]
     pub const fn tiles(&self) -> &TileBatch {
         &self.tiles
+    }
+
+    /// Exact overlay partition for frontends which place the minimap in a sidebar.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn minimap_quad_range(&self) -> std::ops::Range<usize> {
+        self.minimap_quads.clone()
     }
 
     #[must_use]

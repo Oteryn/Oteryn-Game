@@ -448,7 +448,7 @@ pub(super) async fn assert_inherited_protection(
         ),
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute)
     ));
-    assert!(destination.note_activity_input(resumed).await);
+    assert!(destination.note_activity_input(resumed).await.is_ok());
     let result = destination
         .return_native_activity(
             resumed,

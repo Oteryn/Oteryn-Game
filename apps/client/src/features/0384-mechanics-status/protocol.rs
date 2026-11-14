@@ -32,8 +32,7 @@ impl PlayLink {
             tr!("Character effects — Ctrl+Alt+Shift+U"),
             |mailbox| &mut mailbox.mechanics_status,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).mechanics_status.open = true;
         }
         true

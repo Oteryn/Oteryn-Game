@@ -17,9 +17,10 @@ impl PlayLink {
         }
         self.world_event_request();
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).world_event.open = true;
         }
         true

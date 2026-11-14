@@ -5,6 +5,12 @@ use oteryn_session::WorldObjectOverlayEntry;
 use std::collections::{BTreeMap, VecDeque};
 
 impl PlayView {
+    /// Keep view-owned notifications and editors inside the selected shared frontend.
+    pub fn use_shared_frontend(&mut self) {
+        self.shared_frontend = true;
+        self.game_notifications.use_shared_frontend();
+    }
+
     pub fn new(
         own: TileCoord,
         floor: i16,
@@ -13,6 +19,9 @@ impl PlayView {
         let local = LocalPlayState::new(World::builtin()?);
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
+            #[cfg(feature = "bevy-shell")]
+            last_step: None,
+            shared_frontend: false,
             game_notifications: Default::default(),
             touch: Default::default(),
             creature_drag: Default::default(),

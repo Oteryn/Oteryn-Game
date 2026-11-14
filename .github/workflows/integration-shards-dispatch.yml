@@ -45,7 +45,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       # Restore only: this run never writes a cache entry that main or the queue could read.
       - name: Restore trimmed Cargo cache from protected main
@@ -56,9 +56,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
@@ -78,7 +78,7 @@ jobs:
             tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           else
             echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
-            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
             cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
           fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
@@ -89,8 +89,8 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
           python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
           mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
           test "${#shard_args[@]}" -gt 0
-          cargo +1.99.1 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
+          cargo +1.100.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast

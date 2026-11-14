@@ -69,7 +69,7 @@ fn coin_market_session_loop_applies_only_the_confirmed_server_receipt()->Result<
    let fields=["30".into(),"100".into(),String::new()];link.coin_market_control(2,fields.clone());assert!(link.market_panel().coins.view.is_none());
    link.coin_market_control(6,fields);assert!(link.market_panel().coins.view.is_none());
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while link.market_panel().coins.pending.is_some() || link.market_panel().coins.view.is_none(){tokio::task::yield_now().await;}}).await?;
-   let panel=link.market_panel();assert!(panel.coins.confirmed.is_none());assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Transferable after: 70")));assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Receipt:")));
+   let panel=link.market_panel();assert!(panel.coins.confirmed.is_none());assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Balance after: 75")));assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Receipt:")));
    drop(link);task.await?;Ok::<_,Box<dyn std::error::Error+Send+Sync>>(())
   })?
  })?.join().map_err(|_|"coin session test thread failed")?

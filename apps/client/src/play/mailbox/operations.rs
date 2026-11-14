@@ -234,6 +234,17 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
+    /// Select a shared desktop frontend before presenting any admitted game UI.
+    /// Stored in the connection mailbox so all non-owning links use the same presenter.
+    pub fn use_shared_frontend(&self) {
+        lock(&self.mailbox).shared_frontend = true;
+    }
+
+    #[must_use]
+    pub fn uses_shared_frontend(&self) -> bool {
+        lock(&self.mailbox).shared_frontend
+    }
+
     pub fn request(&self, direction: StepDir) {
         let mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {
@@ -258,14 +269,17 @@ impl PlayLink {
     pub fn poll(&self) -> Option<PlayEvent> {
         self.poll_weekly_results();
         #[cfg(windows)]
-        super::super::feature_0148_wheel_allocation::view::poll_gems(&self.mailbox, &self.commands);
-        #[cfg(windows)]
-        super::super::feature_0152_item_forge::view::poll_resource_dialog(
-            &self.mailbox,
-            &self.commands,
-        );
-        #[cfg(windows)]
-        super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
+        if !self.uses_shared_frontend() {
+            super::super::feature_0148_wheel_allocation::view::poll_gems(
+                &self.mailbox,
+                &self.commands,
+            );
+            super::super::feature_0152_item_forge::view::poll_resource_dialog(
+                &self.mailbox,
+                &self.commands,
+            );
+            super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
+        }
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(

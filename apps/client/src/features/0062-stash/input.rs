@@ -128,9 +128,10 @@ impl PlayLink {
             }
         }
         #[cfg(windows)]
-        super::view::open_window(shared, commands);
-        #[cfg(not(windows))]
-        {
+        if !lock(shared).shared_frontend {
+            super::view::open_window(shared, commands);
+        }
+        if cfg!(not(windows)) || lock(shared).shared_frontend {
             lock(shared).stash.open = true;
         }
     }

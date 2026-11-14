@@ -463,3 +463,59 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+// Bevy caller tests feed the existing mailbox owner through test-only publication.
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_hud_fixture(
+        &self,
+        rows: &[oteryn_session::WorldSpatialEntity],
+        vitals: Option<oteryn_session::ActorVitals>,
+    ) {
+        self.battle_publish(
+            Some(ActorCombatState {
+                target: None,
+                modes: FightModes::DEFAULT,
+                in_fight: false,
+            }),
+            Some(7),
+            rows,
+        );
+        self.vitals(vitals);
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.analyser.selected = true;
+        mailbox.analyser.kills = 23;
+    }
+}
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_hud_skills_fixture(&self) -> Result<(), &'static str> {
+        use oteryn_session::skill_display::SkillDisplay;
+        use oteryn_session::skill_progress::{SkillProgress, SkillProgressSnapshot};
+        self.skill_display_initialize(true);
+        let snapshot = SkillDisplay {
+            trained: SkillProgressSnapshot {
+                skills: [SkillProgress {
+                    level: 20,
+                    progress: 450,
+                    required: 1000,
+                    percent: 4500,
+                }; 8],
+            },
+            level: 30,
+            experience: 100_000,
+            level_percent: 2345,
+            loyalty_bonus_percent: 10,
+            loyalty_levels: [23; 8],
+            current_levels: Some([24; 8]),
+        };
+        self.skill_progress_result(&oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: snapshot.encode().ok_or("skill fixture encode")?,
+        });
+        Ok(())
+    }
+}
