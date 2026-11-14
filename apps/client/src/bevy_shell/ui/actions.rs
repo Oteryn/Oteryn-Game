@@ -7,6 +7,7 @@ pub(super) fn activate(
     event: On<Activate>,
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
+    mut commands: Commands,
     modal: game_ui::modal::ModalGuard,
 ) {
     if !modal.allows(event.entity) {
@@ -49,6 +50,7 @@ pub(super) fn activate(
                     | Control::PlayerReport
                     | Control::PremiumOverview
                     | Control::Prey
+                    | Control::PrivateChannels
                     | Control::Quests
                     | Control::Spells
                     | Control::StatusDetails
@@ -107,6 +109,7 @@ pub(super) fn activate(
             Control::PlayerReport => game_ui::player_report_report::open(&mut owner),
             Control::PremiumOverview => game_ui::premium_overview::open(&mut owner),
             Control::Prey => game_ui::open_prey(&mut owner),
+            Control::PrivateChannels => game_ui::private_channels::open(&owner, &mut commands),
             Control::Quests => game_ui::open_quests(&mut owner),
             Control::Spells => game_ui::open_spells(&mut owner),
             Control::StatusDetails => game_ui::status_details::toggle(&owner),
