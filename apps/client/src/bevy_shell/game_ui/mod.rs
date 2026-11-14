@@ -48,6 +48,7 @@ mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;
+pub(super) mod item_catalogue;
 mod item_details;
 mod journal;
 mod layout;
@@ -156,6 +157,7 @@ pub(super) fn install(app: &mut App) {
     hud::install(app);
     imbue::install(app);
     inventory::install(app);
+    item_catalogue::install(app);
     item_details::install(app);
     journal::install(app);
     mail::install(app);

@@ -99,3 +99,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "catalogue_bound.rs"]
+mod catalogue_bound;
+#[cfg(feature = "bevy-shell")]
+pub use catalogue_bound::ItemCatalogueSnapshot;

@@ -68,3 +68,7 @@ impl PlayLink {
 #[cfg(test)]
 #[path = "tests/catalogue.rs"]
 mod catalogue_tests;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/bevy_catalogue.rs"]
+mod bevy_catalogue_tests;

@@ -32,6 +32,7 @@ impl crate::play::Stepper for Selected {
 #[test]
 fn cp02_0132_inspection_scenario() {
     let (link, mut rx, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
     assert!(!link.inspect(oteryn_client_ui::inspection::Request::Catalogue(42)));
     outbox.discovery_initialize(&Selected);
     assert!(link.inspect(oteryn_client_ui::inspection::Request::Catalogue(42)));
@@ -45,6 +46,7 @@ fn cp02_inspection_native_session_scenario() -> Result<(), Box<dyn std::error::E
     use oteryn_client_runtime::server_mechanic::ServerMechanicCommand;
     use oteryn_client_ui::inspection::*;
     peer::scenario(|link, push, wait| {
+        link.use_shared_frontend();
         let reply = Reply {
             status: 1,
             items: vec![InspectedItem {

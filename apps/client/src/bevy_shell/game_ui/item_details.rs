@@ -11,6 +11,7 @@ struct Key {
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
+    Catalogue,
     Inspect,
     Refresh,
     Copy,
@@ -155,6 +156,7 @@ fn perform(owner: &HostOwner, state: &mut State, clipboard: &mut Clipboard, cont
             play.link.inspection_set_open(false);
             state.snapshot = None;
         }
+        Kind::Catalogue => super::item_catalogue::open(owner),
         Kind::Inspect if panel.selected && !panel.pending => {
             play.link.discovery_action(132, 1, &[], 0);
         }
