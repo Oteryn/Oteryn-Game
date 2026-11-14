@@ -47,6 +47,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    TaskBoard,
     Login,
     CancelLogin,
     Fullscreen,
@@ -64,6 +65,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::TaskBoard => "shell.task_board",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -169,6 +171,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::TaskBoard, "Task Board", 110.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -373,6 +376,7 @@ fn activate(
                 control,
                 Control::Options
                     | Control::Market
+                    | Control::TaskBoard
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
@@ -388,6 +392,11 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::TaskBoard => {
+                if let Some(play) = &owner.play {
+                    play.link.open_task_board();
+                }
+            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -572,7 +581,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::TaskBoard
+            )
         ) {
             node.display = if playing {
                 Display::Flex
