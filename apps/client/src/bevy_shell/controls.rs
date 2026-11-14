@@ -88,6 +88,9 @@ impl HostOwner {
         {
             return;
         }
+        if play.link.item_forge_input(&routed) {
+            return;
+        }
         if oteryn_client_ui::container_sort::open_key(&routed) {
             play.link.container_sort_open();
             return;
