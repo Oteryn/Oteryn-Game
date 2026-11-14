@@ -1,4 +1,5 @@
 //! Source-derived primitives only; actions edit the production owner's transient draft.
+use super::game_ui::condition_details::{self, Target};
 use super::owner::{GraphicsDraft, HostOwner};
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
@@ -42,6 +43,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    Details(Target),
     Options,
     Market,
     Party,
@@ -59,6 +61,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Details(target) => target.id(),
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -162,12 +165,19 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::Login, "Sign in", 80.),
+        (
+            Control::Details(Target::BattleInstinct),
+            "Battle Instinct",
+            100.,
+        ),
         (Control::CancelLogin, "Cancel sign-in", 100.),
-        (Control::Options, "Options", 80.),
+        (Control::Details(Target::Conditions), "Conditions", 80.),
+        (Control::Login, "Sign in", 80.),
         (Control::Market, "Market", 80.),
+        (Control::Options, "Options", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
+        (Control::Details(Target::Rest), "Rest and food", 100.),
         (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
@@ -371,8 +381,9 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Options
+                Control::Details(_)
                     | Control::Market
+                    | Control::Options
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
@@ -383,6 +394,7 @@ fn activate(
             return;
         }
         match control {
+            Control::Details(target) => condition_details::toggle(&owner, *target),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
@@ -570,10 +582,7 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if matches!(
-            control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
-        ) {
+        } else if condition_details::toolbar_window(control) {
             node.display = if playing {
                 Display::Flex
             } else {
