@@ -148,8 +148,10 @@ fn keyboard(
             && event.state == bevy::input::ButtonState::Pressed
             && !event.repeat
     }) {
-        if guard.allows_focus(None)
-            && !owner.modal_active()
+        if state.widgets.as_ref().map_or_else(
+            || guard.allows_focus(None),
+            |widgets| guard.allows(widgets.panel),
+        ) && !owner.modal_active()
             && let Some(play) = &owner.play
         {
             let panel = play.link.raid_schedule_panel();
@@ -186,7 +188,7 @@ fn keyboard(
     }
 }
 
-pub(super) fn open(owner: &mut HostOwner) {
+pub(in crate::bevy_shell) fn open(owner: &mut HostOwner) {
     if !owner.modal_active()
         && let Some(play) = &owner.play
     {

@@ -51,7 +51,7 @@ pub enum RaidScheduleControl { Refresh, Close }
 impl PlayLink {
     pub fn raid_schedule_dispatch_bound(&self, expected: &oteryn_client_ui::raid_schedule::Panel, control: RaidScheduleControl) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if mailbox.ended.is_some() || self.commands.is_closed() || mailbox.properties.raid_schedule != *expected || !expected.open {
+        if self.commands.is_closed() || mailbox.properties.raid_schedule != *expected || !expected.open {
             return false;
         }
         if control == RaidScheduleControl::Close {
@@ -66,6 +66,9 @@ impl PlayLink {
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl crate::play::Outbox {
+    pub(crate) fn bevy_raid_schedule_reply(&self, command: &oteryn_client_runtime::raw_feature::FeatureCommand, result: &oteryn_client_runtime::raw_feature::GatedCommandResult) {
+        self.properties_result(command, result);
+    }
     pub(crate) fn bevy_raid_schedule_selected(&self, selected: bool) {
         lock(&self.0).properties.raid_schedule.selected = selected;
     }

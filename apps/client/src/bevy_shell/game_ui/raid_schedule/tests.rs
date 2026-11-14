@@ -34,9 +34,10 @@ fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
 }
 
 fn show(app: &mut App) -> TestResult {
-    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
-    open(&mut owner);
-    drop(owner);
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        open(&mut owner);
+    }
     app.update();
     Ok(())
 }
@@ -63,7 +64,7 @@ fn raid_schedule_window_shows_server_data_only() -> TestResult {
 }
 #[test]
 fn raid_schedule_actions_are_bound_and_confirmed() -> TestResult {
-    let (mut app, mut commands, _) = fixture(true)?;
+    let (mut app, mut commands, outbox) = fixture(true)?;
     show(&mut app)?;
     let owner = app.world().non_send::<HostOwner>();
     let link = &owner.play.as_ref().ok_or("play")?.link;
@@ -77,6 +78,28 @@ fn raid_schedule_actions_are_bound_and_confirmed() -> TestResult {
     assert_eq!(link.raid_schedule_panel().summary, before.summary);
     assert!(!link.raid_schedule_dispatch_bound(&before, Kind::Refresh));
     assert!(commands.try_recv().is_err());
+    let payload = oteryn_client_runtime::raid_schedule::encode_raid_schedule_state(
+        &oteryn_client_runtime::raid_schedule::RaidScheduleState {
+            raid_key: "raid:test".into(),
+            running: true,
+            committed_steps: 2,
+            active_creatures: 5,
+        },
+    )
+    .map_err(|error| format!("{error:?}"))?;
+    outbox.bevy_raid_schedule_reply(
+        &command,
+        &oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+            payload,
+        },
+    );
+    assert_eq!(
+        link.raid_schedule_panel().summary,
+        "raid:test | Running\r\nCommitted steps: 2 | Active creatures: 5"
+    );
     Ok(())
 }
 #[test]
