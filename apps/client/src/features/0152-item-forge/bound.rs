@@ -25,6 +25,7 @@ pub(crate) enum ForgeControl {
     Quote,
     Review,
     Forge,
+    Retry,
     History,
     Resource(Operation),
     ConfirmResource(u64),
@@ -132,6 +133,7 @@ impl PlayLink {
             {
                 Action::Forge
             }
+            ForgeControl::Retry if panel.retry.is_some() => Action::Retry,
             ForgeControl::History if !panel.resource_dialog.confirming() => {
                 Action::Legacy(Operation::QueryHistory)
             }
@@ -265,6 +267,7 @@ mod tests {
                 ForgeControl::Quote,
                 ForgeControl::Review,
                 ForgeControl::Forge,
+                ForgeControl::Retry,
                 ForgeControl::History,
                 ForgeControl::Resource(Operation::DustToSlivers),
                 ForgeControl::Resource(Operation::SliversToCores),

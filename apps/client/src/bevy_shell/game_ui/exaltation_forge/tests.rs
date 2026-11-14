@@ -395,3 +395,102 @@ fn forge_rejected_when_session_replaced_or_item_changed() -> Result<(), Error> {
     }
     Ok(())
 }
+
+fn retry_button(app: &mut App) -> Result<Entity, Error> {
+    app.world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Retry original attempt").then_some(parent.parent()))
+        .ok_or("missing Retry original attempt button".into())
+}
+#[test]
+fn forge_retry_resends_original_attempt() -> Result<(), Error> {
+    let (mut app, mut commands, outbox) = fixture()?;
+    let retry = retry_button(&mut app)?;
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(retry)
+            .is_some()
+    );
+    app.world_mut().trigger(Activate { entity: retry });
+    assert!(commands.try_recv().is_err());
+    browse(&mut app, &mut commands, &outbox)?;
+    quote(&mut app, &mut commands, &outbox, Operation::Fusion)?;
+    click(&mut app, Kind::Review)?;
+    app.update();
+    click(&mut app, Kind::Confirm)?;
+    let PlayCommand::ServerMechanic(original) = commands.try_recv()? else {
+        return Err("original attempt".into());
+    };
+    app.update();
+    let retry = retry_button(&mut app)?;
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(retry)
+            .is_some()
+    );
+    app.world_mut().trigger(Activate { entity: retry });
+    assert!(commands.try_recv().is_err(), "pending suppresses retries");
+    outbox.bevy_forge_result(vec![0xff]);
+    app.update();
+    assert!(panel(&app)?.retry.is_some());
+    assert!(!panel(&app)?.editing());
+    let retry = retry_button(&mut app)?;
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(retry)
+            .is_none()
+    );
+    app.world_mut().trigger(Activate { entity: retry });
+    app.world_mut().trigger(Activate { entity: retry });
+    let PlayCommand::ServerMechanic(resent) = commands.try_recv()? else {
+        return Err("retried attempt".into());
+    };
+    assert_eq!(
+        resent, original,
+        "retry preserves occurrence and every original operand"
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "duplicate retries are suppressed"
+    );
+    assert!(panel(&app)?.pending);
+    assert!(panel(&app)?.decoded.is_none());
+    outbox.bevy_forge_result(serde_json::to_vec(&receipt(true))?);
+    app.update();
+    assert!(panel(&app)?.retry.is_none());
+    let retry = retry_button(&mut app)?;
+    assert!(
+        app.world()
+            .get::<bevy::ui::InteractionDisabled>(retry)
+            .is_some()
+    );
+    Ok(())
+}
+#[test]
+fn forge_hidden_modal_does_not_block_operation() -> Result<(), Error> {
+    let (mut app, mut commands, outbox) = fixture()?;
+    browse(&mut app, &mut commands, &outbox)?;
+    quote(&mut app, &mut commands, &outbox, Operation::Fusion)?;
+    click(&mut app, Kind::Review)?;
+    app.update();
+    app.world_mut().spawn((
+        GameModal,
+        GlobalZIndex(999),
+        Node {
+            display: Display::None,
+            ..default()
+        },
+    ));
+    click(&mut app, Kind::Confirm)?;
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("hidden modal blocked the Forge operation".into());
+    };
+    let request = Request::decode(&command.payload).ok_or("forge request")?;
+    assert_eq!(request.operation, Operation::Fusion);
+    assert_eq!(request.first_item, Some(item(2)?.handle));
+    assert_eq!(request.second_item, Some(item(3)?.handle));
+    assert!(commands.try_recv().is_err());
+    assert!(panel(&app)?.pending);
+    Ok(())
+}

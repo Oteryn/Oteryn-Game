@@ -338,6 +338,17 @@ pub(super) fn render(
         footer,
         key,
         (
+            Kind::Owner(ForgeControl::Retry),
+            "Retry original attempt",
+            panel.retry.is_some() && !panel.pending && panel.preview.pending.is_none(),
+        ),
+    );
+    button(
+        commands,
+        skins,
+        footer,
+        key,
+        (
             Kind::Owner(ForgeControl::History),
             "Forge history",
             panel.selected
