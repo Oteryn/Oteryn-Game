@@ -16,10 +16,18 @@ impl PlayLink {
         }
     }
     pub fn player_trade_choose_partner(&self, partner: oteryn_session::EntityRef) -> bool {
-        oteryn_client_ui::player_trade::picker::select_partner(
-            &mut lock(&self.mailbox).player_trade,
+        let shared_frontend = self.uses_shared_frontend();
+        let mut mailbox = lock(&self.mailbox);
+        if !oteryn_client_ui::player_trade::picker::select_partner(
+            &mut mailbox.player_trade,
             partner,
-        )
+        ) {
+            return false;
+        }
+        if shared_frontend {
+            mailbox.player_trade.open = true;
+        }
+        true
     }
     pub fn player_trade_choose_item(&self, row: usize) -> bool {
         oteryn_client_ui::player_trade::picker::select_item(
@@ -50,9 +58,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).player_trade.open = true;
         }
         true
@@ -86,9 +95,12 @@ impl crate::play::PlayView {
             {
                 consumed = true;
                 #[cfg(windows)]
-                super::view::context_menu(link, partner);
-                #[cfg(not(windows))]
-                let _ = link.player_trade_choose_partner(partner);
+                if !link.uses_shared_frontend() {
+                    super::view::context_menu(link, partner);
+                }
+                if cfg!(not(windows)) || link.uses_shared_frontend() {
+                    let _ = link.player_trade_choose_partner(partner);
+                }
             }
         }
         consumed

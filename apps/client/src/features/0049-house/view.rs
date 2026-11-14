@@ -9,6 +9,9 @@ impl PlayLink {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     use crate::play::feature_0115_mail::view::native::{Form, open};
     lock(&link.mailbox).properties.house.ownership.context=std::sync::Arc::downgrade(&link.mailbox);
     open(

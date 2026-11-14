@@ -15,9 +15,10 @@ impl PlayLink {
     pub fn cyclopedia_atlas_open(&self) {
         self.cyclopedia_atlas_action(0);
         #[cfg(windows)]
-        super::super::view::atlas::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::super::view::atlas::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).properties.cyclopedia_map.geometry.open = true;
         }
     }
@@ -93,7 +94,9 @@ pub(in crate::play) fn submit(
     }
     if action == 11 {
         #[cfg(windows)]
-        super::super::view::atlas::show_map(panel, commands);
+        if !mailbox.shared_frontend {
+            super::super::view::atlas::show_map(panel, commands);
+        }
         return;
     }
     if action == 8 || action == 9 {

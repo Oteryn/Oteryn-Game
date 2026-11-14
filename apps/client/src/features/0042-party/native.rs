@@ -69,6 +69,9 @@ fn wide(value: &str) -> Vec<u16> {
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.party.open {
@@ -418,6 +421,9 @@ fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
 
 /// Runs synchronously on the play window thread; the menu never owns session authority.
 pub(in crate::play) fn context_menu(link: &PlayLink, target: oteryn_session::EntityRef) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     // SAFETY: all menu/window resources are created, used, and destroyed on this thread.
     unsafe {
         let owner = GetForegroundWindow();

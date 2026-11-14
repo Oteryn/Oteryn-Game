@@ -15,9 +15,10 @@ impl PlayLink {
     pub fn cyclopedia_character_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::cyclopedia_character::blessings_key(events) {
             #[cfg(windows)]
-            super::view::blessings::open_window(self);
-            #[cfg(not(windows))]
-            {
+            if !self.uses_shared_frontend() {
+                super::view::blessings::open_window(self);
+            }
+            if cfg!(not(windows)) || self.uses_shared_frontend() {
                 lock(&self.mailbox).cyclopedia_character.blessings.open = true;
                 self.blessings_request();
             }
@@ -27,9 +28,10 @@ impl PlayLink {
             return false;
         }
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).cyclopedia_character.open = true;
         }
         true

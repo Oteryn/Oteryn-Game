@@ -192,3 +192,77 @@ fn vip_window_closes_when_the_play_link_is_dropped() {
     drop(link);
     assert!(!crate::play::mailbox::lock(&shared).vip.open);
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_vip_fixture(
+        &self,
+        raw: &str,
+        revision: u64,
+        presence: oteryn_session::VipPresenceBatch,
+    ) {
+        self.vip_initialize(true);
+        self.vip_result(&oteryn_client_runtime::vip::VipResponse {
+            status: oteryn_session::CommandStatus::Accepted,
+            result: oteryn_client_runtime::vip::vip::ResultView {
+                code: 1,
+                revision,
+                number: 0,
+                wait: 0,
+                view: raw.to_owned(),
+            },
+        });
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.vip_presence.selected = true;
+        mailbox.vip_presence.presence = presence;
+    }
+}
+
+#[cfg(feature = "bevy-shell")]
+#[test]
+fn shared_vip_visibility_uses_the_canonical_shortcut_and_close_preserves_pending_data()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    let raw = r#"{"entries":[],"groups":[]}"#;
+    outbox.bevy_vip_fixture(raw, 7, oteryn_session::VipPresenceBatch::default());
+    assert!(!link.vip_is_open());
+    assert!(link.vip_input(&[NormalizedInputEvent::Key {
+        code: KeyCode::new(25)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false
+    }]));
+    assert!(link.vip_is_open());
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Vip(_)
+    ));
+    assert!(link.vip_panel().pending);
+    link.vip_close();
+    assert!(!link.vip_is_open());
+    let panel = link.vip_panel();
+    assert!(panel.pending);
+    assert_eq!(panel.revision, 7);
+    assert_eq!(panel.view.as_deref(), Some(raw));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_vip_refusal_fixture(&self, code: u8) {
+        let revision = crate::play::mailbox::lock(&self.0).vip.revision;
+        self.vip_result(&oteryn_client_runtime::vip::VipResponse {
+            status: oteryn_session::CommandStatus::Rejected,
+            result: oteryn_client_runtime::vip::vip::ResultView {
+                code,
+                revision,
+                number: 0,
+                wait: 0,
+                view: String::new(),
+            },
+        });
+    }
+}

@@ -40,6 +40,9 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
     }
 }
 pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::EntityRef) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     // SAFETY: menu and cursor operations run on the shell UI thread.
     unsafe {
         let menu = CreatePopupMenu();
@@ -68,6 +71,9 @@ pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::Entity
     }
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if !mailbox.dialogue.visible() || mailbox.dialogue_window || mailbox.dialogue_shutdown {

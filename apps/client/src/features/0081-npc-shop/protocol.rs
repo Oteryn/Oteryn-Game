@@ -154,3 +154,12 @@ impl Mailbox {
         }
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_npc_shop_supported(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.npc_shop.selected = true;
+        mailbox.npc_shop.live.selected = true;
+    }
+}

@@ -123,7 +123,8 @@ impl SettingsState {
         self.import_from(&path)
     }
 
-    pub(super) fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+    pub(super) fn replace_saved(&mut self, mut preferences: ReferencePreferences) -> io::Result<()> {
+        preferences.miscellaneous = self.preferences.miscellaneous;
         let store = self
             .store
             .as_mut()
@@ -175,7 +176,7 @@ impl SettingsState {
             help_report_pending: false,
             control_input: super::super::controls::ControlInput::default(),
             control_epoch: std::time::Instant::now(),
-            base_path,
+            base_path: base_path.clone(),
             character: None,
             skills_edit: 0,
             item_hotkeys_edit: 0,
@@ -187,7 +188,14 @@ impl SettingsState {
             archive_edit: 0,
             battle_edit: 0,
             store,
-            preferences: {let mut p=preferences;p.miscellaneous=crate::play::MiscellaneousPreferences::load();p},
+            preferences: {
+                let mut preferences = preferences;
+                preferences.miscellaneous = base_path
+                    .as_ref()
+                    .and_then(|path| super::super::MiscellaneousPreferences::read(&path.with_extension("session-options.json")).ok())
+                    .unwrap_or_default();
+                preferences
+            },
             feedback,
             open: false,
             shutdown: false,
@@ -304,7 +312,8 @@ impl SettingsState {
             .store
             .as_mut()
             .ok_or_else(|| tr!("Preference storage is unavailable").to_owned())
-            .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()));
+            .and_then(|store| store.apply(preferences.clone()).map_err(|e| e.to_string()))
+            .and_then(|()| self.save_miscellaneous(preferences.miscellaneous));
         // A disk error must not disable local controls for this process.
         if self.preferences.bar_actions != preferences.bar_actions {
             self.bar_actions_edit = crate::play::feature_0017_attack::view::next_edit();

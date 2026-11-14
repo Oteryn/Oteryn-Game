@@ -12,12 +12,18 @@ impl PlayLink {
 mod selector_window;
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     catalogue_window::open(link);
     selector_window::open(link);
 }
 
 #[cfg(windows)]
 pub(in crate::play) fn open_classic_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,

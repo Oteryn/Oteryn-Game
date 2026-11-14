@@ -119,7 +119,9 @@ impl PlayLink {
                 return false;
             }
             #[cfg(windows)]
-            super::open_multi(self, slot);
+            if !self.uses_shared_frontend() {
+                super::open_multi(self, slot);
+            }
             return true;
         }
         let mut mailbox = lock(&self.mailbox);

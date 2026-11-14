@@ -8,10 +8,16 @@ use oteryn_client_ui::world_interaction::menu::{ContextAction, Menu, context_ent
 use std::ptr::null;
 use windows_sys::Win32::{Foundation::POINT, UI::WindowsAndMessaging::*};
 pub fn open_menu(view: &PlayView, link: &PlayLink, menu: &Menu) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     open(view, link, Some(menu), None, None);
 }
 
 pub fn open_context(view: &PlayView, link: &PlayLink, tile: oteryn_renderer::TileCoord) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     let menu = view.world_context(tile, link);
     let npc = link
         .npc_dialogue_panel()
@@ -33,6 +39,9 @@ fn open(
     npc: Option<oteryn_session::EntityRef>,
     player: Option<oteryn_session::EntityRef>,
 ) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     let entries = context_entries(
         menu,
         npc.is_some(),

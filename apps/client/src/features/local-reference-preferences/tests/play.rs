@@ -14,6 +14,8 @@ mod contexts;
 mod hud_options;
 #[path = "interface.rs"]
 mod interface;
+#[path = "miscellaneous_persistence.rs"]
+mod miscellaneous_persistence;
 #[path = "options.rs"]
 mod options;
 

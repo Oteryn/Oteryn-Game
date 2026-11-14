@@ -15,8 +15,7 @@ impl PlayLink {
         self.hireling_request(Intent::Refresh);
         #[cfg(windows)]
         self.open_hireling_panel();
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).hireling.open = true;
         }
         true

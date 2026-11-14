@@ -118,6 +118,9 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
     }
 }
 pub(super) fn open(link: &PlayLink, slot: usize) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     let weak = Arc::downgrade(&link.mailbox);
     let _ = std::thread::Builder::new()
         .name("multiaction-editor".into())

@@ -141,10 +141,66 @@ impl PreferenceStore {
     }
 
     pub fn path() -> Option<PathBuf> {
-        std::env::var_os("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .map(|root| root.join(Path::new("Oteryn/client-preferences.json")))
+        Self::configuration_path("client-preferences.json")
     }
+
+    /// Shared native configuration location; explicit host paths bypass this default.
+    pub(crate) fn configuration_path(filename: &str) -> Option<PathBuf> {
+        let platform = if cfg!(windows) {
+            ConfigurationPlatform::Windows
+        } else if cfg!(target_os = "macos") {
+            ConfigurationPlatform::MacOs
+        } else {
+            ConfigurationPlatform::Unix
+        };
+        configuration_path_for(
+            platform,
+            filename,
+            |name| std::env::var_os(name),
+            |path| {
+                // Keep an inaccessible file selected so the loader reports its error.
+                path.try_exists().unwrap_or(true)
+            },
+        )
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ConfigurationPlatform {
+    Windows,
+    MacOs,
+    Unix,
+}
+
+fn configuration_path_for(
+    platform: ConfigurationPlatform,
+    filename: &str,
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    exists: impl Fn(&Path) -> bool,
+) -> Option<PathBuf> {
+    let home = || lookup("HOME").map(PathBuf::from);
+    let unix_root = || {
+        lookup("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| home().map(|root| root.join(".config")))
+    };
+    let root = match platform {
+        ConfigurationPlatform::Windows => lookup("LOCALAPPDATA").map(PathBuf::from),
+        ConfigurationPlatform::MacOs => home().map(|root| root.join("Library/Application Support")),
+        ConfigurationPlatform::Unix => unix_root(),
+    };
+    let preferred = root.map(|root| root.join("Oteryn").join(filename));
+    // Existing macOS clients used the Unix path. Prefer the native file once one exists,
+    // otherwise retain an existing legacy file without copying or changing its schema.
+    if platform == ConfigurationPlatform::MacOs
+        && preferred.as_ref().is_none_or(|path| !exists(path))
+        && let Some(legacy) = unix_root()
+            .map(|root| root.join("Oteryn").join(filename))
+            .filter(|path| exists(path))
+    {
+        return Some(legacy);
+    }
+    preferred
 }
 
 #[cfg(test)]
@@ -206,5 +262,88 @@ mod legacy_chords {
             assert_eq!(loaded.custom_hotkeys.len(), 5);
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod native_configuration_path_tests {
+    use super::*;
+    use std::ffi::OsString;
+
+    fn lookup(name: &str) -> Option<OsString> {
+        match name {
+            "LOCALAPPDATA" => Some("/windows/local".into()),
+            "HOME" => Some("/users/player".into()),
+            "XDG_CONFIG_HOME" => Some("/xdg/config".into()),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn default_files_use_the_native_platform_configuration_directory() {
+        for (platform, expected) in [
+            (
+                ConfigurationPlatform::Windows,
+                "/windows/local/Oteryn/client-preferences.json",
+            ),
+            (
+                ConfigurationPlatform::MacOs,
+                "/users/player/Library/Application Support/Oteryn/client-preferences.json",
+            ),
+            (
+                ConfigurationPlatform::Unix,
+                "/xdg/config/Oteryn/client-preferences.json",
+            ),
+        ] {
+            assert_eq!(
+                configuration_path_for(platform, "client-preferences.json", lookup, |_| false),
+                Some(PathBuf::from(expected))
+            );
+        }
+        assert_eq!(
+            configuration_path_for(
+                ConfigurationPlatform::Unix,
+                "client-preferences.json",
+                |name| (name == "HOME").then(|| "/users/player".into()),
+                |_| false
+            ),
+            Some(PathBuf::from(
+                "/users/player/.config/Oteryn/client-preferences.json"
+            ))
+        );
+        assert_eq!(
+            configuration_path_for(
+                ConfigurationPlatform::Unix,
+                "client-preferences.json",
+                |_| None,
+                |_| false
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn existing_macos_login_file_is_retained_until_the_native_file_exists() {
+        let legacy = PathBuf::from("/xdg/config/Oteryn/native-login.json");
+        let native =
+            PathBuf::from("/users/player/Library/Application Support/Oteryn/native-login.json");
+        assert_eq!(
+            configuration_path_for(
+                ConfigurationPlatform::MacOs,
+                "native-login.json",
+                lookup,
+                |path| path == legacy
+            ),
+            Some(legacy.clone())
+        );
+        assert_eq!(
+            configuration_path_for(
+                ConfigurationPlatform::MacOs,
+                "native-login.json",
+                lookup,
+                |path| path == legacy || path == native
+            ),
+            Some(native)
+        );
     }
 }

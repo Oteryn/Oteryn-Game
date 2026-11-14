@@ -6,6 +6,11 @@ use super::{
 use oteryn_platform_client::native_login::PublicClass;
 
 impl PlayView {
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) const fn step_receipt(&self) -> Option<super::StepReceipt> {
+        self.last_step
+    }
+
     /// One shell tick, never waiting on the network: applies every outcome the session task has
     /// delivered, then hands it the next step if one is due. A session end returns to login with
     /// its public class, a committed logout to character selection; a view error is a render
@@ -20,6 +25,18 @@ impl PlayView {
                 PlayEvent::ActionFeedback(line) => self.action_line = line,
                 PlayEvent::Stepped(outcome) => {
                     self.apply(&outcome).map_err(|_error| UNAVAILABLE)?;
+                    #[cfg(feature = "bevy-shell")]
+                    {
+                        self.last_step = Some(super::StepReceipt {
+                            reply_count: self
+                                .last_step
+                                .map_or(1, |last| last.reply_count.saturating_add(1)),
+                            command_id: outcome.command_id,
+                            result_server_sequence: outcome.result_server_sequence,
+                            accepted: outcome.status == oteryn_session::CommandStatus::Accepted,
+                            moved: outcome.disposition == oteryn_session::StepDisposition::Moved,
+                        });
+                    }
                 }
                 PlayEvent::Pushed(pushed) => {
                     self.apply_pushed(&pushed).map_err(|_error| UNAVAILABLE)?;
