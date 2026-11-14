@@ -1,4 +1,7 @@
 //! Native admitted query flow for Party effects.
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+pub(crate) mod bound;
 use crate::combat_input::PlayCommand;
 use crate::play::{Outbox, PlayLink, mailbox::lock};
 use oteryn_client_runtime::raw_feature::FeatureCommand;
