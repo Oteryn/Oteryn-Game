@@ -27,6 +27,7 @@ fn result(payload: Vec<u8>) -> GatedCommandResult {
 #[test]
 fn premium_game_real_controller_sends_existing_command_and_refuses_stale_data() -> TestResult {
     let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
     outbox.premium_game_initialize(true);
     assert!(
         link.premium_overview_input(&[oteryn_input_actions::NormalizedInputEvent::Key {
