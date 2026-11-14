@@ -56,6 +56,7 @@ mod mail;
 pub(super) use layout::setup;
 mod market;
 pub(super) mod minimap;
+pub(super) mod minimap_markers;
 pub(super) mod modal;
 mod npc_shop;
 pub(super) mod options;
@@ -163,6 +164,7 @@ pub(super) fn install(app: &mut App) {
     mail::install(app);
     market::install(app);
     minimap::install(app);
+    minimap_markers::install(app);
     modal::install(app);
     npc_shop::install(app);
     options::install(app);

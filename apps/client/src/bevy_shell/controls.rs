@@ -132,6 +132,17 @@ impl HostOwner {
         }) {
             return false;
         }
+        if oteryn_client_ui::minimap::editor_key(routed) {
+            super::game_ui::minimap_markers::open(self);
+            return true;
+        }
+        if oteryn_client_ui::minimap::create_mark_key(routed) {
+            if let Some(play) = &self.play {
+                play.view
+                    .minimap_editor_create(&play.link, !self.modal_active());
+            }
+            return true;
+        }
         if super::game_ui::cast_chat::shortcut(self, routed) {
             return true;
         }

@@ -86,6 +86,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::HousePodium
                     | Control::HouseTransfer
                     | Control::Market
+                    | Control::MinimapMarkers
                     | Control::Party
                     | Control::PlayerReport
                     | Control::Prey
