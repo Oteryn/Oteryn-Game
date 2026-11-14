@@ -1118,6 +1118,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wait_seconds,
             };
         }
+        match self
+            .root
+            .platform_mute_for_session(self.character, session)
+            .await
+        {
+            Ok(None) => {}
+            wait => {
+                return ChatIntentResult {
+                    disposition: ChatDisposition::Muted,
+                    wait_seconds: wait
+                        .ok()
+                        .flatten()
+                        .unwrap_or(1)
+                        .clamp(1, oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS),
+                };
+            }
+        }
         let now = self.owner_now();
         if let Some(refused) = self.states.chat.pre_gate(session, intent, now) {
             return refused;
