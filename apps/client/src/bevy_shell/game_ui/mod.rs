@@ -231,20 +231,20 @@ fn region(commands: &mut Commands) -> Entity {
 }
 
 pub(super) fn install(app: &mut App) {
-    modal::install(app);
-    options::install(app);
-    journal::install(app);
-    chat::install(app);
     actions::install(app);
+    chat::install(app);
     coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
+    journal::install(app);
     market::install(app);
     minimap::install(app);
+    modal::install(app);
     npc_shop::install(app);
+    options::install(app);
     party::install(app);
     quick_loot::install(app);
     store::install(app);
