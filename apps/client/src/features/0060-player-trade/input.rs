@@ -16,6 +16,7 @@ impl PlayLink {
         }
     }
     pub fn player_trade_choose_partner(&self, partner: oteryn_session::EntityRef) -> bool {
+        let shared_frontend = self.uses_shared_frontend();
         let mut mailbox = lock(&self.mailbox);
         if !oteryn_client_ui::player_trade::picker::select_partner(
             &mut mailbox.player_trade,
@@ -23,7 +24,9 @@ impl PlayLink {
         ) {
             return false;
         }
-        mailbox.player_trade.open = true;
+        if shared_frontend {
+            mailbox.player_trade.open = true;
+        }
         true
     }
     pub fn player_trade_choose_item(&self, row: usize) -> bool {

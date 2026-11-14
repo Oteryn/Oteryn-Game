@@ -330,3 +330,17 @@ fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Resul
     assert!(!view.player_trade_context_input(&link, &clicks));
     Ok(())
 }
+
+#[test]
+fn player_trade_choose_partner_keeps_win32_window_openable() {
+    let (link, _commands, outbox) = play_channel();
+    outbox.player_trade_initialize(true, None);
+    let partner = EntityRef { identity: [4; 16], generation: 2 };
+    assert!(!link.uses_shared_frontend());
+    assert!(link.player_trade_choose_partner(partner));
+    assert!(!link.player_trade_panel().open);
+    assert_eq!(link.player_trade_panel().partner, Some(partner));
+    link.use_shared_frontend();
+    assert!(link.player_trade_choose_partner(partner));
+    assert!(link.player_trade_panel().open);
+}
