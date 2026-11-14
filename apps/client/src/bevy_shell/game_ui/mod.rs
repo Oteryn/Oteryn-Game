@@ -60,6 +60,7 @@ mod npc_shop;
 pub(super) mod options;
 pub(super) mod party;
 pub(super) mod player_report_report;
+pub(super) mod premium_overview;
 mod prey;
 pub(super) use prey::open as open_prey;
 mod projection;
@@ -166,6 +167,7 @@ pub(super) fn install(app: &mut App) {
     options::install(app);
     party::install(app);
     player_report_report::install(app);
+    premium_overview::install(app);
     prey::install(app);
     quick_loot::install(app);
     raid_schedule::install(app);

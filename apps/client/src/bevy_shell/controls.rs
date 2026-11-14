@@ -291,6 +291,7 @@ impl HostOwner {
         if play.link.guild_input(routed)
             || play.link.guild_bank_input(routed)
             || play.link.mechanics_status_input(routed)
+            || play.link.premium_overview_input_bound(routed)
             || play.link.party_effects_input(routed)
             || play.link.potion_durations_input(routed)
             || play.link.store_input(routed)
