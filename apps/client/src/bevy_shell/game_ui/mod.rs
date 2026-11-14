@@ -2,6 +2,8 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+mod house_podium;
+pub(super) use house_podium::open as open_house_podium;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -233,6 +235,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    house_podium::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
