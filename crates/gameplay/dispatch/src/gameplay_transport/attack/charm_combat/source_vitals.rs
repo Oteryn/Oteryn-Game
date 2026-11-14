@@ -11,6 +11,50 @@ pub(in crate::gameplay_transport) struct CharmSourceVitals<'a> {
 }
 
 impl PlayerLethalVitals for CharmSourceVitals<'_> {
+    fn dodge_source_attack(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+    ) -> bool {
+        if self
+            .states
+            .source_player_health(runtime, target, session)
+            .is_none()
+            || self.states.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return false;
+        }
+        let Ok(creature) = runtime.companion_snapshot(source) else {
+            return false;
+        };
+        if creature.state.master.is_some() || creature.state.policy.is_familiar {
+            return false;
+        }
+        let digest = Sha256::new()
+            .chain_update(b"oteryn.charm.source.v1")
+            .chain_update(occurrence.as_bytes())
+            .finalize();
+        let mut identity = [0; 16];
+        identity.copy_from_slice(&digest[..16]);
+        evaluate(
+            self.states,
+            runtime,
+            self.catalogue,
+            target,
+            session,
+            &creature.state.policy.definition_key,
+            &self.root,
+            DecisionOccurrenceId::from_bytes(identity),
+            CharmHookEvent::IncomingCreatureAttack,
+        )
+        .iter()
+        .any(|outcome| matches!(effect(outcome), Some(CharmEffectOutcome::DodgeAttack)))
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "preserve the existing native owner ABI"

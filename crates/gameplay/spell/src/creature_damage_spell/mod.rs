@@ -2505,6 +2505,20 @@ impl DamageSpellOwner {
             occurrence,
         } in prepared.targets
         {
+            // CHARM4-INCOMING-EFFECT-ORDER-V1: cancellation precedes every
+            // mutation, reflection and attached effect. The source owner retains
+            // this actual no-effect outcome, so retry cannot select a new result.
+            if vitals.dodge_source_attack(runtime, proposal.issuer, target, session, &occurrence) {
+                result.targets.push((
+                    target,
+                    Ok(SpellTargetOutcome {
+                        damage: None,
+                        mana: None,
+                        condition_only_applied: false,
+                    }),
+                ));
+                continue;
+            }
             if source.element.as_deref() != Some("mana_drain")
                 && !vitals.reflect_equipment_damage(
                     runtime,

@@ -176,6 +176,21 @@ impl PlayerHitKind {
 }
 
 pub trait PlayerLethalVitals {
+    /// Read-only defensive selection after independent source/target admission.
+    /// The source owner retains its cancellation in the occurrence receipt before
+    /// returning; no synthetic zero-damage HP/MP receipt is manufactured.
+    /// A successful Dodge cancels the whole attack, including attached conditions.
+    fn dodge_source_attack(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _occurrence: &str,
+    ) -> bool {
+        false
+    }
+
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
     #[allow(clippy::too_many_arguments)]
