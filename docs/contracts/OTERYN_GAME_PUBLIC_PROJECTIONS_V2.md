@@ -129,8 +129,8 @@ deferred mount display emits no mount. Keys use the common key grammar.
 Four independent `[platform.public_projections]` flags default false, missing
 means false: `character_skills_enabled`, `character_achievements_enabled`,
 `character_equipment_enabled`, `character_outfit_enabled`. The existing global
-`enabled` prerequisite remains unchanged. Publisher selection and the physical mTLS boundary exclude these four families
-even when flags are true until Part C enables qualified delivery. Migration
+`enabled` prerequisite remains unchanged. Publisher selection and the physical mTLS boundary admit these four families
+only when their independent per-family flags are true; missing flags are false. Migration
 2834 supplies their durable sources. No new environment variable is defined.
 
 ## Persistence, watermark and recovery
@@ -182,3 +182,26 @@ Full operator resync includes all four families and all subjects, including
 suppression rows. Baseline completeness is false until that scan completes.
 Unknown/poison rows remain queued. Delivery acknowledgements continue to clear
 only through the acknowledged epoch/revision; a concurrent successor remains.
+
+## Flagged character-view delivery (P3 Part C)
+
+The Game server supplies the same independent default-false Activation to
+publisher selection and the actual mTLS boundary. The shared identity and
+compiled versioned routes are retained; no environment variables or wire fields
+are added. The enabled achievement loop first synchronizes Game catalogue
+metadata and fail closed on mismatch. Other families continue independently.
+
+Watermarks attempt every three seconds, bounded by durable outbox age and
+baseline completeness. Exchanges are bounded to three seconds and 256 response
+bytes; transient backoff is 1..60 seconds with longer Retry-After honored.
+Definite refusals retain the subject and alarm/hold for 300 seconds. Full resync
+includes suppressions and retained subjects in bounded 128-subject batches under
+the existing 60-second operator deadline. Independent flags activate no owner
+serving authority or production rollout.
+
+Migration 2834 moves the unavoidable metadata replacement of old closed family
+CHECKs to its end, adds them NOT VALID then validates separately. PostgreSQL
+requires ACCESS EXCLUSIVE for dropping those old CHECKs; transactional migration
+cannot eliminate that short schema lock. No hot-root index is built. Raw outfit
+proof DML is revoked, the proof writer has a pinned search_path, and ordinary
+revision-only root changes do not recapture unrelated family payloads.

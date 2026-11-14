@@ -76,7 +76,7 @@
         "alarms"
       ],
       "codes": [],
-      "note": "A definite public projection refusal held publication."
+      "note": "A definite v1/v2 public projection refusal held publication for 300 s; bounded family and alarm count only, no subject or payload."
     },
     {
       "event": "public_projections",

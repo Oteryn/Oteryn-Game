@@ -550,32 +550,28 @@ fn public_projections_v2_character_view_bounds_and_exact_members() {
 }
 
 #[test]
-fn public_projections_v2_new_families_never_published_before_source_support() {
-    let activation = Activation {
-        character_skills: true,
-        character_achievements: true,
-        character_equipment: true,
-        character_outfit: true,
-        ..Activation::default()
-    };
-    let selected: Vec<_> = Family::ALL
-        .into_iter()
-        .filter(|family| family.publishable(activation))
-        .collect();
-    for family in [
+fn public_v2_owner_only_families_independent_flags() {
+    let off = Activation::default();
+    let families = [
         Family::CharacterSkills,
         Family::CharacterAchievements,
         Family::CharacterEquipment,
         Family::CharacterOutfit,
-    ] {
-        assert!(family.enabled(activation));
-        assert!(!family.produced());
-        assert!(!selected.contains(&family));
+    ];
+    for (index, family) in families.into_iter().enumerate() {
+        assert!(!family.publishable(off));
+        let mut activation = off;
+        match family {
+            Family::CharacterSkills => activation.character_skills = true,
+            Family::CharacterAchievements => activation.character_achievements = true,
+            Family::CharacterEquipment => activation.character_equipment = true,
+            Family::CharacterOutfit => activation.character_outfit = true,
+            _ => unreachable!("test selects only new families"),
+        }
+        for (j, other) in families.into_iter().enumerate() {
+            assert_eq!(other.publishable(activation), index == j);
+        }
     }
-    assert_eq!(
-        selected,
-        [Family::CharacterDeaths, Family::Guild, Family::House]
-    );
 }
 
 #[test]
@@ -619,7 +615,7 @@ fn public_projections_v2_invalid_fixture_bytes_are_refused() {
     assert!(decode_watermark(file.trim_end_matches('\n').as_bytes()).is_err());
 }
 #[test]
-fn public_projections_v2_transport_boundary_refuses_wire_only_families() {
+fn public_projections_v2_transport_boundary_enforces_independent_family_flags() {
     for name in [
         "character_skills",
         "character_achievements",
@@ -628,7 +624,45 @@ fn public_projections_v2_transport_boundary_refuses_wire_only_families() {
     ] {
         let (wire, snapshot) = character_view_fixture(name);
         assert!(decode_character_snapshot(wire.as_bytes()).is_ok());
-        assert!(!publication_supported(snapshot.family().operation(), &wire));
+        let mut activation = Activation::default();
+        match snapshot.family() {
+            Family::CharacterSkills => activation.character_skills = true,
+            Family::CharacterAchievements => activation.character_achievements = true,
+            Family::CharacterEquipment => activation.character_equipment = true,
+            Family::CharacterOutfit => activation.character_outfit = true,
+            _ => panic!("fixture family"),
+        }
+        assert!(publication_supported(
+            snapshot.family().operation(),
+            &wire,
+            activation
+        ));
+        let wm = encode_watermark(
+            AUTHORITY,
+            snapshot.family(),
+            Facts {
+                projection_epoch: 1,
+                oldest_undelivered_ms: None,
+                now_ms: 1790000003000,
+            },
+            Duration::from_secs(3),
+        )
+        .unwrap();
+        assert!(publication_supported(
+            Operation::PublishPublicProjectionWatermarkV2,
+            &wm,
+            activation
+        ));
+        assert!(!publication_supported(
+            Operation::PublishPublicProjectionWatermarkV2,
+            &wm,
+            Activation::default()
+        ));
+        assert!(!publication_supported(
+            snapshot.family().operation(),
+            &wire,
+            Activation::default()
+        ));
     }
     let wire = encode_watermark(
         AUTHORITY,
@@ -643,7 +677,8 @@ fn public_projections_v2_transport_boundary_refuses_wire_only_families() {
     .unwrap();
     assert!(!publication_supported(
         Operation::PublishPublicProjectionWatermarkV2,
-        &wire
+        &wire,
+        Activation::default()
     ));
 }
 #[test]
@@ -674,4 +709,18 @@ fn public_projections_v2_skills_and_equipment_reject_review_boundaries() {
         decode_character_snapshot(wire.replace(row, &format!("{left},{right}")).as_bytes())
             .is_err()
     );
+}
+
+#[test]
+fn public_v2_outfit_producer_defers_mount_but_decoder_keeps_wire_shape() {
+    let (_, mut snapshot) = character_view_fixture("character_outfit");
+    let Body::Outfit(rows) = &mut snapshot.body else {
+        panic!("outfit")
+    };
+    rows[0].mount.push(character_views::Mount {
+        mount_key: "mount.fixture".into(),
+    });
+    let wire = encode_wire(AUTHORITY, &snapshot).unwrap();
+    assert!(decode_character_snapshot(wire.as_bytes()).is_ok());
+    assert!(encode(AUTHORITY, &snapshot).is_err());
 }

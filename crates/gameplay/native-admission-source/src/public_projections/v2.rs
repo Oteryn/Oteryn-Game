@@ -74,22 +74,12 @@ pub struct Activation {
     pub world_daily_kills: bool,
 }
 impl Family {
-    /// Durable source support alone never authorizes publication. Part C enables delivery.
+    /// All compiled snapshot families have durable sources; activation remains independent.
     pub const fn produced(self) -> bool {
-        match self {
-            Self::CharacterDeaths
-            | Self::Guild
-            | Self::House
-            | Self::CharacterOnlineSessions
-            | Self::WorldDailyKills => true,
-            Self::CharacterSkills
-            | Self::CharacterAchievements
-            | Self::CharacterEquipment
-            | Self::CharacterOutfit => false,
-        }
+        true
     }
     pub const fn publishable(self, activation: Activation) -> bool {
-        self.produced() && self.enabled(activation)
+        self.enabled(activation)
     }
     pub const fn enabled(self, activation: Activation) -> bool {
         match self {
@@ -460,6 +450,14 @@ impl Serialize for Wire<'_> {
     }
 }
 pub fn encode(authority: &str, snapshot: &Snapshot) -> Result<String, SourceError> {
+    if let Body::Outfit(rows) = &snapshot.body
+        && rows.iter().any(|row| !row.mount.is_empty())
+    {
+        return Err(SourceError::InvalidInput);
+    }
+    encode_wire(authority, snapshot)
+}
+fn encode_wire(authority: &str, snapshot: &Snapshot) -> Result<String, SourceError> {
     if !envelope_valid(
         authority,
         snapshot.projection_epoch,
@@ -587,6 +585,21 @@ pub fn encode_watermark(
         512,
     )
 }
+fn log_v2_hold(family: Family, alarms: u64) {
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Warn,
+            "admission",
+            "public_projection_held",
+        )
+        .field(
+            "family",
+            oteryn_error_codes::FieldValue::Token(family.wire()),
+        )
+        .field("alarms", oteryn_error_codes::FieldValue::U64(alarms)),
+    );
+}
 impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, S, K, F> {
     pub(super) async fn v2_loops(&self) {
         let _ = join_all(
@@ -598,7 +611,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
         )
         .await;
     }
-    async fn v2_family_loop(&self, family: Family) {
+    pub(super) async fn v2_family_loop(&self, family: Family) {
+        while self.pass(|| self.store.prepare_v2(family)).await.is_err() {
+            self.clock.sleep(IDLE).await;
+        }
         let mut held: Vec<(String, Duration)> = Vec::new();
         let mut retry = Duration::ZERO;
         let mut backoff = Duration::ZERO;
@@ -618,8 +634,8 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                         self.max_transaction,
                     )
                 {
-                    let result = self
-                        .deliver(
+                    let (result, retry_after) = self
+                        .deliver_with_retry(
                             Operation::PublishPublicProjectionWatermarkV2,
                             &body,
                             EXCHANGE_BOUND,
@@ -631,12 +647,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                             watermark_retry = Duration::ZERO;
                         }
                         Err(e) if definite(e) => {
-                            self.alarm();
+                            log_v2_hold(family, self.alarm());
                             watermark_retry = self.clock.elapsed() + DEFINITE_HOLD;
                         }
                         Err(_) => {
                             watermark_backoff = next_backoff(watermark_backoff);
-                            watermark_retry = self.clock.elapsed() + watermark_backoff;
+                            watermark_retry = self.clock.elapsed().saturating_add(
+                                watermark_backoff.max(retry_after.unwrap_or_default()),
+                            );
                         }
                     }
                 }
@@ -654,15 +672,15 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     continue;
                 }
             };
-            let result = if self.admit(snapshot.projection_epoch).is_err() {
-                Err(NotDelivered::Unavailable)
+            let (result, retry_after) = if self.admit(snapshot.projection_epoch).is_err() {
+                (Err(NotDelivered::Unavailable), None)
             } else {
                 match encode(&self.source_authority, &snapshot) {
                     Ok(body) => {
-                        self.deliver(family.operation(), &body, EXCHANGE_BOUND)
+                        self.deliver_with_retry(family.operation(), &body, EXCHANGE_BOUND)
                             .await
                     }
-                    Err(_) => Err(NotDelivered::InvalidReport),
+                    Err(_) => (Err(NotDelivered::InvalidReport), None),
                 }
             };
             match result {
@@ -673,7 +691,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     retry = Duration::ZERO;
                 }
                 Err(e) if definite(e) => {
-                    self.alarm();
+                    log_v2_hold(family, self.alarm());
                     held.push((
                         format!("{}:{}", snapshot.world_id, snapshot.subject),
                         self.clock.elapsed() + DEFINITE_HOLD,
@@ -681,7 +699,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 }
                 Err(_) => {
                     backoff = next_backoff(backoff);
-                    retry = self.clock.elapsed() + backoff;
+                    retry = self
+                        .clock
+                        .elapsed()
+                        .saturating_add(backoff.max(retry_after.unwrap_or_default()));
                 }
             }
         }

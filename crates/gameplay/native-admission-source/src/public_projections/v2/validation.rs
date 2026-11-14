@@ -84,7 +84,7 @@ pub fn decode_character_snapshot(raw: &[u8]) -> Result<Snapshot, SourceError> {
             .map_err(|_| SourceError::InvalidInput)?,
         body,
     };
-    if encode(&e.source_authority, &snapshot)?.as_bytes() != raw {
+    if encode_wire(&e.source_authority, &snapshot)?.as_bytes() != raw {
         return Err(SourceError::InvalidInput);
     }
     Ok(snapshot)
@@ -116,21 +116,34 @@ pub fn decode_watermark(raw: &[u8]) -> Result<WatermarkFamily, SourceError> {
     }
     Ok(w.family)
 }
-/// The actual mTLS boundary remains closed until Part C enables delivery.
-pub(crate) fn publication_supported(operation: Operation, body: &str) -> bool {
-    match operation {
-        Operation::PublishCharacterSkillsV2
-        | Operation::PublishCharacterAchievementsV2
-        | Operation::PublishCharacterEquipmentV2
-        | Operation::PublishCharacterOutfitV2 => false,
-        Operation::PublishPublicProjectionWatermarkV2 => matches!(
-            decode_watermark(body.as_bytes()),
-            Ok(WatermarkFamily::CharacterDeaths
-                | WatermarkFamily::Guild
-                | WatermarkFamily::House
-                | WatermarkFamily::CharacterOnlineSessions
-                | WatermarkFamily::WorldDailyKills)
-        ),
-        _ => true,
-    }
+/// The mTLS boundary independently enforces each new family flag.
+pub(crate) fn publication_supported(
+    operation: Operation,
+    body: &str,
+    activation: Activation,
+) -> bool {
+    let family = match operation {
+        Operation::PublishCharacterSkillsV2 => Some(Family::CharacterSkills),
+        Operation::PublishCharacterAchievementsV2 => Some(Family::CharacterAchievements),
+        Operation::PublishCharacterEquipmentV2 => Some(Family::CharacterEquipment),
+        Operation::PublishCharacterOutfitV2 => Some(Family::CharacterOutfit),
+        Operation::PublishPublicProjectionWatermarkV2 => {
+            return match decode_watermark(body.as_bytes()) {
+                Ok(WatermarkFamily::CharacterSkills) => activation.character_skills,
+                Ok(WatermarkFamily::CharacterAchievements) => activation.character_achievements,
+                Ok(WatermarkFamily::CharacterEquipment) => activation.character_equipment,
+                Ok(WatermarkFamily::CharacterOutfit) => activation.character_outfit,
+                Ok(
+                    WatermarkFamily::CharacterDeaths
+                    | WatermarkFamily::Guild
+                    | WatermarkFamily::House
+                    | WatermarkFamily::CharacterOnlineSessions
+                    | WatermarkFamily::WorldDailyKills,
+                ) => true,
+                _ => false,
+            };
+        }
+        _ => None,
+    };
+    family.is_none_or(|f| f.publishable(activation))
 }

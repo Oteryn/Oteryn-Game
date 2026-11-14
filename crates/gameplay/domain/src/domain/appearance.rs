@@ -58,6 +58,11 @@ pub enum EarnedCosmetic<'a> {
 /// The active content of this world.
 pub trait AppearanceContent<K> {
     fn palette_size(&self) -> u16;
+    /// Active content's authored default. Missing evidence suppresses projection only.
+    fn projection_fallback(&self, _sex: Sex) -> Option<AppearanceSelection<K>> {
+        None
+    }
+
     /// At most 4096 explicitly authored keys for bounded transaction-bound reads.
     fn earned_grant_keys(&self) -> Vec<String> {
         Vec::new()

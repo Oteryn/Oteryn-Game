@@ -441,6 +441,9 @@ impl ReportClock for Clock {
 
 #[derive(Default)]
 struct Store {
+    v2_rows: Vec<v2::Snapshot>,
+    v2_acks: Vec<u64>,
+    v2_facts: Option<v2::Facts>,
     epoch: u64,
     totals: Vec<TotalsSnapshot>,
     totals_facts: Option<TotalsFacts>,
@@ -466,6 +469,34 @@ struct Store {
 type Shared = Arc<Mutex<Store>>;
 
 impl PublicStore for Shared {
+    async fn next_v2(
+        &self,
+        family: v2::Family,
+        held: &[String],
+    ) -> Result<Option<v2::Snapshot>, ()> {
+        Ok(self
+            .lock()
+            .unwrap()
+            .v2_rows
+            .iter()
+            .find(|s| {
+                s.family() == family && !held.contains(&format!("{}:{}", s.world_id, s.subject))
+            })
+            .cloned())
+    }
+    async fn ack_v2(&self, snapshot: &v2::Snapshot) -> Result<(), ()> {
+        let mut s = self.lock().unwrap();
+        s.v2_acks.push(snapshot.projection_revision);
+        s.v2_rows.retain(|r| {
+            r.subject != snapshot.subject
+                || r.projection_epoch > snapshot.projection_epoch
+                || r.projection_revision > snapshot.projection_revision
+        });
+        Ok(())
+    }
+    async fn v2_facts(&self, _: v2::Family) -> Result<v2::Facts, ()> {
+        self.lock().unwrap().v2_facts.ok_or(())
+    }
     async fn sample_totals(&self, _after: &str) -> Result<Option<String>, ()> {
         Ok(None)
     }
@@ -1791,4 +1822,232 @@ fn world_totals_watermark_requires_durable_sampling_coverage() {
     assert_eq!(sent[0].0, Operation::PublishPublicProjectionWatermarkV1);
     assert!(sent[0].1.contains(r#""family":"world_totals""#));
     assert!(sent[0].1.contains(r#""complete_through":"1790000000""#));
+}
+
+// Bounded virtual-clock execution of the actual asynchronous family loop: no sleeps.
+#[derive(Clone)]
+struct FamilyClock {
+    now: Arc<Mutex<Duration>>,
+    until: Duration,
+}
+impl ReportClock for FamilyClock {
+    fn elapsed(&self) -> Duration {
+        *self.now.lock().unwrap()
+    }
+    fn unix_now(&self) -> i64 {
+        1790000000
+    }
+    async fn sleep(&self, d: Duration) {
+        let next = self.elapsed() + d;
+        if next > self.until {
+            std::future::pending::<()>().await;
+        }
+        *self.now.lock().unwrap() = next;
+    }
+}
+type FamilyReply = (Result<Delivery, NotDelivered>, Option<Duration>);
+struct FamilySink {
+    clock: FamilyClock,
+    sent: Mutex<Vec<(Duration, Operation, String)>>,
+    replies: Mutex<VecDeque<FamilyReply>>,
+    store: Shared,
+    successor: bool,
+}
+impl PublicSink for FamilySink {
+    async fn send(&self, op: Operation, body: &str) -> Result<Delivery, NotDelivered> {
+        self.send_with_retry(op, body).await.0
+    }
+    async fn send_with_retry(
+        &self,
+        op: Operation,
+        body: &str,
+    ) -> (Result<Delivery, NotDelivered>, Option<Duration>) {
+        self.sent
+            .lock()
+            .unwrap()
+            .push((self.clock.elapsed(), op, body.into()));
+        if op == Operation::PublishPublicProjectionWatermarkV2 {
+            return (Ok(Delivery::Accepted), None);
+        }
+        if self.successor {
+            let mut s = self.store.lock().unwrap();
+            if s.v2_acks.is_empty() {
+                let mut next = s.v2_rows[0].clone();
+                next.projection_revision += 1;
+                s.v2_rows.insert(0, next);
+            }
+        }
+        self.replies
+            .lock()
+            .unwrap()
+            .pop_front()
+            .unwrap_or((Err(NotDelivered::Unavailable), None))
+    }
+}
+fn family_publisher(
+    until: u64,
+    replies: Vec<FamilyReply>,
+    successor: bool,
+) -> Publisher<FamilyClock, Shared, FamilySink, Fence> {
+    let snapshot = v2::decode_character_snapshot(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_skills_v2.json"
+        ))
+        .trim_ascii_end(),
+    )
+    .unwrap();
+    let store = Shared::default();
+    store.lock().unwrap().v2_rows.push(snapshot);
+    let clock = FamilyClock {
+        now: Arc::default(),
+        until: Duration::from_secs(until),
+    };
+    let sink = FamilySink {
+        clock: clock.clone(),
+        sent: Mutex::default(),
+        replies: Mutex::new(replies.into()),
+        store: store.clone(),
+        successor,
+    };
+    let mut p = Publisher::new(clock, store, sink, Fence(Some(1)), AUTHORITY.into(), MAX_TX);
+    p.v2_activation.character_skills = true;
+    p
+}
+fn drive_family(p: &Publisher<FamilyClock, Shared, FamilySink, Fence>) {
+    if !v2::Family::CharacterSkills.publishable(p.v2_activation) {
+        let mut work = Box::pin(p.v2_loops());
+        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(work.as_mut().poll(&mut cx).is_pending());
+        return;
+    }
+    let mut work = Box::pin(p.v2_family_loop(v2::Family::CharacterSkills));
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(work.as_mut().poll(&mut cx).is_pending());
+}
+#[test]
+fn public_v2_new_families_flag_off_never_published() {
+    let mut p = family_publisher(5, vec![], false);
+    p.v2_activation = Default::default();
+    drive_family(&p);
+    assert!(
+        p.sink
+            .sent
+            .lock()
+            .unwrap()
+            .iter()
+            .all(|(_, op, _)| !matches!(
+                op,
+                Operation::PublishCharacterSkillsV2
+                    | Operation::PublishCharacterAchievementsV2
+                    | Operation::PublishCharacterEquipmentV2
+                    | Operation::PublishCharacterOutfitV2
+            ))
+    );
+    assert!(p.store.lock().unwrap().v2_acks.is_empty());
+}
+#[test]
+fn public_v2_skills_flag_on_publishes_golden_bytes() {
+    let p = family_publisher(1, vec![(Ok(Delivery::Accepted), None)], false);
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    assert_eq!(
+        sent.iter()
+            .find(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+            .unwrap()
+            .2,
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_skills_v2.json"
+        ))
+        .trim_end()
+    );
+    assert_eq!(p.store.lock().unwrap().v2_acks, vec![7]);
+}
+#[test]
+fn public_v2_definite_refusal_holds_subject_300s() {
+    for error in [
+        NotDelivered::Malformed,
+        NotDelivered::InvalidReport,
+        NotDelivered::Unauthenticated,
+        NotDelivered::Conflict,
+    ] {
+        let p = family_publisher(
+            303,
+            vec![(Err(error), None), (Ok(Delivery::Accepted), None)],
+            false,
+        );
+        drive_family(&p);
+        let sent = p.sink.sent.lock().unwrap();
+        let snapshots: Vec<_> = sent
+            .iter()
+            .filter(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+            .collect();
+        assert_eq!(snapshots.len(), 2);
+        assert!(snapshots[1].0 - snapshots[0].0 >= Duration::from_secs(300));
+        assert!(snapshots[1].0 - snapshots[0].0 < Duration::from_secs(302));
+        assert_eq!(snapshots[0].2, snapshots[1].2);
+        assert_eq!(p.alarms.load(atomic::Ordering::Relaxed), 1);
+    }
+}
+#[test]
+fn public_v2_retry_after_honoured() {
+    let p = family_publisher(
+        125,
+        vec![
+            (
+                Err(NotDelivered::Unavailable),
+                Some(Duration::from_secs(123)),
+            ),
+            (Ok(Delivery::Accepted), None),
+        ],
+        false,
+    );
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    let snapshots: Vec<_> = sent
+        .iter()
+        .filter(|(_, op, _)| *op == Operation::PublishCharacterSkillsV2)
+        .collect();
+    assert_eq!(snapshots.len(), 2);
+    assert!(snapshots[1].0 - snapshots[0].0 >= Duration::from_secs(123));
+    assert!(snapshots[1].0 - snapshots[0].0 < Duration::from_secs(124));
+    assert_eq!(snapshots[0].2, snapshots[1].2);
+}
+#[test]
+fn public_v2_ack_clears_only_acknowledged_revision() {
+    let p = family_publisher(1, vec![(Ok(Delivery::Accepted), None)], true);
+    drive_family(&p);
+    let s = p.store.lock().unwrap();
+    assert_eq!(s.v2_acks, vec![7]);
+    assert_eq!(s.v2_rows[0].projection_revision, 8);
+}
+#[test]
+fn public_v2_watermark_not_past_poison_row() {
+    let p = family_publisher(12, vec![(Err(NotDelivered::InvalidReport), None)], false);
+    p.store.lock().unwrap().v2_facts = Some(v2::Facts {
+        projection_epoch: 1,
+        oldest_undelivered_ms: Some(1790000000000),
+        now_ms: 1790000015000,
+    });
+    drive_family(&p);
+    let sent = p.sink.sent.lock().unwrap();
+    let watermarks: Vec<serde_json::Value> = sent
+        .iter()
+        .filter(|(_, op, _)| *op == Operation::PublishPublicProjectionWatermarkV2)
+        .map(|(_, _, body)| serde_json::from_str(body).unwrap())
+        .collect();
+    assert!(watermarks.len() >= 4);
+    for w in watermarks {
+        assert!(
+            w["complete_through"]
+                .as_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+                < 1790000000
+        );
+        assert!(w["complete_through"].as_str().unwrap() <= w["observed_at"].as_str().unwrap());
+    }
+    assert_eq!(p.store.lock().unwrap().v2_rows.len(), 1);
 }

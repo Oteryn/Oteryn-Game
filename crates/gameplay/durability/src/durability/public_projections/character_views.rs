@@ -57,10 +57,10 @@ pub(crate) async fn capture_displayed_look<K: AsRef<str>>(
     occurrence: &[u8; 16],
     shown: crate::domain::appearance::DisplayedLook<'_, K>,
 ) -> Result<(), DurabilityError> {
-    let affected = sqlx::query("INSERT INTO game_public_v2_outfit_proofs(character_id,account_id,sex,occurrence_id,content_revision,outfit_key,colours,addons) SELECT r.character_id,r.account_id,r.sex,a.last_appearance_occurrence_id,a.content_revision,$3,$4,$5 FROM game_character_roots r JOIN game_character_appearance a USING(character_id) WHERE r.character_id=encode($1,'hex')::uuid AND a.last_appearance_occurrence_id=encode($2,'hex')::uuid AND r.sex IS NOT NULL AND a.outfit_key=$3 AND a.colours=$4 AND a.addons=$5 ON CONFLICT(character_id) DO UPDATE SET account_id=EXCLUDED.account_id,sex=EXCLUDED.sex,occurrence_id=EXCLUDED.occurrence_id,content_revision=EXCLUDED.content_revision,outfit_key=EXCLUDED.outfit_key,colours=EXCLUDED.colours,addons=EXCLUDED.addons")
+    let affected: i64 = sqlx::query_scalar("SELECT game_public_v2_write_outfit_proof(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5)")
         .bind(character.as_slice()).bind(occurrence.as_slice()).bind(shown.outfit_key.as_ref())
         .bind(shown.colours.map(i32::from).to_vec()).bind(i16::from(shown.addons))
-        .execute(&mut **tx).await?.rows_affected();
+        .fetch_one(&mut **tx).await?;
     if affected != 1 { return Err(DurabilityError::InvalidStoredState); }
     Ok(())
 }

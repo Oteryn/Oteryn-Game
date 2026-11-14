@@ -372,17 +372,18 @@ resolution (including synthetic fixture catalogue evidence), current ownership
 and its revision floor, committed custody/DisplayedLook and suppression on
 unknown source evidence remain Part B/C source-reader responsibilities. Merely
 constructing a wire record does not prove those facts or authorize disclosure.
-There is no inbound snapshot decoder in the existing Game v2 producer. Invalid
-raw request fixtures are retained for Platform conformance; typed record
-validation is exercised here. The equal-key changed-equipment example is valid
+Part B adds closed canonical validators for the four character-view envelopes
+and the v2 watermark; invalid raw fixtures are exercised alongside typed record
+validation. The equal-key changed-equipment example is valid
 wire and is a sequence conflict, never a malformed schema; deciding 409 remains
 the Platform ingest responsibility.
 
-The supervisor authorized only mechanical integration compatibility edits:
-config parses four independent default-false flags without new environment
-variables; serve copies them into Activation. Wire-only families are excluded
-from publisher selection even if enabled, and durability returns no snapshot
-and refuses completeness facts for them until Part B provides the sources.
+At Part A, the supervisor authorized mechanical compatibility edits only:
+config parsed four independent default-false flags without new environment
+variables and serve copied them into Activation. Parts B and C replace that
+temporary wire-only guard with real durable sources and flagged delivery.
+Both publisher selection and the physical mTLS boundary still refuse a new
+family when its flag is missing or false.
 
 The pasted death example's `"killers":["Beren","Mira"]` differs from main's
 stable-identity records. Per supervisor decision, deaths are outside P3: neither
@@ -404,8 +405,9 @@ existing file-name order. Game previously exposed per-entry revisions only;
 this defines the whole-catalogue identity without substituting an earned row's
 revision or a gameplay content revision. `sync_public_achievement_catalogue`
 installs Game-owned metadata under reconciliation and the epoch fence. Reads
-require the exact current compiled catalogue and metadata. Part C must perform
-that synchronization before starting achievement delivery. Unknown keys,
+require the exact current compiled catalogue and metadata. The publisher synchronizes
+that Game-owned cache before the first achievement completeness pass; failure
+stalls only that family. Unknown keys,
 missing provenance and more than 1024 facts retain a poison head/outbox, never
 truncate or claim an empty earned list. Count and aggregation share one SQL
 snapshot. Ownership changes and account-fact fan-out serialize through a
@@ -425,8 +427,8 @@ ownership or interpretation invalidates it. Displayed mounts are always empty,
 even when a valid selection retains a mount. No unlock inventory is exported.
 
 The durability reader now decodes all four families. Native publisher selection
-and the actual mTLS snapshot/watermark boundary remain closed until Part C;
-flags stay independently default false. The Part A review fixes additionally
+and the actual mTLS snapshot/watermark boundary both enforce the independent
+flags, which stay default false. The Part A review fixes additionally
 validate closed canonical envelopes and exercise the previously unread invalid
 fixtures. Existing v1 and death encoders are unchanged.
 
@@ -439,3 +441,36 @@ Every case runs a capture-disabled negative control first and checks its exact
 missing-output failure before a fresh positive database. The same-second case
 injects a fixed SQL observation clock across separate commits, and verifies
 that rollback leaves no published revision.
+
+## P3 Part C — flagged delivery
+
+The server passes its existing per-family config to both the v2 publisher and
+mTLS sink. Missing flags stay false; owner-only families activate independently.
+The compiled paths, shared identity, Connection: close and three-second exchange
+bound are unchanged. Large achievement requests receive their route-specific
+body allowance rather than the generic 10 KiB HTTP envelope allowance.
+
+V2 exchanges retain Retry-After without a 60-second cap. Transient retries use
+max(server delay, exponential 1..60 seconds); definite 400/401/409 refusals keep
+the subject queued and emit the registered bounded held event for a 300-second
+hold. Responses exceed neither 256 bytes nor their exact acknowledgement schema;
+unexpected framing/status/content is unknown acknowledgement. ACK transactions
+clear only through the acknowledged revision. Three-second watermark attempts
+read the durable oldest outstanding change and baseline completeness; poison,
+failed delivery and unfinished resync cannot advance completeness.
+
+Review hardening in migration 2834: missing catalogues produce held JSON null,
+never a known empty achievement record. Root revision-only writes no longer scan
+unrelated families; ownership/world/lifecycle changes still invalidate all views.
+Outfit proofs have no direct runtime DML grants: a pinned-search-path SECURITY
+DEFINER writer binds the current root, selection and immutable appearance receipt.
+DisplayedLook uses the content-authored fallback; missing fallback evidence
+suppresses projection without rejecting gameplay. The producer always emits
+mount [], while the closed wire decoder retains its accepted 0..1 shape.
+
+Operator resync includes all four families, using 128-subject keyset batches
+inside the existing atomic resync/60-second deadline. The existing closed CHECKs
+must be replaced to admit the new families. PostgreSQL requires ACCESS EXCLUSIVE
+for that metadata change even with NOT VALID; these changes run last, with
+separate VALIDATE statements, and no root index build or source resync while
+that unavoidable lock is held. No claim of lock-free transactional DDL is made.

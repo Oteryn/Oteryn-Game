@@ -1372,7 +1372,7 @@ async fn public_projections_loop(
     let mut publisher = public_projections::Publisher::new(
         SystemClock::default(),
         crate::durability::public_projections::PublicProjectionsStore { root, authority },
-        MtlsPublicSink::new(descriptor),
+        MtlsPublicSink::new(descriptor).with_v2_activation(activation),
         EpochFenceFile::new(fence),
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,

@@ -1,15 +1,4 @@
 -- P3/G-4 revision 3. Derived sources only; no serving or publisher activation.
-ALTER TABLE game_public_v2_heads DROP CONSTRAINT game_public_v2_heads_family_check;
-ALTER TABLE game_public_v2_heads ADD CONSTRAINT game_public_v2_heads_family_check CHECK(family IN(
- 'character_deaths','guild','house','character_online_sessions','world_daily_kills',
- 'character_skills','character_achievements','character_equipment','character_outfit')) NOT VALID;
-ALTER TABLE game_public_v2_heads VALIDATE CONSTRAINT game_public_v2_heads_family_check;
-
-ALTER TABLE game_public_v2_subject_fences DROP CONSTRAINT game_public_v2_subject_fences_lock_kind_check;
-ALTER TABLE game_public_v2_subject_fences ADD CONSTRAINT game_public_v2_subject_fences_lock_kind_check
- CHECK(lock_kind IN('deaths','guild','house','online','kills','character_views')) NOT VALID;
-ALTER TABLE game_public_v2_subject_fences VALIDATE CONSTRAINT game_public_v2_subject_fences_lock_kind_check;
-
 -- A validated whole Game catalogue, never an inferred revision from one earned row.
 CREATE TABLE game_public_v2_achievement_catalogue (
  singleton BOOLEAN PRIMARY KEY CHECK(singleton), revision TEXT NOT NULL,
@@ -32,9 +21,26 @@ CREATE TABLE game_public_v2_character_baselines (
 );
 INSERT INTO game_public_v2_character_baselines(family) VALUES('character_skills'),('character_achievements'),('character_equipment'),('character_outfit');
 REVOKE ALL ON game_public_v2_achievement_catalogue,game_public_v2_outfit_proofs,game_public_v2_character_baselines FROM PUBLIC;
-GRANT SELECT,INSERT,UPDATE ON game_public_v2_achievement_catalogue,game_public_v2_outfit_proofs TO oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT,INSERT,UPDATE ON game_public_v2_achievement_catalogue TO oteryn_game_runtime,oteryn_game_control;
+REVOKE INSERT,UPDATE,DELETE ON game_public_v2_outfit_proofs FROM oteryn_game_runtime,oteryn_game_control;
+GRANT SELECT ON game_public_v2_outfit_proofs TO oteryn_game_runtime,oteryn_game_control;
 GRANT SELECT ON game_public_v2_character_baselines TO oteryn_game_runtime,oteryn_game_control;
 
+CREATE FUNCTION game_public_v2_write_outfit_proof(c UUID,o UUID,k TEXT,p INTEGER[],a SMALLINT)
+ RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE changed BIGINT;
+BEGIN
+ INSERT INTO game_public_v2_outfit_proofs(character_id,account_id,sex,occurrence_id,content_revision,outfit_key,colours,addons)
+ SELECT r.character_id,r.account_id,r.sex,v.last_appearance_occurrence_id,v.content_revision,k,p,a
+ FROM game_character_roots r JOIN game_character_appearance v USING(character_id)
+ JOIN game_character_appearance_receipts q ON q.appearance_occurrence_id=v.last_appearance_occurrence_id AND q.character_id=r.character_id
+ WHERE r.character_id=c AND v.last_appearance_occurrence_id=o AND r.sex IS NOT NULL
+ AND v.outfit_key=k AND v.colours=p AND v.addons=a AND v.committed_character_revision=r.character_revision
+ ON CONFLICT(character_id) DO UPDATE SET account_id=EXCLUDED.account_id,sex=EXCLUDED.sex,occurrence_id=EXCLUDED.occurrence_id,
+ content_revision=EXCLUDED.content_revision,outfit_key=EXCLUDED.outfit_key,colours=EXCLUDED.colours,addons=EXCLUDED.addons;
+ GET DIAGNOSTICS changed=ROW_COUNT;
+ RETURN changed;
+END $$;
 CREATE FUNCTION game_public_v2_equipment_custody(c UUID)
  RETURNS TABLE(slot SMALLINT,item_instance_id UUID,world_id UUID) LANGUAGE sql STABLE SECURITY DEFINER AS $$
  SELECT s.slot,s.item_instance_id,s.world_id FROM game_character_equipment_slots s WHERE s.character_id=c
@@ -49,7 +55,9 @@ BEGIN
  END IF;
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
  -- Epoch -> catalogue -> derived subject; fan-out never locks another actor's root.
- PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
+ IF f='character_achievements' THEN
+  PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
+ END IF;
  PERFORM game_public_v2_subject_lock('character_views',c::text);
  SELECT * INTO r FROM game_character_roots WHERE character_id=c;
  IF r.character_id IS NOT NULL AND r.lifecycle=1 AND NOT game_account_closure_detached(c) THEN
@@ -66,6 +74,7 @@ BEGIN
    p:=coalesce(p,'[]'::jsonb);
   ELSIF f='character_achievements' THEN
    SELECT * INTO cat FROM game_public_v2_achievement_catalogue WHERE singleton;
+   p:='null'::jsonb; -- Missing catalogue is unknown, never a known empty earned list.
    IF FOUND THEN
     -- One statement/cut for count, compatibility and content, bounded at 1025.
     WITH earned AS MATERIALIZED (
@@ -112,11 +121,27 @@ CREATE FUNCTION game_public_v2_character_source() RETURNS TRIGGER LANGUAGE plpgs
 DECLARE c UUID; f TEXT; a UUID;
 BEGIN
  c:=CASE WHEN TG_OP='DELETE' THEN OLD.character_id ELSE NEW.character_id END;
+ IF TG_TABLE_NAME='game_character_roots' AND TG_OP='UPDATE' THEN
+  IF (OLD.account_id,OLD.world_id,OLD.lifecycle,OLD.profile_revision,OLD.ruleset_revision,OLD.content_revision,OLD.sex)
+   IS NOT DISTINCT FROM (NEW.account_id,NEW.world_id,NEW.lifecycle,NEW.profile_revision,NEW.ruleset_revision,NEW.content_revision,NEW.sex) THEN RETURN NULL; END IF;
+ END IF;
  IF TG_TABLE_NAME='game_character_roots' THEN
   SELECT account_id INTO a FROM game_character_roots WHERE character_id=c;
   IF a IS NOT NULL THEN PERFORM game_public_v2_subject_lock('character_views','account:'||a::text); END IF;
  END IF;
- FOREACH f IN ARRAY TG_ARGV LOOP PERFORM game_public_v2_character_capture(c,f); END LOOP;
+ FOREACH f IN ARRAY TG_ARGV LOOP
+  -- Revision-only gameplay writes do not re-scan unrelated source families.
+  IF TG_TABLE_NAME='game_character_roots' AND TG_OP='UPDATE' THEN
+   IF (OLD.account_id,OLD.world_id,OLD.lifecycle) IS NOT DISTINCT FROM
+      (NEW.account_id,NEW.world_id,NEW.lifecycle) THEN
+    IF f='character_achievements' OR f='character_equipment' THEN CONTINUE; END IF;
+    IF f='character_skills' AND (OLD.profile_revision,OLD.ruleset_revision,OLD.content_revision)
+       IS NOT DISTINCT FROM (NEW.profile_revision,NEW.ruleset_revision,NEW.content_revision) THEN CONTINUE; END IF;
+    IF f='character_outfit' AND (OLD.sex,OLD.content_revision) IS NOT DISTINCT FROM (NEW.sex,NEW.content_revision) THEN CONTINUE; END IF;
+   END IF;
+  END IF;
+  PERFORM game_public_v2_character_capture(c,f);
+ END LOOP;
  RETURN NULL;
 END $$;
 -- Deferred capture sees the final reconciled source cut, never an intermediate root/XP update.
@@ -192,27 +217,54 @@ CREATE FUNCTION game_public_v2_source_pending(f TEXT) RETURNS BIGINT LANGUAGE sq
 $$;
 ALTER FUNCTION game_public_projection_resync(TEXT,BOOLEAN) RENAME TO game_public_projection_resync_before_character_views;
 CREATE FUNCTION game_public_projection_resync(f TEXT,raise_epoch BOOLEAN) RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE e BIGINT; c RECORD; family_name TEXT;
+DECLARE e BIGINT; c RECORD; family_name TEXT; last_character UUID; batch_count INTEGER;
 BEGIN
  IF f IS NULL OR raise_epoch IS NULL THEN RAISE EXCEPTION 'resync requires family and epoch mode' USING ERRCODE='22004'; END IF;
  IF f IN('character_skills','character_achievements','character_equipment','character_outfit') THEN
   IF raise_epoch THEN RAISE EXCEPTION 'only all may raise epoch' USING ERRCODE='22023'; END IF;
   SELECT projection_epoch INTO STRICT e FROM game_public_projection_epoch WHERE epoch_scope=1 FOR UPDATE;
  ELSE e:=game_public_projection_resync_before_character_views(f,raise_epoch); END IF;
- FOR c IN SELECT character_id FROM game_character_roots UNION
-   SELECT subject::uuid FROM game_public_v2_heads WHERE family IN('character_skills','character_achievements','character_equipment','character_outfit') ORDER BY character_id LOOP
-  FOREACH family_name IN ARRAY ARRAY['character_skills','character_achievements','character_equipment','character_outfit'] LOOP
-   IF f='all' OR f=family_name THEN PERFORM game_public_v2_character_capture(c.character_id,family_name); END IF;
+ IF f='all' OR f IN('character_skills','character_achievements','character_equipment','character_outfit') THEN
+ LOOP
+  batch_count:=0;
+  FOR c IN SELECT character_id FROM (
+    SELECT character_id FROM game_character_roots WHERE last_character IS NULL OR character_id>last_character
+    UNION SELECT subject::uuid FROM game_public_v2_heads WHERE family IN('character_skills','character_achievements','character_equipment','character_outfit')
+      AND (last_character IS NULL OR subject::uuid>last_character)
+   ) subjects ORDER BY character_id LIMIT 128 LOOP
+   FOREACH family_name IN ARRAY ARRAY['character_skills','character_achievements','character_equipment','character_outfit'] LOOP
+    IF f='all' OR f=family_name THEN PERFORM game_public_v2_character_capture(c.character_id,family_name); END IF;
+   END LOOP;
+   last_character:=c.character_id; batch_count:=batch_count+1;
   END LOOP;
+  EXIT WHEN batch_count<128;
  END LOOP;
+ END IF;
  UPDATE game_public_v2_character_baselines SET complete=true WHERE f='all' OR family=f;
  RETURN e;
 END $$;
 DO $$ DECLARE f REGPROCEDURE; BEGIN
  FOR f IN SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=current_schema()
- AND (p.proname IN('game_public_v2_equipment_custody','game_public_v2_item_source','game_public_v2_character_capture','game_public_v2_character_source','game_public_v2_achievement_source','game_public_v2_catalogue_source','game_public_v2_ready','game_public_v2_source_pending','game_public_projection_resync')) LOOP
+ AND (p.proname IN('game_public_v2_write_outfit_proof','game_public_v2_equipment_custody','game_public_v2_item_source','game_public_v2_character_capture','game_public_v2_character_source','game_public_v2_achievement_source','game_public_v2_catalogue_source','game_public_v2_ready','game_public_v2_source_pending','game_public_projection_resync')) LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
  END LOOP;
 END $$;
 GRANT EXECUTE ON FUNCTION game_public_v2_ready(TEXT,TEXT,TEXT),game_public_v2_source_pending(TEXT) TO oteryn_game_runtime,oteryn_game_control;
+
+-- Expand the pre-existing closed checks last: metadata-only replacement, then validation.
+-- PostgreSQL requires ACCESS EXCLUSIVE to remove the old closed CHECK; keep that
+-- unavoidable lock out of source setup/resync (the migrator is transactional).
+ALTER TABLE game_public_v2_heads DROP CONSTRAINT game_public_v2_heads_family_check;
+ALTER TABLE game_public_v2_heads ADD CONSTRAINT game_public_v2_heads_family_check CHECK(family IN(
+ 'character_deaths','guild','house','character_online_sessions','world_daily_kills',
+ 'character_skills','character_achievements','character_equipment','character_outfit')) NOT VALID;
+ALTER TABLE game_public_v2_heads VALIDATE CONSTRAINT game_public_v2_heads_family_check;
+
+ALTER TABLE game_public_v2_subject_fences DROP CONSTRAINT game_public_v2_subject_fences_lock_kind_check;
+ALTER TABLE game_public_v2_subject_fences ADD CONSTRAINT game_public_v2_subject_fences_lock_kind_check
+ CHECK(lock_kind IN('deaths','guild','house','online','kills','character_views')) NOT VALID;
+ALTER TABLE game_public_v2_subject_fences VALIDATE CONSTRAINT game_public_v2_subject_fences_lock_kind_check;
+
+
+GRANT EXECUTE ON FUNCTION game_public_v2_write_outfit_proof(UUID,UUID,TEXT,INTEGER[],SMALLINT) TO oteryn_game_runtime,oteryn_game_control;

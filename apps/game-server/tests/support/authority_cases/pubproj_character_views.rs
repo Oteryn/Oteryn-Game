@@ -56,9 +56,14 @@ const ITEM: &str = "INSERT INTO game_item_instances(item_instance_id,world_id,de
 const SLOT: &str = "INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) SELECT character_id,5,'019a0000-0000-7000-8000-000000000072',world_id,'019a0000-0000-7000-8000-000000000073' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid";
 
 // A bounded test content profile, with an actual earned account mount fact below.
+static CONTENT_FALLBACK_READ: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 struct LookContent;
 impl crate::domain::appearance::AppearanceContent<String> for LookContent {
     fn palette_size(&self)->u16 {133}
+    fn projection_fallback(&self,_:crate::domain::appearance::Sex)->Option<crate::domain::appearance::AppearanceSelection<String>> {
+        CONTENT_FALLBACK_READ.store(true,std::sync::atomic::Ordering::SeqCst);
+        Some(crate::domain::appearance::AppearanceSelection {outfit_key:"outfit.fixture".into(),colours:[0;4],addons:0,mount_key:None})
+    }
     fn earned_grant_keys(&self)->Vec<String> {vec!["fixture:mount".into()]}
     fn earned_unlock(&self,key:&str,provenance:&str,target:crate::domain::appearance::EarnedCosmetic<'_>)->crate::domain::appearance::UnlockFact {
         use crate::domain::appearance::{EarnedCosmetic,UnlockFact};
@@ -120,6 +125,7 @@ async fn exercise(h: &Harness, case: u8) -> TestResult {
             assert_eq!(rows[0].slots.len(),1);
             assert_eq!(rows[0].slots[0].slot,crate::native_admission_source::public_projections::v2::character_views::Slot::RightHand);
             assert_eq!(rows[0].slots[0].item_key,"fixture:two_handed_sword");
+            assert!(!rows[0].slots.iter().any(|s|s.slot==crate::native_admission_source::public_projections::v2::character_views::Slot::LeftHand),"reader must not duplicate the two-handed primary item into LeftHand");
             if case==4 {
                 let mut pending=h.pool.begin().await?;
                 pending.execute("SET LOCAL session_replication_role=replica").await?;
@@ -130,6 +136,7 @@ async fn exercise(h: &Harness, case: u8) -> TestResult {
             }
         }
         6 => {
+            CONTENT_FALLBACK_READ.store(false,std::sync::atomic::Ordering::SeqCst);
             use crate::domain::appearance::{AppearanceSelection, Sex};
             use crate::durability::character_appearance::{AppearanceChangeOccurrence, AppearanceChangeRequest,
                 AppearanceValidationContext, AppearanceChangeOutcome};
@@ -146,6 +153,7 @@ async fn exercise(h: &Harness, case: u8) -> TestResult {
                 }, AppearanceValidationContext {sex:Sex::Male,content:LookContent,content_revision:"content-1".into()})
                 .await.map_err(debug)?;
             assert!(matches!(outcome,AppearanceChangeOutcome::Committed(_)));
+            assert!(CONTENT_FALLBACK_READ.load(std::sync::atomic::Ordering::SeqCst),"DisplayedLook must consult the authored content default");
             let s=snapshot(h,Family::CharacterOutfit).await?.ok_or("displayed look")?;
             assert!(matches!(s.body,Body::Outfit(rows) if rows.len()==1 && rows[0].mount.is_empty()));
             let stored:Option<String>=sqlx::query_scalar("SELECT mount_key FROM game_character_appearance WHERE character_id=encode($1,'hex')::uuid")
@@ -243,3 +251,62 @@ pg_case!(public_v2_outfit_mount_always_empty,6);
 pg_case!(public_v2_same_second_changes_bump_revision,7);
 pg_case!(public_v2_ack_clears_only_at_or_below_revision,8);
 pg_case!(public_v2_resync_includes_new_families_and_suppressions,9);
+
+#[test]
+fn public_v2_review_source_isolation_and_missing_evidence() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64<<20).spawn(move || -> Result<(),String> {
+ runtime().map_err(debug)?.block_on(async move {
+ let h=Harness::create(admin,"p3_review_sources",true).await?;
+ let result:TestResult=async {
+ prepare(&h).await?;
+ let seal=h.recovery.seal_current().map_err(debug)?;
+ let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+ sqlx::query("UPDATE game_public_v2_achievement_catalogue SET revision='incompatible' WHERE singleton").execute(&h.pool).await?;
+ assert!(h.root.next_public_v2(&authority,Family::CharacterAchievements,&[]).await.is_err(),"catalogue mismatch must hold reader");
+ assert!(h.root.public_v2_facts(&authority,Family::CharacterAchievements).await.is_err(),"catalogue mismatch must hold watermark");
+ h.root.sync_public_achievement_catalogue(&authority).await.map_err(debug)?;
+ let before=[head(&h,"character_achievements").await?.0,head(&h,"character_equipment").await?.0,head(&h,"character_outfit").await?.0];
+ history(&h,&[XP]).await?;
+ let after=[head(&h,"character_achievements").await?.0,head(&h,"character_equipment").await?.0,head(&h,"character_outfit").await?.0];
+ assert_eq!(before,after,"progression must not touch unrelated families");
+ // Exercise the deferred revision-only trigger inside a rollback-only probe:
+ // historical projection fixtures cannot fabricate a committed gameplay receipt chain.
+ let mut probe=h.pool.begin().await?;
+ probe.execute("SET LOCAL session_replication_role=replica").await?;
+ sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(id(CHARACTER).as_slice()).execute(&mut *probe).await?;
+ probe.execute("SET CONSTRAINTS ALL IMMEDIATE").await?;
+ let probed:i64=sqlx::query_scalar("SELECT revision FROM game_public_v2_heads WHERE family='character_achievements' AND subject=encode($1,'hex')::uuid::text").bind(id(CHARACTER).as_slice()).fetch_one(&mut *probe).await?;
+ assert_eq!(probed,before[0],"revision-only writes must not scan achievements");
+ probe.rollback().await?;
+ history(&h,&["DELETE FROM game_public_v2_achievement_catalogue WHERE EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)"]).await?;
+ sqlx::query("SELECT game_public_v2_character_capture(encode($1,'hex')::uuid,'character_achievements')").bind(id(CHARACTER).as_slice()).execute(&h.pool).await?;
+ assert!(head(&h,"character_achievements").await?.1.is_null(),"missing catalogue must hold");
+ let ready:bool=sqlx::query_scalar("SELECT game_public_v2_ready('character_achievements','',encode($1,'hex')::uuid::text)").bind(id(CHARACTER).as_slice()).fetch_one(&h.pool).await?;
+ assert!(!ready);
+ let may_write:bool=sqlx::query_scalar("SELECT has_table_privilege('oteryn_game_runtime','game_public_v2_outfit_proofs','INSERT,UPDATE')").fetch_one(&h.pool).await?;
+ assert!(!may_write,"runtime cannot forge outfit proofs");
+ assert!(matches!(snapshot(&h,Family::CharacterEquipment).await?.ok_or("custody suppression")?.body,Body::Equipment(rows) if rows.is_empty()));
+ assert!(matches!(snapshot(&h,Family::CharacterOutfit).await?.ok_or("proof suppression")?.body,Body::Outfit(rows) if rows.is_empty()));
+ history(&h,&["UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid", "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid", "INSERT INTO game_character_appearance(character_id,outfit_key,colours,addons,mount_key,content_revision,committed_character_revision,last_appearance_occurrence_id) SELECT character_id,'outfit.fixture',ARRAY[1,2,3,4],0,NULL,content_revision,character_revision,'019a0000-0000-7000-8000-000000000099' FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid"]).await?;
+ assert_eq!(head(&h,"character_outfit").await?.1,serde_json::json!([]),"raw selection without DisplayedLook proof must suppress");
+ // Cross a full keyset page, including roots with no progression/equipment/proof.
+ history(&h,&["INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) SELECT ('019a0000-0000-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,account_id,world_id,1,1,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Fixture Batch '||chr(65+n/26)||chr(65+n%26),sex FROM game_character_roots CROSS JOIN generate_series(1000,1128) n WHERE character_id=encode($1,'hex')::uuid"]).await?;
+ for family in FAMILIES {
+  sqlx::query("SELECT game_public_projection_resync($1,false)").bind(family).execute(&h.pool).await?;
+  let covered:i64=sqlx::query_scalar("SELECT count(*) FROM game_public_v2_heads WHERE family=$1").bind(family).fetch_one(&h.pool).await?;
+  assert_eq!(covered,130,"bounded resync must cover every subject");
+ }
+
+
+ Ok(())
+ }.await;
+ h.cleanup().await?;
+ result
+ }).map_err(debug)
+ })?.join().map_err(|_|"review case failed")?.map_err(Into::into)
+}
+
+pg_case!(public_v2_resync_covers_new_families, 9);
