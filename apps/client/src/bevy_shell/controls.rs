@@ -43,6 +43,9 @@ impl HostOwner {
             }
             return;
         }
+        if super::game_ui::cast_chat::shortcut(self, &routed) {
+            return;
+        }
         let Some(play) = &mut self.play else {
             return;
         };
