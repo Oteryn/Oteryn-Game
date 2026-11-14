@@ -161,7 +161,9 @@ pub(super) fn render(
     if let Some(ware) = selected {
         // The server definition reference is not an appearance identifier.
         label(commands, skin, right, "Item artwork unavailable");
-        if panel.definition == ware.definition {
+        if panel.definition == ware.definition
+            && panel.view == oteryn_client_ui::market::MarketView::Browse
+        {
             let books = row(commands, right);
             for (side, title) in [(1, "Buy offers"), (2, "Sell offers")] {
                 let book = pane(commands, skin, books, percent(49.));
@@ -253,6 +255,7 @@ pub(super) fn render(
         label(commands, skin, root, feedback);
     }
     let footer = row(commands, root);
+    super::operations::button(commands, skin, footer, key);
     button(commands, skin, footer, key, Kind::Close, "Close", 80.);
     root
 }
