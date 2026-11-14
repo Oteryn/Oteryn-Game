@@ -4738,3 +4738,371 @@ fn player_death_canonical_container_slot_500_item_boundary_preserves_every_child
         .map_err(|_| "maximum slot promotion thread panicked")?
         .map_err(Into::into)
 }
+
+async fn run_world_reset_proof_cache_qualification(admin: String, case: u8) -> TestResult {
+    // libtest runs these scenarios in one PID. fence_parent removes its tag's
+    // old directory, so sharing a tag would erase another scenario's fence.
+    let tag = match case {
+        0 => "world_reset_cache_writes",
+        1 => "world_reset_cache_forgery",
+        2 => "world_reset_cache_deps",
+        _ => return Err("unknown cache qualification case".into()),
+    };
+    let h = Harness::create(admin, tag).await?;
+    let result: TestResult = async {
+        match case {
+            0 => {
+                prepare_nested_reset(&h, &h.root).await?;
+                let mut tx = h.pool.begin().await?;
+                let proof = "SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)";
+                assert!(sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM pg_temp.game_world_reset_proof_cache_state_v1 WHERE kind=1 AND xact_id=pg_current_xact_id()").fetch_one(&mut *tx).await?,1);
+                sqlx::query("SAVEPOINT before_drain_change").execute(&mut *tx).await?;
+                let changed=sqlx::query("DELETE FROM game_durability_admission_runtime_guards g USING game_runtime_scope_assignments a WHERE g.scope_key=a.scope_key AND a.world_id=encode($1,'hex')::uuid AND a.scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+                assert_eq!(changed.rows_affected(),1);
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM pg_temp.game_world_reset_proof_cache_state_v1").fetch_one(&mut *tx).await?,0);
+                assert!(!sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                sqlx::query("ROLLBACK TO SAVEPOINT before_drain_change").execute(&mut *tx).await?;
+                assert!(sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                // This second connection cannot invalidate the first connection's TEMP
+                // rows. Visibility fencing must still reject its newly committed change.
+                let removed=sqlx::query("DELETE FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid").bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+                assert_eq!(removed.rows_affected(),1);
+                assert!(!sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                tx.rollback().await?;
+            }
+            1 => {
+                // A fresh backend has no trusted TEMP tables from harness seeding.
+                let mut connection = <sqlx::PgConnection as sqlx::Connection>::connect(&h.database.url).await?;
+                let mut tx = sqlx::Connection::begin(&mut connection).await?;
+                sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ").execute(&mut *tx).await?;
+                sqlx::query("SELECT pg_current_xact_id()").execute(&mut *tx).await?;
+                sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+                sqlx::raw_sql("CREATE TEMP TABLE game_world_reset_proof_cache_state_v1(kind smallint,xact_id xid8,visibility_snapshot text,item_id uuid,world_id uuid,reset_epoch numeric,proven_items uuid[],batch_allowed boolean);").execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1 VALUES(1,pg_current_xact_id(),pg_current_snapshot()::text,NULL,encode($1,'hex')::uuid,0,NULL,true),(2,pg_current_xact_id(),pg_current_snapshot()::text,encode($2,'hex')::uuid,NULL,NULL,ARRAY[encode($2,'hex')::uuid],true)").bind(id(WORLD).as_slice()).bind(id(99).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("RESET ROLE").execute(&mut *tx).await?;
+                assert!(!sqlx::query_scalar::<_,bool>("SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)").bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                assert!(!sqlx::query_scalar::<_,bool>("SELECT game_world_reset_item_proven(encode($1,'hex')::uuid)").bind(id(99).as_slice()).fetch_one(&mut *tx).await?);
+                tx.rollback().await?;
+                for function in ["game_world_reset_proof_cache_init()","game_world_reset_proof_cache_invalidate()","game_world_reset_items_proven_set(uuid)","game_world_reset_item_proven_uncached(uuid)","game_world_reset_drained_uncached(uuid,numeric)","game_world_reset_proof_visibility(uuid)","game_world_reset_proof_touch_world(uuid)","game_world_reset_proof_world_change()"] {
+                    assert!(!sqlx::query_scalar::<_,bool>("SELECT has_function_privilege('oteryn_game_runtime',$1,'EXECUTE') OR has_function_privilege('oteryn_game_control',$1,'EXECUTE')").bind(function).fetch_one(&h.pool).await?,"private helper: {function}");
+                }
+                for role in ["oteryn_game_runtime", "oteryn_game_control"] {
+                    assert!(!sqlx::query_scalar::<_, bool>("SELECT has_table_privilege($1,'game_world_reset_proof_writers','INSERT,UPDATE,DELETE,TRUNCATE')").bind(role).fetch_one(&h.pool).await?, "writer heads are private: {role}");
+                }
+            }
+            2 => {
+                let relations:Vec<String>=sqlx::query_scalar(r"SELECT DISTINCT found[1] FROM pg_proc p CROSS JOIN LATERAL regexp_matches(p.prosrc,'\m(?:FROM|JOIN)\s+(?:public\.)?(game_[a-z0-9_]+)\M','gi') found WHERE p.oid IN('game_world_reset_item_proven_uncached(uuid)'::regprocedure,'game_world_reset_drained_uncached(uuid,numeric)'::regprocedure,'game_world_reset_items_proven_set(uuid)'::regprocedure,'game_player_death_retirement_entry_proven(uuid)'::regprocedure,'game_player_death_retirement_root_bounds_proven(uuid)'::regprocedure,'game_node_lock_current_registration(uuid,numeric)'::regprocedure,'game_node_registration_history_valid()'::regprocedure) ORDER BY 1").fetch_all(&h.pool).await?;
+                assert!(relations.len()>=24,"complete full-proof dependency closure: {relations:?}");
+                for relation in relations {
+                    let triggers:Vec<i16>=sqlx::query_scalar("SELECT tgtype FROM pg_trigger WHERE tgrelid=to_regclass($1) AND tgfoid='game_world_reset_proof_cache_invalidate()'::regprocedure AND tgenabled='O' ORDER BY tgtype").bind(&relation).fetch_all(&h.pool).await?;
+                    // INSERT | DELETE | UPDATE | TRUNCATE, statement-level, BEFORE and AFTER.
+                    assert_eq!(triggers,vec![60,62],"every write invalidates {relation}");
+                }
+            }
+            _ => return Err("unknown cache qualification case".into()),
+        }
+        Ok(())
+    }.await;
+    h.cleanup().await?;
+    result
+}
+fn world_reset_proof_cache_qualification(case: u8) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_world_reset_proof_cache_qualification(admin, case))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "World reset proof cache test thread panicked")?
+        .map_err(Into::into)
+}
+#[test]
+fn player_death_world_reset_cache_invalidates_own_and_concurrent_changes() -> TestResult {
+    world_reset_proof_cache_qualification(0)
+}
+#[test]
+fn player_death_world_reset_cache_cannot_be_forged() -> TestResult {
+    world_reset_proof_cache_qualification(1)
+}
+#[test]
+fn player_death_world_reset_cache_tracks_full_proof_dependencies() -> TestResult {
+    world_reset_proof_cache_qualification(2)
+}
+
+async fn run_world_reset_cohort_index_plan(admin: String) -> TestResult {
+    let h = Harness::create(admin, "world_reset_cohort_index").await?;
+    let result: TestResult = async {
+        let mut tx = h.pool.begin().await?;
+        // The fixture has no retirement history. Test index eligibility/range
+        // conditions rather than the empty-table sequential-scan cost choice.
+        sqlx::query("SET LOCAL enable_seqscan=off").execute(&mut *tx).await?;
+        let plan = sqlx::query_scalar::<_, String>(
+            "EXPLAIN (COSTS OFF) SELECT ARRAY(SELECT item_instance_id FROM game_item_decay_retire_receipts WHERE cause_kind='WORLD_RESET' AND created_xact_id=pg_current_xact_id() AND world_id=encode($1,'hex')::uuid AND reset_epoch=0::numeric AND ground_root_item_instance_id=encode($2,'hex')::uuid ORDER BY item_instance_id LIMIT 502)",
+        ).bind(id(WORLD).as_slice()).bind(id(99).as_slice()).fetch_all(&mut *tx).await?.join("\n");
+        assert!(plan.contains("game_world_reset_retire_receipts_cohort"), "{plan}");
+        let condition = plan.lines().find(|line| line.contains("Index Cond:")).ok_or("cohort discovery needs an index condition")?;
+        for column in ["created_xact_id", "world_id", "reset_epoch", "ground_root_item_instance_id"] {
+            assert!(condition.contains(column), "cohort bound {column}: {plan}");
+        }
+        let plan = sqlx::query_scalar::<_, String>(
+            "EXPLAIN (COSTS OFF) SELECT item_instance_id FROM game_item_decay_retire_receipts WHERE cause_kind='WORLD_RESET' AND created_xact_id=pg_current_xact_id()",
+        ).fetch_all(&mut *tx).await?.join("\n");
+        assert!(plan.contains("game_world_reset_retire_receipts_cohort"), "{plan}");
+        assert!(plan.lines().any(|line| line.contains("Index Cond:") && line.contains("created_xact_id")), "transaction receipt reads must not scan history: {plan}");
+        tx.rollback().await?;
+        Ok(())
+    }.await;
+    h.cleanup().await?;
+    result
+}
+
+#[test]
+fn player_death_world_reset_cohort_discovery_uses_transaction_index() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_world_reset_cohort_index_plan(admin))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "World reset cohort index test thread panicked")?
+        .map_err(Into::into)
+}
+
+async fn run_world_reset_cohort_cache_qualification(admin: String, mode: i16) -> TestResult {
+    let tag = match mode {
+        0 => "world_reset_cohort_writes",
+        1 => "world_reset_cohort_concurrent",
+        2 => "world_reset_cohort_cursor",
+        3 => "world_reset_cohort_other_world",
+        _ => return Err("unknown cohort qualification mode".into()),
+    };
+    let h = Harness::create(admin, tag).await?;
+    let result: TestResult = async {
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let items = carried_chain(&h, &authority, 3).await?;
+        drop_unselected_death_root(&h, &authority, items[0], false).await?;
+        let reset = prepare_nested_reset(&h, &h.root).await?;
+        let foreign_xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text").fetch_one(&h.pool).await?;
+        sqlx::raw_sql(r"
+CREATE TABLE max501_cohort_probe_config(mode SMALLINT, expected_items INTEGER, foreign_xid XID8, advisory_key BIGINT);
+CREATE SEQUENCE max501_cohort_probe_ready;
+CREATE SEQUENCE max501_cohort_probe_passed;
+CREATE SEQUENCE max501_cohort_producer_called;
+CREATE FUNCTION max501_cohort_proof_or_false(item UUID) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+BEGIN
+ RETURN game_world_reset_item_proven(item);
+EXCEPTION WHEN check_violation THEN RETURN false;
+END $$;
+REVOKE ALL ON FUNCTION max501_cohort_proof_or_false(UUID) FROM PUBLIC;
+CREATE FUNCTION max501_cohort_probe() RETURNS TRIGGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,pg_temp AS $$
+DECLARE cfg max501_cohort_probe_config%ROWTYPE; active_row game_world_reset_active%ROWTYPE;
+ cached RECORD; proven UUID[]; producer_before BIGINT; inner_rolled_back BOOLEAN:=false; outer_rolled_back BOOLEAN:=false;
+BEGIN
+ IF (SELECT is_called FROM max501_cohort_probe_passed) THEN RETURN NEW; END IF;
+ SELECT * INTO STRICT cfg FROM max501_cohort_probe_config;
+ IF cfg.mode=2 THEN
+  IF (SELECT is_called FROM max501_cohort_producer_called) THEN RAISE EXCEPTION 'hold cursor invoked cohort producer'; END IF;
+  IF NOT max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'valid uncached proof missing'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_cursors WHERE is_holdable) THEN RAISE EXCEPTION 'hold cursor fixture missing'; END IF;
+  IF to_regclass('pg_temp.game_world_reset_proof_cache_state_v1') IS NOT NULL THEN
+   IF EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_cache_state_v1 WHERE kind=2) THEN
+    RAISE EXCEPTION 'hold cursor must bypass cohort reuse';
+   END IF;
+  END IF;
+  PERFORM nextval('max501_cohort_probe_passed'); RETURN NEW;
+ END IF;
+ IF NOT (SELECT is_called FROM max501_cohort_producer_called) THEN RAISE EXCEPTION 'production skipped cohort producer'; END IF;
+ SELECT * INTO STRICT cached FROM pg_temp.game_world_reset_proof_cache_state_v1
+  WHERE kind=2 AND xact_id=pg_current_xact_id();
+ -- Other databases can change the global visibility snapshot between callbacks,
+ -- legitimately replacing the batch with a single-Item fallback. First require
+ -- actual production cohort execution and its kind=2 row, then prime the probe
+ -- from a fresh FULL proof; this fixture's second writer is still blocked.
+ proven:=game_world_reset_items_proven_set(NEW.item_instance_id);
+ IF cardinality(proven) IS DISTINCT FROM cfg.expected_items OR NOT (NEW.item_instance_id=ANY(proven)) THEN
+  RAISE EXCEPTION 'full kind=2 cohort was not proven';
+ END IF;
+ UPDATE pg_temp.game_world_reset_proof_cache_state_v1
+  SET proven_items=proven,visibility_snapshot=pg_current_snapshot()::text,batch_allowed=true
+  WHERE kind=2 AND xact_id=pg_current_xact_id();
+ SELECT * INTO STRICT cached FROM pg_temp.game_world_reset_proof_cache_state_v1
+  WHERE kind=2 AND xact_id=pg_current_xact_id();
+ SELECT * INTO STRICT active_row FROM game_world_reset_active WHERE world_id=NEW.world_id;
+ IF cfg.mode IN(1,3) THEN
+  -- The other connection holds this lock until it commits its invalidation.
+  PERFORM nextval('max501_cohort_probe_ready');
+  PERFORM pg_advisory_lock(cfg.advisory_key);
+  PERFORM pg_advisory_unlock(cfg.advisory_key);
+  IF cfg.mode=1 THEN
+   IF game_world_reset_drained_uncached(NEW.world_id,NEW.reset_epoch) THEN RAISE EXCEPTION 'concurrent write did not invalidate the full proof'; END IF;
+   IF max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'kind=2 reused after concurrent commit'; END IF;
+   INSERT INTO game_world_reset_active SELECT (active_row).*;
+  ELSE
+   SELECT last_value INTO producer_before FROM max501_cohort_producer_called;
+   IF NOT max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'unrelated World invalidated current authority'; END IF;
+   IF producer_before<>(SELECT last_value FROM max501_cohort_producer_called) THEN RAISE EXCEPTION 'unrelated World recomputed cohort'; END IF;
+   IF NOT EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_cache_state_v1 WHERE kind=2 AND cardinality(proven_items)=cfg.expected_items AND batch_allowed) THEN
+    RAISE EXCEPTION 'unrelated World discarded cached cohort';
+   END IF;
+  END IF;
+ ELSE
+  BEGIN
+   DELETE FROM game_world_reset_active WHERE world_id=NEW.world_id;
+   IF max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'kind=2 reused after own write'; END IF;
+   -- Simulate a trusted stale cache row from another physical transaction.
+   -- Current visibility alone is insufficient: the xid fence must reject it.
+   INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1
+    (kind,xact_id,visibility_snapshot,write_fence,item_id,world_id,reset_epoch,proven_items,batch_allowed)
+    VALUES(2,cfg.foreign_xid,pg_current_snapshot()::text,cached.write_fence,cached.item_id,cached.world_id,cached.reset_epoch,cached.proven_items,true);
+   IF max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'kind=2 reused a foreign xid'; END IF;
+   BEGIN
+    INSERT INTO game_world_reset_active SELECT (active_row).*;
+    IF NOT max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'savepoint repaired proof missing'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM pg_temp.game_world_reset_proof_cache_state_v1 WHERE kind=2 AND NEW.item_instance_id=ANY(proven_items)) THEN
+     RAISE EXCEPTION 'savepoint did not cache the repaired cohort';
+    END IF;
+    RAISE EXCEPTION 'roll back repaired authority and its cache' USING ERRCODE='ZX001';
+   EXCEPTION WHEN SQLSTATE 'ZX001' THEN inner_rolled_back:=true;
+   END;
+   -- The outer state is invalid again. A leaked positive inner proof must fail.
+   IF game_world_reset_drained_uncached(NEW.world_id,NEW.reset_epoch) THEN RAISE EXCEPTION 'rollback did not restore invalid authority'; END IF;
+   IF NOT inner_rolled_back OR max501_cohort_proof_or_false(NEW.item_instance_id) THEN
+    RAISE EXCEPTION 'kind=2 cache leaked across rollback to invalid authority';
+   END IF;
+   RAISE EXCEPTION 'restore original authority' USING ERRCODE='ZX002';
+  EXCEPTION WHEN SQLSTATE 'ZX002' THEN outer_rolled_back:=true;
+  END;
+  IF NOT outer_rolled_back THEN RAISE EXCEPTION 'outer rollback missing'; END IF;
+ END IF;
+ IF NOT max501_cohort_proof_or_false(NEW.item_instance_id) THEN RAISE EXCEPTION 'restored cohort proof missing'; END IF;
+ PERFORM nextval('max501_cohort_probe_passed');
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION max501_cohort_probe() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER zzz_max501_cohort_probe AFTER INSERT ON game_item_decay_retire_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION max501_cohort_probe();
+").execute(&h.pool).await?;
+        // Observe the real producer without changing any of its proof predicates.
+        let (definition, body): (String, String) = sqlx::query_as(
+            "SELECT pg_get_functiondef(oid),prosrc FROM pg_proc WHERE oid='game_world_reset_items_proven_set(uuid)'::regprocedure",
+        ).fetch_one(&h.pool).await?;
+        assert_eq!(definition.matches(body.as_str()).count(), 1);
+        assert_eq!(body.matches("\nBEGIN\n").count(), 1);
+        let observed = body.replacen("\nBEGIN\n", "\nBEGIN\n PERFORM nextval('max501_cohort_producer_called');\n", 1);
+        sqlx::raw_sql(sqlx::AssertSqlSafe(definition.replacen(body.as_str(), &observed, 1))).execute(&h.pool).await?;
+        const ADVISORY_KEY: i64 = 645_012_837;
+        sqlx::query("INSERT INTO max501_cohort_probe_config VALUES($1,$2,$3::text::xid8,$4)")
+            .bind(mode).bind(i32::try_from(items.len())?).bind(foreign_xid).bind(ADVISORY_KEY).execute(&h.pool).await?;
+        if mode == 2 {
+            sqlx::raw_sql(r"
+CREATE FUNCTION max501_hold_cursor() RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_cursors WHERE name='max501_hold_cursor') THEN
+  EXECUTE 'DECLARE max501_hold_cursor CURSOR WITH HOLD FOR SELECT 1';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER max501_hold_cursor BEFORE INSERT ON game_item_decay_retire_receipts
+ FOR EACH ROW EXECUTE FUNCTION max501_hold_cursor();
+").execute(&h.pool).await?;
+        }
+        let other_world = id(198);
+        if mode == 3 {
+            // Clone a valid synthetic reset target, changing only its WorldId.
+            // This adds no Items and leaves the measured root's facts untouched.
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT (jsonb_populate_record(NULL::game_world_reset_epochs,to_jsonb(e)||jsonb_build_object('world_id',encode($1,'hex')::uuid))).* FROM game_world_reset_epochs e WHERE world_id=encode($2,'hex')::uuid")
+                .bind(other_world.as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_jobs SELECT (jsonb_populate_record(NULL::game_world_reset_jobs,to_jsonb(j)||jsonb_build_object('world_id',encode($1,'hex')::uuid))).* FROM game_world_reset_jobs j WHERE world_id=encode($2,'hex')::uuid")
+                .bind(other_world.as_slice()).bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+        }
+        if mode == 1 || mode == 3 {
+            let mut blocker = h.pool.acquire().await?;
+            sqlx::query("SELECT pg_advisory_lock($1)").bind(ADVISORY_KEY).execute(&mut *blocker).await?;
+            let invalidate = async {
+                let action: TestResult = async {
+                    let until = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+                    loop {
+                        let ready: bool = sqlx::query_scalar("SELECT is_called FROM max501_cohort_probe_ready").fetch_one(&h.pool).await?;
+                        if ready { break; }
+                        if tokio::time::Instant::now() >= until { return Err("cohort commit probe did not become ready".into()); }
+                        tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+                    }
+                    let changed = if mode == 1 {
+                        sqlx::query("DELETE FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid").bind(id(WORLD).as_slice()).execute(&h.pool).await?
+                    } else {
+                        sqlx::query("UPDATE game_world_reset_jobs SET revision=revision+1 WHERE world_id=encode($1,'hex')::uuid").bind(other_world.as_slice()).execute(&h.pool).await?
+                    };
+                    if changed.rows_affected()!=1 { return Err("concurrent invalidation did not change authority".into()); }
+                    Ok(())
+                }.await;
+                let unlocked: bool = sqlx::query_scalar("SELECT pg_advisory_unlock($1)").bind(ADVISORY_KEY).fetch_one(&mut *blocker).await?;
+                assert!(unlocked);
+                action
+            };
+            let (retired, invalidated) = tokio::join!(h.root.retire_world_reset_ground(&authority, &h.node, &reset), invalidate);
+            invalidated?;
+            assert!(retired.map_err(debug)?);
+        } else {
+            assert!(h.root.retire_world_reset_ground(&authority, &h.node, &reset).await.map_err(debug)?);
+        }
+        let passed: (i64, bool) = sqlx::query_as("SELECT last_value,is_called FROM max501_cohort_probe_passed").fetch_one(&h.pool).await?;
+        assert_eq!(passed, (1,true), "the real deciding transaction exercised the cohort probe");
+        for item in items { assert_eq!(h.item_state(item).await?, (0,2)); }
+        drop(authority);
+        drop(seal);
+        Ok(())
+    }.await;
+    h.cleanup().await?;
+    result
+}
+
+fn world_reset_cohort_cache_qualification(mode: i16) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_world_reset_cohort_cache_qualification(admin, mode))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "World reset cohort qualification thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_world_reset_cohort_cache_invalidates_writes_and_savepoints() -> TestResult {
+    world_reset_cohort_cache_qualification(0)
+}
+#[test]
+fn player_death_world_reset_cohort_cache_invalidates_concurrent_commit() -> TestResult {
+    world_reset_cohort_cache_qualification(1)
+}
+#[test]
+fn player_death_world_reset_hold_cursor_bypasses_cohort_cache() -> TestResult {
+    world_reset_cohort_cache_qualification(2)
+}
+
+#[test]
+fn player_death_world_reset_unrelated_world_commit_preserves_cohort() -> TestResult {
+    world_reset_cohort_cache_qualification(3)
+}
