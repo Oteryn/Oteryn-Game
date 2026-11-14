@@ -76,6 +76,9 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/srx2_charm_consumers.rs
   - crates/gameplay/dispatch/src/lifted_tests/creature_damage_spell_composed_tests.rs
   - crates/gameplay/spell/src/creature_damage_spell/composed.rs
+  - apps/game-server/tests/ability_engine.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_secondary.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -255,3 +258,30 @@ on all five changed packages passed on the lead tree, as did formatting and
 governance (129 unittest cases). The concrete evidence and assertion-contract
 changes are in the runtime completion report. Publication remains AUTHORING
 progress; outgoing, secondary and delayed repairs and final qualification remain.
+
+## Completion repair continuation (2026-11-14, evening)
+
+AUTHORING resumed in #3183 comment 6882512583 from verified 5620c4a6.
+Current main ccede464 was merged forward at 3ca2f0fa, including existing
+Node boot/busy-holder fixes. No other charm writer is active. The dedicated
+task PostgreSQL 18.6 route was repaired without changing other containers or
+reading/publishing credentials. Recovered outgoing/secondary drafts are being
+independently run and reviewed, not accepted solely from worker summaries.
+
+The concrete ability_engine E0599 is its historical standalone owner shim,
+which must remain fail-closed for retained creatures. The reproduced
+Enrage/Parry regression requires Numb selection from the actual staged source
+health, not the raw damage prediction. These repairs preserve the existing
+immutable player-commit callback and all current source/session fences.
+
+## Verified surviving-source/standalone-fixture increment (2026-11-15)
+
+Freshly rerun on the unchanged recovered source: the Enrage/Parry/Numb real-owner
+regression passed (1 test), `ability_engine` passed (118 tests), strict dispatch
+all-features/all-targets Clippy, formatting, governance and diff checks passed.
+The published correction evaluates the minor using the exact staged reflected
+source HP after native reductions, not a predicted raw hit. The standalone
+ability-engine shim remains fail-closed; no authority or assertion is relaxed.
+This is a tested increment, not full charm completion. Outgoing/secondary/due
+source repairs remain under qualification. System audio/udev development
+packages are installed on the PC, not proof of a rebuilt cloud snapshot.

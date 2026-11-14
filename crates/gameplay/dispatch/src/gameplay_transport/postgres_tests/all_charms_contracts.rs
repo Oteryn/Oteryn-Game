@@ -921,3 +921,134 @@ fn all25_secondary_auto_leech_retains_only_assigned_minor_bonus_at_every_stage()
     }
     Ok(())
 }
+
+#[test]
+fn incoming_order_enrage_parry_uses_actual_source_survival_for_numb() -> TestResult {
+    use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals};
+    let (mut f, source) = enrage_fixture(1_000)?;
+    f.root = GameplayDecisionRoot::from_bytes(f.runtime.content_pin().server_artifact_digest());
+    let race = BestiaryRaceKey::new(RACE).map_err(|e| format!("{e:?}"))?;
+    let keys = [
+        CharmKey::new("oteryn:charm.parry"),
+        CharmKey::new("oteryn:charm.numb"),
+    ];
+    let keys = keys
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("{e:?}"))?;
+    let state = CombatCharmState::new(
+        crate::domain::CharacterId::from_bytes(*f.character.as_bytes())
+            .map_err(|e| format!("{e:?}"))?,
+        CharacterCharmState {
+            unlocks: keys
+                .iter()
+                .map(|key| {
+                    Ok((
+                        key.clone(),
+                        CharmStage::new(3).map_err(|e| format!("{e:?}"))?,
+                    ))
+                })
+                .collect::<Result<_, String>>()?,
+            assignments: keys.into_iter().map(|key| (key, race.clone())).collect(),
+        },
+    );
+    assert!(
+        f.states
+            .install_charm_state(&f.runtime, f.actor, f.session, state)
+    );
+    let maximum = f
+        .runtime
+        .companion_snapshot(source)
+        .map_err(|e| format!("{e:?}"))?
+        .maximum_health;
+    let health = maximum * 3 / 10;
+    f.runtime
+        .set_test_creature_health(source, health)
+        .map_err(|e| format!("{e:?}"))?;
+    let raw = u32::try_from(health * 4 / 3)?;
+    assert!(i64::from(raw) > health, "unreduced reflection would kill");
+    let effective = f
+        .runtime
+        .soulpit_variant(source)
+        .ok_or("Enrage owner")?
+        .incoming_health_change(i64::from(raw), health, maximum)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        effective > 0 && effective < health,
+        "the actual Enrage owner keeps the source alive"
+    );
+    let seed = (0..10_000_u32)
+        .find(|seed| {
+            let outcomes = evaluate(
+                &f,
+                RACE,
+                CharmHookEvent::IncomingCreatureHit {
+                    base_damage: u64::from(raw),
+                },
+                *seed,
+            );
+            outcomes.iter().any(|outcome| {
+                matches!(
+                    charm_combat::effect(outcome),
+                    Some(CharmEffectOutcome::ReflectDamage { .. })
+                )
+            }) && outcomes.iter().any(|outcome| {
+                matches!(
+                    charm_combat::effect(outcome),
+                    Some(CharmEffectOutcome::ParalyseCreature { .. })
+                )
+            })
+        })
+        .ok_or("one deterministic Parry + Numb occurrence")?;
+    let mut bytes = [0; 16];
+    bytes[..4].copy_from_slice(&seed.to_le_bytes());
+    let mut attack = crate::gameplay_transport::attack::ChannelAttackStates::default();
+    let mut vitals =
+        crate::gameplay_transport::attack::charm_combat::source_vitals::CharmSourceVitals {
+            states: &mut f.states,
+            attack: &mut attack,
+            catalogue: &f.catalogue,
+            root: GameplayDecisionRoot::from_bytes(
+                f.runtime.content_pin().server_artifact_digest(),
+            ),
+        };
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000);
+    let result = vitals
+        .apply_source_incoming_hit(
+            &mut f.runtime,
+            source,
+            f.actor,
+            f.session,
+            10,
+            raw,
+            Some(DecisionOccurrenceId::from_bytes(bytes)),
+            PlayerHitKind::Mitigated,
+            "incoming-order-enrage-parry",
+            now,
+            None,
+            None,
+        )
+        .ok_or("actual incoming owner commit")?;
+    assert!(result.applied > 0);
+    let actual = f
+        .runtime
+        .companion_snapshot(source)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        actual.health,
+        health - effective,
+        "native reduction is part of the committed reflection"
+    );
+    assert!(
+        f.runtime
+            .actor_active_speed_delta(
+                source,
+                None,
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get())
+            )
+            .map_err(|error| format!("{error:?}"))?
+            < 0,
+        "Numb must use the actual still-living source, not raw Parry >= source HP prediction"
+    );
+    Ok(())
+}

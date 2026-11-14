@@ -225,8 +225,6 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         } else {
             parry
         };
-        let source_alive_after_parry =
-            source_health > i64::from(parry) + if parry_first { 0 } else { i64::from(equipment) };
         let amount = parry.checked_add(equipment)?;
         let principal = if amount > 0 {
             let lease = runtime.bound_attacker_lease(target, session).ok()?;
@@ -248,23 +246,30 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             .equipment_reflection_kills
             .try_reserve(usize::from(amount > 0))
             .ok()?;
-        let minor = if let Some((identity, race, _)) = &plan {
-            evaluate_incoming_category(
-                self.states,
-                runtime,
-                self.catalogue,
-                &self.root,
-                target,
-                session,
-                race,
-                *identity,
-                base_damage,
-                oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
-                source_alive_after_parry,
-            )
-        } else {
-            Vec::new()
+        let catalogue = self.catalogue;
+        let root = &self.root;
+        let evaluate_minor = |states: &ChannelSpellStates,
+                              runtime: &ChannelRuntimeV1,
+                              source_alive_after_parry: bool| {
+            if let Some((identity, race, _)) = &plan {
+                evaluate_incoming_category(
+                    states,
+                    runtime,
+                    catalogue,
+                    root,
+                    target,
+                    session,
+                    race,
+                    *identity,
+                    base_damage,
+                    oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                    source_alive_after_parry,
+                )
+            } else {
+                Vec::new()
+            }
         };
+        let mut minor = Vec::new();
         let mut reflected = None;
         let receipt = if amount > 0 {
             let mut stream = b"charm-parry-source:".to_vec();
@@ -286,13 +291,20 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
                     amount,
                     now.get() / 1000,
                     |runtime, result| {
+                        // The real source owner has already staged native reductions
+                        // (including Enrage). Raw reflection >= HP is not a kill proof.
+                        // Evaluate before the player write, against its exact successor.
+                        let selected =
+                            evaluate_minor(self.states, runtime, result.health_after > 0);
                         let receipt = commit(self.states, runtime)?;
+                        minor = selected;
                         reflected = Some(result);
                         Some(receipt)
                     },
                 )
                 .ok()??
         } else {
+            minor = evaluate_minor(self.states, runtime, source_health > 0);
             commit(self.states, runtime)?
         };
         if let Some(result) = reflected.filter(|result| result.applied) {
