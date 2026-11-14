@@ -396,6 +396,12 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
         !owner.staff_muted(deps.admitted.game_session_id).await,
         "Platform MUTE must not become a staff spell restriction"
     );
+    // A character-scoped delivery must not apply a previous owner's account binding.
+    sqlx::query("UPDATE game_platform_enforcement_streams SET account_id=$1::uuid WHERE sanction_stream_id=$2::uuid")
+        .bind(uuid(999)).bind(&c.sanction_stream_id).execute(&h.pool).await?;
+    assert_eq!(owner.staff_mute_wait(deps.admitted.game_session_id).await, None);
+    sqlx::query("UPDATE game_platform_enforcement_streams SET account_id=$1::uuid WHERE sanction_stream_id=$2::uuid")
+        .bind(&c.account_id).bind(&c.sanction_stream_id).execute(&h.pool).await?;
     clock(h, END).await?;
     assert_eq!(
         owner
