@@ -118,3 +118,36 @@ pub(in crate::play) fn open_classic_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/bound.rs"]
+mod bound_tests;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{BestiaryBinding, BestiaryControl};
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_bestiary_selected(&self) {
+        lock(&self.0).properties.charm_progression.selected = true;
+    }
+    pub(crate) fn bevy_bestiary_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        payload: Vec<u8>,
+    ) {
+        self.properties_result(
+            command,
+            &oteryn_client_runtime::raw_feature::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_client_runtime::raw_feature::CommandStatus::Accepted,
+                payload,
+            },
+        );
+    }
+    pub(crate) fn bevy_bestiary_end(&self) {
+        self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    }
+}
