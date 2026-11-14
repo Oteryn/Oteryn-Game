@@ -13,6 +13,7 @@ pub(super) mod animus_mastery;
 mod bestiary;
 pub(super) mod browse_field;
 mod chat;
+mod daily_rewards;
 mod exiva_settings;
 pub(super) use exiva_settings::open_exiva_settings;
 mod coin_market;
@@ -111,6 +112,7 @@ pub(super) fn install(app: &mut App) {
     cast_control::install(app);
     cyclopedia_map::install(app);
     cyclopedia_trackers::install(app);
+    daily_rewards::install(app);
     exaltation_forge::install(app);
     container_sorting::install(app);
     chat::install(app);

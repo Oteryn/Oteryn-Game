@@ -77,6 +77,8 @@ impl HostOwner {
             || play.link.quest_input(&routed)
             || play.link.appearance_input(&routed)
             || play.link.pvp_expert_input(&routed)
+            || play.link.daily_boost_input(&routed)
+            || play.link.daily_reward_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
