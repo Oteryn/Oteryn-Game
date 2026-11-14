@@ -145,3 +145,92 @@ fn analyser_tools_confirmation_invalidated_by_draft_edit() -> TestResult {
     assert!(control(&mut app, Some(14), true).is_err());
     Ok(())
 }
+
+#[test]
+fn analyser_tools_shortcut_preserves_focused_chat_and_arrow_input() -> TestResult {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    let (mut app, mut commands, _outbox) = fixture()?;
+    let editor = app.world_mut().spawn(EditableText::new("chat draft")).id();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Navigated);
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Shift);
+    crate::bevy_shell::controls::tests::shortcut(&mut app, 28, chord)?;
+    // ArrowUp uses the same focused-editor admission as the winit input adapter.
+    crate::bevy_shell::controls::tests::shortcut(&mut app, 82, Modifiers::default())?;
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .editor
+            .text()
+            .to_string(),
+        "chat draft"
+    );
+    assert!(commands.try_recv().is_err());
+    app.world_mut().resource_mut::<InputFocus>().clear();
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.open_chat();
+        if !link.preference_chat_open() {
+            link.chat_console_mode();
+        }
+        assert!(link.preference_chat_open());
+    }
+    crate::bevy_shell::controls::tests::shortcut(&mut app, 28, chord)?;
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn analyser_tools_owner_refresh_preserves_draft_and_invalidates_confirmation() -> TestResult {
+    let (mut app, _commands, _outbox) = fixture()?;
+    open(app.world().non_send::<HostOwner>());
+    app.update();
+    let reset = control(&mut app, Some(14), false)?;
+    app.world_mut().trigger(Activate { entity: reset });
+    app.update();
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 0 {
+            text.editor_mut().set_text("987");
+        }
+    }
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .analyser_select("hunting");
+    app.update();
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(f, t)| f.0 == 0 && t.editor.text() == "987")
+    );
+    // Escape uses the same session-only close admission as the Close control.
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
