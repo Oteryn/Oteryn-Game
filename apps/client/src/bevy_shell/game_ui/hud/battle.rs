@@ -124,6 +124,8 @@ pub(super) fn project(
         ))
         .id();
     commands.entity(regions.battle).add_child(title);
+    let config = super::super::battle_config::entry(&mut commands, &skins, generation);
+    commands.entity(regions.battle).add_child(config);
     for (index, name) in names.iter().enumerate() {
         let label = if index == active {
             format!("• {name}")

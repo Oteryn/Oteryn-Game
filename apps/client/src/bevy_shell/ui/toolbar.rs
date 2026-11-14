@@ -61,6 +61,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::AnimusMastery
                     | Control::Appearance
                     | Control::Arena
+                    | Control::BattleConfig
                     | Control::BossDifficulty
                     | Control::BossRewardChest
                     | Control::Bosstiary(_)

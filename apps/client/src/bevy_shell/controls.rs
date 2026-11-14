@@ -132,6 +132,9 @@ impl HostOwner {
         }) {
             return false;
         }
+        if super::game_ui::battle_config::input(self, routed) {
+            return true;
+        }
         if oteryn_client_ui::minimap::editor_key(routed) {
             super::game_ui::minimap_markers::open(self);
             return true;
