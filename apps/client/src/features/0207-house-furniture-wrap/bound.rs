@@ -1,5 +1,8 @@
 //! Atomic presentation bindings; the existing panel and protocol remain the owners.
-use crate::play::{PlayLink, mailbox::{Mailbox, lock}};
+use crate::play::{
+    PlayLink,
+    mailbox::{Mailbox, lock},
+};
 use oteryn_client_ui::house_furniture_wrap::{Intent, Panel};
 use std::sync::{Arc, Mutex, Weak};
 
@@ -37,7 +40,7 @@ impl PlayLink {
         let mut mailbox = lock(&self.mailbox);
         if blocked
             || !expected.session.ptr_eq(&Arc::downgrade(&self.mailbox))
-            || mailbox.ended.is_some()
+            || mailbox.inventory_shutdown
             || self.commands.is_closed()
             || mailbox.server_modal.is_active()
             || mailbox.world_input_blocked()
@@ -55,23 +58,64 @@ impl PlayLink {
                 }
             }
             FurnitureWrappingAction::Close => {
-                if !panel.open { return false; }
+                if !panel.open {
+                    return false;
+                }
                 panel.open = false;
             }
             FurnitureWrappingAction::Select(index) => {
-                if !panel.open || !panel.selected || panel.pending
-                    || !panel.catalogue.as_ref().is_some_and(|catalogue| index < catalogue.entries.len())
-                { return false; }
+                if !panel.open
+                    || !panel.selected
+                    || panel.pending
+                    || !panel
+                        .catalogue
+                        .as_ref()
+                        .is_some_and(|catalogue| index < catalogue.entries.len())
+                {
+                    return false;
+                }
                 panel.choice = (index + 1).to_string();
                 // Selecting another target always starts a fresh owner review.
                 panel.reviewed_payload = None;
                 panel.feedback.clear();
             }
             FurnitureWrappingAction::Request(intent) => {
-                if !panel.open || !panel.selected || panel.pending { return false; }
+                if !panel.open || !panel.selected || panel.pending {
+                    return false;
+                }
                 super::super::input::submit(&mut mailbox, &self.commands, intent);
             }
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn furniture_wrapping_owner_rejects_server_modal_and_closed_transport() {
+        let (link, commands, outbox) = crate::play::play_channel();
+        outbox.furniture_wrapping_test_selected();
+        let expected = link.house_furniture_snapshot();
+        let modal = link.bevy_server_modal_fixture();
+        assert!(!link.house_furniture_dispatch_bound(
+            &expected,
+            FurnitureWrappingAction::Toggle,
+            false
+        ));
+        assert_eq!(link.house_furniture_panel(), expected.panel);
+        drop(modal);
+        drop(commands);
+        let (link, commands, outbox) = crate::play::play_channel();
+        outbox.furniture_wrapping_test_selected();
+        drop(commands);
+        let expected = link.house_furniture_snapshot();
+        assert!(!link.house_furniture_dispatch_bound(
+            &expected,
+            FurnitureWrappingAction::Toggle,
+            false
+        ));
+        assert_eq!(link.house_furniture_panel(), expected.panel);
     }
 }
