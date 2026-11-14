@@ -165,8 +165,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::Bosstiary(false), "Bosstiary", 80.),
-        (Control::Bosstiary(true), "Boss cooldowns", 110.),
+        (Control::Bosstiary(false), "Bosstiary (Ctrl+Shift+J)", 190.),
+        (Control::Bosstiary(true), "Cooldown Ctrl+Alt+Shift+J", 230.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),

@@ -222,9 +222,8 @@ fn confirm(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
     for event in events
@@ -254,18 +253,6 @@ fn keyboard(
                         false,
                     );
                 }
-            }
-        } else if event.key_code == KeyCode::KeyJ
-            && let Some(keys) = &keys
-            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && !keys.any_pressed([KeyCode::SuperLeft, KeyCode::SuperRight])
-        {
-            let cooldowns = keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight]);
-            let allowed = state.roots.last().is_some_and(|root| guard.allows(*root))
-                || guard.allows_focus(None);
-            if allowed {
-                toggle(&mut owner, cooldowns);
             }
         }
     }

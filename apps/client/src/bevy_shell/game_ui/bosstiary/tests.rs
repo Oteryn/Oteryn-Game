@@ -301,24 +301,39 @@ fn bosstiary_window_registered() -> Result {
     app.world_mut().trigger(Activate { entity });
     app.update();
     assert!(!snapshot(&app)?.panel.open);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ShiftLeft);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyJ,
-            logical_key: bevy::input::keyboard::Key::Character("j".into()),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[oteryn_input_actions::NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::new(13)?,
+            state: oteryn_input_actions::ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::one(
+                oteryn_input_actions::Modifier::Control,
+            )
+            .with(oteryn_input_actions::Modifier::Shift),
             repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+        }],
+        false,
+    );
     app.update();
     assert!(snapshot(&app)?.panel.open);
     click(&mut app, Kind::Close(false))?;
+    assert!(!snapshot(&app)?.panel.open);
+    let cooldowns = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(13)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Shift)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&cooldowns), true);
+    assert!(!snapshot(&app)?.panel.cooldowns_open);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&cooldowns), false);
+    app.update();
+    assert!(snapshot(&app)?.panel.cooldowns_open);
     assert!(!snapshot(&app)?.panel.open);
     Ok(())
 }
