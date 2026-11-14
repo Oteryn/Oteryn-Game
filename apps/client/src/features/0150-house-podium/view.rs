@@ -108,6 +108,27 @@ fn button_labels(panel: &oteryn_client_ui::house_podium::Panel) -> &'static [&'s
     }
 }
 
+/// Dispatch against the exact retained projection captured by the presenter.
+#[cfg(feature = "bevy-shell")]
+impl PlayLink {
+    pub fn house_podium_request_bound(
+        &self,
+        expected: &oteryn_client_ui::house_podium::Panel,
+        intent: oteryn_client_ui::house_podium::Intent,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mailbox.properties.house_podium;
+        if panel != expected || !panel.open || !panel.selected || panel.pending {
+            return false;
+        }
+        if super::protocol::command(panel, intent).is_err() {
+            return false;
+        }
+        super::input::submit(&mut mailbox, &self.commands, intent);
+        mailbox.properties.house_podium.pending
+    }
+}
+
 #[cfg(test)]
 mod capability_tests {
     use super::*;
@@ -132,23 +153,3 @@ mod capability_tests {
     }
 }
 
-/// Dispatch against the exact retained projection captured by the presenter.
-#[cfg(feature = "bevy-shell")]
-impl PlayLink {
-    pub fn house_podium_request_bound(
-        &self,
-        expected: &oteryn_client_ui::house_podium::Panel,
-        intent: oteryn_client_ui::house_podium::Intent,
-    ) -> bool {
-        let mut mailbox = lock(&self.mailbox);
-        let panel = &mailbox.properties.house_podium;
-        if panel != expected || !panel.open || !panel.selected || panel.pending {
-            return false;
-        }
-        if super::protocol::command(panel, intent).is_err() {
-            return false;
-        }
-        super::input::submit(&mut mailbox, &self.commands, intent);
-        mailbox.properties.house_podium.pending
-    }
-}
