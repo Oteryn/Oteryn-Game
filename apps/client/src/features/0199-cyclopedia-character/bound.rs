@@ -29,6 +29,29 @@ impl PlayLink {
         action: CharacterAction,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if matches!(
+            action,
+            CharacterAction::Close | CharacterAction::CloseBrowser
+        ) || matches!(action, CharacterAction::Toggle) && mailbox.cyclopedia_character.open
+        {
+            if self.commands.is_closed()
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+                || mailbox.cyclopedia_character_shutdown
+            {
+                return false;
+            }
+            if matches!(action, CharacterAction::CloseBrowser) {
+                mailbox.cyclopedia_character.gallery.open = false;
+                mailbox.cyclopedia_character.items.open = false;
+                mailbox.cyclopedia_character.protection.open = false;
+            } else {
+                mailbox.cyclopedia_character.open = false;
+            }
+            return true;
+        }
+
         if mailbox.cyclopedia_character_shutdown || mailbox.server_modal.is_active() {
             return false;
         }

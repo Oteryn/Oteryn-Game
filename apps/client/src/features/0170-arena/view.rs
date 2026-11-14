@@ -44,6 +44,21 @@ impl PlayLink {
     }
     pub(crate) fn arena_toggle_bound(&self, expected: &ArenaSnapshot) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if mailbox.arena.open {
+            if !expected
+                .session
+                .ptr_eq(&std::sync::Arc::downgrade(&self.mailbox))
+                || self.commands.is_closed()
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.arena.open = false;
+            return true;
+        }
+
         if !expected
             .session
             .ptr_eq(&std::sync::Arc::downgrade(&self.mailbox))

@@ -44,18 +44,20 @@ impl HostOwner {
             }
             return;
         }
-        if super::game_ui::cast_chat::shortcut(self, &routed) {
-            return;
-        }
         let Some(play) = &mut self.play else {
             return;
         };
         if play.view.tutorial_input(&routed).unwrap_or(true)
             || play.view.notification_input(&routed)
             || play.link.use_with_cancel_input(&routed)
-            || play.link.chat_input(&routed)
-            || play.link.chat_public_input(&routed)
         {
+            return;
+        }
+        // Ctrl+E belongs to Exiva outside chat; chat's channel action shares the key.
+        if !chat && play.link.exiva_input(&routed) {
+            return;
+        }
+        if play.link.chat_input(&routed) || play.link.chat_public_input(&routed) {
             return;
         }
         play.view.observe_creature_pointer(&routed);
@@ -74,142 +76,12 @@ impl HostOwner {
             }
             return;
         }
-        if super::game_ui::highscores_character_info::input(&play.link, &routed)
-            || play.link.house_podium_input(&routed)
-            || play.link.quest_input(&routed)
-            || play.link.appearance_input(&routed)
-            || play.link.pvp_expert_input(&routed)
-            || play.link.daily_boost_input(&routed)
-            || play.link.daily_reward_input(&routed)
-            || play.link.spell_catalog_input(&routed)
-            || play.link.loyalty_skills_input(&routed)
-            || play.link.mail_open_input(&routed)
-            || play.link.raid_schedule_input(&routed)
-            || play.link.notices_input(&routed)
-            || play.link.npc_dialogue_input(&routed, &play.view)
-            || play.link.charm_progression_input(&routed)
-            || play.link.bevy_depot_input(&routed)
-            || play.link.bevy_depot_search_input(&routed)
-            || play.link.discovery_input(&routed)
-            || play.link.guild_war_input(&routed)
-            || play.link.imbue_input(&routed)
-            || play.link.bevy_stash_input(&routed)
-            || (routed.iter().any(|event| {
-                matches!(
-                    event,
-                    NormalizedInputEvent::Key { code, .. } if code.get() == 25
-                )
-            }) && play.link.vip_input(&routed))
-            || play.link.wheel_input(&routed)
-        {
+        if !chat && self.route_window_shortcuts(&routed) {
             return;
         }
-        if oteryn_client_ui::boss_encounter::open_key(&routed)
-            || oteryn_client_ui::boss_encounter::cooldowns_key(&routed)
-        {
-            let cooldowns = oteryn_client_ui::boss_encounter::cooldowns_key(&routed);
-            super::game_ui::bosstiary::toggle(self, cooldowns);
+        let Some(play) = &mut self.play else {
             return;
-        }
-        if oteryn_client_ui::hireling::open_key(&routed) {
-            super::game_ui::hireling_services::toggle(self);
-            return;
-        }
-        if play.link.guildhall_input(&routed) {
-            return;
-        }
-        if oteryn_client_ui::cyclopedia_tracker::open_key(&routed) {
-            super::game_ui::cyclopedia_trackers::open(self);
-            return;
-        }
-        if oteryn_client_ui::cyclopedia_map::open_key(&routed) {
-            super::game_ui::cyclopedia_map::open(self);
-            return;
-        }
-        if oteryn_client_ui::boss_difficulty::open_key(&routed) {
-            super::game_ui::boss_difficulty::open(self);
-            return;
-        }
-        if oteryn_client_ui::boss_rewards::open_key(&routed) {
-            super::game_ui::open_boss_reward_chest(self);
-            return;
-        }
-        if oteryn_client_ui::animus_mastery::open_key(&routed) {
-            super::game_ui::animus_mastery::open(self);
-            return;
-        }
-        if oteryn_client_ui::browse_field::open_key(&routed)
-            && !routed.iter().any(|event| {
-                matches!(event,
-                NormalizedInputEvent::Key { modifiers, .. }
-                    if modifiers.contains(oteryn_input_actions::Modifier::Super))
-            })
-        {
-            play.link.browse_field_set_open_bound(true);
-            return;
-        }
-        if play.link.item_forge_input(&routed) {
-            return;
-        }
-        if oteryn_client_ui::container_sort::open_key(&routed) {
-            play.link.container_sort_open();
-            return;
-        }
-        if oteryn_client_ui::arena::open_key(&routed) {
-            if !play.view.gameplay_input_blocked(&play.link) {
-                let _ = play.link.arena_toggle_bound(&play.link.arena_snapshot());
-            }
-            return;
-        }
-        if oteryn_client_ui::cyclopedia_character::open_key(&routed) {
-            super::game_ui::cyclopedia_character::toggle(self);
-            return;
-        }
-        if oteryn_client_ui::house_furniture_wrap::open_key(&routed) {
-            super::game_ui::furniture_wrapping::toggle(self);
-            return;
-        }
-        if !chat && self.phase == super::owner::Phase::Playing {
-            if oteryn_client_ui::condition_status::open_key(&routed) {
-                condition_details::open_input(&play.link, Target::Conditions);
-                return;
-            }
-            if oteryn_client_ui::rest_status::open_key(&routed) {
-                condition_details::open_input(&play.link, Target::Rest);
-                return;
-            }
-        }
-        if oteryn_client_ui::market::open_key(&routed) {
-            play.link.market_set_open(true);
-            return;
-        }
-        if oteryn_client_ui::party::open_key(&routed) {
-            play.link.open_party();
-            return;
-        }
-        if oteryn_client_ui::task_board::open_key(&routed) {
-            play.link.open_task_board();
-            return;
-        }
-        if oteryn_client_ui::task_board::soulseals_key(&routed) {
-            play.link.open_soulseals();
-            return;
-        }
-        if play.link.prey_input(&routed) {
-            return;
-        }
-        if oteryn_client_ui::weapon_proficiency::open_key(&routed) {
-            super::game_ui::weapon_proficiency::open(self);
-            return;
-        }
-        if oteryn_client_ui::staff_tools::open_key(&routed) {
-            let _ = play.link.staff_tools_open_bound();
-            return;
-        }
-        if oteryn_client_ui::player_report::open_key(&routed) {
-            play.link.player_report_open();
-            return;
-        }
+        };
         play.view.cursor_spell_input(&routed);
         if let Some(direction) = crate::input::arrow_step(&routed) {
             play.view.arrow(direction);
@@ -253,8 +125,195 @@ impl HostOwner {
         }
     }
 
+    fn route_window_shortcuts(&mut self, routed: &[NormalizedInputEvent]) -> bool {
+        if routed.iter().any(|event| {
+            matches!(event, NormalizedInputEvent::Key { modifiers, .. }
+            if modifiers.contains(oteryn_input_actions::Modifier::Super))
+        }) {
+            return false;
+        }
+        if super::game_ui::cast_chat::shortcut(self, routed) {
+            return true;
+        }
+        let Some(play) = &mut self.play else {
+            return false;
+        };
+        if super::game_ui::highscores_character_info::input(&play.link, routed)
+            || play.link.house_podium_input(routed)
+            || play.link.quest_input(routed)
+            || play.link.appearance_input(routed)
+            || play.link.pvp_expert_input(routed)
+            || play.link.daily_boost_input(routed)
+            || play.link.daily_reward_input(routed)
+            || play.link.spell_catalog_input(routed)
+            || play.link.loyalty_skills_input(routed)
+            || play.link.mail_open_input(routed)
+            || play.link.raid_schedule_input(routed)
+            || play.link.notices_input(routed)
+            || play.link.npc_dialogue_input(routed, &play.view)
+            || play.link.charm_progression_input(routed)
+            || play.link.bevy_depot_input(routed)
+            || play.link.bevy_depot_search_input(routed)
+            || play.link.discovery_input(routed)
+            || play.link.guild_war_input(routed)
+            || play.link.imbue_input(routed)
+            || play.link.bevy_stash_input(routed)
+            || (routed.iter().any(|event| {
+                matches!(
+                    event,
+                    NormalizedInputEvent::Key { code, .. } if code.get() == 25
+                )
+            }) && play.link.vip_input(routed))
+            || play.link.wheel_input(routed)
+        {
+            return true;
+        }
+        if oteryn_client_ui::boss_encounter::open_key(routed)
+            || oteryn_client_ui::boss_encounter::cooldowns_key(routed)
+        {
+            let cooldowns = oteryn_client_ui::boss_encounter::cooldowns_key(routed);
+            super::game_ui::bosstiary::toggle(self, cooldowns);
+            return true;
+        }
+        if oteryn_client_ui::hireling::open_key(routed) {
+            super::game_ui::hireling_services::toggle(self);
+            return true;
+        }
+        if play.link.guildhall_input(routed) {
+            return true;
+        }
+        if oteryn_client_ui::cyclopedia_tracker::open_key(routed) {
+            super::game_ui::cyclopedia_trackers::open(self);
+            return true;
+        }
+        if oteryn_client_ui::cyclopedia_map::open_key(routed) {
+            super::game_ui::cyclopedia_map::open(self);
+            return true;
+        }
+        if oteryn_client_ui::boss_difficulty::open_key(routed) {
+            super::game_ui::boss_difficulty::open(self);
+            return true;
+        }
+        if oteryn_client_ui::boss_rewards::open_key(routed) {
+            super::game_ui::open_boss_reward_chest(self);
+            return true;
+        }
+        if oteryn_client_ui::animus_mastery::open_key(routed) {
+            super::game_ui::animus_mastery::open(self);
+            return true;
+        }
+        if oteryn_client_ui::browse_field::open_key(routed)
+            && !routed.iter().any(|event| {
+                matches!(event,
+                NormalizedInputEvent::Key { modifiers, .. }
+                    if modifiers.contains(oteryn_input_actions::Modifier::Super))
+            })
+        {
+            play.link.browse_field_set_open_bound(true);
+            return true;
+        }
+        if play.link.item_forge_input(routed) {
+            return true;
+        }
+        if oteryn_client_ui::container_sort::open_key(routed) {
+            play.link.container_sort_open();
+            return true;
+        }
+        if oteryn_client_ui::arena::open_key(routed) {
+            if !play.view.gameplay_input_blocked(&play.link) {
+                let _ = play.link.arena_toggle_bound(&play.link.arena_snapshot());
+            }
+            return true;
+        }
+        if oteryn_client_ui::cyclopedia_character::open_key(routed) {
+            super::game_ui::cyclopedia_character::toggle(self);
+            return true;
+        }
+        if oteryn_client_ui::house_furniture_wrap::open_key(routed) {
+            super::game_ui::furniture_wrapping::toggle(self);
+            return true;
+        }
+        if self.phase == super::owner::Phase::Playing {
+            if oteryn_client_ui::condition_status::open_key(routed) {
+                condition_details::open_input(&play.link, Target::Conditions);
+                return true;
+            }
+            if oteryn_client_ui::rest_status::open_key(routed) {
+                condition_details::open_input(&play.link, Target::Rest);
+                return true;
+            }
+        }
+        if oteryn_client_ui::market::open_key(routed) {
+            play.link.market_set_open(true);
+            return true;
+        }
+        if oteryn_client_ui::party::open_key(routed) {
+            play.link.open_party();
+            return true;
+        }
+        if oteryn_client_ui::task_board::open_key(routed) {
+            play.link.open_task_board();
+            return true;
+        }
+        if oteryn_client_ui::task_board::soulseals_key(routed) {
+            play.link.open_soulseals();
+            return true;
+        }
+        if play.link.prey_input(routed) {
+            return true;
+        }
+        if oteryn_client_ui::weapon_proficiency::open_key(routed) {
+            super::game_ui::weapon_proficiency::open(self);
+            return true;
+        }
+        if oteryn_client_ui::staff_tools::open_key(routed) {
+            let _ = play.link.staff_tools_open_bound();
+            return true;
+        }
+        if oteryn_client_ui::player_report::open_key(routed) {
+            play.link.player_report_open();
+            return true;
+        }
+
+        // Existing routes retain chord ownership; new routes are inserted by owner name.
+        if oteryn_client_ui::achievement_notices::open_key(routed) {
+            super::game_ui::open_achievement_notices(self);
+            return true;
+        }
+        if oteryn_client_ui::cast_control::open_key(routed) {
+            super::game_ui::cast_control::open(self);
+            return true;
+        }
+        if oteryn_client_ui::market::coin_open_key(routed) {
+            play.link.open_coin_market();
+            return true;
+        }
+        if play.link.guild_input(routed)
+            || play.link.guild_bank_input(routed)
+            || play.link.mechanics_status_input(routed)
+            || play.link.party_effects_input(routed)
+            || play.link.potion_durations_input(routed)
+            || play.link.store_input(routed)
+        {
+            return true;
+        }
+        // Furniture rotation's Ctrl+Alt+Shift+F is already owned by the forge route.
+        if oteryn_client_ui::training::open_key(routed) {
+            super::game_ui::training::open(self);
+            return true;
+        }
+        if oteryn_client_ui::world_event::open_key(routed) {
+            super::game_ui::world_event_window::open(self);
+            return true;
+        }
+        false
+    }
+
     /// A shared popup may consume the OS release; clear its retained pointer state.
     pub(super) fn pointer_context_closed(&mut self) {
         self.controls.mouse.context_closed();
     }
 }
+
+#[cfg(test)]
+pub(in crate::bevy_shell) mod tests;

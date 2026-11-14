@@ -34,6 +34,20 @@ impl PlayLink {
     /// Re-prove the complete displayed state under the same lock as the existing writer.
     pub(crate) fn wheel_dispatch_bound(&self, expected: &WheelPanel, action: WheelControl) -> bool {
         let mut m = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if action == WheelControl::Close {
+            if self.commands.is_closed()
+                || m.quest_shutdown
+                || m.custom_hotkeys_ended
+                || m.wheel_shutdown
+            {
+                return false;
+            }
+            m.wheel.open = false;
+            m.wheel.presets_open = false;
+            return true;
+        }
+
         if !admitted(&m, expected) || (!m.wheel.selected && action != WheelControl::Close) {
             return false;
         }

@@ -124,8 +124,15 @@ fn imbue_actions_rejected_when_session_replaced_or_item_changed() {
                 }
             }
             let before = link.imbue_snapshot();
-            assert!(!link.imbue_dispatch_bound(&expected, action.clone()));
-            assert_eq!(link.imbue_snapshot(), before);
+            if matches!(action, ImbueControl::Close) && matches!(reason, 1 | 3) {
+                assert!(link.imbue_dispatch_bound(&expected, action.clone()));
+                let mut closed = before;
+                closed.panel.open = false;
+                assert_eq!(link.imbue_snapshot(), closed);
+            } else {
+                assert!(!link.imbue_dispatch_bound(&expected, action.clone()));
+                assert_eq!(link.imbue_snapshot(), before);
+            }
             assert!(commands.try_recv().is_err());
         }
     }

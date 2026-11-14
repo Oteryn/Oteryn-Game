@@ -28,7 +28,9 @@ struct State {
     confirmation: Option<Kind>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, (keyboard, project).chain());
 }
 fn presentation(panel: &Panel) -> String {
     format!(
@@ -106,7 +108,7 @@ fn activate(
     let Some(binding) = &state.binding else {
         return;
     };
-    if !play.link.bestiary_binding_current(binding) {
+    if control.kind != Kind::Close && !play.link.bestiary_binding_current(binding) {
         return;
     }
     if matches!(control.kind, Kind::Request(Intent::Unlock | Intent::Remove)) && !control.confirm {
@@ -138,5 +140,25 @@ fn activate(
             binding,
             owner.generation(),
         );
+    }
+}
+
+fn keyboard(
+    mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    state: Res<State>,
+) {
+    if events.read().any(|event| {
+        event.key_code == KeyCode::Escape
+            && event.state == bevy::input::ButtonState::Pressed
+            && !event.repeat
+    }) && state.generation == owner.generation()
+        && state.overlay.is_some_and(|root| guard.allows(root))
+        && let Some(binding) = &state.binding
+        && let Some(play) = &owner.play
+    {
+        play.link
+            .bestiary_dispatch_bound(binding, Kind::Close, false);
     }
 }

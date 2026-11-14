@@ -263,21 +263,17 @@ fn ui_actions() -> Result {
     }
     Ok(())
 }
-fn shortcut(app: &mut App) {
-    let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-    for key in [KeyCode::ControlLeft, KeyCode::AltLeft, KeyCode::ShiftLeft] {
-        keys.press(key);
-    }
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyS,
-            logical_key: bevy::input::keyboard::Key::Character("s".into()),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+fn shortcut(app: &mut App) -> Result {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    crate::bevy_shell::controls::tests::shortcut(
+        app,
+        22,
+        Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+    )?;
     app.update();
+    Ok(())
 }
 fn registered() -> Result {
     let (mut app, _rx, _outbox) = fixture()?;
@@ -296,9 +292,9 @@ fn registered() -> Result {
     app.world_mut().trigger(Activate { entity });
     app.update();
     assert!(app.world().resource::<State>().root.is_some());
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     assert!(app.world().resource::<State>().root.is_none());
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     assert!(app.world().resource::<State>().root.is_some());
     click(&mut app, Kind::Close)?;
     assert!(app.world().resource::<State>().root.is_none());
@@ -365,7 +361,7 @@ fn cast_control_shortcut_preserves_text_input_context() -> Result {
     app.world_mut()
         .resource_mut::<bevy::input_focus::InputFocus>()
         .set(field, bevy::input_focus::FocusCause::Navigated);
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     assert!(app.world().resource::<State>().root.is_none());
     assert!(rx.try_recv().is_err());
     app.world_mut()
@@ -378,7 +374,7 @@ fn cast_control_shortcut_preserves_text_input_context() -> Result {
         link.chat_console_mode();
     }
     assert!(link.preference_chat_open());
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     assert!(app.world().resource::<State>().root.is_none());
     assert!(rx.try_recv().is_err());
     let owner = app.world().non_send::<HostOwner>();
@@ -390,7 +386,7 @@ fn cast_control_shortcut_preserves_text_input_context() -> Result {
         link.chat_console_mode();
     }
     assert!(!link.preference_chat_open());
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     assert!(app.world().resource::<State>().root.is_some());
     assert!(matches!(rx.try_recv()?, PlayCommand::ServerMechanic(_)));
     assert!(rx.try_recv().is_err());

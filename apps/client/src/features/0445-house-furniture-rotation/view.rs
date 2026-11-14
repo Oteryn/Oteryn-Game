@@ -101,6 +101,18 @@ mod bound {
                 return false;
             }
             let mut mailbox = lock(&self.mailbox);
+            // Closing presentation preserves every in-flight operation and receipt.
+            if action == BoundAction::Close {
+                if self.commands.is_closed()
+                    || mailbox.quest_shutdown
+                    || mailbox.custom_hotkeys_ended
+                {
+                    return false;
+                }
+                mailbox.properties.house_furniture_rotation.open = false;
+                return true;
+            }
+
             if !mailbox.shared_frontend
                 || self.commands.is_closed()
                 || mailbox.server_modal.is_active()
@@ -115,6 +127,10 @@ mod bound {
             if action == BoundAction::Close || action == BoundAction::Toggle && panel.open {
                 // Closing presentation does not cancel the retained owner's in-flight request.
                 panel.open = false;
+                return true;
+            }
+            if action == BoundAction::Toggle && panel.pending {
+                panel.open = true;
                 return true;
             }
             if panel.pending || !panel.open && action != BoundAction::Toggle {

@@ -121,6 +121,28 @@ impl PlayLink {
         use ImbueControl as C;
         use oteryn_client_ui::imbue::{Intent, request};
         let mut m = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if matches!(control, C::Close | C::CloseTracker) {
+            if !expected
+                .session
+                .ptr_eq(&std::sync::Arc::downgrade(&self.mailbox))
+                || self.commands.is_closed()
+                || m.quest_shutdown
+                || m.custom_hotkeys_ended
+                || m.imbue_shutdown
+            {
+                return false;
+            }
+            let open = if control == C::Close {
+                &mut m.imbue.open
+            } else {
+                &mut m.imbue.tracker_open
+            };
+            let was_open = *open;
+            *open = false;
+            return was_open;
+        }
+
         if !std::sync::Weak::ptr_eq(&expected.session, &std::sync::Arc::downgrade(&self.mailbox))
             || m.containers.views != expected.containers
             || self.commands.is_closed()

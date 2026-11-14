@@ -203,7 +203,7 @@ fn button(
             confirm,
         },
     ));
-    if !panel.selected || panel.pending {
+    if kind != Kind::Close && (!panel.selected || panel.pending) {
         entity.insert(bevy::ui::InteractionDisabled);
     }
     let entity = entity.observe(activate).id();

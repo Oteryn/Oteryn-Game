@@ -66,6 +66,20 @@ impl PlayLink {
         intent: Option<Intent>,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if intent.is_none() {
+            if !expected.matches(self, generation)
+                || self.commands.is_closed()
+                || mailbox.depot_shutdown
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.depot.open = false;
+            return true;
+        }
+
         if !expected.matches(self, generation)
             || self.commands.is_closed()
             || mailbox.depot_shutdown
@@ -206,9 +220,11 @@ impl PlayLink {
             || mailbox.server_modal.is_active()
             || mailbox.world_input_blocked()
             || mailbox.activity_reset_commands
-            || !mailbox.depot.selected
-            || mailbox.depot.pending
         {
+            return true;
+        }
+        mailbox.depot.open = true;
+        if !mailbox.depot.selected || mailbox.depot.pending {
             return true;
         }
         let mut prepared = mailbox.depot.clone();

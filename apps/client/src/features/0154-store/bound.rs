@@ -91,6 +91,22 @@ impl PlayLink {
         action: StoreAction,
     ) -> bool {
         let mut m = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if action == StoreAction::Close {
+            if !expected
+                .session
+                .ptr_eq(&std::sync::Arc::downgrade(&self.mailbox))
+                || self.commands.is_closed()
+                || m.depot_shutdown
+                || m.quest_shutdown
+                || m.custom_hotkeys_ended
+            {
+                return false;
+            }
+            m.store.open = false;
+            return true;
+        }
+
         if !expected.session.ptr_eq(&Arc::downgrade(&self.mailbox))
             || self.commands.is_closed()
             || m.depot_shutdown

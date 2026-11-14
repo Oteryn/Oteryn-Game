@@ -209,7 +209,6 @@ fn finish(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -227,14 +226,7 @@ fn keyboard(
         if event.repeat || event.state != bevy::input::ButtonState::Pressed {
             continue;
         }
-        let toggle = event.key_code == KeyCode::KeyN
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-            && !keys.pressed(KeyCode::ShiftLeft)
-            && !keys.pressed(KeyCode::ShiftRight)
-            && !keys.pressed(KeyCode::SuperLeft)
-            && !keys.pressed(KeyCode::SuperRight);
-        if toggle || (event.key_code == KeyCode::Escape && state.root.is_some()) {
+        if event.key_code == KeyCode::Escape && state.root.is_some() {
             state.queued = None;
             open(&owner);
             break;

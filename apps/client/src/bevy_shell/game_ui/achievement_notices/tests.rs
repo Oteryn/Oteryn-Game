@@ -211,22 +211,22 @@ fn achievement_notices_window_registered() -> TestResult {
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .press(KeyCode::ShiftLeft);
-    app.world_mut().write_message(key(KeyCode::KeyM));
+    crate::bevy_shell::controls::tests::shortcut(
+        &mut app,
+        16,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Shift),
+    )?;
     app.update();
     assert!(panel(&app).open);
-    app.world_mut().write_message(key(KeyCode::KeyM));
+    crate::bevy_shell::controls::tests::shortcut(
+        &mut app,
+        16,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Shift),
+    )?;
     app.update();
     assert!(!panel(&app).open);
     assert!(commands.try_recv().is_err());
     Ok(())
-}
-fn key(code: KeyCode) -> bevy::input::keyboard::KeyboardInput {
-    bevy::input::keyboard::KeyboardInput {
-        key_code: code,
-        logical_key: bevy::input::keyboard::Key::Character("m".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window: Entity::PLACEHOLDER,
-    }
 }

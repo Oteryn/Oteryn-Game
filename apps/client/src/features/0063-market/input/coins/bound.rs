@@ -34,15 +34,22 @@ impl PlayLink {
     pub(crate) fn coin_market_close_bound(
         &self,
         binding: usize,
-        expected: &oteryn_client_ui::market::CoinPanel,
+        _expected: &oteryn_client_ui::market::CoinPanel,
     ) -> bool {
         let mut m = lock(&self.mailbox);
-        if !self.coin_market_available(&m, binding, expected) {
+        if binding != self.market_session_binding()
+            || self.commands.is_closed()
+            || m.market_shutdown
+            || m.depot_shutdown
+            || m.custom_hotkeys_ended
+            || m.quest_shutdown
+        {
             return false;
         }
         m.market.coins.open = false;
         true
     }
+
     fn coin_market_available(
         &self,
         m: &Mailbox,

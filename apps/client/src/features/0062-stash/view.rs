@@ -33,6 +33,20 @@ impl PlayLink {
     ) -> bool {
         use oteryn_client_ui::stash::{Intent, request};
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if matches!(control, StashControl::Close) {
+            if !expected.matches(self, generation)
+                || self.commands.is_closed()
+                || mailbox.depot_shutdown
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.stash.open = false;
+            return true;
+        }
+
         if !expected.matches(self, generation)
             || self.commands.is_closed()
             || mailbox.depot_shutdown
@@ -150,9 +164,11 @@ impl PlayLink {
             || mailbox.server_modal.is_active()
             || mailbox.world_input_blocked()
             || mailbox.activity_reset_commands
-            || !mailbox.stash.selected
-            || mailbox.stash.pending
         {
+            return true;
+        }
+        mailbox.stash.open = true;
+        if !mailbox.stash.selected || mailbox.stash.pending {
             return true;
         }
         let mut prepared = mailbox.stash.clone();

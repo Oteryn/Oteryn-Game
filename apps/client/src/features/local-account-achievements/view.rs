@@ -104,6 +104,15 @@ impl PlayLink {
         intent: Option<oteryn_client_ui::account_achievements::Intent>,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if intent.is_none() {
+            if self.commands.is_closed() || mailbox.quest_shutdown || mailbox.custom_hotkeys_ended {
+                return false;
+            }
+            mailbox.achievements.open = false;
+            return true;
+        }
+
         if self.commands.is_closed()
             || mailbox.server_modal.is_active()
             || mailbox.achievements != *expected

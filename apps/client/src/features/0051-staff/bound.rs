@@ -43,7 +43,10 @@ impl PlayLink {
     }
     pub fn staff_tools_close_bound(&self, expected: &StaffToolsSnapshot) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        if !self.staff_tools_current(&mailbox, expected) {
+        if !Arc::ptr_eq(&self.mailbox, &expected.session)
+            || self.commands.is_closed()
+            || mailbox.custom_hotkeys_ended
+        {
             return false;
         }
         mailbox.properties.staff.open = false;

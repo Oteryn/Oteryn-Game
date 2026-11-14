@@ -134,7 +134,8 @@ pub(super) fn build(
             76.,
             panel,
         );
-    } else {
+    }
+    {
         button(
             commands,
             skins,

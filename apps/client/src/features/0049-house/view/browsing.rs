@@ -86,6 +86,24 @@ impl PlayLink {
     ) -> Result<Option<Confirmation>, String> {
         use super::super::input;
         let mut mailbox = lock(&self.mailbox);
+        if matches!(
+            action,
+            HouseBrowsingAction::Close | HouseBrowsingAction::OwnershipClose
+        ) {
+            if !expected.identity.ptr_eq(&Arc::downgrade(&self.mailbox))
+                || self.commands.is_closed()
+                || mailbox.inventory_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return Err("The session has ended".into());
+            }
+            if action == HouseBrowsingAction::Close {
+                mailbox.properties.house.model.open = false;
+            }
+            mailbox.properties.house.ownership.open = false;
+            return Ok(None);
+        }
+
         if self.commands.is_closed()
             || mailbox.world_input_blocked()
             || mailbox.activity_reset_commands
@@ -236,8 +254,13 @@ mod tests {
         );
         link.house_edit(1, "changed".into());
         assert!(
-            link.house_browsing_dispatch_bound(&snapshot, super::HouseBrowsingAction::Close)
-                .is_err()
+            link.house_browsing_dispatch_bound(
+                &snapshot,
+                super::HouseBrowsingAction::Map {
+                    fields: snapshot.fields.clone()
+                }
+            )
+            .is_err()
         );
         assert!(link.house_panel().model.open);
         assert!(queue.try_recv().is_err());
@@ -427,7 +450,7 @@ mod action_tests {
         let expected = link.house_browsing_snapshot();
         let modal = link.bevy_server_modal_fixture();
         assert!(
-            link.house_browsing_dispatch_bound(&expected, HouseBrowsingAction::Close)
+            link.house_browsing_dispatch_bound(&expected, HouseBrowsingAction::OwnershipOpen)
                 .is_err()
         );
         assert_eq!(link.house_browsing_snapshot(), expected);

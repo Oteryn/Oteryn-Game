@@ -19,9 +19,12 @@ fn furniture_rotation_owner_rejects_closed_pending_and_replaced_binding()
     let after = link.house_rotation_panel();
     // Closing must not let an older same-page reply consume a replacement request.
     assert!(
-        !link.house_rotation_dispatch_bound(&link.house_rotation_binding(), BoundAction::Toggle)
+        link.house_rotation_dispatch_bound(&link.house_rotation_binding(), BoundAction::Toggle)
     );
-    assert_eq!(link.house_rotation_panel(), after);
+    let mut reopened = after;
+    reopened.open = true;
+    assert_eq!(link.house_rotation_panel(), reopened);
+    let after = reopened;
     assert!(!link.house_rotation_dispatch_bound(&pending, BoundAction::Request(Intent::Refresh)));
     assert_eq!(link.house_rotation_panel(), after);
     drop(commands);

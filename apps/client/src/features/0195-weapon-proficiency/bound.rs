@@ -35,6 +35,19 @@ impl PlayLink {
         action: Action,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if action == Action::Close {
+            if session != std::sync::Arc::as_ptr(&self.mailbox) as usize
+                || self.commands.is_closed()
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.weapon_proficiency.open = false;
+            return true;
+        }
+
         if session != std::sync::Arc::as_ptr(&self.mailbox) as usize
             || !mailbox.shared_frontend
             || self.commands.is_closed()

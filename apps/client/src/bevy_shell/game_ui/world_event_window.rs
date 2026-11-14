@@ -136,7 +136,6 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     focus: Res<InputFocus>,
     owner: NonSend<HostOwner>,
@@ -147,24 +146,7 @@ fn keyboard(
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
         }
-        if event.key_code == KeyCode::KeyN
-            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && !keys.any_pressed([
-                KeyCode::AltLeft,
-                KeyCode::AltRight,
-                KeyCode::ShiftLeft,
-                KeyCode::ShiftRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ])
-            && guard.allows_focus(None)
-            && owner
-                .play
-                .as_ref()
-                .is_some_and(|p| !p.link.preference_chat_open())
-        {
-            open(&owner);
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(widgets) = &state.widgets
             && inside(focus.get(), widgets.root, &parents)
             && guard.allows(widgets.root)

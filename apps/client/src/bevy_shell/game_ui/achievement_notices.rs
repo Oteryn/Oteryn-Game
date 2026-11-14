@@ -167,11 +167,10 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     windows: Query<Entity, With<Window>>,
     state: Res<State>,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
 ) {
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
@@ -179,27 +178,16 @@ fn keyboard(
         }
         let window = windows.iter().next();
         let allowed = guard.allows_focus(window);
-        let shortcut = event.key_code == KeyCode::KeyM
-            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-            && !keys.any_pressed([
-                KeyCode::AltLeft,
-                KeyCode::AltRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ]);
         if !allowed || owner.modal_active() {
             continue;
         }
-        if window.is_some() && (shortcut || event.key_code == KeyCode::Escape) {
-            if let Some((generation, binding)) = &state.snapshot
-                && *generation == owner.generation()
-                && let Some(play) = &owner.play
-            {
-                let _ = play.link.achievement_notices_set_open_bound(binding, false);
-            }
-        } else if shortcut {
-            open(&mut owner);
+        if window.is_some()
+            && event.key_code == KeyCode::Escape
+            && let Some((generation, binding)) = &state.snapshot
+            && *generation == owner.generation()
+            && let Some(play) = &owner.play
+        {
+            let _ = play.link.achievement_notices_set_open_bound(binding, false);
         }
     }
 }

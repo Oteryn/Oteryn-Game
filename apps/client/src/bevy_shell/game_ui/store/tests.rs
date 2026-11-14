@@ -275,11 +275,16 @@ fn store_actions_rejected_when_session_replaced_or_pending() -> TestResult {
         Action::Refresh,
         Action::History,
         Action::Ledger,
-        Action::Close,
     ] {
         click(&mut app, action)?;
     }
     assert!(snapshot(&app)? == pending);
+    click(&mut app, Action::Close)?;
+    let closed = snapshot(&app)?;
+    let mut expected_panel = pending.panel.clone();
+    expected_panel.open = false;
+    assert_eq!(closed.panel, expected_panel);
+    assert_eq!(closed.history, pending.history);
     assert!(commands.try_recv().is_err());
     let (replacement, mut other_commands, other_outbox) = play_channel();
     replacement.use_shared_frontend();
@@ -358,7 +363,6 @@ fn store_owner_rechecks_modal_and_closed_channel_under_lock() -> TestResult {
     let expected = link.store_snapshot();
     let modal = link.bevy_server_modal_fixture();
     for action in [
-        StoreAction::Close,
         StoreAction::GiftOpen,
         StoreAction::Select(0),
         StoreAction::History(false),

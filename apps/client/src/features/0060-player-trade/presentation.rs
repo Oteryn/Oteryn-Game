@@ -68,12 +68,12 @@ pub fn same_presentation(a: &PlayerTradePanel, b: &PlayerTradePanel) -> bool {
 }
 #[must_use]
 pub fn trade_action_enabled(panel: &PlayerTradePanel, action: TradeAction) -> bool {
+    if action == TradeAction::Close {
+        return panel.open;
+    }
     let phase = trade_phase(panel);
     if !panel.selected || phase == TradePhase::Unknown {
         return false;
-    }
-    if action == TradeAction::Close {
-        return phase == TradePhase::Inactive;
     }
     if panel.pending || panel.items.pending {
         return false;
@@ -130,6 +130,15 @@ impl PlayLink {
         action: TradeAction,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        if action == TradeAction::Close {
+            if self.commands.is_closed() || mailbox.custom_hotkeys_ended {
+                return false;
+            }
+            mailbox.player_trade.open = false;
+            mailbox.player_trade.show_requested = false;
+            return true;
+        }
+
         let panel = &mut mailbox.player_trade;
         if !same_presentation(panel, expected) || !trade_action_enabled(panel, action) {
             return false;

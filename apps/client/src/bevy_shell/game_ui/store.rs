@@ -207,6 +207,10 @@ fn activate(
     {
         return;
     }
+    if control.action == Action::Close {
+        perform(&owner, &mut state, Action::Close);
+        return;
+    }
     // Do not read text ahead of Bevy's edit/paste application.
     if fields.iter().any(|(_, t)| {
         t.pending_paste.is_some()
@@ -250,6 +254,16 @@ fn customization(state: &State) -> Option<StoreCustomization> {
     })
 }
 fn perform(owner: &HostOwner, state: &mut State, action: Action) {
+    if action == Action::Close {
+        if owner.generation() == state.generation
+            && let Some(play) = &owner.play
+            && let Some(expected) = &state.seen
+        {
+            play.link.store_dispatch_bound(expected, StoreAction::Close);
+        }
+        return;
+    }
+
     let Some(link) = current(owner, state) else {
         return;
     };

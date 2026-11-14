@@ -47,6 +47,22 @@ impl PlayLink {
         confirmed: bool,
     ) -> bool {
         let mut m = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if control == BestiaryControl::Close {
+            if !expected
+                .session
+                .ptr_eq(&std::sync::Arc::downgrade(&self.mailbox))
+                || self.commands.is_closed()
+                || m.quest_shutdown
+                || m.custom_hotkeys_ended
+            {
+                return false;
+            }
+            let open = m.properties.charm_progression.open;
+            m.properties.charm_progression.open = false;
+            return open;
+        }
+
         if !self.bestiary_binding_matches(expected, &m) {
             return false;
         }

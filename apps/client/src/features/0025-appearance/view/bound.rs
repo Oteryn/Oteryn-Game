@@ -54,6 +54,19 @@ impl PlayLink {
             return false;
         }
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if control == C::Close {
+            if !std::sync::Arc::ptr_eq(&self.mailbox, &expected.session)
+                || self.commands.is_closed()
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.properties.appearance.open = false;
+            return true;
+        }
+
         if mailbox.properties.appearance != expected.panel
             || !expected.panel.open
             || !expected.panel.selected

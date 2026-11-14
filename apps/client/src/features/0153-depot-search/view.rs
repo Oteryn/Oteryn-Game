@@ -28,6 +28,20 @@ impl PlayLink {
         query: Option<u32>,
     ) -> bool {
         let mut mailbox = lock(&self.mailbox);
+        // Closing presentation preserves every in-flight operation and receipt.
+        if query.is_none() {
+            if !expected.matches(self, generation)
+                || self.commands.is_closed()
+                || mailbox.depot_shutdown
+                || mailbox.quest_shutdown
+                || mailbox.custom_hotkeys_ended
+            {
+                return false;
+            }
+            mailbox.depot_search.open = false;
+            return true;
+        }
+
         if !expected.matches(self, generation)
             || self.commands.is_closed()
             || mailbox.depot_shutdown
@@ -130,8 +144,6 @@ impl PlayLink {
             && !mailbox.server_modal.is_active()
             && !mailbox.world_input_blocked()
             && !mailbox.activity_reset_commands
-            && mailbox.depot_search.selected
-            && !mailbox.depot_search.pending
         {
             mailbox.depot_search.open = true;
         }

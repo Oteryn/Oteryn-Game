@@ -251,14 +251,6 @@ fn world_event_window_window_registered() -> Result {
     assert!(!panel(&app)?.open);
     // The outstanding query must settle before a new query can be issued.
     reply(&outbox, false, CommandStatus::Accepted)?;
-    let shortcut = bevy::input::keyboard::KeyboardInput {
-        key_code: KeyCode::KeyN,
-        logical_key: bevy::input::keyboard::Key::Character("n".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window: Entity::PLACEHOLDER,
-    };
     let modal = app
         .world_mut()
         .spawn((super::super::GameModal, GlobalZIndex(999), Node::default()))
@@ -266,7 +258,11 @@ fn world_event_window_window_registered() -> Result {
     app.world_mut()
         .resource_mut::<InputFocus>()
         .set(modal, bevy::input_focus::FocusCause::Navigated);
-    app.world_mut().write_message(shortcut.clone());
+    crate::bevy_shell::controls::tests::shortcut(
+        &mut app,
+        17,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+    )?;
     app.world_mut()
         .resource_mut::<ButtonInput<KeyCode>>()
         .press(KeyCode::ControlLeft);
@@ -275,7 +271,11 @@ fn world_event_window_window_registered() -> Result {
     assert!(commands.try_recv().is_err());
     app.world_mut().despawn(modal);
     app.update();
-    app.world_mut().write_message(shortcut.clone());
+    crate::bevy_shell::controls::tests::shortcut(
+        &mut app,
+        17,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+    )?;
     app.update();
     assert!(panel(&app)?.open);
     query(&mut commands)?;
@@ -286,7 +286,11 @@ fn world_event_window_window_registered() -> Result {
     toolbar(&mut app)?;
     assert!(panel(&app)?.open);
     query(&mut commands)?;
-    app.world_mut().write_message(shortcut);
+    crate::bevy_shell::controls::tests::shortcut(
+        &mut app,
+        17,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+    )?;
     app.update();
     assert!(!panel(&app)?.open);
     assert!(commands.try_recv().is_err());

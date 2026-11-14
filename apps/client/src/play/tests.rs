@@ -342,3 +342,7 @@ include!(concat!(env!("OUT_DIR"), "/play_feature_tests.rs"));
 
 #[path = "tests_additional.rs"]
 mod additional;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "tests/bevy_close.rs"]
+mod bevy_close;

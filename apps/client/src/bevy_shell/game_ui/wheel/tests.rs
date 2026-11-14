@@ -48,7 +48,7 @@ fn ready() -> (
 }
 #[test]
 fn wheel_window_shows_server_allocation_only() -> Result {
-    let (link, _, _) = ready();
+    let (link, _commands, _outbox) = ready();
     let p = link.wheel_panel();
     assert!(link.wheel_dispatch_bound(
         &p,
@@ -210,7 +210,7 @@ fn wheel_gem_action_requires_confirm_and_revision() -> Result {
 }
 #[test]
 fn wheel_presets_reuse_existing_owner() -> Result {
-    let (link, _, _) = ready();
+    let (link, _commands, _outbox) = ready();
     let path = std::env::temp_dir().join(format!("uni6-presets-{}.json", std::process::id()));
     assert!(link.wheel_preset_bound(&link.wheel_panel(), 0, "uni6", &path));
     assert!(link.wheel_dispatch_bound(
@@ -237,7 +237,6 @@ fn wheel_actions_rejected_when_session_replaced_or_stale_revision() -> Result {
         }
     });
     let actions = [
-        Kind::Close,
         Kind::Metadata,
         Kind::Socket,
         Kind::Clear,
@@ -262,7 +261,7 @@ fn wheel_actions_rejected_when_session_replaced_or_stale_revision() -> Result {
     }
     let p = link.wheel_panel();
     link.wheel_test_update(|_, shutdown| *shutdown = true);
-    for action in actions {
+    for action in actions.into_iter().chain(std::iter::once(Kind::Close)) {
         assert!(!link.wheel_dispatch_bound(&p, action));
         assert_eq!(link.wheel_panel(), p);
     }
@@ -404,7 +403,7 @@ fn wheel_v2_equips_and_unequips_through_revision_bound_owner() -> Result {
 }
 #[test]
 fn wheel_presets_owner_open_flag_projects_and_closes() -> Result {
-    let (link, _, _) = ready();
+    let (link, _commands, _outbox) = ready();
     link.wheel_test_update(|p, _| {
         p.open = false;
         p.presets_open = true;
@@ -438,7 +437,7 @@ fn wheel_ignores_hidden_modals() -> Result {
         link.wheel_test_update(|p, _| p.diagram.selected = true);
         let _app = window_with_modal(link, Some(display))?;
         assert_eq!(commands.try_recv().is_ok(), display == Display::None);
-        let (link, _, _) = ready();
+        let (link, _commands, _outbox) = ready();
         let mut app = window_with_modal(link, Some(display))?;
         let close = app
             .world_mut()

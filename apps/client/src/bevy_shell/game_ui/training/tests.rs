@@ -181,7 +181,7 @@ fn training_window_registered() -> Result {
             .training_panel()
             .open
     );
-    shortcut(&mut app);
+    shortcut(&mut app)?;
     app.update();
     assert!(
         app.world()
@@ -193,7 +193,27 @@ fn training_window_registered() -> Result {
             .training_panel()
             .open
     );
-    shortcut(&mut app);
+    shortcut(&mut app)?;
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .training_panel()
+            .open
+    );
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
     app.update();
     assert!(
         !app.world()
@@ -281,19 +301,14 @@ fn confirmation_controls() -> Result {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
-fn shortcut(app: &mut App) {
-    use bevy::input::keyboard::{Key, KeyboardInput};
-    let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-    keys.press(KeyCode::ControlLeft);
-    keys.press(KeyCode::AltLeft);
-    app.world_mut().write_message(KeyboardInput {
-        key_code: KeyCode::KeyN,
-        logical_key: Key::Character("n".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window: Entity::PLACEHOLDER,
-    });
+fn shortcut(app: &mut App) -> Result {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    crate::bevy_shell::controls::tests::shortcut(
+        app,
+        17,
+        Modifiers::one(Modifier::Control).with(Modifier::Alt),
+    )?;
+    Ok(())
 }
 
 fn rejected_controls() -> Result {
