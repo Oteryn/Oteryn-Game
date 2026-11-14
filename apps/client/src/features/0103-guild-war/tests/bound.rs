@@ -61,3 +61,26 @@ fn guild_wars_binding_does_not_keep_session_alive() {
     assert!(receiver.is_closed());
     drop(binding);
 }
+
+#[test]
+fn guild_wars_invalid_input_preserves_owner_draft() {
+    let (link, mut receiver, outbox) = play_channel();
+    outbox.guild_wars_test_selected();
+    link.guild_war_open();
+    for (field, value) in values().into_iter().enumerate() {
+        link.guild_war_edit(field, value);
+    }
+    let binding = link.guild_wars_binding();
+    for (intent, field, value) in [
+        (Intent::Declare, 0, "invalid UUID"),
+        (Intent::Accept, 0, "invalid UUID"),
+        (Intent::Declare, 1, "invalid frag limit"),
+        (Intent::Declare, 2, "invalid duration"),
+    ] {
+        let mut proposed = values();
+        proposed[field] = value.into();
+        assert!(!link.guild_wars_submit_bound(&binding, &proposed, intent));
+        assert_eq!(link.guild_war_panel(), binding.panel);
+        assert!(receiver.try_recv().is_err());
+    }
+}

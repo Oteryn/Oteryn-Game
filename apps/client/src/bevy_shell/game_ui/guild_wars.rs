@@ -232,33 +232,13 @@ fn finish(
         propose(&mut state, control.kind, &fields);
     }
 }
-fn shortcut(event: &bevy::input::keyboard::KeyboardInput, keys: &ButtonInput<KeyCode>) -> bool {
-    event.key_code == KeyCode::KeyW
-        && event.state == bevy::input::ButtonState::Pressed
-        && !event.repeat
-        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-        && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-        && ![
-            KeyCode::ShiftLeft,
-            KeyCode::ShiftRight,
-            KeyCode::SuperLeft,
-            KeyCode::SuperRight,
-        ]
-        .iter()
-        .any(|key| keys.pressed(*key))
-}
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     state: Res<State>,
-    focus: Res<InputFocus>,
-    keys: Res<ButtonInput<KeyCode>>,
 ) {
     for event in events.read() {
-        if shortcut(event, &keys) && guard.allows_focus(focus.get()) {
-            open(&owner);
-        }
         if event.key_code == KeyCode::Escape
             && event.state == bevy::input::ButtonState::Pressed
             && !event.repeat

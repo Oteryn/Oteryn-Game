@@ -24,7 +24,6 @@ fn fixture() -> Result<Fixture, Error> {
         .init_asset::<Font>()
         .init_asset::<Image>()
         .init_resource::<InputFocus>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -230,15 +229,9 @@ fn guild_wars_window_registered() -> Result<(), Error> {
         .write_message(key(KeyCode::Escape, bevy::input::keyboard::Key::Escape));
     app.update();
     assert!(!panel(&app)?.open);
-    {
-        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-        keys.press(KeyCode::ControlLeft);
-        keys.press(KeyCode::AltLeft);
-    }
-    app.world_mut().write_message(key(
-        KeyCode::KeyW,
-        bevy::input::keyboard::Key::Character("w".into()),
-    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[shortcut::owner_chord()?], false);
     app.update();
     assert!(panel(&app)?.open);
     Ok(())
@@ -283,3 +276,6 @@ fn guild_wars_cancel_preserves_draft_and_queued_edits_delay_confirmation() -> Re
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[path = "tests/shortcut.rs"]
+mod shortcut;

@@ -92,6 +92,11 @@ impl PlayLink {
         {
             return false;
         }
+        let mut proposed = panel.clone();
+        proposed.fields = fields.clone();
+        if super::protocol::command(&proposed, intent).is_err() {
+            return false;
+        }
         mailbox.properties.guild_war.fields = fields.clone();
         super::input::submit(&mut mailbox, &self.commands, intent);
         mailbox.properties.guild_war.pending
