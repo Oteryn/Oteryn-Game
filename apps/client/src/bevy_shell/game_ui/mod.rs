@@ -14,6 +14,8 @@ mod container_sorting;
 mod coin_market;
 mod depot;
 mod feature_dialogs;
+mod furniture_rotation;
+pub(super) use furniture_rotation::toggle as toggle_furniture_rotation;
 pub(super) mod house_move_out;
 pub(super) mod house_transfer;
 pub(super) mod house_browsing;
@@ -262,6 +264,7 @@ pub(super) fn install(app: &mut App) {
     coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
+    furniture_rotation::install(app);
     house_move_out::install(app);
     house_transfer::install(app);
     house_browsing::install(app);

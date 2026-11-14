@@ -56,3 +56,134 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+#[cfg(feature = "bevy-shell")]
+mod bound {
+    use super::*;
+    use crate::play::mailbox::SharedMailbox;
+    use oteryn_client_ui::house_furniture_rotation::{Intent, Panel};
+    use std::sync::Arc;
+
+    /// A displayed snapshot retains the actual session, not just matching catalogue bytes.
+    #[derive(Clone)]
+    pub(crate) struct RotationBinding {
+        session: SharedMailbox,
+        pub(crate) panel: Panel,
+    }
+    impl RotationBinding {
+        pub(crate) fn can_rotate(&self) -> bool {
+            super::super::protocol::command(&self.panel, Intent::Rotate).is_ok()
+        }
+        pub(crate) fn same_session(&self, other: &Self) -> bool {
+            Arc::ptr_eq(&self.session, &other.session)
+        }
+    }
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub(crate) enum BoundAction {
+        Toggle,
+        Close,
+        Select(usize),
+        Request(Intent),
+    }
+    impl PlayLink {
+        pub(crate) fn house_rotation_binding(&self) -> RotationBinding {
+            RotationBinding {
+                session: Arc::clone(&self.mailbox),
+                panel: self.house_rotation_panel(),
+            }
+        }
+        /// Validate and enqueue under the owner lock; the existing reducer owns replies.
+        pub(crate) fn house_rotation_dispatch_bound(
+            &self,
+            expected: &RotationBinding,
+            action: BoundAction,
+        ) -> bool {
+            if !Arc::ptr_eq(&self.mailbox, &expected.session) {
+                return false;
+            }
+            let mut mailbox = lock(&self.mailbox);
+            if !mailbox.shared_frontend
+                || self.commands.is_closed()
+                || mailbox.server_modal.is_active()
+                || mailbox.world_input_blocked()
+            {
+                return false;
+            }
+            let panel = &mut mailbox.properties.house_furniture_rotation;
+            if panel != &expected.panel || !panel.selected {
+                return false;
+            }
+            if action == BoundAction::Close || action == BoundAction::Toggle && panel.open {
+                // Closing presentation does not cancel the retained owner's in-flight request.
+                panel.open = false;
+                return true;
+            }
+            if panel.pending || !panel.open && action != BoundAction::Toggle {
+                return false;
+            }
+            let intent = match action {
+                BoundAction::Select(index) => {
+                    if panel
+                        .catalogue
+                        .as_ref()
+                        .and_then(|catalogue| catalogue.entries.get(index))
+                        .is_none()
+                    {
+                        return false;
+                    }
+                    panel.choice = (index + 1).to_string();
+                    return true;
+                }
+                BoundAction::Toggle => Intent::Refresh,
+                BoundAction::Request(intent) => intent,
+                BoundAction::Close => return false,
+            };
+            let Ok(command) = super::super::protocol::command(panel, intent) else {
+                return false;
+            };
+            // Sending and marking pending share the lock with the reply reducer.
+            if self
+                .commands
+                .send(crate::combat_input::PlayCommand::Feature(command.clone()))
+                .is_err()
+            {
+                return false;
+            }
+            panel.open = true;
+            oteryn_client_ui::house_furniture_rotation::request(panel, command.payload)
+        }
+    }
+}
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{BoundAction, RotationBinding};
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn furniture_rotation_selected(&self) {
+        lock(&self.0).properties.house_furniture_rotation.selected = true;
+    }
+    pub(crate) fn furniture_rotation_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        super::protocol::apply(
+            &mut lock(&self.0).properties.house_furniture_rotation,
+            command,
+            result,
+        );
+    }
+    pub(crate) fn furniture_rotation_change_target(&self) {
+        use oteryn_client_runtime::raw_feature::house_rotation::Target;
+        if let Some(catalogue) = &mut lock(&self.0).properties.house_furniture_rotation.catalogue
+            && let Some(entry) = catalogue.entries.first_mut()
+            && let Target::Item {
+                expected_revision, ..
+            } = &mut entry.target
+        {
+            *expected_revision += 1;
+        }
+    }
+    pub(crate) fn furniture_rotation_end(&self) {
+        self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    }
+}
