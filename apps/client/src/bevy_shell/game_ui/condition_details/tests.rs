@@ -17,6 +17,9 @@ type Fixture = (
     Outbox,
 );
 fn app() -> Result<Fixture, Box<dyn std::error::Error>> {
+    app_with_details(true)
+}
+fn app_with_details(details: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
     outbox.condition_details_test_selected();
@@ -38,7 +41,9 @@ fn app() -> Result<Fixture, Box<dyn std::error::Error>> {
     .insert_non_send(owner)
     .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
-    install(&mut app);
+    if details {
+        install(&mut app);
+    }
     app.update();
     Ok((app, link, commands, outbox))
 }
@@ -116,7 +121,7 @@ fn button(
 fn condition_details_window_shows_server_data_only() -> TestResult {
     let (mut app, link, mut commands, outbox) = app()?;
     for target in Target::ALL {
-        toggle(app.world().non_send::<HostOwner>(), target);
+        toggle(app.world().non_send::<HostOwner>(), target, false);
         request(&mut commands, target)?;
         app.update();
         assert!(!visible(&mut app).contains("Melee: +17"));
@@ -134,7 +139,7 @@ fn condition_details_window_shows_server_data_only() -> TestResult {
 fn condition_details_actions_are_bound_and_confirmed() -> TestResult {
     let (mut app, link, mut commands, outbox) = app()?;
     for target in Target::ALL {
-        toggle(app.world().non_send::<HostOwner>(), target);
+        toggle(app.world().non_send::<HostOwner>(), target, false);
         request(&mut commands, target)?;
         publish(&outbox, target)?;
         app.update();
@@ -168,7 +173,7 @@ fn condition_details_actions_are_bound_and_confirmed() -> TestResult {
 fn condition_details_rejected_when_session_replaced_or_target_changed() -> TestResult {
     let (mut app, link, mut commands, outbox) = app()?;
     let target = Target::Conditions;
-    toggle(app.world().non_send::<HostOwner>(), target);
+    toggle(app.world().non_send::<HostOwner>(), target, false);
     request(&mut commands, target)?;
     publish(&outbox, target)?;
     app.update();
@@ -256,14 +261,12 @@ fn condition_details_window_registered() -> TestResult {
 fn condition_details_refreshes_open_windows_and_stops_after_close() -> TestResult {
     let (mut app, link, mut commands, outbox) = app()?;
     for target in Target::ALL {
-        toggle(app.world().non_send::<HostOwner>(), target);
+        toggle(app.world().non_send::<HostOwner>(), target, false);
         request(&mut commands, target)?;
         publish(&outbox, target)?;
         app.update();
-        app.world_mut()
-            .resource_mut::<State>()
-            .window(target)
-            .refreshed = Some(Instant::now() - Duration::from_secs(2));
+        let refresh = button(&mut app, target, Action::Refresh)?;
+        app.world_mut().trigger(Activate { entity: refresh });
         app.update();
         request(&mut commands, target)?;
         app.update();
@@ -273,12 +276,138 @@ fn condition_details_refreshes_open_windows_and_stops_after_close() -> TestResul
         publish(&outbox, target)?;
         app.update();
         assert!(!link.condition_details_snapshot(target).open());
-        app.world_mut()
-            .resource_mut::<State>()
-            .window(target)
-            .refreshed = Some(Instant::now() - Duration::from_secs(2));
+
         app.update();
         assert!(commands.try_recv().is_err());
     }
+    Ok(())
+}
+
+#[test]
+fn condition_details_open_rejects_editing_phase_and_blocked_gameplay() -> TestResult {
+    for target in Target::ALL {
+        for fence in 0..5 {
+            let (mut app, link, mut commands, outbox) = app()?;
+            match fence {
+                0 => {
+                    let editor = app
+                        .world_mut()
+                        .spawn((Node::default(), bevy::text::EditableText::new("draft")))
+                        .id();
+                    app.world_mut()
+                        .resource_mut::<InputFocus>()
+                        .set(editor, bevy::input_focus::FocusCause::Navigated);
+                }
+                1 => {
+                    app.world_mut().non_send_mut::<HostOwner>().phase =
+                        crate::bevy_shell::owner::Phase::Offline
+                }
+                2 => outbox.condition_details_test_block_gameplay(),
+                3 => outbox.condition_details_test_chat_context(),
+                _ => {
+                    app.world_mut().spawn((
+                        bevy::window::PrimaryWindow,
+                        bevy::window::Window {
+                            focused: false,
+                            ..default()
+                        },
+                    ));
+                    app.update();
+                }
+            }
+            let toolbar = app
+                .world_mut()
+                .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+                .iter(app.world())
+                .find_map(|(entity, control)| (control.id() == target.id()).then_some(entity))
+                .ok_or("toolbar")?;
+            let before = link.condition_details_snapshot(target);
+            app.world_mut().trigger(Activate { entity: toolbar });
+            assert!(link.condition_details_snapshot(target) == before);
+            assert!(commands.try_recv().is_err());
+            let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            keys.press(KeyCode::ControlLeft);
+            keys.press(KeyCode::AltLeft);
+            keys.press(KeyCode::ShiftLeft);
+            keys.press(target.shortcut());
+            app.update();
+            assert!(link.condition_details_snapshot(target) == before);
+            assert!(commands.try_recv().is_err());
+        }
+    }
+    Ok(())
+}
+#[test]
+fn condition_details_refresh_is_manual_only() -> TestResult {
+    let (mut app, _link, mut commands, outbox) = app()?;
+    for target in Target::ALL {
+        toggle(app.world().non_send::<HostOwner>(), target, false);
+        request(&mut commands, target)?;
+        publish(&outbox, target)?;
+        app.update();
+        app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            std::time::Duration::from_secs(2),
+        ));
+        app.update();
+        assert!(commands.try_recv().is_err());
+        let refresh = button(&mut app, target, Action::Refresh)?;
+        app.world_mut().trigger(Activate { entity: refresh });
+        request(&mut commands, target)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn condition_details_registrations_preserve_existing_order() -> TestResult {
+    let expected = [
+        "modal::install(app);",
+        "options::install(app);",
+        "journal::install(app);",
+        "chat::install(app);",
+        "actions::install(app);",
+        "feature_dialogs::install(app);",
+        "hud::install(app);",
+        "inventory::install(app);",
+        "item_details::install(app);",
+        "market::install(app);",
+        "minimap::install(app);",
+        "npc_shop::install(app);",
+        "party::install(app);",
+        "quick_loot::install(app);",
+        "trade::install(app);",
+    ];
+    let modules = include_str!("../mod.rs");
+    let installs = modules
+        .lines()
+        .map(str::trim)
+        .filter(|line| expected.contains(line))
+        .collect::<Vec<_>>();
+    assert_eq!(installs, expected);
+    let toolbar = include_str!("../../ui.rs");
+    let positions = [
+        "(Control::Login,",
+        "(Control::CancelLogin,",
+        "(Control::Options,",
+        "(Control::Market,",
+        "(Control::Party,",
+        "(Control::Quests,",
+        "(Control::Spells,",
+    ]
+    .iter()
+    .map(|entry| toolbar.find(entry).ok_or("toolbar entry"))
+    .collect::<Result<Vec<_>, _>>()?;
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    Ok(())
+}
+
+#[test]
+fn condition_details_focus_guard_does_not_register_headless_windows() -> TestResult {
+    let (app, _link, _commands, _outbox) = app_with_details(false)?;
+    assert!(
+        app.world()
+            .components()
+            .get_id(std::any::TypeId::of::<bevy::window::Window>())
+            .is_none()
+    );
     Ok(())
 }

@@ -105,7 +105,10 @@ impl PlayLink {
             || !expected.session.ptr_eq(&Arc::downgrade(&self.mailbox))
             || panel(&mailbox, expected.target) != expected.panel
             || (action != Action::Open && !expected.open())
-            || (action == Action::Open && expected.open())
+            || (action == Action::Open
+                && (expected.open()
+                    || mailbox.world_input_blocked()
+                    || (mailbox.chat.open && mailbox.chat.console.can_send())))
             || (action == Action::Refresh && !expected.ready())
         {
             return false;
@@ -160,6 +163,14 @@ impl PlayLink {
 }
 #[cfg(test)]
 impl crate::play::Outbox {
+    pub(crate) fn condition_details_test_chat_context(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.chat.open = true;
+        mailbox.chat.console.temporary_on();
+    }
+    pub(crate) fn condition_details_test_block_gameplay(&self) {
+        lock(&self.0).death.dead = true;
+    }
     pub(crate) fn condition_details_test_selected(&self) {
         self.condition_status_initialize(true);
         self.rest_status_initialize(true);

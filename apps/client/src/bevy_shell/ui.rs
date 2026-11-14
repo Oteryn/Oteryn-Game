@@ -170,11 +170,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
             "Battle Instinct",
             100.,
         ),
+        (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Details(Target::Conditions), "Conditions", 80.),
-        (Control::Login, "Sign in", 80.),
-        (Control::Market, "Market", 80.),
         (Control::Options, "Options", 80.),
+        (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Details(Target::Rest), "Rest and food", 100.),
@@ -373,6 +373,7 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
+    input: condition_details::OpeningInput,
 ) {
     if !modal.allows(event.entity) {
         return;
@@ -381,9 +382,9 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Details(_)
+                Control::Options
+                    | Control::Details(_)
                     | Control::Market
-                    | Control::Options
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
@@ -394,7 +395,7 @@ fn activate(
             return;
         }
         match control {
-            Control::Details(target) => condition_details::toggle(&owner, *target),
+            Control::Details(target) => input.toggle(&owner, *target),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
