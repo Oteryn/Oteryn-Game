@@ -1,8 +1,10 @@
 //! Source-derived primitives only; actions edit the production owner's transient draft.
 mod actions;
+mod assets;
 mod toolbar;
 use super::owner::{GraphicsDraft, HostOwner};
 use actions::activate;
+pub(super) use assets::validate_assets;
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
@@ -10,31 +12,9 @@ use bevy::{
     ui_widgets::ValueChange,
 };
 use oteryn_client_ui_bevy as source;
-use std::path::Path;
 pub(super) use toolbar::project_toolbar;
 
 const SKIN: &str = "images/skin/classic/";
-const FILES: [&str; 7] = [
-    "images/skin/classic/button-grey-up.png",
-    "images/skin/classic/button-grey-down.png",
-    "images/skin/classic/checkbox-checked.png",
-    "images/skin/classic/checkbox-unchecked.png",
-    "images/skin/classic/dialog-frame-borderimage.png",
-    "images/1pixel-down-frame.png",
-    "fonts/verdanab.ttf",
-];
-pub(super) fn validate_assets(root: &Path) -> Result<(), String> {
-    for name in FILES {
-        let path = root
-            .join(name)
-            .canonicalize()
-            .map_err(|_| format!("Missing external UI asset: {name}"))?;
-        if !path.starts_with(root) || !path.is_file() {
-            return Err(format!("UI asset leaves --ui-assets directory: {name}"));
-        }
-    }
-    Ok(())
-}
 #[derive(Resource)]
 pub(super) struct Skins {
     pub(super) buttons: source::ButtonImages,
@@ -158,6 +138,13 @@ impl Control {
             _ => false,
         }
     }
+}
+// Keep source-registered owner entry points at the shell's registration path.
+fn open_cyclopedia_character(owner: NonSendMut<HostOwner>) {
+    super::game_ui::cyclopedia_character::toggle(&owner);
+}
+fn open_skills_config(owner: NonSendMut<HostOwner>) {
+    super::game_ui::skills_config::open(&owner);
 }
 #[derive(Component)]
 pub(super) struct ShellToolbar;

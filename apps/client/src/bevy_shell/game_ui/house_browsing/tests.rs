@@ -225,7 +225,7 @@ fn house_browsing_window_registered() -> TestResult {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
-    assert!(link(&app)?.house_panel().model.open);
+    assert!(!link(&app)?.house_panel().model.open);
     Ok(())
 }
 

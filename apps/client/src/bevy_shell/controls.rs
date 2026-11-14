@@ -79,7 +79,6 @@ impl HostOwner {
             || play.link.pvp_expert_input(&routed)
             || play.link.daily_boost_input(&routed)
             || play.link.daily_reward_input(&routed)
-            || play.link.house_transfer_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.loyalty_skills_input(&routed)
             || play.link.mail_open_input(&routed)

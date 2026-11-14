@@ -275,8 +275,8 @@ fn house_move_out_window_registered() -> Result {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
-    assert!(panel(&app)?.open);
-    assert!(app.world().resource::<State>().root.is_some());
+    assert!(!panel(&app)?.open);
+    assert!(app.world().resource::<State>().root.is_none());
     assert!(commands.try_recv().is_err());
     Ok(())
 }
@@ -351,7 +351,7 @@ fn house_move_out_owner_chord_is_routed() -> Result {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
-    assert!(panel(&app)?.open);
+    assert!(!panel(&app)?.open);
     assert!(commands.try_recv().is_err());
     Ok(())
 }

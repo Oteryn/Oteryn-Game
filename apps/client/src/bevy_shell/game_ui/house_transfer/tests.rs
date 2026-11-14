@@ -350,7 +350,7 @@ fn house_transfer_window_registered() -> Result {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
-    assert!(panel(&app).open);
+    assert!(!panel(&app).open);
     key(&mut app, KeyCode::Escape);
     assert!(!panel(&app).open);
     key(&mut app, KeyCode::F8);

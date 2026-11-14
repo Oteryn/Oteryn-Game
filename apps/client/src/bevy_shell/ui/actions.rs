@@ -93,17 +93,15 @@ pub(super) fn activate(
             Control::Training => game_ui::training::open(&owner),
             Control::Store => game_ui::store::open(&mut owner),
             Control::WeaponProficiency => game_ui::weapon_proficiency::open(&owner),
-            Control::Bosstiary(cooldowns) => {
-                game_ui::bosstiary::toggle(&mut owner, *cooldowns)
-            }
+            Control::Bosstiary(cooldowns) => game_ui::bosstiary::toggle(&mut owner, *cooldowns),
             Control::AchievementNotices => game_ui::open_achievement_notices(&mut owner),
             Control::ExpertPvpModes => game_ui::expert_pvp_modes::toggle(&owner),
             Control::Guild(bank) => game_ui::guild::open(&mut owner, *bank),
             Control::RaidSchedule => game_ui::raid_schedule::open(&mut owner),
             Control::Arena => game_ui::arena::toggle(&owner),
-            Control::CyclopediaCharacter => game_ui::cyclopedia_character::toggle(&owner),
+            Control::CyclopediaCharacter => super::open_cyclopedia_character(owner),
             Control::FurnitureWrapping => game_ui::furniture_wrapping::toggle(&mut owner),
-            Control::SkillsConfig => game_ui::skills_config::open(&owner),
+            Control::SkillsConfig => super::open_skills_config(owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
