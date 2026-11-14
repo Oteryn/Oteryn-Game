@@ -1629,31 +1629,15 @@ impl ChannelSpellStates {
     }
 }
 impl ChannelSpellStates {
-    // Current and externally fenced entry points share staging, receipts and secondary effects.
-    #[allow(clippy::too_many_arguments)]
-    fn source_composite_attack_damage(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
+    pub(in crate::gameplay_transport) fn source_incoming_magnitude(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        source: ExactActorRef,
         target: ExactActorRef,
         session: GameSessionId,
         magnitude: u32,
-        kind: crate::player_lethal::PlayerHitKind,
-        occurrence: &str,
-        source: ExactActorRef,
-        definitions: &[crate::foundation::ConditionDefinition],
-        facts: &crate::foundation::ApplicationFacts<'_>,
-        immunities: &[crate::foundation::ConditionType],
-        fence: Option<&crate::foundation::ScopeRuntimeFence>,
-        stamp: crate::foundation::RuntimeWorkStamp,
-    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
-        let current = fence.or_else(|| runtime.owner_fence().ok())?;
-        let binding = runtime.binding();
-        if !current.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
-            || !current.accepts_stamp(stamp)
-        {
-            return None;
-        }
-
+        now: u64,
+    ) -> u32 {
         let magnitude = runtime
             .companion_snapshot(source)
             .ok()
@@ -1676,10 +1660,39 @@ impl ChannelSpellStates {
                 session,
                 &s.state.policy.definition_key,
                 2,
-                facts.now,
+                now,
             )
         });
-        let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
+        magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32
+    }
+
+    // Current and externally fenced entry points share staging, receipts and secondary effects.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::gameplay_transport) fn source_composite_attack_damage(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        kind: crate::player_lethal::PlayerHitKind,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: Option<&crate::foundation::ScopeRuntimeFence>,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        let current = fence.or_else(|| runtime.owner_fence().ok())?;
+        let binding = runtime.binding();
+        if !current.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !current.accepts_stamp(stamp)
+        {
+            return None;
+        }
+
+        let magnitude =
+            self.source_incoming_magnitude(runtime, source, target, session, magnitude, facts.now);
         let replayed = self.source_secondary_memos.iter().any(|memo| {
             memo.actor == target && memo.session == session && memo.occurrence == occurrence
         }) || self.source_damage.iter().any(|memo| {
@@ -2241,6 +2254,32 @@ impl ChannelSpellStates {
         facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<NativeOwnedPlayerTickReceipt> {
+        let catalogue = self
+            .charm_state(runtime, target, session)
+            .map(|_| crate::content::charm_source::CanonicalCharmCatalogue::embedded())
+            .transpose()
+            .ok()?;
+        self.tick_source_player_conditions_with_charms(
+            runtime,
+            target,
+            session,
+            facts,
+            now,
+            catalogue.as_ref().map(|catalogue| {
+                catalogue as &dyn oteryn_gameplay_progression::charm_effects::CharmCatalogueRead
+            }),
+        )
+    }
+
+    pub(in crate::gameplay_transport) fn tick_source_player_conditions_with_charms(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        catalogue: Option<&dyn oteryn_gameplay_progression::charm_effects::CharmCatalogueRead>,
+    ) -> Option<NativeOwnedPlayerTickReceipt> {
         use oteryn_gameplay_foundation::foundation::condition::{ConditionSourceKind, TickKind};
         if self.is_dead(target)
             || self.has_pending_spell_commit(target, session)
@@ -2262,6 +2301,13 @@ impl ChannelSpellStates {
         let mut analyser_facts = Vec::new();
         let mut damage = 0u32;
         let mut public_cause = None;
+        let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+        let candidates = catalogue
+            .map(|_| runtime.visible_entities().creatures)
+            .unwrap_or_default();
+        let mut reflections: Vec<(ExactActorRef, u32)> = Vec::new();
+        let mut minors = Vec::new();
+
         for tick in &ticks {
             if next.vitals().health == 0 {
                 break;
@@ -2292,8 +2338,59 @@ impl ChannelSpellStates {
                         &tick.provenance,
                         amount,
                     );
-                    let (successor, hit) =
-                        crate::spell::actor_conditions::stage_typed_hit_in_world(
+                    let source = catalogue.and_then(|_| {
+                        let label = tick.provenance.source.as_deref()?;
+                        let field = crate::durability::spell_items_abi::DurableCreatureFieldOrigin::from_condition_source(label);
+                        candidates.iter().find(|candidate| {
+                            if let Some(field) = &field {
+                                candidate.actor.placement_identity() == field.actor_placement
+                                    && candidate.generation == field.actor_generation
+                                    && candidate.actor.scope_generation().get() == field.source_scope_generation
+                                    && field.content_digest == runtime.content_pin().server_artifact_digest()
+                            } else {
+                                label == format!("creature:{}", hex(&candidate.actor.placement_identity()))
+                            }
+                        }).map(|candidate| candidate.actor)
+                    });
+                    let source = source.filter(|source| {
+                        runtime.companion_snapshot(*source).is_ok_and(|snapshot| {
+                            let lost = reflections
+                                .iter()
+                                .find(|(actor, _)| actor == source)
+                                .map_or(0, |(_, amount)| *amount);
+                            snapshot.health > i64::from(lost)
+                                && snapshot.state.master.is_none()
+                                && !snapshot.state.policy.is_familiar
+                        })
+                    });
+                    // The frozen instance sequence and due time identify this tick, even
+                    // when a caller retries with another pass ID or assignment selection.
+                    let text = format!(
+                        "condition:{}:{}:{}:{}",
+                        hex(&target.placement_identity()),
+                        tick.sequence,
+                        tick.due,
+                        tick.provenance.definition_key
+                    );
+                    if let (Some(source), Some(catalogue)) = (source, catalogue) {
+                        let digest = Sha256::new()
+                            .chain_update(b"oteryn.charm.source.v1")
+                            .chain_update(text.as_bytes())
+                            .finalize();
+                        let mut identity = [0; 16];
+                        identity.copy_from_slice(&digest[..16]);
+                        let occurrence = DecisionOccurrenceId::from_bytes(identity);
+                        let snapshot = runtime.companion_snapshot(source).ok()?;
+                        if super::attack::charm_combat::evaluate(self, runtime, catalogue, target, session,
+                            &snapshot.state.policy.definition_key, &root, occurrence,
+                            oteryn_gameplay_progression::charm_effects::CharmHookEvent::IncomingCreatureAttack)
+                            .iter().any(|outcome| matches!(super::attack::charm_combat::effect(outcome),
+                                Some(oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::DodgeAttack))) {
+                            continue;
+                        }
+                    }
+                    let (successor, hit, gate) =
+                        crate::spell::actor_conditions::stage_typed_hit_with_gate(
                             runtime,
                             target,
                             &next,
@@ -2302,6 +2399,46 @@ impl ChannelSpellStates {
                             now.get(),
                         )
                         .ok()?;
+                    if gate > 0
+                        && let (Some(source), Some(catalogue)) = (source, catalogue)
+                        && let Some((identity, race, reflected)) =
+                            super::attack::charm_combat::prepare_incoming(
+                                self, runtime, catalogue, &root, source, target, session, amount,
+                                &text, None,
+                            )
+                    {
+                        if reflected > 0 {
+                            if let Some((_, total)) =
+                                reflections.iter_mut().find(|(actor, _)| *actor == source)
+                            {
+                                *total = total.checked_add(reflected)?;
+                            } else {
+                                reflections.try_reserve(1).ok()?;
+                                reflections.push((source, reflected));
+                            }
+                        }
+                        let lost = reflections
+                            .iter()
+                            .find(|(actor, _)| *actor == source)
+                            .map_or(0, |(_, amount)| *amount);
+                        let alive =
+                            runtime.companion_snapshot(source).ok()?.health > i64::from(lost);
+                        let outcomes = super::attack::charm_combat::evaluate_incoming_category(
+                            self,
+                            runtime,
+                            catalogue,
+                            &root,
+                            target,
+                            session,
+                            &race,
+                            identity,
+                            amount,
+                            oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                            alive,
+                        );
+                        minors.try_reserve(1).ok()?;
+                        minors.push((source, identity, outcomes));
+                    }
                     if let Some(value) = std::num::NonZeroU32::new(hit.applied) {
                         analyser_facts.push(oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput {
                             value, element: super::analyser::element(crate::player_lethal::PlayerHitKind::from_dot(element)),
@@ -2402,8 +2539,70 @@ impl ChannelSpellStates {
         } else {
             None
         };
-        if changed && !self.commit(runtime, target, session, next) {
-            return None;
+        self.equipment_reflection_kills
+            .try_reserve(reflections.len())
+            .ok()?;
+        let principal = if reflections.is_empty() {
+            None
+        } else {
+            let lease = runtime.bound_attacker_lease(target, session).ok()?;
+            Some(crate::combat::CapturedRewardPrincipal {
+                character: lease.character_id(),
+                lease_generation: lease.generation(),
+                actor: target,
+                session,
+            })
+        };
+        let mut reflected = Vec::new();
+        reflected.try_reserve(reflections.len()).ok()?;
+        runtime
+            .commit_source_damage_batch_with_vitals(
+                &reflections,
+                target,
+                session,
+                b"charm-parry-condition-ticks",
+                revision,
+                now.get() / 1000,
+                |runtime, results| {
+                    if changed && !self.commit(runtime, target, session, next) {
+                        return None;
+                    }
+                    reflected.extend_from_slice(results);
+                    Some(())
+                },
+            )
+            .ok()??;
+        for ((source, _), result) in reflections.iter().zip(reflected) {
+            if result.applied {
+                self.analyser.impact_amount(
+                    target,
+                    session,
+                    u64::try_from(result.health_before.saturating_sub(result.health_after))
+                        .unwrap_or(0),
+                    Some(super::analyser::charm_element(
+                        oteryn_gameplay_progression::charm_effects::CharmElement::Physical,
+                    )),
+                );
+                if result.health_after == 0
+                    && let Some(principal) = &principal
+                {
+                    self.equipment_reflection_kills
+                        .push((*source, *principal, now.get()));
+                }
+            }
+        }
+        for (source, identity, outcomes) in minors {
+            super::attack::charm_combat::apply_incoming_minor(
+                self,
+                runtime,
+                &root,
+                source,
+                target,
+                session,
+                identity,
+                now.get(),
+                &outcomes,
+            );
         }
         for fact in analyser_facts {
             self.analyser.push(target, session, fact);
@@ -2726,13 +2925,24 @@ impl ChannelSpellStates {
 }
 
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn source_hit_is_replay(
+        &self,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+    ) -> bool {
+        self.source_damage
+            .iter()
+            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+    }
+
     #[allow(
         clippy::too_many_arguments,
         reason = "existing damage owner inputs plus advisory source"
     )]
-    fn apply_typed_attack_damage_from(
+    pub(in crate::gameplay_transport) fn apply_typed_attack_damage_from(
         &mut self,
-        runtime: &mut ChannelRuntimeV1,
+        runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         magnitude: u32,
@@ -2854,7 +3064,7 @@ pub(in crate::gameplay_transport) fn native_public_death_cause(
     )
 }
 impl ChannelSpellStates {
-    fn capture_native_death_cause(
+    pub(in crate::gameplay_transport) fn capture_native_death_cause(
         &mut self,
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,

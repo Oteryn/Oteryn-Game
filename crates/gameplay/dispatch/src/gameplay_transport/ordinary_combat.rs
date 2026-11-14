@@ -189,6 +189,7 @@ pub(super) async fn prepare(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -212,6 +213,7 @@ pub(super) async fn prepare(
         room,
         objects,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -240,6 +242,7 @@ pub(super) async fn prepare_named(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     spell: &SpellDefinition,
@@ -293,6 +296,7 @@ pub(super) async fn prepare_named(
         room,
         objects,
         content,
+        charms,
         owned,
         book,
         spell,
@@ -329,6 +333,7 @@ fn lower(
     states: &mut ChannelSpellStates,
     room: &QualifiedNativeEntryRoom,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
@@ -582,6 +587,15 @@ fn lower(
         owner
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
+        crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+            states,
+            runtime,
+            charms,
+            owned.binding().actor,
+            command,
+            owner,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,

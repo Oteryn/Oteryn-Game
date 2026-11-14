@@ -919,10 +919,11 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .1
             .mana;
         // This fixture fills red, including monk slot 12's 0.25% mana leech.
-        // Crystal 201189f player_wheel.cpp:2254-2256 and game.cpp:8585-8617,
-        // 8664-8667 refund rounded actual damage; the delayed callback pays no cost.
+        // The accepted Global Leech profile rounds each positive contribution up.
+        // This surviving target has no Prey, so its immediate HP loss is also the
+        // pre-overkill basis. The delayed callback still pays no additional cost.
         let mana_leech = if matches!(plan.case, Case::Outburst(_)) {
-            i64::try_from(((u64::try_from(RAT_HEALTH)? - hit) * 25 + 5000) / 10000)?
+            i64::try_from(((u64::try_from(RAT_HEALTH)? - hit) * 25).div_ceil(10000))?
         } else {
             0
         };

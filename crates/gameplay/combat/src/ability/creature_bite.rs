@@ -337,10 +337,9 @@ impl CreatureBiteLedger {
         self.entries.len()
     }
 
-    /// The live `issuer`'s entry, made on its first bite. A full ledger first drops the entries
-    /// of dead issuers. The carrier admits at most `CREATUREAI0-RL-04` creatures, and `issuer` is
-    /// one of them without an entry, so the live entries left are fewer than the maximum and a
-    /// live issuer is never refused `LedgerFull`.
+    /// The current issuer's entry, made on its first bite. A full ledger first drops
+    /// retired incarnations, retaining a qualified Parry kill until its slot retires.
+    /// The carrier bounds current incarnations by `CREATUREAI0-RL-04`.
     fn entry(
         &mut self,
         runtime: &ChannelRuntimeV1,
@@ -349,8 +348,12 @@ impl CreatureBiteLedger {
     ) -> Result<&mut BiteEntry, BiteRejection> {
         let key = issuer.placement_identity();
         if !self.entries.contains_key(&key) && self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
-            self.entries
-                .retain(|_, entry| runtime.contains_live_creature(entry.issuer));
+            self.entries.retain(|_, entry| {
+                runtime.contains_live_creature(entry.issuer)
+                    || runtime
+                        .companion_snapshot_including_dead(entry.issuer)
+                        .is_ok()
+            });
             if self.entries.len() >= CREATURE_BITE_LEDGER_MAX {
                 return Err(BiteRejection::LedgerFull);
             }
@@ -386,7 +389,12 @@ pub fn commit_ai_bite(
     protection: ReentryProtection,
     now: SemanticTimeMicros,
 ) -> Result<AppliedBite, BiteRejection> {
-    if !runtime.contains_live_creature(intent.issuer) {
+    let live = runtime.contains_live_creature(intent.issuer);
+    if !live
+        && runtime
+            .companion_snapshot_including_dead(intent.issuer)
+            .is_err()
+    {
         return Err(BiteRejection::StaleIssuer);
     }
     if let Some(binding) = definition.native_schedule
@@ -401,7 +409,18 @@ pub fn commit_ai_bite(
     let source_index = definition
         .native_schedule
         .map(|binding| binding.source_index);
-    let entry = *ledger.entry(runtime, intent.issuer, source_index)?;
+    let entry = if live {
+        *ledger.entry(runtime, intent.issuer, source_index)?
+    } else {
+        let actor = ledger
+            .entries
+            .get(&intent.issuer.placement_identity())
+            .ok_or(BiteRejection::StaleIssuer)?;
+        match source_index {
+            Some(index) => *actor.native.get(&index).ok_or(BiteRejection::StaleIssuer)?,
+            None => actor.legacy,
+        }
+    };
     if let Some((sequence, target, result)) = entry.last {
         if intent.think_sequence < sequence {
             return Err(BiteRejection::OccurrenceSuperseded);
@@ -413,6 +432,9 @@ pub fn commit_ai_bite(
                 Err(BiteRejection::OccurrenceConflict)
             };
         }
+    }
+    if !runtime.contains_live_creature(intent.issuer) {
+        return Err(BiteRejection::StaleIssuer);
     }
     let result = resolve_and_apply(
         runtime, vitals, &entry, intent, definition, revisions, protection, now,

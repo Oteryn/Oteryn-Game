@@ -69,31 +69,25 @@ pub(super) fn critical_swing(
     Some(i64::from(damage))
 }
 
-/// `Game::applyLifeLeech` and `Game::applyManaLeech` (`game.cpp:8760-8764`, `8998-9056`): the
-/// health the hit really took heals the attacker and restores its mana, in one compare-committed
-/// vitals write. A leech that restores nothing writes nothing.
+/// Only an applied owner receipt permits leech. The admitted attack supplies
+/// its pre-Prey, pre-overkill damage; HP loss is not the leech basis. Both gains
+/// use the existing compare-committed vitals write and cannot replay.
 pub(super) fn leech_hit(
     states: &mut ChannelSpellStates,
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
     offence: &EquippedOffence,
+    damage: u32,
     result: &crate::foundation::OwnerDamageResult,
 ) {
     if !result.applied || (offence.life_leech == 0 && offence.mana_leech == 0) {
         return;
     }
-    let real = result
-        .health_before
-        .saturating_sub(result.health_after.max(0))
-        .max(0);
-    let Ok(real) = u32::try_from(real) else {
-        return;
-    };
     let Some(next) = states.get(runtime, actor, session).and_then(|state| {
         state.after_leech(
-            leech_amount(real, offence.life_leech),
-            leech_amount(real, offence.mana_leech),
+            leech_amount(damage, offence.life_leech),
+            leech_amount(damage, offence.mana_leech),
         )
     }) else {
         return;
@@ -170,4 +164,53 @@ pub(super) fn cleave_targets(
         }
     }
     targets
+}
+
+#[cfg(test)]
+mod global_leech_tests {
+    use super::*;
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+    use crate::spell::cast::PlayerSpellState;
+
+    #[test]
+    fn global_auto_leech_uses_calculated_damage_and_rejects_unapplied_receipt() -> Result<(), String>
+    {
+        let (runtime, actor, session) = runtime_with_player(64);
+        let mut states = ChannelSpellStates::default();
+        let mut player = PlayerSpellState::new(FACTS, 0, 0).ok_or("character invalid")?;
+        player.restore_saved_vitals(20, 20);
+        states.actors.push((actor, session, player));
+        let offence = EquippedOffence::from_sums(0, 0, 1600, 1600);
+        let mut receipt = crate::foundation::OwnerDamageResult {
+            applied: true,
+            health_before: 20,
+            health_after: 0,
+        };
+        leech_hit(
+            &mut states,
+            &runtime,
+            actor,
+            session,
+            &offence,
+            100,
+            &receipt,
+        );
+        let after = states
+            .get(&runtime, actor, session)
+            .ok_or("current caster missing")?
+            .clone();
+        assert_eq!((after.vitals().health, after.vitals().mana), (36, 36));
+        receipt.applied = false;
+        leech_hit(
+            &mut states,
+            &runtime,
+            actor,
+            session,
+            &offence,
+            100,
+            &receipt,
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&after));
+        Ok(())
+    }
 }

@@ -217,6 +217,7 @@ pub(super) async fn bless(
         let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
             owner.owner_now().get(),
         );
+        let source_before = runtime.companion_snapshot(source).map_err(debug)?.health;
         assert!(vitals.reflect_equipment_damage(
             &mut runtime,
             source,
@@ -228,12 +229,9 @@ pub(super) async fn bless(
             now
         ));
         assert_eq!(
-            runtime
-                .companion_snapshot_including_dead(source)
-                .map_err(debug)?
-                .health,
-            0,
-            "actual Parry kills the exact source before its admitted incoming lethal hit lands"
+            runtime.companion_snapshot(source).map_err(debug)?.health,
+            source_before,
+            "reflection preparation cannot publish source HP before player acceptance"
         );
         let hit = vitals
             .apply_creature_damage(
@@ -246,6 +244,15 @@ pub(super) async fn bless(
                 ),
             )
             .ok_or("lethal source hit")?;
+        assert_eq!(
+            runtime
+                .companion_snapshot_including_dead(source)
+                .map_err(debug)?
+                .health,
+            0,
+            "actual Parry kills the exact source before its admitted incoming lethal hit lands"
+        );
+
         let death = states
             .player_death(&runtime, actor, session)
             .ok_or("pending death")?;
@@ -548,20 +555,22 @@ pub(super) async fn mana(
             Some(receipt)
         );
         if name == "numb" {
-            assert!(
+            assert_eq!(
                 runtime
                     .actor_active_speed_delta(source, None, now)
-                    .map_err(debug)?
-                    < 0
+                    .map_err(debug)?,
+                0,
+                "a mana-only drain must not run the incoming health-hit minor"
             );
         } else {
-            assert!(
+            assert_eq!(
                 states
                     .get(&runtime, actor, session)
                     .ok_or("player")?
                     .owned_conditions()
-                    .speed_delta_at(now.get())
-                    > 0
+                    .speed_delta_at(now.get()),
+                0,
+                "a mana-only drain must not run the incoming health-hit minor"
             );
         }
     }

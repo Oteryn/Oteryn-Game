@@ -107,6 +107,11 @@ pub enum CharmHookEvent {
         health_before: i64,
         health_after: i64,
     },
+    /// Passive per-race leech rates for an admitted direct hit. The owner still
+    /// requires an applied damage receipt before installing the resulting gain.
+    LeechCalculation {
+        source: CharmHitSource,
+    },
     IncomingCreatureAttack,
     /// The creature's hit on the character, with its base damage before the character's own
     /// resistances and armor.
@@ -264,6 +269,18 @@ pub fn evaluate_charm_hook(
     state: &dyn CharmStateRead,
     catalogue: &dyn CharmCatalogueRead,
 ) -> Result<Vec<CharmOutcome>, CharmEvaluationError> {
+    evaluate_charm_hook_category(input, state, catalogue, None, true)
+}
+
+/// Evaluate one category against the source liveness after an earlier category.
+/// Draw indices and all existing event numerics remain unchanged.
+pub fn evaluate_charm_hook_category(
+    input: &CharmEvaluationInput<'_>,
+    state: &dyn CharmStateRead,
+    catalogue: &dyn CharmCatalogueRead,
+    category: Option<CharmCategory>,
+    source_alive: bool,
+) -> Result<Vec<CharmOutcome>, CharmEvaluationError> {
     if state.character() != input.character {
         return Err(CharmEvaluationError::StateForOtherCharacter);
     }
@@ -299,10 +316,19 @@ pub fn evaluate_charm_hook(
     for (definition, stage, value) in resolved {
         let effect = definition.effect();
         let hook = effect.hook();
-        if !event_runs_effect(&input.event, lethal, effect) {
+        if category.is_some_and(|category| definition.category() != category)
+            || !event_runs_effect(&input.event, lethal, effect)
+        {
             continue;
         }
-        let result = evaluate_effect(input, hook, lethal, definition, value)?;
+        let result = if !source_alive
+            && (effect.targets_living_creature()
+                || matches!(effect, CharmEffect::ParalyseCreatureAfterItsAttack { .. }))
+        {
+            CharmResult::NoLivingTarget
+        } else {
+            evaluate_effect(input, hook, lethal, definition, value)?
+        };
         outcomes.push(CharmOutcome {
             charm_key: definition.key().to_owned(),
             stage,
@@ -365,6 +391,10 @@ fn event_runs_effect(event: &CharmHookEvent, lethal: bool, effect: CharmEffect) 
             }
             CharmHitSource::CharmDamage => false,
         },
+        CharmHookEvent::LeechCalculation { source } => {
+            *source != CharmHitSource::CharmDamage
+                && matches!(effect, CharmEffect::LifeLeech | CharmEffect::ManaLeech)
+        }
         CharmHookEvent::IncomingCreatureAttack => hook == CharmHook::IncomingCreatureAttack,
         CharmHookEvent::IncomingCreatureHit { .. } => hook == CharmHook::IncomingCreatureHit,
         CharmHookEvent::IncomingManaDrain { .. } => {

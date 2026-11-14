@@ -1,4 +1,6 @@
 //! Numerical Item and Wheel contributions from the same fenced cast snapshot.
+#[path = "spell_leech_projection.rs"]
+pub(in crate::gameplay_transport) mod leech_projection;
 use crate::spell::{SpellDefinition, cast::PlayerSpellState, owned_cast_facts::OwnedCastFacts};
 use oteryn_gameplay_content::content::item_spell_augments::{
     ItemSpellAugment, ItemSpellAugmentKind as K,

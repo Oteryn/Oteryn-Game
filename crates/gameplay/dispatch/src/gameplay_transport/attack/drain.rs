@@ -708,20 +708,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     1,
                     now.get(),
                 );
-                let final_parts = if let Some(mut parts) = ranged_magnitude {
-                    // Wheel has already resolved each component. Perfect Shot adds to primary.
+                let damage_parts = if let Some(mut parts) = ranged_magnitude {
+                    // Wheel has resolved both components; Perfect Shot adds to primary.
                     parts[0] = parts[0]
                         .saturating_add(landed.saturating_sub(parts[0].saturating_add(parts[1])))
                         .max(0);
-                    boost_attack_components(parts, prey, talisman_damage, talisman.elite(&race_key))
+                    parts
                 } else {
-                    boost_attack_components(
-                        [landed, 0],
-                        prey,
-                        talisman_damage,
-                        talisman.elite(&race_key),
-                    )
+                    [landed, 0]
                 };
+                let leech_parts = boost_attack_components(
+                    damage_parts,
+                    0,
+                    talisman_damage,
+                    talisman.elite(&race_key),
+                );
+                let leech_damage =
+                    u32::try_from(leech_parts[0].saturating_add(leech_parts[1]).max(0))
+                        .unwrap_or(u32::MAX);
+                let final_parts = boost_attack_components(
+                    damage_parts,
+                    prey,
+                    talisman_damage,
+                    talisman.elite(&race_key),
+                );
                 let landed = final_parts[0].saturating_add(final_parts[1]);
                 if landed <= 0 {
                     train_swing(
@@ -815,12 +825,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     &mut trained,
                 );
-                // Equipment leech remains a primary-target effect in this owner. Secondary
-                // auto-attack targets only receive the explicit D186 charm exceptions.
-                if extension {
-                    offence.life_leech = 0;
-                    offence.mana_leech = 0;
-                }
                 let outcomes = {
                     let source = if extension {
                         CharmHitSource::CharacterAutoAttackOffTarget
@@ -848,20 +852,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ),
                     )
                 };
-                charm_combat::bonuses(&mut offence, &outcomes);
+                charm_combat::committed_hit_bonuses(&mut offence, &outcomes, extension);
                 if !extension {
                     // Canary on_combat_taskboard.lua:24-27 adds the proc to the ordinary
-                    // life skill. The existing owner heals from committed real damage.
+                    // life skill. The owner uses the retained pre-Prey, pre-overkill basis.
                     offence.life_leech = offence.life_leech.saturating_add(talisman_life);
                 }
-                equipped_offence::leech_hit(
-                    &mut states,
-                    &runtime,
-                    entry.actor,
-                    entry.session,
-                    &offence,
-                    &result,
-                );
+                // Keep the owner's Enrage callback even though Leech excludes Prey
+                // and HP clipping. A failed projection suppresses only regeneration,
+                // never the already committed hit or its remaining kill/charm work.
+                if let Ok(leech_damage) = crate::gameplay_transport::item_spell_augments::leech_projection::owner_damage_basis(
+                    &runtime, target, leech_damage, result.health_before, 0,
+                ) {
+                    equipped_offence::leech_hit(
+                        &mut states, &runtime, entry.actor, entry.session, &offence,
+                        leech_damage, &result,
+                    );
+                }
                 if result.applied
                     && result.health_after < result.health_before
                     && snapshot.state.master.is_none()
