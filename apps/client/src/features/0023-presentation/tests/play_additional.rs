@@ -61,7 +61,12 @@ fn combat_review_same_tile_values_reserve_separate_lines_in_order()
     {
         *secondary = Some(*primary);
     }
-    view.receive_presentation(&[middle, numbered_value(8)], now);
+    // A last number of another colour does not merge into the first one.
+    let mut last = numbered_value(8);
+    if let PresentationEventKind::ValueText { primary, .. } = &mut last {
+        primary.color = oteryn_session::PresentationColor::Red;
+    }
+    view.receive_presentation(&[middle, last], now);
     view.project_presentation(now)?;
     let quads = &view.scene().sprites().instances()[base..];
     assert_eq!(quads.len(), first.len() * 4);

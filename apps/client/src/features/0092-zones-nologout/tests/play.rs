@@ -197,3 +197,33 @@ fn t057_banner_filter_retains_server_notice() -> Result<(), String> {
     assert_eq!(view.server_message_status().as_deref(),Some("Welcome"));
     Ok(())
 }
+
+#[test]
+fn shared_frontend_routes_each_server_kind_to_its_screen_place_and_replaces_per_kind()
+-> Result<(), String> {
+    use crate::play::feature_local_game_notifications::state::ScreenPlace;
+    let (link, _commands, outbox) = play_channel();
+    outbox.push(vec![
+        message_event(1, ServerMessage::StatusText("Welcome".into())),
+        message_event(2, ServerMessage::Warning("First".into())),
+        message_event(3, ServerMessage::Advance("You advanced".into())),
+        message_event(4, ServerMessage::Warning("Second".into())),
+    ]);
+    let mut view = view().map_err(|error| error.to_string())?;
+    view.use_shared_frontend();
+    let Some(PlayEvent::Pushed(delta)) = link.poll() else {
+        return Err("missing messages".into());
+    };
+    view.apply_pushed(&delta).map_err(|error| error.to_string())?;
+    let shown = |place| view.screen_message(place);
+    assert_eq!(shown(ScreenPlace::Status).as_deref(), Some("Welcome"));
+    assert_eq!(shown(ScreenPlace::LowCenter).as_deref(), Some("Second"));
+    assert_eq!(shown(ScreenPlace::MiddleCenter).as_deref(), Some("You advanced"));
+    // The shared frontend no longer duplicates them in the banner centre.
+    assert!(view.notification_text(false).is_empty() && view.notification_text(true).is_empty());
+    let mut preferences = view.preferences().clone();
+    preferences.game_window.banner = false;
+    view.set_preferences(preferences).map_err(|error| error.to_string())?;
+    assert!(view.screen_message(ScreenPlace::Status).is_none());
+    Ok(())
+}

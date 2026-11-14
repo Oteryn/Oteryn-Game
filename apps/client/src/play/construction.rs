@@ -23,6 +23,7 @@ impl PlayView {
             last_step: None,
             shared_frontend: false,
             game_notifications: Default::default(),
+            screen_messages: Default::default(),
             touch: Default::default(),
             creature_drag: Default::default(),
             world_context_feedback: None,

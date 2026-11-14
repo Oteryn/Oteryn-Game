@@ -147,3 +147,58 @@ fn shared_notices_close_preserves_server_owned_history() {
 }
 
 mod text_input;
+
+#[test]
+fn server_text_labels_show_each_kind_in_its_own_colour() -> Result {
+    use crate::play::feature_local_game_notifications::state::ScreenPlace;
+    use oteryn_session::{AppliedDelta, ServerMessage, SessionEvent};
+    let (link, _commands, outbox) = play_channel();
+    outbox.push(vec![SessionEvent::ServerMessage(AppliedDelta {
+        server_sequence: 1,
+        base_revision: 0,
+        new_revision: 1,
+        value: ServerMessage::Warning("Fire!".into()),
+    })]);
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    let Some(crate::play::PlayEvent::Pushed(delta)) = link.poll() else {
+        return Err("missing message".into());
+    };
+    view.apply_pushed(&delta)?;
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(super::super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, notices::setup).chain(),
+        )
+        .add_systems(Update, notices::project);
+    app.update();
+    app.update();
+    let mut labels = app
+        .world_mut()
+        .query::<(&notices::ScreenMessage, &Text, &TextColor)>();
+    let shown = labels
+        .iter(app.world())
+        .map(|(label, text, color)| (label.0, text.0.clone(), color.0))
+        .collect::<Vec<_>>();
+    assert_eq!(shown.len(), 3);
+    for (place, text, color) in shown {
+        let [r, g, b] = place.rgb();
+        assert_eq!(color, Color::srgb_u8(r, g, b));
+        assert_eq!(
+            text,
+            if place == ScreenPlace::LowCenter {
+                "Fire!"
+            } else {
+                ""
+            }
+        );
+    }
+    Ok(())
+}

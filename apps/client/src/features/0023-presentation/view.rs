@@ -7,6 +7,8 @@ mod actor_hud;
 mod icons;
 #[path = "resources.rs"]
 mod resources;
+#[path = "view/value_anim.rs"]
+mod value_anim;
 #[path = "visual.rs"]
 mod visual;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
@@ -37,7 +39,9 @@ fn number(
     atlas: &AtlasImage,
     [center, top]: [f32; 2],
     value: PresentationValue,
+    alpha: u8,
 ) -> Result<(), BatchError> {
+    let start = batch.len();
     let text = value.value.to_string();
     let left = center - (text.len() as f32 * 8.0 - 2.0) / 2.0;
     for (i, digit) in text.bytes().enumerate() {
@@ -55,6 +59,9 @@ fn number(
                 }
             }
         }
+    }
+    if alpha < 100 && batch.len() > start {
+        batch.lighting.opacity.push((start..batch.len(), alpha));
     }
     Ok(())
 }

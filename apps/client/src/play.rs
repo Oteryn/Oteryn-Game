@@ -37,6 +37,7 @@ pub struct PlayView {
     last_step: Option<StepReceipt>,
     shared_frontend: bool,
     game_notifications: feature_local_game_notifications::state::State,
+    screen_messages: feature_local_game_notifications::state::ScreenMessages,
     touch: feature_0233_touch_controls::state::State,
     ui_sounds: Vec<UiSound>,
     creature_drag: feature_0082_creature_push::state::CreatureDrag,

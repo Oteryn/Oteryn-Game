@@ -91,6 +91,26 @@ impl PlayView {
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
+        let merged = value_anim::merge_plan(
+            &self
+                .visuals
+                .iter()
+                .map(|cue| match cue.kind {
+                    PresentationEventKind::ValueText { position, primary, secondary, .. }
+                        if position.floor == self.floor && game_window.visible(&cue.kind) =>
+                    {
+                        Some(value_anim::Number {
+                            tile: (position.x, position.y, position.floor),
+                            color: primary.color,
+                            value: primary.value,
+                            plain: secondary.is_none(),
+                            received: cue.received,
+                        })
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>(),
+        );
         for (index, cue) in self.visuals.iter().enumerate() {
             if !game_window.visible(&cue.kind) { continue; }
             let age = now.saturating_duration_since(cue.received);
@@ -105,7 +125,12 @@ impl PlayView {
                     primary,
                     secondary,
                     ..
-                } if position.floor == self.floor && progress < 1.0 => {
+                } if position.floor == self.floor && progress < value_anim::VALUE_TEXT_SECONDS => {
+                    let Some(total) = merged.get(index).copied().flatten() else {
+                        continue;
+                    };
+                    let primary = PresentationValue { value: total, ..primary };
+                    let alpha = value_anim::fade_percent(progress);
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -115,9 +140,9 @@ impl PlayView {
                     let line = lines.entry((position.x, position.y)).or_insert(0_u32);
                     let top = y - progress * 32.0 - 12.0 * *line as f32;
                     *line += 1 + u32::from(secondary.is_some());
-                    number(batch, view, atlas, [center, top], primary)?;
+                    number(batch, view, atlas, [center, top], primary, alpha)?;
                     if let Some(value) = secondary {
-                        number(batch, view, atlas, [center, top - 12.0], value)?;
+                        number(batch, view, atlas, [center, top - 12.0], value, alpha)?;
                     }
                 }
                 PresentationEventKind::MagicEffect {

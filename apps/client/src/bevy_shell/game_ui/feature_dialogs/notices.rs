@@ -1,6 +1,7 @@
 //! Notifications retain the core expiry/preferences; death follows authoritative vitals.
 use super::*;
 use crate::bevy_shell::window_drag::DraggableDialog;
+use crate::play::feature_local_game_notifications::state::ScreenPlace;
 use bevy::{input_focus::tab_navigation::TabGroup, ui_widgets::ScrollArea};
 use oteryn_client_ui_bevy as source;
 
@@ -10,6 +11,9 @@ pub(super) struct DeathOverlay;
 pub(super) struct DeathText;
 #[derive(Component)]
 pub(super) struct Banner;
+/// One on-screen server text place (OTClient `game_textmessage` labels).
+#[derive(Component)]
+pub(super) struct ScreenMessage(pub(super) ScreenPlace);
 #[derive(Component)]
 pub(super) struct NoticeOverlay;
 #[derive(Component)]
@@ -42,6 +46,50 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             GlobalZIndex(30),
         ))
         .insert(TextLayout::default());
+    // Centre labels share one box over the map centre; the status label sits at the bottom.
+    let centre = commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                top: percent(45.),
+                left: percent(50.),
+                margin: UiRect::left(px(-151.)),
+                width: px(303.),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            GlobalZIndex(30),
+            Pickable::IGNORE,
+        ))
+        .id();
+    for place in ScreenPlace::ALL {
+        let label = commands
+            .spawn((
+                ScreenMessage(place),
+                source::text("", source::font(skins.font.clone(), false)),
+            ))
+            .insert(TextLayout {
+                justify: Justify::Center,
+                ..default()
+            })
+            .id();
+        if place == ScreenPlace::Status {
+            commands.entity(label).insert((
+                Node {
+                    position_type: PositionType::Absolute,
+                    bottom: px(7.),
+                    left: percent(50.),
+                    margin: UiRect::left(px(-150.)),
+                    width: px(300.),
+                    ..default()
+                },
+                GlobalZIndex(30),
+            ));
+        } else {
+            commands.entity(centre).add_child(label);
+        }
+    }
     let notices = overlay(&mut commands, 170, NoticeOverlay);
     let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Notices");
     let scroll = commands
@@ -184,7 +232,14 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     mut death: Query<(Entity, &mut Node), (With<DeathOverlay>, Without<NoticeOverlay>)>,
     mut notice: Query<&mut Node, (With<NoticeOverlay>, Without<DeathOverlay>)>,
-    mut texts: Query<(&mut Text, Has<DeathText>, Has<Banner>, Has<NoticeText>)>,
+    mut texts: Query<(
+        &mut Text,
+        &mut TextColor,
+        Has<DeathText>,
+        Has<Banner>,
+        Has<NoticeText>,
+        Option<&ScreenMessage>,
+    )>,
     close: Query<(Entity, &CloseNotice, &ChildOf)>,
     mut focus: ResMut<InputFocus>,
     mut previous: Local<(bool, bool)>,
@@ -235,8 +290,18 @@ pub(super) fn project(
         focus.clear();
     }
     *previous = (dead.is_some(), notices.is_some());
-    for (mut text, is_death, is_banner, is_notice) in &mut texts {
-        let value = if is_death {
+    for (mut text, mut color, is_death, is_banner, is_notice, screen) in &mut texts {
+        let value = if let Some(ScreenMessage(place)) = screen {
+            let [r, g, b] = place.rgb();
+            color.set_if_neq(TextColor(Color::srgb_u8(r, g, b)));
+            Some(
+                owner
+                    .play
+                    .as_ref()
+                    .and_then(|p| p.view.screen_message(*place))
+                    .unwrap_or_default(),
+            )
+        } else if is_death {
             Some(dead.clone().unwrap_or_default())
         } else if is_banner {
             Some(

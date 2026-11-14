@@ -248,6 +248,36 @@ fn combat_values_float_keep_secondary_and_cull_other_floors()
 }
 
 #[test]
+fn young_same_colour_values_on_one_tile_draw_as_their_sum()
+-> Result<(), Box<dyn std::error::Error>> {
+    let draw = |events: &[PresentationEventKind]| -> Result<Vec<_>, Box<dyn std::error::Error>> {
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+        let base = view.scene().sprites().len();
+        let now = std::time::Instant::now();
+        view.receive_presentation(events, now);
+        view.project_presentation(now)?;
+        Ok(view.scene().sprites().instances()[base..].to_vec())
+    };
+    let merged = draw(&[numbered_value(8), numbered_value(8)])?;
+    assert!(!merged.is_empty());
+    assert_eq!(merged, draw(&[numbered_value(16)])?);
+    Ok(())
+}
+
+#[test]
+fn value_numbers_hold_then_fade_out_before_expiring() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?;
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[numbered_value(8)], now);
+    view.advance_presentation(now + std::time::Duration::from_millis(500))?;
+    assert!(view.scene().sprites().lighting.opacity.is_empty());
+    view.advance_presentation(now + std::time::Duration::from_millis(917))?;
+    let fading: Vec<u8> = view.scene().sprites().lighting.opacity.iter().map(|o| o.1).collect();
+    assert_eq!(fading, vec![50]);
+    Ok(())
+}
+
+#[test]
 fn combat_visual_queues_are_bounded_across_mailbox_coalescing()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = crate::play::play_channel();

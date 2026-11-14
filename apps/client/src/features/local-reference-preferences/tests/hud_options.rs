@@ -138,3 +138,19 @@ fn hud_arc_opacity_reaches_renderer_upload_without_dimming_other_quads()
     assert!(play.scene().sprites().lighting.opacity.is_empty());
     Ok(())
 }
+
+#[test]
+fn creature_health_bars_and_names_are_on_by_default_and_a_saved_choice_wins()
+-> Result<(), Box<dyn std::error::Error>> {
+    let defaults = crate::play::ReferencePreferences::default();
+    assert!(defaults.creature_bars);
+    assert_eq!(defaults.hud_names, [true; 3]);
+    let mut json = serde_json::to_value(&defaults)?;
+    json.as_object_mut().ok_or("object")?.remove("creature_bars");
+    let unsaved: crate::play::ReferencePreferences = serde_json::from_value(json.clone())?;
+    assert!(unsaved.creature_bars);
+    json["creature_bars"] = serde_json::json!(false);
+    let saved: crate::play::ReferencePreferences = serde_json::from_value(json)?;
+    assert!(!saved.creature_bars);
+    Ok(())
+}
