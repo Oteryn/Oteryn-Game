@@ -47,6 +47,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    StaffTools,
     Login,
     CancelLogin,
     Fullscreen,
@@ -64,6 +65,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::StaffTools => "shell.staff_tools",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -169,6 +171,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::StaffTools, "Staff tools (Ctrl+Alt+0)", 180.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -376,6 +379,7 @@ fn activate(
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
+                    | Control::StaffTools
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -388,6 +392,7 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::StaffTools => super::game_ui::staff_tools::open(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -542,6 +547,7 @@ pub(super) fn project_toolbar(
     >,
 ) {
     let playing = owner.play.is_some();
+    let staff = super::game_ui::staff_tools::toolbar_visible(&owner);
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
             if playing {
@@ -573,8 +579,9 @@ pub(super) fn project_toolbar(
         } else if matches!(
             control,
             Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+                | Some(Control::StaffTools)
         ) {
-            node.display = if playing {
+            node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
             } else {
                 Display::None
