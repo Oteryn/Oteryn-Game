@@ -61,6 +61,48 @@ fn support_evidence_window_registered() -> TestResult {
             .iter(app.world())
             .any(|text| text.0 == crate::play::help_text(crate::play::HelpTopic::Client))
     );
+    let overlay = app.world().resource::<State>().overlay;
+    std::fs::write(
+        directory.join("approved-survey.txt"),
+        "changed owner evidence",
+    )?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .queue_support_at(&directory);
+    assert!(matches!(
+        requests.try_recv()?,
+        PlayCommand::SupportDelivery(_, _)
+    ));
+    app.update();
+    assert_eq!(
+        app.world().resource::<State>().overlay,
+        overlay,
+        "idle frames must retain the cached preview"
+    );
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "changed owner evidence")
+    );
+    app.world()
+        .resource::<State>()
+        .watch
+        .as_ref()
+        .ok_or("reply watch")?
+        .store(true, Ordering::Release);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "changed owner evidence")
+    );
+    app.update();
     let close = app
         .world_mut()
         .query::<(Entity, &Control)>()
@@ -70,36 +112,6 @@ fn support_evidence_window_registered() -> TestResult {
     app.world_mut().trigger(Activate { entity: close });
     app.update();
     assert!(app.world().resource::<State>().overlay.is_none());
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ShiftLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(SHORTCUT);
-    app.update();
-    assert!(app.world().resource::<State>().overlay.is_some());
-    assert!(requests.try_recv().is_err());
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .release(SHORTCUT);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .clear();
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ShiftLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(SHORTCUT);
-    app.update();
-    assert!(app.world().resource::<State>().overlay.is_none());
-    assert!(requests.try_recv().is_err());
     std::fs::remove_dir_all(directory)?;
     Ok(())
 }

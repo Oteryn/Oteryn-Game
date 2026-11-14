@@ -7,19 +7,25 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use crate::support_delivery::Evidence;
+use crate::play::feature_0462_support_intake::input::evidence_owner::Evidence;
 use bevy::{
     input_focus::InputFocus,
     prelude::*,
     ui_widgets::{Activate, ScrollArea},
 };
 use oteryn_client_ui_bevy as source;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct State {
     open: bool,
     generation: u64,
     overlay: Option<Entity>,
     rows: Vec<Evidence>,
+    watch: Option<Arc<AtomicBool>>,
+    redraw: bool,
 }
 #[derive(Component, Clone)]
 struct Control {
@@ -33,6 +39,7 @@ pub(super) fn install(app: &mut App) {
 fn toggle(world: &mut State, generation: u64) {
     world.open = !world.open || world.generation != generation;
     world.generation = generation;
+    world.watch = None;
 }
 pub(in crate::bevy_shell) fn toolbar_activate(
     event: On<Activate>,
@@ -45,23 +52,7 @@ pub(in crate::bevy_shell) fn toolbar_activate(
     }
 }
 
-fn keyboard(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut state: ResMut<State>,
-    owner: NonSend<HostOwner>,
-    modal: ModalGuard,
-) {
-    if keys.just_pressed(SHORTCUT)
-        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-        && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-        && !keys.pressed(KeyCode::AltLeft)
-        && !keys.pressed(KeyCode::AltRight)
-        && (modal.allows_focus(None) || state.overlay.is_some_and(|entity| modal.allows(entity)))
-        && owner.phase == Phase::Playing
-        && !owner.modal_active()
-    {
-        toggle(&mut state, owner.generation());
-    }
+fn keyboard(keys: Res<ButtonInput<KeyCode>>, mut state: ResMut<State>, modal: ModalGuard) {
     if keys.just_pressed(KeyCode::Escape)
         && state.overlay.is_some_and(|entity| modal.allows(entity))
     {
@@ -88,15 +79,6 @@ fn project(
 ) {
     let visible =
         state.open && state.generation == owner.generation() && owner.phase == Phase::Playing;
-    let rows = if visible {
-        owner
-            .play
-            .as_ref()
-            .map(|play| play.link.support_evidence_rows())
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
     if !visible {
         if let Some(entity) = state.overlay.take() {
             clear_focus(entity, &mut focus, &parents);
@@ -104,9 +86,31 @@ fn project(
         }
         state.open = false;
         state.rows.clear();
+        state.watch = None;
         return;
     }
-    if state.overlay.is_some() && state.rows == rows {
+    let refresh = state
+        .watch
+        .as_ref()
+        .is_none_or(|watch| watch.swap(false, Ordering::AcqRel));
+    if !refresh && !state.redraw && state.overlay.is_some() {
+        return;
+    }
+    let rows = if refresh {
+        if let Some(play) = owner.play.as_ref() {
+            if state.watch.is_none() {
+                let watch = play.link.support_evidence_watch();
+                watch.swap(false, Ordering::AcqRel);
+                state.watch = Some(watch);
+            }
+            play.link.support_evidence_rows()
+        } else {
+            Vec::new()
+        }
+    } else {
+        state.rows.clone()
+    };
+    if state.overlay.is_some() && state.rows == rows && !state.redraw {
         return;
     }
     if let Some(entity) = state.overlay.take() {
@@ -152,7 +156,7 @@ fn project(
     source::dialog_caption(
         &mut commands,
         panel,
-        "Support-evidence delivery (Ctrl+Shift+F8)",
+        "Support-evidence delivery",
         skins.font.clone(),
     );
     for topic in [
@@ -211,6 +215,7 @@ fn project(
         None,
         "Close",
     );
+    state.redraw = false;
     state.overlay = Some(overlay);
     state.rows = rows;
 }
@@ -257,17 +262,19 @@ fn activate(
         return;
     }
     if let Some(evidence) = &control.evidence {
-        if let Some(play) = &owner.play {
-            play.link.support_evidence_submit(
+        if let Some(play) = &owner.play
+            && play.link.support_evidence_submit(
                 evidence,
                 true,
                 play.view.gameplay_input_blocked(&play.link),
-            );
+            )
+        {
+            state.rows = play.link.support_evidence_snapshot();
+            state.redraw = true;
         }
     } else {
         state.open = false;
     }
 }
-const SHORTCUT: KeyCode = KeyCode::F8;
 #[cfg(test)]
 mod tests;

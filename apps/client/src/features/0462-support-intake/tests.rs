@@ -1,4 +1,4 @@
-use crate::support_delivery::{Evidence, EvidenceOwner};
+use super::evidence_owner::{self, Evidence, EvidenceOwner};
 #[test]
 fn support_evidence_window_shows_server_data_only() {
     let mut owner = EvidenceOwner::default();
@@ -46,7 +46,7 @@ fn support_evidence_real_dispatch_is_exact_and_closed_sessions_reject()
     std::fs::write(&path, "exact evidence")?;
     let (link, mut requests, outbox) = crate::play::play_channel();
     let evidence = Evidence::new(path.clone(), 6144, "exact evidence".into());
-    crate::support_delivery::with_owner(link.support_evidence_key(), &link.commands, |owner| {
+    evidence_owner::with_owner(link.support_evidence_key(), &link.commands, |owner| {
         owner.observe(evidence.clone())
     });
     assert!(!link.support_evidence_submit(&evidence, false, false));
@@ -77,17 +77,17 @@ fn support_evidence_real_dispatch_is_exact_and_closed_sessions_reject()
         payload: vec![1],
     };
     outbox.support_evidence_reply(&path, &command, &result);
-    crate::support_delivery::with_owner(link.support_evidence_key(), &link.commands, |owner| {
+    evidence_owner::with_owner(link.support_evidence_key(), &link.commands, |owner| {
         assert_eq!(owner.rows()[0].result, Some(result.clone()))
     });
     let (replacement, _replacement_requests, _replacement_outbox) = crate::play::play_channel();
-    crate::support_delivery::with_owner(
+    evidence_owner::with_owner(
         replacement.support_evidence_key(),
         &replacement.commands,
         |owner| owner.observe(evidence.clone()),
     );
     outbox.support_evidence_reply(&path, &command, &result);
-    crate::support_delivery::with_owner(
+    evidence_owner::with_owner(
         replacement.support_evidence_key(),
         &replacement.commands,
         |owner| {
@@ -143,6 +143,53 @@ fn support_evidence_pending_preview_requires_consent_before_saving_or_sending()
         "approved file must not become a second request"
     );
     assert!(owner.rows()[0].pending);
+    let result = oteryn_session::GatedCommandResult {
+        command_id: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: vec![0],
+    };
+    owner.reply(&approved, &command, &result);
+    let retry = owner.rows()[0].clone();
+    assert!(retry.result.is_none());
+    assert!(!retry.pending);
+    assert!(evidence_owner::matches_file(&retry));
+    assert_eq!(std::fs::read_to_string(&approved)?, expected.text);
+    assert!(
+        owner
+            .submit(&retry, true, false, |retry_command, retry_path| {
+                assert_eq!(retry_command, command);
+                assert_eq!(retry_path, approved);
+                true
+            })
+            .is_some()
+    );
     std::fs::remove_dir_all(directory)?;
+    Ok(())
+}
+
+#[test]
+fn support_evidence_accepted_without_storage_remains_retryable()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut owner = EvidenceOwner::default();
+    let row = Evidence::new("approved-crash.txt".into(), 6144, "exact evidence".into());
+    owner.observe(row.clone());
+    assert!(owner.submit(&row, true, false, |_, _| true).is_some());
+    let command = oteryn_client_ui::support_intake::submission(row.kind, &row.text, true)
+        .ok_or("submission")?;
+    let result = oteryn_session::GatedCommandResult {
+        command_id: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: vec![0],
+    };
+    let watch = owner.watch();
+    assert!(!watch.load(std::sync::atomic::Ordering::Acquire));
+    owner.reply(&row.path, &command, &result);
+    assert!(watch.swap(false, std::sync::atomic::Ordering::AcqRel));
+    assert!(!owner.rows()[0].pending);
+    assert!(owner.rows()[0].result.is_none());
+    assert_eq!(owner.rows()[0].text, row.text);
+    assert!(owner.submit(&row, true, false, |_, _| true).is_some());
     Ok(())
 }

@@ -1,10 +1,12 @@
+#[cfg(feature = "bevy-shell")]
+pub(crate) mod evidence_owner;
 use crate::play::PlayLink;
 impl PlayLink {
     /// Queue only evidence previously approved in the native consent dialogs.
     pub fn queue_support_at(&self, directory: &std::path::Path) {
         #[cfg(feature = "bevy-shell")]
-        crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
-            for evidence in crate::support_delivery::evidence_at(directory) {
+        evidence_owner::with_owner(self.support_evidence_key(), &self.commands, |owner| {
+            for evidence in evidence_owner::evidence_at(directory) {
                 owner.observe(evidence);
             }
         });
@@ -20,9 +22,20 @@ impl PlayLink {
     fn support_evidence_key(&self) -> usize {
         std::sync::Arc::as_ptr(&self.mailbox) as usize
     }
-    pub(crate) fn support_evidence_rows(&self) -> Vec<crate::support_delivery::Evidence> {
+    pub(crate) fn support_evidence_watch(&self) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        evidence_owner::with_owner(self.support_evidence_key(), &self.commands, |owner| {
+            owner.watch()
+        })
+    }
+    pub(crate) fn support_evidence_snapshot(&self) -> Vec<evidence_owner::Evidence> {
         let _mailbox = crate::play::mailbox::lock(&self.mailbox);
-        crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
+        evidence_owner::with_owner(self.support_evidence_key(), &self.commands, |owner| {
+            owner.rows().to_vec()
+        })
+    }
+    pub(crate) fn support_evidence_rows(&self) -> Vec<evidence_owner::Evidence> {
+        let _mailbox = crate::play::mailbox::lock(&self.mailbox);
+        evidence_owner::with_owner(self.support_evidence_key(), &self.commands, |owner| {
             if let Some(directory) = crate::support_delivery::directory() {
                 owner.refresh(&directory);
             }
@@ -31,7 +44,7 @@ impl PlayLink {
     }
     pub(crate) fn support_evidence_submit(
         &self,
-        expected: &crate::support_delivery::Evidence,
+        expected: &evidence_owner::Evidence,
         consent: bool,
         blocked: bool,
     ) -> bool {
@@ -39,11 +52,11 @@ impl PlayLink {
         if mailbox.custom_hotkeys_ended
             || mailbox.server_modal.is_active()
             || self.commands.is_closed()
-            || !crate::support_delivery::matches_file(expected)
+            || !evidence_owner::matches_file(expected)
         {
             return false;
         }
-        crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
+        evidence_owner::with_owner(self.support_evidence_key(), &self.commands, |owner| {
             owner
                 .submit(expected, consent, blocked, |command, path| {
                     self.commands
@@ -68,7 +81,7 @@ impl crate::play::Outbox {
         if mailbox.custom_hotkeys_ended {
             return;
         }
-        crate::support_delivery::retain_reply(
+        evidence_owner::retain_reply(
             std::sync::Arc::as_ptr(&self.0) as usize,
             path,
             command,
