@@ -18,6 +18,7 @@ pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod task_board;
 mod trade;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
@@ -241,6 +242,7 @@ pub(super) fn install(app: &mut App) {
     npc_shop::install(app);
     party::install(app);
     quick_loot::install(app);
+    task_board::install(app);
     trade::install(app);
     app.add_systems(
         Update,

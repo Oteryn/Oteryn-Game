@@ -73,6 +73,9 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
+- **Ctrl+Shift+T:** Task Board: Bounty Tasks, Weekly progress/results and Shop.
+  Rerolls require confirmation and cost one token. Daily tokens are claimed at
+  the Daily Reward Wall; the board shows the balance and cap.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.

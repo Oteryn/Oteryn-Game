@@ -34,6 +34,37 @@ fn market_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> Test
     Ok(())
 }
 
+#[test]
+fn taskboard_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    let shortcut = NormalizedInputEvent::Key {
+        code: KeyCode::new(23)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    let is_open = |host: &HostOwner| {
+        host.play
+            .as_ref()
+            .is_some_and(|play| play.link.task_board_panel().open)
+    };
+    host.route_input(std::slice::from_ref(&shortcut), true);
+    assert!(!is_open(&host));
+    host.open_graphics();
+    host.route_input(std::slice::from_ref(&shortcut), false);
+    assert!(!is_open(&host));
+    host.cancel();
+    host.route_input(std::slice::from_ref(&shortcut), false);
+    assert!(
+        is_open(&host),
+        "Ctrl+Shift+T must reach the portable Task Board owner"
+    );
+    Ok(())
+}
+
 struct Temp(PathBuf);
 impl Temp {
     fn new() -> std::io::Result<Self> {
