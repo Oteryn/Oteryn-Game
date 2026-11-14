@@ -43,6 +43,7 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    Guild(bool),
     Market,
     Party,
     Quests,
@@ -60,6 +61,8 @@ impl Control {
     pub fn id(self) -> &'static str {
         match self {
             Self::Options => "shell.options",
+            Self::Guild(false) => "shell.guild",
+            Self::Guild(true) => "shell.guild_bank",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
@@ -165,6 +168,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
+        (Control::Guild(false), "Guild", 80.),
+        (Control::Guild(true), "Guild bank", 85.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
@@ -372,6 +377,7 @@ fn activate(
             && matches!(
                 control,
                 Control::Options
+                    | Control::Guild(_)
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -384,6 +390,7 @@ fn activate(
         }
         match control {
             Control::Options => owner.open_graphics(),
+            Control::Guild(bank) => super::game_ui::guild::open(&mut owner, *bank),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
@@ -570,10 +577,12 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if matches!(
-            control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
-        ) {
+        } else if matches!(control, Some(Control::Guild(_)))
+            || matches!(
+                control,
+                Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            )
+        {
             node.display = if playing {
                 Display::Flex
             } else {

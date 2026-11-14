@@ -9,3 +9,9 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{GuildWindowAction, GuildWindowView, needs_confirmation, permitted};
