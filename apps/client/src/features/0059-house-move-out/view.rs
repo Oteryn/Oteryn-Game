@@ -1,3 +1,6 @@
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+pub(crate) mod bound;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_move_out_panel(&self) -> oteryn_client_ui::house_move_out::Panel {

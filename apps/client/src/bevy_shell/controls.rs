@@ -80,6 +80,7 @@ impl HostOwner {
             || play.link.bevy_depot_input(&routed)
             || play.link.bevy_depot_search_input(&routed)
             || play.link.discovery_input(&routed)
+            || play.link.house_move_out_input(&routed)
             || play.link.guild_war_input(&routed)
             || play.link.imbue_input(&routed)
             || play.link.bevy_stash_input(&routed)

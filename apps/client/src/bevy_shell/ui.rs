@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    HouseMoveOut,
     GuildhallLeadership,
     CyclopediaTrackers,
     CyclopediaMap,
@@ -71,6 +72,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::HouseMoveOut => "shell.house_move_out",
             Self::GuildhallLeadership => "shell.guildhall_leadership",
             Self::CyclopediaTrackers => "shell.cyclopedia_trackers",
             Self::CyclopediaMap => "shell.cyclopedia_map",
@@ -186,6 +188,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::HouseMoveOut, "House move-out (Ctrl+Alt+O)", 210.),
         (Control::CyclopediaMap, "Cyclopedia", 90.),
         (Control::BossDifficulty, "Boss difficulty", 120.),
         (
@@ -411,7 +414,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -424,6 +427,7 @@ fn activate(
             return;
         }
         match control {
+            Control::HouseMoveOut => super::game_ui::house_move_out::open(&mut owner),
             Control::GuildhallLeadership => {
                 super::game_ui::guildhall_leadership::toggle(&mut owner)
             }
@@ -628,7 +632,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
