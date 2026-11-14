@@ -182,7 +182,10 @@ fn project(
         }
     }
     if let Some(action) = &state.confirmation {
-        actions = vec![("Confirm payment".into(), action.clone())];
+        actions = vec![
+            ("Confirm payment".into(), action.clone()),
+            ("Cancel".into(), TaskBoardControl::CancelPayment),
+        ];
     }
     for (label, action) in actions {
         let button = commands
@@ -271,18 +274,36 @@ fn activate(
     guard: ModalGuard,
     mut state: ResMut<State>,
 ) {
-    if !guard.allows(event.entity) || owner.modal_active() {
-        return;
-    }
     let Ok(control) = controls.get(event.entity) else {
         return;
     };
+    if matches!(
+        control.action,
+        TaskBoardControl::Close | TaskBoardControl::CloseResults
+    ) {
+        if control.generation == owner.generation()
+            && let Some(play) = &owner.play
+            && control.session == play.link.task_board_session_identity()
+        {
+            play.link
+                .task_board_action_bound(&control.snapshot, control.action.clone());
+        }
+        return;
+    }
+    if !guard.allows(event.entity) || owner.modal_active() {
+        return;
+    }
     if !valid(
         &owner,
         control.generation,
         control.session,
         &control.snapshot,
     ) {
+        return;
+    }
+    if matches!(control.action, TaskBoardControl::CancelPayment) {
+        state.confirmation = None;
+        state.snapshot = None;
         return;
     }
     if paid(&control.action) && !control.confirm {

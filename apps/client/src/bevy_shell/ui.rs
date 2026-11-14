@@ -45,9 +45,9 @@ pub(super) enum Control {
     Options,
     Market,
     Party,
-    TaskBoard,
     Quests,
     Spells,
+    TaskBoard,
     Login,
     CancelLogin,
     Fullscreen,
@@ -62,10 +62,10 @@ impl Control {
         match self {
             Self::Options => "shell.options",
             Self::Market => "shell.market",
-            Self::TaskBoard => "shell.task_board",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::TaskBoard => "shell.task_board",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -169,9 +169,9 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
-        (Control::TaskBoard, "Task Board", 110.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::TaskBoard, "Task Board", 110.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -389,14 +389,14 @@ fn activate(
         match control {
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
+            Control::Party => super::game_ui::open_party(&mut owner),
+            Control::Quests => super::game_ui::open_quests(&mut owner),
+            Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::TaskBoard => {
                 if let Some(play) = &owner.play {
                     play.link.open_task_board();
                 }
             }
-            Control::Party => super::game_ui::open_party(&mut owner),
-            Control::Quests => super::game_ui::open_quests(&mut owner),
-            Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
