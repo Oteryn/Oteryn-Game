@@ -89,7 +89,7 @@ impl Clients {
             (authority, AUTHORITY_IDENTITY_VAR),
             (changes, CHANGES_IDENTITY_VAR),
         ] {
-            if enabled {
+            if enabled || lookup(key).is_some() {
                 own.push((key, read(key)?));
             }
         }
@@ -129,6 +129,11 @@ impl Clients {
         let mut authority_client = None;
         let mut changes_client = None;
         for (key, pem) in own {
+            if key == AUTHORITY_IDENTITY_VAR && !authority
+                || key == CHANGES_IDENTITY_VAR && !changes
+            {
+                continue;
+            }
             let (http, origin) = platform_http(&PremiumClientConfig {
                 origin: origin.clone(),
                 identity_pem: pem,
@@ -252,7 +257,7 @@ impl Client {
                 .get("retry-after")
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.parse::<u64>().ok())
-                .map(Duration::from_secs);
+                .map(|s| Duration::from_secs(s).min(Duration::from_secs(60)));
             let status = response.status().as_u16();
             if status != 200 {
                 return Err(match status {

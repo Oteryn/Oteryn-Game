@@ -46,6 +46,17 @@
       "note": "Platform stream page applied."
     },
     {
+      "event": "profile_b_alarm",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "operation",
+        "reason"
+      ],
+      "codes": [],
+      "note": "Bounded Profile-B transport/fence alarm; never identities, entitlements, payloads or credentials."
+    },
+    {
       "event": "security_revocation_stream_failed",
       "level": "warn",
       "span": false,

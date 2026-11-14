@@ -9,7 +9,7 @@ CREATE TABLE game_profile_b_products (
     product_id TEXT NOT NULL CHECK (octet_length(product_id)<=64 AND product_id ~ '^[a-z][a-z0-9_]{0,31}(\.[a-z][a-z0-9_]{0,31}){1,3}$'),
     product_version BIGINT NOT NULL CHECK (product_version BETWEEN 1 AND 9007199254740991),
     lifecycle_revision BIGINT NOT NULL DEFAULT 0 CHECK (lifecycle_revision BETWEEN 0 AND 9007199254740991),
-    lifecycle_bytes BYTEA,
+    lifecycle_bytes BYTEA CHECK (octet_length(lifecycle_bytes) BETWEEN 1 AND 512),
     hint_revision BIGINT NOT NULL DEFAULT 0 CHECK (hint_revision BETWEEN 0 AND 9007199254740991),
     PRIMARY KEY(account_id,product_id,product_version)
 );
@@ -27,6 +27,10 @@ SET search_path=pg_catalog,public AS $$ BEGIN
             RAISE EXCEPTION 'Profile-B authority fence regression';
         END IF;
     ELSE
+        IF OLD.lifecycle_bytes IS NOT NULL AND (convert_from(OLD.lifecycle_bytes,'UTF8')::jsonb->>0) IS NOT NULL
+            AND (convert_from(OLD.lifecycle_bytes,'UTF8')::jsonb->>0) IS DISTINCT FROM (convert_from(NEW.lifecycle_bytes,'UTF8')::jsonb->>0) THEN
+            RAISE EXCEPTION 'Profile-B entitlement identity is immutable';
+        END IF;
         IF NEW.lifecycle_revision<OLD.lifecycle_revision OR NEW.hint_revision<OLD.hint_revision OR
             (NEW.lifecycle_revision=OLD.lifecycle_revision AND OLD.lifecycle_bytes IS NOT NULL AND NEW.lifecycle_bytes IS DISTINCT FROM OLD.lifecycle_bytes) THEN
             RAISE EXCEPTION 'Profile-B lifecycle fence regression';

@@ -149,6 +149,9 @@ fn profile_b_lease_failure_matrix_and_boundaries() -> TestResult {
     );
     let mut active_end = e.clone();
     active_end.effective_until = Some(a.authority_issued_at.clone());
+    let mut invalid_active = a.clone();
+    invalid_active.entitlements[0] = active_end.clone();
+    assert!(!invalid_active.valid());
     assert_eq!(evaluate(&active_end, at(0, 0), 0), Evaluation::Expired);
     let mut ended = a.clone();
     ended.entitlements[0].effective_until = Some(a.authority_issued_at.clone());
@@ -198,6 +201,9 @@ fn profile_b_request_binding_and_closed_pages() -> TestResult {
         .map(|e| (e.product_id.clone(), e.product_version))
         .collect::<Vec<_>>();
     assert!(a.bound_to(&r, &products));
+    let mut wrong_schema = r.clone();
+    wrong_schema.schema = "other.v1".into();
+    assert!(!a.bound_to(&wrong_schema, &products));
     let mut wrong = r.clone();
     wrong.nonce = "0".repeat(32);
     assert!(!a.bound_to(&wrong, &products));
@@ -226,7 +232,12 @@ fn profile_b_request_binding_and_closed_pages() -> TestResult {
     );
     let decoded: Answer = serde_json::from_str(&oversized)?;
     assert!(decoded.valid());
-    assert!(Message::parse(oversized.as_bytes()).is_none());
+    assert_eq!(Message::decode(oversized.as_bytes()), Err(ParseError::Size));
+    let noncanonical = format!("{} ", String::from_utf8(fixture("authority")?)?);
+    assert_eq!(
+        Message::decode(noncanonical.as_bytes()),
+        Err(ParseError::NonCanonical)
+    );
     let Some(Message::ChangesRequest(request)) = Message::parse(&fixture("changes-request")?)
     else {
         return Err("request".into());
@@ -402,7 +413,8 @@ fn profile_b_clients_require_expected_variant_and_requested_page_limit() -> Test
 }
 #[test]
 fn profile_b_transport_failure_statuses_and_backoff() -> TestResult {
-    use crate::platform_streams::enforcement::transport::{Failure, backoff};
+    use super::runtime::retry_delay as backoff;
+    use crate::platform_streams::enforcement::transport::Failure;
     run(async {
         for (status, retry, expected) in [
             (400, None, Failure::Defect),
@@ -411,7 +423,7 @@ fn profile_b_transport_failure_statuses_and_backoff() -> TestResult {
             (
                 429,
                 Some(90),
-                Failure::Retry(Some(std::time::Duration::from_secs(90))),
+                Failure::Retry(Some(std::time::Duration::from_secs(60))),
             ),
             (503, None, Failure::Retry(None)),
         ] {
@@ -422,7 +434,7 @@ fn profile_b_transport_failure_statuses_and_backoff() -> TestResult {
         assert_eq!(backoff(8, None).as_secs(), 60);
         assert_eq!(
             backoff(0, Some(std::time::Duration::from_secs(90))).as_secs(),
-            90
+            60
         );
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let client =
@@ -512,6 +524,18 @@ fn profile_b_config_default_off_strict_flags_and_products() -> TestResult {
             "purpose identities overlap"
         );
     }
+    let values = std::collections::HashMap::from([
+        (CHANGES_ENABLED_VAR, std::ffi::OsString::from("true")),
+        (AUTHORITY_IDENTITY_VAR, first.clone().into_os_string()),
+        (CHANGES_IDENTITY_VAR, first.clone().into_os_string()),
+    ]);
+    assert!(
+        matches!(
+            Clients::from_lookup(|key| values.get(key).cloned()),
+            Err(ClientConfigError::Invalid(CHANGES_IDENTITY_VAR))
+        ),
+        "disabled B1 identity still participates"
+    );
     std::fs::remove_dir_all(dir)?;
     Ok(())
 }

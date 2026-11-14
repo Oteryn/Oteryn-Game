@@ -764,6 +764,8 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
                 ] {
                     if let Some(path) = std::env::var_os(name) {
                         other_chains.push(chain(
@@ -3473,6 +3475,96 @@ fn enforcement_startup(
     Ok(clients)
 }
 
+fn platform_client_identities(
+    config: &NodeConfig,
+) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+    let platform = &config.platform;
+    let mut paths = vec![(
+        "platform.client_certificate_file",
+        &platform.client_certificate_file,
+    )];
+    if let Some(v) = &platform.bootstrap_intents {
+        paths.push((
+            "platform.bootstrap_intents.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.runtime_status {
+        paths.push((
+            "platform.runtime_status.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.account_characters {
+        paths.push((
+            "platform.account_characters.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.character_commands {
+        paths.push((
+            "platform.character_commands.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.character_services {
+        paths.push((
+            "platform.character_services.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.bazaar {
+        paths.push((
+            "platform.bazaar.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.public_projections {
+        paths.push((
+            "platform.public_projections.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
+        paths.push((
+            "platform.world_event_outcomes.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &config.journal {
+        paths.push((
+            "journal.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    let identities = paths
+        .into_iter()
+        .map(|(key, path)| {
+            read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
+                .map(|pem| (key, pem))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(identities)
+}
+
+fn profile_b_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    others: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
+) -> Result<
+    Option<Box<oteryn_gameplay_social::platform_streams::profile_b::transport::Clients>>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::profile_b::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&others()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients.map(Box::new))
+}
+
 async fn enforcement_store_startup(
     enabled: bool,
     check: impl Future<
@@ -3528,77 +3620,13 @@ async fn boot_and_serve(
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
+    let profile_b_clients = profile_b_startup(
+        |key| std::env::var_os(key),
+        || platform_client_identities(config),
+    )?;
     let enforcement_clients = enforcement_startup(
         |key| std::env::var_os(key),
-        || {
-            let platform = &config.platform;
-            let mut paths = vec![(
-                "platform.client_certificate_file",
-                &platform.client_certificate_file,
-            )];
-            if let Some(v) = &platform.bootstrap_intents {
-                paths.push((
-                    "platform.bootstrap_intents.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.runtime_status {
-                paths.push((
-                    "platform.runtime_status.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.account_characters {
-                paths.push((
-                    "platform.account_characters.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.character_commands {
-                paths.push((
-                    "platform.character_commands.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.character_services {
-                paths.push((
-                    "platform.character_services.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.bazaar {
-                paths.push((
-                    "platform.bazaar.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &platform.public_projections {
-                paths.push((
-                    "platform.public_projections.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
-                paths.push((
-                    "platform.world_event_outcomes.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            if let Some(v) = &config.journal {
-                paths.push((
-                    "journal.client_certificate_file",
-                    &v.client_certificate_file,
-                ));
-            }
-            let identities = paths
-                .into_iter()
-                .map(|(key, path)| {
-                    read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
-                        .map(|pem| (key, pem))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(identities)
-        },
+        || platform_client_identities(config),
     )?;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
@@ -3809,6 +3837,13 @@ async fn boot_and_serve(
     // (PREMIUM-ACTIVATION-0 §1.1), durable latch and optional activation record (§1.2).
     // The serving path pulls into this coordinator's consumer using the existing client gate.
     let premium_reads = production_premium_reads(root, config.premium_activation.as_ref());
+    let _profile_b_tasks =
+        oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+            root.clone(),
+            profile_b_clients.map(|c| *c),
+            premium_reads.consumer(),
+        );
+
     // Local operator mode; the Platform runtime-status payload has a closed contract.
     eprintln!(
         "event=store_configuration store_purchases={}",
@@ -3913,6 +3948,39 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn profile_b_flags_off_spawn_nothing_and_skip_identity_reads() {
+        let config =
+            profile_b_startup(|_| None, || Err(invalid("unexpected identity read"))).expect("off");
+        assert!(config.is_none());
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let tasks = oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+                root,
+                None,
+                std::sync::Arc::default(),
+            );
+            assert!(tasks.is_empty());
+        });
+    }
+    #[test]
+    fn profile_b_missing_identity_fails_startup_with_its_key() {
+        use oteryn_gameplay_social::platform_streams::profile_b::transport::*;
+        for (flag, identity) in [
+            (AUTHORITY_ENABLED_VAR, AUTHORITY_IDENTITY_VAR),
+            (CHANGES_ENABLED_VAR, CHANGES_IDENTITY_VAR),
+        ] {
+            assert!(
+                matches!(profile_b_startup(|key|(key==flag).then(||"true".into()),||Err(invalid("unexpected identity read"))),Err(BootError::Startup(StartupError::Invalid{key})) if key==identity)
+            );
+        }
+    }
 
     #[test]
     fn enforcement_owner_routes_requests_and_preserves_errors() {

@@ -112,6 +112,10 @@ impl DurabilityRoot {
                 let row=sqlx::query("SELECT lifecycle_revision,lifecycle_bytes,hint_revision FROM game_profile_b_products WHERE account_id=$1::uuid AND product_id=$2 AND product_version=$3").bind(&answer.account_id).bind(&e.product_id).bind(e.product_version as i64).fetch_optional(&mut *tx).await?;
                 if let Some(row)=row {
                     let old:i64=row.try_get("lifecycle_revision")?;let hint:i64=row.try_get("hint_revision")?;let bytes:Option<Vec<u8>>=row.try_get("lifecycle_bytes")?;
+                    if let Some(bytes)=&bytes {
+                        let (old_id,_,_,_):(Option<String>,bool,Option<String>,Option<String>)=serde_json::from_slice(bytes).map_err(|_|DurabilityError::InvalidStoredState)?;
+                        conflicting |= old_id.is_some() && old_id!=e.entitlement_id;
+                    }
                     conflicting |= e.lifecycle_revision<(old.max(hint) as u64) || e.lifecycle_revision==old as u64 && bytes.is_some_and(|b|life(e).is_ok_and(|new|b!=new));
                 }
                 if let Some(old)=previous.answer.as_ref().and_then(|a|a.entitlements.iter().find(|p|p.product_id==e.product_id&&p.product_version==e.product_version))
@@ -128,6 +132,34 @@ impl DurabilityRoot {
             }
             sqlx::query("UPDATE game_profile_b_accounts SET authority_revision=$2,answer_bytes=$3 WHERE account_id=$1::uuid").bind(&answer.account_id).bind(answer.authority_revision as i64).bind(raw).execute(&mut *tx).await?;
             let result=view(&mut tx,&answer.account_id).await?;commit_semantic_transaction(tx,deadline).await?;Ok(Acceptance::Accepted(result))
+        })).await
+    }
+    /// A shared cursor may be advanced by another node: live consumers also read captured floors.
+    pub async fn profile_b_known_hints(
+        &self,
+        accounts: &[String],
+        products: &[(String, u64)],
+    ) -> Result<Vec<Hint>, DurabilityError> {
+        if accounts.len() > 500
+            || products.len() > 17
+            || accounts
+                .iter()
+                .any(|id| !super::enforcement_wire::uuid7(id))
+            || products.iter().any(|(p, v)| {
+                !super::profile_b_wire::product(p)
+                    || !(1..=super::profile_b_wire::INT53_MAX).contains(v)
+            })
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let accounts = sqlx::types::Json(accounts.to_vec());
+        let products=sqlx::types::Json(products.iter().map(|(product_id,product_version)|serde_json::json!({"product_id":product_id,"product_version":product_version})).collect::<Vec<_>>());
+        self.try_issue_semantic_pass()?.run(move|holder,deadline|Box::pin(async move {
+            let mut tx=begin_semantic_transaction(holder,deadline).await?;
+            let rows=sqlx::query("SELECT p.account_id::text,p.product_id,p.product_version,p.hint_revision FROM jsonb_array_elements_text($1::jsonb) a(account_id) CROSS JOIN jsonb_to_recordset($2::jsonb) AS k(product_id TEXT,product_version BIGINT) JOIN game_profile_b_products p ON p.account_id=a.account_id::uuid AND p.product_id=k.product_id AND p.product_version=k.product_version WHERE p.hint_revision>0 ORDER BY p.account_id,p.product_id,p.product_version LIMIT 8500")
+                .bind(accounts).bind(products).fetch_all(&mut *tx).await?;
+            let result=rows.into_iter().map(|r|Ok::<_,sqlx::Error>(Hint{account_id:r.try_get("account_id")?,product_id:r.try_get("product_id")?,product_version:r.try_get::<i64,_>("product_version")? as u64,lifecycle_revision:r.try_get::<i64,_>("hint_revision")? as u64})).collect::<Result<Vec<_>,_>>()?;
+            commit_semantic_transaction(tx,deadline).await?;Ok(result)
         })).await
     }
     pub async fn profile_b_hint_revision(

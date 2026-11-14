@@ -218,41 +218,59 @@ pub enum Message {
     ChangesRequest(ChangesRequest),
     Page(Page),
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseError {
+    Size,
+    Malformed,
+    NonCanonical,
+}
 impl Message {
     pub fn parse(raw: &[u8]) -> Option<Self> {
+        Self::decode(raw).ok()
+    }
+    pub fn decode(raw: &[u8]) -> Result<Self, ParseError> {
         if raw.is_empty() || raw.len() > PAGE_BYTES {
-            return None;
+            return Err(ParseError::Size);
         }
-        let value: serde_json::Value = serde_json::from_slice(raw).ok()?;
-        let schema = value.get("schema")?.as_str()?;
-        let (message, canonical, bound) = match schema {
-            "oteryn.entitlement_authority_request.v1" => {
-                (Self::Request(serde_json::from_slice(raw).ok()?), false, 256)
+        let value: serde_json::Value =
+            serde_json::from_slice(raw).map_err(|_| ParseError::Malformed)?;
+        let schema = value
+            .get("schema")
+            .and_then(serde_json::Value::as_str)
+            .ok_or(ParseError::Malformed)?;
+        let (canonical, bound) = match schema {
+            "oteryn.entitlement_authority_request.v1" | "oteryn.entitlement_change_request.v1" => {
+                (false, 256)
             }
-            "oteryn.entitlement_authority.v1" => (
-                Self::Answer(serde_json::from_slice(raw).ok()?),
-                true,
-                AUTHORITY_BYTES,
-            ),
-            "oteryn.entitlement_change_request.v1" => (
-                Self::ChangesRequest(serde_json::from_slice(raw).ok()?),
-                false,
-                256,
-            ),
-            "oteryn.entitlement_change_page.v1" => (
-                Self::Page(serde_json::from_slice(raw).ok()?),
-                true,
-                PAGE_BYTES,
-            ),
-            _ => return None,
+            "oteryn.entitlement_authority.v1" => (true, AUTHORITY_BYTES),
+            "oteryn.entitlement_change_page.v1" => (true, PAGE_BYTES),
+            _ => return Err(ParseError::Malformed),
         };
-        if raw.len() > bound || !message.valid() {
-            return None;
+        if raw.len() > bound {
+            return Err(ParseError::Size);
         }
-        if canonical && (raw.contains(&b'\\') || message.encode()?.as_slice() != raw) {
-            return None;
+        let message = match schema {
+            "oteryn.entitlement_authority_request.v1" => {
+                Self::Request(serde_json::from_slice(raw).map_err(|_| ParseError::Malformed)?)
+            }
+            "oteryn.entitlement_change_request.v1" => Self::ChangesRequest(
+                serde_json::from_slice(raw).map_err(|_| ParseError::Malformed)?,
+            ),
+            "oteryn.entitlement_authority.v1" => {
+                Self::Answer(serde_json::from_slice(raw).map_err(|_| ParseError::Malformed)?)
+            }
+            _ => Self::Page(serde_json::from_slice(raw).map_err(|_| ParseError::Malformed)?),
+        };
+        if !message.valid() {
+            return Err(ParseError::Malformed);
         }
-        Some(message)
+        if canonical
+            && (raw.contains(&b'\\')
+                || message.encode().ok_or(ParseError::Malformed)?.as_slice() != raw)
+        {
+            return Err(ParseError::NonCanonical);
+        }
+        Ok(message)
     }
     fn valid(&self) -> bool {
         match self {

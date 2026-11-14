@@ -36,6 +36,8 @@ impl Clients {
             super::super::LOYALTY_IDENTITY_VAR,
             super::super::SECURITY_REVOCATION_IDENTITY_VAR,
             crate::premium::client::IDENTITY_VAR,
+            crate::platform_streams::profile_b::transport::AUTHORITY_IDENTITY_VAR,
+            crate::platform_streams::profile_b::transport::CHANGES_IDENTITY_VAR,
         ] {
             if lookup(var).is_some() {
                 identities.push((var, read(var)?));
