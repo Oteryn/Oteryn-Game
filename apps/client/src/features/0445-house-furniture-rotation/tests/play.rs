@@ -91,3 +91,7 @@ fn native_rotation_decodes_named_catalogue_and_discards_stale_revision()
     assert!(panel.feedback.contains("Invalid furniture response"));
     Ok(())
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;

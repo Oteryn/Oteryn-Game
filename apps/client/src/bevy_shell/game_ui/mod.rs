@@ -2,6 +2,8 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+mod furniture_rotation;
+pub(super) use furniture_rotation::toggle as toggle_furniture_rotation;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -233,6 +235,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    furniture_rotation::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
