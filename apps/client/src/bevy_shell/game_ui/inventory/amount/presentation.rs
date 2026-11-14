@@ -84,11 +84,28 @@ pub(super) fn focus_new(
     }
 }
 fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryUi) -> Entity {
+    build_dialog(
+        commands,
+        skins,
+        DialogSpec {
+            source: DialogSource::Movement(prompt),
+            title: "Move stack",
+            confirm: "Move",
+            value: &value(ui),
+            maximum: prompt.item.count.min(100),
+            item: ui.split_entry,
+        },
+    )
+}
+pub(super) fn build_dialog(commands: &mut Commands, skins: &Skins, spec: DialogSpec<'_>) -> Entity {
     let root = commands
         .spawn((
             Root,
             GameModal,
-            GlobalZIndex(90),
+            GlobalZIndex(match spec.source {
+                DialogSource::Movement(_) => 90,
+                DialogSource::Caller(_) => 210,
+            }),
             Node {
                 position_type: PositionType::Absolute,
                 width: percent(100.),
@@ -119,7 +136,7 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         ))
         .id();
     commands.entity(root).add_child(panel);
-    source::dialog_caption(commands, panel, "Move stack", skins.font.clone());
+    source::dialog_caption(commands, panel, spec.title, skins.font.clone());
     let row = commands
         .spawn(Node {
             column_gap: px(8.),
@@ -141,7 +158,7 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         ))
         .id();
     commands.entity(row).add_child(slot);
-    if let Some(item) = ui.split_entry {
+    if let Some(item) = spec.item {
         let icon = commands
             .spawn((
                 ItemIcon(item),
@@ -171,12 +188,11 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         .id();
     let input = commands
         .spawn((
-            Field(prompt),
             TextInput,
             SelectAllOnFocus,
             EditableText {
                 max_characters: Some(20),
-                ..EditableText::new(value(ui))
+                ..EditableText::new(spec.value)
             },
             source::font(skins.font.clone(), false),
             TextColor(source::TEXT_COLOR),
@@ -190,22 +206,39 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
                 ..default()
             },
         ))
-        .observe(super::input::changed)
         .id();
+    match spec.source {
+        DialogSource::Movement(prompt) => {
+            commands
+                .entity(input)
+                .insert(Field(prompt))
+                .observe(super::input::changed);
+        }
+        DialogSource::Caller(id) => {
+            commands
+                .entity(input)
+                .insert((caller::Field(id), Name::new("amount.caller.input")))
+                .observe(caller::changed);
+        }
+    }
     commands.entity(frame).add_child(input);
     let range = commands
-        .spawn((
-            Range,
-            source::text(
-                format!("of {}", prompt.item.count.min(100)),
-                source::font(skins.font.clone(), false),
-            ),
-        ))
+        .spawn((source::text(
+            format!("of {}", spec.maximum),
+            source::font(skins.font.clone(), false),
+        ),))
         .id();
+    match spec.source {
+        DialogSource::Movement(_) => {
+            commands.entity(range).insert(Range);
+        }
+        DialogSource::Caller(_) => {
+            commands.entity(range).insert(caller::Range);
+        }
+    }
     commands.entity(row).add_children(&[frame, range]);
     let feedback = commands
         .spawn((
-            Feedback,
             source::text("", source::font(skins.font.clone(), false)),
             Node {
                 width: percent(100.),
@@ -214,6 +247,14 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         ))
         .insert(TextLayout::default())
         .id();
+    match spec.source {
+        DialogSource::Movement(_) => {
+            commands.entity(feedback).insert(Feedback);
+        }
+        DialogSource::Caller(_) => {
+            commands.entity(feedback).insert(caller::Feedback);
+        }
+    }
     commands.entity(panel).add_child(feedback);
     let buttons = commands
         .spawn(Node {
@@ -223,21 +264,49 @@ fn build(commands: &mut Commands, skins: &Skins, prompt: Prompt, ui: &InventoryU
         })
         .id();
     commands.entity(panel).add_child(buttons);
-    for (caption, control, width) in [
-        ("All", Control::All(prompt), 30.),
-        ("−", Control::Count(prompt, -1), 22.),
-        ("+", Control::Count(prompt, 1), 22.),
-        ("Move", Control::Confirm(prompt), 50.),
-        (
-            "Cancel",
-            Control::Cancel {
-                generation: prompt.generation,
-                prompt: Some(prompt),
-            },
-            50.,
-        ),
+    for (caption, action, width) in [
+        ("All", AmountAction::All, 30.),
+        ("−", AmountAction::Change(-1), 22.),
+        ("+", AmountAction::Change(1), 22.),
+        (spec.confirm, AmountAction::Confirm, 50.),
+        ("Cancel", AmountAction::Cancel, 50.),
     ] {
-        super::super::dialogs::button(commands, skins, buttons, caption, control, width);
+        match spec.source {
+            DialogSource::Movement(prompt) => {
+                let control = match action {
+                    AmountAction::All => Control::All(prompt),
+                    AmountAction::Change(delta) => Control::Count(prompt, delta),
+                    AmountAction::Confirm => Control::Confirm(prompt),
+                    AmountAction::Cancel => Control::Cancel {
+                        generation: prompt.generation,
+                        prompt: Some(prompt),
+                    },
+                };
+                super::super::dialogs::button(commands, skins, buttons, caption, control, width);
+            }
+            DialogSource::Caller(id) => {
+                let name = match action {
+                    AmountAction::All => "amount.caller.all",
+                    AmountAction::Change(delta) if delta < 0 => "amount.caller.decrease",
+                    AmountAction::Change(_) => "amount.caller.increase",
+                    AmountAction::Confirm => "amount.caller.confirm",
+                    AmountAction::Cancel => "amount.caller.cancel",
+                };
+                let entity = commands
+                    .spawn((
+                        source::button(skins.buttons.clone(), width),
+                        caller::Control { id, action },
+                        Name::new(name),
+                    ))
+                    .observe(caller::activate)
+                    .id();
+                let label = commands
+                    .spawn(source::button_caption(caption, skins.font.clone()))
+                    .id();
+                commands.entity(entity).add_child(label);
+                commands.entity(buttons).add_child(entity);
+            }
+        }
     }
     root
 }

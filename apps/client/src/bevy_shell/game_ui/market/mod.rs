@@ -1,5 +1,6 @@
 //! Named catalogue, offer books and confirmed purchases over the retained MARKET_V1 owner.
 mod actions;
+mod operations;
 mod purchase;
 #[cfg(test)]
 mod tests;
@@ -49,6 +50,7 @@ struct State {
     pending: Option<(Action, Entity, Entity)>,
 }
 pub(super) fn install(app: &mut App) {
+    operations::install(app);
     purchase::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))

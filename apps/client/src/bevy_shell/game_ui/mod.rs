@@ -1,6 +1,8 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+mod coin_market;
+mod depot;
 mod feature_dialogs;
 mod hud;
 mod inventory;
@@ -18,8 +20,10 @@ pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+pub(super) mod store;
 mod trade;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -227,21 +231,25 @@ fn region(commands: &mut Commands) -> Entity {
 }
 
 pub(super) fn install(app: &mut App) {
-    modal::install(app);
-    options::install(app);
-    journal::install(app);
-    chat::install(app);
     actions::install(app);
+    chat::install(app);
+    coin_market::install(app);
+    depot::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
+    journal::install(app);
     market::install(app);
     minimap::install(app);
+    modal::install(app);
     npc_shop::install(app);
+    options::install(app);
     party::install(app);
     quick_loot::install(app);
+    store::install(app);
     trade::install(app);
+    wheel::install(app);
     app.add_systems(
         Update,
         (

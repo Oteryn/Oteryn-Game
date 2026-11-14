@@ -120,6 +120,10 @@ fn open(link: &PlayLink) {
         },
     );
 }
+#[cfg(feature = "bevy-shell")]
+#[path = "coins/bound.rs"]
+mod bound;
+
 #[cfg(test)]
 #[path="coins/tests.rs"]
 mod tests;

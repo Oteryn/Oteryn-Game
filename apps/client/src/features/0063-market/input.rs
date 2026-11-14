@@ -172,5 +172,9 @@ pub(in crate::play) fn stashback(
     true
 }
 
+#[cfg(feature = "bevy-shell")]
+#[path = "input/bound.rs"]
+mod bound;
+
 #[path="input/coins.rs"]
 mod coins;
