@@ -31,13 +31,7 @@ pub(super) fn project(
     skins: Option<Res<Skins>>,
     time: Res<Time>,
     mut state: ResMut<SpeechBubbles>,
-    mut drawn: Query<(
-        &mut Text2d,
-        &mut TextColor,
-        &mut Transform,
-        &mut Visibility,
-        &TextLayoutInfo,
-    )>,
+    mut drawn: Query<(&mut Text2d, &mut TextColor, &mut Transform, &TextLayoutInfo)>,
 ) {
     let state = &mut *state;
     let (Some(play), Some(window), Some(skins)) = (&owner.play, window.single().ok(), skins) else {
@@ -88,10 +82,9 @@ pub(super) fn project(
                     .spawn((
                         Text2d::new(text.compose()),
                         source::font(skins.font.clone(), false),
-                        TextColor(colour),
+                        unmeasured(colour),
                         TextBounds::new_horizontal(logic::WRAP_WIDTH_PX),
                         Anchor::TOP_LEFT,
-                        Visibility::Hidden,
                         RenderLayers::layer(1),
                         Transform::from_xyz(0., 0., 900.),
                     ))
@@ -99,19 +92,23 @@ pub(super) fn project(
             );
             continue;
         };
-        let Ok((mut label, mut paint, mut transform, mut visibility, info)) = drawn.get_mut(entity)
-        else {
+        let Ok((mut label, mut paint, mut transform, info)) = drawn.get_mut(entity) else {
             continue;
         };
         let composed = text.compose();
         if label.0 != composed {
             label.0 = composed;
         }
-        if paint.0 != colour {
-            paint.0 = colour;
-        }
-        // The size is the previous frame's layout; nothing is shown before it exists.
+        // The size is the previous frame's layout; the text stays transparent until it exists.
         let measured = info.size;
+        let shown = if measured.x > 0. {
+            colour
+        } else {
+            colour.with_alpha(0.)
+        };
+        if paint.0 != shown {
+            paint.0 = shown;
+        }
         let (left, top) = logic::layout_rect(
             (dx / scale, dy / scale),
             (measured.x, measured.y),
@@ -119,14 +116,6 @@ pub(super) fn project(
         );
         transform.translation.x = left + (offset.x - size.x / 2.) / scale;
         transform.translation.y = (size.y / 2. - offset.y) / scale - top;
-        let wanted = if measured.x > 0. {
-            Visibility::Inherited
-        } else {
-            Visibility::Hidden
-        };
-        if *visibility != wanted {
-            *visibility = wanted;
-        }
     }
     for entity in state
         .entities
@@ -134,4 +123,11 @@ pub(super) fn project(
     {
         commands.entity(entity).despawn();
     }
+}
+
+/// A text before its first layout: transparent, but visible to the cameras. Bevy lays out
+/// `Text2d` only for a camera that sees a sprite, and the world camera may see no sprite but
+/// this text, so a hidden text would never be measured and never shown.
+fn unmeasured(colour: Color) -> (TextColor, Visibility) {
+    (TextColor(colour.with_alpha(0.)), Visibility::Inherited)
 }

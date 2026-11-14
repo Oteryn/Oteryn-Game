@@ -189,3 +189,15 @@ fn only_local_lines_become_speech_and_only_new_ones_are_taken() {
     );
     assert!(new_lines(std::slice::from_ref(&b), std::slice::from_ref(&b)).is_empty());
 }
+
+#[test]
+fn an_unmeasured_text_stays_visible_to_layout_and_transparent() {
+    use bevy::prelude::{Alpha, Color, TextColor, Visibility, World};
+    let mut world = World::new();
+    let entity = world.spawn(super::unmeasured(Color::WHITE)).id();
+    assert_ne!(world.get::<Visibility>(entity), Some(&Visibility::Hidden));
+    assert_eq!(
+        world.get::<TextColor>(entity).map(|c| c.0.alpha()),
+        Some(0.)
+    );
+}
