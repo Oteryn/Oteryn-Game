@@ -3,6 +3,9 @@ use oteryn_client_runtime::raw_feature::{CommandStatus, FeatureCommand, GatedCom
 use oteryn_client_ui::mail::{Intent, Panel};
 use oteryn_session::property_services::mail::{self, MailIntent};
 
+/// UTF-8 byte limit enforced by the MAIL_V1 text codec.
+pub const MAX_TEXT_BYTES: usize = 7_996;
+
 #[derive(Debug, Default)]
 pub(in crate::play) struct Panels {
     pub appearance: oteryn_client_ui::appearance::Panel,
