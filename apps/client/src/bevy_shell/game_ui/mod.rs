@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+mod container_sorting;
 mod coin_market;
 mod depot;
 mod feature_dialogs;
@@ -232,6 +233,7 @@ fn region(commands: &mut Commands) -> Entity {
 
 pub(super) fn install(app: &mut App) {
     actions::install(app);
+    container_sorting::install(app);
     chat::install(app);
     coin_market::install(app);
     depot::install(app);
@@ -261,6 +263,10 @@ pub(super) fn install(app: &mut App) {
 
 #[cfg(test)]
 mod native_tests;
+
+pub(super) fn open_container_sorting(owner: &mut HostOwner) {
+    container_sorting::open(owner);
+}
 
 pub(super) fn open_quests(owner: &mut HostOwner) {
     journal::open_quests(owner);
