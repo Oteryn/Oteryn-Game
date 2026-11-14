@@ -43,3 +43,53 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(feature = "bevy-shell")]
+#[derive(Clone, PartialEq, Eq)]
+pub enum RaidScheduleControl {
+    Refresh,
+    Close,
+}
+#[cfg(feature = "bevy-shell")]
+impl PlayLink {
+    pub fn raid_schedule_dispatch_bound(
+        &self,
+        expected: &oteryn_client_ui::raid_schedule::Panel,
+        control: RaidScheduleControl,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if self.commands.is_closed()
+            || mailbox.properties.raid_schedule != *expected
+            || !expected.open
+        {
+            return false;
+        }
+        if control == RaidScheduleControl::Close {
+            mailbox.properties.raid_schedule.open = false;
+            return true;
+        }
+        if !expected.selected || expected.pending {
+            return false;
+        }
+        super::input::submit(
+            &mut mailbox,
+            &self.commands,
+            oteryn_client_ui::raid_schedule::Intent::Query,
+        );
+        true
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_raid_schedule_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+    pub(crate) fn bevy_raid_schedule_selected(&self, selected: bool) {
+        lock(&self.0).properties.raid_schedule.selected = selected;
+    }
+}
