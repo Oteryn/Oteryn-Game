@@ -152,7 +152,8 @@ impl HostOwner {
         let Some(play) = &mut self.play else {
             return false;
         };
-        if super::game_ui::highscores_character_info::input(&play.link, routed)
+        if play.link.action_bar_editor_input_bound(routed)
+            || super::game_ui::highscores_character_info::input(&play.link, routed)
             || (oteryn_client_ui::hotkey_equip::open_key(routed)
                 && play.link.hotkey_equip_open_bound())
             || play.link.hotkey_equip_keys_bound(routed)

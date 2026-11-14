@@ -1,9 +1,17 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
+#[cfg(feature = "bevy-shell")]
+#[path = "editor_bound.rs"]
+mod editor_bound;
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "editor_bound_tests.rs"]
+mod editor_bound_tests;
 use super::item_actions::item_source;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
 };
+#[cfg(feature = "bevy-shell")]
+pub use editor_bound::ActionBarEditorSnapshot;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, num::NonZeroU32};
 
@@ -182,6 +190,9 @@ pub(crate) struct ItemCooldownRead {
 }
 #[derive(Debug, Default)]
 pub(crate) struct BarActionsState {
+    // Window admission must not invalidate a pending action's cooldown-read revision.
+    #[cfg(feature = "bevy-shell")]
+    pub(super) editor_revision: u64,
     pub saved: BarActions,
     pub item_cooldowns_selected: bool,
     pub item_cooldowns: BTreeMap<u32, (std::time::Instant, u64)>,

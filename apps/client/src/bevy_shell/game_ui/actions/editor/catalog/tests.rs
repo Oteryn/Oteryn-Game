@@ -5,6 +5,7 @@ fn named_catalogue_search_paging_and_activation_use_current_server_identity()
 -> Result<(), Box<dyn std::error::Error>> {
     let (mut app, _) = super::super::super::tests::fixture()?;
     let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
     let entries: Vec<_> = (1..=13)
         .map(
             |cast_index| oteryn_session::spell_catalog::SpellCatalogEntry {

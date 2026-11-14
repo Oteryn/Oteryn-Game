@@ -8,7 +8,13 @@ pub(super) struct Projection<'w, 's> {
     rows: Query<
         'w,
         's,
-        (&'static BarRow, &'static mut Node, &'static ComputedNode),
+        (
+            Entity,
+            &'static BarRow,
+            &'static mut Node,
+            &'static ComputedNode,
+            Option<&'static ChildOf>,
+        ),
         Without<ActionControl>,
     >,
     controls: Query<
@@ -66,7 +72,12 @@ pub(super) struct Projection<'w, 's> {
     hovered: Query<'w, 's, (&'static Hovered, &'static ActionControl)>,
 }
 
-pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
+pub(super) fn project(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    regions: Res<super::super::GameRegions>,
+    mut ui: Projection,
+) {
     let Some(play) = &owner.play else {
         return;
     };
@@ -74,9 +85,48 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
     let labels = play.link.spell_slot_labels();
     let tips = play.link.spell_slot_tooltips();
     let mut capacities = [12; 3];
-    for (bar, mut node, computed) in &mut ui.rows {
+    for (entity, bar, mut node, computed, parent) in &mut ui.rows {
         let row = &layout.rows[bar.0];
-        let available = computed.size().x * computed.inverse_scale_factor;
+        let side = row.dock != crate::play::BarDock::Bottom;
+        let destination = if side { regions.world } else { regions.bars };
+        if parent.is_none_or(|parent| parent.parent() != destination) {
+            commands.entity(entity).insert(ChildOf(destination));
+        }
+        node.position_type = if side {
+            PositionType::Absolute
+        } else {
+            PositionType::Relative
+        };
+        node.flex_direction = if side {
+            FlexDirection::Column
+        } else {
+            FlexDirection::Row
+        };
+        node.width = if side { px(SLOT_SIZE) } else { percent(100.) };
+        node.height = if side { percent(100.) } else { px(SLOT_SIZE) };
+        node.min_height = if side { px(0.) } else { px(SLOT_SIZE) };
+        node.row_gap = px(SLOT_GAP);
+        node.top = if side { px(0.) } else { Val::Auto };
+        let offset = layout.rows[..bar.0]
+            .iter()
+            .filter(|other| other.dock == row.dock && other.enabled)
+            .count() as f32
+            * (SLOT_SIZE + SLOT_GAP);
+        node.left = if row.dock == crate::play::BarDock::Left {
+            px(offset)
+        } else {
+            Val::Auto
+        };
+        node.right = if row.dock == crate::play::BarDock::Right {
+            px(offset)
+        } else {
+            Val::Auto
+        };
+        let available = (if side {
+            computed.size().y
+        } else {
+            computed.size().x
+        }) * computed.inverse_scale_factor;
         if available > 0. {
             capacities[bar.0] =
                 ((available - 38.) / (SLOT_SIZE + SLOT_GAP)).floor().max(1.) as usize;

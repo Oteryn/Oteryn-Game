@@ -4,7 +4,9 @@ use oteryn_session::ActorVitals;
 #[test]
 fn clxa_soul_and_monk_vitals_reach_native_hud() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     for (vitals, expected) in [
         (
             ActorVitals {
@@ -32,7 +34,9 @@ fn clxa_soul_and_monk_vitals_reach_native_hud() -> Result<(), Box<dyn std::error
 #[test]
 fn vitals_reach_the_play_projection_and_a_new_connection_starts_empty() -> Result<(), BatchError> {
     let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     assert!(view.actor_vitals().is_none());
     let initial = ActorVitals {
         health: 150,
@@ -58,6 +62,7 @@ fn vitals_reach_the_play_projection_and_a_new_connection_starts_empty() -> Resul
     assert_eq!(view.tick(&link), Ok(()));
     assert_eq!(view.actor_vitals(), Some(&updated));
     let (fresh, _, _) = play_channel();
+    fresh.use_shared_frontend();
     assert!(fresh.actor_vitals().is_none());
     Ok(())
 }
@@ -65,6 +70,7 @@ fn vitals_reach_the_play_projection_and_a_new_connection_starts_empty() -> Resul
 #[test]
 fn undrained_vitals_keep_only_the_latest_value() -> Result<(), BatchError> {
     let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
     for health in 0..5_000 {
         outbox.push(vec![SessionEvent::ActorVitals(AppliedDelta {
             server_sequence: u64::from(health) + 1,
@@ -79,6 +85,7 @@ fn undrained_vitals_keep_only_the_latest_value() -> Result<(), BatchError> {
     }
     assert!(link.poll().is_none());
     let mut view = view()?;
+    view.use_shared_frontend();
     assert_eq!(view.tick(&link), Ok(()));
     assert_eq!(view.actor_vitals().map(|v| v.health), Some(4_999));
     Ok(())
@@ -88,7 +95,9 @@ fn undrained_vitals_keep_only_the_latest_value() -> Result<(), BatchError> {
 fn configured_slot_dispatches_server_index_and_invalid_edit_is_atomic()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     assert!(link.spell_bar_bind(&["71".into(), "".into(), "3".into(), "4".into()]));
     assert!(!link.spell_bar_bind(&["12".into(), "bad".into(), "3".into(), "4".into()]));
     view.cast(std::num::NonZeroU32::new(1).ok_or("slot")?);
@@ -105,6 +114,7 @@ fn configured_slot_dispatches_server_index_and_invalid_edit_is_atomic()
 #[test]
 fn native_bar_cast_uses_binding_and_obeys_death_gate() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
     crate::play::feature_local_spell_action_bar::input::submit(
         &mut mailbox,
@@ -140,7 +150,9 @@ fn native_bar_cast_uses_binding_and_obeys_death_gate() -> Result<(), Box<dyn std
 fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn std::error::Error>>
 {
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     outbox.battle_instinct_status_initialize(true);
     let status = oteryn_client_ui::battle_instinct_status::BattleInstinctStatus {
         active: true,
@@ -189,6 +201,7 @@ fn nx7_battle_instinct_reply_reaches_hud_beside_harmony() -> Result<(), Box<dyn 
     view.tick(&link).map_err(|_| "tick")?;
     assert!(view.hud_status().contains("Battle Instinct: eligible"));
     let (fresh, _, _) = play_channel();
+    fresh.use_shared_frontend();
     view.tick(&fresh).map_err(|_| "tick")?;
     assert!(!view.hud_status().contains("Battle Instinct"));
     Ok(())
@@ -204,10 +217,12 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::num::NonZeroU32;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut fields = vec![String::new(); 12];
     fields[11] = "71".into();
     assert!(link.spell_bar_bind(&fields));
     let mut view = view()?;
+    view.use_shared_frontend();
     view.cast(NonZeroU32::new(12).ok_or("slot")?);
     view.tick(&link).map_err(|_| "tick")?;
     assert!(
@@ -250,6 +265,7 @@ fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices
     use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};
     use std::num::NonZeroU32;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_initialize(true);
     outbox.hotkey_equip_items(vec![256]);
     assert!(link.assign_bar_action(
@@ -335,6 +351,7 @@ fn n001_text_action_sends_at_once_or_inserts_into_the_chat_input()
     use crate::play::feature_local_spell_action_bar::view::{BarAction, BarActions};
     use std::num::NonZeroU32;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.chat_initialize(true);
     assert!(link.assign_bar_action(
         0,
@@ -384,6 +401,7 @@ fn n002_equip_action_binds_an_upgrade_tier() -> Result<(), Box<dyn std::error::E
     use crate::play::feature_local_spell_action_bar::view::{BarAction, BarActions};
     use std::num::NonZeroU32;
     let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_initialize(true);
     outbox.hotkey_equip_items(vec![256]);
     let definition = NonZeroU32::new(256).ok_or("item")?;
@@ -422,6 +440,7 @@ mod hotkeys;
 #[test]
 fn t058_bar_labels_and_cooldowns_are_independent() {
     let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
     assert!(link.spell_slot_labels()[0].contains('\n'));
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
@@ -439,6 +458,7 @@ fn t058_bar_labels_and_cooldowns_are_independent() {
 #[test]
 fn t058_row_layout_preserves_all_twelve_slots() {
     let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
     assert_eq!(link.action_bar_grid(), (12, 1));
     crate::play::mailbox::lock(&link.mailbox)
         .local_preferences
@@ -451,6 +471,7 @@ fn t058_row_layout_preserves_all_twelve_slots() {
 fn t058_auto_insert_uses_learned_server_catalog_once() {
     use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
     let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.local_preferences.action_bar.auto_insert = true;
@@ -482,6 +503,7 @@ fn t058_auto_insert_uses_learned_server_catalog_once() {
 #[test]
 fn t058_tooltip_toggle_projects_live_slot_details() {
     let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
     assert!(link.spell_slot_tooltips()[0].contains("Cooldown"));
     crate::play::mailbox::lock(&link.mailbox)
         .local_preferences
@@ -494,6 +516,7 @@ fn t058_tooltip_toggle_projects_live_slot_details() {
 fn t058_rune_amounts_use_live_inventory_stacks() -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_client_runtime::spell_catalog::{SpellCatalog, SpellCatalogEntry};
     let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
     {
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.spell_catalog.catalog.replace(SpellCatalog {

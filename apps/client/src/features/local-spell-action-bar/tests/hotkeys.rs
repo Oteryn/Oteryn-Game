@@ -6,6 +6,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 fn custom_text_keys_persist_and_do_not_repeat_or_steal_chat_letters()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.chat_initialize(true);
     let path = std::env::temp_dir().join(format!("custom-keys-{}.json", std::process::id()));
     let mut settings = SettingsState::new(Some(path.clone()));
@@ -77,6 +78,7 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.targeting_initialize(true);
     let actor = |id| WorldSpatialEntity {
         display_name: None,

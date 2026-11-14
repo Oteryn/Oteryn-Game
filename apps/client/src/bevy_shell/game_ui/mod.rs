@@ -2,6 +2,7 @@
 pub(super) use achievement_notices::open as open_achievement_notices;
 mod achievement_notices;
 pub(super) mod achievements;
+pub(super) mod action_bar_editor;
 mod actions;
 pub(super) mod analyser_tools;
 pub(super) mod appearance;
@@ -125,6 +126,7 @@ pub(in crate::bevy_shell) struct ToolbarRegion;
 pub(super) fn install(app: &mut App) {
     achievement_notices::install(app);
     achievements::install(app);
+    action_bar_editor::install(app);
     actions::install(app);
     analyser_tools::install(app);
     animus_mastery::install(app);

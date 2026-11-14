@@ -15,8 +15,10 @@ pub(super) fn fixture() -> Result<
     Box<dyn std::error::Error>,
 > {
     let (link, commands, _) = play_channel();
+    link.use_shared_frontend();
     assert!(link.spell_bar_bind(&["71".into(), "".into(), "".into(), "".into()]));
-    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
     let mut owner = HostOwner::new(None)?;
     owner.play = Some(ActivePlay { view, link });
     owner.phase = Phase::Playing;
@@ -35,6 +37,7 @@ pub(super) fn fixture() -> Result<
         (crate::bevy_shell::ui::setup, super::super::setup).chain(),
     );
     app.add_systems(Update, super::super::project);
+    super::super::action_bar_editor::install(&mut app);
     install(&mut app);
     app.update();
     Ok((app, commands))
@@ -211,6 +214,7 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
 fn action_button_obeys_existing_server_observed_death_gate() -> TestResult {
     let (mut app, _) = fixture()?;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     assert!(link.spell_bar_bind(&["71".into(), "".into(), "".into(), "".into()]));
     outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
         oteryn_session::AppliedDelta {

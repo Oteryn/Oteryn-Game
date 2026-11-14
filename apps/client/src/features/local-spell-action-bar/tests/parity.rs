@@ -5,7 +5,9 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns, spell_catalog::*};
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     let entries = (1..=3)
         .map(|id| SpellCatalogEntry {
             cast_index: id,
@@ -84,7 +86,9 @@ fn multi_action_uses_first_ready_spell_through_play_queue_and_persists()
 #[test]
 fn each_bar_accepts_fifty_buttons_through_play_queue() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     for slot in [49, 99, 149] {
         {
             let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
@@ -117,7 +121,9 @@ fn cooldown_bar_consumes_real_server_events_independently_of_action_slots()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns};
     let (link, _, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     outbox.push(vec![SessionEvent::ActorCooldowns(AppliedDelta {
         server_sequence: 1,
         base_revision: 0,
@@ -195,7 +201,9 @@ fn cursor_position_item_uses_real_play_queue_without_second_click()
     use oteryn_session::{CharacterInventory, ItemEntry};
     use std::num::{NonZeroU32, NonZeroU64};
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     outbox.targeting_initialize(true);
     outbox.inventory_initialize(
         Some(CharacterInventory {
@@ -259,7 +267,9 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
         spell_catalog::*,
     };
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     let entry = SpellCatalogEntry {
         cast_index: 71,
         name: "Wave".into(),
@@ -373,6 +383,7 @@ fn native_battle_keys_cast_catalogue_bindings_and_obey_death_gate()
     use oteryn_input_actions::{Modifier, Modifiers};
     use oteryn_session::spell_catalog::*;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     assert!(link.bind_action_key(0, "SUPER+ALT+F12"));
     let keys = [
         (0x31, Modifiers::NONE),
@@ -443,6 +454,7 @@ fn native_battle_key_uses_hovered_entity_generation_without_crosshair()
     use oteryn_client_runtime::world_interaction::{Selection, Target};
     use oteryn_input_actions::{Modifier, Modifiers};
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.targeting_initialize(true);
     let definition = std::num::NonZeroU32::new(256).ok_or("item")?;
     outbox.inventory_initialize(
@@ -517,7 +529,9 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
     use oteryn_session::{ActorCooldown, ActorCooldownKind, ActorCooldowns, spell_catalog::*};
     use std::num::{NonZeroU32, NonZeroU64};
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let mut view = view()?;
+    view.use_shared_frontend();
     let definition = NonZeroU32::new(256).ok_or("definition")?;
     let entries = [
         SpellCatalogEntry {

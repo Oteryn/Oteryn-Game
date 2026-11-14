@@ -11,6 +11,7 @@ fn inventory_drop_assigns_current_item_without_move_and_rejects_stale_source()
 -> Result<(), Box<dyn std::error::Error>> {
     let (mut app, _) = tests::fixture()?;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let item = oteryn_session::ItemEntry {
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,

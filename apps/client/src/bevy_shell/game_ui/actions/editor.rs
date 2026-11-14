@@ -44,6 +44,7 @@ pub(super) struct Description;
 pub(super) struct Feedback;
 #[derive(Component, Clone, Copy)]
 enum Edit {
+    Multi,
     PreviousSpells,
     NextSpells,
     Text,
@@ -200,6 +201,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         })
         .id();
     for (action, caption) in [
+        (Edit::Multi, "Assign Multiaction"),
         (Edit::PreviousSpells, "Previous spells"),
         (Edit::NextSpells, "Next spells"),
         (Edit::Text, "Send text"),
@@ -239,6 +241,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_children(&[actions, feedback]);
 }
 
+// Bevy supplies widget queries, modal admission and both editor drafts independently.
+#[allow(clippy::too_many_arguments)]
 fn activate(
     event: On<Activate>,
     guard: ModalGuard,
@@ -247,6 +251,7 @@ fn activate(
     owner: NonSend<HostOwner>,
     mut state: ResMut<EditorState>,
     mut focus: ResMut<InputFocus>,
+    mut advanced: ResMut<super::super::action_bar_editor::State>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -263,6 +268,13 @@ fn activate(
     if matches!(action, Edit::Close) {
         state.selected = None;
         focus.clear();
+        return;
+    }
+    if matches!(action, Edit::Multi) {
+        if super::super::action_bar_editor::edit_slot(&owner, &mut advanced, slot) {
+            state.selected = None;
+            focus.clear();
+        }
         return;
     }
     let Some(play) = &owner.play else {
@@ -351,7 +363,7 @@ fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[Stri
                 },
             )
         }
-        Edit::Close | Edit::PreviousSpells | Edit::NextSpells => false,
+        Edit::Multi | Edit::Close | Edit::PreviousSpells | Edit::NextSpells => false,
     }
 }
 
