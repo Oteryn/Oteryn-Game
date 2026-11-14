@@ -1838,6 +1838,18 @@ impl ReportClock for FamilyClock {
         1790000000
     }
     async fn sleep(&self, d: Duration) {
+        // Let every concurrent family reach its source before advancing virtual time.
+        let mut yielded = false;
+        std::future::poll_fn(|cx| {
+            if yielded {
+                std::task::Poll::Ready(())
+            } else {
+                yielded = true;
+                cx.waker().wake_by_ref();
+                std::task::Poll::Pending
+            }
+        })
+        .await;
         let next = self.elapsed() + d;
         if next > self.until {
             std::future::pending::<()>().await;
@@ -1915,21 +1927,45 @@ fn family_publisher(
     p
 }
 fn drive_family(p: &Publisher<FamilyClock, Shared, FamilySink, Fence>) {
-    if !v2::Family::CharacterSkills.publishable(p.v2_activation) {
-        let mut work = Box::pin(p.v2_loops());
-        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
-        assert!(work.as_mut().poll(&mut cx).is_pending());
-        return;
-    }
     let mut work = Box::pin(p.v2_family_loop(v2::Family::CharacterSkills));
     let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
-    assert!(work.as_mut().poll(&mut cx).is_pending());
+    for _ in 0..4096 {
+        assert!(work.as_mut().poll(&mut cx).is_pending());
+    }
 }
 #[test]
 fn public_v2_new_families_flag_off_never_published() {
     let mut p = family_publisher(5, vec![], false);
     p.v2_activation = Default::default();
-    drive_family(&p);
+    for bytes in [
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_achievements_v2.json"
+        ))
+        .as_slice(),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_equipment_v2.json"
+        ))
+        .as_slice(),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/fixtures/public-projections/character_outfit_v2.json"
+        ))
+        .as_slice(),
+    ] {
+        p.store
+            .lock()
+            .unwrap()
+            .v2_rows
+            .push(v2::decode_character_snapshot(bytes.trim_ascii_end()).unwrap());
+    }
+    assert_eq!(p.store.lock().unwrap().v2_rows.len(), 4);
+    let mut work = Box::pin(p.v2_loops());
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    for _ in 0..256 {
+        assert!(work.as_mut().poll(&mut cx).is_pending());
+    }
     assert!(
         p.sink
             .sent

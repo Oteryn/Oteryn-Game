@@ -470,7 +470,24 @@ mount [], while the closed wire decoder retains its accepted 0..1 shape.
 
 Operator resync includes all four families, using 128-subject keyset batches
 inside the existing atomic resync/60-second deadline. The existing closed CHECKs
-must be replaced to admit the new families. PostgreSQL requires ACCESS EXCLUSIVE
-for that metadata change even with NOT VALID; these changes run last, with
-separate VALIDATE statements, and no root index build or source resync while
-that unavoidable lock is held. No claim of lock-free transactional DDL is made.
+must be replaced to admit the new families. Their locks remain held until the
+migration commits; the stopped-service qualification below is mandatory.
+
+### P3 review: migration and catalogue refresh qualification
+
+Migration 2834 requires **all Game writers and publishers stopped**. Its one
+migration transaction retains trigger-creation SHARE ROW EXCLUSIVE locks and
+CHECK-replacement ACCESS EXCLUSIVE locks through CHECK validation and the new
+account-leading roots index build. Separate statements do not release these
+locks. Before deployment, qualify migration duration and the restart window on
+a restored store with representative roots, heads and subject-fence sizes;
+no online migration or production-size duration is claimed. This replaces the
+prior suggestion that putting validation last shortened the retained locks.
+
+Runtime catalogue preparation uses the ordinary durability deadline, never the
+operator-only 60-second override. A catalogue change invalidates achievement
+coverage and queues a keyset refresh; each pass captures at most 16 subjects.
+Coverage stays incomplete, with completeness held at zero, until the last page
+commits. All character-view capture families take the catalogue SHARE lock
+before their subject lock. Deferred earned-fact events fan out once per account
+transaction, using an account-leading roots index and the final committed cut.

@@ -34,7 +34,6 @@ impl super::DurabilityRoot {
     ) -> super::Result<()> {
         let recovery = authority.record_for(self)?;
         let (revision, entries) = catalogue()?;
-        let _boot = self.boot_pass_deadline(super::RESYNC_DEADLINE);
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = super::begin_semantic_transaction(holder, deadline).await?;
             super::assert_recovery_fence(&mut tx, &recovery).await?;
@@ -43,8 +42,12 @@ impl super::DurabilityRoot {
     // An identical compiled catalogue does not re-touch subjects or change observations.
     sqlx::query("INSERT INTO game_public_v2_achievement_catalogue(singleton,revision,entries) VALUES(true,$1,$2) ON CONFLICT(singleton) DO UPDATE SET revision=EXCLUDED.revision,entries=EXCLUDED.entries WHERE (game_public_v2_achievement_catalogue.revision,game_public_v2_achievement_catalogue.entries) IS DISTINCT FROM (EXCLUDED.revision,EXCLUDED.entries)")
         .bind(revision).bind(entries).execute(&mut *tx).await?;
+            // Catalogue updates leave coverage incomplete until every bounded page
+            // (including retained suppressions) has been captured under this revision.
+            let complete: bool = sqlx::query_scalar("SELECT game_public_v2_catalogue_refresh_page()")
+                .fetch_one(&mut *tx).await?;
             super::commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(()))
+            if complete { Ok(Ok(())) } else { Ok(Err(super::CharacterAuthorityError::from(DurabilityError::Unavailable))) }
         })).await?
     }
 }

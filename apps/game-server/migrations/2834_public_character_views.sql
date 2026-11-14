@@ -1,3 +1,8 @@
+-- OPERATOR PRECONDITION: apply only with Game writers and publishers STOPPED.
+-- This transactional migration retains source-trigger SHARE ROW EXCLUSIVE and
+-- CHECK-replacement ACCESS EXCLUSIVE locks through validation and index build.
+-- Qualify elapsed time on a representative restored store before deployment;
+-- there is no online-migration or production-size timing claim.
 -- P3/G-4 revision 3. Derived sources only; no serving or publisher activation.
 -- A validated whole Game catalogue, never an inferred revision from one earned row.
 CREATE TABLE game_public_v2_achievement_catalogue (
@@ -25,6 +30,17 @@ GRANT SELECT,INSERT,UPDATE ON game_public_v2_achievement_catalogue TO oteryn_gam
 REVOKE INSERT,UPDATE,DELETE ON game_public_v2_outfit_proofs FROM oteryn_game_runtime,oteryn_game_control;
 GRANT SELECT ON game_public_v2_outfit_proofs TO oteryn_game_runtime,oteryn_game_control;
 GRANT SELECT ON game_public_v2_character_baselines TO oteryn_game_runtime,oteryn_game_control;
+
+-- Account-leading lookup for achievement fan-out (built only while stopped).
+CREATE INDEX game_public_v2_character_account ON game_character_roots(account_id,character_id) WHERE lifecycle=1;
+CREATE TABLE game_public_v2_achievement_cuts (
+ account_id UUID PRIMARY KEY, last_xid xid8 NOT NULL
+);
+CREATE TABLE game_public_v2_catalogue_refresh (
+ singleton BOOLEAN PRIMARY KEY CHECK(singleton), last_character UUID
+);
+REVOKE ALL ON game_public_v2_achievement_cuts,game_public_v2_catalogue_refresh FROM PUBLIC;
+
 
 CREATE FUNCTION game_public_v2_write_outfit_proof(c UUID,o UUID,k TEXT,p INTEGER[],a SMALLINT)
  RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -54,10 +70,10 @@ BEGIN
   RAISE EXCEPTION 'unknown character projection family' USING ERRCODE='22023';
  END IF;
  PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
- -- Epoch -> catalogue -> derived subject; fan-out never locks another actor's root.
- IF f='character_achievements' THEN
-  PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
- END IF;
+ -- All four capture families take the catalogue lock before any subject lock.
+ -- A skills capture and a later achievement capture in one transaction cannot
+ -- straddle a catalogue UPDATE holding its row and waiting for that subject.
+ PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
  PERFORM game_public_v2_subject_lock('character_views',c::text);
  SELECT * INTO r FROM game_character_roots WHERE character_id=c;
  IF r.character_id IS NOT NULL AND r.lifecycle=1 AND NOT game_account_closure_detached(c) THEN
@@ -164,6 +180,12 @@ CREATE FUNCTION game_public_v2_achievement_source() RETURNS TRIGGER LANGUAGE plp
 DECLARE c RECORD; a UUID;
 BEGIN
  a:=CASE WHEN TG_OP='DELETE' THEN OLD.account_id ELSE NEW.account_id END;
+ -- Deferred events all observe the final transaction cut. Fan out once per
+ -- affected account, even when the gameplay commit grants many achievements.
+ INSERT INTO game_public_v2_achievement_cuts(account_id,last_xid) VALUES(a,pg_current_xact_id())
+ ON CONFLICT(account_id) DO UPDATE SET last_xid=EXCLUDED.last_xid
+ WHERE game_public_v2_achievement_cuts.last_xid<>EXCLUDED.last_xid;
+ IF NOT FOUND THEN RETURN NULL; END IF;
  PERFORM game_public_v2_subject_lock('character_views','account:'||a::text);
  FOR c IN SELECT character_id FROM game_character_roots
  WHERE account_id=a AND lifecycle=1
@@ -175,15 +197,42 @@ END $$;
 CREATE CONSTRAINT TRIGGER public_v2_earned AFTER INSERT OR UPDATE OR DELETE ON game_account_achievements
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_public_v2_achievement_source();
 CREATE FUNCTION game_public_v2_catalogue_source() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE c RECORD;
 BEGIN
- FOR c IN SELECT character_id FROM game_character_roots WHERE lifecycle=1 ORDER BY character_id LOOP
-  PERFORM game_public_v2_character_capture(c.character_id,'character_achievements');
- END LOOP;
+ -- Refresh only invalidates coverage here. Runtime preparation recaptures a
+ -- bounded page per ordinary durability pass; never scan all actors in a trigger.
+ UPDATE game_public_v2_character_baselines SET complete=false WHERE family='character_achievements';
+ INSERT INTO game_public_v2_catalogue_refresh(singleton,last_character) VALUES(true,NULL)
+ ON CONFLICT(singleton) DO UPDATE SET last_character=NULL;
  RETURN NULL;
 END $$;
 CREATE TRIGGER public_v2_catalogue AFTER INSERT OR UPDATE ON game_public_v2_achievement_catalogue
  FOR EACH ROW EXECUTE FUNCTION game_public_v2_catalogue_source();
+
+CREATE FUNCTION game_public_v2_catalogue_refresh_page() RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE after_character UUID; c RECORD; last_seen UUID; captured INTEGER:=0;
+BEGIN
+ PERFORM 1 FROM game_public_projection_epoch WHERE epoch_scope=1 FOR SHARE;
+ PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;
+ SELECT last_character INTO after_character FROM game_public_v2_catalogue_refresh WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RETURN true; END IF;
+ FOR c IN SELECT DISTINCT subject FROM (
+  (SELECT character_id::text AS subject FROM (SELECT character_id FROM game_character_roots
+    WHERE character_id>coalesce(after_character,'00000000-0000-0000-0000-000000000000'::uuid) ORDER BY character_id LIMIT 16) r)
+  UNION ALL
+  (SELECT subject FROM game_public_v2_heads WHERE family='character_achievements' AND world_id=''
+    AND subject>coalesce(after_character::text,'') ORDER BY subject LIMIT 16)
+ ) subjects ORDER BY subject LIMIT 16 LOOP
+  PERFORM game_public_v2_character_capture(c.subject::uuid,'character_achievements');
+  last_seen:=c.subject::uuid; captured:=captured+1;
+ END LOOP;
+ IF captured<16 THEN
+  DELETE FROM game_public_v2_catalogue_refresh WHERE singleton;
+  UPDATE game_public_v2_character_baselines SET complete=true WHERE family='character_achievements';
+  RETURN true;
+ END IF;
+ UPDATE game_public_v2_catalogue_refresh SET last_character=last_seen WHERE singleton;
+ RETURN false;
+END $$;
 
 CREATE CONSTRAINT TRIGGER public_v2_container AFTER INSERT OR UPDATE OR DELETE ON game_item_container_slots
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_public_v2_character_source('character_equipment');
@@ -216,7 +265,7 @@ CREATE FUNCTION game_public_v2_source_pending(f TEXT) RETURNS BIGINT LANGUAGE sq
  ELSE game_public_v2_source_pending_before_character_views(f) END
 $$;
 ALTER FUNCTION game_public_projection_resync(TEXT,BOOLEAN) RENAME TO game_public_projection_resync_before_character_views;
-CREATE FUNCTION game_public_projection_resync(f TEXT,raise_epoch BOOLEAN) RETURNS BIGINT LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE FUNCTION game_public_projection_resync(f TEXT,raise_epoch BOOLEAN) RETURNS BIGINT LANGUAGE plpgsql SECURITY INVOKER AS $$
 DECLARE e BIGINT; c RECORD; family_name TEXT; last_character UUID; batch_count INTEGER;
 BEGIN
  IF f IS NULL OR raise_epoch IS NULL THEN RAISE EXCEPTION 'resync requires family and epoch mode' USING ERRCODE='22004'; END IF;
@@ -245,14 +294,15 @@ BEGIN
 END $$;
 DO $$ DECLARE f REGPROCEDURE; BEGIN
  FOR f IN SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=current_schema()
- AND (p.proname IN('game_public_v2_write_outfit_proof','game_public_v2_equipment_custody','game_public_v2_item_source','game_public_v2_character_capture','game_public_v2_character_source','game_public_v2_achievement_source','game_public_v2_catalogue_source','game_public_v2_ready','game_public_v2_source_pending','game_public_projection_resync')) LOOP
+ AND (p.proname IN('game_public_v2_write_outfit_proof','game_public_v2_equipment_custody','game_public_v2_item_source','game_public_v2_character_capture','game_public_v2_character_source','game_public_v2_achievement_source','game_public_v2_catalogue_source','game_public_v2_catalogue_refresh_page','game_public_v2_ready','game_public_v2_source_pending','game_public_projection_resync')) LOOP
   EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',f,current_schema());
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f);
  END LOOP;
 END $$;
 GRANT EXECUTE ON FUNCTION game_public_v2_ready(TEXT,TEXT,TEXT),game_public_v2_source_pending(TEXT) TO oteryn_game_runtime,oteryn_game_control;
 
--- Expand the pre-existing closed checks last: metadata-only replacement, then validation.
+-- Expand the pre-existing closed checks last; validations retain the DROP locks.
+-- The stopped-service prerequisite above covers the full migration transaction.
 -- PostgreSQL requires ACCESS EXCLUSIVE to remove the old closed CHECK; keep that
 -- unavoidable lock out of source setup/resync (the migrator is transactional).
 ALTER TABLE game_public_v2_heads DROP CONSTRAINT game_public_v2_heads_family_check;
@@ -268,3 +318,5 @@ ALTER TABLE game_public_v2_subject_fences VALIDATE CONSTRAINT game_public_v2_sub
 
 
 GRANT EXECUTE ON FUNCTION game_public_v2_write_outfit_proof(UUID,UUID,TEXT,INTEGER[],SMALLINT) TO oteryn_game_runtime,oteryn_game_control;
+
+GRANT EXECUTE ON FUNCTION game_public_v2_catalogue_refresh_page() TO oteryn_game_runtime,oteryn_game_control;

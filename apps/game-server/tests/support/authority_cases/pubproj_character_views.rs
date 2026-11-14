@@ -310,3 +310,133 @@ fn public_v2_review_source_isolation_and_missing_evidence() -> TestResult {
 }
 
 pg_case!(public_v2_resync_covers_new_families, 9);
+
+
+async fn catalogue_lock_race(h:&Harness)->TestResult {
+                // Pause the real fenced kill immediately after its deferred skills capture.
+                // The observer controls a lock, not an elapsed-time guess.
+                h.pool.execute("ALTER FUNCTION game_public_v2_character_capture(UUID,TEXT) RENAME TO p3_capture_actual; CREATE FUNCTION game_public_v2_character_capture(c UUID,f TEXT) RETURNS VOID LANGUAGE plpgsql AS $$ BEGIN PERFORM p3_capture_actual(c,f); IF f='character_skills' THEN PERFORM pg_advisory_xact_lock(3185001); END IF; END $$").await?;
+                let mut barrier=h.pool.acquire().await?;
+                sqlx::query("SELECT pg_advisory_lock(3185001)").execute(&mut *barrier).await?;
+                let barrier_pid:i32=sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *barrier).await?;
+                let seal=h.recovery.seal_current().map_err(debug)?;
+                let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+                // Allow the negative control to reach PostgreSQL's deadlock detector.
+                let _test_deadline=h.root.boot_pass_deadline(std::time::Duration::from_secs(15));
+                let kill=async {
+                    use crate::durability::bestiary_progress::{BestiaryKillRequest,BestiaryKillOccurrence,BestiaryKillOutcome};
+                    let request=BestiaryKillRequest {
+                        occurrence:BestiaryKillOccurrence::from_bytes(id(201)).map_err(debug)?,
+                        race:crate::domain::bestiary::BestiaryRace::new("oteryn:creature.rat","definition-r1",vec![1]).map_err(debug)?,
+                        context:crate::bestiary_postgres_harness::context(),
+                        policy_revision:"policy-1".into(), reward_revision:"reward-1".into(),
+                    };
+                    let outcome=h.root.commit_bestiary_kill(&authority,&h.node,crate::bestiary_postgres_harness::fence(1)?,request).await.map_err(debug)?;
+                    assert!(matches!(outcome,BestiaryKillOutcome::Committed(_)));
+                    Ok::<_,Box<dyn std::error::Error>>(())
+                };
+                let refresh=async {
+                    tokio::time::timeout(std::time::Duration::from_secs(5),async {
+                        loop {
+                            let waiting:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))").bind(barrier_pid).fetch_one(&mut *barrier).await?;
+                            if waiting { break; } tokio::task::yield_now().await;
+                        }
+                        Ok::<_,sqlx::Error>(())
+                    }).await??;
+                    let mut catalogue=h.pool.acquire().await?;
+                    let catalogue_pid:i32=sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *catalogue).await?;
+                    let update=async {
+                        sqlx::query("UPDATE game_public_v2_achievement_catalogue SET revision=revision||'.refresh' WHERE singleton").execute(&mut *catalogue).await?;
+                        Ok::<_,sqlx::Error>(())
+                    };
+                    let release=async {
+                        tokio::time::timeout(std::time::Duration::from_secs(5),async {
+                            loop {
+                                let blocked:bool=sqlx::query_scalar("SELECT cardinality(pg_blocking_pids($1))>0").bind(catalogue_pid).fetch_one(&mut *barrier).await?;
+                                if blocked { break; } tokio::task::yield_now().await;
+                            }
+                            Ok::<_,sqlx::Error>(())
+                        }).await??;
+                        sqlx::query("SELECT pg_advisory_unlock(3185001)").execute(&mut *barrier).await?;
+                        Ok::<_,Box<dyn std::error::Error>>(())
+                    };
+                    let (updated,released)=tokio::join!(update,release); released?; updated?;
+                    Ok::<_,Box<dyn std::error::Error>>(())
+                };
+                let (kill,refresh)=tokio::join!(kill,refresh);
+                refresh?; kill?;
+                let earned:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/hunting_permit'").fetch_one(&h.pool).await?;
+                assert_eq!(earned,1,"the competing real kill must actually grant an achievement");
+    Ok(())
+}
+#[test]
+fn public_v2_catalogue_refresh_and_bestiary_do_not_deadlock() -> TestResult {
+    let Some(admin)=configured_admin() else { return Ok(()); };
+    std::thread::Builder::new().stack_size(64<<20).spawn(move || -> Result<(),String> {
+        runtime().map_err(debug)?.block_on(async move {
+            for negative in [true,false] {
+                let h=Harness::create(admin.clone(),if negative {"p3_old_lock_cycle"} else {"p3_catalogue_lock_order"},true).await?;
+                prepare(&h).await?;
+                if negative {
+                    // Restore the two reviewed lock-order defects in this isolated DB.
+                    let definition:String=sqlx::query_scalar("SELECT pg_get_functiondef('game_public_v2_character_capture(uuid,text)'::regprocedure)").fetch_one(&h.pool).await?;
+                    let old=definition.replace("PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE;", "IF f='character_achievements' THEN PERFORM 1 FROM game_public_v2_achievement_catalogue WHERE singleton FOR SHARE; END IF;");
+                    assert_ne!(old,definition,"negative control must restore the reviewed lock order");
+                    sqlx::query(sqlx::AssertSqlSafe(old)).execute(&h.pool).await?;
+                    h.pool.execute("CREATE OR REPLACE FUNCTION game_public_v2_catalogue_source() RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$ DECLARE c RECORD; BEGIN FOR c IN SELECT character_id FROM game_character_roots WHERE lifecycle=1 ORDER BY character_id LOOP PERFORM game_public_v2_character_capture(c.character_id,'character_achievements'); END LOOP; RETURN NULL; END $$").await?;
+                }
+                let result=catalogue_lock_race(&h).await;
+                h.cleanup().await?;
+                if negative {
+                    let error=result.err().ok_or("reviewed lock cycle unexpectedly succeeded")?;
+                    assert!(error.to_string().contains("40P01") || error.to_string().contains("deadlock detected"),"wrong negative-control failure: {error}");
+                    println!("P3_REVIEW_LOCK_ORDER_RED: {error}");
+                } else { result?; }
+            }
+            Ok::<_,Box<dyn std::error::Error>>(())
+        }).map_err(debug)
+    })?.join().map_err(|_|"catalogue concurrency case failed")?.map_err(Into::into)
+}
+
+#[test]
+fn public_v2_catalogue_refresh_is_bounded_and_achievement_grants_coalesce() -> TestResult {
+    let Some(admin)=configured_admin() else { return Ok(()); };
+    std::thread::Builder::new().stack_size(64<<20).spawn(move || -> Result<(),String> {
+        runtime().map_err(debug)?.block_on(async move {
+            let h=Harness::create(admin,"p3_catalogue_pages",true).await?;
+            let result:TestResult=async {
+                prepare(&h).await?;
+                let seal=h.recovery.seal_current().map_err(debug)?;
+                let authority=h.root.open_character_authority(&seal).await.map_err(debug)?;
+                history(&h,&["INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name,sex) SELECT ('019a0000-0000-7000-8000-'||lpad(to_hex(n),12,'0'))::uuid,account_id,world_id,1,1,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Catalogue Page '||chr(65+n/26)||chr(65+n%26),sex FROM game_character_roots CROSS JOIN generate_series(1000,1031) n WHERE character_id=encode($1,'hex')::uuid"]).await?;
+                for function in ["game_public_projection_resync(text,boolean)","game_public_projection_resync_before_character_views(text,boolean)"] {
+                    for role in ["oteryn_game_runtime","oteryn_game_control"] {
+                        let allowed:bool=sqlx::query_scalar("SELECT has_function_privilege($1,$2,'EXECUTE')").bind(role).bind(function).fetch_one(&h.pool).await?;
+                        assert!(!allowed,"{function} must remain owner-only for {role}");
+                    }
+                }
+                let before=head(&h,"character_achievements").await?.0;
+                sqlx::query("UPDATE game_public_v2_achievement_catalogue SET revision='refresh-required' WHERE singleton").execute(&h.pool).await?;
+                assert_eq!(head(&h,"character_achievements").await?.0,before,"catalogue trigger must never synchronously scan subjects");
+                h.pool.execute("CREATE FUNCTION p3_runtime_deadline() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('statement_timeout')::interval>interval '2 seconds' THEN RAISE EXCEPTION 'runtime used the operator deadline'; END IF; RETURN NEW; END $$; CREATE TRIGGER p3_runtime_deadline BEFORE INSERT ON game_public_v2_outbox FOR EACH ROW EXECUTE FUNCTION p3_runtime_deadline()").await?;
+                assert!(h.root.sync_public_achievement_catalogue(&authority).await.is_err(),"one ordinary pass cannot finish 33 subjects");
+                let complete:bool=sqlx::query_scalar("SELECT complete FROM game_public_v2_character_baselines WHERE family='character_achievements'").fetch_one(&h.pool).await?;
+                assert!(!complete);
+                let pending:i64=sqlx::query_scalar("SELECT game_public_v2_source_pending('character_achievements')").fetch_one(&h.pool).await?;
+                assert_eq!(pending,0,"coverage must hold the watermark until the last page");
+                let mut completed=false;
+                for _ in 0..4 { if h.root.sync_public_achievement_catalogue(&authority).await.is_ok() {completed=true;break;} }
+                assert!(completed,"bounded pages eventually cover every subject");
+                h.pool.execute("DROP TRIGGER p3_runtime_deadline ON game_public_v2_outbox; DROP FUNCTION p3_runtime_deadline()").await?;
+                let before=head(&h,"character_achievements").await?.0;
+                history(&h,&["INSERT INTO game_account_achievement_grant_requests SELECT 'fixture',decode('01','hex'),k.key,k.value->>'revision',r.account_id,r.character_id,1790000000000 FROM game_character_roots r CROSS JOIN game_public_v2_achievement_catalogue c CROSS JOIN LATERAL (SELECT key,value FROM jsonb_each(c.entries) ORDER BY key LIMIT 3) k WHERE r.character_id=encode($1,'hex')::uuid", "INSERT INTO game_account_achievements SELECT account_id,achievement_key,source_kind,source_event_id FROM game_account_achievement_grant_requests WHERE character_id=encode($1,'hex')::uuid"]).await?;
+                assert_eq!(head(&h,"character_achievements").await?.0,before+1,"three deferred grants produce one account/subject capture");
+                assert_eq!(head(&h,"character_achievements").await?.1[0]["earned"].as_array().ok_or("earned")?.len(),3);
+                let indexed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_indexes WHERE indexname='game_public_v2_character_account' AND indexdef LIKE '%(account_id, character_id)%')").fetch_one(&h.pool).await?;
+                assert!(indexed);
+                Ok(())
+            }.await;
+            h.cleanup().await?;result
+        }).map_err(debug)
+    })?.join().map_err(|_|"bounded catalogue case failed")?.map_err(Into::into)
+}
