@@ -45,6 +45,7 @@ pub(super) mod house_transfer;
 pub(super) use house_podium::open as open_house_podium;
 mod hud;
 mod imbue;
+pub(super) mod input_profiles;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
@@ -158,6 +159,7 @@ pub(super) fn install(app: &mut App) {
     house_transfer::install(app);
     hud::install(app);
     imbue::install(app);
+    input_profiles::install(app);
     inventory::install(app);
     item_details::install(app);
     journal::install(app);

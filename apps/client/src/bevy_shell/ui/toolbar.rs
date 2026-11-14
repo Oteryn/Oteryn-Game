@@ -85,6 +85,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::HouseMoveOut
                     | Control::HousePodium
                     | Control::HouseTransfer
+                    | Control::InputProfiles
                     | Control::Market
                     | Control::MinimapMarkers
                     | Control::Party
