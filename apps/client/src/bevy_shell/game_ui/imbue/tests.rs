@@ -185,3 +185,130 @@ fn assert_rendered(panel: ImbuePanel, expected: &[&str]) -> Result<(), Box<dyn s
     }
     Ok(())
 }
+
+fn review_fixture(
+    p: ImbuePanel,
+) -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    use crate::play::{PlayView, play_channel};
+    use bevy::{asset::AssetPlugin, input_focus::InputFocus};
+    let (link, commands, outbox) = play_channel();
+    outbox.bevy_imbue_fixture(p);
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    Ok((app, commands))
+}
+
+#[test]
+fn imbue_review_missing_cost_keeps_cancel_only() -> Result<(), Box<dyn std::error::Error>> {
+    for missing_window in [false, true] {
+        let mut p = panel();
+        if missing_window {
+            p.window = None;
+        } else {
+            p.offer = 1;
+        }
+        let (mut app, mut commands) = review_fixture(p)?;
+        let owner = app.world().non_send::<HostOwner>();
+        let generation = owner.generation();
+        let snapshot = owner.play.as_ref().ok_or("play")?.link.imbue_snapshot();
+        app.world_mut().resource_mut::<State>().confirmation = Some((generation, snapshot, true));
+        app.world_mut().resource_mut::<State>().shown = None;
+        app.update();
+        let controls: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &Control)>()
+            .iter(app.world())
+            .map(|(e, c)| (e, c.action.clone()))
+            .collect();
+        assert_eq!(controls.len(), 1, "missing cost must leave exactly Cancel");
+        let cancel = controls
+            .iter()
+            .find_map(|(e, a)| matches!(a, Action::Cancel).then_some(*e))
+            .ok_or("Cancel missing")?;
+        app.world_mut().trigger(Activate { entity: cancel });
+        assert!(app.world().resource::<State>().confirmation.is_none());
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn imbue_review_escape_closes_only_top_window() -> Result<(), Box<dyn std::error::Error>> {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    let (mut app, mut commands) = review_fixture(panel())?;
+    let escape = |app: &mut App, repeat| {
+        app.world_mut().write_message(KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: Key::Escape,
+            state: ButtonState::Pressed,
+            text: None,
+            repeat,
+            window: Entity::PLACEHOLDER,
+        });
+        app.update();
+    };
+    let get_panel = |app: &App| -> Result<ImbuePanel, Box<dyn std::error::Error>> {
+        Ok(app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel())
+    };
+    escape(&mut app, true);
+    assert!(get_panel(&app)?.open);
+    let apply = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            matches!(control.action, Action::Confirm(true)).then_some(entity)
+        })
+        .ok_or("Apply missing")?;
+    app.world_mut().trigger(Activate { entity: apply });
+    app.update();
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    escape(&mut app, false);
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    assert!(get_panel(&app)?.open);
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(250), Node::default()))
+        .id();
+    escape(&mut app, false);
+    assert!(get_panel(&app)?.open);
+    app.world_mut().entity_mut(higher).despawn();
+    app.update();
+    escape(&mut app, false);
+    assert!(!get_panel(&app)?.open);
+    assert!(get_panel(&app)?.tracker_open);
+    escape(&mut app, false);
+    assert!(!get_panel(&app)?.tracker_open);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

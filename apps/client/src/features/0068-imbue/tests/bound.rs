@@ -130,3 +130,19 @@ fn imbue_actions_rejected_when_session_replaced_or_item_changed() {
         }
     }
 }
+
+#[test]
+fn imbue_review_snapshot_keeps_weak_session_identity_after_owner_drop() {
+    let (link, _commands, outbox) = setup();
+    let snapshot = link.imbue_snapshot();
+    assert!(std::sync::Weak::ptr_eq(
+        &snapshot.session,
+        &std::sync::Arc::downgrade(&link.mailbox)
+    ));
+    drop(link);
+    drop(outbox);
+    assert!(snapshot.session.upgrade().is_none());
+    assert_eq!(snapshot, snapshot.clone());
+    let (replacement, _, _) = setup();
+    assert_ne!(snapshot, replacement.imbue_snapshot());
+}

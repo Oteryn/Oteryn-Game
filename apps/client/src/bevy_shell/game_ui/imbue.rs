@@ -30,7 +30,9 @@ struct State {
     confirmation: Option<(u64, ImbueSnapshot, bool)>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, (keyboard, project).chain());
 }
 fn offer_text(panel: &ImbuePanel, index: usize) -> String {
     let Some(offer) = panel.window.as_ref().and_then(|w| w.offers.get(index)) else {
@@ -157,6 +159,13 @@ fn project(
                 Some(w.clear_gold)
             }
         }) else {
+            button(
+                &mut commands,
+                &skins,
+                root,
+                control(Action::Cancel),
+                "Cancel",
+            );
             return;
         };
         label(
@@ -354,5 +363,46 @@ fn activate(
         && let Ok(control) = controls.get(event.entity)
     {
         perform(&owner, &mut state, control);
+    }
+}
+
+fn keyboard(
+    mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    let Some(root) = state.root else {
+        events.clear();
+        return;
+    };
+    if !guard.allows(root) {
+        events.clear();
+        return;
+    }
+    if events.read().any(|event| {
+        event.key_code == KeyCode::Escape
+            && event.state == bevy::input::ButtonState::Pressed
+            && !event.repeat
+    }) && let Some((generation, snapshot)) = state.shown.clone()
+    {
+        let action = if state.confirmation.is_some() {
+            Action::Cancel
+        } else {
+            Action::Owner(if snapshot.panel.open {
+                Kind::Close
+            } else {
+                Kind::CloseTracker
+            })
+        };
+        perform(
+            &owner,
+            &mut state,
+            &Control {
+                generation,
+                snapshot,
+                action,
+            },
+        );
     }
 }

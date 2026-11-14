@@ -72,13 +72,24 @@ impl PlayLink {
 }
 
 #[cfg(feature = "bevy-shell")]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct ImbueSnapshot {
     pub panel: ImbuePanel,
     pub items: oteryn_client_runtime::depot::Items,
     containers: Option<oteryn_client_runtime::container_tree::ContainerViews>,
-    session: usize,
+    session: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
 }
+#[cfg(feature = "bevy-shell")]
+impl PartialEq for ImbueSnapshot {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Weak::ptr_eq(&self.session, &other.session)
+            && self.panel == other.panel
+            && self.items == other.items
+            && self.containers == other.containers
+    }
+}
+#[cfg(feature = "bevy-shell")]
+impl Eq for ImbueSnapshot {}
 #[cfg(feature = "bevy-shell")]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImbueControl {
@@ -101,7 +112,7 @@ impl PlayLink {
             panel: m.imbue.clone(),
             items: m.depot.items.clone(),
             containers: m.containers.views.clone(),
-            session: std::sync::Arc::as_ptr(&self.mailbox) as usize,
+            session: std::sync::Arc::downgrade(&self.mailbox),
         }
     }
 
@@ -110,7 +121,7 @@ impl PlayLink {
         use ImbueControl as C;
         use oteryn_client_ui::imbue::{Intent, request};
         let mut m = lock(&self.mailbox);
-        if expected.session != std::sync::Arc::as_ptr(&self.mailbox) as usize
+        if !std::sync::Weak::ptr_eq(&expected.session, &std::sync::Arc::downgrade(&self.mailbox))
             || m.containers.views != expected.containers
             || self.commands.is_closed()
             || m.imbue_shutdown
