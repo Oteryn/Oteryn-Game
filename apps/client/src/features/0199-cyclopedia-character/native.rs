@@ -2,8 +2,10 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
+#[cfg(any(windows, test))]
 pub(in crate::play) const OVERVIEW_CARD_COUNT: usize = 15;
 
+#[cfg(any(windows, test))]
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(
@@ -136,3 +138,8 @@ mod character_paint;
 #[cfg(windows)]
 #[path = "view/offence_table.rs"]
 mod offence_table;
+
+#[cfg(feature = "bevy-shell")]
+pub(in crate::play) fn refresh_intent(p: &CyclopediaCharacterPanel) -> Intent {
+    target::refresh_intent(p)
+}

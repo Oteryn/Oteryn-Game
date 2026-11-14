@@ -232,8 +232,8 @@ pub(super) fn install(app: &mut App) {
     options::install(app);
     journal::install(app);
     chat::install(app);
-    cyclopedia_character::install(app);
     actions::install(app);
+    cyclopedia_character::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);

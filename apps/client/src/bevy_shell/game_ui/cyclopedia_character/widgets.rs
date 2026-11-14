@@ -1,5 +1,5 @@
 use super::*;
-use bevy::input_focus::tab_navigation::TabIndex;
+use bevy::{input_focus::tab_navigation::TabIndex, text::TextCursorStyle};
 pub(super) fn build(
     commands: &mut Commands,
     skins: &Skins,
@@ -10,7 +10,6 @@ pub(super) fn build(
 ) -> Entity {
     let root = commands
         .spawn((
-            GameModal,
             GlobalZIndex(164),
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             crate::bevy_shell::window_drag::DraggableDialog,
@@ -96,6 +95,15 @@ pub(super) fn build(
             label,
         );
     }
+    button(
+        commands,
+        skins,
+        row,
+        generation,
+        serial,
+        Action::Refresh,
+        "Refresh",
+    );
     button(
         commands,
         skins,
@@ -240,8 +248,82 @@ pub(super) fn build(
             },
         ))
         .id();
-    commands.entity(root).add_child(scroll);
+    let browser_open = p.gallery.open || p.items.open || p.protection.open;
+    let content_parent = if browser_open {
+        let browser = commands
+            .spawn((
+                source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+                Node {
+                    width: percent(100.),
+                    padding: UiRect::all(px(8.)),
+                    flex_direction: FlexDirection::Column,
+                    min_height: px(0.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(root).add_child(browser);
+        let title = if p.gallery.open {
+            "Appearance gallery"
+        } else if p.items.open {
+            "Item summary"
+        } else {
+            "Death loss preview"
+        };
+        source::dialog_caption(commands, browser, title, skins.font.clone());
+        button(
+            commands,
+            skins,
+            browser,
+            generation,
+            serial,
+            Action::CloseBrowser,
+            "Close subwindow",
+        );
+        browser
+    } else {
+        root
+    };
+    commands.entity(content_parent).add_child(scroll);
     text(commands, skins, scroll, &body(p));
+    let bars = if p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Misc {
+        ui::misc_bars(p)
+    } else {
+        ui::overview_bars(p)
+    };
+    if let Some(bars) = bars {
+        for ((value, max), label) in bars.into_iter().zip(["Stamina", "Offline training"]) {
+            text(
+                commands,
+                skins,
+                scroll,
+                &format!("{label}: {value}/{max} minutes"),
+            );
+            let track = commands
+                .spawn((
+                    source::frame(skins.inset.clone(), [1.; 4]),
+                    Node {
+                        width: percent(100.),
+                        height: px(12.),
+                        min_height: px(12.),
+                        ..default()
+                    },
+                ))
+                .id();
+            let fill = commands
+                .spawn((
+                    Node {
+                        width: percent(f32::from(value) * 100. / f32::from(max)),
+                        height: percent(100.),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.25, 0.55, 0.35)),
+                ))
+                .id();
+            commands.entity(track).add_child(fill);
+            commands.entity(scroll).add_child(track);
+        }
+    }
     if p.gallery.open {
         match gallery_pixels::Art::load() {
             Ok(mut art) => {

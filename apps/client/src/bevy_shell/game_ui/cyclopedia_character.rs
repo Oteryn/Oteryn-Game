@@ -4,7 +4,6 @@ use super::{
         owner::{HostOwner, Phase},
         ui::Skins,
     },
-    GameModal,
     modal::ModalGuard,
 };
 use crate::play::feature_0199_cyclopedia_character::view::bound::CharacterAction as Action;
@@ -50,10 +49,8 @@ pub(in crate::bevy_shell) fn toggle(owner: &HostOwner) {
         let panel = play.link.cyclopedia_character_panel();
         if play.link.cyclopedia_character_bound(&panel, Action::Toggle) && !panel.open {
             let panel = play.link.cyclopedia_character_panel();
-            let intent = if panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Inspection {
-                if panel.badges_open { Intent::ProfileBadges } else { Intent::ProfileInspection }
-            } else { Intent::Tab };
-            play.link.cyclopedia_character_bound(&panel, Action::Request(intent));
+            play.link
+                .cyclopedia_character_bound(&panel, Action::Refresh);
         }
     }
 }
@@ -63,10 +60,17 @@ fn keyboard(
     owner: NonSend<HostOwner>,
     state: Res<State>,
 ) {
+    if owner.modal_active() {
+        return;
+    }
     // Ctrl+Shift+F9 is unused by the other shell windows.
     if keys.just_pressed(KeyCode::F9)
         && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
         && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
+        && !keys.pressed(KeyCode::AltLeft)
+        && !keys.pressed(KeyCode::AltRight)
+        && !keys.pressed(KeyCode::SuperLeft)
+        && !keys.pressed(KeyCode::SuperRight)
         && guard.allows_focus(state.root)
     {
         toggle(&owner);
@@ -82,6 +86,7 @@ fn keyboard(
     }
 }
 fn project(
+    guard: ModalGuard,
     mut images: ResMut<Assets<Image>>,
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -93,6 +98,17 @@ fn project(
         .as_ref()
         .map(|p| p.link.cyclopedia_character_panel())
         .filter(|p| p.open);
+    if let Some(panel) = &panel
+        && panel.misc_resources_due
+        && !panel.pending
+        && !owner.modal_active()
+        && guard.allows_focus(state.root)
+        && let Some(play) = &owner.play
+        && !play.view.gameplay_input_blocked(&play.link)
+    {
+        play.link
+            .cyclopedia_character_bound(panel, Action::Request(Intent::MiscResources));
+    }
     if state.generation == owner.generation() && state.snapshot == panel {
         return;
     }
@@ -175,6 +191,12 @@ fn activate(
 }
 fn body(p: &Panel) -> String {
     let mut text = ui::panel_text(p);
+    if p.pending || p.blessings.pending {
+        text.push_str("\nWaiting for the server");
+    }
+    if !p.selected {
+        text.push_str("\nFeature unavailable in this session");
+    }
     for (label, value) in ui::overview_cards(p)
         .into_iter()
         .chain(ui::store_cards(p))
@@ -185,6 +207,7 @@ fn body(p: &Panel) -> String {
     for row in ui::combat_rows(p) {
         text.push_str(&format!("\n{}: {} ({})", row.label, row.value, row.source));
     }
+    text.push_str(&ui::store_blessings(p));
     for row in ui::profile_rows(p) {
         text.push_str(&format!("\n{}: {}", row.label, row.detail));
     }
@@ -192,7 +215,9 @@ fn body(p: &Panel) -> String {
         text.push_str(&format!("\n{}: {}", row.at, row.description));
     }
     if p.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements {
-        text.push_str(&oteryn_client_ui::account_achievements::panel_text(&p.achievements));
+        text.push_str(&oteryn_client_ui::account_achievements::panel_text(
+            &p.achievements,
+        ));
     }
     if p.badges_open || p.command_kind == 387 {
         text.push_str(&ui::badge_text(p));
@@ -204,6 +229,12 @@ fn body(p: &Panel) -> String {
     }
     if p.gallery.open {
         text.push_str("\nAppearance gallery");
+        if let Some(page) = &p.gallery.page {
+            text.push_str(&format!(
+                "\nOffset: {} · Total: {}",
+                page.offset, page.total
+            ));
+        }
         for entry in p.gallery.rows() {
             text.push_str(&format!(
                 "\n{:?}: {} (look {})",
@@ -213,6 +244,12 @@ fn body(p: &Panel) -> String {
     }
     if p.items.open {
         text.push_str("\nItem summary — Inventory / Depot / Stash / Inbox");
+        if let Some(page) = &p.items.page {
+            text.push_str(&format!(
+                "\nOffset: {} · Total: {}",
+                page.offset, page.total
+            ));
+        }
         for row in p.items.rows() {
             text.push_str(&format!("\n{}: {:?}", row.definition, row.quantities));
         }
@@ -220,6 +257,7 @@ fn body(p: &Panel) -> String {
     if p.protection.open {
         text.push_str("\nDeath loss preview\n");
         if let Some(forecast) = &p.protection.forecast {
+            text.push_str(&ui::protection_heading(forecast, p.vocation_id));
             for (label, value) in ui::protection_cards(forecast) {
                 text.push_str(&format!("\n{label}: {value}"));
             }
