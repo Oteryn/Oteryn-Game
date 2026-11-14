@@ -158,6 +158,10 @@ impl HostOwner {
             }
             return;
         }
+        if oteryn_client_ui::cyclopedia_character::open_key(&routed) {
+            super::game_ui::cyclopedia_character::toggle(self);
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;

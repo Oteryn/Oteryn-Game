@@ -14,6 +14,7 @@ pub(super) mod animus_mastery;
 mod bestiary;
 pub(super) mod browse_field;
 mod chat;
+pub(super) mod cyclopedia_character;
 mod daily_rewards;
 mod exiva_settings;
 pub(super) use exiva_settings::open_exiva_settings;
@@ -115,6 +116,7 @@ pub(super) fn install(app: &mut App) {
     browse_field::install(app);
     cast_chat::install(app);
     cast_control::install(app);
+    cyclopedia_character::install(app);
     cyclopedia_map::install(app);
     cyclopedia_trackers::install(app);
     daily_rewards::install(app);

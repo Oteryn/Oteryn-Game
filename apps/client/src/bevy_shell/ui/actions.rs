@@ -52,6 +52,7 @@ pub(super) fn activate(
                     | Control::Guild(_)
                     | Control::RaidSchedule
                     | Control::Arena
+                    | Control::CyclopediaCharacter
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -98,6 +99,7 @@ pub(super) fn activate(
             Control::Guild(bank) => game_ui::guild::open(&mut owner, *bank),
             Control::RaidSchedule => game_ui::raid_schedule::open(&mut owner),
             Control::Arena => game_ui::arena::toggle(&owner),
+            Control::CyclopediaCharacter => game_ui::cyclopedia_character::toggle(&owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
