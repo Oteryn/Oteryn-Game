@@ -44,7 +44,7 @@ readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
 readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
-readonly RUST_IMAGE=rust:1.99.1-bookworm@sha256:48b7f435b8fc6378ce43b44f15e3a47fd8919b2825f835c39bd4bd3da50af5b8
+readonly RUST_IMAGE=rust:1.100.0-bookworm@sha256:ade39a710ef85f3506cffcfec3e8a24ba090badef1dff2fb798f71d878833fea
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
@@ -407,7 +407,7 @@ evidence "platform_seed=account=1 admission_trust=published_public_key_only oaut
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.99.1 build --locked -p oteryn-game-server -p oteryn-client --bins
+  cargo +1.100.0 build --locked -p oteryn-game-server -p oteryn-client --bins
   TARGET="$GAME_SOURCE/target/debug"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
@@ -416,7 +416,7 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.99.1 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
+    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
   TARGET="$GAME_SOURCE/target/login-local-container/debug"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
@@ -433,7 +433,7 @@ if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
   PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
   WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
-  (cd "$GAME_SOURCE" && cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
+  (cd "$GAME_SOURCE" && cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
   sudo install -d -o root -g root -m 0755 "$BASE/world"
   sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
 fi
