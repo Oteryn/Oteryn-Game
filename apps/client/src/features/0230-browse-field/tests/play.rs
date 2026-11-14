@@ -74,9 +74,11 @@ fn browse_field_selects_the_first_visible_server_window() {
     assert_eq!(link.browse_field_panel().view_id, 3);
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(feature = "bevy-shell")))]
 #[path = "../native.rs"]
 mod native;
+#[cfg(all(not(windows), feature = "bevy-shell"))]
+use crate::play::feature_0230_browse_field::view::bevy_tests::native;
 
 #[cfg(not(windows))]
 #[test]
