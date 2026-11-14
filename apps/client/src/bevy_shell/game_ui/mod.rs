@@ -12,6 +12,7 @@ pub(super) mod cast_chat;
 pub(super) mod cast_control;
 pub(super) use boss_reward_chest::open as open_boss_reward_chest;
 pub(super) mod animus_mastery;
+pub(super) mod battle_config;
 mod bestiary;
 pub(super) mod browse_field;
 mod chat;
@@ -121,6 +122,7 @@ pub(super) fn install(app: &mut App) {
     animus_mastery::install(app);
     appearance::install(app);
     arena::install(app);
+    battle_config::install(app);
     bestiary::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);

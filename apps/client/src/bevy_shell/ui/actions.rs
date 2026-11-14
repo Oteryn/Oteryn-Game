@@ -17,6 +17,7 @@ pub(super) fn activate(
             && matches!(
                 control,
                 Control::Achievements
+                    | Control::BattleConfig
                     | Control::Appearance
                     | Control::CastChat
                     | Control::Cast
@@ -68,6 +69,7 @@ pub(super) fn activate(
         }
         match control {
             Control::Achievements => game_ui::achievements::open(&mut owner),
+            Control::BattleConfig => game_ui::battle_config::open(&owner),
             Control::Appearance => game_ui::appearance::open(&mut owner),
             Control::CastChat => game_ui::cast_chat::toggle(&mut owner),
             Control::Cast => game_ui::cast_control::open(&owner),

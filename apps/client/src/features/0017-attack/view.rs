@@ -3,7 +3,7 @@ mod metadata;
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "preferences.rs"]
 mod preferences;
-#[cfg(test)]
+#[cfg(any(test, feature = "bevy-shell"))]
 pub use preferences::BattleSort;
 pub(crate) use preferences::next_edit;
 pub use preferences::{
@@ -55,3 +55,13 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/battle_config.rs"]
+mod battle_config_tests;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "battle_config.rs"]
+mod battle_config;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use battle_config::{BattleConfigAction, BattleConfigBinding};

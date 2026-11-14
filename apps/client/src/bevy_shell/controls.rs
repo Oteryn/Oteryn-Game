@@ -132,6 +132,9 @@ impl HostOwner {
         }) {
             return false;
         }
+        if super::game_ui::battle_config::input(self, routed) {
+            return true;
+        }
         if super::game_ui::cast_chat::shortcut(self, routed) {
             return true;
         }
