@@ -25,6 +25,7 @@ fn fixture(window: usize) -> Result<(App, Receiver, Outbox), Box<dyn std::error:
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
+    super::super::inventory::amount::install(&mut app);
     install(&mut app);
     app.update();
     Ok((app, commands, outbox))
@@ -244,5 +245,172 @@ fn depot_shortcuts_bind_live_session_and_reject_closed_or_modal_opening() -> Tes
             expected
         );
     }
+    Ok(())
+}
+
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, value)| (value.as_str() == name).then_some(entity))
+        .ok_or_else(|| format!("missing {name}").into())
+}
+fn withdraw_prompt(app: &mut App) -> TestResult {
+    let withdraw = named(app, "stash.withdraw.0")?;
+    app.world_mut().trigger(Activate { entity: withdraw });
+    app.update();
+    let input = named(app, "amount.caller.input")?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::ValueChange::<String> {
+            source: input,
+            value: "13".into(),
+            is_final: false,
+        });
+    Ok(())
+}
+#[test]
+fn stash_withdraw_uses_quantity_and_rejects_stale_session() -> TestResult {
+    let (mut app, mut commands, _) = fixture(1)?;
+    let before = link(&app)?.stash_panel();
+    withdraw_prompt(&mut app)?;
+    assert!(
+        commands.try_recv().is_err(),
+        "opening the amount prompt must not withdraw"
+    );
+    let input = named(&mut app, "amount.caller.input")?;
+    let confirm = named(&mut app, "amount.caller.confirm")?;
+    for invalid in ["0", "81", "2.5", ""] {
+        app.world_mut()
+            .trigger(bevy::ui_widgets::ValueChange::<String> {
+                source: input,
+                value: invalid.into(),
+                is_final: false,
+            });
+        app.world_mut().trigger(Activate { entity: confirm });
+        app.update();
+        assert!(commands.try_recv().is_err());
+        assert_eq!(link(&app)?.stash_panel(), before);
+    }
+    app.world_mut()
+        .trigger(bevy::ui_widgets::ValueChange::<String> {
+            source: input,
+            value: "13".into(),
+            is_final: false,
+        });
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    let PlayCommand::Stash(command) = commands.try_recv()? else {
+        return Err("withdraw command".into());
+    };
+    assert_eq!(
+        command.intent.action,
+        stash::stash::StashAction::Withdraw {
+            row: [3; 16],
+            amount: 13
+        }
+    );
+    assert_eq!(
+        link(&app)?.stash_panel().rows,
+        before.rows,
+        "only a server reply changes stock"
+    );
+    assert!(commands.try_recv().is_err());
+
+    let (mut app, mut commands, _) = fixture(1)?;
+    withdraw_prompt(&mut app)?;
+    let confirm = named(&mut app, "amount.caller.confirm")?;
+    let (replacement, mut next_commands, next_outbox) = play_channel();
+    next_outbox.bevy_depot_fixture();
+    next_outbox.bevy_depot_window(1);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = replacement;
+    let expected = link(&app)?.stash_panel();
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert_eq!(link(&app)?.stash_panel(), expected);
+    assert!(commands.try_recv().is_err());
+    assert!(next_commands.try_recv().is_err());
+
+    let (mut app, mut commands, _) = fixture(1)?;
+    withdraw_prompt(&mut app)?;
+    let confirm = named(&mut app, "amount.caller.confirm")?;
+    let expected = link(&app)?.stash_panel();
+    let modal = link(&app)?.bevy_server_modal_fixture();
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert_eq!(link(&app)?.stash_panel(), expected);
+    assert!(commands.try_recv().is_err());
+    drop(modal);
+    commands.close();
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert_eq!(link(&app)?.stash_panel(), expected);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn stash_quantity_waits_for_editor_and_cancel_never_dispatches() -> TestResult {
+    let (mut app, mut commands, _) = fixture(1)?;
+    withdraw_prompt(&mut app)?;
+    let input = named(&mut app, "amount.caller.input")?;
+    let confirm = named(&mut app, "amount.caller.confirm")?;
+    app.world_mut()
+        .get_mut::<EditableText>(input)
+        .ok_or("editor")?
+        .queue_edit(bevy::text::TextEdit::Insert("7".into()));
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "pending edits cannot submit the old value"
+    );
+    // Model the upstream editor completing its queued edit before the deferred confirmation.
+    app.world_mut()
+        .entity_mut(input)
+        .insert(EditableText::new("7"));
+    app.update();
+    let PlayCommand::Stash(command) = commands.try_recv()? else {
+        return Err("withdraw".into());
+    };
+    assert_eq!(
+        command.intent.action,
+        stash::stash::StashAction::Withdraw {
+            row: [3; 16],
+            amount: 7
+        }
+    );
+    assert!(commands.try_recv().is_err());
+
+    let (mut app, mut commands, _) = fixture(1)?;
+    withdraw_prompt(&mut app)?;
+    let input = named(&mut app, "amount.caller.input")?;
+    for (button, expected) in [
+        ("amount.caller.all", "80"),
+        ("amount.caller.decrease", "79"),
+        ("amount.caller.increase", "80"),
+    ] {
+        let button = named(&mut app, button)?;
+        app.world_mut().trigger(Activate { entity: button });
+        assert_eq!(
+            app.world()
+                .get::<EditableText>(input)
+                .ok_or("editor")?
+                .value()
+                .to_string(),
+            expected
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    let cancel = named(&mut app, "amount.caller.cancel")?;
+    app.world_mut().trigger(Activate { entity: cancel });
+    app.update();
+    assert!(named(&mut app, "amount.caller.input").is_err());
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

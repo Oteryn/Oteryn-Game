@@ -51,6 +51,7 @@ enum Kind {
     Previous,
     Next,
     Filter,
+    Withdraw(usize),
     Search,
 }
 #[derive(Component, Clone)]

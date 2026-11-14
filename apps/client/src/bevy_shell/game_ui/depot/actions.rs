@@ -1,4 +1,46 @@
+use super::super::inventory::amount::{AmountTarget, CallerAmount};
 use super::*;
+struct Withdrawal {
+    bound: DepotBinding<stash::StashPanel>,
+    generation: u64,
+    row: usize,
+}
+impl AmountTarget for Withdrawal {
+    fn maximum(&self, owner: &HostOwner) -> Option<u32> {
+        if owner.phase != crate::bevy_shell::owner::Phase::Playing
+            || owner.generation() != self.generation
+            || owner.modal_active()
+        {
+            return None;
+        }
+        let live = owner.play.as_ref()?.link.stash_binding(owner.generation());
+        if !self.bound.same(&live) || !live.panel.open || !live.panel.selected || live.panel.pending
+        {
+            return None;
+        }
+        live.panel
+            .rows
+            .get(self.row)
+            .filter(|row| !row.migration_required && row.quantity > 0)
+            .map(|row| row.quantity)
+    }
+    fn confirm(&self, owner: &HostOwner, amount: u32) -> bool {
+        if self.maximum(owner).is_none() {
+            return false;
+        }
+        owner.play.as_ref().is_some_and(|play| {
+            play.link.stash_dispatch_bound(
+                &self.bound,
+                owner.generation(),
+                StashControl::Request(stash::Intent::Withdraw {
+                    row: self.row,
+                    amount,
+                }),
+            )
+        })
+    }
+}
+
 fn editing(text: &EditableText) -> bool {
     text.pending_paste.is_some()
         || text
@@ -55,6 +97,7 @@ pub(super) fn activate(
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     guard: ModalGuard,
+    mut amount: ResMut<CallerAmount>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -62,6 +105,21 @@ pub(super) fn activate(
     let Ok(control) = controls.get(event.entity) else {
         return;
     };
+    if let Kind::Withdraw(row) = control.kind {
+        if let Some(Snapshot::Stash(bound)) = current(&owner, &state, control) {
+            amount.open(
+                &owner,
+                Box::new(Withdrawal {
+                    bound: bound.clone(),
+                    generation: owner.generation(),
+                    row,
+                }),
+                "Withdraw stack",
+                "Withdraw",
+            );
+        }
+        return;
+    }
     if matches!(control.kind, Kind::Filter | Kind::Search) {
         let Some((entity, _, text)) = fields
             .iter()

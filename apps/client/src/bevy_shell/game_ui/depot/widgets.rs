@@ -206,6 +206,17 @@ pub(super) fn build(
                 ready && p.has_more,
             );
             text(commands, skins, body, stash::panel_text(p));
+            for (index, entry) in p.rows.iter().enumerate() {
+                button(
+                    commands,
+                    skins,
+                    body,
+                    &format!("Withdraw {}…", stash::row_label(entry)),
+                    key,
+                    Kind::Withdraw(index),
+                    ready && entry.quantity > 0 && !entry.migration_required,
+                );
+            }
         }
         Snapshot::Search(bound) => {
             let p = &bound.panel;
@@ -262,6 +273,9 @@ fn button(
         source::button(skins.buttons.clone(), 120.),
         Control { key, kind },
     ));
+    if let Kind::Withdraw(index) = kind {
+        entity.insert(Name::new(format!("stash.withdraw.{index}")));
+    }
     if !enabled {
         entity.insert(InteractionDisabled);
     }
