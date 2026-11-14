@@ -78,7 +78,7 @@ pub(super) fn row(
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
 }
-fn available(owner: &HostOwner) -> bool {
+pub(super) fn available(owner: &HostOwner) -> bool {
     owner.phase == crate::bevy_shell::owner::Phase::Playing
         && !owner.modal_active()
         && owner
@@ -149,7 +149,7 @@ fn select(
     state.quantity = "1".into();
     state.feedback.clear();
 }
-fn editing(text: &EditableText) -> bool {
+pub(super) fn editing(text: &EditableText) -> bool {
     text.pending_paste.is_some()
         || text
             .pending_edits

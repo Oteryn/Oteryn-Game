@@ -345,4 +345,6 @@ fn pending_search_is_cancelled_when_its_original_editor_is_removed() -> TestResu
 
 mod lifecycle;
 
+mod operations;
+
 mod purchase;

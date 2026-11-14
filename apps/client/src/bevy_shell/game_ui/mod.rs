@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+mod coin_market;
 mod depot;
 mod feature_dialogs;
 mod hud;
@@ -233,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     journal::install(app);
     chat::install(app);
     actions::install(app);
+    coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
     hud::install(app);
