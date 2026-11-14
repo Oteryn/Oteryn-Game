@@ -38,3 +38,12 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/bound.rs"]
+mod bound_tests;
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub use bound::{SkillsConfigControl, SkillsConfigSnapshot};

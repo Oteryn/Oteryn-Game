@@ -46,6 +46,7 @@ pub(super) enum Control {
     Market,
     Party,
     Quests,
+    SkillsConfig,
     Spells,
     Login,
     CancelLogin,
@@ -63,6 +64,7 @@ impl Control {
             Self::Market => "shell.market",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
+            Self::SkillsConfig => "shell.skills_config",
             Self::Spells => "shell.spells",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
@@ -168,6 +170,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
+        (Control::SkillsConfig, "Skills", 100.),
         (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
@@ -375,6 +378,7 @@ fn activate(
                     | Control::Market
                     | Control::Party
                     | Control::Quests
+                    | Control::SkillsConfig
                     | Control::Spells
                     | Control::Login
                     | Control::CancelLogin
@@ -387,6 +391,7 @@ fn activate(
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
+            Control::SkillsConfig => super::game_ui::skills_config::open(&owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
@@ -572,7 +577,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::SkillsConfig
+                    | Control::Spells
+            )
         ) {
             node.display = if playing {
                 Display::Flex
