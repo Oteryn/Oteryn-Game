@@ -2,8 +2,8 @@ use super::*;
 use crate::bevy_shell::owner::{ActivePlay, Phase};
 use crate::play::{PlayView, play_channel};
 use bevy::{asset::AssetPlugin, input_focus::InputFocus, ui_widgets::Activate};
-type TestResult = Result<(), Box<dyn std::error::Error>>;
-fn fixture() -> Result<App, Box<dyn std::error::Error>> {
+pub(super) type TestResult = Result<(), Box<dyn std::error::Error>>;
+pub(super) fn fixture() -> Result<App, Box<dyn std::error::Error>> {
     let (link, _commands, _outbox) = play_channel();
     link.use_shared_frontend();
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
@@ -24,7 +24,7 @@ fn fixture() -> Result<App, Box<dyn std::error::Error>> {
     app.update();
     Ok(app)
 }
-fn click(app: &mut App, kind: Kind) -> TestResult {
+pub(super) fn click(app: &mut App, kind: Kind) -> TestResult {
     let entity = app
         .world_mut()
         .query::<(Entity, &Control)>()
@@ -34,7 +34,7 @@ fn click(app: &mut App, kind: Kind) -> TestResult {
     app.world_mut().trigger(Activate { entity });
     Ok(())
 }
-fn field(app: &mut App, index: usize, value: &str) {
+pub(super) fn field(app: &mut App, index: usize, value: &str) {
     let world = app.world_mut();
     for (field, mut text) in world.query::<(&Field, &mut EditableText)>().iter_mut(world) {
         if field.0 == index {
@@ -235,7 +235,13 @@ fn input_profiles_window_registered() -> TestResult {
     click(&mut app, Kind::Close)?;
     app.update();
     assert!(app.world().resource::<State>().root.is_none());
-    open(&mut app.world_mut().non_send_mut::<HostOwner>());
+    let toolbar = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "shell.input_profiles").then_some(entity))
+        .ok_or("toolbar")?;
+    app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert!(app.world().resource::<State>().root.is_some());
     // Closing is admitted even if another owner modal or gameplay block appears.

@@ -12,6 +12,10 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 #[cfg(test)]
+mod input_tests;
+#[cfg(test)]
+mod persistence_tests;
+#[cfg(test)]
 mod tests;
 mod widgets;
 #[derive(Clone, Debug, PartialEq, Eq)]
