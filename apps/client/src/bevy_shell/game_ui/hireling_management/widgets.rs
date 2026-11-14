@@ -101,6 +101,7 @@ pub(super) fn render(
         let message = match confirmation {
             Confirmation::Return(name) => format!("Return {name} to lamp?"),
             Confirmation::Hireling(review) => review.text(),
+            Confirmation::Retry(review) => review.text().to_owned(),
         };
         text(commands, skins, content, message);
         let row = row(commands, content);
@@ -109,6 +110,17 @@ pub(super) fn render(
     } else {
         let enabled =
             snapshot.panel.selected && snapshot.panel.pending.is_none() && !snapshot.store.pending;
+        if snapshot.store.confirmed_purchase.is_some() {
+            button(
+                commands,
+                skins,
+                content,
+                key,
+                Kind::Retry,
+                "Retry configuration",
+                snapshot.panel.selected,
+            );
+        }
         let identities = row(commands, content);
         for (index, entry) in snapshot.panel.entries.iter().enumerate() {
             button(

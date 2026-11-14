@@ -198,3 +198,56 @@ fn hireling_management_ended_session_and_closed_transport_reject_without_mutatio
     assert_eq!(closed, link.hireling_management_snapshot());
     Ok(())
 }
+
+#[test]
+fn hireling_management_retry_consent_is_single_use_and_binds_the_original_receipt() -> Result {
+    for action in 131..=136 {
+        let (link, mut commands, _) = fixture()?;
+        let snapshot = link.hireling_management_snapshot();
+        let review = link.hireling_management_review_bound(&snapshot, action, "Bella")?;
+        assert!(link.hireling_management_dispatch_bound(
+            &snapshot,
+            HirelingAction::Configure(Box::new(review))
+        ));
+        let PlayCommand::ServerMechanic(original) = commands.try_recv()? else {
+            return Err("purchase missing".into());
+        };
+        let pending = link.hireling_management_snapshot();
+        let review = link.hireling_management_retry_review_bound(&pending)?;
+        assert!(review.text().contains("5 coins"));
+        assert!(link.hireling_management_dispatch_bound(
+            &pending,
+            HirelingAction::Retry(Box::new(review.clone()))
+        ));
+        let after = link.hireling_management_snapshot();
+        assert!(!link.hireling_management_dispatch_bound(
+            &after,
+            HirelingAction::Retry(Box::new(review.clone()))
+        ));
+        assert_eq!(after, link.hireling_management_snapshot());
+        let PlayCommand::ServerMechanic(replayed) = commands.try_recv()? else {
+            return Err("retry missing".into());
+        };
+        assert_eq!(
+            (replayed.capability, replayed.command_type, replayed.payload),
+            (original.capability, original.command_type, original.payload)
+        );
+        assert!(commands.try_recv().is_err());
+        assert_eq!(after.panel.entries, pending.panel.entries);
+        // A different selected identity cannot reuse consent even with a new snapshot.
+        lock(&link.mailbox).hireling_management.identity = Some(entry(2).hireling);
+        let changed = link.hireling_management_snapshot();
+        assert!(
+            link.hireling_management_retry_review_bound(&changed)
+                .is_err()
+        );
+        assert!(
+            !link.hireling_management_dispatch_bound(
+                &changed,
+                HirelingAction::Retry(Box::new(review))
+            )
+        );
+        assert_eq!(changed, link.hireling_management_snapshot());
+    }
+    Ok(())
+}

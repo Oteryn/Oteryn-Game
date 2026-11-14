@@ -1,4 +1,7 @@
-//! Atomic presentation bindings over the existing hireling and Store owners.
+#[path = "bound/retry.rs"]
+mod retry;
+pub(crate) use retry::HirelingRetry;
+// Atomic presentation bindings over the existing hireling and Store owners.
 use super::super::input::configuration;
 use crate::combat_input::PlayCommand;
 use crate::play::{
@@ -49,6 +52,7 @@ pub(crate) enum HirelingAction {
     Outfit { look_type: u16, colors: [u8; 4] },
     Prices,
     Configure(Box<HirelingReview>),
+    Retry(Box<HirelingRetry>),
 }
 impl PlayLink {
     pub(crate) fn hireling_management_snapshot(&self) -> HirelingSnapshot {
@@ -117,6 +121,9 @@ impl PlayLink {
             m.hireling_management.open = false;
             return true;
         }
+        if let HirelingAction::Retry(review) = action {
+            return retry::submit(&mut m, &self.commands, &review);
+        }
         if !m.hireling_management.selected
             || m.hireling_management.pending.is_some()
             || m.store.pending
@@ -124,7 +131,7 @@ impl PlayLink {
             return false;
         }
         match action {
-            HirelingAction::Open | HirelingAction::Close => false, // Handled before the pending gate so an in-flight window can close.
+            HirelingAction::Open | HirelingAction::Close | HirelingAction::Retry(_) => false, // Handled before the pending gate so an in-flight window can close.
             HirelingAction::Select(index) => ui::select(&mut m.hireling_management, index),
             HirelingAction::Configure(review) => {
                 if configuration::review(&m, review.0.action, &review.0.name).as_ref()
@@ -203,11 +210,21 @@ impl crate::play::Outbox {
         self.store_initialize(true, true);
     }
     pub(crate) fn bevy_hireling_management_store_reply(&self, payload: Vec<u8>) {
+        self.bevy_hireling_management_store_status(
+            oteryn_session::CommandStatus::Accepted,
+            payload,
+        );
+    }
+    pub(crate) fn bevy_hireling_management_store_status(
+        &self,
+        status: oteryn_session::CommandStatus,
+        payload: Vec<u8>,
+    ) {
         self.store_result(
             &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
                 command_id: 1,
                 server_sequence: 1,
-                status: oteryn_session::CommandStatus::Accepted,
+                status,
                 payload,
             },
         );

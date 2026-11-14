@@ -1,3 +1,5 @@
+#[path = "store_owner.rs"]
+mod store_owner;
 use crate::combat_input::PlayCommand;
 use crate::play::mailbox::Mailbox;
 use oteryn_client_runtime::cui3::store::StoreCataloguePage;
@@ -103,15 +105,8 @@ pub(in crate::play) fn submit(
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect::<String>();
-    crate::play::feature_0154_store::view::native::customization(
-        &mut m.store,
-        &sealed.name,
-        "0",
-        &id,
-    );
-    let Some(command) =
-        crate::play::feature_0154_store::view::native::purchase(&mut m.store, sealed.index, true)
-    else {
+    store_owner::customization(&mut m.store, &sealed.name, "0", &id);
+    let Some(command) = store_owner::purchase(&mut m.store, sealed.index, true) else {
         return false;
     };
     if commands.send(PlayCommand::ServerMechanic(command)).is_err() {

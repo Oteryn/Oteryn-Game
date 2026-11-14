@@ -56,7 +56,6 @@ pub(in crate::play) fn customization(
         .flatten();
 }
 
-#[cfg(any(windows, test))]
 pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     if !panel.selected {
         return tr!("Store unavailable in this session").into();

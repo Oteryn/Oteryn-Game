@@ -176,20 +176,15 @@ fn hireling_management_window_registered() -> Result {
     click(&mut app, Kind::Close)?;
     app.update();
     assert!(!panel(&app)?.open);
-    app.world_mut().write_message(KeyboardInput {
-        key_code: KeyCode::F8,
-        logical_key: Key::F8,
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window: Entity::PLACEHOLDER,
-    });
-    app.update();
-    assert!(panel(&app)?.open);
-    let _ = commands.try_recv()?;
-    for expected_open in [false, true] {
+    // This owner defines no open key: bare F8 and modified chords belong elsewhere.
+    for key_code in [
+        KeyCode::F8,
+        KeyCode::ControlLeft,
+        KeyCode::AltLeft,
+        KeyCode::F8,
+    ] {
         app.world_mut().write_message(KeyboardInput {
-            key_code: KeyCode::F8,
+            key_code,
             logical_key: Key::F8,
             state: bevy::input::ButtonState::Pressed,
             text: None,
@@ -197,12 +192,16 @@ fn hireling_management_window_registered() -> Result {
             window: Entity::PLACEHOLDER,
         });
         app.update();
-        assert_eq!(panel(&app)?.open, expected_open);
         assert!(
-            commands.try_recv().is_err(),
-            "reopening must preserve the in-flight list request"
+            !panel(&app)?.open,
+            "hireling management must be toolbar only"
         );
+        assert!(commands.try_recv().is_err());
     }
+    app.world_mut().trigger(Activate { entity: toolbar });
+    app.update();
+    assert!(panel(&app)?.open);
+    let _ = commands.try_recv()?;
     app.world_mut().write_message(KeyboardInput {
         key_code: KeyCode::Escape,
         logical_key: Key::Escape,
@@ -359,3 +358,6 @@ fn hireling_management_local_drafts_are_scoped_to_the_open_window() -> Result {
     assert_eq!(panel(&app)?.entries, vec![entry()]);
     Ok(())
 }
+
+#[path = "tests/recovery.rs"]
+mod recovery;

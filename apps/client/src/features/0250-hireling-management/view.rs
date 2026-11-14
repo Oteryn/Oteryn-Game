@@ -22,4 +22,4 @@ mod native;
 #[path = "view/bound.rs"]
 mod bound;
 #[cfg(feature = "bevy-shell")]
-pub(crate) use bound::{HirelingAction, HirelingReview, HirelingSnapshot};
+pub(crate) use bound::{HirelingAction, HirelingReview, HirelingRetry, HirelingSnapshot};

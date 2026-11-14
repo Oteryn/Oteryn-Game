@@ -8,7 +8,7 @@ use super::{
     modal::ModalGuard,
 };
 use crate::play::feature_0250_hireling_management::view::{
-    HirelingAction, HirelingReview, HirelingSnapshot,
+    HirelingAction, HirelingRetry, HirelingReview, HirelingSnapshot,
 };
 use bevy::{
     input_focus::{FocusCause, InputFocus},
@@ -30,6 +30,7 @@ enum Kind {
     Return,
     Save(u16),
     Prices,
+    Retry,
     Configure(usize),
     Confirm,
     Cancel,
@@ -50,6 +51,7 @@ enum Field {
 enum Confirmation {
     Return(String),
     Hireling(Box<HirelingReview>),
+    Retry(Box<HirelingRetry>),
 }
 #[derive(Resource, Default)]
 struct State {
@@ -256,6 +258,14 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             state.dirty = true;
             return;
         }
+        Kind::Retry => {
+            match play.link.hireling_management_retry_review_bound(expected) {
+                Ok(review) => state.confirmation = Some(Confirmation::Retry(Box::new(review))),
+                Err(message) => state.feedback = message.into(),
+            }
+            state.dirty = true;
+            return;
+        }
         Kind::Configure(action) => {
             match play
                 .link
@@ -275,6 +285,7 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             match confirmation {
                 Confirmation::Return(_) => HirelingAction::Return,
                 Confirmation::Hireling(review) => HirelingAction::Configure(review),
+                Confirmation::Retry(review) => HirelingAction::Retry(review),
             }
         }
         Kind::Cancel => {
@@ -287,7 +298,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         .hireling_management_dispatch_bound(expected, action);
 }
 fn needs_fields(kind: Kind) -> bool {
-    !matches!(kind, Kind::Close | Kind::Confirm | Kind::Cancel)
+    !matches!(
+        kind,
+        Kind::Close | Kind::Confirm | Kind::Cancel | Kind::Retry
+    )
 }
 fn editing(text: &EditableText) -> bool {
     text.pending_paste.is_some()
@@ -356,21 +370,14 @@ fn finish(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
         }
-        if event.key_code == KeyCode::F8
-            && state.widgets.as_ref().map_or_else(
-                || guard.allows_focus(None),
-                |widgets| guard.allows(widgets.panel),
-            )
-        {
-            open(&mut owner);
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(widgets) = &state.widgets
             && guard.allows(widgets.panel)
             && let Some((key, _)) = &state.snapshot
