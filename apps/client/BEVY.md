@@ -74,8 +74,9 @@ With no text field focused, the existing gameplay shortcuts open:
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
-- **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
-  is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
+  and Offer History. Create buy/sell offers, cancel selected own offers, and accept
+  buy/sell offers with bounded quantities through the existing server intents.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.

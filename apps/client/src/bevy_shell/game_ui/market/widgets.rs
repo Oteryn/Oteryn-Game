@@ -34,6 +34,8 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, parent: Entity) -> En
     source::dialog_caption(commands, root, "Market", skin.font.clone());
     root
 }
+// The window projects its panel, item, offer selection and offer type together.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn render(
     commands: &mut Commands,
     skin: &Skins,
@@ -41,6 +43,8 @@ pub(super) fn render(
     key: Key,
     panel: &MarketPanel,
     selected: Option<&Ware>,
+    selected_offer: Option<usize>,
+    sell: bool,
 ) -> Entity {
     let root = commands
         .spawn(Node {
@@ -53,6 +57,14 @@ pub(super) fn render(
         })
         .id();
     commands.entity(frame).add_child(root);
+    let tabs = row(commands, root);
+    for (kind, title) in [
+        (Kind::Browse, "Offers"),
+        (Kind::Intent(Intent::OwnOffers), "My Offers"),
+        (Kind::Intent(Intent::History), "Offer History"),
+    ] {
+        button(commands, skin, tabs, key, kind, title, 120.);
+    }
     let content = commands
         .spawn(Node {
             width: percent(100.),
@@ -152,13 +164,17 @@ pub(super) fn render(
         70.,
     );
     let right = pane(commands, skin, content, Val::Auto);
+    let right = scroll(commands, right, Val::Auto);
     label(
         commands,
         skin,
         right,
         selected.map_or("Select an item", |ware| ware.name.as_str()),
     );
-    if let Some(ware) = selected {
+    if panel.view != MarketView::Browse {
+        offers::list(commands, skin, right, key, panel);
+    }
+    if let Some(ware) = selected.filter(|_| panel.view == MarketView::Browse) {
         // The server definition reference is not an appearance identifier.
         label(commands, skin, right, "Item artwork unavailable");
         if panel.definition == ware.definition {
@@ -169,10 +185,10 @@ pub(super) fn render(
                 label(commands, skin, book, "Amount       Price       Total");
                 let offers = scroll(commands, book, px(190.));
                 let mut count = 0;
-                for offer in panel
-                    .rows
-                    .iter()
-                    .filter(|offer| offer.definition == ware.definition && offer.side == side)
+                for (index, offer) in
+                    panel.rows.iter().enumerate().filter(|(_, offer)| {
+                        offer.definition == ware.definition && offer.side == side
+                    })
                 {
                     label(
                         commands,
@@ -185,6 +201,7 @@ pub(super) fn render(
                             u128::from(offer.amount) * u128::from(offer.price)
                         ),
                     );
+                    offers::select_button(commands, skin, offers, key, index);
                     if offer.side == 2 {
                         purchase::row(commands, skin, offers, key, offer);
                     }
@@ -238,6 +255,18 @@ pub(super) fn render(
             );
         }
     }
+    if panel.view != MarketView::History {
+        offers::editor(
+            commands,
+            skin,
+            right,
+            key,
+            panel,
+            selected,
+            selected_offer,
+            sell,
+        );
+    }
     if !panel.selected {
         label(
             commands,
@@ -275,7 +304,7 @@ fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val) -> En
     commands.entity(parent).add_child(entity);
     entity
 }
-fn row(commands: &mut Commands, parent: Entity) -> Entity {
+pub(super) fn row(commands: &mut Commands, parent: Entity) -> Entity {
     let entity = commands
         .spawn(Node {
             width: percent(100.),
@@ -289,7 +318,7 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn scroll(commands: &mut Commands, parent: Entity, height: Val) -> Entity {
+pub(super) fn scroll(commands: &mut Commands, parent: Entity, height: Val) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
@@ -308,7 +337,7 @@ fn scroll(commands: &mut Commands, parent: Entity, height: Val) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn label(commands: &mut Commands, skin: &Skins, parent: Entity, value: &str) {
+pub(super) fn label(commands: &mut Commands, skin: &Skins, parent: Entity, value: &str) {
     let entity = commands
         .spawn(source::text(value, source::font(skin.font.clone(), false)))
         .insert((
@@ -322,7 +351,7 @@ fn label(commands: &mut Commands, skin: &Skins, parent: Entity, value: &str) {
         .id();
     commands.entity(parent).add_child(entity);
 }
-fn button(
+pub(super) fn button(
     commands: &mut Commands,
     skin: &Skins,
     parent: Entity,
@@ -335,6 +364,12 @@ fn button(
         .spawn((
             source::button(skin.buttons.clone(), width),
             Action { key, kind },
+            Name::new(match kind {
+                Kind::Browse => "market.tab.browse",
+                Kind::Intent(Intent::OwnOffers) => "market.tab.own",
+                Kind::Intent(Intent::History) => "market.tab.history",
+                _ => "market.action",
+            }),
         ))
         .insert(Node {
             width: px(width),
