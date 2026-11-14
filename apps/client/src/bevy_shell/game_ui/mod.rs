@@ -83,6 +83,7 @@ mod task_board;
 mod team_finder;
 pub(super) use team_finder::open as open_team_finder;
 pub(super) mod store;
+pub(super) mod touch_controls;
 mod trade;
 pub(super) mod training;
 pub(super) mod viewport;
@@ -194,6 +195,7 @@ pub(super) fn install(app: &mut App) {
     support_evidence::install(app);
     task_board::install(app);
     team_finder::install(app);
+    touch_controls::install(app);
     trade::install(app);
     training::install(app);
     weapon_proficiency::install(app);

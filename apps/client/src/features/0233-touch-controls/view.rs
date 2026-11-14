@@ -107,3 +107,76 @@ fn text(
     }
     Ok(())
 }
+
+/// Shared frontend reads the retained overlay; it does not keep a second mode store.
+#[cfg(feature = "bevy-shell")]
+impl crate::play::PlayView {
+    pub fn touch_controls_available(&self, link: &crate::play::PlayLink) -> bool {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        !link.commands.is_closed()
+            && !mailbox.world_input_blocked()
+            && !mailbox.server_modal.is_active()
+            && !self.death.dead
+    }
+
+    pub fn touch_controls_tap_contact(&self, id: u64) -> bool {
+        self.touch.tap.is_some_and(|(contact, _)| contact == id)
+    }
+
+    pub fn touch_controls_mode(&self) -> Option<usize> {
+        self.touch.mode
+    }
+
+    pub fn touch_controls_visible(&self) -> bool {
+        self.touch.visible
+    }
+
+    /// Compare the captured local projection under the session owner lock. Closing
+    /// is independent of gameplay admission and never clears pending commands.
+    pub fn touch_controls_visibility_bound(
+        &mut self,
+        link: &crate::play::PlayLink,
+        expected: bool,
+        visible: bool,
+    ) -> bool {
+        let mailbox = crate::play::mailbox::lock(&link.mailbox);
+        if link.commands.is_closed() || self.touch.visible != expected || expected == visible {
+            return false;
+        }
+        if visible && (mailbox.world_input_blocked() || mailbox.server_modal.is_active()) {
+            return false;
+        }
+        self.touch.visible = visible;
+        if !visible {
+            self.cancel_touch_controls();
+        }
+        true
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+mod bound_tests {
+    use crate::play::{PlayView, mailbox::lock, play_channel};
+    #[test]
+    fn touch_controls_close_preserves_pending_while_blocked()
+    -> Result<(), oteryn_renderer::BatchError> {
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        let (link, _commands, _) = play_channel();
+        link.use_shared_frontend();
+        view.enable_touch_controls();
+        view.in_flight = true;
+        view.touch.mode = Some(3);
+        lock(&link.mailbox).death_reset_commands = true;
+        assert!(view.touch_controls_visibility_bound(&link, true, false));
+        assert!(!view.touch_controls_visible());
+        assert!(view.in_flight);
+        assert_eq!(view.touch.mode, Some(3));
+        assert!(!view.touch_controls_visibility_bound(&link, false, true));
+        lock(&link.mailbox).death_reset_commands = false;
+        assert!(view.touch_controls_visibility_bound(&link, false, true));
+        assert!(view.in_flight);
+        assert_eq!(view.touch.mode, Some(3));
+        Ok(())
+    }
+}

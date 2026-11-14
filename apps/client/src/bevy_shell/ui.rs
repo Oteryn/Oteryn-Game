@@ -81,6 +81,7 @@ pub(super) enum Control {
     StaffTools,
     WorldEvent,
     TeamFinder,
+    TouchControls,
     Training,
     Store,
     Login,
@@ -151,6 +152,7 @@ impl Control {
             Self::StaffTools => "shell.staff_tools",
             Self::WorldEvent => "shell.world_event",
             Self::TeamFinder => "shell.team_finder",
+            Self::TouchControls => "shell.touch_controls",
             Self::Training => "shell.training",
             Self::Store => "shell.store",
             Self::Login => "shell.sign_in",
@@ -327,6 +329,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::TaskBoard, "Task Board", 110.),
         (Control::WorldEvent, "World events", 100.),
         (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
+        (Control::TouchControls, "Touch controls", 120.),
         (Control::Training, "Training", 80.),
         (Control::Store, "Store", 80.),
     ] {

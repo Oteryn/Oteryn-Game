@@ -106,6 +106,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::SupportEvidence
                     | Control::TaskBoard
                     | Control::TeamFinder
+                    | Control::TouchControls
                     | Control::Training
                     | Control::WeaponProficiency
                     | Control::WorldEvent

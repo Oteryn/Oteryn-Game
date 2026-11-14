@@ -1,11 +1,18 @@
 use super::*;
 use crate::play::feature_0233_touch_controls::state::{Layout, Phase};
 
+fn shared_view() -> Result<PlayView, BatchError> {
+    let mut view = super::view()?;
+    view.use_shared_frontend();
+    Ok(view)
+}
+
 #[test]
 fn touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode() -> Result<(), BatchError>
 {
-    let mut view = view()?;
+    let mut view = shared_view()?;
     let (link, _, _) = play_channel();
+    link.use_shared_frontend();
     let now = std::time::Instant::now();
     view.project_presentation(now)?;
     let hidden = view.scene().sprites().instances().to_vec();
@@ -69,10 +76,12 @@ fn touch_joystick_uses_paced_keyboard_steps_and_release_stops()
         ([-48.0, 0.0], [StepDir::West, StepDir::West]),
         ([-48.0, -48.0], [StepDir::North, StepDir::West]),
     ] {
-        let mut touched = view()?;
-        let mut keyboard = view()?;
+        let mut touched = shared_view()?;
+        let mut keyboard = shared_view()?;
         let (link, mut commands, outbox) = play_channel();
+        link.use_shared_frontend();
         let (keys, mut key_commands, _) = play_channel();
+        keys.use_shared_frontend();
         let layout = Layout::new(touched.scene().view());
         let center = layout.center;
         touch(&mut touched, &link, 1, Phase::Started, center);
@@ -137,8 +146,8 @@ fn touch_hotbar_world_taps_equal_mouse_context_and_follow_keys()
                 health_percent: 100,
             },
         };
-        let mut touched = view()?.with_entities(vec![entity])?;
-        let mut mouse = view()?.with_entities(vec![entity])?;
+        let mut touched = shared_view()?.with_entities(vec![entity])?;
+        let mut mouse = shared_view()?.with_entities(vec![entity])?;
         if mode == 3 {
             let mut map = super::feature_local_world_view::live_snapshot(101);
             map.tiles[0].items[0].origin =
@@ -149,7 +158,9 @@ fn touch_hotbar_world_taps_equal_mouse_context_and_follow_keys()
             mouse = mouse.with_entities(Vec::new())?;
         }
         let (link, mut commands, outbox) = play_channel();
+        link.use_shared_frontend();
         let (other, mut equivalent, other_outbox) = play_channel();
+        other.use_shared_frontend();
         outbox.world_context_initialize(true, true);
         other_outbox.world_context_initialize(true, true);
         outbox.target_move_initialize(true);
@@ -212,10 +223,12 @@ fn touch_hotbar_world_taps_equal_mouse_context_and_follow_keys()
 
 #[test]
 fn touch_default_tap_dead_zone_and_contact_ownership() -> Result<(), Box<dyn std::error::Error>> {
-    let mut touched = view()?;
-    let mut mouse = view()?;
+    let mut touched = shared_view()?;
+    let mut mouse = shared_view()?;
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     let (other, mut equivalent, other_outbox) = play_channel();
+    other.use_shared_frontend();
     outbox.target_walk_initialize(true);
     other_outbox.target_walk_initialize(true);
     assert!(!touched.touch.visible);
