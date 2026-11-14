@@ -21,6 +21,7 @@ enum Kind {
     Close,
     Tab(Tab),
     Refresh,
+    OpenBounty,
     Select(u8),
     Claim,
     Difficulty(u8),
@@ -51,6 +52,11 @@ fn completed(panel: &TaskBoardPanel) -> bool {
                 .is_some_and(|a| b.current >= a.required)
     })
 }
+/// The server generates bounty offers only on OpenBounty (task_board_full.rs),
+/// so a board with no offers and no active task needs it.
+fn unopened(b: &model::task_board::full::Bounty) -> bool {
+    b.selected == 0 && b.offers.is_empty() && b.active.is_none()
+}
 fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
     let mut rows = Vec::new();
     let Some(r) = &panel.weekly else {
@@ -70,6 +76,9 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 "Daily tokens: claim at the Daily Reward Wall",
                 None,
             );
+            if unopened(b) {
+                entry(&mut rows, "Open bounty", Some(Kind::OpenBounty));
+            }
             for (index, offer) in b.offers.iter().enumerate() {
                 let active = usize::from(b.selected) == index + 1;
                 let progress = if active { b.current } else { 0 };
@@ -241,6 +250,7 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
     let r = panel.weekly.as_ref();
     match kind {
         Kind::Refresh => Some(FullIntent::Refresh),
+        Kind::OpenBounty if r.is_some_and(|r| unopened(&r.bounty)) => Some(FullIntent::OpenBounty),
         Kind::Select(slot)
             if r.is_some_and(|r| {
                 r.bounty.selected == 0 && usize::from(*slot) < r.bounty.offers.len()

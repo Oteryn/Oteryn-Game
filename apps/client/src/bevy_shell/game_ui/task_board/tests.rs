@@ -247,3 +247,35 @@ fn taskboard_native_activate_sends_confirmed_intent_and_rejects_stale_revision()
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+#[test]
+fn taskboard_open_bounty_when_no_offers() -> Result<(), &'static str> {
+    let mut p = panel();
+    if let Some(r) = p.weekly.as_mut() {
+        r.bounty.selected = 0;
+        r.bounty.offers.clear();
+        r.bounty.active = None;
+    }
+    let rows = entries(&p, Tab::Bounty, false);
+    let row = rows
+        .iter()
+        .find(|r| matches!(r.action, Some(Kind::OpenBounty)))
+        .ok_or("open bounty row")?;
+    assert!(row.text.contains("Open bounty"));
+    let mut confirm = false;
+    let i = intent(&p, &mut confirm, &Kind::OpenBounty).ok_or("open intent")?;
+    let command = oteryn_client_ui::task_board::full_request(&mut p, i).ok_or("command")?;
+    assert_eq!(
+        decode_request(&command.payload)
+            .map_err(|_| "decode")?
+            .action,
+        7
+    );
+    let offered = panel();
+    assert!(
+        !entries(&offered, Tab::Bounty, false)
+            .iter()
+            .any(|r| matches!(r.action, Some(Kind::OpenBounty)))
+    );
+    assert!(intent(&offered, &mut confirm, &Kind::OpenBounty).is_none());
+    Ok(())
+}
