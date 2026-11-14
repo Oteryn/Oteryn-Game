@@ -175,8 +175,12 @@ impl Texts {
         self.0.clear();
     }
 
-    /// Only the texts of the camera floor are drawn.
+    /// Only the texts of the camera floor are drawn. Chat positions carry the legacy floor
+    /// (surface 7) while a live map view is on its native floor (`-z`, surface -7); both name
+    /// the same level, so the floors are compared by magnitude.
     pub fn on_floor(&self, floor: i16) -> impl Iterator<Item = &StaticText> {
-        self.0.iter().filter(move |t| t.position.2 == floor)
+        self.0
+            .iter()
+            .filter(move |t| t.position.2.unsigned_abs() == floor.unsigned_abs())
     }
 }

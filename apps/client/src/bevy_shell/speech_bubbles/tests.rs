@@ -134,6 +134,16 @@ fn only_the_camera_floor_is_drawn() {
 }
 
 #[test]
+fn legacy_floor_speech_is_drawn_on_the_native_live_map_floor() {
+    // Chat carries the legacy floor (surface 7); a live map view is on its native floor (-7).
+    let mut texts = Texts::default();
+    texts.add(&speech("Ann", ChatSpeechMode::Say, "up", (1, 1, 6)), 0);
+    texts.add(&speech("Bob", ChatSpeechMode::Say, "here", (1, 1, 7)), 0);
+    let names: Vec<_> = texts.on_floor(-7).map(StaticText::compose).collect();
+    assert_eq!(names, ["Bob says:\nhere"]);
+}
+
+#[test]
 fn wrap_width_is_275() {
     assert_eq!(WRAP_WIDTH_PX, 275.0);
 }
