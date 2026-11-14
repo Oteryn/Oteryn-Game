@@ -275,9 +275,20 @@ fn world_event_window_window_registered() -> Result {
     assert!(commands.try_recv().is_err());
     app.world_mut().despawn(modal);
     app.update();
-    app.world_mut().write_message(shortcut);
+    app.world_mut().write_message(shortcut.clone());
     app.update();
     assert!(panel(&app)?.open);
     query(&mut commands)?;
+    toolbar(&mut app)?;
+    assert!(!panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
+    reply(&outbox, false, CommandStatus::Accepted)?;
+    toolbar(&mut app)?;
+    assert!(panel(&app)?.open);
+    query(&mut commands)?;
+    app.world_mut().write_message(shortcut);
+    app.update();
+    assert!(!panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
