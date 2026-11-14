@@ -1,0 +1,196 @@
+{
+  "schema": "OTERYN_WHEEL_TESTSERVER_AUDIT_EVIDENCE/v1",
+  "captured_utc_date": "2026-11-13",
+  "client_version": "15.33.dd0955",
+  "source": "Installed official test client, native desktop screenshots and existing local preset file",
+  "purpose": "Record fresh native baseline and precise limits of attempted controlled checks. No controlled grade/stat delta was completed.",
+  "privacy": "Private screenshots stay outside Git; this artifact contains only derived observations, capture basenames and hashes.",
+  "clock_qualification": "Native guest timestamps differ from the tool UTC clock. Preserve guest timestamps as capture identifiers; use separately recorded tool observation times for session status.",
+  "session_status": {
+    "logged_in_wheel_observed_tool_utc": "2026-11-13T20:18:40Z",
+    "logged_in_capture_guest_utc": "2026-11-13T20:11:29.858926+00:00",
+    "final_state": "CONNECTION_LOST_DIALOG",
+    "final_observed_tool_utc": "2026-11-13T20:29:48Z",
+    "final_capture_guest_utc": "2026-11-13T20:22:52.942623+00:00",
+    "final_dialog_text": "The connection to the game server was lost. Error: The remote host closed the connection. Please try again later.",
+    "action_after_disconnect": "Stopped; no reconnect, login or credential action."
+  },
+  "baseline_preset": {
+    "export_string": "M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA",
+    "name": "Default-Preset",
+    "local_preset_file_sha256": "151ade1860e358e06f19bf68ed54a4cd84da013250032bdcb265b3a18881358b",
+    "qualification": "Read before the first Workshop inspection and after every subsequent captured step; content hash stayed unchanged. No temporary fixture was imported.",
+    "level": 757,
+    "available_promotion_points": 42,
+    "displayed_total_promotion_points": 742,
+    "allocated_points": 700,
+    "allocated_points_qualification": "Derived by 742 minus42 and independently decoded from the retained export.",
+    "point_budget_reconciliation": {
+      "classification": "DERIVED_ARITHMETIC; BONUS_SOURCE_BREAKDOWN_UNKNOWN",
+      "level_points_under_level_minus_50_rule": 707,
+      "observed_workshop_promotion_points": 3,
+      "unattributed_remainder": 32,
+      "calculation": "742 - (757 - 50) - 3 = 32",
+      "qualification": "The same retained Wheel capture directly shows level757 and Available Promotion Points42/742; the Skills capture independently confirms level757. No total-budget breakdown tooltip was captured. Do not attribute the32 points to a specific item, accomplishment or shop reward. The preset encodes allocated points, not the complete budget or its sources."
+    },
+    "equipped_modifier_ids_from_saved_export": {
+      "0": [
+        39
+      ],
+      "2": [
+        33,
+        28,
+        92
+      ]
+    },
+    "equipped_modifier_qualification": "Previously decoded saved export, unchanged on this fresh pass. Gem Atelier slot/grade panel was not opened during this pass."
+  },
+  "workshop_baseline": {
+    "classification": "FACT: directly visible in current native Workshop",
+    "promotion_points_bonus": 3,
+    "hit_points_bonus": 75,
+    "mana_bonus": 75,
+    "capacity_bonus": 75,
+    "grade_count_inference": {
+      "classification": "INFERENCE_FROM_DISPLAYED_BONUSES_AND_VERIFIED_WORKSHOP_RULE",
+      "fully_enhanced_modifiers": 3,
+      "completed_upgrade_steps": 15
+    },
+    "funds_display": {
+      "gold": 66766629,
+      "lesser_fragments": 39,
+      "greater_fragments": 0
+    },
+    "initial_selected_modifier": {
+      "name": "Dodge",
+      "displayed_current_grade": "I",
+      "displayed_current_bonus_percent": 0.28,
+      "next_grade_price_gold_display": "5,000 k",
+      "next_grade_price_gold_numeric": 5000000,
+      "next_grade_price_greater_fragments": 5,
+      "purchase": "NOT_PERFORMED",
+      "reason": "Displayed required greater fragments5 exceeded available0. This default selection was not the planned unused Basic modifier."
+    }
+  },
+  "actual_stats_baseline": {
+    "classification": "FACT: full HP/Mana bars and Skills text, plus exact native Capacity tooltip",
+    "hit_points_current": 8400,
+    "hit_points_maximum": 8400,
+    "mana_current": 8305,
+    "mana_maximum": 8305,
+    "capacity_free": 10484,
+    "capacity_total": 20595,
+    "capacity_tooltip": "You have 10,484 of 20,595 Capacity left",
+    "qualification": "Total Capacity is directly displayed; it is not inferred from free Capacity or item weight."
+  },
+  "wheel_baseline": {
+    "gem_vessel_nodes": 3,
+    "conviction_revelation_mastery_ascetic": 125,
+    "vessel_damage_healing": 3,
+    "vessel_revelation_mastery_spiritual_outburst": 225,
+    "vessel_hit_points": 100,
+    "vessel_mana": 150,
+    "vessel_resistance_percent": {
+      "energy": 1,
+      "fire": 1.5,
+      "life_drain": 4.5
+    },
+    "revelation_damage_healing": 13,
+    "revelation_stages": {
+      "ascetic": 2,
+      "spiritual_outburst": 1,
+      "avatar_of_balance": "locked",
+      "gift_of_life": "locked"
+    }
+  },
+  "controlled_checks": [
+    {
+      "check": "Unused Basic modifier I to II with actual before/after HP, Mana and total Capacity",
+      "status": "NOT_EXECUTED",
+      "reason": "Session disconnected during panel navigation before selecting an eligible unused Basic modifier. No upgrade or payment occurred."
+    },
+    {
+      "check": "Remove only greater gem33/28/92 and measure actual maximum Mana change",
+      "status": "NOT_EXECUTED",
+      "reason": "No gem placement/removal action occurred before disconnect."
+    },
+    {
+      "check": "Applied gem-free legal red249/250 boundary with three GradeIV Workshop modifiers",
+      "status": "NOT_EXECUTED",
+      "reason": "No temporary allocation was imported or applied. Earlier invalid candidate codes were explicitly rejected before use; replacement fixture was not attempted."
+    },
+    {
+      "check": "Native mod39 grade and exact eight-slot quality order",
+      "status": "NOT_EXECUTED",
+      "reason": "Gem Atelier panel was not inspected in this pass. Saved export does not encode Workshop grades."
+    }
+  ],
+  "game_value_mutations": {
+    "grade_upgrades": 0,
+    "gold_spent": 0,
+    "fragments_spent": 0,
+    "allocation_changes": 0,
+    "gem_placement_changes": 0,
+    "temporary_preset_imports": 0,
+    "restoration_required": false
+  },
+  "evidence": [
+    {
+      "label": "fresh_logged_in_wheel",
+      "image_basename": "status-20261113T201129Z-eda1fba6ee.jpg",
+      "sha256": "e4e3f1a8e24331a96c0321b3bbffb77fc2e65df8568b4240c216898ba55a0273",
+      "dimensions": [
+        1600,
+        900
+      ]
+    },
+    {
+      "label": "workshop_baseline",
+      "image_basename": "workshop-baseline-20261113T201503Z-2eead7e42f.webp",
+      "sha256": "416d75e66fc73c98dad20cc5f45830d986927908a12d196b255145d606c03d2f",
+      "dimensions": [
+        1600,
+        900
+      ]
+    },
+    {
+      "label": "skills_baseline",
+      "image_basename": "baseline-skills-open-20261113T201757Z-878dd25357.webp",
+      "sha256": "66dabbb739e118319038a60ec04e1b2a05b39626ed17437fd178056ffbb2bb3a",
+      "crop_from_native_png": [
+        1235,
+        40,
+        1600,
+        900
+      ]
+    },
+    {
+      "label": "capacity_tooltip",
+      "image_basename": "baseline-capacity-tooltip-20261113T201832Z-b22e11e78f.webp",
+      "sha256": "5c98b0059493df5e3aee44656e2e7fa8a592eaeefd6bd7bde0c462aa7994a3d7",
+      "crop_from_native_png": [
+        1210,
+        575,
+        1600,
+        875
+      ]
+    },
+    {
+      "label": "final_connection_lost",
+      "image_basename": "wheel-reopen-control-20261113T202252Z-17239e501d.webp",
+      "sha256": "0bbce9cb14efd70747be9ed8f847a581af68a200bd24ee8f80c8336852010289",
+      "crop_from_native_png": [
+        280,
+        145,
+        1310,
+        810
+      ]
+    }
+  ],
+  "limitations": [
+    "Baseline observations do not establish a measured +5 HP/Mana/Capacity delta or measured gem Mana removal delta.",
+    "No live conclusion about automatic GradeIV domain points can be drawn from this interrupted pass.",
+    "Native screenshots preserve the observed state privately; none are included in this JSON or tracked repository changes.",
+    "Only panel opening/closing, tooltip hovering and an attempted Skills shortcut were performed; no account/security changes or external purchases."
+  ]
+}

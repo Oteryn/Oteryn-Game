@@ -21,7 +21,8 @@ pub(super) async fn check_read(
     assert_eq!(status, oteryn_protocol_oteryn::CommandStatus::Accepted);
     let reply = presentation::Reply::decode(&bytes).ok_or("executed catalogue")?;
     assert_eq!(reply.request, r);
-    assert_eq!(reply.modifiers.len(), 69);
+    // W06, docs/reference/wheel-of-destiny-testserver-20261113.md: 46 basic + 27 supreme.
+    assert_eq!(reply.modifiers.len(), 73);
     let capacity = reply
         .modifiers
         .iter()

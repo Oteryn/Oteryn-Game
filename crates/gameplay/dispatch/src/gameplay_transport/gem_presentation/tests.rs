@@ -1,3 +1,5 @@
+// W02/W04/W06/W07: docs/reference/wheel-of-destiny-testserver-20261113.md
+// and its retained official client/planner JSON qualify these updated values.
 use super::*;
 #[test]
 fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
@@ -5,7 +7,8 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
     let data = WheelGemData::embedded().map_err(|_| "catalogue")?;
     for vocation in ["druid", "knight", "monk", "paladin", "sorcerer"] {
         let rows = project(&data, vocation).ok_or("project")?;
-        assert_eq!(rows.len(), 69);
+        // W06: 46 basic + 27 supreme modifiers in the current Winter catalogue.
+        assert_eq!(rows.len(), 73);
         let reply = wire::Reply {
             grades_current: true,
             qualified_gems: (1_u128..=225).map(u128::to_be_bytes).collect(),
@@ -25,19 +28,18 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                 .iter()
                 .find(|r| r.kind == 0 && r.id == 48)
                 .ok_or("capacity")?;
-            assert_eq!(capacity.effects[0].values[3], 750000);
+            assert_eq!(capacity.effects[0].values[3], 700000);
             let mana = rows
                 .iter()
                 .find(|r| r.kind == 0 && r.id == 33)
                 .ok_or("mixed mana")?;
-            assert!(
+            assert_eq!(
                 mana.effects
                     .iter()
                     .find(|e| e.name == "Mana")
                     .ok_or("mana")?
-                    .values
-                    .iter()
-                    .all(|v| *v == 0)
+                    .values,
+                [100_000, 110_000, 120_000, 150_000]
             );
         }
         let dodge = rows
@@ -56,7 +58,7 @@ fn gem_presentation_all_canonical_vocations_fit_and_use_executed_corrections()
                     .effects
                     .iter()
                     .filter(|e| e.name == "revelation_mastery_points")
-                    .all(|e| e.values[0] >= 300000)
+                    .all(|e| e.values == [150_000, 165_000, 180_000, 225_000])
             );
         }
     }

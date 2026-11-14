@@ -313,6 +313,20 @@ impl WheelRuntimeEffects {
         } else {
             0
         };
+        // Winter Update 2026: each modifier-grade upgrade grants +5 health, mana and
+        // capacity, even without a socketed gem. The base Grade I is stored as zero.
+        let workshop_bonus = if grades_current {
+            state
+                .grades
+                .values()
+                .try_fold(0_u32, |total, grade| total.checked_add(u32::from(*grade)))?
+                .checked_mul(5)?
+        } else {
+            0
+        };
+        self.max_health = self.max_health.checked_add(workshop_bonus)?;
+        self.max_mana = self.max_mana.checked_add(workshop_bonus)?;
+        self.capacity = self.capacity.checked_add(workshop_bonus)?;
         // Crystal player_wheel.cpp:2931-2945 adds every Grade IV modifier to each
         // revelation domain, independently of whether a gem using it is socketed.
         for domain in ["green", "red", "purple", "blue"] {
@@ -811,9 +825,70 @@ mod tests {
 mod atelier_tests {
     use super::*;
     use crate::atelier::vessels::{GEM_VESSEL_SLOT_QUALITIES, GEM_VESSEL_SLOTS};
-    use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
+    use crate::atelier::{AtelierAction, AtelierState, FragmentKind, Gem, GemQuality};
     use crate::wheel::WheelSlots;
     use crate::wheel_gem_data::WheelGemData;
+
+    #[test]
+    fn workshop_upgrades_grant_shared_stats_without_socketed_gems()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let data = WheelGemData::embedded()?;
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::ZERO,
+            current: true,
+        };
+        // Official client 15.33.dd0955, client.en.qm: every unlocked modifier grade
+        // grants +5 Health, Mana and Capacity, independently of socketed gems.
+        for vocation in ["knight", "paladin", "sorcerer", "druid", "monk"] {
+            let mut state = AtelierState {
+                vocation: vocation.into(),
+                gold: 100_000_000,
+                ..Default::default()
+            };
+            state.fragments.insert(FragmentKind::Basic, 100);
+            for (mod_id, expected) in [(0, 5), (0, 10), (0, 15), (1, 20), (1, 25)] {
+                state
+                    .commit(
+                        state.revision,
+                        AtelierAction::GradeUp {
+                            kind: FragmentKind::Basic,
+                            mod_id,
+                        },
+                    )
+                    .map_err(|refusal| format!("grade upgrade refused: {refusal:?}"))?;
+                let mut effects =
+                    derive_runtime_effects(data.wheel(), &allocation, vocation, 1000, true, true)
+                        .ok_or("Wheel effects")?;
+                effects
+                    .contribute_gems(&state, &data, &allocation)
+                    .ok_or("Workshop contribution")?;
+                assert_eq!(
+                    (effects.max_health, effects.max_mana, effects.capacity),
+                    (expected, expected, expected),
+                    "{vocation} shared grades {:?}",
+                    state.grades,
+                );
+                assert!(effects.sockets.effective_grades.is_empty());
+                assert_eq!(effects.sockets.grade_iv_points, u32::from(expected >= 15));
+            }
+            // A former catalogue cannot authorize current shared-grade stats.
+            state.grade_ruleset_revision = Some("old".into());
+            let mut effects =
+                derive_runtime_effects(data.wheel(), &allocation, vocation, 1000, true, true)
+                    .ok_or("Wheel effects")?;
+            effects
+                .contribute_gems(&state, &data, &allocation)
+                .ok_or("stale Workshop contribution")?;
+            assert_eq!(
+                (effects.max_health, effects.max_mana, effects.capacity),
+                (0, 0, 0)
+            );
+            assert_eq!(effects.sockets.grade_iv_points, 0);
+        }
+        Ok(())
+    }
 
     #[test]
     fn atelier_vessel_uses_independent_shared_grades_and_revelation_mastery() {
@@ -889,6 +964,83 @@ mod atelier_tests {
             .expect("dormant");
         assert!(dormant.sockets.effective_grades.is_empty());
         assert_eq!(dormant.revelation_stages.get("gift_of_life"), Some(&2));
+    }
+
+    #[test]
+    fn official_test_planner_monk_preset_has_single_mastery_and_mixed_mana()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let data = WheelGemData::embedded()?;
+        // Native saved preset, independently imported into the official test planner:
+        // M1Y2CAAm8waQQnUkACJ6aBmOr_QUBRJuY_KgAA. The planner defaults every mod to
+        // Grade IV; this fixture uses those explicit grades. The native panel separately
+        // showed +100 Health and +1% Energy Resistance, consistent with mod 39 at Grade I.
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::new([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 75, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 50, 0, 0, 0, 0, 100,
+                75, 0, 0, 0, 200, 150, 0, 0, 0, 0,
+            ])
+            .map_err(|error| format!("preset slots: {error:?}"))?,
+            current: true,
+        };
+        assert_eq!(allocation.slots.total(), 700);
+        let mut state = AtelierState {
+            vocation: "monk".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        for (id, quality, slot, mods) in [
+            (1, GemQuality::Lesser, 0, vec![39]),
+            (2, GemQuality::Greater, 2, vec![33, 28, 92]),
+        ] {
+            state.gems.insert(
+                id,
+                Gem {
+                    id,
+                    quality,
+                    mods,
+                    locked: false,
+                    vessel: true,
+                    slot: Some(slot),
+                    ruleset_revision: data.revision().into(),
+                },
+            );
+        }
+        for (kind, id) in [
+            (FragmentKind::Basic, 39),
+            (FragmentKind::Basic, 33),
+            (FragmentKind::Basic, 28),
+            (FragmentKind::Supreme, 92),
+        ] {
+            state.grades.insert((kind, id), 3);
+        }
+        let mut effects =
+            derive_runtime_effects(data.wheel(), &allocation, "monk", 757, true, true)
+                .ok_or("preset Wheel effects")?;
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .ok_or("preset gem contribution")?;
+        assert_eq!(effects.sockets.gem_vessel_nodes, 3);
+        assert_eq!(
+            effects.revelation_stages,
+            BTreeMap::from([("ascetic".into(), 2), ("spiritual_outburst".into(), 1)])
+        );
+        assert_eq!(
+            effects.sockets.gem_values_milli,
+            [
+                ("Energy Resistance", "", 1_500),
+                ("Fire Resistance", "", 1_500),
+                ("Hit Points", "", 150_000),
+                ("Life Drain Resistance", "", 4_500),
+                ("Mana", "", 150_000),
+                ("revelation_mastery_points", "Spiritual Outburst", 225_000),
+            ]
+            .into_iter()
+            .map(|(kind, target, value)| ((kind.into(), target.into()), value))
+            .collect()
+        );
+        Ok(())
     }
 
     fn allocation_with_domain_points(data: &WheelGemData, total: u16) -> WheelAllocation {

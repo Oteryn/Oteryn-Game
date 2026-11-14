@@ -115,7 +115,7 @@ impl WheelGemData {
             }
             parsed.push(data);
         }
-        let gems = parsed.pop().ok_or(WheelGemDataError("missing Gem file"))?;
+        let mut gems = parsed.pop().ok_or(WheelGemDataError("missing Gem file"))?;
         let wheel = parsed
             .pop()
             .ok_or(WheelGemDataError("missing Wheel file"))?;
@@ -143,6 +143,73 @@ impl WheelGemData {
                 ])
         {
             return reject("incomplete imported data");
+        }
+        // W06: owner-selected Winter test-server catalogue. Validate the original
+        // import above before applying this central overlay, preserving paid revisions.
+        let winter: Value = serde_json::from_str(include_str!(
+            "../../../../docs/reference/wheel-of-destiny-testserver-20261113/new-supreme-mods.json"
+        ))
+        .map_err(|_| WheelGemDataError("malformed Winter modifier evidence"))?;
+        for row in winter["new_mods"]
+            .as_array()
+            .ok_or(WheelGemDataError("Winter modifiers"))?
+        {
+            let id = row["source_id"]
+                .as_u64()
+                .ok_or(WheelGemDataError("Winter id"))?;
+            let vocation = row["vocation"]
+                .as_str()
+                .ok_or(WheelGemDataError("Winter vocation"))?;
+            let spell = row["spell_name"]
+                .as_str()
+                .ok_or(WheelGemDataError("Winter spell"))?;
+            let kind = row["effect"]
+                .as_str()
+                .ok_or(WheelGemDataError("Winter effect"))?;
+            let values = row["grade_values"]
+                .as_array()
+                .ok_or(WheelGemDataError("Winter grades"))?;
+            if !(94..=113).contains(&id) || values.len() != 4 {
+                return reject("invalid Winter modifier grades");
+            }
+            let grades: Vec<Value> = values.iter().enumerate().map(|(grade, value)| {
+                let mut effects = vec![serde_json::json!({
+                    "kind": kind, "target": format!("Augmented {spell}"),
+                    "value": value.as_f64().map(f64::abs), "unit": row["unit"]
+                })];
+                if id == 97 {
+                    effects.push(serde_json::json!({"kind": "momentum_chance",
+                        "target": format!("Augmented {spell}"), "unit": "percent_points",
+                        "value": ([0.0, 0.33, 0.66, 1.0][grade])}));
+                }
+                serde_json::json!({"grade": grade, "reference_text": format!("{spell}: {value}"),
+                    "numeric_effects": effects})
+            }).collect();
+            let template_id = match kind {
+                "base_damage_bonus" => 10,
+                "critical_extra_damage" => 29,
+                "base_healing_bonus" => 4,
+                "cooldown_reduction" => 60,
+                _ => return reject("unknown Winter modifier effect"),
+            };
+            let catalogue = gems.data["catalogue"]["supreme_mods"]
+                .as_array_mut()
+                .ok_or(WheelGemDataError("supreme catalogue"))?;
+            let mut modifier = catalogue
+                .iter()
+                .find(|entry| entry["source_id"] == template_id)
+                .ok_or(WheelGemDataError("supreme template"))?
+                .clone();
+            modifier["source_id"] = Value::from(id);
+            modifier["name"] = Value::from(format!("Augmented {spell}"));
+            modifier["summary_name"] = modifier["name"].clone();
+            modifier["grades"] = Value::from(grades);
+            modifier["icon"]["source_index"] = Value::from(id);
+            catalogue.push(modifier);
+            gems.data["vocations"][vocation]["supreme_mods"]
+                .as_array_mut()
+                .ok_or(WheelGemDataError("supreme pool"))?
+                .push(Value::from(id));
         }
         Ok(Self { wheel, gems })
     }

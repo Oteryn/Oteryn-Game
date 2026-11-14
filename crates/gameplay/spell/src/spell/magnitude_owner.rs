@@ -1141,11 +1141,12 @@ impl PreparedMagnitudeOwner {
             .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
         if element == Element::Healing {
             value = percent(value, needed(a.healing_dealt_percent)?)?;
-            value = compound(
+            value = self.compound_named_gem(
                 value,
                 needed(a.source_healing_multiplier_percent)?
                     .checked_add(hit.bonus_percent)
                     .ok_or(Error::InvalidMagnitude)?,
+                "base_healing_bonus",
             )?;
             value = value
                 .checked_add(i64::from(needed(a.wheel_flat_healing)?))
@@ -1222,7 +1223,8 @@ impl PreparedMagnitudeOwner {
             let bonus = needed(a.source_damage_multiplier_percent)?
                 .checked_add(hit.bonus_percent)
                 .ok_or(Error::InvalidMagnitude)?;
-            value = compound(value, bonus)?
+            value = self
+                .compound_named_gem(value, bonus, "base_damage_bonus")?
                 .checked_add(i64::from(needed(a.wheel_flat_damage)?))
                 .ok_or(Error::InvalidMagnitude)?;
             return self.finish_wheel_damage(value, &target);
@@ -1308,7 +1310,8 @@ impl PreparedMagnitudeOwner {
         let bonus = needed(a.source_damage_multiplier_percent)?
             .checked_add(hit.bonus_percent)
             .ok_or(Error::InvalidMagnitude)?;
-        value = compound(negative, bonus)?
+        value = self
+            .compound_named_gem(negative, bonus, "base_damage_bonus")?
             .checked_neg()
             .ok_or(Error::InvalidMagnitude)?;
         let mut flat = i64::from(needed(a.wheel_flat_damage)?);
@@ -1532,6 +1535,23 @@ impl PreparedMagnitudeOwner {
             }
         }
         self.finish_sanctuary(value.max(0), target.actor)
+    }
+
+    // W06/W07: keep the catalogue's fractional percent at the existing Wheel
+    // multiplier stage. The integer portion is already in resolved_attributes.
+    fn compound_named_gem(&self, value: i64, bonus: u32, kind: &str) -> Result<i64, Error> {
+        let fraction = self.selected_spell.as_deref().map_or(0, |spell| {
+            self.attributes
+                .wheel_effects
+                .as_ref()
+                .map_or(0, |effects| effects.gem_value_milli(kind, spell) % 1_000)
+        });
+        if fraction == 0 {
+            return compound(value, bonus);
+        }
+        signed_truncate(
+            value as f64 + value as f64 * (f64::from(bonus) / 100.0 + fraction as f64 / 100_000.0),
+        )
     }
 
     /// Crystal combat.cpp:197-208 and wheel:3510 read these for each real Combat.

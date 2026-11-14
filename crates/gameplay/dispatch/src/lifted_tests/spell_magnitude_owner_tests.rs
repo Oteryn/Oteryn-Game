@@ -2506,3 +2506,98 @@ fn ascetic_spell_and_rune_damage_use_own_or_guiding_mantra_after_flat_before_san
         }
     }
 }
+
+#[test]
+fn winter_supreme_modifiers_change_cast_magnitude_for_every_vocation() {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(winter_supreme_cast_magnitudes)
+        .expect("cast test thread")
+        .join()
+        .expect("cast test result");
+}
+
+fn winter_supreme_cast_magnitudes() {
+    use oteryn_gameplay_progression::{
+        atelier::{AtelierState, FragmentKind, Gem, GemQuality},
+        wheel::{WheelAllocation, WheelSlots},
+        wheel_effects::WheelRuntimeEffects,
+        wheel_gem_data::WheelGemData,
+    };
+    let data = WheelGemData::embedded().expect("Winter catalogue");
+    // W06 official Grade IV values, including fractional damage. The actual
+    // projector feeds the same selected-spell consumer as a native cast.
+    for (vocation, id, name, expected) in [
+        ("knight", 94, "Shield Slam", 1064),
+        ("paladin", 98, "Divine Barrage", 1021),
+        ("sorcerer", 102, "Death Echo", 1021),
+        ("druid", 106, "Forked Glacier", 1021),
+        ("monk", 110, "Chained Penance", 1021),
+    ] {
+        let mut f = fixture();
+        f.state.conditions.clear_on_death();
+        f.attributes.base_critical_chance_permyriad = Some(0);
+        f.attributes.equipment_critical_chance_permyriad = Some(0);
+        f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+            numerator: 0,
+            denominator: 1,
+        });
+        f.attributes.wheel_flat_damage = Some(0);
+        let mut state = AtelierState {
+            vocation: vocation.into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        state.grades.insert((FragmentKind::Supreme, id), 3);
+        state.gems.insert(
+            1,
+            Gem {
+                id: 1,
+                quality: GemQuality::Greater,
+                mods: vec![31, 0, id],
+                locked: false,
+                vessel: true,
+                slot: Some(2),
+                ruleset_revision: data.revision().into(),
+            },
+        );
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::ZERO,
+            current: true,
+        };
+        let mut effects = WheelRuntimeEffects::default();
+        effects.sockets.gem_vessel_nodes = 3;
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .expect("real projector");
+        f.attributes.wheel_effects = Some(effects);
+        let mut p = plan();
+        let NativeCombatPlan::Combat(combat) = &mut p else {
+            panic!("combat fixture")
+        };
+        combat.element = Element::Physical;
+        combat.block_armor = false;
+        combat.hits.truncate(1);
+        combat.hits[0].magnitude = 1000;
+        combat.hits[0].bonus_percent = 0;
+        combat.hits[0].side_percent = None;
+        let hit = combat.hits[0].clone();
+        let mut spell = wheel_healing_spell();
+        spell.name = name.into();
+        let mut owner = qualify(&f, &p).expect("qualified magnitude owner");
+        owner.select_item_spell(&spell).expect("named spell");
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[1], &mut |_, high| high),
+            Ok(expected),
+            "{vocation}: {name}"
+        );
+        spell.name = "Unrelated Spell".into();
+        owner.select_item_spell(&spell).expect("unrelated spell");
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[1], &mut |_, high| high),
+            Ok(950)
+        );
+    }
+}

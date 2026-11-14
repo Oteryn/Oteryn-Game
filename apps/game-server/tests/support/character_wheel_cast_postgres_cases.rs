@@ -653,14 +653,16 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                         [&u128::from_be_bytes(id(105))]
                         .vessel
                 );
+                // W02: docs/reference/wheel-of-destiny-testserver-20261113.md and
+                // existing-mod-grades.json qualify one 150/165/180/225 contribution.
                 assert_eq!(
                     effects.gem_value_milli("revelation_mastery_points", "Gift of Life"),
-                    300_000,
-                    "the current SQL reader includes both literal Crystal mastery additions"
+                    150_000,
+                    "the current cast projection applies one Grade I Mastery contribution"
                 );
                 assert_eq!(
                     stages.value["gift_of_life"], 3,
-                    "850 allocated +300 mastery +1 Grade IV opens stage3"
+                    "850 allocated +150 mastery reaches stage3"
                 );
                 assert_eq!(stages.value["beam_mastery"], 0);
                 assert_eq!(stages.value["Beam Mastery"], 0);

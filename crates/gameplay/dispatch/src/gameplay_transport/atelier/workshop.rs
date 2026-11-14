@@ -60,9 +60,10 @@ mod tests {
                 ..AtelierState::default()
             };
             let rows = grades_for_query(&state).ok_or("compatible Workshop catalogue")?;
-            assert_eq!(rows.len(), 69, "{vocation}");
+            // W06: current Winter pools add four supreme modifiers per vocation.
+            assert_eq!(rows.len(), 73, "{vocation}");
             assert!(rows.len() <= MAX_GRADE_ENTRIES);
-            assert_eq!(rows.iter().filter(|row| row.kind == 1).count(), 23);
+            assert_eq!(rows.iter().filter(|row| row.kind == 1).count(), 27);
             assert_eq!(
                 rows.iter()
                     .filter(|row| row.kind == 0)
@@ -99,7 +100,8 @@ mod tests {
         state.grades.insert((FragmentKind::Basic, 0), 2);
         state.grades.insert((FragmentKind::Supreme, 58), 3);
         let rows = grades_for_query(&state).ok_or("promoted Workshop catalogue")?;
-        assert_eq!(rows.len(), 69);
+        // W06: docs/reference/wheel-of-destiny-testserver-20261113.md.
+        assert_eq!(rows.len(), 73);
         for row in &rows {
             assert_eq!(
                 row.grade,

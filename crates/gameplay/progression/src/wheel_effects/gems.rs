@@ -1,6 +1,6 @@
-//! Executed Crystal gem values at 201189f. The imported catalogue also carries client
-//! descriptions; source integer assignments and the differences below are applied once,
-//! before contributions from separate gems are added.
+//! Gem values in thousandths, normalized before separate contributions are added.
+//! Retained integer-field rules come from Crystal at 201189f; Revelation Mastery and
+//! Monk mixed Mana use catalogue values corroborated by official test client 15.33.dd0955.
 
 use super::WheelRuntimeEffects;
 use serde_json::Value;
@@ -68,19 +68,13 @@ fn catalogue_milli(value: &Value) -> Option<i64> {
     Some(rounded as i64)
 }
 
-pub fn basic_milli(id: u16, grade: u8, vocation: &str, effect: &Value) -> Option<i64> {
+pub fn basic_milli(_id: u16, grade: u8, vocation: &str, effect: &Value) -> Option<i64> {
     if grade > 3 {
         return None;
     }
     let name = effect["name"].as_str()?;
     let value = catalogue_milli(&effect["values_by_vocation"][vocation][usize::from(grade)])?;
     match name {
-        // Crystal wheel_gems.cpp:741-800,817-824: the four mixed Mana maps have no
-        // Monk entry and return zero; their independently added resistance remains active.
-        "Mana" if vocation == "monk" && (33..=36).contains(&id) => Some(0),
-        // wheel_gems.cpp:861-869: Monk capacity is 500 * 1.5 at Grade IV;
-        // the imported description's 700 is not the executed value.
-        "Capacity" if id == 48 && vocation == "monk" && grade == 3 => Some(750_000),
         "Hit Points" | "Mana" | "Capacity" => Some(value / 1_000 * 1_000),
         // GemModifierResistanceStrategy and GemModifierStatStrategy take int32_t
         // hundredths (wheel_gems.hpp:43-68); signed penalties are retained in the sum.
@@ -106,7 +100,7 @@ pub struct SupremeEffect<'a> {
 
 pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffect<'_>> {
     let multiplier = *[10_i64, 11, 12, 15].get(usize::from(grade))?;
-    let mut kind = effect["kind"].as_str()?;
+    let kind = effect["kind"].as_str()?;
     let display_target = effect["target"].as_str()?;
     let mut target = display_target
         .strip_prefix("Augmented ")
@@ -115,32 +109,24 @@ pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffec
     if value < 0 {
         return None;
     }
-    match (id, kind) {
+    value = match (id, kind) {
         // The donor truncates the int32_t constructor argument before aggregation:
         // 28 * 1/1.1/1.2/1.5 becomes 28/30/33/42 hundredths, not rounded UI text.
-        (0, "dodge") => value = (28 * multiplier / 10) * 10,
+        (0, "dodge") => (28 * multiplier / 10) * 10,
         // Crystal explicitly rounds Groundshaker, unlike the other int spell fields.
         // wheel_gems.cpp:365-367; wheel_definitions.hpp:287-305.
-        (16, "base_damage_bonus") => value = ((6_500 * multiplier / 10 + 500) / 1_000) * 1_000,
-        // Executed primary-source values differ from the imported descriptions.
-        // wheel_gems.cpp:408-410,515-518,595-613. The Flurry assignments intentionally
-        // follow the source fields even though their enum names describe the opposite.
-        (29, "critical_extra_damage") => value = (12 * multiplier / 10) * 1_000,
-        (60, "cooldown_reduction") => value = 5_000,
-        (82, "base_damage_bonus") => {
-            kind = "critical_extra_damage";
-            value = (6_500 * multiplier / 10) / 1_000 * 1_000;
-        }
-        (83, "critical_extra_damage") => {
-            kind = "base_damage_bonus";
-            value = (8 * multiplier / 10) * 1_000;
-        }
-        (86, "base_damage_bonus") => value = (8 * multiplier / 10) * 1_000,
-        _ => {}
-    }
+        (16, "base_damage_bonus") => ((6_500 * multiplier / 10 + 500) / 1_000) * 1_000,
+        // W07: current official values/types replace the donor assignments.
+        _ => value,
+    };
     value = match kind {
         "dodge" | "life_leech" | "mana_leech" => value / 10 * 10,
         "critical_extra_damage" if target == "Critical Extra Damage" => value / 10 * 10,
+        "critical_extra_damage" | "base_damage_bonus" | "base_healing_bonus"
+            if matches!(id, 29 | 82 | 83 | 86 | 94..=113) =>
+        {
+            value
+        }
         "critical_extra_damage" | "base_damage_bonus" | "base_healing_bonus" => {
             value / 1_000 * 1_000
         }
@@ -151,10 +137,8 @@ pub fn supreme_effect(id: u16, grade: u8, effect: &Value) -> Option<SupremeEffec
             value
         }
         "revelation_mastery_points" => {
-            // Primary-source behavior: each case adds the points immediately, then
-            // processActiveGems executes the same strategy once (wheel_gems.cpp:261-263,
-            // 271-320,633-643; player_wheel.cpp:2757). Preserve both additions explicitly.
-            (value / 1_000).checked_mul(2)?.checked_mul(1_000)?
+            // A Revelation Mastery modifier contributes its displayed points once.
+            value / 1_000 * 1_000
         }
         _ => return None,
     };
@@ -259,34 +243,72 @@ mod tests {
         Ok(())
     }
 
+    fn projected_supreme(
+        data: &WheelGemData,
+        vocation: &str,
+        id: u16,
+        grade: u8,
+    ) -> Result<WheelRuntimeEffects, Error> {
+        let mut state = AtelierState {
+            vocation: vocation.into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        state.grades.insert((FragmentKind::Supreme, id), grade);
+        state.gems.insert(
+            1,
+            Gem {
+                id: 1,
+                quality: GemQuality::Greater,
+                mods: vec![31, 0, id],
+                locked: false,
+                vessel: true,
+                slot: Some(2),
+                ruleset_revision: data.revision().into(),
+            },
+        );
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::ZERO,
+            current: true,
+        };
+        let mut effects = WheelRuntimeEffects::default();
+        effects.sockets.gem_vessel_nodes = 3;
+        effects
+            .contribute_gems(&state, data, &allocation)
+            .ok_or("projection")?;
+        Ok(effects)
+    }
+
     #[test]
-    fn executed_primary_spell_values_override_display_descriptions() -> Result<(), Error> {
+    fn official_winter_spell_values_replace_donor_overrides() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
         for (id, input_kind, output_kind, expected) in [
             (
                 29,
                 "critical_extra_damage",
                 "critical_extra_damage",
-                [12_000, 13_000, 14_000, 18_000],
+                [8_000, 8_800, 9_600, 12_000],
             ),
-            (60, "cooldown_reduction", "cooldown_reduction", [5_000; 4]),
+            (60, "cooldown_reduction", "cooldown_reduction", [10_000; 4]),
             (
                 82,
                 "base_damage_bonus",
-                "critical_extra_damage",
-                [6_000, 7_000, 7_000, 9_000],
+                "base_damage_bonus",
+                [6_500, 7_200, 7_900, 9_750],
             ),
             (
                 83,
                 "critical_extra_damage",
-                "base_damage_bonus",
-                [8_000, 8_000, 9_000, 12_000],
+                "critical_extra_damage",
+                [8_000, 8_800, 9_600, 12_000],
             ),
             (
                 86,
                 "base_damage_bonus",
                 "base_damage_bonus",
-                [8_000, 8_000, 9_000, 12_000],
+                [5_000, 5_500, 6_000, 7_500],
             ),
         ] {
             for grade in 0..4_u8 {
@@ -295,22 +317,45 @@ mod tests {
                 assert_eq!(actual.kind, output_kind);
                 assert_eq!(actual.value_milli, expected[usize::from(grade)]);
                 assert!(!actual.target.starts_with("Augmented "));
+                let vocation = match id {
+                    29 => "paladin",
+                    60 => "druid",
+                    _ => "monk",
+                };
+                let projected = projected_supreme(&data, vocation, id, grade)?;
+                assert_eq!(
+                    projected.gem_value_milli(output_kind, actual.target),
+                    expected[usize::from(grade)]
+                );
+                if id == 60 {
+                    assert_eq!(
+                        projected.gem_value_milli("momentum_chance", ""),
+                        [0, 330, 660, 1000][usize::from(grade)]
+                    );
+                }
             }
         }
         Ok(())
     }
 
     #[test]
-    fn mastery_preserves_both_source_additions_and_momentum_is_global() -> Result<(), Error> {
+    fn mastery_contributes_once_for_every_perk_and_momentum_is_global() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
-        for grade in 0..4_u8 {
-            let row = effect(&data, 5, grade, "revelation_mastery_points")?;
-            let actual = supreme_effect(5, grade, &row).ok_or("mastery")?;
-            assert_eq!(actual.target, "Gift of Life");
-            assert_eq!(
-                actual.value_milli,
-                [300_000, 330_000, 360_000, 450_000][usize::from(grade)]
-            );
+        // The catalogue records 150/165/180/225 points. The current official test
+        // planner independently shows 225 for every Mastery ID at Grade IV.
+        for id in [
+            5, 21, 22, 23, 39, 40, 41, 56, 57, 58, 73, 74, 75, 91, 92, 93,
+        ] {
+            for grade in 0..4_u8 {
+                let row = effect(&data, id, grade, "revelation_mastery_points")?;
+                let actual = supreme_effect(id, grade, &row).ok_or("mastery")?;
+                assert_eq!(Some(actual.target), row["target"].as_str());
+                assert_eq!(
+                    actual.value_milli,
+                    [150_000, 165_000, 180_000, 225_000][usize::from(grade)],
+                    "mastery mod {id}, grade {grade}",
+                );
+            }
         }
         let row = effect(&data, 6, 1, "momentum_chance")?;
         let actual = supreme_effect(6, 1, &row).ok_or("momentum")?;
@@ -322,8 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn monk_mana_and_capacity_follow_source_tables_without_dropping_resistance() -> Result<(), Error>
-    {
+    fn monk_mixed_mana_is_preserved_alongside_resistance_and_capacity() -> Result<(), Error> {
         let data = WheelGemData::embedded()?;
         for id in 33..=36_u16 {
             let row = data.gems()["catalogue"]["basic_mods"]
@@ -336,7 +380,11 @@ mod tests {
                 for value in row["effects"].as_array().ok_or("effects")? {
                     let actual = basic_milli(id, grade, "monk", value).ok_or("projection")?;
                     if value["name"] == "Mana" {
-                        assert_eq!(actual, 0);
+                        assert_eq!(
+                            actual,
+                            [100_000, 110_000, 120_000, 150_000][usize::from(grade)],
+                            "Monk mixed Mana mod {id}, grade {grade}",
+                        );
                     } else {
                         assert!(actual > 0);
                     }
@@ -358,9 +406,201 @@ mod tests {
         for grade in 0..4_u8 {
             assert_eq!(
                 basic_milli(48, grade, "monk", capacity),
-                Some([500_000, 550_000, 600_000, 750_000][usize::from(grade)])
+                Some([500_000, 550_000, 600_000, 700_000][usize::from(grade)])
             );
         }
+        Ok(())
+    }
+
+    // W06: current official client Grades I-IV; see the retained audit JSON.
+    #[test]
+    fn winter_supreme_modifiers_project_every_grade_and_workshop_pool() -> Result<(), Error> {
+        let data = WheelGemData::embedded()?;
+        let evidence: Value = serde_json::from_str(include_str!(
+            "../../../../../docs/reference/wheel-of-destiny-testserver-20261113/new-supreme-mods.json"
+        ))?;
+        assert_eq!(
+            data.gems()["catalogue"]["supreme_mods"]
+                .as_array()
+                .ok_or("catalogue")?
+                .len(),
+            114
+        );
+        let ids: Vec<_> = evidence["new_mods"]
+            .as_array()
+            .ok_or("new mods")?
+            .iter()
+            .filter_map(|row| row["source_id"].as_u64())
+            .collect();
+        assert_eq!(ids, (94..=113).collect::<Vec<u64>>());
+        for row in evidence["new_mods"].as_array().ok_or("new mods")? {
+            let id = u16::try_from(row["source_id"].as_u64().ok_or("id")?)?;
+            let vocation = row["vocation"].as_str().ok_or("vocation")?;
+            let kind = row["effect"].as_str().ok_or("kind")?;
+            let spell = row["spell_name"].as_str().ok_or("spell")?;
+            assert!(
+                data.gems()["vocations"][vocation]["supreme_mods"]
+                    .as_array()
+                    .ok_or("pool")?
+                    .contains(&Value::from(id))
+            );
+            let family = &data.gems()["vocations"][vocation];
+            let first = u16::try_from(
+                family["basic_mods_position_1"][0]
+                    .as_u64()
+                    .ok_or("first basic")?,
+            )?;
+            let second = family["basic_mods_position_2"]
+                .as_array()
+                .ok_or("second pool")?
+                .iter()
+                .filter_map(Value::as_u64)
+                .find(|value| *value != u64::from(first))
+                .ok_or("second basic")?;
+            let mut paid = AtelierState {
+                vocation: vocation.into(),
+                gold: 200_000_000,
+                ..Default::default()
+            };
+            paid.unrevealed.insert(GemQuality::Greater, 1);
+            paid.fragments.insert(FragmentKind::Supreme, 100);
+            for action in [
+                crate::atelier::AtelierAction::Reveal {
+                    id: 1,
+                    quality: GemQuality::Greater,
+                    mods: vec![first, u16::try_from(second)?, id],
+                },
+                crate::atelier::AtelierAction::Reshape {
+                    id: 1,
+                    position: 3,
+                    mod_id: 0,
+                },
+                crate::atelier::AtelierAction::Reshape {
+                    id: 1,
+                    position: 3,
+                    mod_id: id,
+                },
+            ] {
+                paid.commit(paid.revision, action)
+                    .map_err(|error| format!("modifier {id}: {error:?}"))?;
+            }
+            for _ in 0..3 {
+                paid.commit(
+                    paid.revision,
+                    crate::atelier::AtelierAction::GradeUp {
+                        kind: FragmentKind::Supreme,
+                        mod_id: id,
+                    },
+                )
+                .map_err(|error| format!("upgrade {id}: {error:?}"))?;
+            }
+            assert_eq!(paid.grades.get(&(FragmentKind::Supreme, id)), Some(&3));
+            for grade in 0..4_u8 {
+                let effects = projected_supreme(&data, vocation, id, grade)?;
+                let expected = (row["grade_values"][usize::from(grade)]
+                    .as_f64()
+                    .ok_or("grade")?
+                    .abs()
+                    * 1000.0)
+                    .round() as i64;
+                assert_eq!(
+                    effects.gem_value_milli(kind, spell),
+                    expected,
+                    "id {id}, grade {grade}"
+                );
+                if id == 97 {
+                    assert_eq!(
+                        effects.gem_value_milli("momentum_chance", ""),
+                        [0, 330, 660, 1000][usize::from(grade)]
+                    );
+                }
+            }
+        }
+        let family = &data.gems()["vocations"]["monk"];
+        let basic: std::collections::BTreeSet<_> =
+            ["basic_mods_position_1", "basic_mods_position_2"]
+                .into_iter()
+                .flat_map(|key| family[key].as_array().into_iter().flatten())
+                .filter_map(Value::as_u64)
+                .collect();
+        assert_eq!(
+            family["supreme_mods"].as_array().ok_or("monk pool")?.len(),
+            27
+        );
+        assert_eq!(
+            basic.len() + family["supreme_mods"].as_array().ok_or("pool")?.len(),
+            73
+        );
+        let mut state = AtelierState {
+            vocation: "monk".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            gold: 100_000_000,
+            ..Default::default()
+        };
+        for id in basic {
+            state
+                .grades
+                .insert((FragmentKind::Basic, u16::try_from(id)?), 3);
+        }
+        for id in family["supreme_mods"].as_array().ok_or("pool")? {
+            state.grades.insert(
+                (
+                    FragmentKind::Supreme,
+                    u16::try_from(id.as_u64().ok_or("id")?)?,
+                ),
+                3,
+            );
+        }
+        state.grades.insert((FragmentKind::Supreme, 113), 2);
+        state.fragments.insert(FragmentKind::Supreme, 100);
+        let commit = state
+            .commit(
+                0,
+                crate::atelier::AtelierAction::GradeUp {
+                    kind: FragmentKind::Supreme,
+                    mod_id: 113,
+                },
+            )
+            .map_err(|error| format!("final grade: {error:?}"))?;
+        assert_eq!(commit.promotion_points, 73);
+
+        Ok(())
+    }
+
+    #[test]
+    fn official_monk_capacity_projects_seven_hundred_plus_workshop() -> Result<(), Error> {
+        let data = WheelGemData::embedded()?;
+        let mut state = AtelierState {
+            vocation: "monk".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        state.grades.insert((FragmentKind::Basic, 48), 3);
+        state.gems.insert(
+            1,
+            Gem {
+                id: 1,
+                quality: GemQuality::Greater,
+                mods: vec![48, 0, 0],
+                locked: false,
+                vessel: true,
+                slot: Some(2),
+                ruleset_revision: data.revision().into(),
+            },
+        );
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::ZERO,
+            current: true,
+        };
+        let mut effects = WheelRuntimeEffects::default();
+        effects.sockets.gem_vessel_nodes = 3;
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .ok_or("projection")?;
+        assert_eq!(effects.gem_value_milli("Capacity", ""), 700_000);
+        assert_eq!(effects.capacity, 715);
         Ok(())
     }
 
