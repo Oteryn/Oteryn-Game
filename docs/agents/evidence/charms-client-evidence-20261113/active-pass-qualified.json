@@ -1,0 +1,473 @@
+{
+  "schema": "CHARMS_BOUNDED_ACTIVE_TEST_AND_RESTORE/v1",
+  "scope": "Single paid reset and rebuilding original levels/assignments; not75stages or combat qualification",
+  "authorization": "Owner explicitly allowed active test-server actions",
+  "baseline": "baseline-qualified.json",
+  "reset": {
+    "paid_gold": 5495250,
+    "gold_before": 72262029,
+    "gold_after": 66766779,
+    "major_before": [
+      114,
+      6914
+    ],
+    "major_after": [
+      6914,
+      6914
+    ],
+    "minor_before": [
+      50,
+      900
+    ],
+    "minor_after": [
+      100,
+      100
+    ],
+    "proof": "active-test-reset-1-result.png"
+  },
+  "echo_samples": [
+    {
+      "event": "Freeze0to1",
+      "major_before": 6914,
+      "major_after": 6594,
+      "cost": 320,
+      "minor_total_before": 100,
+      "minor_total_after": 150,
+      "grant": 50,
+      "proof": "active-freeze-stage1-result.png"
+    },
+    {
+      "event": "Freeze1to2",
+      "major_before": 6594,
+      "major_after": 6114,
+      "cost": 480,
+      "minor_total_before": 150,
+      "minor_total_after": 250,
+      "grant": 100,
+      "proof": "restore-freeze-stage2-result.png"
+    }
+  ],
+  "restore": {
+    "major_level_spend": 6800,
+    "minor_level_spend": 850,
+    "major_available_final": 114,
+    "major_total_final": 6914,
+    "minor_available_final": 50,
+    "minor_total_final": 900,
+    "gold_final": 66766779,
+    "paid_resets": 1,
+    "assignments_restored": 9,
+    "Fatal_Hold_unassigned_as_before": true,
+    "proof": "active-final-restored-context.png",
+    "level_transactions": [
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Freeze",
+        "stage": 2,
+        "expected_cost": 480,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou want to upgrede the Charm Freeze?This will costyou 4Bo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-freeze-stage2-confirmation.png",
+        "utc": "2026-11-13T10:55:53.761841+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Low Blow",
+        "stage": 1,
+        "expected_cost": 800,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "Confirm UnkockingofCharm",
+          "Doyou want to unlockthe Charm Low Blow? This will costyou Boo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-low-blow-stage1-confirmation.png",
+        "utc": "2026-11-13T10:56:05.898836+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Low Blow",
+        "stage": 2,
+        "expected_cost": 1200,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou wantto upgredethe Charm LowBlow?Thiswill costyou 12oo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-low-blow-stage2-confirmation.png",
+        "utc": "2026-11-13T10:56:07.204861+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Parry",
+        "stage": 1,
+        "expected_cost": 400,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "Confirm Unkocking ofCharm",
+          "Doyou want to unlock the Charm Parry? This will costyou 4oo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-parry-stage1-confirmation.png",
+        "utc": "2026-11-13T10:56:11.342301+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Parry",
+        "stage": 2,
+        "expected_cost": 600,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou want to upgrade the Charm Parry?This will costyou 6oo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-parry-stage2-confirmation.png",
+        "utc": "2026-11-13T10:56:12.601941+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Poison",
+        "stage": 1,
+        "expected_cost": 240,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "Confirm UnkockingofCharm",
+          "Doyou want to unlock the Charm Poison?This will costyou 24o Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-poison-stage1-confirmation.png",
+        "utc": "2026-11-13T10:56:16.832983+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Poison",
+        "stage": 2,
+        "expected_cost": 360,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharim",
+          "Doyou want to upgrede the Charm Poison?This will costyou 36o Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-poison-stage2-confirmation.png",
+        "utc": "2026-11-13T10:56:18.085439+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Savage Blow",
+        "stage": 1,
+        "expected_cost": 800,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUnkockingofCharm",
+          "Doyou wantto unlock the Charm Savage Bkow?This will costyou Boo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-savage-blow-stage1-confirmation.png",
+        "utc": "2026-11-13T10:57:35.114227+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Savage Blow",
+        "stage": 2,
+        "expected_cost": 1200,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou wanttoupgrade the Charm SavageBlow?This willcostyou 12oo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-savage-blow-stage2-confirmation.png",
+        "utc": "2026-11-13T10:57:36.420023+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Enflame",
+        "stage": 1,
+        "expected_cost": 400,
+        "currency": "charm_points",
+        "dialog_ocr": [
+          "Confirm UnlockingofCharm",
+          "Doyou want to unlockthe CharmEnflame?This will costyou 4oo Charm Points?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-enflame-stage1-confirmation.png",
+        "utc": "2026-11-13T10:57:40.848973+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Vampiric Embrace",
+        "stage": 1,
+        "expected_cost": 100,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirimUnkockingofCharm",
+          "Doyou wantto unlockthe Charm Vampiric Emhrece?This will costyou 1oo Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-vampiric-embrace-stage1-confirmation.png",
+        "utc": "2026-11-13T10:59:52.354690+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Vampiric Embrace",
+        "stage": 2,
+        "expected_cost": 150,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou wantto upgrede the CharmVampiricEmbrace?This will costyou 15o Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-vampiric-embrace-stage2-confirmation.png",
+        "utc": "2026-11-13T10:59:53.859476+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Void Inversion",
+        "stage": 1,
+        "expected_cost": 100,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "Confirim UnkockingofCharm",
+          "Doyou want to unlockthe Charm Void Inversion?Thiswill costyou 1oo Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-void-inversion-stage1-confirmation.png",
+        "utc": "2026-11-13T10:59:58.580981+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Void Inversion",
+        "stage": 2,
+        "expected_cost": 150,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou wantto upgrede the CharmVoid Inversion?Thiswill costyou 15o Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-void-inversion-stage2-confirmation.png",
+        "utc": "2026-11-13T11:00:00.189236+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Void's Call",
+        "stage": 1,
+        "expected_cost": 100,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirmUnkockingofCharm",
+          "Doyou want to unlock the Charm Void's Call? Thiswill cost you 1oo Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-voids-call-stage1-confirmation.png",
+        "utc": "2026-11-13T11:00:04.584265+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Void's Call",
+        "stage": 2,
+        "expected_cost": 150,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirmUpgradingofCharm",
+          "Doyou want to upgrede the Charm Void's Call?This will costyou 15o Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-voids-call-stage2-confirmation.png",
+        "utc": "2026-11-13T11:00:05.933683+00:00"
+      },
+      {
+        "event": "authorized_restore_purchase",
+        "charm": "Fatal Hold",
+        "stage": 1,
+        "expected_cost": 100,
+        "currency": "minor_charm_echoes",
+        "dialog_ocr": [
+          "ConfirmUnkockingofCharm",
+          "Doyou want to unlock the Charm Fatal Hok?Thiswill costyou 1oo Minor Charm Echoes?",
+          "Yes",
+          "No"
+        ],
+        "confirmation_file": "restore-fatal-hold-stage1-confirmation.png",
+        "utc": "2026-11-13T11:01:21.853613+00:00"
+      }
+    ],
+    "initial_pilot": [
+      {
+        "event": "authorized_active_test",
+        "operation": "unlock",
+        "charm": "Freeze",
+        "expected_cost": 320,
+        "utc": "2026-11-13T10:53:35.115112+00:00"
+      }
+    ],
+    "assignment_transactions": [
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Freeze",
+        "creature": "Norcferatu Nightweaver",
+        "dialog_ocr": [
+          "ConfirmSelected Charm",
+          "Doyou want to use the Charm Freezefor this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:03:15.406011+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Low Blow",
+        "creature": "Norcferatu Heartless",
+        "dialog_ocr": [
+          "ConfirmSelected Charim",
+          "Doyou want to use the Charm Low Blow for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:03:24.390174+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Parry",
+        "creature": "Cobra Scout",
+        "dialog_ocr": [
+          "Confirm Selected Charm",
+          "Kmg",
+          "Doyou want to use the Charm Parry for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:04:19.756792+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Poison",
+        "creature": "Gloom Maw",
+        "dialog_ocr": [
+          "ConfirmSelected Charm",
+          "Doyou wantto use the Charm Poison for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:07:16.304597+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Savage Blow",
+        "creature": "Varg",
+        "dialog_ocr": [
+          "ConfirmSelectedCharm",
+          "Doyou want to use the Charm Savage Blow for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:07:23.680395+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Enflame",
+        "creature": "Orclops Bloodbreaker",
+        "dialog_ocr": [
+          "ConfirmSelectedCharm",
+          "Doyou want to use the Charm Enflamefor thiscreature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:07:31.096703+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Vampiric Embrace",
+        "creature": "Norcferatu Heartless",
+        "dialog_ocr": [
+          "ConfirmSelectedCharim",
+          "Doyou want to use the Charm VampiricEmbrece for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:08:37.639059+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Void Inversion",
+        "creature": "Gloom Maw",
+        "dialog_ocr": [
+          "ConfirmSelectedCharim",
+          "Doyou want to use the Charm VoidInversion for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:08:46.277207+00:00"
+      },
+      {
+        "event": "authorized_restore_assignment",
+        "charm": "Void's Call",
+        "creature": "Norcferatu Nightweaver",
+        "dialog_ocr": [
+          "ConfirmSelected Charm",
+          "Doyou want to use the Charm Void's Call for this creature?",
+          "Yes",
+          "No"
+        ],
+        "utc": "2026-11-13T11:08:54.559061+00:00"
+      }
+    ]
+  },
+  "source_fee_comparison": {
+    "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "path": "crates/gameplay/domain/src/domain/charm.rs",
+    "line": 846,
+    "source_full_level_fee_with_25_percent_discount": 6320250,
+    "observed_fee": 5495250,
+    "difference": 825000,
+    "reachable_via": "durability/charm_state.rs723-729 and939-957; source trace only, no Oteryn runtime test"
+  },
+  "official_source": {
+    "url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8140",
+    "retrieval": "Directfetch403; relevant indexed official page paragraphs returned by websearch, not a third-party article",
+    "old_test_formula": "level *5000",
+    "new_base_formula_derived_from_official_examples": "100000 +11000*max(level-100,0)",
+    "examples_without_discount": {
+      "100": 100000,
+      "500": 4500000,
+      "1000": 10000000,
+      "2000": 21000000
+    },
+    "level757_base": 7327000,
+    "level757_with_25_percent_discount": 5495250,
+    "boundary": "Formula follows examples. Firstfree reset and actual entitlement/discount must be included in a complete calculator; not every entitlement or threshold experimentally tested."
+  },
+  "calculator_audit": "No charm-reset arm found in current Platform mainc5780e2... calculator router, onlyexperience/stamina/training/loot. Atlas targeted searches did not find one; not proof about every external/historical calculator.",
+  "limits": [
+    "No combat,damagecap,area or proc timing tests",
+    "No all75stage purchase",
+    "No general fee function inferred from one UI sample alone",
+    "No runtime/content formula patched"
+  ],
+  "keepalive_handoff": "Paused during owner character-switch handoff; no unattended input until new context configured",
+  "verified_utc": "2026-11-13T11:13:17.664065+00:00"
+}

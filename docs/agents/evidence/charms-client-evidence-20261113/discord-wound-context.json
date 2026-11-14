@@ -1,0 +1,116 @@
+{
+  "schema": "OTERYN_CHARMS_FILTERED_WOUND_CONTEXT/v1",
+  "accessed_utc": "2026-11-13T12:11:16.114382+00:00",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "26b6dfd11d47abe0f2a0b67e76a19408d7fca1e6",
+  "source_domain": "GLOBAL_TIBIA_COMMUNITY",
+  "query": {
+    "result_count": 9,
+    "field_text_normalized_from_ui": "wound\nw: tasks-and-bestiary\nw: content-updates-discussions\nw: polish-chat\nw: monk-channel\nw: english-chat\ncharms",
+    "filter_dialog_channels": [
+      "tasks-and-bestiary",
+      "content-updates-discussions",
+      "polish-chat",
+      "monk-channel",
+      "english-chat"
+    ],
+    "interpretation": "Owner-prepared UI state preserved; exact text includes wound and trailing charms plus five channel tokens. Do not simplify to an independently submitted server-wide wound-only query.",
+    "exhaustive": false,
+    "absence_established": false
+  },
+  "claims": [
+    {
+      "id": "CRYPT-STRIKE-REPLY",
+      "url": "https://discord.com/channels/836592213327609957/1336272311661236286/1444951371735371909",
+      "author": "Verilo / Antarya",
+      "date_local": "2025-12-01 08:20",
+      "kind": "DIRECT_COMMUNITY_REPLY_NOT_CONTROLLED_TEST",
+      "summary": "Says Crypt Strike armor penetration does not scale charms, not even Wound.",
+      "question_url": "https://discord.com/channels/836592213327609957/1336272311661236286/1444950271888330753",
+      "question_author": "Grooszka",
+      "question_date_local": "2025-12-01 08:16",
+      "question_summary": "Asks if Crypt Strike armor penetration scales with charms, specifically Carnage.",
+      "context_verified": true,
+      "limitation": "This is Crypt Strike context, not a direct answer to the later weapon physical-pierce question. No test sample, gear controls or video supplied in inspected window."
+    },
+    {
+      "id": "WEAPON-PIERCE-QUESTION",
+      "url": "https://discord.com/channels/836592213327609957/1336272311661236286/1550397624773775381",
+      "author": "Lewah",
+      "date_local": "2026-09-18 08:46",
+      "kind": "QUESTION_WITH_ADJACENT_CONTEXT_READ",
+      "summary": "Asks whether Wound is affected by weapon physical pierce.",
+      "context_verified": true,
+      "limitation": "No answer to that question in inspected adjacent window, which moves to FH-gem discussion. Does not establish that no answer exists elsewhere."
+    },
+    {
+      "id": "WEAPON-PIERCE-QUESTION-LEAD",
+      "url": "https://discord.com/channels/836592213327609957/1336272311661236286/1539030639192571984",
+      "author": "Monkee Shizzaren",
+      "date_local": "2026-08-17 23:58",
+      "kind": "SEARCH_RESULT_QUESTION_NOT_CONTEXT_QUALIFIED",
+      "summary": "Asks whether phys-pierce percent increases Wound damage.",
+      "context_verified": false,
+      "limitation": "Matching search result only; surrounding conversation not opened in this bounded follow-up."
+    },
+    {
+      "id": "CARNAGE-RESISTANCE-CLAIM",
+      "url": "https://discord.com/channels/836592213327609957/1336272311661236286/1444950895019425865",
+      "author": "Siconix",
+      "date_local": "2025-12-01 08:18",
+      "kind": "COMMUNITY_ASSERTION_NOT_CONTROLLED_TEST",
+      "summary": "Claims Carnage physical damage ignores armor and resistance; says similarly for Overpower in following message1444950914288058418.",
+      "context_verified": true,
+      "limitation": "No protocol, controlled data or footage in inspected context. Current source flags differ; do not treat assertion as a proven runtime defect."
+    }
+  ],
+  "source_effects": {
+    "Carnage": {
+      "damage_cap_level_multiplier": 6,
+      "element": "physical",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 15,
+      "reduced_by_armor": true,
+      "type": "kill_area_damage"
+    },
+    "Wound": {
+      "damage_cap_level_multiplier": 2,
+      "element": "physical",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  "source_receipts": [
+    {
+      "path": "content/charms/charms-00000-00024.json",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 21013,
+      "sha256": "ce118bb9933ed5fae362c819aa0c0b50c043df4c9829de9ea7d03f89d73e3afe"
+    },
+    {
+      "path": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 20851,
+      "sha256": "51763f2e41469df8e85097f4328c775a3e7a50fd338c74b1cdb15d2d5248aae5"
+    },
+    {
+      "path": "crates/gameplay/progression/src/charm_effects.rs",
+      "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "bytes": 21513,
+      "sha256": "b0ff811efcb4e3c68df626914f31f881d3864e1fd6bca9bf1027264c2f1bca0c"
+    }
+  ],
+  "source_comparison": {
+    "damage_function": "crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat.rs:228-265 damage_amount",
+    "effect_evaluator": "crates/gameplay/progression/src/charm_effects.rs evaluate_effect",
+    "finding": "damage_amount uses target armor when flagged and creature element response unless ignores_resistances. Its signature has no attacker equipment-pierce argument. Wound ignores armor but not resistance by flags; Carnage applies both. This inspected seam is compatible with no direct pierce amplification, not full Crypt Strike/weapon-pierce callgraph or current Global proof.",
+    "crypt_strike_equals_weapon_pierce": false,
+    "controlled_global_test_found": false
+  },
+  "runtime_changed": false,
+  "game_actions": false,
+  "mechanic_status_promotions": [],
+  "prior_scope_correction": "Earlier10-window both-Discord pass was shallow and not exhaustive. This owner-corrected channel-filtered query and full-context reads expose a concrete distinction omitted by first-window summaries."
+}

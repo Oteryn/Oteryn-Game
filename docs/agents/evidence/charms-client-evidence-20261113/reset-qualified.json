@@ -1,0 +1,22 @@
+{
+  "root_owner_authorization": "test server may actively test",
+  "operation": "reset_all",
+  "before": {
+    "gold": 72262029,
+    "major_available": 114,
+    "major_total": 6914,
+    "minor_available": 50,
+    "minor_total": 900
+  },
+  "after": {
+    "gold": 66766779,
+    "major_available": 6914,
+    "major_total": 6914,
+    "minor_available": 100,
+    "minor_total": 100
+  },
+  "observed_gold_cost": 5495250,
+  "proof": "active-test-reset-1-result.png",
+  "interpretation": "Single UI reset readback only; no universal feeformula inferred",
+  "plan": "No further reset. Rebuild original6Major and4Minor levels+assignments, measuring actualMajor\u2192Minor echo grants; no75stageexhaustivebuy"
+}
