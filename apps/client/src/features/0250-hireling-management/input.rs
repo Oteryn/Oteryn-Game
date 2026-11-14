@@ -1,4 +1,4 @@
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 #[path = "input/configuration.rs"]
 pub(in crate::play) mod configuration;
 use crate::combat_input::PlayCommand;

@@ -234,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    hireling_management::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);

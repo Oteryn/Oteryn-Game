@@ -123,7 +123,7 @@ pub(in crate::play) fn submit(
         Some("Configuration submitted; refresh after the purchase result");
     true
 }
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 pub(in crate::play) fn prices(m: &mut Mailbox, commands: &UnboundedSender<PlayCommand>) {
     if m.store.pending || m.store.confirmed_purchase.is_some() {
         return;

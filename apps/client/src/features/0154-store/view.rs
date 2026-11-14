@@ -17,7 +17,7 @@ impl PlayLink {
         lock(&self.mailbox).store.clone()
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
 #[cfg(windows)]
