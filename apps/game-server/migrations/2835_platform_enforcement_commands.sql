@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS game_platform_enforcement_configuration (
 );
 INSERT INTO game_platform_enforcement_configuration(singleton) VALUES(true) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS game_platform_enforcement_cursor (
- singleton BOOLEAN PRIMARY KEY CHECK(singleton), stream_cursor TEXT,
+ singleton BOOLEAN PRIMARY KEY CHECK(singleton), stream_cursor TEXT, reconcile_cursor TEXT,
+ stream_stopped BOOLEAN NOT NULL DEFAULT false,reconcile_stopped BOOLEAN NOT NULL DEFAULT false,
+ CHECK(reconcile_cursor IS NULL OR (reconcile_cursor ~ '^v1:[1-9][0-9]{0,18}$' AND substring(reconcile_cursor FROM 4)::numeric<=9223372036854775807)),
  CHECK(stream_cursor IS NULL OR (stream_cursor ~ '^v1:[1-9][0-9]{0,18}$' AND substring(stream_cursor FROM 4)::numeric<=9223372036854775807))
 );
 INSERT INTO game_platform_enforcement_cursor(singleton) VALUES(true) ON CONFLICT DO NOTHING;
@@ -26,9 +28,13 @@ CREATE TABLE IF NOT EXISTS game_platform_enforcement_receipts (
  command_bytes BYTEA NOT NULL CHECK(octet_length(command_bytes) BETWEEN 1 AND 1024),
  command_digest TEXT NOT NULL CHECK(command_digest ~ '^[0-9a-f]{64}$'),
  receipt_revision INTEGER NOT NULL CHECK(receipt_revision BETWEEN 1 AND 65535),
- result_bytes BYTEA NOT NULL CHECK(octet_length(result_bytes) BETWEEN 1 AND 1024)
+ result_bytes BYTEA NOT NULL CHECK(octet_length(result_bytes) BETWEEN 1 AND 1024),
+ publication_stopped BOOLEAN NOT NULL DEFAULT false,
+ overdue_alarmed BOOLEAN NOT NULL DEFAULT false
 );
 CREATE TABLE IF NOT EXISTS game_platform_enforcement_result_outbox (
+ delivery_position BIGSERIAL UNIQUE,
+ acknowledged BOOLEAN NOT NULL DEFAULT false,held BOOLEAN NOT NULL DEFAULT false,reconcile_required BOOLEAN NOT NULL DEFAULT false,
  operation_id UUID NOT NULL CHECK(game_character_is_uuid_v7(operation_id)) REFERENCES game_platform_enforcement_receipts(operation_id),
  command_digest TEXT NOT NULL CHECK(command_digest ~ '^[0-9a-f]{64}$'),
  receipt_revision INTEGER NOT NULL CHECK(receipt_revision BETWEEN 1 AND 65535),
@@ -55,6 +61,18 @@ END $$;
 CREATE OR REPLACE TRIGGER game_platform_enforcement_receipt_immutable
  BEFORE UPDATE ON game_platform_enforcement_receipts FOR EACH ROW
  EXECUTE FUNCTION game_platform_enforcement_receipt_immutable();
+CREATE OR REPLACE FUNCTION game_platform_enforcement_result_immutable() RETURNS trigger
+ LANGUAGE plpgsql SET search_path=pg_catalog,public AS $$ BEGIN
+ IF (NEW.operation_id,NEW.command_digest,NEW.receipt_revision,NEW.result_bytes,NEW.delivery_position)
+  IS DISTINCT FROM (OLD.operation_id,OLD.command_digest,OLD.receipt_revision,OLD.result_bytes,OLD.delivery_position) THEN
+  RAISE EXCEPTION 'enforcement result binding is immutable' USING ERRCODE='23514';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE OR REPLACE TRIGGER game_platform_enforcement_result_immutable
+ BEFORE UPDATE ON game_platform_enforcement_result_outbox FOR EACH ROW
+ EXECUTE FUNCTION game_platform_enforcement_result_immutable();
+REVOKE ALL ON FUNCTION game_platform_enforcement_result_immutable() FROM PUBLIC;
 -- The deciding owner samples Game time only after acquiring deciding locks.
 CREATE OR REPLACE FUNCTION game_platform_enforcement_now_ms() RETURNS BIGINT LANGUAGE sql VOLATILE
  SET search_path=pg_catalog,public
@@ -67,8 +85,10 @@ REVOKE ALL ON game_platform_enforcement_configuration,game_platform_enforcement_
 GRANT SELECT ON game_platform_enforcement_configuration TO oteryn_game_runtime;
 GRANT SELECT,UPDATE ON game_platform_enforcement_cursor TO oteryn_game_runtime;
 GRANT SELECT,INSERT,UPDATE ON game_platform_enforcement_streams,game_platform_enforcement_receipts TO oteryn_game_runtime;
-GRANT SELECT,INSERT,DELETE ON game_platform_enforcement_result_outbox TO oteryn_game_runtime;
+GRANT SELECT,INSERT,UPDATE ON game_platform_enforcement_result_outbox TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_platform_enforcement_conflicts TO oteryn_game_runtime;
 GRANT SELECT ON game_platform_enforcement_configuration,game_platform_enforcement_cursor,
  game_platform_enforcement_streams,game_platform_enforcement_receipts,game_platform_enforcement_result_outbox,
  game_platform_enforcement_conflicts TO oteryn_game_control;
+
+GRANT USAGE,SELECT ON SEQUENCE game_platform_enforcement_result_outbox_delivery_position_seq TO oteryn_game_runtime;

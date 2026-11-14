@@ -125,20 +125,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             use super::connection::AdmissionRefusal;
             use crate::durability::DurabilityError;
             let read = async {
-                let retry=super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
-                retry.retry_unavailable(async || {
-                    self.root.platform_mute_for_session(self.character,session).await.map_err(|error| match error {
-                        DurabilityError::RootUnavailable|DurabilityError::Unavailable|DurabilityError::Database(_)|DurabilityError::RootPassDeadlineExceeded => AdmissionRefusal::Unavailable,
-                        _ => AdmissionRefusal::Rejected,
+                let retry = super::AdmissionRetryBudget::for_foreground_command(self.root).ok()?;
+                retry
+                    .retry_unavailable(async || {
+                        self.root
+                            .platform_mute_for_session(self.character, session)
+                            .await
+                            .map_err(|error| match error {
+                                DurabilityError::RootUnavailable
+                                | DurabilityError::Unavailable
+                                | DurabilityError::Database(_)
+                                | DurabilityError::RootPassDeadlineExceeded => {
+                                    AdmissionRefusal::Unavailable
+                                }
+                                _ => AdmissionRefusal::Rejected,
+                            })
                     })
-                }).await.ok()
-            }.await;
+                    .await
+                    .ok()
+            }
+            .await;
             // No failure is cached. The next chat command retries current truth.
-            platform_wait=read.unwrap_or(Some(1)).map(|wait| wait.clamp(1,oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS));
+            platform_wait = read
+                .unwrap_or(Some(1))
+                .map(|wait| wait.clamp(1, oteryn_protocol_oteryn::chat::MAX_CHAT_WAIT_SECONDS));
         }
-        match (self.staff_only_mute_wait(session).await,platform_wait) {
-            (Some(a),Some(b))=>Some(a.max(b)),
-            (a,b)=>a.or(b),
+        match (self.staff_only_mute_wait(session).await, platform_wait) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (a, b) => a.or(b),
         }
     }
     async fn staff_only_mute_wait(&self, session: GameSessionId) -> Option<u32> {
@@ -179,7 +193,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 fn platform_enforcement_enabled(serving_enabled: bool) -> bool {
     #[cfg(test)]
-    if let Some(enabled)=test_clock::enforcement() { return enabled; }
+    if let Some(enabled) = test_clock::enforcement() {
+        return enabled;
+    }
     serving_enabled
 }
 
@@ -212,8 +228,12 @@ pub(super) mod test_clock {
     pub(in crate::gameplay_transport) fn get() -> Option<Option<(u64, u64)>> {
         NOW.get()
     }
-    pub(in crate::gameplay_transport) fn set_enforcement(enabled:bool) { ENFORCEMENT.set(Some(enabled)); }
-    pub(in crate::gameplay_transport) fn enforcement()->Option<bool> { ENFORCEMENT.get() }
+    pub(in crate::gameplay_transport) fn set_enforcement(enabled: bool) {
+        ENFORCEMENT.set(Some(enabled));
+    }
+    pub(in crate::gameplay_transport) fn enforcement() -> Option<bool> {
+        ENFORCEMENT.get()
+    }
     #[test]
     fn staff_test_clock_overrides_are_isolated_between_scenarios() {
         let available = std::thread::spawn(|| {

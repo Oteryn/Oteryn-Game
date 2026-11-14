@@ -3455,6 +3455,24 @@ async fn realize_activation_paced(
     }
 }
 
+fn enforcement_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    other_identities: impl FnOnce() -> Result<Vec<Vec<u8>>, BootError>,
+) -> Result<
+    Option<oteryn_gameplay_social::platform_streams::enforcement::transport::Clients>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::enforcement::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&other_identities()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients)
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -3462,50 +3480,78 @@ async fn boot_and_serve(
     npc_boot: Option<bundle_npcs::NpcBoot>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
-    let _enforcement_clients =
-        oteryn_gameplay_social::platform_streams::enforcement::transport::Clients::from_env()
-            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
     let config = &material.config;
-    if let Some(clients) = &_enforcement_clients {
-        let platform = &config.platform;
-        let mut paths = vec![&platform.client_certificate_file];
-        if let Some(v) = &platform.bootstrap_intents {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.runtime_status {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.account_characters {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.character_commands {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.character_services {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.bazaar {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.public_projections {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &platform.world_event_outcomes {
-            paths.push(&v.client_certificate_file);
-        }
-        if let Some(v) = &config.journal {
-            paths.push(&v.client_certificate_file);
-        }
-        let identities = paths
-            .into_iter()
-            .map(|path| {
-                read_file("platform.enforcement.identity_separation",path,FileClass::Secret,effective_uid(),MAX_PEM_BYTES)
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        clients
-            .check_other_identities(&identities)
-            .map_err(|_| invalid("platform.enforcement.identity_separation"))?;
-    }
+    let enforcement_clients = enforcement_startup(
+        |key| std::env::var_os(key),
+        || {
+            let platform = &config.platform;
+            let mut paths = vec![(
+                "platform.client_certificate_file",
+                &platform.client_certificate_file,
+            )];
+            if let Some(v) = &platform.bootstrap_intents {
+                paths.push((
+                    "platform.bootstrap_intents.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.runtime_status {
+                paths.push((
+                    "platform.runtime_status.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.account_characters {
+                paths.push((
+                    "platform.account_characters.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.character_commands {
+                paths.push((
+                    "platform.character_commands.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.character_services {
+                paths.push((
+                    "platform.character_services.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.bazaar {
+                paths.push((
+                    "platform.bazaar.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &platform.public_projections {
+                paths.push((
+                    "platform.public_projections.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
+                paths.push((
+                    "platform.world_event_outcomes.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            if let Some(v) = &config.journal {
+                paths.push((
+                    "journal.client_certificate_file",
+                    &v.client_certificate_file,
+                ));
+            }
+            let identities = paths
+                .into_iter()
+                .map(|(key, path)| {
+                    read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(identities)
+        },
+    )?;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();
@@ -3546,6 +3592,26 @@ async fn boot_and_serve(
     .await
     .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
+    if enforcement_clients.is_some() {
+        with_retries(
+            root,
+            "enforcement store configuration",
+            config.boot_pass_deadline(),
+            boot_step_retryable,
+            root_busy,
+            || {
+                root.enforcement_transport(
+                    &authority,
+                    oteryn_gameplay_social::platform_streams::enforcement::worker::Action::Cursor {
+                        reconcile: false,
+                    },
+                )
+            },
+        )
+        .await
+        .map_err(|_| invalid("game_platform_enforcement_configuration"))?;
+    }
+
     let Some(generation) = first(
         await_assignment(
             root,
@@ -3701,6 +3767,7 @@ async fn boot_and_serve(
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        platform_enforcement_enabled: enforcement_clients.is_some(),
         cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
             *proof.fact().node_id().as_bytes(),
         )
@@ -3752,7 +3819,33 @@ async fn boot_and_serve(
     };
     // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
     // the boot future too; boxing only the outer node leaves stacked poll temporaries.
-    Box::pin(supervision::supervise(supervision::Serving {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::{
+        StoreRequest, Tasks, store_channel,
+    };
+    let (requests, mut receiver) = store_channel();
+    let _enforcement_tasks = Tasks::spawn(enforcement_clients, requests);
+    let enforcement_owner = Box::pin(async {
+        while let Some(request) = receiver.recv().await {
+            match request {
+                StoreRequest::Transact(action, reply) => {
+                    let _ = reply.send(
+                        root.enforcement_transport(&authority, action)
+                            .await
+                            .map_err(|_| ()),
+                    );
+                }
+                StoreRequest::Decide(raw, reply) => {
+                    let _ = reply.send(
+                        root.decide_platform_enforcement(&authority, &proof, &raw)
+                            .await
+                            .map_err(|_| ()),
+                    );
+                }
+            }
+        }
+        std::future::pending::<()>().await
+    });
+    let serving = Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
         listener_config,
@@ -3766,8 +3859,10 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
-    }))
-    .await
+    }));
+    first(serving, enforcement_owner)
+        .await
+        .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]
@@ -3778,6 +3873,34 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn enforcement_flag_off_spawns_nothing() {
+        let clients = enforcement_startup(|_| None, || Err(invalid("unexpected identity read")))
+            .expect("off");
+        let (store, mut receiver) =
+            oteryn_gameplay_social::platform_streams::enforcement::worker::store_channel();
+        let tasks = oteryn_gameplay_social::platform_streams::enforcement::worker::Tasks::spawn(
+            clients, store,
+        );
+        assert!(tasks.is_empty());
+        assert!(receiver.try_recv().is_err());
+    }
+    #[test]
+    fn enforcement_flag_on_missing_identity_fails_startup() {
+        use oteryn_gameplay_social::platform_streams::enforcement::{
+            ENABLED_VAR, transport::READER_IDENTITY_VAR,
+        };
+        assert!(matches!(
+            enforcement_startup(
+                |key| (key == ENABLED_VAR).then(|| "true".into()),
+                || Err(invalid("unexpected identity read"))
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: READER_IDENTITY_VAR
+            }))
+        ));
+    }
 
     #[test]
     fn a_busy_holder_delays_the_privilege_answer_without_refusing() {

@@ -575,7 +575,7 @@ fn scenario(which: u8) -> TestResult {
                 let c=command(&h,101).await?;
                 assert!(h.root.decide_platform_enforcement(&a,&h.node,&c.encode().ok_or("encode")?).await.is_err(),"default-off deciding configuration");
                 sqlx::query("UPDATE game_platform_enforcement_configuration SET enabled=true,supported_policy_revision=1 WHERE singleton").execute(&h.pool).await?;
-                match which {0=>decisions(&h,&a).await,1=>chat(&h,&a).await,2=>race(&h,&a).await,3=>permissions(&h,&a).await,4=>{
+                match which {5=>pull_to_ack(&h,&a).await,0=>decisions(&h,&a).await,1=>chat(&h,&a).await,2=>race(&h,&a).await,3=>permissions(&h,&a).await,4=>{
                     let sessions:i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions WHERE session_state IN(1,2)").fetch_one(&h.pool).await?;
                     assert_eq!(sessions,0);
                     assert_eq!(decide(&h,&a,&c).await?.runtime_effect,RuntimeEffect::OnNextAdmission);
@@ -607,3 +607,81 @@ fn platform_enforcement_storage_privileges_and_immutable_binding() -> TestResult
 fn platform_enforcement_without_session_is_on_next_admission() -> TestResult {
     scenario(4)
 }
+
+struct PgEnforcementStore<'a,'f,'s> { h:&'a Harness,authority:&'a ReconciledCharacterAuthority<'f,'s> }
+impl crate::platform_streams::enforcement::worker::Store for PgEnforcementStore<'_, '_, '_> {
+    async fn transact(&self,action:crate::platform_streams::enforcement::worker::Action)->Result<crate::platform_streams::enforcement::worker::Reply,()> {
+        super::maintain_ready(&self.h.root).await.map_err(|_|())?;
+        self.h.root.enforcement_transport(self.authority,action).await.map_err(|_|())
+    }
+    async fn decide(&self,raw:Vec<u8>)->Result<Vec<u8>,()> {
+        super::maintain_ready(&self.h.root).await.map_err(|_|())?;
+        self.h.root.decide_platform_enforcement(self.authority,&self.h.node,&raw).await.map_err(|_|())
+    }
+}
+async fn pull_to_ack(h:&Harness,a:&ReconciledCharacterAuthority<'_, '_>)->TestResult {
+    use crate::platform_streams::enforcement::{Message,CommandPage,transport::Clients,worker::{self,Step}};
+    use tokio::io::{AsyncReadExt,AsyncWriteExt};
+    let apply=command(h,101).await?;let apply_raw=apply.encode().ok_or("encode apply")?;
+    let mut revoke=apply.clone();revoke.operation_id=uuid(102);revoke.intent=Intent::Revoke;revoke.decision_revision=2;revoke.prior_decision_revision=Some(1);revoke.effective_at_ms=None;revoke.expires_at_ms=None;
+    let page=|commands,next:Option<&str>|Message::Page(CommandPage{schema:"oteryn.enforcement_command_stream_page.v1".into(),items:commands,next_cursor:next.map(str::to_owned)}).encode().ok_or("page encode");
+    let ack=include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-ack.json")).to_vec();
+    let replies=vec![page(vec![apply],Some("v1:1"))?,ack.clone(),page(vec![],None)?,page(vec![revoke],Some("v1:2"))?,ack];
+    let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let clients=Clients::local(format!("http://{}",listener.local_addr()?)).map_err(debug)?;
+    let peer=tokio::spawn(async move {
+        let mut requests=Vec::new();
+        for body in replies {
+            let (mut socket,_)=listener.accept().await.map_err(|e|e.to_string())?;
+            let mut raw=Vec::new();let mut buffer=[0u8;4096];
+            let body_start=loop {
+                let n=socket.read(&mut buffer).await.map_err(|e|e.to_string())?;if n==0 {return Err("request disconnected".to_string());}raw.extend_from_slice(&buffer[..n]);
+                if let Some(end)=raw.windows(4).position(|bytes|bytes==b"\r\n\r\n") {
+                    let head=String::from_utf8_lossy(&raw[..end]);
+                    let length=head.lines().find_map(|line|line.to_ascii_lowercase().strip_prefix("content-length:").and_then(|s|s.trim().parse::<usize>().ok())).ok_or("request content length")?;
+                    if raw.len()>=end+4+length {break end+4;}
+                }
+            };
+            requests.push(raw[body_start..].to_vec());
+            let head=format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",body.len());
+            socket.write_all(head.as_bytes()).await.map_err(|e|e.to_string())?;socket.write_all(&body).await.map_err(|e|e.to_string())?;
+        }
+        Ok::<_,String>(requests)
+    });
+    let first=PgEnforcementStore{h,authority:a};
+    assert_eq!(worker::pull(&first,&clients).await.map_err(debug)?,Step::More);
+    let count=|query:&'static str|sqlx::query_scalar::<_,i64>(query).fetch_one(&h.pool);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,1);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged").await?,1);
+    let stored:Vec<u8>=sqlx::query_scalar("SELECT result_bytes FROM game_platform_enforcement_receipts").fetch_one(&h.pool).await?;
+    let mut expected=EnforcementResult::parse(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-applied.json"))).ok_or("result fixture")?;
+    expected.command_digest=crate::platform_streams::enforcement::digest(&apply_raw);
+    assert_eq!(stored,expected.encode().ok_or("result encode")?);
+    assert_eq!(worker::publish(&first,&clients,START+500).await.map_err(debug)?,Step::More);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged").await?,1);
+    let mut immutable=h.pool.begin().await?;
+    immutable.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
+    let mut changed=stored.clone();changed.push(b' ');
+    let error=sqlx::query("UPDATE game_platform_enforcement_result_outbox SET result_bytes=$1").bind(changed).execute(&mut *immutable).await.err().ok_or("result history changed")?;
+    assert!(matches!(error,sqlx::Error::Database(ref e) if e.code().as_deref()==Some("23514")));
+    immutable.rollback().await?;
+    // Restart the task over the same durable cursor and acknowledgements.
+    let restarted=PgEnforcementStore{h,authority:a};
+    assert_eq!(worker::pull(&restarted,&clients).await.map_err(debug)?,Step::Idle);
+    assert_eq!(worker::publish(&restarted,&clients,START+500).await.map_err(debug)?,Step::Idle);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,1);
+    // Crash after the next decision/cursor commits but before any result publication.
+    assert_eq!(worker::pull(&restarted,&clients).await.map_err(debug)?,Step::More);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged").await?,1);
+    let after_crash=PgEnforcementStore{h,authority:a};
+    assert_eq!(worker::publish(&after_crash,&clients,START+500).await.map_err(debug)?,Step::More);
+    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged").await?,2);
+    let requests=peer.await.map_err(debug)?.map_err(debug)?;
+    assert_eq!(requests.len(),5);assert_eq!(requests[1],stored);
+    let Some(Message::Request(request))=Message::parse(&requests[2]) else {return Err("restart did not use stream request".into());};
+    assert_eq!(request.after.as_deref(),Some("v1:1"));
+    let latest:Vec<u8>=sqlx::query_scalar("SELECT result_bytes FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid").bind(uuid(102)).fetch_one(&h.pool).await?;
+    assert_eq!(requests[4],latest);Ok(())
+}
+#[test]
+fn pull_to_ack_end_to_end()->TestResult {scenario(5)}

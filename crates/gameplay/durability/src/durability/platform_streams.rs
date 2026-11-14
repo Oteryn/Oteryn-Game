@@ -7,6 +7,7 @@
 //! record projects through its revisioned function (migrations 2800, 2803), so a replayed or
 //! reordered record never moves a projection backwards.
 pub mod enforcement;
+pub mod enforcement_transport;
 pub mod enforcement_wire;
 mod security_revocation;
 

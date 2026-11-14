@@ -1,13 +1,19 @@
 //! Frozen enforcement wire, shared with its durable deciding owner (no puller in Part A).
 pub mod transport;
+pub mod worker;
 
 pub const ENABLED_VAR: &str = "OTERYN_PLATFORM_ENFORCEMENT_ENABLED";
 
-pub fn enabled() -> bool {
-    std::env::var(ENABLED_VAR).is_ok_and(|value| enabled_value(Some(&value)))
-}
-fn enabled_value(value: Option<&str>) -> bool {
-    value == Some("true")
+fn enabled_value(
+    value: Option<std::ffi::OsString>,
+) -> Result<bool, crate::premium::client::ClientConfigError> {
+    match value {
+        None => Ok(false),
+        Some(value) if value == "true" => Ok(true),
+        Some(_) => Err(crate::premium::client::ClientConfigError::Invalid(
+            ENABLED_VAR,
+        )),
+    }
 }
 
 pub use crate::durability::platform_streams::enforcement_wire::*;
@@ -25,10 +31,11 @@ mod tests {
     }
     #[test]
     fn enforcement_flag_defaults_off() {
-        for value in [None, Some("false"), Some("1"), Some("TRUE"), Some("")] {
-            assert!(!enabled_value(value));
+        assert_eq!(enabled_value(None), Ok(false));
+        for value in ["false", "1", "TRUE", ""] {
+            assert!(enabled_value(Some(value.into())).is_err());
         }
-        assert!(enabled_value(Some("true")));
+        assert_eq!(enabled_value(Some("true".into())), Ok(true));
     }
     #[test]
     fn enforcement_fixtures_round_trip_byte_exact() -> TestResult {

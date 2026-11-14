@@ -70,7 +70,7 @@ pub async fn serve_gameplay(
         test_step_wait_receipts: None,
         activity_runtimes: Default::default(),
         states: std::sync::Arc::new(channel_states::ChannelSessionStates {
-            platform_enforcement_enabled: crate::platform_streams::enforcement::enabled(),
+            platform_enforcement_enabled: owners.platform_enforcement_enabled,
             security_revocation_stream_enabled: crate::platform_streams::enabled(
                 crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR,
                 std::env::var_os(crate::platform_streams::SECURITY_REVOCATIONS_ENABLED_VAR),

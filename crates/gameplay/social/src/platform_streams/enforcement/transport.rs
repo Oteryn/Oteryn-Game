@@ -13,19 +13,16 @@ pub struct Clients {
     reader: reqwest::Client,
     results: reqwest::Client,
     origin: reqwest::Url,
-    leaves: Vec<String>,
+    leaves: Vec<(&'static str, String)>,
 }
 impl Clients {
     pub fn from_env() -> Result<Option<Self>, ClientConfigError> {
         Self::from_lookup(|key| std::env::var_os(key))
     }
-    fn from_lookup(
+    pub fn from_lookup(
         lookup: impl Fn(&str) -> Option<OsString>,
     ) -> Result<Option<Self>, ClientConfigError> {
-        if !lookup(ENABLED_VAR)
-            .as_deref()
-            .is_some_and(|value| value == "true")
-        {
+        if !super::enabled_value(lookup(ENABLED_VAR))? {
             return Ok(None);
         }
         let read = |var: &'static str| {
@@ -36,10 +33,7 @@ impl Clients {
         // Resolve identities first so a missing purpose fails with its own configuration key.
         let reader = read(READER_IDENTITY_VAR)?;
         let results = read(RESULTS_IDENTITY_VAR)?;
-        let mut identities = vec![
-            (READER_IDENTITY_VAR, reader.clone()),
-            (RESULTS_IDENTITY_VAR, results.clone()),
-        ];
+        let mut identities = Vec::new();
         for var in [
             super::super::SANCTION_IDENTITY_VAR,
             super::super::LOYALTY_IDENTITY_VAR,
@@ -50,6 +44,8 @@ impl Clients {
                 identities.push((var, read(var)?));
             }
         }
+        identities.push((READER_IDENTITY_VAR, reader.clone()));
+        identities.push((RESULTS_IDENTITY_VAR, results.clone()));
         super::super::check_identities(
             &identities
                 .iter()
@@ -57,10 +53,25 @@ impl Clients {
                 .collect::<Vec<_>>(),
             None,
         )?;
-        let leaves = identities[..2]
+        let leaves = identities[identities.len() - 2..]
             .iter()
-            .filter_map(|(_, pem)| super::super::leaf_certificate(pem))
-            .collect();
+            .map(|(key, pem)| {
+                super::super::leaf_certificate(pem)
+                    .map(|leaf| (*key, leaf))
+                    .ok_or(ClientConfigError::Invalid(key))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let rename = |identity_var| {
+            move |ClientConfigError::Invalid(key)| {
+                ClientConfigError::Invalid(match key {
+                    crate::premium::client::URL_VAR => super::super::STREAMS_URL_VAR,
+                    crate::premium::client::PLATFORM_CA_VAR => {
+                        super::super::STREAMS_PLATFORM_CA_VAR
+                    }
+                    _ => identity_var,
+                })
+            }
+        };
         let origin = lookup(super::super::STREAMS_URL_VAR)
             .and_then(|value| value.into_string().ok())
             .ok_or(ClientConfigError::Invalid(super::super::STREAMS_URL_VAR))?;
@@ -69,12 +80,14 @@ impl Clients {
             origin: origin.clone(),
             identity_pem: reader,
             platform_ca_pem: ca.clone(),
-        })?;
+        })
+        .map_err(rename(READER_IDENTITY_VAR))?;
         let (results, _) = platform_http(&PremiumClientConfig {
             origin,
             identity_pem: results,
             platform_ca_pem: ca,
-        })?;
+        })
+        .map_err(rename(RESULTS_IDENTITY_VAR))?;
         Ok(Some(Self {
             reader,
             results,
@@ -86,11 +99,27 @@ impl Clients {
         for pem in others {
             let leaf = super::super::leaf_certificate(pem)
                 .ok_or(ClientConfigError::Invalid(READER_IDENTITY_VAR))?;
-            if self.leaves.contains(&leaf) {
-                return Err(ClientConfigError::Invalid(READER_IDENTITY_VAR));
+            if let Some((key, _)) = self.leaves.iter().find(|(_, own)| own == &leaf) {
+                return Err(ClientConfigError::Invalid(key));
             }
         }
         Ok(())
+    }
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn local(origin: String) -> Result<Self, ClientConfigError> {
+        let http = reqwest::Client::builder()
+            .http1_only()
+            .no_proxy()
+            .build()
+            .map_err(|_| ClientConfigError::Invalid(super::super::STREAMS_URL_VAR))?;
+        let origin = reqwest::Url::parse(&origin)
+            .map_err(|_| ClientConfigError::Invalid(super::super::STREAMS_URL_VAR))?;
+        Ok(Self {
+            reader: http.clone(),
+            results: http,
+            origin,
+            leaves: Vec::new(),
+        })
     }
     pub async fn exchange(&self, route: Route, body: Vec<u8>) -> Result<Vec<u8>, Failure> {
         let (path, bound, request_bound, result) = match route {
@@ -188,7 +217,7 @@ mod tests {
         assert!(matches!(Clients::from_lookup(|_| None), Ok(None)));
         assert!(matches!(
             Clients::from_lookup(|key| (key == ENABLED_VAR).then(|| OsString::from("TRUE"))),
-            Ok(None)
+            Err(ClientConfigError::Invalid(ENABLED_VAR))
         ));
     }
     #[test]
@@ -199,17 +228,44 @@ mod tests {
         ));
     }
     #[test]
-    fn enforcement_reader_results_identity_overlap_is_rejected() {
-        let cert = "-----BEGIN CERTIFICATE-----\nYQ==\n-----END CERTIFICATE-----\n";
-        assert!(
-            super::super::super::check_identities(
-                &[
-                    (READER_IDENTITY_VAR, cert.as_bytes()),
-                    (RESULTS_IDENTITY_VAR, cert.as_bytes())
-                ],
-                None
-            )
-            .is_err()
-        );
+    fn enforcement_reader_results_identity_overlap_is_rejected()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use std::collections::HashMap;
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let directory = std::env::temp_dir().join(format!(
+            "enforcement-identities-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        std::fs::create_dir(&directory)?;
+        let first = directory.join("reader.pem");
+        let second = directory.join("results.pem");
+        std::fs::write(
+            &first,
+            "-----BEGIN CERTIFICATE-----\nYQ==\n-----END CERTIFICATE-----\n",
+        )?;
+        std::fs::write(
+            &second,
+            "-----BEGIN CERTIFICATE-----\nYg==\n-----END CERTIFICATE-----\n",
+        )?;
+        for results in [&first, &second] {
+            let mut values = HashMap::from([
+                (ENABLED_VAR, OsString::from("true")),
+                (READER_IDENTITY_VAR, first.clone().into_os_string()),
+                (RESULTS_IDENTITY_VAR, results.clone().into_os_string()),
+            ]);
+            if results == &second {
+                values.insert(
+                    super::super::super::SECURITY_REVOCATION_IDENTITY_VAR,
+                    second.clone().into_os_string(),
+                );
+            }
+            assert!(matches!(
+                Clients::from_lookup(|key| values.get(key).cloned()),
+                Err(ClientConfigError::Invalid(RESULTS_IDENTITY_VAR))
+            ));
+        }
+        std::fs::remove_dir_all(directory)?;
+        Ok(())
     }
 }
