@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    ContainerSorting,
     Options,
     Market,
     Party,
@@ -59,6 +60,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::ContainerSorting => "shell.container_sorting",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -164,6 +166,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
+        (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
@@ -371,7 +374,8 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Options
+                Control::ContainerSorting
+                    | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -383,6 +387,7 @@ fn activate(
             return;
         }
         match control {
+            Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
@@ -572,7 +577,8 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::ContainerSorting | Control::Market | Control::Party)
+                | Some(Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
