@@ -149,7 +149,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         ComposedFreshAdmission::analyser_next(self, admitted).await
     }
     mechanic_composed_methods!();
-    async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
+    async fn activity_transfer_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         self.note_activity_input(admitted).await
     }
     async fn activity_scope_snapshot(
@@ -159,7 +162,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.project_activity_scope(admitted).await
     }
 
-    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+    async fn house_transfer_input(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(), crate::durability::DurabilityError> {
         self.note_house_input(admitted).await
     }
     async fn observe_house_map(

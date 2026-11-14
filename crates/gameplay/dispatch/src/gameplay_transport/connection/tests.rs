@@ -5,6 +5,9 @@ mod buffered_step_recovery;
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 
+#[path = "tests/guard_deferral.rs"]
+mod guard_deferral;
+
 #[path = "tests/hotkey_coalescing.rs"]
 mod hotkey_coalescing;
 
