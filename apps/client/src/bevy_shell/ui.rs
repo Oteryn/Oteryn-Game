@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    Appearance,
     CastChat,
     Cast,
     ExivaSettings,
@@ -83,6 +84,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Appearance => "shell.appearance",
             Self::CastChat => "shell.cast_chat",
             Self::Cast => "shell.cast_control",
             Self::ExivaSettings => "shell.exiva_settings",
@@ -210,6 +212,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::Appearance, "Outfit (Ctrl+Alt+A)", 160.),
         (Control::Cast, "Cast settings", 100.),
         (Control::HouseMoveOut, "House move-out (Ctrl+Alt+O)", 210.),
         (Control::CyclopediaMap, "Cyclopedia", 90.),
@@ -451,7 +454,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::CastChat | Control::Cast | Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::Appearance | Control::CastChat | Control::Cast | Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::PlayerReport
@@ -469,6 +472,7 @@ fn activate(
             return;
         }
         match control {
+            Control::Appearance => super::game_ui::appearance::open(&mut owner),
             Control::CastChat => super::game_ui::cast_chat::toggle(&mut owner),
             Control::Cast => super::game_ui::cast_control::open(&owner),
             Control::ExivaSettings => super::game_ui::open_exiva_settings(&owner),
@@ -686,7 +690,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::StatusDetails | Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::Appearance | Control::StatusDetails | Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex

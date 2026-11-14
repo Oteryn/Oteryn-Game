@@ -1,5 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+pub(super) mod appearance;
 pub(super) mod cast_chat;
 pub(super) mod cast_control;
 pub(super) mod boss_difficulty;
@@ -267,6 +268,7 @@ pub(super) fn install(app: &mut App) {
     cast_control::install(app);
     cast_chat::install(app);
     actions::install(app);
+    appearance::install(app);
     exiva_settings::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);
