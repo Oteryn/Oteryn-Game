@@ -1,10 +1,13 @@
 //! Source-derived primitives only; actions edit the production owner's transient draft.
-use super::owner::{GraphicsDraft, HostOwner};
+mod actions;
+use super::owner::HostOwner;
+pub(super) use actions::Control;
+use actions::activate;
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
     prelude::*,
     ui::{Checked, InteractionDisabled},
-    ui_widgets::{Activate, ValueChange},
+    ui_widgets::ValueChange,
 };
 use oteryn_client_ui_bevy as source;
 use std::path::Path;
@@ -39,99 +42,6 @@ pub(super) struct Skins {
     pub(super) frame: Handle<Image>,
     pub(super) inset: Handle<Image>,
     pub(super) font: Handle<Font>,
-}
-#[derive(Component, Clone, Copy, Debug)]
-pub(super) enum Control {
-    Appearance,
-    CastChat,
-    Cast,
-    ExivaSettings,
-    HouseMoveOut,
-    GuildhallLeadership,
-    CyclopediaTrackers,
-    CyclopediaMap,
-    BossDifficulty,
-    BossRewardChest,
-    AnimusMastery,
-    BrowseField,
-    ContainerSorting,
-    Options,
-    HirelingServices,
-    FurnitureRotation,
-    HouseTransfer,
-    HouseBrowsing,
-    GuildWars,
-    Market,
-    Party,
-    PlayerReport,
-    Quests,
-    Spells,
-    StatusDetails,
-    StaffTools,
-    WorldEvent,
-    TeamFinder,
-    Training,
-    Store,
-    Login,
-    CancelLogin,
-    Fullscreen,
-    Vsync,
-    IntegerScaling,
-    Apply,
-    Ok,
-    Cancel,
-}
-impl Control {
-    pub fn id(self) -> &'static str {
-        match self {
-            Self::Appearance => "shell.appearance",
-            Self::CastChat => "shell.cast_chat",
-            Self::Cast => "shell.cast_control",
-            Self::ExivaSettings => "shell.exiva_settings",
-            Self::HouseMoveOut => "shell.house_move_out",
-            Self::GuildhallLeadership => "shell.guildhall_leadership",
-            Self::CyclopediaTrackers => "shell.cyclopedia_trackers",
-            Self::CyclopediaMap => "shell.cyclopedia_map",
-            Self::BossDifficulty => "shell.boss_difficulty",
-            Self::BossRewardChest => "shell.boss_reward_chest",
-            Self::AnimusMastery => "shell.animus_mastery",
-            Self::BrowseField => "shell.browse_field",
-            Self::ContainerSorting => "shell.container_sorting",
-            Self::Options => "shell.options",
-            Self::HirelingServices => "shell.hireling_services",
-            Self::FurnitureRotation => "shell.furniture_rotation",
-            Self::HouseTransfer => "shell.house_transfer",
-            Self::HouseBrowsing => "shell.house_browsing",
-            Self::GuildWars => "shell.guild_wars",
-            Self::Market => "shell.market",
-            Self::Party => "shell.party",
-            Self::PlayerReport => "shell.player_report",
-            Self::Quests => "shell.quests",
-            Self::Spells => "shell.spells",
-            Self::StatusDetails => "shell.status_details",
-            Self::StaffTools => "shell.staff_tools",
-            Self::WorldEvent => "shell.world_event",
-            Self::TeamFinder => "shell.team_finder",
-            Self::Training => "shell.training",
-            Self::Store => "shell.store",
-            Self::Login => "shell.sign_in",
-            Self::CancelLogin => "shell.cancel_sign_in",
-            Self::Fullscreen => "graphics.fullscreen",
-            Self::Vsync => "graphics.vsync",
-            Self::IntegerScaling => "graphics.integer_scaling",
-            Self::Apply => "graphics.apply",
-            Self::Ok => "graphics.ok",
-            Self::Cancel => "graphics.cancel",
-        }
-    }
-    fn checked(self, draft: GraphicsDraft) -> bool {
-        match self {
-            Self::Fullscreen => draft.fullscreen,
-            Self::Vsync => draft.vsync,
-            Self::IntegerScaling => draft.integer_scaling,
-            _ => false,
-        }
-    }
 }
 #[derive(Component)]
 pub(super) struct ShellToolbar;
@@ -440,96 +350,6 @@ fn action_button(
         .id();
     commands.entity(button).add_child(text);
     button
-}
-fn activate(
-    event: On<Activate>,
-    controls: Query<&Control>,
-    mut owner: NonSendMut<HostOwner>,
-    modal: super::game_ui::modal::ModalGuard,
-) {
-    if !modal.allows(event.entity) {
-        return;
-    }
-    if let Ok(control) = controls.get(event.entity) {
-        if owner.modal_active()
-            && matches!(
-                control,
-                Control::Appearance
-                    | Control::CastChat
-                    | Control::Cast
-                    | Control::ExivaSettings
-                    | Control::HirelingServices
-                    | Control::FurnitureRotation
-                    | Control::HouseMoveOut
-                    | Control::HouseTransfer
-                    | Control::HouseBrowsing
-                    | Control::GuildhallLeadership
-                    | Control::GuildWars
-                    | Control::CyclopediaTrackers
-                    | Control::CyclopediaMap
-                    | Control::BossDifficulty
-                    | Control::BossRewardChest
-                    | Control::AnimusMastery
-                    | Control::BrowseField
-                    | Control::ContainerSorting
-                    | Control::Options
-                    | Control::Market
-                    | Control::Party
-                    | Control::PlayerReport
-                    | Control::Quests
-                    | Control::Spells
-                    | Control::StatusDetails
-                    | Control::StaffTools
-                    | Control::WorldEvent
-                    | Control::Training
-                    | Control::Store
-                    | Control::Login
-                    | Control::CancelLogin
-            )
-        {
-            return;
-        }
-        match control {
-            Control::Appearance => super::game_ui::appearance::open(&mut owner),
-            Control::CastChat => super::game_ui::cast_chat::toggle(&mut owner),
-            Control::Cast => super::game_ui::cast_control::open(&owner),
-            Control::ExivaSettings => super::game_ui::open_exiva_settings(&owner),
-            Control::HouseMoveOut => super::game_ui::house_move_out::open(&mut owner),
-            Control::GuildhallLeadership => {
-                super::game_ui::guildhall_leadership::toggle(&mut owner)
-            }
-            Control::CyclopediaTrackers => super::game_ui::cyclopedia_trackers::open(&owner),
-            Control::CyclopediaMap => super::game_ui::cyclopedia_map::open(&mut owner),
-            Control::BossDifficulty => super::game_ui::boss_difficulty::open(&owner),
-            Control::BossRewardChest => super::game_ui::open_boss_reward_chest(&mut owner),
-            Control::AnimusMastery => super::game_ui::animus_mastery::open(&owner),
-            Control::BrowseField => super::game_ui::browse_field::open(&owner),
-            Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
-            Control::Options => owner.open_graphics(),
-            Control::HirelingServices => super::game_ui::hireling_services::toggle(&owner),
-            Control::FurnitureRotation => super::game_ui::toggle_furniture_rotation(&mut owner),
-            Control::HouseTransfer => super::game_ui::house_transfer::open(&owner),
-            Control::HouseBrowsing => super::game_ui::house_browsing::open(&mut owner),
-            Control::GuildWars => super::game_ui::open_guild_wars(&owner),
-            Control::Market => super::game_ui::open_market(&mut owner),
-            Control::Party => super::game_ui::open_party(&mut owner),
-            Control::PlayerReport => super::game_ui::player_report_report::open(&mut owner),
-            Control::Quests => super::game_ui::open_quests(&mut owner),
-            Control::Spells => super::game_ui::open_spells(&mut owner),
-            Control::StatusDetails => super::game_ui::status_details::toggle(&owner),
-            Control::StaffTools => super::game_ui::staff_tools::open(&mut owner),
-            Control::WorldEvent => super::game_ui::world_event_window::open(&owner),
-            Control::TeamFinder => super::game_ui::open_team_finder(&mut owner),
-            Control::Training => super::game_ui::training::open(&owner),
-            Control::Store => super::game_ui::store::open(&mut owner),
-            Control::Login => owner.request_login(),
-            Control::CancelLogin => owner.cancel_login(),
-            Control::Apply => owner.apply(false),
-            Control::Ok => owner.apply(true),
-            Control::Cancel => owner.cancel(),
-            _ => {}
-        }
-    }
 }
 fn toggle(
     event: On<ValueChange<bool>>,
