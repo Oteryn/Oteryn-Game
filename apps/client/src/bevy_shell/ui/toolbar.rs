@@ -87,6 +87,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::AchievementNotices
                     | Control::ExpertPvpModes
                     | Control::Guild(_)
+                    | Control::RaidSchedule
                     | Control::Spells
             )
         ) {

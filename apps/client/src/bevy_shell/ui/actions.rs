@@ -50,6 +50,7 @@ pub(super) fn activate(
                     | Control::AchievementNotices
                     | Control::ExpertPvpModes
                     | Control::Guild(_)
+                    | Control::RaidSchedule
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -94,6 +95,7 @@ pub(super) fn activate(
             Control::AchievementNotices => game_ui::open_achievement_notices(&mut owner),
             Control::ExpertPvpModes => game_ui::expert_pvp_modes::toggle(&owner),
             Control::Guild(bank) => game_ui::guild::open(&mut owner, *bank),
+            Control::RaidSchedule => game_ui::raid_schedule::open(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),

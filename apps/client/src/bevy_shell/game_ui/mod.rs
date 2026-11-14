@@ -54,6 +54,7 @@ pub(super) mod player_report_report;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+pub(super) mod raid_schedule;
 pub(super) mod staff_tools;
 pub(super) mod status_details;
 mod team_finder;
@@ -144,6 +145,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     player_report_report::install(app);
     quick_loot::install(app);
+    raid_schedule::install(app);
     staff_tools::install(app);
     status_details::install(app);
     store::install(app);
