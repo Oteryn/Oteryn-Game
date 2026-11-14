@@ -40,6 +40,8 @@ pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod team_finder;
+pub(super) use team_finder::open as open_team_finder;
 pub(super) mod store;
 mod trade;
 pub(super) mod training;
@@ -286,6 +288,7 @@ pub(super) fn install(app: &mut App) {
     options::install(app);
     party::install(app);
     quick_loot::install(app);
+    team_finder::install(app);
     store::install(app);
     trade::install(app);
     training::install(app);

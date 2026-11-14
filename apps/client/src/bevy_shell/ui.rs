@@ -61,6 +61,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    TeamFinder,
     Training,
     Store,
     Login,
@@ -94,6 +95,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::TeamFinder => "shell.team_finder",
             Self::Training => "shell.training",
             Self::Store => "shell.store",
             Self::Login => "shell.sign_in",
@@ -223,6 +225,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
         (Control::Training, "Training", 80.),
         (Control::Store, "Store", 80.),
     ] {
@@ -462,6 +465,7 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::TeamFinder => super::game_ui::open_team_finder(&mut owner),
             Control::Training => super::game_ui::training::open(&owner),
             Control::Store => super::game_ui::store::open(&mut owner),
             Control::Login => owner.request_login(),
@@ -649,7 +653,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

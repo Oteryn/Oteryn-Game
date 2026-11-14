@@ -84,3 +84,9 @@ impl PlayLink {
         build().is_some_and(|listing| self.team_finder_advertise(Some(listing)))
     }
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub use bound::{TeamFinderAction, TeamFinderSnapshot};

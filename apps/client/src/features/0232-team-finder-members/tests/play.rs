@@ -151,3 +151,7 @@ fn cp02_team_finder_native_session_scenario() -> Result<(), Box<dyn std::error::
 }
 
 include!("social.rs");
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound_tests;
