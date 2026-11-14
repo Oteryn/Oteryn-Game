@@ -155,6 +155,8 @@ fn guild_controls_use_real_codecs_and_apply_server_state() -> Result<(), Error> 
             runtime.block_on(async {
                 for login_member in [false, true] {
                     let (link, incoming, outbox) = play_channel();
+                    // The test drives panel state, not native Win32 windows.
+                    link.use_shared_frontend();
                     let task = tokio::spawn(run_session(
                         Peer {
                             member: false,

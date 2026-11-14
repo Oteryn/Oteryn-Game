@@ -99,6 +99,8 @@ fn boss_encounter_play_input_queries_and_displays_server_snapshot() -> Result<()
             runtime.block_on(async {
                 let commands = Arc::new(Mutex::new(Vec::new()));
                 let (link, incoming, outbox) = play_channel();
+                // The test drives panel state, not native Win32 windows.
+                link.use_shared_frontend();
                 let task = tokio::spawn(run_session(
                     Peer {
                         commands: Arc::clone(&commands),
