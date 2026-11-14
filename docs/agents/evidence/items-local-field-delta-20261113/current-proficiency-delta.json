@@ -1,0 +1,95 @@
+{
+  "schema": "ITEMS_CURRENT_PROFICIENCY_DELTA/v1",
+  "classification": "DERIVED",
+  "previous_asset": {
+    "raw_proficiency_basename": "proficiencies-9fecbbddf2b51e45c0498ee97cc01dc3d9070c54d4cc7b900d0a142c51fb004c.json",
+    "raw_proficiency_sha256": "9fecbbddf2b51e45c0498ee97cc01dc3d9070c54d4cc7b900d0a142c51fb004c",
+    "raw_proficiency_bytes": 511849,
+    "prior_mixed_private_receipt_sha256": "b4dbccde5a596f0e683bfce2e3b9796129157c34631326c5bd9d777f7ade637c",
+    "source_main": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "proficiency_source_files": {
+      "tools/content-schema/proficiency-authoring/proficiency_authoring.py": "772e7b2b3ec81f071a74ac5bb5a4e87c7873d2d9517fdaeb95d4daa93ebb8d0a",
+      "content/proficiencies/index.json": "cd3313ca55c10357c49ba53f180cd1820ce98a618c83d27a8fb787a7a8503f5d",
+      "tools/content-census/stage_proficiencies.py": "c5afa128a0b1c893b79b78071090c2404cecfba1a8f971637353e4ad739ec510",
+      "content/proficiencies/proficiencies-00000-00149.json": "76bfb19a9cc492a02ce2e01cd58735b0d74c32d104e13641d6e88692226af699",
+      "content/proficiencies/proficiencies-00150-00299.json": "4933213704e175d9c6b513e66e7f196032fd3148579b8336dc3063a7b108e9cb",
+      "content/proficiencies/proficiencies-00300-00442.json": "209c23cf764da9f3dfeafd2bd1a856aa65481e2d473d86efe639c1082bac904d"
+    },
+    "namespace": "client_proficiency_ID/version only; no serverID/runtimecrosswalkadmission"
+  },
+  "current_asset": {
+    "basename": "proficiencies-a77c88ea13f8b1909576a34ba309ad721bfc461046509509d65f347805fd8607.json",
+    "bytes": 511849,
+    "sha256": "a77c88ea13f8b1909576a34ba309ad721bfc461046509509d65f347805fd8607"
+  },
+  "summary": {
+    "profiles": 444,
+    "profile_canonical_hashes_unchanged": 443,
+    "perks": 3680,
+    "perk_canonical_hashes_unchanged": 3678,
+    "changed_perks": 2,
+    "added_or_removed_perk_keys": 0
+  },
+  "deltas": [
+    {
+      "client_proficiency_id": 499,
+      "level1": 2,
+      "perk_index0": 1,
+      "previous": {
+        "BestiaryId": 14,
+        "BestiaryName": {
+          "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+          "utf8_sha256": "91bff5f5b9c373dcfa3d91e1d8abbc3d877ba70e3a20246816e1f18f026c4506",
+          "utf8_bytes": 6,
+          "unicode_codepoints": 6
+        },
+        "Type": 6,
+        "Value": 0.015
+      },
+      "current": {
+        "BestiaryId": 2,
+        "Type": 6,
+        "Value": 0.02,
+        "BestiaryName_custody": {
+          "utf8_sha256": "49af91097cd89c72506121810cd750b530e86b76f3a24796740ce4b2f1a0d86e",
+          "utf8_bytes": 7
+        }
+      },
+      "previous_canonical_perk_sha256": "4c6ec450bfecb383a7aec022f0ab91905884cad840f89e2ab5b5d3880cff9609",
+      "current_canonical_perk_sha256": "b2202c8197477ad0216fc6392507272fae44334e3b0d162851312b76b678bbd8"
+    },
+    {
+      "client_proficiency_id": 499,
+      "level1": 4,
+      "perk_index0": 1,
+      "previous": {
+        "BestiaryId": 14,
+        "BestiaryName": {
+          "state": "OBSERVED_VALUE_RETAINED_PRIVATELY",
+          "utf8_sha256": "91bff5f5b9c373dcfa3d91e1d8abbc3d877ba70e3a20246816e1f18f026c4506",
+          "utf8_bytes": 6,
+          "unicode_codepoints": 6
+        },
+        "Type": 6,
+        "Value": 0.02
+      },
+      "current": {
+        "BestiaryId": 18,
+        "Type": 6,
+        "Value": 0.025,
+        "BestiaryName_custody": {
+          "utf8_sha256": "a5bb6066391197b9b53c348c977a6b1fbe97575905481e8d6b034dfa095c2cba",
+          "utf8_bytes": 6
+        }
+      },
+      "previous_canonical_perk_sha256": "7ade7e1fdcfbc6d5ef3bb94f809e2cadc857ae919acebfe13c88d77d6250c5ee",
+      "current_canonical_perk_sha256": "e12086ee5f10301e22e4666e3a450ca20eeef9880ad5b81233fbb19661476018"
+    }
+  ],
+  "held_type33_profile499_level3_perk0": {
+    "raw_Type": 33,
+    "raw_Value": 0.05,
+    "status": "UNCHANGED_RAW_VALUE; prior source-codec hold is not automatically discharged by tooltip"
+  },
+  "boundary": "Client-file change only. No runtime source mutation, no inferred server mapping, no promotion of proportional values to unqualified percentage units."
+}

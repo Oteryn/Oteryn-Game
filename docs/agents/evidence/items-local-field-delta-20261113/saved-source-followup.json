@@ -1,0 +1,91 @@
+{
+  "classification": "DERIVED",
+  "publication_predecessor": "a5d7617184202228e2ad27a948c4d061897c4524",
+  "device_id": "a7037f94-ac2b-43f4-bb22-d173061b6583",
+  "device_state": "ONLINE freshly checked",
+  "source_root": "/home/mole/Documents/codex-evidence/2026-11-12/handoff/outputs",
+  "pilot_archive_exact_name_search": {
+    "roots": [
+      "/home/mole/Documents/codex-evidence/2026-11-12/handoff/outputs",
+      "/home/mole/Downloads"
+    ],
+    "both_roots_exist": true,
+    "names": [
+      "OTERYN-Global-Winter-Update-static-pilot-20261112.zip",
+      "OTERYN-Global-static-batch002-20261112.zip"
+    ],
+    "matches": [],
+    "qualification": "Bounded exact-filename search; not a global absence or private Library deletion claim. Historical22 retain their fields and recorded archive hashes/version."
+  },
+  "saved_decoration_retake_directories": [
+    {
+      "directory": "items-sequence-decoration/trade-retake-1794549431282648770",
+      "png_count": 3,
+      "panel_arrow_pngs": 0,
+      "target_physical_ui_ordinal": null,
+      "target_event_sha256": null,
+      "disposition": "SAFE_STOP_NO_RETRY: unknown/ambiguous category thumb header"
+    },
+    {
+      "directory": "items-sequence-decoration/trade-retake-1794551691464847917",
+      "png_count": 12,
+      "panel_arrow_pngs": 8,
+      "target_physical_ui_ordinal": 46,
+      "target_event_sha256": "2369c1a0eedd7fa45344ce86e728ef7bbe6c4de4d0e536567547ce71a92a64c1",
+      "disposition": "Earlier retake of46; superseded by final46 receipt"
+    },
+    {
+      "directory": "items-sequence-decoration/trade-retake-1794551921135492892",
+      "png_count": 54,
+      "panel_arrow_pngs": 50,
+      "target_physical_ui_ordinal": 46,
+      "target_event_sha256": "76b7f8aa0589e967e732fa28b18b6ff8b11625e6240b9d144308ab06aa91e8a1",
+      "disposition": "Already represented by full reviewed retake and current complete observation",
+      "reviewed_receipt": {
+        "file": "decoration-full-retake46-reviewed.json",
+        "bytes": 53779,
+        "sha256": "b3a640a66c1bf5bd4aec915c8cba81a0139da474100e976b6b30a4e894c54a22"
+      }
+    },
+    {
+      "directory": "items-sequence-decoration/trade-retake-1794551950377577111",
+      "png_count": 54,
+      "panel_arrow_pngs": 50,
+      "target_physical_ui_ordinal": 52,
+      "target_event_sha256": "5ffe7e341cafabc01fbad629e747864522ae58714e4dd417b84964ccd6c5592c",
+      "disposition": "Already represented by full reviewed retake and current complete observation",
+      "reviewed_receipt": {
+        "file": "decoration-full-retake52-reviewed.json",
+        "bytes": 52544,
+        "sha256": "38bfe813dfd969ad8d6cbe6efeeee4e28e714be9ce34fd5962ffb4f18bd6fbaf"
+      }
+    },
+    {
+      "directory": "items-sequence-decoration/trade-retake-1794551984931473447",
+      "png_count": 56,
+      "panel_arrow_pngs": 52,
+      "target_physical_ui_ordinal": 59,
+      "target_event_sha256": "2b2c0a24d642c654b0d8e0f8f6c5a1f37263c62d7bfe29adaccb8bfc50da0d28",
+      "disposition": "Already represented by full reviewed retake and current complete observation",
+      "reviewed_receipt": {
+        "file": "decoration-full-retake59-reviewed.json",
+        "bytes": 55296,
+        "sha256": "f013cfb860666323f813ffde824c1f7223a3659e9f263e903cf58fa9c3458219"
+      }
+    }
+  ],
+  "total_PNG": 179,
+  "panel_arrow_PNG": 160,
+  "navigation_PNG": 19,
+  "new_observation_records": 0,
+  "current_counts_unchanged": {
+    "COMPLETE": 2209,
+    "PARTIAL": 671,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "valid_JSON_correction": "All449 JSON parse. Two scalar-counter inventory normalizations are not missing/corrupt sources or future source gaps.",
+  "game_inputs": 0,
+  "new_screenshots": 0,
+  "scope": "Read existing files only; no new card read and no count inflation from repeated scroll pages."
+}

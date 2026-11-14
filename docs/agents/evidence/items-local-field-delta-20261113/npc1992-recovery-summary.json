@@ -1,0 +1,65 @@
+{
+  "classification": "DERIVED",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6864189998",
+  "source_population": "Exactly1992 previously PARTIAL currentUI records, disjoint from prior340 complete cards; primary key pinned3173 UI row, category and physical ordinal. No global item/server-ID guess.",
+  "recovery_counts": {
+    "RECOVERED_PARTIAL": 678,
+    "UNRESOLVED": 7,
+    "RECOVERED_COMPLETE": 1307
+  },
+  "prior_ALL_counts": {
+    "COMPLETE": 340,
+    "PARTIAL": 2540,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "current_ALL_counts": {
+    "COMPLETE": 1647,
+    "PARTIAL": 1226,
+    "UNRECONCILED": 34,
+    "total": 2907
+  },
+  "new_complete_components": {
+    "both_NPC_panes_exact_calibrated_empty": 796,
+    "nonempty_quotes_and_no_overflow_qualified": 511
+  },
+  "qualified_visible_quote_occurrences": 1120,
+  "panel_state_counts": {
+    "PARTIAL_VISIBLE_QUOTES_OR_UNRESOLVED_TEXT": 708,
+    "COMPLETE_OBSERVED_EMPTY": 2761,
+    "COMPLETE_NONEMPTY_NO_OVERFLOW": 515
+  },
+  "remaining_panel_reason_occurrences": {
+    "RAW_LITERAL_CROSSCHECK_OR_NATIVE_UNIT_BITMAP_NOT_QUALIFIED": 837,
+    "NO_COMPLETE_GP_QUOTE_PARSED_CURRENCY_OR_TEXT_REQUIRES_QC": 47,
+    "VISIBLE_UNIT_ROWS_AND_PARSED_QUOTE_COUNT_DIFFER": 89,
+    "OVERFLOW_OR_SCROLLBAR_GEOMETRY_NOT_QUALIFIED": 184,
+    "UNACCOUNTED_VISIBLE_TEXT_BEFORE_FIRST_QUOTE": 17
+  },
+  "actual_source_status": {
+    "old_Ubuntu_laptop": "ONLINE, original files read through authorized RDC; no game input",
+    "original_Basic_images_read": 1992,
+    "original_image_SHA_matches_existing_scoped_public_proof_sets": 1992,
+    "mismatches": 0
+  },
+  "qualification": [
+    "Empty means exact RGB-region equality to a manually qualified native empty panel, not raw zero or no vendors globally.",
+    "Complete nonempty requires calibrated full scrollbar geometry, every visible quote accounted, exact native gp bitmap, and numeric/NPC/location corroboration against paired current raw fields on calibrated panel direction.",
+    "Various Locations is the literal native bitmap control, not one chosen raw city. Raw tuple indices retain all matching source-town entries; no name-deduplicated source export.",
+    "Yasir OCR spelling is corrected only when its native name bitmap matches the manually reviewed savedCreature116 control.",
+    "OCR alone never qualifies a field; unsupported currencies, text, clipping and overflow stay explicit PARTIAL/UNRESOLVED."
+  ],
+  "limitations": [
+    "Raw tuple literal corroboration is not a canonical appearance/server binding.",
+    "Remaining overflow tails and unqualified OCR/literals are retained for offline recovery; they are not asserted missing from all local sources.",
+    "No new game card, live copy test, screenshot, login, runtime or canonical content edit."
+  ],
+  "supersedes_for_current_count": "night-all-visible-summary.json remains historical pre-recovery340 snapshot.",
+  "reason_occurrence_counts_are_nonexclusive": true,
+  "direction_calibration": {
+    "manually_reviewed_GP_quotes": 214,
+    "UI_direction_axis_literal_matches": 214,
+    "reversed_axis_matches": 66,
+    "meaning": "UI BuyFrom corroborates rawsale_price; UI SellTo corroborates rawbuy_price. Zero axes never imply pane absence."
+  }
+}

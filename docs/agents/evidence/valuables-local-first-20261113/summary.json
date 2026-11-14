@@ -1,0 +1,327 @@
+{
+  "classification": "DERIVED_LOCAL_SOURCE_AND_NAME_CANDIDATE_ROUTING",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6866782804",
+  "publication_predecessor": "fc6e49f647ac29d9bea063b27562084c696aa570",
+  "source_market_category": 15,
+  "source_category_label": "Valuables (source market cohort; physical GUI membership not qualified per record)",
+  "source_appearances": 415,
+  "source_types": 415,
+  "unique_source_names": 353,
+  "description_present": 243,
+  "raw_NPC_tuples": 1518,
+  "candidate_weight_states": {
+    "ONE_MAIN_WEIGHT_CANDIDATE": 374,
+    "MULTIPLE_MAIN_WEIGHT_CANDIDATES": 18,
+    "NO_MAIN_NAME_CANDIDATE": 13,
+    "WEIGHT_NOT_KNOWN_IN_MAIN_CANDIDATES": 10
+  },
+  "qualified_new_appearance_weight_bindings": 0,
+  "qualified_complete_UI_cards": 0,
+  "source_asset_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "comparison_main": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+  "open_PR_inventory_at": "2026-11-13T22:24:06.621217+00:00",
+  "open_PRs": 34,
+  "complete_changed_path_occurrences": 6926,
+  "parsed_unique_JSON_blobs": 970,
+  "comparison_queries": 1379,
+  "comparison_elapsed_seconds": 42.29232320000301,
+  "deleted_PR_paths": [
+    {
+      "PR": 3111,
+      "head": "c5de5b1686c8fbb834db62b1059ca0209f782e09",
+      "path": "content/world/npc-placements/placements-00000-00107.json",
+      "verified_PR_file_status": "removed",
+      "previous_blob_sha": "db885938d2a7eed2fe36032e71137808aaf9a8ea",
+      "qualification": "Deleted from PR head, not a failed JSON read or missing retained item data."
+    },
+    {
+      "PR": 3056,
+      "head": "ff0fb599754fa11ac9be0a7b246331ee9d7c9d07",
+      "path": "content/world/npc-placements/placements-00000-00107.json",
+      "verified_PR_file_status": "removed",
+      "previous_blob_sha": "db885938d2a7eed2fe36032e71137808aaf9a8ea",
+      "qualification": "Deleted from PR head, not a failed JSON read or missing retained item data."
+    }
+  ],
+  "root_verified_single_UI_sample": {
+    "display_name": "abacus",
+    "copied_weight_oz": "12.00",
+    "marketable_literal": "yes",
+    "description_copied": true,
+    "description_text_published": false,
+    "appearance_binding": "UNQUALIFIED; no appearance or server-ID inference from this sample",
+    "independent_NPC_endpoints": "UNQUALIFIED",
+    "complete_UI_card": false,
+    "private_copy_sha256": "80711a13db8c532d0601d158e11f984a962aeb2c758225e7a4780297b38a442b"
+  },
+  "qualification": "All source/candidate values retained separately. One unique main weight candidate is not authoritative appearance binding. Multiple names/variants and explicit unknowns stay held. Current2907 observation ledger is unchanged by this415-source-cohort inventory. UI capture beyond the one root-verified abacus sample was discarded as stale by the reader.",
+  "source_heads": [
+    {
+      "PR": 3184,
+      "head": "843626377f874b37722de3ab72c207b93c2e0b28",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 3,
+      "complete_path_count": 3
+    },
+    {
+      "PR": 3183,
+      "head": "a997547565218b9204752a73915f52b8537c5aa7",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 23,
+      "complete_path_count": 23
+    },
+    {
+      "PR": 3182,
+      "head": "15f95211fbdffaa5756b098463eda01ad9c35797",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 54,
+      "complete_path_count": 54
+    },
+    {
+      "PR": 3181,
+      "head": "400b2d2988d2bb9501238dc5c9f8d0c5dfa4858f",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 11,
+      "complete_path_count": 11
+    },
+    {
+      "PR": 3180,
+      "head": "4b19ff32bceeb6a3baa1466ab5706199bdac9c2a",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 44,
+      "complete_path_count": 44
+    },
+    {
+      "PR": 3179,
+      "head": "539fcd4b9ddeb05d776b70e0a1d72d6f92080560",
+      "base": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+      "changed_files": 9,
+      "complete_path_count": 9
+    },
+    {
+      "PR": 3177,
+      "head": "97685d43a194010559a3a92821089067dbb147a3",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 2,
+      "complete_path_count": 2
+    },
+    {
+      "PR": 3176,
+      "head": "8382ce41514c415996216d85d4d12a9e9a0e8070",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 6,
+      "complete_path_count": 6
+    },
+    {
+      "PR": 3175,
+      "head": "0515417abe9bf7b77c1842c988712e2fd838fa4b",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 10,
+      "complete_path_count": 10
+    },
+    {
+      "PR": 3174,
+      "head": "0550cc3eafd6d1fe07580eaac0c27bfd8cbcf329",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 2,
+      "complete_path_count": 2
+    },
+    {
+      "PR": 3173,
+      "head": "657e3bf49ad1eadaf5390a7d97e1dd125c317d97",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 11,
+      "complete_path_count": 11
+    },
+    {
+      "PR": 3172,
+      "head": "7f4f724dc8514b4ab6a1977a75fb26f306d62d99",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 38,
+      "complete_path_count": 38
+    },
+    {
+      "PR": 3171,
+      "head": "5808f185cd4b94391426517521a5456deb1e92f2",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 19,
+      "complete_path_count": 19
+    },
+    {
+      "PR": 3170,
+      "head": "54c930ab3771d28d7d5584beed6b3e69125bf5a7",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 18,
+      "complete_path_count": 18
+    },
+    {
+      "PR": 3161,
+      "head": "98cd7d0f841ef09c33eb45f9661d41ba5394c424",
+      "base": "9b7552e07f241a423a10d8304726c2de94489c74",
+      "changed_files": 14,
+      "complete_path_count": 14
+    },
+    {
+      "PR": 3160,
+      "head": "a240e5a2069e72844eae787407cc80f9df618ca4",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 14,
+      "complete_path_count": 14
+    },
+    {
+      "PR": 3159,
+      "head": "894eddccb3890f82d14cab487988136c5288dd60",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 11,
+      "complete_path_count": 11
+    },
+    {
+      "PR": 3158,
+      "head": "0d8340614cd9f298579fcdc05d35292f1ae27f13",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 12,
+      "complete_path_count": 12
+    },
+    {
+      "PR": 3156,
+      "head": "26b958e6485c778353211b47b62d4d98a55e0cd7",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 10,
+      "complete_path_count": 10
+    },
+    {
+      "PR": 3155,
+      "head": "1977d159e985544503a770dec375e2651b4b70b4",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 14,
+      "complete_path_count": 14
+    },
+    {
+      "PR": 3154,
+      "head": "a45faafc52e68783f2e4a9de5add4c7504b03f4d",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 2,
+      "complete_path_count": 2
+    },
+    {
+      "PR": 3153,
+      "head": "8437bce34a1a764a80950f3eb726dc6054edcd52",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 13,
+      "complete_path_count": 13
+    },
+    {
+      "PR": 3152,
+      "head": "57403cf2ef48cc6e8cd2ac278ccbf413faa4370a",
+      "base": "5efd67da164ac9dc33c8c066434b228cebb86c2b",
+      "changed_files": 13,
+      "complete_path_count": 13
+    },
+    {
+      "PR": 3150,
+      "head": "8bf243e96f0307040e57cd16b2de893d563daa1d",
+      "base": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "changed_files": 14,
+      "complete_path_count": 14
+    },
+    {
+      "PR": 3148,
+      "head": "99738f5d262251241ac5c7803f12c4422adf547e",
+      "base": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "changed_files": 11,
+      "complete_path_count": 11
+    },
+    {
+      "PR": 3146,
+      "head": "9b9dfddf2f445505255a63207f48505901be6a16",
+      "base": "83be72ad403ebc221dadba4b161c85fa1d47219a",
+      "changed_files": 8,
+      "complete_path_count": 8
+    },
+    {
+      "PR": 3143,
+      "head": "2ce469ba39057774c851a8066e12fdcfca358c6d",
+      "base": "3044e745b3846e5926b4b060b9401e280c2ce446",
+      "changed_files": 11,
+      "complete_path_count": 11
+    },
+    {
+      "PR": 3142,
+      "head": "6616d8f53da38b6b0d4acc26467eef87ff4cd404",
+      "base": "3044e745b3846e5926b4b060b9401e280c2ce446",
+      "changed_files": 31,
+      "complete_path_count": 31
+    },
+    {
+      "PR": 3124,
+      "head": "6aa4e6114109c5b46389b6d0b92f4d7287f6e38e",
+      "base": "3a50a9e6f6e3e817d28dd3bd5bf17449d0c18e4a",
+      "changed_files": 1,
+      "complete_path_count": 1
+    },
+    {
+      "PR": 3111,
+      "head": "c5de5b1686c8fbb834db62b1059ca0209f782e09",
+      "base": "330aa0ba926bb912c209d221e7af6bc95371246f",
+      "changed_files": 3021,
+      "complete_path_count": 3021
+    },
+    {
+      "PR": 3104,
+      "head": "846fce4e00c578e5e7c4c0198da7e984a79ddf85",
+      "base": "35c9cd157ad61df3ba116521d59eb07d11969c89",
+      "changed_files": 423,
+      "complete_path_count": 423
+    },
+    {
+      "PR": 3102,
+      "head": "4d1bd69a0a2e39dea83097cc3e0569c02471c3ff",
+      "base": "2c17b0706abe9e9677b5db4ed75bee8d642e74e3",
+      "changed_files": 8,
+      "complete_path_count": 8
+    },
+    {
+      "PR": 3100,
+      "head": "abeff314b27fc49dbc9ee50e47fe14a2af3c435c",
+      "base": "c255c6b88dff9467deae5dfc7cd0ff1a0c8fb75f",
+      "changed_files": 15,
+      "complete_path_count": 15
+    },
+    {
+      "PR": 3056,
+      "head": "ff0fb599754fa11ac9be0a7b246331ee9d7c9d07",
+      "base": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+      "changed_files": 3030,
+      "complete_path_count": 3030
+    }
+  ],
+  "private_input_receipts": [
+    {
+      "file": "client415-private.json",
+      "bytes": 2468060,
+      "sha256": "310154000a1f8a7313d0eb197283d92d3c2510f70ea95d633a8c70e49cee52f9"
+    },
+    {
+      "file": "candidate-field-routing-private.json",
+      "bytes": 227080,
+      "sha256": "7b8742b4f9515593c15574ba035c638bcde2d752dfa6eec0a60396469ded5dc7"
+    },
+    {
+      "file": "open-pr-inventory.json",
+      "bytes": 555764,
+      "sha256": "18cba7500ecd9f03e5e77e942dab69461234f7b2228503c053f90e0290df5dea"
+    },
+    {
+      "file": "cross-pr-name-candidates-private.json",
+      "bytes": 110958210,
+      "sha256": "c8e51ae8e0c5c6a89eb2f8558357e36ff3b3f40a3a1a713f1c3a75c6734c4be4"
+    },
+    {
+      "file": "comparison-summary.json",
+      "bytes": 362,
+      "sha256": "3ddd57cdd7959520eadf2b9080fe2d49484785b3bdc72bcd52811d5fe1b89b08"
+    }
+  ],
+  "source_assets_or_description_text_published": false,
+  "appearances_with_NPC_tuples": 185
+}

@@ -1,0 +1,94 @@
+{
+  "classification": "DERIVED",
+  "authoring_predecessor": "faf65853bd6907e704795f6951ed8cacc7cca7f1",
+  "device": "mole-IdeaPad-Gaming-3-15IHU6 a7037f94-ac2b-43f4-bb22-d173061b6583 freshlyONLINE",
+  "original_root": "/home/mole/Documents/codex-evidence/2026-11-12/handoff/outputs",
+  "private_transfer": {
+    "method": "existing authenticatedTLS source-IP-restricted whitelist, derived2files,300s expiry",
+    "files": {
+      "classification": {
+        "file": "classification.json",
+        "size": 1837373,
+        "sha256": "32e194bbdc0fb1a9ae7e708711ac09bbfde4479cc21f4a860769fb92fe4a8d84"
+      },
+      "crops": {
+        "file": "npc-crops.zip",
+        "size": 14939339,
+        "sha256": "825f39541341dabf44cd447cdc5543e80b2e6eb131a2bfd97def51383ce66eb9"
+      }
+    }
+  },
+  "private_inputs": [
+    {
+      "file": "joined-classification.json",
+      "bytes": 2342892,
+      "sha256": "1e706a3140a19c52bde74753c6a40b017bc9c1d8499c9fc1c520b5ab157b4b23"
+    },
+    {
+      "file": "ocr-candidates.jsonl",
+      "bytes": 787054,
+      "sha256": "3b8b13fa7095312d422971ac81c6035c436de912af8fac2a10b3f68a4df4eba4"
+    },
+    {
+      "file": "qualified-candidates.json",
+      "bytes": 3347724,
+      "sha256": "cb8b0715a41c50f2e9c8e53867f1f5c4c3e481ae2ad962bb9743e51cc1ab0044"
+    }
+  ],
+  "geometry_boxes": {
+    "SellTo_content": [
+      240,
+      272,
+      443,
+      365
+    ],
+    "BuyFrom_content": [
+      467,
+      272,
+      666,
+      365
+    ],
+    "SellTo_scrollbar": [
+      444,
+      287,
+      456,
+      354
+    ],
+    "BuyFrom_scrollbar": [
+      670,
+      287,
+      682,
+      354
+    ]
+  },
+  "native_gp_control": {
+    "source": "items-current/cards/00001-details.png",
+    "source_sha256": "43723e40ee679f8a0ecdd9a33dd37578f17f7a8cd6ff0f5f32d2d0698532ab76",
+    "box": [
+      271,
+      275,
+      284,
+      286
+    ],
+    "binary_threshold": "allRGBchannels>140; exact0/1 pixel match, no OCR currency default"
+  },
+  "native_Various_Locations_control": {
+    "source": "same manually reviewed albino plate SellTo pane",
+    "box": [
+      240,
+      289,
+      443,
+      300
+    ],
+    "interpretation": "Literal UI display kept, raw source-town tuples not collapsed"
+  },
+  "native_Yasir_control": {
+    "source_UI_row_index0": 115,
+    "private_crop": "creature-products-116.png",
+    "private_crop_sha256": "bc2792e837fea5ffcd2ebea5cb30b57cbfc72386b144b78f2db0aa9dbc7d3fec",
+    "method": "Manually viewed retained native crop, exact name bitmap only; no fuzzy string substitution"
+  },
+  "private_media_not_published": true,
+  "UI_inputs": 0,
+  "new_screenshots": 0
+}

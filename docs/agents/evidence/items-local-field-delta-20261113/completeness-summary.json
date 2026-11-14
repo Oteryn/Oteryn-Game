@@ -1,0 +1,188 @@
+{
+  "classification": "DERIVED",
+  "criteria": "completion-criteria.json",
+  "counts": {
+    "local_extraction": {
+      "appearance_rows": 6470,
+      "types": 6228,
+      "market_absent_rows": 1288,
+      "unextracted_cohort_rows": 0
+    },
+    "current_scoped_Basic_cards": {
+      "read": 2632,
+      "complete": 701,
+      "partial_needs_offline_qualification": 1931,
+      "identity_held_within_this_physical_scope": 0,
+      "not_a_global_unique_item_count": true
+    },
+    "legacy": {
+      "observation_records": 314,
+      "distinct_item_count_not_claimed": true,
+      "Basic_complete_under_current_criteria": 0,
+      "needs_offline_qualification": 314
+    },
+    "historical3143": {
+      "field_observations": 261,
+      "label_groups": 22,
+      "current_build_complete": 0,
+      "held_version_and_identity": 22
+    },
+    "appearance_disjoint_partitions": {
+      "Basic": {
+        "complete": 49,
+        "incomplete_after_resolved_identity": 77,
+        "identity_unresolved": 6344,
+        "total": 6470
+      },
+      "all_applicable_panels": {
+        "complete": 0,
+        "incomplete_after_resolved_identity": 126,
+        "identity_unresolved": 6344,
+        "total": 6470
+      },
+      "Oteryn_import_ready": {
+        "complete": 0,
+        "incomplete_after_resolved_identity": 0,
+        "identity_unresolved": 6470,
+        "total": 6470
+      }
+    },
+    "type_disjoint_partitions": {
+      "Basic": {
+        "complete": 49,
+        "incomplete_after_resolved_identity": 77,
+        "identity_unresolved": 6102,
+        "total": 6228
+      },
+      "all_applicable_panels": {
+        "complete": 0,
+        "incomplete_after_resolved_identity": 126,
+        "identity_unresolved": 6102,
+        "total": 6228
+      },
+      "Oteryn_import_ready": {
+        "complete": 0,
+        "incomplete_after_resolved_identity": 0,
+        "identity_unresolved": 6228,
+        "total": 6228
+      }
+    },
+    "current_physical_all_applicable_panels": {
+      "complete": 0,
+      "incomplete_or_applicability_held": 2632
+    },
+    "variants": {
+      "multi_appearance_types": 157,
+      "appearance_rows": 6470,
+      "type_rows": 6228,
+      "first_alias_selection_forbidden": true
+    },
+    "client_namespace_binding": {
+      "accepted_current_client_singletons": 126,
+      "Basic_complete": 49,
+      "Basic_incomplete_needs_offline_qualification": 77,
+      "canonical_server_binding": 0
+    }
+  },
+  "category_current_physical_counts": {
+    "Creature Products": {
+      "scoped_cards": 980,
+      "Basic_PARTIAL": 980
+    },
+    "Decoration": {
+      "scoped_cards": 462,
+      "Basic_PARTIAL": 462
+    },
+    "Food": {
+      "scoped_cards": 169,
+      "Basic_PARTIAL": 169
+    },
+    "Gold": {
+      "scoped_cards": 3,
+      "Basic_COMPLETE": 3
+    },
+    "Helmets and Hats": {
+      "scoped_cards": 128,
+      "Basic_COMPLETE": 50,
+      "Basic_PARTIAL": 78
+    },
+    "Legs": {
+      "scoped_cards": 66,
+      "Basic_PARTIAL": 66
+    },
+    "Others": {
+      "scoped_cards": 603,
+      "Basic_COMPLETE": 603
+    },
+    "Potions": {
+      "scoped_cards": 44,
+      "Basic_COMPLETE": 44
+    },
+    "Boots": {
+      "scoped_cards": 67,
+      "Basic_PARTIAL": 67
+    },
+    "Containers": {
+      "scoped_cards": 109,
+      "Basic_PARTIAL": 109
+    },
+    "UNKNOWN_GLOBAL_SEARCH_RESULT_NOT_CATEGORY_CENSUS": {
+      "scoped_cards": 1,
+      "Basic_COMPLETE": 1
+    }
+  },
+  "explanation": "701 closed Basic physical cards out of2632 scoped observations;1931 need offline closure metadata.126 Hats bindings qualify the current-client appearance namespace, yielding49 complete and77 incomplete client Basic appearances; canonical/server import remains separately unqualified. Types require every retained appearance variant, so type partitions are computed independently.314 overlapping legacy records and22 older pilot label groups are preserved without invented unique-item totals.",
+  "all_open_PR_inventory": {
+    "open_PR_count": 31,
+    "complete_file_path_occurrences": 6804,
+    "source_sha256": "c2cbd64024f83361f3ea1c19b23cf4be79fc625e480acc5aa629ae9c7c0ac373",
+    "method": "Fresh31 heads; complete files from PR connection or exact GitHub merge-base→head Gitdiff for oversized PRs, avoiding REST3000 cap."
+  },
+  "remaining_queue_order": [
+    "OFFLINE:qualify1931 existing current card field-state/absence records, reuse proof files; do not reread automatically.",
+    "OFFLINE:normalize314 overlapping legacy observations and22 pilot groups; retain version/identity holds.",
+    "OFFLINE:resolve qualified physical-card/appearance/canonical variant bindings; do not turn name candidates into IDs.",
+    "Only then identify specific actually unavailable applicable fields and coordinate a live safe text-copy test before GUI reads."
+  ],
+  "GUI_actions": 0,
+  "runtime_changes": 0,
+  "no_all_tabs_or_import_completeness_claim": true,
+  "missing_qualification_counts": {
+    "current_physical_card_reason_counts": {
+      "NEEDS_OFFLINE_QUALIFICATION:DISPLAY_FIELD_ABSENCE_OR_APPLICABILITY_NOT_CLOSED": 1931
+    },
+    "current_physical_card_field_metadata_counts": {
+      "CategoryBasicFieldInventory:NOT_QUALIFIED": 1853,
+      "DisplayFieldAbsenceProof:NOT_NORMALIZED": 1853,
+      "Augments:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 66,
+      "Mantra:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 74,
+      "Protection:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 49,
+      "Required Level:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 55,
+      "Description:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 60,
+      "Skill Boost:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 54,
+      "Vocations:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 47,
+      "Classification:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 11,
+      "Imbuement Slots:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 46,
+      "Armor:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 8
+    },
+    "appearance_Basic_reason_counts": {
+      "CLIENT_CARD_TO_APPEARANCE_BINDING_NOT_QUALIFIED": 6344,
+      "BASIC_DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_NEEDS_OFFLINE_QUALIFICATION": 77
+    },
+    "appearance_Basic_field_metadata_counts": {
+      "ClientPhysicalCardIdentity:NOT_QUALIFIED": 6344,
+      "Armor:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 8,
+      "Augments:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 65,
+      "Classification:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 10,
+      "Imbuement Slots:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 45,
+      "Mantra:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 73,
+      "Protection:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 49,
+      "Required Level:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 54,
+      "Skill Boost:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 53,
+      "Vocations:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 46,
+      "Description:DISPLAY_ABSENCE_OR_APPLICABILITY_METADATA_UNQUALIFIED": 60
+    },
+    "not_missing_actual_value_counts": true,
+    "no_new_GUI_count_inferred": true
+  }
+}

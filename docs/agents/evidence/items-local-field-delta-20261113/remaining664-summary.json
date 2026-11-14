@@ -1,0 +1,58 @@
+{
+  "classification": "DERIVED_ROUTING_NOT_COMPLETENESS_PROMOTION",
+  "current_counts": {
+    "COMPLETE": 2216,
+    "PARTIAL": 664,
+    "UNRECONCILED": 27,
+    "total": 2907
+  },
+  "routed_records": 664,
+  "primary_groups_disjoint": {
+    "VISIBLE_LITERAL_OR_CURRENCY_408": 408,
+    "OVERFLOW_OR_GEOMETRY_180": 180,
+    "COMBINED_VENDOR_TAIL_OR_LITERAL_76": 76
+  },
+  "category_counts": {
+    "Amulets": 33,
+    "Armors": 48,
+    "Creature Products": 341,
+    "Decoration": 46,
+    "Food": 30,
+    "Helmets and Hats": 27,
+    "Legs": 15,
+    "Others": 56,
+    "Potions": 17,
+    "Boots": 6,
+    "Containers": 45
+  },
+  "panel_geometry_counts": {
+    "CALIBRATED_NO_OVERFLOW": 413,
+    "CALIBRATED_OVERFLOW_VISIBLE": 105,
+    "GEOMETRY_NOT_CLASSIFIED": 176
+  },
+  "panel_geometry_counts_are_panels_not_items": true,
+  "local_bitmap_integrity": {
+    "PRESENT_HASH_MATCH": 664
+  },
+  "routing_counts": {
+    "OFFLINE_REVIEW_PENDING": 664,
+    "CONFIRMED_OFFLINE_RECOVERABLE": 0,
+    "CONFIRMED_LIVE_NEEDED": 0
+  },
+  "meaning": "408 primary literal/currency cases are first offline OCR/native/raw-pair candidates, not already guaranteed recoveries.180 geometry cases and76 combined tail/literal cases need per-panel distinction:105 panels match known overflow,176 are unclassified,413 match no-overflow. None is classified live-needed without a qualified saved-tail/source exhaustion decision.",
+  "all_known_values_retained": true,
+  "UI_inputs": 0,
+  "new_screenshots": 0,
+  "source_receipts": [
+    {
+      "path": "outputs/items-all-local-first-20261113/npc-recovery-private/joined-classification.json",
+      "bytes": 2342892,
+      "sha256": "1e706a3140a19c52bde74753c6a40b017bc9c1d8499c9fc1c520b5ab157b4b23"
+    },
+    {
+      "path": "outputs/items-all-local-first-20261113/npc-followup-private/joined-extra541.json",
+      "bytes": 646798,
+      "sha256": "64dfef0570bfadbad271bcb2ceca86b7ff7e474ada721109f86d670426249b0c"
+    }
+  ]
+}
