@@ -1,6 +1,8 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+mod exiva_settings;
+pub(super) use exiva_settings::open_exiva_settings;
 mod feature_dialogs;
 mod hud;
 mod inventory;
@@ -232,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     journal::install(app);
     chat::install(app);
     actions::install(app);
+    exiva_settings::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
