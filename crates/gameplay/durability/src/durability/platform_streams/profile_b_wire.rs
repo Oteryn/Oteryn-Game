@@ -10,6 +10,9 @@ pub const PAGE_BYTES: usize = 262144;
 pub const PROFILE: &str = "oteryn.entitlement.profile_b.v1";
 pub const LEASE_POLICY: &str = "oteryn.profile_b.lease.v1";
 pub fn time(s: &str) -> Option<i64> {
+    if s.len() != 20 || !s.ends_with('Z') {
+        return None;
+    }
     rfc3339_utc_micros(s)
 }
 pub fn product(s: &str) -> bool {
@@ -105,6 +108,7 @@ impl Answer {
     }
     pub fn bound_to(&self, request: &Request, products: &[(String, u64)]) -> bool {
         self.valid()
+            && request.schema == "oteryn.entitlement_authority_request.v1"
             && self.account_id == request.account_id
             && self.nonce == request.nonce
             && self
