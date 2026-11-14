@@ -13,6 +13,7 @@ pub(super) fn build(
     generation: u64,
     revision: u64,
     confirmation: Option<&[String; 3]>,
+    feedback: &str,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -62,6 +63,9 @@ pub(super) fn build(
         panel,
         &oteryn_client_ui::guildhall::panel_text(model),
     );
+    if !feedback.is_empty() {
+        label(commands, skin, panel, feedback);
+    }
     let labels = [
         "Guild UUID",
         "Successor character UUID",

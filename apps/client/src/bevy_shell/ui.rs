@@ -166,7 +166,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
-        (Control::GuildhallLeadership, "Guildhall leadership", 150.),
+        (Control::GuildhallLeadership, "Guildhall (Ctrl+Alt+G)", 190.),
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),

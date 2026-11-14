@@ -84,6 +84,9 @@ impl HostOwner {
         {
             return;
         }
+        if play.link.guildhall_input(&routed) {
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;

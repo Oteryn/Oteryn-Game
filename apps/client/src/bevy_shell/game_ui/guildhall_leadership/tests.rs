@@ -216,16 +216,16 @@ fn guildhall_leadership_window_registered() -> Result {
         repeat: false,
         window: Entity::PLACEHOLDER,
     };
+    let chord = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(34)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::AltLeft);
-    app.world_mut().write_message(key(
-        KeyCode::KeyG,
-        bevy::input::keyboard::Key::Character("g".into()),
-    ));
+        .non_send_mut::<HostOwner>()
+        .route_input(&[chord], false);
     app.update();
     assert!(panel(&app).open);
     app.world_mut()
@@ -242,6 +242,46 @@ fn guildhall_leadership_window_registered() -> Result {
             .ok_or("toolbar node")?
             .display,
         Display::None
+    );
+    Ok(())
+}
+
+#[test]
+fn guildhall_leadership_rejected_confirmation_preserves_values_and_reports_feedback() -> Result {
+    let (mut app, mut commands, _) = fixture()?;
+    open(&mut app);
+    fill(&mut app);
+    let world = app.world_mut();
+    for (field, mut text) in world.query::<(&Field, &mut EditableText)>().iter_mut(world) {
+        if field.0 == 2 {
+            *text = EditableText::new("0");
+        }
+    }
+    click(&mut app, Kind::Transfer)?;
+    let expected = app.world().resource::<State>().confirmation.clone();
+    let before = panel(&app);
+    click(&mut app, Kind::Confirm)?;
+    assert_eq!(app.world().resource::<State>().confirmation, expected);
+    assert_eq!(panel(&app), before);
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Transfer was not submitted."))
+    );
+    click(&mut app, Kind::Cancel)?;
+    fill(&mut app);
+    click(&mut app, Kind::Transfer)?;
+    click(&mut app, Kind::Confirm)?;
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    assert!(panel(&app).pending);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Transfer was not submitted."))
     );
     Ok(())
 }

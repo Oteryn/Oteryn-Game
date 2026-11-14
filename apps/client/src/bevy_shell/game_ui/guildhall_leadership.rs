@@ -34,10 +34,10 @@ struct State {
     confirmation: Option<[String; 3]>,
     draft: Option<[String; 3]>,
     dirty: bool,
+    feedback: String,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());
 }
@@ -82,6 +82,7 @@ fn project(
     if state.snapshot != snapshot {
         state.confirmation = None;
         state.draft = None;
+        state.feedback.clear();
     }
     if let Some(root) = state.root.take() {
         if inside(focus.get(), root, &parents) {
@@ -108,6 +109,7 @@ fn project(
         generation,
         revision,
         state.confirmation.as_ref(),
+        &state.feedback,
     ));
 }
 fn activate(
@@ -168,44 +170,43 @@ fn perform(
                 }
                 values[field.0] = text.value().to_string();
             }
+            state.feedback.clear();
             state.confirmation = Some(values);
             state.dirty = true;
         }
         Kind::Confirm => {
             if let Some(values) = state.confirmation.as_ref() {
-                let _ =
-                    play.link
-                        .guildhall_leadership_transfer_bound(expected, values.clone(), true);
+                if play
+                    .link
+                    .guildhall_leadership_transfer_bound(expected, values.clone(), true)
+                {
+                    state.confirmation = None;
+                    state.feedback.clear();
+                } else {
+                    state.feedback =
+                        "Transfer was not submitted. Check the fields and session, then try again."
+                            .into();
+                }
+                state.dirty = true;
             }
-            state.confirmation = None;
-            state.dirty = true;
         }
         Kind::Cancel => {
             state.draft = state.confirmation.take();
+            state.feedback.clear();
             state.dirty = true;
         }
     }
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     fields: Query<(&Field, &EditableText)>,
 ) {
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
-        }
-        if event.key_code == KeyCode::KeyG
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-            && !keys.pressed(KeyCode::ShiftLeft)
-            && !keys.pressed(KeyCode::ShiftRight)
-            && guard.allows_focus(state.root)
-        {
-            toggle(&mut owner);
         }
         if event.key_code == KeyCode::Escape
             && let Some(root) = state.root
