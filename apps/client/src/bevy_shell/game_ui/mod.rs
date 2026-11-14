@@ -2,6 +2,7 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+pub(super) mod highscores_character_info;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -19,7 +20,6 @@ mod projection;
 pub(super) use projection::project;
 mod quick_loot;
 mod trade;
-pub(super) mod uni16_window;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -234,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    highscores_character_info::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
@@ -243,7 +244,6 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     quick_loot::install(app);
     trade::install(app);
-    uni16_window::install(app);
     app.add_systems(
         Update,
         (

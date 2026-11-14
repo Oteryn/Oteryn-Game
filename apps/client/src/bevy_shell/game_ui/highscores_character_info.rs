@@ -58,17 +58,17 @@ pub(super) fn install(app: &mut App) {
             .chain(),
     );
 }
-/// Registration in the existing shortcut router; opening has no protocol side effects.
+/// Preserve the existing shortcuts and dispatch through the retained session owners.
 pub(in crate::bevy_shell) fn input(
     link: &PlayLink,
     events: &[oteryn_input_actions::NormalizedInputEvent],
 ) -> bool {
     if highscores::open_key(events) {
-        link.highscores_open_bound(&link.highscores_panel());
-        true
-    } else if character_info::open_key(events) || character_info::titles_key(events) {
-        link.character_info_open_bound(&link.character_info_panel());
-        true
+        link.highscores_open_refresh_bound(&link.highscores_panel())
+    } else if character_info::titles_key(events) {
+        link.character_titles_open_bound(&link.character_info_panel())
+    } else if character_info::open_key(events) {
+        link.character_info_open_bound(&link.character_info_panel())
     } else {
         false
     }

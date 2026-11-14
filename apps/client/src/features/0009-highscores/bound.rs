@@ -5,6 +5,38 @@ use crate::{
 };
 use oteryn_client_ui::highscores::{self, Action, HighscoresPanel};
 impl PlayLink {
+    pub(crate) fn highscores_open_refresh_bound(&self, expected: &HighscoresPanel) -> bool {
+        // Match the native shortcut: reopen while an existing query is pending, without
+        // queuing a duplicate refresh or changing its query.
+        if expected.pending {
+            return self.highscores_open_bound(expected);
+        }
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.highscores_shutdown
+            || mailbox.world_input_blocked()
+            || mailbox.server_modal.is_active()
+            || self.commands.is_closed()
+            || mailbox.highscores != *expected
+            || !expected.selected
+        {
+            return false;
+        }
+        let mut prepared = expected.clone();
+        let Some(command) = highscores::request(&mut prepared, Action::Refresh) else {
+            return false;
+        };
+        if self
+            .commands
+            .send(PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            return false;
+        }
+        prepared.open = true;
+        mailbox.highscores = prepared;
+        true
+    }
+
     pub(crate) fn highscores_open_bound(&self, expected: &HighscoresPanel) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.highscores_shutdown

@@ -259,3 +259,113 @@ fn highscores_and_character_info_controls_reject_actual_session_replacement() ->
     }
     Ok(())
 }
+
+#[test]
+fn character_titles_key_sends_query_and_opens_titles() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_uni16_character_initialize();
+    let events = [NormalizedInputEvent::Key {
+        code: KeyCode::new(28)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+        repeat: false,
+    }];
+    assert!(input(&link, &events));
+    let panel = link.character_info_panel();
+    assert!(panel.titles_open);
+    assert!(!panel.open);
+    assert!(panel.pending);
+    assert!(panel.own_titles.is_none());
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("titles query".into());
+    };
+    assert_eq!(command.payload, [0, 0, 0, 1]);
+    assert!(!input(&link, &events));
+    assert_eq!(link.character_info_panel(), panel);
+    assert!(commands.try_recv().is_err());
+    let modal = link.bevy_server_modal_fixture();
+    assert!(!input(&link, &events));
+    assert_eq!(link.character_info_panel(), panel);
+    drop(modal);
+    outbox.bevy_uni16_end();
+    let ended = link.character_info_panel();
+    assert!(!input(&link, &events));
+    assert_eq!(link.character_info_panel(), ended);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn highscores_key_refreshes_and_does_not_consume_rejected_open() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    let events = [NormalizedInputEvent::Key {
+        code: KeyCode::new(11)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    }];
+    assert!(!input(&link, &events));
+    assert!(commands.try_recv().is_err());
+    outbox.bevy_uni16_highscores_initialize();
+    assert!(input(&link, &events));
+    assert!(link.highscores_panel().open);
+    assert!(link.highscores_panel().pending);
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("highscores refresh".into());
+    };
+    let query = oteryn_client_runtime::highscores::wire::decode_highscores_query(&command.payload)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (
+            query.category,
+            query.vocation,
+            query.page,
+            query.snapshot_id
+        ),
+        (1, 0, 1, 0)
+    );
+    let before = link.highscores_panel();
+    let modal = link.bevy_server_modal_fixture();
+    assert!(!input(&link, &events));
+    assert_eq!(link.highscores_panel(), before);
+    drop(modal);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn highscores_malformed_success_clears_pending_and_allows_retry() -> TestResult {
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_uni16_highscores_initialize();
+    assert!(link.highscores_open_bound(&link.highscores_panel()));
+    assert!(link.highscores_request_bound(&link.highscores_panel(), Action::Refresh));
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    outbox.bevy_uni16_highscores_reply(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: vec![255],
+        },
+    );
+    let panel = link.highscores_panel();
+    assert!(!panel.pending);
+    assert!(panel.feedback.is_some());
+    assert!(panel.reply.is_none());
+    assert!(link.highscores_request_bound(&panel, Action::Refresh));
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    Ok(())
+}

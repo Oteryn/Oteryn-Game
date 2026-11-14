@@ -5,6 +5,35 @@ use crate::{
 };
 use oteryn_client_ui::character_info::{self, Intent, Panel};
 impl PlayLink {
+    pub(crate) fn character_titles_open_bound(&self, expected: &Panel) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.highscores_shutdown
+            || mailbox.world_input_blocked()
+            || mailbox.server_modal.is_active()
+            || self.commands.is_closed()
+            || mailbox.properties.character_info != *expected
+            || !expected.selected
+            || expected.pending
+        {
+            return false;
+        }
+        let mut prepared = expected.clone();
+        prepared.fields[0] = "0".into();
+        prepared.fields[1] = "1".into();
+        prepared.fields[2].clear();
+        let Ok(command) = super::super::protocol::command(&prepared, Intent::Query) else {
+            return false;
+        };
+        if !character_info::request(&mut prepared, command.kind)
+            || self.commands.send(PlayCommand::Feature(command)).is_err()
+        {
+            return false;
+        }
+        prepared.titles_open = true;
+        mailbox.properties.character_info = prepared;
+        true
+    }
+
     pub(crate) fn character_info_open_bound(&self, expected: &Panel) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.highscores_shutdown

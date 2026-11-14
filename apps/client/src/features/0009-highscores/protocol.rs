@@ -32,6 +32,9 @@ fn apply_bound(
         response.status,
         CommandStatus::Accepted | CommandStatus::DuplicateReplay
     ) && prepared.feedback.is_some()
+        // A valid reply rejected by the canonical reducer belongs to a different query.
+        // Malformed replies instead publish its error and release the pending request.
+        && oteryn_client_runtime::highscores::wire::decode_highscores_result(&response.payload).is_ok()
     {
         return;
     }
