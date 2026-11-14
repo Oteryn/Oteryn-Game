@@ -407,7 +407,7 @@ compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
 php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$ADMISSION_KEY_ID"'",hex2bin("'"$ADMISSION_PUBLIC_HEX"'"));'
 ACCOUNT_PASSWORD="$ACCOUNT_PASSWORD" php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>Illuminate\Support\Facades\Hash::make(getenv("ACCOUNT_PASSWORD")),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);' --env ACCOUNT_PASSWORD
-OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure",["--rust"=>true]); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([0-9a-f-]\{36\}\)\.$/\1/p')"
+OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure",["--rust"=>true]); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([0-9a-f-]\{36\}\)\.[[:space:]]*$/\1/p')"
 [[ "$OAUTH_CLIENT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] \
   || { echo "oauth client id missing or invalid UUID" >&2; exit 1; }
 evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=account_characters_feed"
