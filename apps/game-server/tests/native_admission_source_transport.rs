@@ -412,6 +412,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishCharacterDeathsV2
                     | Operation::PublishGuildV2
                     | Operation::PublishHouseV2
+                    | Operation::PublishCharacterSkillsV2
+                    | Operation::PublishCharacterAchievementsV2
+                    | Operation::PublishCharacterEquipmentV2
+                    | Operation::PublishCharacterOutfitV2
                     | Operation::PublishCharacterOnlineSessionV2
                     | Operation::PublishWorldDailyKillsV2
                     | Operation::PublishPublicProjectionWatermarkV2
@@ -506,6 +510,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishCharacterDeathsV2
                 | Operation::PublishGuildV2
                 | Operation::PublishHouseV2
+                | Operation::PublishCharacterSkillsV2
+                | Operation::PublishCharacterAchievementsV2
+                | Operation::PublishCharacterEquipmentV2
+                | Operation::PublishCharacterOutfitV2
                 | Operation::PublishCharacterOnlineSessionV2
                 | Operation::PublishWorldDailyKillsV2
                 | Operation::PublishPublicProjectionWatermarkV2

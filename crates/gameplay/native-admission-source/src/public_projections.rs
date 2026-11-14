@@ -699,6 +699,9 @@ impl MtlsPublicSink {
 
 impl PublicSink for MtlsPublicSink {
     async fn send(&self, operation: Operation, body: &str) -> Result<Delivery, NotDelivered> {
+        if !v2::publication_supported(operation, body) {
+            return Err(NotDelivered::Unavailable);
+        }
         let capacity = TransientCapacity::new();
         let mut permit = capacity
             .try_queue()

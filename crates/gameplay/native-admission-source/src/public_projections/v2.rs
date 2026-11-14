@@ -2,6 +2,9 @@
 pub mod character_views;
 pub mod daily_kills;
 pub mod online_sessions;
+mod validation;
+pub(super) use validation::publication_supported;
+pub use validation::{decode_character_snapshot, decode_watermark};
 
 use super::*;
 use serde::{Deserialize, ser::SerializeMap};
@@ -71,7 +74,7 @@ pub struct Activation {
     pub world_daily_kills: bool,
 }
 impl Family {
-    /// Wire support alone never authorizes publication. Part B supplies these sources.
+    /// Durable source support alone never authorizes publication. Part C enables delivery.
     pub const fn produced(self) -> bool {
         match self {
             Self::CharacterDeaths
@@ -507,6 +510,20 @@ pub enum WatermarkFamily {
     CharacterOnlineSessions,
     WorldDailyKills,
     WorldDaily,
+}
+impl WatermarkFamily {
+    pub const ALL: [Self; 10] = [
+        Self::CharacterDeaths,
+        Self::Guild,
+        Self::House,
+        Self::CharacterSkills,
+        Self::CharacterAchievements,
+        Self::CharacterEquipment,
+        Self::CharacterOutfit,
+        Self::CharacterOnlineSessions,
+        Self::WorldDailyKills,
+        Self::WorldDaily,
+    ];
 }
 impl From<Family> for WatermarkFamily {
     fn from(value: Family) -> Self {

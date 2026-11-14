@@ -7,14 +7,14 @@ impl DurabilityRoot {
         &self, authority: &ReconciledCharacterAuthority<'_, '_>, family: Family,
         held: &[String],
     ) -> Result<Option<Snapshot>> {
-        if !family.produced() {
-            return Ok(None);
-        }
         let recovery=authority.record_for(self)?;
         let held=held.to_vec();
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
+            if family == Family::CharacterAchievements {
+                character_views::assert_achievement_catalogue(&mut tx).await?;
+            }
             if family == Family::WorldDailyKills {
                 sqlx::query("SELECT game_statistics_kill_maintenance()").execute(&mut *tx).await?;
             }
@@ -37,8 +37,10 @@ impl DurabilityRoot {
                         Family::House=>Body::House(serde_json::from_str(&payload).map_err(invalid)?),
                         Family::CharacterOnlineSessions=>Body::OnlineSessions(serde_json::from_str(&payload).map_err(invalid)?),
                         Family::WorldDailyKills=>Body::DailyKills(serde_json::from_str(&payload).map_err(invalid)?),
-                        Family::CharacterSkills | Family::CharacterAchievements
-                        | Family::CharacterEquipment | Family::CharacterOutfit => return Ok(Ok(None)),
+                        Family::CharacterSkills=>Body::Skills(serde_json::from_str(&payload).map_err(invalid)?),
+                        Family::CharacterAchievements=>Body::Achievements(serde_json::from_str(&payload).map_err(invalid)?),
+                        Family::CharacterEquipment=>Body::Equipment(serde_json::from_str(&payload).map_err(invalid)?),
+                        Family::CharacterOutfit=>Body::Outfit(serde_json::from_str(&payload).map_err(invalid)?),
                     };
                     Some(Snapshot { subject:row.try_get("subject")?, world_id:row.try_get("world_id")?,
                         projection_epoch:positive(row.try_get("projection_epoch")?).map_err(|_|super::super::DurabilityError::InvalidStoredState)?,
@@ -79,13 +81,13 @@ impl DurabilityRoot {
     pub async fn public_v2_facts(
         &self,authority:&ReconciledCharacterAuthority<'_, '_>,family:Family,
     )->Result<Facts> {
-        if !family.produced() {
-            return Err(CharacterAuthorityError::Rejected);
-        }
         let recovery=authority.record_for(self)?;
         self.try_issue_semantic_pass()?.run(move |holder,deadline| Box::pin(async move {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;
             assert_recovery_fence(&mut tx,&recovery).await?;
+            if family == Family::CharacterAchievements {
+                character_views::assert_achievement_catalogue(&mut tx).await?;
+            }
             if family == Family::WorldDailyKills {
                 sqlx::query("SELECT game_statistics_kill_maintenance()").execute(&mut *tx).await?;
             }

@@ -387,3 +387,55 @@ and refuses completeness facts for them until Part B provides the sources.
 The pasted death example's `"killers":["Beren","Mira"]` differs from main's
 stable-identity records. Per supervisor decision, deaths are outside P3: neither
 the existing encoder nor death fixtures change; Platform receives the gap.
+
+## P3 Part B — durable character views
+
+Migration 2834 extends the existing v2 heads/outbox, adding no serving authority.
+Source changes use deferred triggers so the final progression/build/root cut is
+captured in the source transaction. Revision allocation is the existing atomic
+`revision + 1`, independent of observation timestamps. ACKs still remove only
+outbox work at or below the acknowledged revision. Full resync enumerates all
+roots and retained subjects, including suppressions; an incomplete initial
+baseline holds back completeness.
+
+The achievement catalogue revision is `sha256:` plus lowercase SHA-256 of the
+complete validated embedded Game achievement shards, concatenated in their
+existing file-name order. Game previously exposed per-entry revisions only;
+this defines the whole-catalogue identity without substituting an earned row's
+revision or a gameplay content revision. `sync_public_achievement_catalogue`
+installs Game-owned metadata under reconciliation and the epoch fence. Reads
+require the exact current compiled catalogue and metadata. Part C must perform
+that synchronization before starting achievement delivery. Unknown keys,
+missing provenance and more than 1024 facts retain a poison head/outbox, never
+truncate or claim an empty earned list. Count and aggregation share one SQL
+snapshot. Ownership changes and account-fact fan-out serialize through a
+private account source fence; each subject is re-read after its derived fence.
+Fan-out does not take another gameplay actor's Character row lock.
+
+Equipment follows the death owner's durable-slot mapping, including the
+separate main backpack as Container. It exports only primary custody rows and
+TypedDefinitionRef key/revision fields. Missing equipment ownership state or
+invalid custody suppresses the record. Pending moves do not enter the cut.
+
+Outfit publication requires a proof captured from validated DisplayedLook in
+the actual fenced appearance transaction. Raw selections, unsupported inputs,
+and pre-existing selections without current proof suppress safely. The proof
+binds the account, creation sex, content and appearance occurrence; changing
+ownership or interpretation invalidates it. Displayed mounts are always empty,
+even when a valid selection retains a mount. No unlock inventory is exported.
+
+The durability reader now decodes all four families. Native publisher selection
+and the actual mTLS snapshot/watermark boundary remain closed until Part C;
+flags stay independently default false. The Part A review fixes additionally
+validate closed canonical envelopes and exercise the previously unread invalid
+fixtures. Existing v1 and death encoders are unchanged.
+
+PostgreSQL fixtures explicitly distinguish historical source imports from
+native authority: only the new projector triggers are strengthened to ALWAYS
+in isolated databases while historical rows are imported. The outfit case uses
+the real fenced appearance writer. Ownership projection assertions do not
+forge a Bazaar receipt or claim a fresh recovery proof for imported history.
+Every case runs a capture-disabled negative control first and checks its exact
+missing-output failure before a fresh positive database. The same-second case
+injects a fixed SQL observation clock across separate commits, and verifies
+that rollback leaves no published revision.

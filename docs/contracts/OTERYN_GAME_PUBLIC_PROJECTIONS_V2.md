@@ -12,8 +12,8 @@ revision 2 with Game V1 §§2–8. It replaces only V1's three candidate familie
 accepted V1 routes and its closed watermark enum retain their schemas.
 The P3 wire extension for skills, achievements, equipment and outfit is accepted
 against Platform revision 3 at `f5f91a6e81bc8b89b51cbb77517253cf549dc4fa`
-(#1854), owner 2026-11-13. Part A supplies wire only: source capture and publisher
-activation remain separate. Journal, atlas and catalogue adapters stay outside
+(#1854), owner 2026-11-13. Parts A/B supply wire and durable capture; publisher activation remains
+separate. Journal, atlas and catalogue adapters stay outside
 this acceptance. The existing Game death amendment below remains unchanged.
 
 ## Common wire
@@ -129,9 +129,9 @@ deferred mount display emits no mount. Keys use the common key grammar.
 Four independent `[platform.public_projections]` flags default false, missing
 means false: `character_skills_enabled`, `character_achievements_enabled`,
 `character_equipment_enabled`, `character_outfit_enabled`. The existing global
-`enabled` prerequisite remains unchanged. Part A excludes these four families
-from producible publisher work even when flags are true, until Part B supplies
-the authoritative source. No new environment variable is defined.
+`enabled` prerequisite remains unchanged. Publisher selection and the physical mTLS boundary exclude these four families
+even when flags are true until Part C enables qualified delivery. Migration
+2834 supplies their durable sources. No new environment variable is defined.
 
 ## Persistence, watermark and recovery
 
@@ -153,3 +153,32 @@ Operator `public-projection resync --family` accepts each implemented family;
 `all --raise-epoch true` uses the same external F_pub fence as V1. The node
 must be stopped for restore/resync; Platform serves only fresh, privacy-fenced
 read models and never queries Game during page rendering.
+
+
+## Character-view source capture (P3 Part B)
+
+Migration 2834 reuses v2 heads, monotonic counters, outbox and epoch fencing.
+Progression/build/root, earned-account facts, ownership, committed equipment
+(including the main backpack), item changes and appearance changes touch the
+source in the same transaction. Deferred capture observes the final cut.
+Missing/unreconciled progression suppresses skills; missing build uses only its
+established seed. Missing/invalid equipment custody suppresses equipment.
+
+Achievement catalogue identity is `sha256:` followed by the lowercase SHA-256
+of all validated embedded achievement shards in their existing filename order.
+The Game-only synchronization method installs that exact catalogue; readers
+refuse unavailable or incompatible metadata. A bounded 1025-row scan counts and
+aggregates in one snapshot; overflow or unknown provenance creates an
+undeliverable head and retains its outbox. Ownership changes rebind the earned
+view to the new account and current CharacterRevision under the source fence.
+
+The appearance writer captures DisplayedLook only after its existing content,
+sex and earned-unlock validation. Its proof is invalid for another owner, sex,
+content or appearance occurrence. A raw historical selection without proof is
+suppressed. The displayed mount list is always empty. This adds no unlock or
+appearance mutation authority.
+
+Full operator resync includes all four families and all subjects, including
+suppression rows. Baseline completeness is false until that scan completes.
+Unknown/poison rows remain queued. Delivery acknowledgements continue to clear
+only through the acknowledged epoch/revision; a concurrent successor remains.

@@ -351,6 +351,34 @@ fn public_projections_v2_skills_suppression_golden_bytes() {
 }
 #[test]
 fn public_projections_v2_watermark_v2_family_enum_closed() {
+    let names = WatermarkFamily::ALL.map(|family| match family {
+        WatermarkFamily::CharacterDeaths => "character_deaths",
+        WatermarkFamily::Guild => "guild",
+        WatermarkFamily::House => "house",
+        WatermarkFamily::CharacterSkills => "character_skills",
+        WatermarkFamily::CharacterAchievements => "character_achievements",
+        WatermarkFamily::CharacterEquipment => "character_equipment",
+        WatermarkFamily::CharacterOutfit => "character_outfit",
+        WatermarkFamily::CharacterOnlineSessions => "character_online_sessions",
+        WatermarkFamily::WorldDailyKills => "world_daily_kills",
+        WatermarkFamily::WorldDaily => "world_daily",
+    });
+    assert_eq!(
+        names,
+        [
+            "character_deaths",
+            "guild",
+            "house",
+            "character_skills",
+            "character_achievements",
+            "character_equipment",
+            "character_outfit",
+            "character_online_sessions",
+            "world_daily_kills",
+            "world_daily"
+        ]
+    );
+
     for family in [
         "character_deaths",
         "guild",
@@ -573,4 +601,77 @@ fn public_projections_v2_equipment_conflict_fixture_is_schema_valid() {
     assert_ne!(first.body, changed.body);
     assert_eq!(encode(AUTHORITY, &changed).unwrap(), conflict);
     assert_ne!(original, conflict);
+}
+
+#[test]
+fn public_projections_v2_invalid_fixture_bytes_are_refused() {
+    for name in [
+        "character_skills_invalid_types",
+        "character_achievements_invalid_account",
+    ] {
+        let file = std::fs::read_to_string(format!("{FIXTURES}{name}_v2.json")).unwrap();
+        assert!(decode_character_snapshot(file.trim_end_matches('\n').as_bytes()).is_err());
+    }
+    let file = std::fs::read_to_string(format!(
+        "{FIXTURES}character_skills_invalid_watermark_v2.json"
+    ))
+    .unwrap();
+    assert!(decode_watermark(file.trim_end_matches('\n').as_bytes()).is_err());
+}
+#[test]
+fn public_projections_v2_transport_boundary_refuses_wire_only_families() {
+    for name in [
+        "character_skills",
+        "character_achievements",
+        "character_equipment",
+        "character_outfit",
+    ] {
+        let (wire, snapshot) = character_view_fixture(name);
+        assert!(decode_character_snapshot(wire.as_bytes()).is_ok());
+        assert!(!publication_supported(snapshot.family().operation(), &wire));
+    }
+    let wire = encode_watermark(
+        AUTHORITY,
+        Family::CharacterSkills,
+        Facts {
+            projection_epoch: 1,
+            oldest_undelivered_ms: None,
+            now_ms: 1790000003000,
+        },
+        Duration::from_secs(3),
+    )
+    .unwrap();
+    assert!(!publication_supported(
+        Operation::PublishPublicProjectionWatermarkV2,
+        &wire
+    ));
+}
+#[test]
+fn public_projections_v2_skills_and_equipment_reject_review_boundaries() {
+    let (_, s) = character_view_fixture("character_skills");
+    let original = encode(AUTHORITY, &s).unwrap();
+    assert!(decode_character_snapshot(original.as_bytes()).is_ok());
+    for (from, to) in [
+        (r#""level":"412""#, r#""level":"0""#),
+        (r#""magic_level":12"#, r#""magic_level":1001"#),
+        (r#""fist_level":10"#, r#""fist_level":9"#),
+        (r#""magic_level":12"#, r#""unknown":0,"magic_level":12"#),
+    ] {
+        assert!(decode_character_snapshot(original.replace(from, to).as_bytes()).is_err());
+    }
+    let (wire, _) = character_view_fixture("character_equipment");
+    let bad = wire.replace("\"slot\":\"Head\"", "\"private\":0,\"slot\":\"Head\"");
+    assert!(decode_character_snapshot(bad.as_bytes()).is_err());
+    let row =
+        r#"{"slot":"Head","item_key":"oteryn:item.fixture-helmet","item_revision":"fixture-v1"}"#;
+    assert!(wire.contains(row));
+    assert!(
+        decode_character_snapshot(wire.replace(row, &format!("{row},{row}")).as_bytes()).is_err()
+    );
+    let left = row.replace("Head", "LeftHand");
+    let right = row.replace("Head", "RightHand");
+    assert!(
+        decode_character_snapshot(wire.replace(row, &format!("{left},{right}")).as_bytes())
+            .is_err()
+    );
 }
