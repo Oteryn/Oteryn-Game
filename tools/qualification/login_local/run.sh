@@ -364,7 +364,7 @@ ADMIN_URL="postgresql://oteryn_login_local_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$P
 compose config --quiet
 compose build --pull platform gateway
 compose up --detach --wait db platform nginx
-php_exec() { compose exec --no-TTY --user www-data platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"; }
+php_exec() { local code=$1; shift; compose exec --no-TTY --user www-data "$@" platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$code"; }
 
 # Registry topology: one world row, one issued WorldId/ChannelId (uuid7, read back, never invented).
 # F7: issue on the retained SQLite fixture (migrated, one world row), then mirror the issued ids and
@@ -392,6 +392,12 @@ LL_RUNTIME_STATUS_IDENTITIES="{\"$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 export LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
+# Generate Passport keys in the final container before OAuth use; safe to repeat.
+compose exec --no-TTY --user root platform php artisan passport:keys --force
+compose exec --no-TTY --user root platform chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+compose exec --no-TTY --user root platform chmod 600 storage/oauth-private.key
+compose exec --no-TTY --user root platform chmod 644 storage/oauth-public.key
+compose exec --no-TTY --user www-data platform php artisan config:clear
 # The gateway trusts exactly the per-run CA: one certificate in SSL_CERT_FILE, an empty SSL_CERT_DIR.
 [[ "$(grep -c 'BEGIN CERTIFICATE' "$WP5_PKI/platform-upstream-ca.crt")" == 1 && -z "$(ls -A "$LL_NO_SYSTEM_ROOTS")" ]] \
   || { echo "gateway trust roots are not exactly the per-run CA"; exit 1; }
@@ -400,9 +406,10 @@ compose config gateway | grep -q 'SSL_CERT_DIR: /run/login-local/no-system-roots
 compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
 php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$ADMISSION_KEY_ID"'",hex2bin("'"$ADMISSION_PUBLIC_HEX"'"));'
-php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>password_hash("'"$ACCOUNT_PASSWORD"'",PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
-OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure"); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([^ ]*\).*/\1/p')"
-[[ -n "$OAUTH_CLIENT_ID" ]] || { echo "oauth client id not found"; exit 1; }
+ACCOUNT_PASSWORD="$ACCOUNT_PASSWORD" php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>Illuminate\Support\Facades\Hash::make(getenv("ACCOUNT_PASSWORD")),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);' --env ACCOUNT_PASSWORD
+OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure"); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([0-9a-f-]\{36\}\)\.$/\1/p')"
+[[ "$OAUTH_CLIENT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] \
+  || { echo "oauth client id missing or invalid UUID" >&2; exit 1; }
 evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=account_characters_feed"
 
 # Shipped binaries, service user, roles, migration (as node_boot).

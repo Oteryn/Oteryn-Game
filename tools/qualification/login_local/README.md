@@ -172,7 +172,9 @@ A file is written only from a successful capture and is never replaced.
    printed epoch was persisted as F. It then runs one node with `[platform.runtime_status]`,
    `assignment_epoch = 1` (declared, never raised by ops) and `[platform.account_characters]`, then
    `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
-7. Creates the test account, ensures the OAuth client, bootstraps one Character from a real Platform intent,
+7. Generates Passport keys in the final Platform container (private 0600/public 0644, owned by `www-data`)
+   and clears its config cache. Creates the test account with the Platform hasher, ensures the OAuth client
+   and validates its UUID before writing `client.env`, bootstraps one Character from a real Platform intent,
    and waits until the node logs an accepted `PublishAccountCharactersV1` and `PublishProjectionWatermarkV1`.
 8. Writes `client.env` (0600; includes the per-run test password in a comment) and runs the client with
    `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`, `OTERYN_WORLD`,
