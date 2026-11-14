@@ -190,6 +190,28 @@ mod bevy_tests {
         assert!(!link.achievements_dispatch_bound(&before, Some(Intent::Refresh)));
     }
     #[test]
+    fn achievements_stale_replies_are_dropped_after_session_end() {
+        let (link, _commands, outbox) = crate::play::play_channel();
+        outbox.achievements_initialize();
+        assert!(link.achievements_open_bound(&link.achievements_panel()));
+        outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+        let ended = link.achievements_panel();
+        outbox.achievements_result(
+            &oteryn_client_runtime::account_achievements::Response::Page(
+                oteryn_client_runtime::account_achievements::AccountAchievementsResult {
+                    page: 0,
+                    fact_count: 0,
+                    total_points: 0,
+                    has_more: false,
+                    rows: vec![],
+                },
+            ),
+        );
+        assert_eq!(ended, link.achievements_panel());
+        assert!(!link.achievements_open_bound(&ended));
+        assert_eq!(ended, link.achievements_panel());
+    }
+    #[test]
     fn achievements_rejected_when_session_replaced_or_target_changed() {
         let (link, commands, outbox) = crate::play::play_channel();
         outbox.achievements_initialize();
