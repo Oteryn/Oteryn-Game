@@ -708,7 +708,7 @@ fn scenario(which: u8) -> TestResult {
                     assert_eq!(sessions,0);
                     assert_eq!(decide(&h,&a,&c).await?.runtime_effect,RuntimeEffect::OnNextAdmission);
                     Ok(())
-                },5=>pull_to_ack(&h,&a).await,_=>Err("unknown scenario".into())}
+                },5=>pull_to_ack(&h,&a).await,6=>pending_expiry_restart(&h,&a).await,7=>pending_runtime_restart(&h,&a).await,_=>Err("unknown scenario".into())}
             }.await;
             h.cleanup().await?;result
         }).map_err(|e|e.to_string())
@@ -737,7 +737,8 @@ fn platform_enforcement_without_session_is_on_next_admission() -> TestResult {
 }
 
 struct PgEnforcementStore<'a, 'f, 's> {
-    h: &'a Harness,
+    root: &'a crate::durability::DurabilityRoot,
+    node: &'a crate::durability::runtime_scope_assignment::NodeIncarnationProof,
     authority: &'a ReconciledCharacterAuthority<'f, 's>,
 }
 impl crate::platform_streams::enforcement::worker::Store for PgEnforcementStore<'_, '_, '_> {
@@ -745,18 +746,16 @@ impl crate::platform_streams::enforcement::worker::Store for PgEnforcementStore<
         &self,
         action: crate::platform_streams::enforcement::worker::Action,
     ) -> Result<crate::platform_streams::enforcement::worker::Reply, ()> {
-        super::maintain_ready(&self.h.root).await.map_err(|_| ())?;
-        self.h
-            .root
+        super::maintain_ready(self.root).await.map_err(|_| ())?;
+        self.root
             .enforcement_transport(self.authority, action)
             .await
             .map_err(|_| ())
     }
     async fn decide(&self, raw: Vec<u8>) -> Result<Vec<u8>, ()> {
-        super::maintain_ready(&self.h.root).await.map_err(|_| ())?;
-        self.h
-            .root
-            .decide_platform_enforcement(self.authority, &self.h.node, &raw)
+        super::maintain_ready(self.root).await.map_err(|_| ())?;
+        self.root
+            .decide_platform_enforcement(self.authority, self.node, &raw)
             .await
             .map_err(|_| ())
     }
@@ -840,7 +839,7 @@ async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> T
         }
         Ok::<_, String>(requests)
     });
-    let first = PgEnforcementStore { h, authority: a };
+    let first = PgEnforcementStore { root: &h.root, node: &h.node, authority: a };
     assert_eq!(
         worker::pull(&first, &clients).await.map_err(debug)?,
         Step::More
@@ -894,7 +893,7 @@ async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> T
     assert!(matches!(error,sqlx::Error::Database(ref e) if e.code().as_deref()==Some("23514")));
     immutable.rollback().await?;
     // Restart the task over the same durable cursor and acknowledgements.
-    let restarted = PgEnforcementStore { h, authority: a };
+    let restarted = PgEnforcementStore { root: &h.root, node: &h.node, authority: a };
     assert_eq!(
         worker::pull(&restarted, &clients).await.map_err(debug)?,
         Step::Idle
@@ -921,7 +920,7 @@ async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> T
         .await?,
         1
     );
-    let after_crash = PgEnforcementStore { h, authority: a };
+    let after_crash = PgEnforcementStore { root: &h.root, node: &h.node, authority: a };
     assert_eq!(
         worker::publish(&after_crash, &clients, START + 500)
             .await
@@ -953,3 +952,96 @@ async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> T
 fn pull_to_ack_end_to_end() -> TestResult {
     scenario(5)
 }
+
+
+#[derive(Default)]
+struct ResultPeer(std::sync::Mutex<Vec<Vec<u8>>>);
+impl crate::platform_streams::enforcement::worker::Peer for ResultPeer {
+    async fn request(&self, route: crate::platform_streams::enforcement::transport::Route, raw: Vec<u8>) -> Result<Vec<u8>, crate::platform_streams::enforcement::transport::Failure> {
+        use crate::platform_streams::enforcement::transport::{Route,Failure};
+        if !matches!(route,Route::Results) { return Err(Failure::Defect); }
+        self.0.lock().map_err(|_|Failure::Defect)?.push(raw);
+        Ok(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-ack.json")).to_vec())
+    }
+}
+async fn pending_expiry_restart(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {
+    use crate::platform_streams::enforcement::worker::{Publisher,Step};
+    let mut c=command(h,501).await?;
+    decide(h,a,&c).await?;
+    c.operation_id=uuid(502); c.intent=Intent::Expire; c.effective_at_ms=None; c.expires_at_ms=None; c.reason_code=None;
+    let pending=decide(h,a,&c).await?;
+    assert_eq!(pending.state,State::AcceptedPending);
+    assert_eq!(pending.result_code,Code::PendingExpiry);
+    let peer=ResultPeer::default();
+    let store=PgEnforcementStore {root:&h.root,node:&h.node,authority:a};
+    let mut publisher=Publisher::default();
+    // Acknowledge both APPLY and the early EXPIRE. Neither A1 nor A4 supplies it again.
+    assert_eq!(publisher.step(&store,&peer,START+500).await.map_err(debug)?,Step::More);
+    assert_eq!(publisher.step(&store,&peer,START+500).await.map_err(debug)?,Step::More);
+    assert_eq!(publisher.step(&store,&peer,START+500).await.map_err(debug)?,Step::Idle);
+    clock(h,END-1).await?;
+    assert_eq!(Publisher::default().step(&store,&peer,END-1).await.map_err(debug)?,Step::Idle);
+    clock(h,END).await?;
+    let options=h.root.chat_relay_connect_options().ok_or("options")?;
+    let restarted=crate::durability::DurabilityRoot::connect_test_runtime(options.to_url_lossy().as_str())?;
+    super::maintain_ready(&restarted).await?;
+    let seal=h.recovery.seal_current().map_err(debug)?;
+    let authority=restarted.open_character_authority(&seal).await.map_err(debug)?;
+    let store=PgEnforcementStore {root:&restarted,node:&h.node,authority:&authority};
+    assert_eq!(Publisher::default().step(&store,&peer,END).await.map_err(debug)?,Step::More);
+    assert_eq!(Publisher::default().step(&store,&peer,END).await.map_err(debug)?,Step::Idle);
+    let terminal = {
+        let posted=peer.0.lock().map_err(|_|"peer")?;
+        assert_eq!(posted.len(),3);
+        EnforcementResult::parse(&posted[2]).ok_or("terminal")?
+    };
+    assert_eq!((terminal.state,terminal.result_code,terminal.receipt_revision),(State::Expired,Code::Ok,2));
+    assert_eq!(terminal.command_digest,pending.command_digest);
+    let rows:(i64,i64)=sqlx::query_as("SELECT count(*),count(*) FILTER(WHERE acknowledged) FROM game_platform_enforcement_result_outbox WHERE operation_id=$1::uuid").bind(&c.operation_id).fetch_one(&h.pool).await?;
+    assert_eq!(rows,(2,2));
+    let due:Option<i64>=sqlx::query_scalar("SELECT pending_retry_at_ms FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid").bind(&c.operation_id).fetch_one(&h.pool).await?;
+    assert_eq!(due,None);
+    Ok(())
+}
+async fn pending_runtime_restart(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {
+    use crate::platform_streams::enforcement::worker::{Publisher,Step};
+    // EXPIRE naturally emits PENDING_EXPIRY. Seed the other contract-permitted
+    // pending reason against real accepted streams to exercise the whole class.
+    for (n,intent) in [(610,Intent::Apply),(620,Intent::Replace),(630,Intent::Revoke),(640,Intent::Expire)] {
+        clock(h,START+500).await?;
+        let mut c=command(h,n).await?; c.sanction_stream_id=uuid(n+1);
+        c.effective_at_ms=Some(START+10_000);
+        let mut accepted=decide(h,a,&c).await?;
+        if intent!=Intent::Apply {
+            c.operation_id=uuid(n+2); c.intent=intent;
+            if intent==Intent::Expire { c.prior_decision_revision=None; c.reason_code=None; } else { c.decision_revision=2; c.prior_decision_revision=Some(1); }
+            if matches!(intent,Intent::Revoke|Intent::Expire) {c.effective_at_ms=None;c.expires_at_ms=None;}
+            accepted=decide(h,a,&c).await?;
+        }
+        accepted.state=State::AcceptedPending; accepted.result_code=Code::PendingRuntime; accepted.runtime_effect=RuntimeEffect::None;
+        let raw=accepted.encode().ok_or("pending runtime")?;
+        sqlx::query("UPDATE game_platform_enforcement_receipts SET result_bytes=$2,pending_retry_at_ms=$3 WHERE operation_id=$1::uuid").bind(&c.operation_id).bind(&raw).bind(START+10_000).execute(&h.pool).await?;
+        sqlx::query("DELETE FROM game_platform_enforcement_result_outbox WHERE operation_id=$1::uuid").bind(&c.operation_id).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_platform_enforcement_result_outbox(operation_id,command_digest,receipt_revision,result_bytes,acknowledged) VALUES($1::uuid,$2,1,$3,true)").bind(&c.operation_id).bind(&accepted.command_digest).bind(&raw).execute(&h.pool).await?;
+        let due=if intent==Intent::Expire {END} else {START+10_000};
+        clock(h,due).await?;
+        let peer=ResultPeer::default();
+        let store=PgEnforcementStore {root:&h.root,node:&h.node,authority:a};
+        let mut publisher=Publisher::default();
+        for _ in 0..2 { publisher.step(&store,&peer,due).await.map_err(debug)?; }
+        assert_eq!(publisher.step(&store,&peer,due).await.map_err(debug)?,Step::Idle);
+        let result = {
+            let posted=peer.0.lock().map_err(|_|"peer")?;
+            let parsed=posted.iter().map(|b|EnforcementResult::parse(b).ok_or("invalid publication")).collect::<Result<Vec<_>,_>>()?;
+            parsed.into_iter().find(|r|r.operation_id==c.operation_id).ok_or("pending result not published")?
+        };
+        let expected=match intent {Intent::Apply=>State::Applied,Intent::Replace=>State::Replaced,Intent::Revoke=>State::Revoked,Intent::Expire=>State::Expired};
+        assert_eq!((result.state,result.receipt_revision),(expected,2));
+        assert_eq!(decide(h,a,&c).await?.receipt_revision,2,"terminal replay stays immutable");
+    }
+    Ok(())
+}
+#[test]
+fn platform_enforcement_pending_expiry_finishes_after_restart() -> TestResult { scenario(6) }
+#[test]
+fn platform_enforcement_pending_runtime_finishes_all_intents() -> TestResult { scenario(7) }

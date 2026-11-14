@@ -6,6 +6,8 @@ use super::enforcement_wire::EnforcementResult;
 use sqlx::Row;
 
 pub const OVERDUE_AFTER_MS: i64 = 300_000;
+pub const PENDING_SCAN_INTERVAL_MS: i64 = 5_000;
+pub const PENDING_SCAN_LIMIT: usize = 200;
 
 #[derive(Debug, Clone)]
 pub struct Publication {
@@ -34,6 +36,7 @@ pub enum Action {
         reconcile: bool,
     },
     Next,
+    DuePending,
     Mark {
         operation: String,
         revision: u16,
@@ -53,6 +56,7 @@ pub enum Reply {
     Publication(Option<Publication>),
     Bytes(Option<Vec<u8>>),
     Alarms(usize),
+    Commands(Vec<Vec<u8>>),
 }
 impl DurabilityRoot {
     pub async fn enforcement_transport(
@@ -84,6 +88,13 @@ impl DurabilityRoot {
                 },
                 Action::Stop{reconcile}=>{
                     sqlx::query("UPDATE game_platform_enforcement_cursor SET stream_stopped=stream_stopped OR NOT $1,reconcile_stopped=reconcile_stopped OR $1 WHERE singleton").bind(reconcile).execute(&mut *tx).await?;Reply::Done
+                },
+                Action::DuePending=>{
+                    let now:i64=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
+                    if now<=0 {return Err(DurabilityError::Unavailable);}
+                    let commands=sqlx::query_scalar("SELECT r.command_bytes FROM game_platform_enforcement_receipts r WHERE pending_retry_at_ms <= $1 AND NOT publication_stopped AND NOT EXISTS(SELECT 1 FROM game_platform_enforcement_result_outbox o WHERE o.operation_id=r.operation_id AND (held OR reconcile_required)) ORDER BY pending_retry_at_ms,operation_id LIMIT $2")
+                        .bind(now).bind(PENDING_SCAN_LIMIT as i64).fetch_all(&mut *tx).await?;
+                    Reply::Commands(commands)
                 },
                 Action::Next=>{
                     let row=sqlx::query("SELECT o.operation_id::text,o.receipt_revision,o.result_bytes FROM game_platform_enforcement_result_outbox o JOIN game_platform_enforcement_receipts r USING(operation_id) WHERE NOT acknowledged AND NOT held AND NOT reconcile_required AND NOT r.publication_stopped ORDER BY delivery_position LIMIT 1").fetch_optional(&mut *tx).await?;

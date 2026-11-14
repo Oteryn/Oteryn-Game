@@ -75,6 +75,7 @@ impl Store for Memory {
                 s.stopped = true;
                 Reply::Done
             }
+            Action::DuePending => Reply::Commands(Vec::new()),
             Action::Next => Reply::Publication(
                 s.outbox
                     .iter()
@@ -542,6 +543,175 @@ fn enforcement_overdue_scan_is_independent_of_publication_throughput() -> TestRe
         assert_eq!(publisher.step(&store, &peer, 60_100).await, Ok(Step::Idle));
         assert_eq!(store.0.lock().map_err(|_| "mutex")?.overdue_scans, 2);
         assert!(requests.lock().map_err(|_| "mutex")?.is_empty());
+        Ok(())
+    })
+}
+
+struct PendingDecision {
+    command: Vec<u8>,
+    result: EnforcementResult,
+    now_ms: i64,
+    due_ms: i64,
+    publications: Vec<(Publication, bool)>,
+    decisions: usize,
+}
+struct PendingStore(Mutex<PendingDecision>);
+impl Store for PendingStore {
+    async fn transact(&self, action: Action) -> Result<Reply, ()> {
+        let mut s = self.0.lock().map_err(|_| ())?;
+        match action {
+            Action::Next => Ok(Reply::Publication(
+                s.publications
+                    .iter()
+                    .find(|(_, ack)| !ack)
+                    .map(|(p, _)| p.clone()),
+            )),
+            Action::Mark {
+                revision,
+                delivery: Delivery::Ack,
+                ..
+            } => {
+                let (_, ack) = s
+                    .publications
+                    .iter_mut()
+                    .find(|(p, _)| p.revision == revision)
+                    .ok_or(())?;
+                *ack = true;
+                Ok(Reply::Done)
+            }
+            Action::Overdue { .. } => Ok(Reply::Alarms(0)),
+            Action::DuePending => Ok(Reply::Commands(
+                if s.result.state == State::AcceptedPending && s.now_ms >= s.due_ms {
+                    vec![s.command.clone()]
+                } else {
+                    Vec::new()
+                },
+            )),
+            _ => Err(()),
+        }
+    }
+    async fn decide(&self, raw: Vec<u8>) -> Result<Vec<u8>, ()> {
+        let mut s = self.0.lock().map_err(|_| ())?;
+        if raw != s.command || s.now_ms < s.due_ms {
+            return Err(());
+        }
+        let c = Command::parse(&raw).ok_or(())?;
+        s.decisions += 1;
+        s.result.receipt_revision += 1;
+        s.result.state = match c.intent {
+            Intent::Apply => State::Applied,
+            Intent::Replace => State::Replaced,
+            Intent::Revoke => State::Revoked,
+            Intent::Expire => State::Expired,
+        };
+        s.result.result_code = Code::Ok;
+        if matches!(c.intent, Intent::Expire | Intent::Revoke) {
+            s.result.stream_state = if c.intent == Intent::Revoke {
+                StreamState::Revoked
+            } else {
+                StreamState::Expired
+            };
+            s.result.effective_until_ms = None;
+        }
+        s.result.decided_at_ms = s.now_ms;
+        let bytes = s.result.encode().ok_or(())?;
+        let publication = Publication {
+            operation: c.operation_id,
+            revision: s.result.receipt_revision,
+            bytes: bytes.clone(),
+        };
+        s.publications.push((publication, false));
+        Ok(bytes)
+    }
+}
+#[test]
+fn enforcement_pending_decisions_finish_and_publish_after_restart() -> TestResult {
+    run(async {
+        for intent in [
+            Intent::Apply,
+            Intent::Replace,
+            Intent::Revoke,
+            Intent::Expire,
+        ] {
+            let mut c = Command::parse(&fixture("command-apply")?).ok_or("command")?;
+            c.intent = intent;
+            if matches!(intent, Intent::Replace | Intent::Revoke) {
+                c.prior_decision_revision = Some(1);
+                c.decision_revision = 2;
+            }
+            if matches!(intent, Intent::Revoke | Intent::Expire) {
+                c.effective_at_ms = None;
+                c.expires_at_ms = None;
+            }
+            if intent == Intent::Expire {
+                c.reason_code = None;
+            }
+            let command = c.encode().ok_or("encode command")?;
+            let mut result =
+                EnforcementResult::parse(&fixture("result-applied")?).ok_or("result")?;
+            result.command_digest = digest(&command);
+            result.accepted_decision_revision = c.decision_revision;
+            result.state = State::AcceptedPending;
+            result.result_code = if intent == Intent::Expire {
+                Code::PendingExpiry
+            } else {
+                Code::PendingRuntime
+            };
+            result.runtime_effect = RuntimeEffect::None;
+            let due = if intent == Intent::Expire {
+                result.effective_until_ms.ok_or("end")?
+            } else {
+                c.effective_at_ms
+                    .unwrap_or(result.decided_at_ms)
+                    .max(result.decided_at_ms + 5_000)
+            };
+            let bytes = result.encode().ok_or("encode pending")?;
+            let store = PendingStore(Mutex::new(PendingDecision {
+                command,
+                result,
+                now_ms: due - 1,
+                due_ms: due,
+                publications: vec![(
+                    Publication {
+                        operation: c.operation_id,
+                        revision: 1,
+                        bytes,
+                    },
+                    false,
+                )],
+                decisions: 0,
+            }));
+            let (peer, _) = peer(
+                vec![
+                    (200, None, fixture("result-ack")?),
+                    (200, None, fixture("result-ack")?),
+                ],
+                false,
+            )
+            .await?;
+            let mut publisher = Publisher::default();
+            assert_eq!(publisher.step(&store, &peer, due - 1).await, Ok(Step::More));
+            store.0.lock().map_err(|_| "mutex")?.now_ms = due;
+            // A fresh publisher has no process-local knowledge of the earlier pending result.
+            let mut resumed = if intent == Intent::Expire {
+                Publisher::default()
+            } else {
+                publisher
+            };
+            assert_eq!(
+                resumed.step(&store, &peer, due + 5_000).await,
+                Ok(Step::More)
+            );
+            assert_eq!(
+                Publisher::default().step(&store, &peer, due + 1).await,
+                Ok(Step::Idle)
+            );
+            let s = store.0.lock().map_err(|_| "mutex")?;
+            assert_ne!(s.result.state, State::AcceptedPending);
+            assert_eq!(s.result.receipt_revision, 2);
+            assert_eq!(s.decisions, 1);
+            assert!(s.publications.iter().all(|(_, ack)| *ack));
+        }
         Ok(())
     })
 }

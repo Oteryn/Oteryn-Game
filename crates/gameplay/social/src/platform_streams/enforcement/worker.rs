@@ -255,6 +255,7 @@ pub const OVERDUE_SCAN_INTERVAL_MS: i64 = 60_000;
 #[derive(Default)]
 pub struct Publisher {
     next_alarm_scan_ms: Option<i64>,
+    next_pending_scan_ms: Option<i64>,
 }
 impl Publisher {
     pub async fn step(
@@ -263,6 +264,25 @@ impl Publisher {
         peer: &impl Peer,
         now_ms: i64,
     ) -> Result<Step, Failure> {
+        if self.next_pending_scan_ms.is_none_or(|next| now_ms >= next) {
+            let Reply::Commands(commands) = store
+                .transact(Action::DuePending)
+                .await
+                .map_err(|_| Failure::Retry(None))?
+            else {
+                return Err(Failure::Defect);
+            };
+            if commands.len()
+                > crate::durability::platform_streams::enforcement_transport::PENDING_SCAN_LIMIT
+            {
+                return Err(Failure::Defect);
+            }
+            for raw in commands {
+                store.decide(raw).await.map_err(|_| Failure::Retry(None))?;
+            }
+            // No process-local cursor: the persisted due set is revisited immediately on restart.
+            self.next_pending_scan_ms=Some(now_ms.saturating_add(crate::durability::platform_streams::enforcement_transport::PENDING_SCAN_INTERVAL_MS));
+        }
         if self.next_alarm_scan_ms.is_none_or(|next| now_ms >= next) {
             self.next_alarm_scan_ms = Some(now_ms.saturating_add(OVERDUE_SCAN_INTERVAL_MS));
             if let Reply::Alarms(count) = store

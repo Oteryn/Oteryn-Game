@@ -29,9 +29,14 @@ CREATE TABLE IF NOT EXISTS game_platform_enforcement_receipts (
  command_digest TEXT NOT NULL CHECK(command_digest ~ '^[0-9a-f]{64}$'),
  receipt_revision INTEGER NOT NULL CHECK(receipt_revision BETWEEN 1 AND 65535),
  result_bytes BYTEA NOT NULL CHECK(octet_length(result_bytes) BETWEEN 1 AND 1024),
+ pending_retry_at_ms BIGINT CHECK(pending_retry_at_ms>0),
  publication_stopped BOOLEAN NOT NULL DEFAULT false,
  overdue_alarmed BOOLEAN NOT NULL DEFAULT false
 );
+-- Retain pending work independently of A1 cursors and A3 acknowledgements.
+CREATE INDEX IF NOT EXISTS game_platform_enforcement_pending_due
+ ON game_platform_enforcement_receipts(pending_retry_at_ms,operation_id)
+ WHERE pending_retry_at_ms IS NOT NULL;
 CREATE TABLE IF NOT EXISTS game_platform_enforcement_result_outbox (
  delivery_position BIGSERIAL UNIQUE,
  acknowledged BOOLEAN NOT NULL DEFAULT false,held BOOLEAN NOT NULL DEFAULT false,reconcile_required BOOLEAN NOT NULL DEFAULT false,

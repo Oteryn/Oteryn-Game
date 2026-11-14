@@ -90,6 +90,25 @@ async fn outbox(tx: &mut Tx<'_>, r: &EnforcementResult, raw: &[u8]) -> Result<()
     sqlx::query("INSERT INTO game_platform_enforcement_result_outbox(operation_id,command_digest,receipt_revision,result_bytes) VALUES($1::uuid,$2,$3,$4) ON CONFLICT DO NOTHING").bind(&r.operation_id).bind(&r.command_digest).bind(i32::from(r.receipt_revision)).bind(raw).execute(&mut **tx).await?;
     Ok(())
 }
+// Both non-terminal wire reasons must remain live even after their A3 acknowledgement.
+fn pending_retry_at(command: &[u8], r: &EnforcementResult) -> Result<Option<i64>, DurabilityError> {
+    if r.state != State::AcceptedPending {
+        return Ok(None);
+    }
+    let due = match r.result_code {
+        Code::PendingExpiry => r
+            .effective_until_ms
+            .ok_or(DurabilityError::InvalidStoredState)?,
+        Code::PendingRuntime => Command::parse_for_decision(command)
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .effective_at_ms
+            .unwrap_or(r.decided_at_ms),
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    Ok(Some(due.max(r.decided_at_ms.saturating_add(
+        super::enforcement_transport::PENDING_SCAN_INTERVAL_MS,
+    ))))
+}
 async fn persist(
     tx: &mut Tx<'_>,
     id: &CommandIdentity,
@@ -97,8 +116,9 @@ async fn persist(
     r: &EnforcementResult,
 ) -> Result<Vec<u8>, DurabilityError> {
     let raw = r.encode().ok_or(DurabilityError::InvalidStoredState)?;
-    sqlx::query("INSERT INTO game_platform_enforcement_receipts(operation_id,sanction_stream_id,command_bytes,command_digest,receipt_revision,result_bytes) VALUES($1::uuid,$2::uuid,$3,$4,$5,$6) ON CONFLICT(operation_id) DO UPDATE SET receipt_revision=EXCLUDED.receipt_revision,result_bytes=EXCLUDED.result_bytes WHERE game_platform_enforcement_receipts.command_bytes=EXCLUDED.command_bytes AND game_platform_enforcement_receipts.command_digest=EXCLUDED.command_digest")
-  .bind(&id.operation_id).bind(&id.sanction_stream_id).bind(command).bind(&r.command_digest).bind(i32::from(r.receipt_revision)).bind(&raw).execute(&mut **tx).await?;
+    let pending_due = pending_retry_at(command, r)?;
+    sqlx::query("INSERT INTO game_platform_enforcement_receipts(operation_id,sanction_stream_id,command_bytes,command_digest,receipt_revision,result_bytes,pending_retry_at_ms) VALUES($1::uuid,$2::uuid,$3,$4,$5,$6,$7) ON CONFLICT(operation_id) DO UPDATE SET receipt_revision=EXCLUDED.receipt_revision,result_bytes=EXCLUDED.result_bytes,pending_retry_at_ms=EXCLUDED.pending_retry_at_ms WHERE game_platform_enforcement_receipts.command_bytes=EXCLUDED.command_bytes AND game_platform_enforcement_receipts.command_digest=EXCLUDED.command_digest")
+  .bind(&id.operation_id).bind(&id.sanction_stream_id).bind(command).bind(&r.command_digest).bind(i32::from(r.receipt_revision)).bind(&raw).bind(pending_due).execute(&mut **tx).await?;
     outbox(tx, r, &raw).await?;
     Ok(raw)
 }
@@ -161,9 +181,12 @@ impl DurabilityRoot {
    };
    let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid")
     .bind(&c.character_id).fetch_optional(&mut *tx).await?;
+   // An identical pending operation already accepted at this high-water may finish;
+   // a newer stream decision still wins and produces STALE_REVISION.
+   let resuming=previous.is_some() && current.as_ref().is_some_and(|s|s.revision==c.decision_revision);
    let stale=match c.intent {
-    Intent::Apply=>current.is_some(),
-    Intent::Replace|Intent::Revoke=>current.as_ref().is_none_or(|s|s.revision>=c.decision_revision || Some(s.revision)!=c.prior_decision_revision),
+    Intent::Apply=>current.is_some() && !resuming,
+    Intent::Replace|Intent::Revoke=>!resuming && current.as_ref().is_none_or(|s|s.revision>=c.decision_revision || Some(s.revision)!=c.prior_decision_revision),
     Intent::Expire=>current.as_ref().is_none_or(|s|s.revision!=c.decision_revision),
    };
    let mut rejection=if c.command_version!=1 || c.profile==Profile::Jail {Some(Code::Unsupported)}
@@ -220,6 +243,9 @@ impl DurabilityRoot {
    if let Some(previous)=previous {
     let bytes:Vec<u8>=previous.try_get("result_bytes")?;let old=EnforcementResult::parse(&bytes).ok_or(DurabilityError::InvalidStoredState)?;
     if old.state==r.state && old.result_code==r.result_code && old.stream_state==r.stream_state && old.accepted_decision_revision==r.accepted_decision_revision {
+     if old.state==State::AcceptedPending {
+      sqlx::query("UPDATE game_platform_enforcement_receipts SET pending_retry_at_ms=$2 WHERE operation_id=$1::uuid").bind(&id.operation_id).bind(pending_retry_at(&raw,&r)?).execute(&mut *tx).await?;
+     }
      outbox(&mut tx,&old,&bytes).await?;commit_semantic_transaction(tx,deadline).await?;return Ok(bytes);
     }
    }
