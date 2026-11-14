@@ -6,6 +6,7 @@ mod container_sorting;
 mod coin_market;
 mod depot;
 mod feature_dialogs;
+pub(super) mod highscores_character_info;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -240,6 +241,7 @@ pub(super) fn install(app: &mut App) {
     coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
+    highscores_character_info::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);

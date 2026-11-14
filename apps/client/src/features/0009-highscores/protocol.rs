@@ -9,6 +9,34 @@ impl Outbox {
         &self,
         response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
     ) {
-        oteryn_client_ui::highscores::apply_result(&mut lock(&self.0).highscores, response);
+        let mut mailbox = lock(&self.0);
+        #[cfg(feature = "bevy-shell")]
+        if mailbox.shared_frontend {
+            apply_bound(&mut mailbox.highscores, response);
+            return;
+        }
+        oteryn_client_ui::highscores::apply_result(&mut mailbox.highscores, response);
     }
+}
+
+/// Preserve the in-flight query when an older query's success payload reaches this view.
+#[cfg(feature = "bevy-shell")]
+fn apply_bound(
+    panel: &mut oteryn_client_ui::highscores::HighscoresPanel,
+    response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+) {
+    let mut prepared = panel.clone();
+    oteryn_client_ui::highscores::apply_result(&mut prepared, response);
+    use oteryn_client_runtime::server_mechanic::CommandStatus;
+    if matches!(
+        response.status,
+        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+    ) && prepared.feedback.is_some()
+        // A valid reply rejected by the canonical reducer belongs to a different query.
+        // Malformed replies instead publish its error and release the pending request.
+        && oteryn_client_runtime::highscores::wire::decode_highscores_result(&response.payload).is_ok()
+    {
+        return;
+    }
+    *panel = prepared;
 }
