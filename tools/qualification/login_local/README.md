@@ -23,7 +23,7 @@ git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platfor
 bash tools/qualification/login_local/run.sh
 ```
 
-Needs Docker, `openssl`, `sudo`, Rust 1.99.1 (or the container mode below) and a display for the OAuth browser step. Ports:
+Needs Docker, `openssl`, `sudo`, Rust 1.100.0 (or the container mode below) and a display for the OAuth browser step. Ports:
 `LOGIN_LOCAL_PLATFORM_MTLS_PORT` (18563), `_PLATFORM_HTTP_PORT` (18564), `_GATEWAY_PORT` (18565),
 `_GAME_PORT` (17281), `_PG_PORT` (15533). `LOGIN_LOCAL_RUN_CLIENT=0` stops at READY; `LOGIN_LOCAL_HOLD=1`
 keeps the services up for a Windows client; `LOGIN_LOCAL_KEEP=1` skips teardown (the work directory
@@ -129,7 +129,7 @@ listens on the Unix socket only, so a socket probe can pass before the final ser
 
 **No host Rust (Synology DSM).** `LOGIN_LOCAL_RUST` is `auto` (default), `host` or `container`. `auto` picks `container`
 when `cargo`, `cc` or `useradd` is missing. Container mode builds the server binaries in the pinned
-`rust:1.99.1-bookworm` image (as the invoking uid; cargo home and target under the ignored
+`rust:1.100.0-bookworm` image (as the invoking uid; cargo home and target under the ignored
 `target/login-local-container/`) and runs migrate, ops and the node in one container of that image on the host network.
 The node runs as numeric uid `LOGIN_LOCAL_SERVICE_UID` (default `64990`, never 0) instead of a host system user. There is
 no client build, so container mode needs `LOGIN_LOCAL_RUN_CLIENT=0` (`BLOCKED reason=client_run_needs_host_rust`
@@ -172,7 +172,9 @@ A file is written only from a successful capture and is never replaced.
    printed epoch was persisted as F. It then runs one node with `[platform.runtime_status]`,
    `assignment_epoch = 1` (declared, never raised by ops) and `[platform.account_characters]`, then
    `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
-7. Creates the test account, ensures the OAuth client, bootstraps one Character from a real Platform intent,
+7. Generates Passport keys in the final Platform container (private 0600/public 0600, owned by `www-data`)
+   and clears its config cache. Creates the test account with the Platform hasher, ensures the Rust OAuth client (`--rust`)
+   and validates its UUID before writing `client.env`, bootstraps one Character from a real Platform intent,
    and waits until the node logs an accepted `PublishAccountCharactersV1` and `PublishProjectionWatermarkV1`.
 8. Writes `client.env` (0600; includes the per-run test password in a comment) and runs the client with
    `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`, `OTERYN_WORLD`,
@@ -202,7 +204,7 @@ moves to such a commit, the run fails at the projection wait or at ticket issuan
 
 `game-auth:world:ensure`, `NativeTopologyRegistry::issueForPreproduction` / `publishRouteForPreproduction`,
 `NativeSigningTrustRegistry::publishTrustedKey` (via `php -r` inside the throwaway container, as node_boot does),
-`game-auth:oauth-client:ensure`, `game-auth:character-bootstrap-intent:issue`. No step is pending
+`game-auth:oauth-client:ensure --rust`, `game-auth:character-bootstrap-intent:issue`. No step is pending
 PLATFORM-NATIVE-PREPROD-OPS-1. The account is inserted into `identities` by the container's `php -r` (local-only route; no
 operator command creates accounts).
 

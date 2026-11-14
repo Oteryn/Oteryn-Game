@@ -134,9 +134,9 @@ fn e2e_s11_ranking_page_replays_into_the_highscores_panel() -> Result<(), BoxErr
     );
     let count: usize = value(expected, "rows")?.parse()?;
     assert_eq!(page.rows.len(), count);
-    for index in 0..count {
+    for (index, row) in page.rows.iter().enumerate() {
         let want = parse_row(value(expected, &format!("row{index}"))?)?;
-        assert_eq!(page.rows[index], want);
+        assert_eq!(*row, want);
         assert!(panel_text(&panel).contains(&format!(
             "\n{} | {} | {} | {} | {}",
             want.rank, want.name, want.vocation, want.level, want.value

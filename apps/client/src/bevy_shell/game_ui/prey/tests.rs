@@ -444,12 +444,18 @@ fn caption_button(app: &mut App, label: &str) -> Result<Entity, Box<dyn std::err
         .query::<(&Text, &ChildOf)>()
         .iter(app.world())
         .find_map(|(text, parent)| {
-            (text.0 == label
-                && app
-                    .world()
-                    .get::<ChildOf>(parent.parent())
-                    .is_some_and(|p| p.parent() == root))
-            .then_some(parent.parent())
+            if text.0 != label {
+                return None;
+            }
+            let button = parent.parent();
+            let mut entity = button;
+            while let Some(parent) = app.world().get::<ChildOf>(entity) {
+                if parent.parent() == root {
+                    return Some(button);
+                }
+                entity = parent.parent();
+            }
+            None
         })
         .ok_or("caption button absent".into())
 }

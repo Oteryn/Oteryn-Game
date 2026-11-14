@@ -44,7 +44,7 @@ readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
 readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
-readonly RUST_IMAGE=rust:1.99.1-bookworm@sha256:48b7f435b8fc6378ce43b44f15e3a47fd8919b2825f835c39bd4bd3da50af5b8
+readonly RUST_IMAGE=rust:1.100.0-bookworm@sha256:ade39a710ef85f3506cffcfec3e8a24ba090badef1dff2fb798f71d878833fea
 readonly PG_IMAGE=postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
@@ -364,7 +364,7 @@ ADMIN_URL="postgresql://oteryn_login_local_admin:$PG_ADMIN_PASSWORD@127.0.0.1:$P
 compose config --quiet
 compose build --pull platform gateway
 compose up --detach --wait db platform nginx
-php_exec() { compose exec --no-TTY --user www-data platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"; }
+php_exec() { local code=$1; shift; compose exec --no-TTY --user www-data "$@" platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$code"; }
 
 # Registry topology: one world row, one issued WorldId/ChannelId (uuid7, read back, never invented).
 # F7: issue on the retained SQLite fixture (migrated, one world row), then mirror the issued ids and
@@ -392,6 +392,12 @@ LL_RUNTIME_STATUS_IDENTITIES="{\"$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 export LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
+# Generate Passport keys in the final container before OAuth use; safe to repeat.
+compose exec --no-TTY --user root platform php artisan passport:keys --force
+compose exec --no-TTY --user root platform chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+compose exec --no-TTY --user root platform chmod 600 storage/oauth-private.key
+compose exec --no-TTY --user root platform chmod 600 storage/oauth-public.key
+compose exec --no-TTY --user www-data platform php artisan config:clear
 # The gateway trusts exactly the per-run CA: one certificate in SSL_CERT_FILE, an empty SSL_CERT_DIR.
 [[ "$(grep -c 'BEGIN CERTIFICATE' "$WP5_PKI/platform-upstream-ca.crt")" == 1 && -z "$(ls -A "$LL_NO_SYSTEM_ROOTS")" ]] \
   || { echo "gateway trust roots are not exactly the per-run CA"; exit 1; }
@@ -400,14 +406,15 @@ compose config gateway | grep -q 'SSL_CERT_DIR: /run/login-local/no-system-roots
 compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
 php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$ADMISSION_KEY_ID"'",hex2bin("'"$ADMISSION_PUBLIC_HEX"'"));'
-php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>password_hash("'"$ACCOUNT_PASSWORD"'",PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
-OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure"); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([^ ]*\).*/\1/p')"
-[[ -n "$OAUTH_CLIENT_ID" ]] || { echo "oauth client id not found"; exit 1; }
+ACCOUNT_PASSWORD="$ACCOUNT_PASSWORD" php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>Illuminate\Support\Facades\Hash::make(getenv("ACCOUNT_PASSWORD")),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);' --env ACCOUNT_PASSWORD
+OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure",["--rust"=>true]); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([0-9a-f-]\{36\}\)\.$/\1/p')"
+[[ "$OAUTH_CLIENT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] \
+  || { echo "oauth client id missing or invalid UUID" >&2; exit 1; }
 evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=account_characters_feed"
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.99.1 build --locked -p oteryn-game-server -p oteryn-client --bins
+  cargo +1.100.0 build --locked -p oteryn-game-server -p oteryn-client --bins
   TARGET="$GAME_SOURCE/target/debug"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
@@ -416,7 +423,7 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.99.1 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
+    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
   TARGET="$GAME_SOURCE/target/login-local-container/debug"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
@@ -433,7 +440,7 @@ if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
   PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
   WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
-  (cd "$GAME_SOURCE" && cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
+  (cd "$GAME_SOURCE" && cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
   sudo install -d -o root -g root -m 0755 "$BASE/world"
   sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
 fi
