@@ -198,6 +198,10 @@ impl HostOwner {
             super::game_ui::open_boss_reward_chest(self);
             return true;
         }
+        if oteryn_client_ui::analyser::open_key(routed) {
+            super::game_ui::analyser_tools::open(self);
+            return true;
+        }
         if oteryn_client_ui::animus_mastery::open_key(routed) {
             super::game_ui::animus_mastery::open(self);
             return true;

@@ -39,7 +39,7 @@ pub(super) fn export(panel: &Panel, path: &Path) -> io::Result<()> {
     .map_err(io::Error::other)?;
     std::fs::write(path, text)
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 pub(super) fn submit(
     mailbox: &mut crate::play::mailbox::Mailbox,
     importing: bool,
