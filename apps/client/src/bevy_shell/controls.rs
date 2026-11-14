@@ -97,6 +97,9 @@ impl HostOwner {
         {
             return;
         }
+        if play.link.prey_input(&routed) {
+            return;
+        }
         if routed.iter().any(super::game_ui::highscores::shortcut) {
             self.controls.highscores_generation = Some(generation);
             play.link

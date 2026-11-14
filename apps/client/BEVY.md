@@ -75,6 +75,7 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+Z:** Bug report with category, multiline description, review and Send.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+P:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
 - **Ctrl+Shift+F:** Exaltation Forge: Fusion, Transfer, Conversion and History.
   Opens locally and requests current forge candidates; this protocol has no server-open event.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
