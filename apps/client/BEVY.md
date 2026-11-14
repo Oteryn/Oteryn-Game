@@ -76,6 +76,12 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+Alt+I:** Inspection. Use **Inspect selected** to request the selected
+  inventory item's data. Multi-item replies show a selectable list and one details
+  pane, including equipment slots returned by player inspection. Cells use item
+  names when appearance IDs are unavailable. Player outfit and profile details
+  require additional server data. Right-click a visible player and choose
+  **Inspect** to request equipment inspection, subject to server permission.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
