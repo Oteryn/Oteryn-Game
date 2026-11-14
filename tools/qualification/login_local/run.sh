@@ -633,7 +633,9 @@ source_authority = "oteryn:runtime:login-local"
 route_revision = "$ROUTE_REVISION"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-ll-1"
-content_revision = "content-ll-1"
+# Quest and Task Board writers require the Character root content revision (from the
+# Platform intent) to equal this one; a mismatch is ProgressionContextMismatch.
+content_revision = "${INTERPRETATION[2]}"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
 required_gameplay_capabilities = $required_gameplay_capabilities
