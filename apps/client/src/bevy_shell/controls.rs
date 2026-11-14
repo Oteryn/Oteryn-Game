@@ -84,6 +84,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::house_furniture_wrap::open_key(&routed) {
+            super::game_ui::furniture_wrapping::toggle(self);
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;
