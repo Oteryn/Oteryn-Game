@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    BossRewardChest,
     AnimusMastery,
     BrowseField,
     ContainerSorting,
@@ -63,6 +64,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::BossRewardChest => "shell.boss_reward_chest",
             Self::AnimusMastery => "shell.animus_mastery",
             Self::BrowseField => "shell.browse_field",
             Self::ContainerSorting => "shell.container_sorting",
@@ -170,6 +172,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (
+            Control::BossRewardChest,
+            "Boss rewards (Ctrl+Shift+A)",
+            210.,
+        ),
         (Control::BrowseField, "Browse Field", 100.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
@@ -383,7 +390,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -396,6 +403,7 @@ fn activate(
             return;
         }
         match control {
+            Control::BossRewardChest => super::game_ui::open_boss_reward_chest(&mut owner),
             Control::AnimusMastery => super::game_ui::animus_mastery::open(&owner),
             Control::BrowseField => super::game_ui::browse_field::open(&owner),
             Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
@@ -558,6 +566,7 @@ pub(super) fn project_toolbar(
         Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
     >,
 ) {
+    use Control::{BossRewardChest, Market, Party, Quests, Spells};
     let playing = owner.play.is_some();
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
@@ -589,7 +598,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

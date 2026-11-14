@@ -91,6 +91,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::boss_rewards::open_key(&routed) {
+            super::game_ui::open_boss_reward_chest(self);
+            return;
+        }
         if oteryn_client_ui::animus_mastery::open_key(&routed) {
             super::game_ui::animus_mastery::open(self);
             return;
