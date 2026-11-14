@@ -16,7 +16,8 @@ pub(super) fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Appearance
+                Control::Achievements
+                    | Control::Appearance
                     | Control::CastChat
                     | Control::Cast
                     | Control::ExivaSettings
@@ -75,6 +76,7 @@ pub(super) fn activate(
             Control::AnimusMastery => game_ui::animus_mastery::open(&owner),
             Control::BrowseField => game_ui::browse_field::open(&owner),
             Control::ContainerSorting => game_ui::open_container_sorting(&mut owner),
+            Control::Achievements => game_ui::achievements::open(&mut owner),
             Control::Options => owner.open_graphics(),
             Control::HirelingServices => game_ui::hireling_services::toggle(&owner),
             Control::FurnitureRotation => game_ui::toggle_furniture_rotation(&mut owner),

@@ -55,7 +55,8 @@ pub(in crate::bevy_shell) fn project_toolbar(
         } else if matches!(
             control,
             Some(
-                Control::Appearance
+                Control::Achievements
+                    | Control::Appearance
                     | Control::StatusDetails
                     | Control::CastChat
                     | Control::Cast

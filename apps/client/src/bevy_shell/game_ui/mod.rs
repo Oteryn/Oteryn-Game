@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 pub(super) use achievement_notices::open as open_achievement_notices;
 mod achievement_notices;
+pub(super) mod achievements;
 mod actions;
 pub(super) mod appearance;
 pub(super) mod arena;
@@ -148,6 +149,7 @@ pub(super) fn install(app: &mut App) {
     mail::install(app);
     market::install(app);
     minimap::install(app);
+    achievements::install(app);
     modal::install(app);
     npc_shop::install(app);
     options::install(app);
