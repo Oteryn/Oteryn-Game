@@ -347,3 +347,11 @@ mod atlas_tests;
 #[cfg(test)]
 #[path = "view/discovery_tests.rs"]
 mod discovery_tests;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "view/bound_tests.rs"]
+mod bound_tests;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/bound.rs"]
+pub mod bound;
