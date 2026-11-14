@@ -181,6 +181,9 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if play.link.prey_input(&routed) {
+            return;
+        }
         if oteryn_client_ui::weapon_proficiency::open_key(&routed) {
             super::game_ui::weapon_proficiency::open(self);
             return;

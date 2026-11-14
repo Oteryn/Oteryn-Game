@@ -41,6 +41,7 @@ pub(super) fn activate(
                     | Control::Market
                     | Control::Party
                     | Control::PlayerReport
+                    | Control::Prey
                     | Control::Quests
                     | Control::Spells
                     | Control::StatusDetails
@@ -90,6 +91,7 @@ pub(super) fn activate(
             Control::Market => game_ui::open_market(&mut owner),
             Control::Party => game_ui::open_party(&mut owner),
             Control::PlayerReport => game_ui::player_report_report::open(&mut owner),
+            Control::Prey => game_ui::open_prey(&mut owner),
             Control::Quests => game_ui::open_quests(&mut owner),
             Control::Spells => game_ui::open_spells(&mut owner),
             Control::StatusDetails => game_ui::status_details::toggle(&owner),

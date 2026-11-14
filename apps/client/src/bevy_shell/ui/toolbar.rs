@@ -59,6 +59,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Appearance
                     | Control::HirelingManagement
                     | Control::HousePodium
+                    | Control::Prey
                     | Control::StatusDetails
                     | Control::CastChat
                     | Control::Cast
