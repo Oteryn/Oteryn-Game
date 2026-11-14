@@ -91,12 +91,22 @@ fn read_fields(fields: Query<(&Field, &EditableText)>, mut state: ResMut<State>)
         state.fields[field.0] = text.value().to_string();
     }
 }
+fn inside(mut entity: Option<Entity>, root: Entity, parents: &Query<&ChildOf>) -> bool {
+    while let Some(current) = entity {
+        if current == root {
+            return true;
+        }
+        entity = parents.get(current).ok().map(ChildOf::parent);
+    }
+    false
+}
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
+    parents: Query<&ChildOf>,
 ) {
     let current = owner
         .play
@@ -104,7 +114,9 @@ fn project(
         .map(|play| play.link.team_finder_snapshot());
     let Some(current) = current.filter(|snapshot| snapshot.teams.open) else {
         if let Some(root) = state.root.take() {
-            focus.clear();
+            if inside(focus.get(), root, &parents) {
+                focus.clear();
+            }
             commands.entity(root).despawn();
         }
         state.snapshot = None;
@@ -138,7 +150,9 @@ fn project(
         revision: state.revision,
     };
     if let Some(root) = state.root.take() {
-        focus.clear();
+        if inside(focus.get(), root, &parents) {
+            focus.clear();
+        }
         commands.entity(root).despawn();
     }
     state.root = Some(widgets::build(&mut commands, &skins, key, &current, &state));
@@ -333,34 +347,12 @@ fn listing(fields: &[String]) -> Option<oteryn_client_ui::team_finder_leader::Le
     })
 }
 fn keyboard(
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
     for event in events.read() {
-        if event.key_code == KeyCode::F8
-            && keys.as_ref().is_none_or(|keys| {
-                ![
-                    KeyCode::ControlLeft,
-                    KeyCode::ControlRight,
-                    KeyCode::AltLeft,
-                    KeyCode::AltRight,
-                    KeyCode::ShiftLeft,
-                    KeyCode::ShiftRight,
-                ]
-                .into_iter()
-                .any(|key| keys.pressed(key))
-            })
-            && event.state == bevy::input::ButtonState::Pressed
-            && !event.repeat
-            && state
-                .root
-                .map_or_else(|| guard.allows_focus(None), |root| guard.allows(root))
-        {
-            open(&mut owner);
-        }
         if event.key_code == KeyCode::Escape
             && event.state == bevy::input::ButtonState::Pressed
             && !event.repeat

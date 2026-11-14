@@ -76,15 +76,17 @@ fn team_finder_window_registered() -> TestResult {
         0
     );
     use bevy::input::keyboard::{Key, KeyboardInput};
-    let f8 = || KeyboardInput {
-        key_code: KeyCode::F8,
-        logical_key: Key::F8,
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
+    let chord = [oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(23)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
         repeat: false,
-        window: Entity::PLACEHOLDER,
-    };
-    app.world_mut().write_message(f8());
+    }];
+    assert!(oteryn_client_ui::team_finder::open_key(&chord));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&chord, false);
     app.update();
     assert_eq!(
         app.world_mut()
@@ -93,7 +95,14 @@ fn team_finder_window_registered() -> TestResult {
             .count(),
         1
     );
-    app.world_mut().write_message(f8());
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
     app.update();
     assert_eq!(
         app.world_mut()
@@ -386,5 +395,77 @@ fn team_finder_window_shows_server_data_only() -> TestResult {
             .confirmed
             .is_none()
     );
+    Ok(())
+}
+
+fn focus_after_team_finder_projection(closing: bool, inside: bool) -> TestResult {
+    let (mut app, _rx, _outbox) = fixture()?;
+    open(&mut app.world_mut().non_send_mut::<HostOwner>());
+    app.update();
+    let root = app
+        .world()
+        .resource::<State>()
+        .root
+        .ok_or("team finder root")?;
+    let parent = app.world_mut().spawn(Node::default()).id();
+    if inside {
+        app.world_mut().entity_mut(parent).insert(ChildOf(root));
+    } else {
+        app.world_mut()
+            .entity_mut(parent)
+            .insert((GameModal, GlobalZIndex(220)));
+    }
+    let input = app
+        .world_mut()
+        .spawn((Node::default(), EditableText::new("draft"), ChildOf(parent)))
+        .id();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(input, bevy::input_focus::FocusCause::Navigated);
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let action = if closing {
+            Action::Close
+        } else {
+            Action::Filter(oteryn_client_ui::team_finder::TeamFilter {
+                name: "changed".into(),
+                ..default()
+            })
+        };
+        assert!(link.team_finder_dispatch_bound(&link.team_finder_snapshot(), action, false));
+    }
+    app.update();
+    assert_eq!(
+        app.world().resource::<InputFocus>().get(),
+        if inside { None } else { Some(input) }
+    );
+    assert!(app.world().get_entity(root).is_err());
+    Ok(())
+}
+#[test]
+fn team_finder_rebuild_preserves_unrelated_focus() -> TestResult {
+    focus_after_team_finder_projection(false, false)?;
+    focus_after_team_finder_projection(false, true)
+}
+#[test]
+fn team_finder_close_preserves_unrelated_focus() -> TestResult {
+    focus_after_team_finder_projection(true, false)?;
+    focus_after_team_finder_projection(true, true)
+}
+#[test]
+fn team_finder_does_not_claim_f8() -> TestResult {
+    let (mut app, _rx, _outbox) = fixture()?;
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::F8,
+            logical_key: bevy::input::keyboard::Key::F8,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
     Ok(())
 }

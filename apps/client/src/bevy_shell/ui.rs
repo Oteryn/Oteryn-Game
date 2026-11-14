@@ -171,7 +171,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
-        (Control::TeamFinder, "Team Finder (F8)", 120.),
+        (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
