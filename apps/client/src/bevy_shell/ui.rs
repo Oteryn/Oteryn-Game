@@ -47,6 +47,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    SupportEvidence,
     Login,
     CancelLogin,
     Fullscreen,
@@ -64,6 +65,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::SupportEvidence => "shell.support_evidence",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -169,8 +171,14 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::SupportEvidence, "Support-evidence", 130.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
+        if matches!(control, Control::SupportEvidence) {
+            commands
+                .entity(button)
+                .observe(super::game_ui::support_evidence::toolbar_activate);
+        }
         commands.entity(toolbar).add_child(button);
     }
     // Full-window modal scrim blocks world pointer input while settings are open.
@@ -573,7 +581,8 @@ pub(super) fn project_toolbar(
         } else if matches!(
             control,
             Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
-        ) {
+        ) || matches!(control, Some(Control::SupportEvidence))
+        {
             node.display = if playing {
                 Display::Flex
             } else {

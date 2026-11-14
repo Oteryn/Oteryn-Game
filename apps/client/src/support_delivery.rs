@@ -33,10 +33,23 @@ pub(crate) fn queue_support_at(
         let Some(command) = oteryn_client_ui::support_intake::submission(kind, &text, true) else {
             continue;
         };
+        #[cfg(feature = "bevy-shell")]
+        crate::play::feature_0462_support_intake::input::evidence_owner::queue_approved(
+            commands,
+            &path,
+            kind,
+            &text,
+            || {
+                commands
+                    .send(PlayCommand::SupportDelivery(command, path.clone()))
+                    .is_ok()
+            },
+        );
+        #[cfg(not(feature = "bevy-shell"))]
         let _ = commands.send(PlayCommand::SupportDelivery(command, path));
     }
 }
-fn read(path: &Path) -> io::Result<String> {
+pub(crate) fn read(path: &Path) -> io::Result<String> {
     let mut text = String::new();
     std::fs::File::open(path)?
         .take((wire::MAX_PREVIEW_BYTES + 1) as u64)
