@@ -75,6 +75,7 @@ impl HostOwner {
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
+            || play.link.charm_progression_input(&routed)
             || play.link.bevy_depot_input(&routed)
             || play.link.bevy_depot_search_input(&routed)
             || play.link.discovery_input(&routed)
