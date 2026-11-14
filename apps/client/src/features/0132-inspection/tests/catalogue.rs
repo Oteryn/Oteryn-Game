@@ -11,6 +11,7 @@ use oteryn_client_runtime::{
 fn item_catalogue_search_drops_and_market_use_production_queues()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut receiver, outbox) = play_channel();
+    link.use_shared_frontend();
     {
         let mut mailbox = lock(&link.mailbox);
         mailbox.discovery.inspection.selected = true;

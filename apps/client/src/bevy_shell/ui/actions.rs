@@ -42,6 +42,7 @@ pub(super) fn activate(
                     | Control::BrowseField
                     | Control::ContainerSorting
                     | Control::Options
+                    | Control::ItemCatalogue
                     | Control::Market
                     | Control::MinimapMarkers
                     | Control::Party
@@ -98,6 +99,7 @@ pub(super) fn activate(
             Control::HouseTransfer => game_ui::house_transfer::open(&owner),
             Control::HouseBrowsing => game_ui::house_browsing::open(&mut owner),
             Control::GuildWars => game_ui::open_guild_wars(&owner),
+            Control::ItemCatalogue => game_ui::item_catalogue::open(&owner),
             Control::InputProfiles => game_ui::input_profiles::open(&mut owner),
             Control::Market => game_ui::open_market(&mut owner),
             Control::MinimapMarkers => game_ui::minimap_markers::open(&mut owner),

@@ -171,6 +171,7 @@ impl HostOwner {
             || play.link.charm_progression_input(routed)
             || play.link.bevy_depot_input(routed)
             || play.link.bevy_depot_search_input(routed)
+            || play.link.item_catalogue_input(routed)
             || play.link.discovery_input(routed)
             || play.link.guild_war_input(routed)
             || play.link.imbue_input(routed)

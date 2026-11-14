@@ -215,6 +215,7 @@ pub(super) fn render(
             model.selected && !model.pending && model.last_request.is_some_and(read_request),
             72.,
         ),
+        (Kind::Catalogue, "Catalogue", true, 80.),
         (Kind::Copy, "Copy", copy_text(model).is_some(), 60.),
         (Kind::Close, "Close", true, 60.),
     ] {

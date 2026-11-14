@@ -25,6 +25,11 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, action);
     }
     pub fn item_catalogue_open(&self) {
+        #[cfg(feature = "bevy-shell")]
+        if self.uses_shared_frontend() {
+            self.item_catalogue_open_bound();
+            return;
+        }
         self.item_catalogue_request(0);
         #[cfg(windows)]
         if !self.uses_shared_frontend() {
