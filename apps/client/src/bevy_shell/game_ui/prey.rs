@@ -7,6 +7,11 @@ use super::{
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::prey::{Intent, PreyPanel, panel_text};
 use oteryn_client_ui_bevy as source;
+mod confirmation;
+use confirmation::{
+    CancelConfirmation, CreatureField, cancel_confirmation, clear_confirmation, editing,
+    editor_drafts, invalidate_confirmation,
+};
 #[derive(Resource, Default)]
 struct State {
     shown: Option<(u64, PreyPanel)>,
@@ -352,43 +357,6 @@ fn button(commands: &mut Commands, skins: &Skins, parent: Entity, label: &str, c
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
 }
-fn editor_drafts(
-    editors: &Query<(&CreatureField, &bevy::text::EditableText)>,
-) -> Vec<(u8, String)> {
-    let mut drafts: Vec<_> = editors
-        .iter()
-        .map(|(field, editor)| (field.0, editor.value().to_string()))
-        .collect();
-    drafts.sort_by_key(|(slot, _)| *slot);
-    drafts
-}
-fn editing(editors: &Query<(&CreatureField, &bevy::text::EditableText)>) -> bool {
-    editors.iter().any(|(_, editor)| {
-        editor.pending_paste.is_some()
-            || editor
-                .pending_edits
-                .iter()
-                .any(bevy::text::TextEdit::is_destructive)
-    })
-}
-fn invalidate_confirmation(
-    mut commands: Commands,
-    editors: Query<(&CreatureField, &bevy::text::EditableText)>,
-    mut state: ResMut<State>,
-) {
-    if state.confirmation.is_some()
-        && (editing(&editors) || state.confirmation_draft != editor_drafts(&editors))
-    {
-        clear_confirmation(&mut state, &mut commands);
-    }
-}
-fn clear_confirmation(state: &mut State, commands: &mut Commands) {
-    state.confirmation = None;
-    state.confirmation_draft.clear();
-    if let Some(root) = state.confirmation_root.take() {
-        commands.entity(root).despawn();
-    }
-}
 // The observer needs the slot editor as well as the existing modal and owner guards.
 #[allow(clippy::too_many_arguments)]
 fn activate(
@@ -547,34 +515,6 @@ fn activate(
 #[cfg(test)]
 mod tests;
 
-#[derive(Component)]
-struct CreatureField(u8);
-#[derive(Component)]
-struct CancelConfirmation(Control);
-fn cancel_confirmation(
-    event: On<Activate>,
-    controls: Query<&CancelConfirmation>,
-    guard: ModalGuard,
-    owner: NonSend<HostOwner>,
-    mut state: ResMut<State>,
-    mut commands: Commands,
-) {
-    if !guard.allows(event.entity) || owner.modal_active() {
-        return;
-    }
-    let Ok(CancelConfirmation(control)) = controls.get(event.entity) else {
-        return;
-    };
-    if owner.generation() != control.generation
-        || owner
-            .play
-            .as_ref()
-            .is_none_or(|p| p.link.prey_panel() != control.expected)
-    {
-        return;
-    }
-    clear_confirmation(&mut state, &mut commands);
-}
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,

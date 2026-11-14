@@ -1,11 +1,11 @@
 //! Locally explored cells and user markers; geometry comes only from validated server tiles.
 use oteryn_session::world_map::WorldMapViewSnapshot;
 use serde::{Deserialize, Serialize};
-#[path = "transfer.rs"]
-mod transfer;
 #[cfg(feature = "bevy-shell")]
 #[path = "editor.rs"]
 pub(crate) mod editor;
+#[path = "transfer.rs"]
+mod transfer;
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{self, Read},

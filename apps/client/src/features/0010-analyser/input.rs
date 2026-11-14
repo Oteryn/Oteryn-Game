@@ -1,11 +1,11 @@
 #[cfg(feature = "bevy-shell")]
 #[path = "input/bound.rs"]
 mod bound;
-#[cfg(feature = "bevy-shell")]
-pub(crate) use bound::{AnalyserToolsSnapshot, ANALYSER_TOOLS_LABELS, requires_confirmation};
 use crate::combat_input::PlayCommand;
 use crate::play::PlayLink;
 use crate::play::mailbox::{Mailbox, lock};
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{ANALYSER_TOOLS_LABELS, AnalyserToolsSnapshot, requires_confirmation};
 use oteryn_input_actions::NormalizedInputEvent;
 #[cfg(any(windows, test, feature = "bevy-shell"))]
 pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel, index: usize) {
