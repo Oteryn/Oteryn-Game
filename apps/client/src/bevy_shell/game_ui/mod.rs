@@ -8,6 +8,7 @@ mod depot;
 mod feature_dialogs;
 pub(super) mod highscores_character_info;
 mod hud;
+mod imbue;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
@@ -243,6 +244,7 @@ pub(super) fn install(app: &mut App) {
     feature_dialogs::install(app);
     highscores_character_info::install(app);
     hud::install(app);
+    imbue::install(app);
     inventory::install(app);
     item_details::install(app);
     journal::install(app);
