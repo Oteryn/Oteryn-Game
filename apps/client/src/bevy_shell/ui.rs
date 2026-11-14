@@ -2,6 +2,7 @@
 mod actions;
 mod assets;
 mod toolbar;
+use super::game_ui::condition_details::{self, Target};
 use super::owner::{GraphicsDraft, HostOwner};
 use actions::activate;
 pub(super) use assets::validate_assets;
@@ -26,6 +27,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    Details(Target),
     FurnitureWrapping,
     CyclopediaCharacter,
     Arena,
@@ -83,6 +85,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Details(target) => target.id(),
             Self::FurnitureWrapping => "shell.furniture_wrapping",
             Self::CyclopediaCharacter => "shell.cyclopedia_character",
             Self::Arena => "shell.arena",
@@ -300,6 +303,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
     }
+    condition_details::setup_toolbar(&mut commands, &skins, toolbar);
     // Full-window modal scrim blocks world pointer input while settings are open.
     let modal = commands
         .spawn((

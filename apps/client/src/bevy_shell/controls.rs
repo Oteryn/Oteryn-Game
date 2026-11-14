@@ -1,4 +1,5 @@
 //! Existing product input owners, shared with headless caller tests.
+use super::game_ui::condition_details::{self, Target};
 use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
 use oteryn_input_actions::{InputError, NormalizedInputEvent};
@@ -172,6 +173,20 @@ impl HostOwner {
             let panel = play.link.achievements_panel();
             let _ = play.link.achievements_open_bound(&panel);
             return;
+        }
+        if !chat && self.phase == super::owner::Phase::Playing {
+            if oteryn_client_ui::battle_instinct_status::open_key(&routed) {
+                condition_details::open_input(&play.link, Target::BattleInstinct);
+                return;
+            }
+            if oteryn_client_ui::condition_status::open_key(&routed) {
+                condition_details::open_input(&play.link, Target::Conditions);
+                return;
+            }
+            if oteryn_client_ui::rest_status::open_key(&routed) {
+                condition_details::open_input(&play.link, Target::Rest);
+                return;
+            }
         }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
