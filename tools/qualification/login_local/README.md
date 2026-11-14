@@ -172,8 +172,8 @@ A file is written only from a successful capture and is never replaced.
    printed epoch was persisted as F. It then runs one node with `[platform.runtime_status]`,
    `assignment_epoch = 1` (declared, never raised by ops) and `[platform.account_characters]`, then
    `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
-7. Generates Passport keys in the final Platform container (private 0600/public 0644, owned by `www-data`)
-   and clears its config cache. Creates the test account with the Platform hasher, ensures the OAuth client
+7. Generates Passport keys in the final Platform container (private 0600/public 0600, owned by `www-data`)
+   and clears its config cache. Creates the test account with the Platform hasher, ensures the Rust OAuth client (`--rust`)
    and validates its UUID before writing `client.env`, bootstraps one Character from a real Platform intent,
    and waits until the node logs an accepted `PublishAccountCharactersV1` and `PublishProjectionWatermarkV1`.
 8. Writes `client.env` (0600; includes the per-run test password in a comment) and runs the client with
@@ -204,7 +204,7 @@ moves to such a commit, the run fails at the projection wait or at ticket issuan
 
 `game-auth:world:ensure`, `NativeTopologyRegistry::issueForPreproduction` / `publishRouteForPreproduction`,
 `NativeSigningTrustRegistry::publishTrustedKey` (via `php -r` inside the throwaway container, as node_boot does),
-`game-auth:oauth-client:ensure`, `game-auth:character-bootstrap-intent:issue`. No step is pending
+`game-auth:oauth-client:ensure --rust`, `game-auth:character-bootstrap-intent:issue`. No step is pending
 PLATFORM-NATIVE-PREPROD-OPS-1. The account is inserted into `identities` by the container's `php -r` (local-only route; no
 operator command creates accounts).
 
