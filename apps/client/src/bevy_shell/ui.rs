@@ -60,6 +60,7 @@ pub(super) enum Control {
     GuildWars,
     Market,
     Party,
+    PlayerReport,
     Quests,
     Spells,
     WorldEvent,
@@ -96,6 +97,7 @@ impl Control {
             Self::GuildWars => "shell.guild_wars",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
+            Self::PlayerReport => "shell.player_report",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
             Self::WorldEvent => "shell.world_event",
@@ -228,6 +230,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::AnimusMastery, "Animus Mastery (Ctrl+A)", 140.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
+        (Control::PlayerReport, "Reports (Ctrl+Alt+R)", 170.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
         (Control::WorldEvent, "World events", 100.),
@@ -439,6 +442,7 @@ fn activate(
                 Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
+                    | Control::PlayerReport
                     | Control::Quests
                     | Control::Spells
                     | Control::WorldEvent
@@ -471,6 +475,7 @@ fn activate(
             Control::GuildWars => super::game_ui::open_guild_wars(&owner),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
+            Control::PlayerReport => super::game_ui::player_report_report::open(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::WorldEvent => super::game_ui::world_event_window::open(&owner),
@@ -662,7 +667,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
