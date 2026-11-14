@@ -9,6 +9,7 @@
 //! waits [`IDLE_POLL`]; a failure backs off like the Premium pull. All streams are off unless
 //! their variable is `true`, and an enabled stream needs its own identity.
 pub mod enforcement;
+pub mod profile_b;
 
 use crate::durability::DurabilityRoot;
 use crate::durability::platform_streams::{

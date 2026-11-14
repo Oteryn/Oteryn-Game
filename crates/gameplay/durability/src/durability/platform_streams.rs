@@ -9,6 +9,7 @@
 pub mod enforcement;
 pub mod enforcement_transport;
 pub mod enforcement_wire;
+pub mod profile_b_wire;
 mod security_revocation;
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
