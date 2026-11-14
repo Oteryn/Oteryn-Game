@@ -55,9 +55,9 @@ fn project(
     mut state: ResMut<State>,
     fields: Query<&EditableText, With<PresetName>>,
     mut focus: ResMut<InputFocus>,
-    modals: Query<Entity, With<GameModal>>,
+    guard: ModalGuard,
 ) {
-    let blocked = modals.iter().any(|e| Some(e) != state.root);
+    let blocked = !guard.allows_focus(state.root);
     let panel = owner
         .play
         .as_ref()
@@ -117,9 +117,8 @@ fn activate(
     state: Res<State>,
     guard: ModalGuard,
     fields: Query<&EditableText, With<PresetName>>,
-    modals: Query<Entity, With<GameModal>>,
 ) {
-    if modals.iter().any(|e| Some(e) != state.root) || !guard.allows(event.entity) {
+    if !guard.allows(event.entity) {
         return;
     }
     let Ok(control) = controls.get(event.entity) else {

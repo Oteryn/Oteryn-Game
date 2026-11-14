@@ -270,6 +270,12 @@ fn wheel_actions_rejected_when_session_replaced_or_stale_revision() -> Result {
     Ok(())
 }
 fn window(link: crate::play::PlayLink) -> std::result::Result<App, Box<dyn std::error::Error>> {
+    window_with_modal(link, None)
+}
+fn window_with_modal(
+    link: crate::play::PlayLink,
+    display: Option<Display>,
+) -> std::result::Result<App, Box<dyn std::error::Error>> {
     use bevy::{asset::AssetPlugin, input_focus::InputFocus};
     link.use_shared_frontend();
     let mut owner = HostOwner::new(None)?;
@@ -286,6 +292,16 @@ fn window(link: crate::play::PlayLink) -> std::result::Result<App, Box<dyn std::
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
     install(&mut app);
+    if let Some(display) = display {
+        app.world_mut().spawn((
+            GameModal,
+            Node {
+                display,
+                ..default()
+            },
+            GlobalZIndex(999),
+        ));
+    }
     app.update();
     Ok(app)
 }
@@ -412,5 +428,34 @@ fn wheel_presets_owner_open_flag_projects_and_closes() -> Result {
     assert!(link.wheel_dispatch_bound(&link.wheel_panel(), Kind::Close));
     assert!(!link.wheel_panel().open);
     assert!(!link.wheel_panel().presets_open);
+    Ok(())
+}
+
+#[test]
+fn wheel_ignores_hidden_modals() -> Result {
+    for display in [Display::None, Display::Flex] {
+        let (link, mut commands, _) = ready();
+        link.wheel_test_update(|p, _| p.diagram.selected = true);
+        let _app = window_with_modal(link, Some(display))?;
+        assert_eq!(commands.try_recv().is_ok(), display == Display::None);
+        let (link, _, _) = ready();
+        let mut app = window_with_modal(link, Some(display))?;
+        let close = app
+            .world_mut()
+            .query::<(Entity, &Control)>()
+            .iter(app.world())
+            .find_map(|(e, c)| matches!(c.kind, Kind::Close).then_some(e))
+            .ok_or("close")?;
+        app.world_mut().trigger(Activate { entity: close });
+        let panel = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .wheel_panel();
+        assert_eq!(panel.open, display != Display::None);
+    }
     Ok(())
 }
