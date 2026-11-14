@@ -62,3 +62,6 @@ pub(in crate::play) mod dialog_preferences;
 mod bound;
 #[cfg(feature = "bevy-shell")]
 pub use bound::MailBinding;
+
+#[cfg(feature = "bevy-shell")]
+pub use super::protocol::MAX_TEXT_BYTES;

@@ -9,6 +9,7 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 mod item_details;
 mod journal;
+mod mail;
 mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
@@ -19,7 +20,6 @@ mod projection;
 pub(super) use projection::project;
 mod quick_loot;
 mod trade;
-mod uni15_window;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -237,13 +237,13 @@ pub(super) fn install(app: &mut App) {
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
+    mail::install(app);
     market::install(app);
     minimap::install(app);
     npc_shop::install(app);
     party::install(app);
     quick_loot::install(app);
     trade::install(app);
-    uni15_window::install(app);
     app.add_systems(
         Update,
         (

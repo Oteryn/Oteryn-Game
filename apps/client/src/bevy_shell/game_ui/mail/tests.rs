@@ -57,21 +57,30 @@ fn panel(app: &App) -> Result<Panel, Box<dyn std::error::Error>> {
 #[test]
 fn mail_form_shows_server_bound_item() -> TestResult {
     let (mut app, _commands, _outbox) = fixture()?;
-    let fields: Vec<_> = app
-        .world_mut()
-        .query::<(&Field, &EditableText)>()
-        .iter(app.world())
-        .map(|(field, value)| {
-            (
-                field.0,
-                value.value().to_string(),
-                value.allow_newlines,
-                value.max_characters,
-            )
-        })
-        .collect();
+    let mut query = app.world_mut().query::<(
+        &Field,
+        Option<&EditableText>,
+        Option<&Text>,
+        Has<bevy::ui_widgets::TextInput>,
+    )>();
+    let fields: Vec<_> = query.iter(app.world()).collect();
+    assert_eq!(fields.len(), 3);
     for (index, expected) in ["4242", "9000", "Alice\nThais"].iter().enumerate() {
-        assert!(fields.contains(&(index, expected.to_string(), index == 2, Some(7996))));
+        let (_, editable, label, input) = fields
+            .iter()
+            .find(|(field, ..)| field.0 == index)
+            .ok_or("field missing")?;
+        if index == 0 {
+            assert!(editable.is_none());
+            assert!(!input);
+            assert_eq!(label.ok_or("item text missing")?.0, *expected);
+        } else {
+            let editable = editable.ok_or("editor missing")?;
+            assert!(*input);
+            assert_eq!(editable.value().to_string(), *expected);
+            assert_eq!(editable.allow_newlines, index == 2);
+            assert_eq!(editable.max_characters, Some(MAX_TEXT_BYTES));
+        }
     }
     Ok(())
 }

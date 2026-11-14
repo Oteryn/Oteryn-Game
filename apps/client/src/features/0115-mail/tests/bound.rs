@@ -139,3 +139,36 @@ fn mail_rejected_when_session_replaced_or_item_changed() -> TestResult {
     assert_eq!(link.mail_panel(), ended);
     Ok(())
 }
+
+#[test]
+fn mail_send_rejects_edited_item_handle() {
+    for intent in [Intent::Write, Intent::Post] {
+        let (link, mut commands, outbox) = play_channel();
+        seed(&outbox);
+        let binding = link.mail_binding();
+        let before = link.mail_panel();
+        let mut values = before.fields.clone();
+        values[0] = "9999".into();
+        assert!(!link.mail_dispatch_bound(&binding, values, Some(intent)));
+        assert_eq!(link.mail_panel(), before);
+        assert!(commands.try_recv().is_err());
+    }
+}
+
+#[test]
+fn mail_only_open_route_ignores_staff_shortcut() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    seed(&outbox);
+    let before = link.mail_panel();
+    let staff = [NormalizedInputEvent::Key {
+        code: KeyCode::new(39)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+        repeat: false,
+    }];
+    assert!(!link.mail_open_input(&staff));
+    assert_eq!(link.mail_panel(), before);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

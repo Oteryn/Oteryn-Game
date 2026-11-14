@@ -72,7 +72,7 @@ impl HostOwner {
         }
         if play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
-            || play.link.mail_input(&routed)
+            || play.link.mail_open_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
             || play.link.discovery_input(&routed)

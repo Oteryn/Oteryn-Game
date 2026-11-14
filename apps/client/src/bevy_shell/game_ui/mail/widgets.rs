@@ -57,7 +57,7 @@ pub(super) fn build(
     for (index, label) in [
         "Selected item",
         "Selected mailbox (for posting)",
-        "Text (include recipient address for mail; maximum 7,996 UTF-8 bytes)",
+        &format!("Text (include recipient address for mail; maximum {MAX_TEXT_BYTES} UTF-8 bytes)"),
     ]
     .iter()
     .enumerate()
@@ -69,10 +69,23 @@ pub(super) fn build(
             ))
             .id();
         commands.entity(panel).add_child(label);
+        if index == 0 {
+            let item = commands
+                .spawn((
+                    Field(index),
+                    source::text(
+                        &model.fields[index],
+                        source::font(skins.font.clone(), false),
+                    ),
+                ))
+                .id();
+            commands.entity(panel).add_child(item);
+            continue;
+        }
         let mut editable = EditableText::new(&model.fields[index]);
         editable.allow_newlines = index == 2;
         editable.visible_lines = Some(if index == 2 { 6. } else { 1. });
-        editable.max_characters = Some(7996);
+        editable.max_characters = Some(MAX_TEXT_BYTES);
         let mut field = commands.spawn((
             Field(index),
             TextInput,

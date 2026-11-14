@@ -168,7 +168,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                     if form.title == "Staff authorized actions" {
                         8192
                     } else if multiline {
-                        7996
+                        super::super::protocol::MAX_TEXT_BYTES
                     } else {
                         256
                     },
@@ -258,7 +258,7 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                                 if form.title == "Staff authorized actions" {
                                     8192
                                 } else {
-                                    7996
+                                    super::super::protocol::MAX_TEXT_BYTES
                                 },
                             )
                         {

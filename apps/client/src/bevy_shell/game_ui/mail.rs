@@ -5,7 +5,7 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use crate::play::feature_0115_mail::view::MailBinding;
+use crate::play::feature_0115_mail::view::{MAX_TEXT_BYTES, MailBinding};
 use bevy::{prelude::*, text::EditableText, ui_widgets::Activate};
 use oteryn_client_ui::mail::Intent;
 #[derive(Resource, Default)]

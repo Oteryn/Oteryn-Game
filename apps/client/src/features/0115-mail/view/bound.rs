@@ -26,6 +26,21 @@ impl PartialEq for MailBinding {
 }
 impl Eq for MailBinding {}
 impl PlayLink {
+    /// Open only the mail form; the native aggregate input route also handles staff tools.
+    pub fn mail_open_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+        if !oteryn_client_ui::mail::open_key(events) {
+            return false;
+        }
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.properties.mail.pending
+            && let Some(handle) = mailbox.inventory.selected_item().map(|item| item.handle)
+        {
+            mailbox.properties.mail.fields[0] = handle.get().to_string();
+        }
+        mailbox.properties.mail.open = true;
+        true
+    }
+
     pub fn mail_binding(&self) -> MailBinding {
         let mailbox = lock(&self.mailbox);
         MailBinding {
@@ -58,13 +73,15 @@ impl PlayLink {
             mailbox.properties.mail.open = false;
             return true;
         };
-        if !expected.panel.selected || expected.panel.pending {
+        if !expected.panel.selected
+            || expected.panel.pending
+            || values[0] != expected.panel.fields[0]
+        {
             return false;
         }
-        if values
-            .iter()
-            .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 7996))
-        {
+        if values.iter().any(|value| {
+            !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, super::MAX_TEXT_BYTES)
+        }) {
             return false;
         }
         mailbox.properties.mail.fields = values;
