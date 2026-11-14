@@ -252,13 +252,13 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
             }
-            let permit = if limited {
+            let mut permit = if limited {
                 None
             } else {
                 authority.enter_input(admitted.game_session_id).await
             };
-            if permit.is_some() && !authority.house_transfer_input(admitted).await {
-                return Err(ServeEnd::Disconnected);
+            if permit.is_some() && !super::command::guards(authority, admitted, command).await? {
+                drop(permit.take());
             }
             let activity_at = authority.gameplay_idle_now();
             let gameplay_activity = permit.is_some()

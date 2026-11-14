@@ -195,23 +195,28 @@ fn activity_input_waits_for_a_busy_holder_postgres() -> TestResult {
                     &[oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1],
                 )
                 .ok_or("activity capability")?;
-            assert!(owner.activity_transfer_input(admitted).await);
+            assert!(owner.activity_transfer_input(admitted).await.is_ok());
             let busy = hold_holder(&h.root, Duration::from_millis(300))?;
             let accepted = owner.activity_transfer_input(admitted).await;
             busy.await??;
             assert!(
-                accepted,
+                accepted.is_ok(),
                 "the timed activity input refused on a busy holder"
             );
-            let accepted =
-                priority_handoff(&h.root, owner.activity_transfer_input(admitted)).await?;
+            let accepted = priority_handoff(&h.root, async {
+                owner.activity_transfer_input(admitted).await.is_ok()
+            })
+            .await?;
             assert!(
                 accepted,
                 "a background pass must not close ordinary activity-capable input"
             );
             // A persistently unavailable root still authorizes no input.
             let held = h.root.try_issue_semantic_pass()?;
-            assert!(!owner.activity_transfer_input(admitted).await);
+            assert!(matches!(
+                owner.activity_transfer_input(admitted).await,
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ));
             held.run(|_, _| Box::pin(async { Ok(()) })).await?;
             drop(owner);
             drop(seal);

@@ -1538,6 +1538,30 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Retry only transient pre-dispatch holder failures, retaining the exact
+    /// failure when this command's fixed foreground budget is exhausted.
+    async fn retry_command_guard<T>(
+        &self,
+        mut step: impl AsyncFnMut() -> Result<T, crate::durability::DurabilityError>,
+    ) -> Result<T, crate::durability::DurabilityError> {
+        loop {
+            match step().await {
+                Err(
+                    error @ (crate::durability::DurabilityError::RootUnavailable
+                    | crate::durability::DurabilityError::RootPassDeadlineExceeded),
+                ) => {
+                    if !self
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(error);
+                    }
+                }
+                result => return result,
+            }
+        }
+    }
+
     /// Repeats an admission `step` that reports any failure as `false` under
     /// [`Self::retries_unavailable`] (NODEBOOT-1). Only for a step that is a read, or an
     /// idempotent fenced write, followed by a runtime install: the step is repeated whole.
