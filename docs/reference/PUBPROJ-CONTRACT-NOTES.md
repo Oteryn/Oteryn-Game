@@ -347,3 +347,164 @@ This includes forced/original trade, inspection, account deletion, VIP,
 field runes and all fourteen selected authority cases. The broad unit run
 remains pending under the owner's PREPUSH-2 cadence exception; content and
 game-server unit libraries are green. No new PUBPROJ numbers were allocated.
+
+## P3 Part A — accepted G-4 revision 3 wire
+
+Base: `ce45063507c22a11e0db7e9c0ff86dacbe6ff834`. Authority: Platform
+`f5f91a6e81bc8b89b51cbb77517253cf549dc4fa`, accepted revision 3 (#1854).
+Adds skills (public), achievements/equipment/outfit (owner-only) wire records,
+canonical encoders and independent default-off activation fields. Missing
+activation fields deserialize as false. No environment variable is invented.
+The shared watermark vocabulary has exactly ten values. Main has five snapshot
+families and no G-12 world_daily payload; its watermark value is represented
+without inventing a snapshot, operation, route, source or producer loop.
+
+The fixture generator preserves the in-scope revision 3 examples. New fixture
+files have one terminal LF as requested; tests strip that file delimiter before
+comparing to the transmitted encoder bytes, which have no terminal LF. Existing
+fixtures and v1 bytes are unchanged. Resource ordinals 10094–10097 follow main's
+maximum 10093; generated entries register the four exact request byte bounds.
+The numbering helper was run; its reported clashes belong to unrelated open PR
+migration allocations, and it does not enumerate resource-limit ordinals.
+
+Part A proves structural bounds, ordered encoding and golden bytes. Catalogue
+resolution (including synthetic fixture catalogue evidence), current ownership
+and its revision floor, committed custody/DisplayedLook and suppression on
+unknown source evidence remain Part B/C source-reader responsibilities. Merely
+constructing a wire record does not prove those facts or authorize disclosure.
+Part B adds closed canonical validators for the four character-view envelopes
+and the v2 watermark; invalid raw fixtures are exercised alongside typed record
+validation. The equal-key changed-equipment example is valid
+wire and is a sequence conflict, never a malformed schema; deciding 409 remains
+the Platform ingest responsibility.
+
+At Part A, the supervisor authorized mechanical compatibility edits only:
+config parsed four independent default-false flags without new environment
+variables and serve copied them into Activation. Parts B and C replace that
+temporary wire-only guard with real durable sources and flagged delivery.
+Both publisher selection and the physical mTLS boundary still refuse a new
+family when its flag is missing or false.
+
+The pasted death example's `"killers":["Beren","Mira"]` differs from main's
+stable-identity records. Per supervisor decision, deaths are outside P3: neither
+the existing encoder nor death fixtures change; Platform receives the gap.
+
+## P3 Part B — durable character views
+
+Migration 2834 extends the existing v2 heads/outbox, adding no serving authority.
+Source changes use deferred triggers so the final progression/build/root cut is
+captured in the source transaction. Revision allocation is the existing atomic
+`revision + 1`, independent of observation timestamps. ACKs still remove only
+outbox work at or below the acknowledged revision. Full resync enumerates all
+roots and retained subjects, including suppressions; an incomplete initial
+baseline holds back completeness.
+
+The achievement catalogue revision is `sha256:` plus lowercase SHA-256 of the
+complete validated embedded Game achievement shards, concatenated in their
+existing file-name order. Game previously exposed per-entry revisions only;
+this defines the whole-catalogue identity without substituting an earned row's
+revision or a gameplay content revision. `sync_public_achievement_catalogue`
+installs Game-owned metadata under reconciliation and the epoch fence. Reads
+require the exact current compiled catalogue and metadata. The publisher synchronizes
+that Game-owned cache before the first achievement completeness pass; failure
+stalls only that family. Unknown keys,
+missing provenance and more than 1024 facts retain a poison head/outbox, never
+truncate or claim an empty earned list. Count and aggregation share one SQL
+snapshot. Ownership changes and account-fact fan-out serialize through a
+private account source fence; each subject is re-read after its derived fence.
+Fan-out does not take another gameplay actor's Character row lock.
+
+Equipment follows the death owner's durable-slot mapping, including the
+separate main backpack as Container. It exports only primary custody rows and
+TypedDefinitionRef key/revision fields. Missing equipment ownership state or
+invalid custody suppresses the record. Pending moves do not enter the cut.
+
+Outfit publication requires a proof captured from validated DisplayedLook in
+the actual fenced appearance transaction. Raw selections, unsupported inputs,
+and pre-existing selections without current proof suppress safely. The proof
+binds the account, creation sex, content and appearance occurrence; changing
+ownership or interpretation invalidates it. Displayed mounts are always empty,
+even when a valid selection retains a mount. No unlock inventory is exported.
+
+The durability reader now decodes all four families. Native publisher selection
+and the actual mTLS snapshot/watermark boundary both enforce the independent
+flags, which stay default false. The Part A review fixes additionally
+validate closed canonical envelopes and exercise the previously unread invalid
+fixtures. Existing v1 and death encoders are unchanged.
+
+PostgreSQL fixtures explicitly distinguish historical source imports from
+native authority: only the new projector triggers are strengthened to ALWAYS
+in isolated databases while historical rows are imported. The outfit case uses
+the real fenced appearance writer. Ownership projection assertions do not
+forge a Bazaar receipt or claim a fresh recovery proof for imported history.
+Every case runs a capture-disabled negative control first and checks its exact
+missing-output failure before a fresh positive database. The same-second case
+injects a fixed SQL observation clock across separate commits, and verifies
+that rollback leaves no published revision.
+
+## P3 Part C — flagged delivery
+
+The server passes its existing per-family config to both the v2 publisher and
+mTLS sink. Missing flags stay false; owner-only families activate independently.
+The compiled paths, shared identity, Connection: close and three-second exchange
+bound are unchanged. Large achievement requests receive their route-specific
+body allowance rather than the generic 10 KiB HTTP envelope allowance.
+
+V2 exchanges retain Retry-After without a 60-second cap. Transient retries use
+max(server delay, exponential 1..60 seconds); definite 400/401/409 refusals keep
+the subject queued and emit the registered bounded held event for a 300-second
+hold. Responses exceed neither 256 bytes nor their exact acknowledgement schema;
+unexpected framing/status/content is unknown acknowledgement. ACK transactions
+clear only through the acknowledged revision. Three-second watermark attempts
+read the durable oldest outstanding change and baseline completeness; poison,
+failed delivery and unfinished resync cannot advance completeness.
+
+Review hardening in migration 2834: missing catalogues produce held JSON null,
+never a known empty achievement record. Root revision-only writes no longer scan
+unrelated families; ownership/world/lifecycle changes still invalidate all views.
+Outfit proofs have no direct runtime DML grants: a pinned-search-path SECURITY
+DEFINER writer binds the current root, selection and immutable appearance receipt.
+DisplayedLook uses the content-authored fallback; missing fallback evidence
+suppresses projection without rejecting gameplay. The producer always emits
+mount [], while the closed wire decoder retains its accepted 0..1 shape.
+
+Operator resync includes all four families, using 128-subject keyset batches
+inside the existing atomic resync/60-second deadline. The existing closed CHECKs
+must be replaced to admit the new families. Their locks remain held until the
+migration commits; the stopped-service qualification below is mandatory.
+
+### P3 review: migration and catalogue refresh qualification
+
+Migration 2834 requires **all Game writers and publishers stopped**. Its one
+migration transaction retains trigger-creation SHARE ROW EXCLUSIVE locks and
+CHECK-replacement ACCESS EXCLUSIVE locks through CHECK validation and the new
+account-leading roots index build. Separate statements do not release these
+locks. Before deployment, qualify migration duration and the restart window on
+a restored store with representative roots, heads and subject-fence sizes;
+no online migration or production-size duration is claimed. This replaces the
+prior suggestion that putting validation last shortened the retained locks.
+
+Runtime catalogue preparation uses the ordinary durability deadline, never the
+operator-only 60-second override. A catalogue change invalidates achievement
+coverage and queues a keyset refresh; each pass captures at most 16 subjects.
+Coverage stays incomplete, with completeness held at zero, until the last page
+commits. All character-view capture families take the catalogue SHARE lock
+before their subject lock. Deferred earned-fact events fan out once per account
+transaction, using an account-leading roots index and the final committed cut.
+
+Final P3 review: refresh pages use named SQL `page_size = 16`; preparation
+processes incomplete pages back to back, yielding between transactions without
+an IDLE delay. The expected rate is 16 divided by mean bounded-pass duration in
+seconds, rather than 16/s: for example 100 completed passes/s gives 1,600
+subjects/s, approximately 62.5 seconds for 100k subjects. This is a capacity
+calculation, not a measured production guarantee; normal pass deadlines and
+foreground preference remain in force. The fan-out index is hash(account_id),
+so it supplies equality lookup without competing with world-cut ordering.
+
+The same-account/two-character gameplay scenario is excluded by migration 0002's
+`game_durability_one_nonterminal_session_per_account` unique index (states 1/2).
+`character_progression::assert_fenced_root` takes the matching current session
+FOR SHARE, checking its character, account, connection/session and lease fences;
+`assert_gameplay_fence` uses that check before bestiary/progression mutations.
+The lock prevents retiring that session and admitting another character while
+its gameplay transaction is still active. No account-lock change is made here.

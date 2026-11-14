@@ -106,6 +106,14 @@ pub(crate) async fn exchange_with_status(
         .await
         .map(|(status, body, _)| (status, body))
 }
+pub(crate) async fn exchange_public_projection(
+    desc: &ProducerDescriptor,
+    operation: Operation,
+    body: &str,
+    permit: &mut super::QueuePermit<'_>,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
+    exchange_status(desc, operation, body, permit, false).await
+}
 pub(crate) async fn exchange_store(
     desc: &ProducerDescriptor,
     operation: Operation,
@@ -134,7 +142,9 @@ const fn request_envelope_max(operation: Operation) -> usize {
         Operation::PublishWorldOnlineV1 => {
             super::public_projections::ONLINE_BYTES + REQUEST_HEAD_BYTES
         }
-        Operation::PublishCharacterDeathsV2 | Operation::PublishGuildV2 => {
+        Operation::PublishCharacterDeathsV2
+        | Operation::PublishGuildV2
+        | Operation::PublishCharacterAchievementsV2 => {
             operation.request_bytes_max() + REQUEST_HEAD_BYTES
         }
         Operation::PublishBazaarTransferabilityV1
@@ -196,6 +206,21 @@ async fn exchange_status(
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
+        if matches!(
+            operation,
+            Operation::PublishCharacterDeathsV2
+                | Operation::PublishGuildV2
+                | Operation::PublishHouseV2
+                | Operation::PublishCharacterSkillsV2
+                | Operation::PublishCharacterAchievementsV2
+                | Operation::PublishCharacterEquipmentV2
+                | Operation::PublishCharacterOutfitV2
+                | Operation::PublishCharacterOnlineSessionV2
+                | Operation::PublishWorldDailyKillsV2
+                | Operation::PublishPublicProjectionWatermarkV2
+        ) {
+            return read_public_v2_response(&mut tls).await;
+        }
         if let Some(max) = super::bazaar::transport::response_bytes(operation) {
             let mut retry_after = None;
             let (status, raw) = read_response_inner(
@@ -681,6 +706,26 @@ async fn read_response_impl<S: AsyncRead + Unpin>(
         }),
     }
 }
+async fn read_public_v2_response<S: AsyncRead + Unpin>(
+    stream: &mut S,
+) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
+    let mut retry = None;
+    let (status, body) = read_response_impl(
+        stream,
+        false,
+        256,
+        true,
+        &[],
+        false,
+        Some(&mut retry),
+        false,
+        Duration::MAX,
+        false,
+        true,
+    )
+    .await?;
+    Ok((status, body, retry))
+}
 async fn read_journal_response<S: AsyncRead + Unpin>(
     stream: &mut S,
 ) -> Result<(u16, Vec<u8>, Option<Duration>), SourceError> {
@@ -1072,4 +1117,32 @@ fn journal_http_strict_framing_and_full_retry_after() -> Result<(), Box<dyn std:
  let mut input=b"HTTP/1.1 429 Busy\r\nCache-Control: no-store\r\nContent-Length: 0\r\nRetry-After: 999\r\n\r\n".as_slice();
  let (status,body,retry)=read_journal_response(&mut input).await?;assert_eq!(status,429);assert!(body.is_empty());assert_eq!(retry,Some(Duration::from_secs(999)));Ok(())
  })
+}
+
+#[cfg(test)]
+#[test]
+fn public_projections_v2_transport_response_bounds_and_retry_after()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+ for status in [429,503] {
+ let raw=format!("HTTP/1.1 {status} Retry\r\nContent-Length: 0\r\nCache-Control: no-store\r\nRetry-After: 999\r\n\r\n");
+ let (code,body,retry)=read_public_v2_response(&mut raw.as_bytes()).await?;
+ assert_eq!(code,status);assert!(body.is_empty());assert_eq!(retry,Some(Duration::from_secs(999)));
+ }
+ for raw in [
+  format!("HTTP/1.1 200 OK\r\nContent-Length: 257\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n\r\n{}","x".repeat(257)),
+  "HTTP/1.1 409 Conflict\r\nContent-Length: 1\r\nCache-Control: no-store\r\n\r\nx".into(),
+  "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n\r\nx".into(),
+ ] {assert!(read_public_v2_response(&mut raw.as_bytes()).await.is_err());}
+ Ok::<_,Box<dyn std::error::Error>>(())
+ })
+}
+
+#[cfg(test)]
+#[test]
+fn public_projections_v2_achievement_envelope_uses_route_bound() {
+    assert_eq!(
+        request_envelope_max(Operation::PublishCharacterAchievementsV2),
+        262144 + REQUEST_HEAD_BYTES
+    );
 }
