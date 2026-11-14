@@ -267,7 +267,6 @@ fn clear(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -284,27 +283,17 @@ fn keyboard(
         if !allowed {
             continue;
         }
-        if event.key_code == KeyCode::Escape && state.widgets.is_some() {
-            if let Some((key, _)) = &state.snapshot {
-                let kind = if state.confirmation.is_some() {
-                    Kind::Cancel
-                } else {
-                    Kind::Owner(Action::Close)
-                };
-                let control = Control { key: *key, kind };
-                perform(&owner, &mut state, &control);
-            }
-        } else if event.key_code == KeyCode::KeyP
-            && keys.as_ref().is_some_and(|keys| {
-                (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-                    && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-                    && !keys.pressed(KeyCode::AltLeft)
-                    && !keys.pressed(KeyCode::AltRight)
-                    && !keys.pressed(KeyCode::SuperLeft)
-                    && !keys.pressed(KeyCode::SuperRight)
-            })
+        if event.key_code == KeyCode::Escape
+            && state.widgets.is_some()
+            && let Some((key, _)) = &state.snapshot
         {
-            open(&owner);
+            let kind = if state.confirmation.is_some() {
+                Kind::Cancel
+            } else {
+                Kind::Owner(Action::Close)
+            };
+            let control = Control { key: *key, kind };
+            perform(&owner, &mut state, &control);
         }
     }
 }

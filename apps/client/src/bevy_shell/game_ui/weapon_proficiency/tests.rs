@@ -247,22 +247,22 @@ fn weapon_proficiency_window_registered() -> TestResult {
     click(&mut app, Kind::Owner(Action::Close))?;
     app.update();
     assert!(!panel(&app)?.open);
-    let mut keys = ButtonInput::<KeyCode>::default();
-    keys.press(KeyCode::ControlLeft);
-    keys.press(KeyCode::ShiftLeft);
-    app.insert_resource(keys);
-    let key = || bevy::input::keyboard::KeyboardInput {
-        key_code: KeyCode::KeyP,
-        logical_key: bevy::input::keyboard::Key::Character("P".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
+    let code = oteryn_input_actions::KeyCode::new(19)?;
+    let key = || oteryn_input_actions::NormalizedInputEvent::Key {
+        code,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Shift),
         repeat: false,
-        window: Entity::PLACEHOLDER,
     };
-    app.world_mut().write_message(key());
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[key()], false);
     app.update();
     assert!(panel(&app)?.open);
-    app.world_mut().write_message(key());
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[key()], false);
     app.update();
     assert!(!panel(&app)?.open);
     assert!(include_str!("../mod.rs").contains("weapon_proficiency::install(app)"));
