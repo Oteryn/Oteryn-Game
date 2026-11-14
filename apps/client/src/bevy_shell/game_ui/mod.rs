@@ -10,7 +10,7 @@ mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;
-mod item_details;
+pub(super) mod item_details;
 mod journal;
 mod market;
 pub(super) mod minimap;
