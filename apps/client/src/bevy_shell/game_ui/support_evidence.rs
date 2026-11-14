@@ -8,7 +8,11 @@ use super::{
     modal::ModalGuard,
 };
 use crate::support_delivery::Evidence;
-use bevy::{prelude::*, ui_widgets::Activate};
+use bevy::{
+    input_focus::InputFocus,
+    prelude::*,
+    ui_widgets::{Activate, ScrollArea},
+};
 use oteryn_client_ui_bevy as source;
 #[derive(Resource, Default)]
 pub(in crate::bevy_shell) struct State {
@@ -30,11 +34,17 @@ fn toggle(world: &mut State, generation: u64) {
     world.open = !world.open || world.generation != generation;
     world.generation = generation;
 }
-pub(in crate::bevy_shell) fn toggle_from_toolbar(state: &mut State, owner: &HostOwner) {
-    if owner.phase == Phase::Playing && !owner.modal_active() {
-        toggle(state, owner.generation());
+pub(in crate::bevy_shell) fn toolbar_activate(
+    event: On<Activate>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+    modal: ModalGuard,
+) {
+    if modal.allows(event.entity) && owner.phase == Phase::Playing && !owner.modal_active() {
+        toggle(&mut state, owner.generation());
     }
 }
+
 fn keyboard(
     keys: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<State>,
@@ -42,6 +52,10 @@ fn keyboard(
     modal: ModalGuard,
 ) {
     if keys.just_pressed(SHORTCUT)
+        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
+        && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
+        && !keys.pressed(KeyCode::AltLeft)
+        && !keys.pressed(KeyCode::AltRight)
         && (modal.allows_focus(None) || state.overlay.is_some_and(|entity| modal.allows(entity)))
         && owner.phase == Phase::Playing
         && !owner.modal_active()
@@ -54,11 +68,23 @@ fn keyboard(
         state.open = false;
     }
 }
+fn clear_focus(overlay: Entity, focus: &mut InputFocus, parents: &Query<&ChildOf>) {
+    let mut current = focus.get();
+    while let Some(entity) = current {
+        if entity == overlay {
+            focus.clear();
+            return;
+        }
+        current = parents.get(entity).ok().map(ChildOf::parent);
+    }
+}
 fn project(
     mut commands: Commands,
     skins: Res<Skins>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
+    mut focus: ResMut<InputFocus>,
+    parents: Query<&ChildOf>,
 ) {
     let visible =
         state.open && state.generation == owner.generation() && owner.phase == Phase::Playing;
@@ -73,6 +99,7 @@ fn project(
     };
     if !visible {
         if let Some(entity) = state.overlay.take() {
+            clear_focus(entity, &mut focus, &parents);
             commands.entity(entity).despawn();
         }
         state.open = false;
@@ -83,11 +110,16 @@ fn project(
         return;
     }
     if let Some(entity) = state.overlay.take() {
+        clear_focus(entity, &mut focus, &parents);
         commands.entity(entity).despawn();
     }
     let overlay = commands
         .spawn((
             GameModal,
+            bevy::input_focus::tab_navigation::TabGroup {
+                order: 2,
+                modal: true,
+            },
             GlobalZIndex(165),
             Node {
                 position_type: PositionType::Absolute,
@@ -103,6 +135,7 @@ fn project(
     let panel = commands
         .spawn((
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
+            ScrollArea,
             Node {
                 width: px(700.),
                 max_width: percent(95.),
@@ -119,7 +152,7 @@ fn project(
     source::dialog_caption(
         &mut commands,
         panel,
-        "Support-evidence delivery",
+        "Support-evidence delivery (Ctrl+Shift+F8)",
         skins.font.clone(),
     );
     for topic in [
@@ -235,15 +268,6 @@ fn activate(
         state.open = false;
     }
 }
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn support_evidence_window_registered() {
-        let registry = include_str!("mod.rs");
-        let toolbar = include_str!("../ui.rs");
-        assert!(registry.contains("support_evidence::install(app)"));
-        assert!(toolbar.contains("Support-evidence"));
-        assert!(super::SHORTCUT == bevy::prelude::KeyCode::F8);
-    }
-}
 const SHORTCUT: KeyCode = KeyCode::F8;
+#[cfg(test)]
+mod tests;

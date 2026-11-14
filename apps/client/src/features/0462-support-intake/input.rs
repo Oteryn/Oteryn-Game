@@ -5,8 +5,7 @@ impl PlayLink {
         #[cfg(feature = "bevy-shell")]
         crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
             for evidence in crate::support_delivery::evidence_at(directory) {
-                owner.observe(evidence.clone());
-                owner.submit(&evidence, true, false, |_| true);
+                owner.observe(evidence);
             }
         });
         crate::support_delivery::queue_support_at(&self.commands, directory);
@@ -25,9 +24,7 @@ impl PlayLink {
         let _mailbox = crate::play::mailbox::lock(&self.mailbox);
         crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
             if let Some(directory) = crate::support_delivery::directory() {
-                for evidence in crate::support_delivery::evidence_at(&directory) {
-                    owner.observe(evidence);
-                }
+                owner.refresh(&directory);
             }
             owner.rows().to_vec()
         })
@@ -39,23 +36,19 @@ impl PlayLink {
         blocked: bool,
     ) -> bool {
         let mailbox = crate::play::mailbox::lock(&self.mailbox);
-        if mailbox.server_modal.is_active()
+        if mailbox.custom_hotkeys_ended
+            || mailbox.server_modal.is_active()
             || self.commands.is_closed()
-            || crate::support_delivery::evidence_at(
-                expected.path.parent().unwrap_or(std::path::Path::new("")),
-            )
-            .iter()
-            .all(|row| row.path != expected.path || row.text != expected.text)
+            || !crate::support_delivery::matches_file(expected)
         {
             return false;
         }
         crate::support_delivery::with_owner(self.support_evidence_key(), &self.commands, |owner| {
             owner
-                .submit(expected, consent, blocked, |command| {
+                .submit(expected, consent, blocked, |command, path| {
                     self.commands
                         .send(crate::combat_input::PlayCommand::SupportDelivery(
-                            command,
-                            expected.path.clone(),
+                            command, path,
                         ))
                         .is_ok()
                 })
@@ -71,6 +64,10 @@ impl crate::play::Outbox {
         command: &oteryn_client_runtime::raw_feature::FeatureCommand,
         result: &oteryn_session::GatedCommandResult,
     ) {
+        let mailbox = crate::play::mailbox::lock(&self.0);
+        if mailbox.custom_hotkeys_ended {
+            return;
+        }
         crate::support_delivery::retain_reply(
             std::sync::Arc::as_ptr(&self.0) as usize,
             path,

@@ -33,7 +33,36 @@ pub(crate) fn queue_support_at(
         let Some(command) = oteryn_client_ui::support_intake::submission(kind, &text, true) else {
             continue;
         };
-        let _ = commands.send(PlayCommand::SupportDelivery(command, path));
+        #[cfg(feature = "bevy-shell")]
+        let mut retained = RETAINED
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let sent = commands
+            .send(PlayCommand::SupportDelivery(command, path.clone()))
+            .is_ok();
+        #[cfg(feature = "bevy-shell")]
+        if sent {
+            for entry in retained.iter_mut().filter(|entry| {
+                entry
+                    .sender
+                    .upgrade()
+                    .is_some_and(|sender| sender.same_channel(commands))
+            }) {
+                entry
+                    .owner
+                    .observe(Evidence::new(path.clone(), kind, text.clone()));
+                if let Some(row) = entry
+                    .owner
+                    .rows
+                    .iter_mut()
+                    .find(|row| row.path == path && row.text == text)
+                {
+                    row.pending = true;
+                }
+            }
+        }
+        #[cfg(not(feature = "bevy-shell"))]
+        let _ = sent;
     }
 }
 fn read(path: &Path) -> io::Result<String> {
@@ -70,19 +99,32 @@ pub(crate) struct Evidence {
     pub kind: u32,
     pub text: String,
     pub pending: bool,
+    source: Option<String>,
     pub result: Option<oteryn_session::GatedCommandResult>,
 }
 #[cfg(feature = "bevy-shell")]
 impl Evidence {
+    fn delivery_path(&self) -> PathBuf {
+        if self.source.is_some() {
+            self.path.with_file_name("approved-crash.txt")
+        } else {
+            self.path.clone()
+        }
+    }
     pub fn new(path: PathBuf, kind: u32, text: String) -> Self {
         Self {
             path,
             kind,
             text,
             pending: false,
+            source: None,
             result: None,
         }
     }
+}
+#[cfg(feature = "bevy-shell")]
+pub(crate) fn matches_file(row: &Evidence) -> bool {
+    read(&row.path).ok().as_deref() == Some(row.source.as_deref().unwrap_or(&row.text))
 }
 #[cfg(feature = "bevy-shell")]
 #[derive(Default)]
@@ -94,12 +136,32 @@ impl EvidenceOwner {
     pub fn rows(&self) -> &[Evidence] {
         &self.rows
     }
+    pub fn refresh(&mut self, directory: &Path) {
+        for evidence in evidence_at(directory) {
+            self.observe(evidence);
+        }
+        let path = directory.join("pending-crash.txt");
+        if let Ok(raw) = read(&path) {
+            if self
+                .rows
+                .iter()
+                .any(|row| row.path == path && row.source.as_deref() == Some(raw.as_str()))
+            {
+                return;
+            }
+            let text = preview(&raw);
+            if oteryn_client_ui::support_intake::submission(wire::CRASH, &text, true).is_some() {
+                let mut evidence = Evidence::new(path, wire::CRASH, text);
+                evidence.source = Some(raw);
+                self.observe(evidence);
+            }
+        }
+    }
     pub fn observe(&mut self, evidence: Evidence) {
-        if !self
-            .rows
-            .iter()
-            .any(|row| row.path == evidence.path && row.text == evidence.text)
-        {
+        if !self.rows.iter().any(|row| {
+            (row.path == evidence.path || row.delivery_path() == evidence.path)
+                && row.text == evidence.text
+        }) {
             self.rows
                 .retain(|row| row.path != evidence.path || row.pending);
             self.rows.push(evidence);
@@ -110,7 +172,7 @@ impl EvidenceOwner {
         expected: &Evidence,
         consent: bool,
         blocked: bool,
-        send: impl FnOnce(FeatureCommand) -> bool,
+        send: impl FnOnce(FeatureCommand, PathBuf) -> bool,
     ) -> Option<()> {
         if blocked || !consent {
             return None;
@@ -120,7 +182,16 @@ impl EvidenceOwner {
             return None;
         }
         let command = oteryn_client_ui::support_intake::submission(row.kind, &row.text, consent)?;
-        if !send(command) {
+        let path = row.delivery_path();
+        if row.source.is_some() {
+            if !matches_file(row) || crate::crash_report::save(&row.text, &path, true).is_err() {
+                return None;
+            }
+            if std::fs::remove_file(&row.path).is_err() {
+                return None;
+            }
+        }
+        if !send(command, path) {
             return None;
         }
         row.pending = true;
@@ -134,7 +205,7 @@ impl EvidenceOwner {
     ) {
         for row in &mut self.rows {
             if row.pending
-                && row.path == path
+                && row.delivery_path() == path
                 && row.kind == command.kind
                 && wire::decode_submission(&command.payload).ok() == Some(row.text.as_str())
             {
@@ -190,7 +261,13 @@ pub(crate) fn retain_reply(
     let mut retained = RETAINED
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some(entry) = retained.iter_mut().find(|entry| entry.key == key) {
+    if let Some(entry) = retained.iter_mut().find(|entry| {
+        entry.key == key
+            && entry
+                .sender
+                .upgrade()
+                .is_some_and(|sender| !sender.is_closed())
+    }) {
         entry.owner.reply(path, command, result);
     }
 }
@@ -261,7 +338,7 @@ mod tests {
         };
         owner.reply(&row.path, &command, &result);
         assert!(owner.rows()[0].result.is_none());
-        assert!(owner.submit(&row, true, false, |_| true).is_some());
+        assert!(owner.submit(&row, true, false, |_, _| true).is_some());
         owner.reply(Path::new("changed"), &command, &result);
         assert!(owner.rows()[0].pending);
         owner.reply(&row.path, &command, &result);

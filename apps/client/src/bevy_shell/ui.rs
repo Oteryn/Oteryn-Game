@@ -174,6 +174,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::SupportEvidence, "Support-evidence", 130.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
+        if matches!(control, Control::SupportEvidence) {
+            commands
+                .entity(button)
+                .observe(super::game_ui::support_evidence::toolbar_activate);
+        }
         commands.entity(toolbar).add_child(button);
     }
     // Full-window modal scrim blocks world pointer input while settings are open.
@@ -366,7 +371,6 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
-    mut support: ResMut<super::game_ui::support_evidence::State>,
 ) {
     if !modal.allows(event.entity) {
         return;
@@ -380,7 +384,6 @@ fn activate(
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
-                    | Control::SupportEvidence
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -393,9 +396,6 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
-            Control::SupportEvidence => {
-                super::game_ui::support_evidence::toggle_from_toolbar(&mut support, &owner)
-            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -410,7 +410,6 @@ fn toggle(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
-    mut support: ResMut<super::game_ui::support_evidence::State>,
 ) {
     if !modal.allows(event.source) {
         return;
@@ -581,14 +580,9 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(
-                Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
-                    | Control::SupportEvidence
-            )
-        ) {
+            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+        ) || matches!(control, Some(Control::SupportEvidence))
+        {
             node.display = if playing {
                 Display::Flex
             } else {
