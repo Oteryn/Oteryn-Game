@@ -4,6 +4,8 @@ pub(crate) use oteryn_client_runtime::premium_overview::{Overview, State};
 use oteryn_client_runtime::raw_feature::{FeatureCommand, GatedCommandResult};
 #[derive(Debug, Default)]
 pub(crate) struct Panel {
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) bevy_revision: u64,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,
@@ -118,4 +120,61 @@ pub(super) fn text(view: &View, status: &Overview) -> String {
         "\n\nGameplay still checks all current eligibility rules. This panel grants no access.",
     );
     text
+}
+
+/// A retained-owner observation bound to the mailbox and its presentation generation.
+#[cfg(feature = "bevy-shell")]
+#[derive(Clone)]
+pub(crate) struct Binding {
+    pub(crate) session: std::sync::Weak<dyn Send + Sync>,
+    pub(crate) used: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub(crate) open: bool,
+    pub(crate) pending: bool,
+    pub(crate) selected: bool,
+    pub(crate) text: String,
+    revision: u64,
+    started: Option<Instant>,
+    observation: Option<Overview>,
+    feedback: String,
+    fresh_until: Option<Instant>,
+}
+#[cfg(feature = "bevy-shell")]
+impl Binding {
+    pub(crate) fn same_projection(&self, other: &Self) -> bool {
+        self.session.ptr_eq(&other.session)
+            && !self.used.load(std::sync::atomic::Ordering::Relaxed)
+            && self.revision == other.revision
+            && self.open == other.open
+            && self.pending == other.pending
+            && self.selected == other.selected
+            && self.text == other.text
+    }
+    pub(crate) fn matches(&self, panel: &Panel) -> bool {
+        self.revision == panel.bevy_revision
+            && self.open == panel.open
+            && self.pending == panel.pending
+            && self.selected == panel.selected
+            && self.started == panel.started
+            && self.observation == panel.view.game_status
+            && self.feedback == panel.view.feedback
+            && self.fresh_until == panel.view.fresh_until
+    }
+}
+#[cfg(feature = "bevy-shell")]
+impl Panel {
+    pub(crate) fn binding(&self, session: std::sync::Weak<dyn Send + Sync>) -> Binding {
+        Binding {
+            session,
+            used: Default::default(),
+            open: self.open,
+            pending: self.pending,
+            selected: self.selected,
+            text: self.view.status_text(),
+            revision: self.bevy_revision,
+            started: self.started,
+            observation: self.view.game_status.clone(),
+            feedback: self.view.feedback.clone(),
+            fresh_until: self.view.fresh_until,
+        }
+    }
 }

@@ -92,6 +92,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::MinimapMarkers
                     | Control::Party
                     | Control::PlayerReport
+                    | Control::PremiumOverview
                     | Control::Prey
                     | Control::Quests
                     | Control::RaidSchedule
