@@ -22,6 +22,7 @@ mod prey;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod task_board;
 mod stash;
 mod trade;
 pub(super) mod viewport;
@@ -250,6 +251,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     prey::install(app);
     quick_loot::install(app);
+    task_board::install(app);
     stash::install(app);
     trade::install(app);
     app.add_systems(

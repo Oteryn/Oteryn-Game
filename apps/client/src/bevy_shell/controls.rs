@@ -115,6 +115,11 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if oteryn_client_ui::task_board::open_key(&routed) {
+            play.link
+                .task_board_set_open(!play.link.task_board_panel().open);
+            return;
+        }
         play.view.cursor_spell_input(&routed);
         if let Some(direction) = crate::input::arrow_step(&routed) {
             play.view.arrow(direction);
