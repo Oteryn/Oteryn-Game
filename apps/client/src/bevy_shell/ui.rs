@@ -52,6 +52,7 @@ pub(super) enum Control {
     BrowseField,
     ContainerSorting,
     Options,
+    HirelingServices,
     FurnitureRotation,
     HouseTransfer,
     HouseBrowsing,
@@ -83,6 +84,7 @@ impl Control {
             Self::BrowseField => "shell.browse_field",
             Self::ContainerSorting => "shell.container_sorting",
             Self::Options => "shell.options",
+            Self::HirelingServices => "shell.hireling_services",
             Self::FurnitureRotation => "shell.furniture_rotation",
             Self::HouseTransfer => "shell.house_transfer",
             Self::HouseBrowsing => "shell.house_browsing",
@@ -204,6 +206,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::GuildhallLeadership, "Guildhall (Ctrl+Alt+G)", 190.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
+        (
+            Control::HirelingServices,
+            "Hireling services (Ctrl+Shift+H)",
+            240.,
+        ),
         (Control::FurnitureRotation, "Furniture rotation", 140.),
         (Control::HouseTransfer, "House transfer", 110.),
         (Control::HouseBrowsing, "Houses", 100.),
@@ -417,7 +424,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -442,6 +449,7 @@ fn activate(
             Control::BrowseField => super::game_ui::browse_field::open(&owner),
             Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
             Control::Options => owner.open_graphics(),
+            Control::HirelingServices => super::game_ui::hireling_services::toggle(&owner),
             Control::FurnitureRotation => super::game_ui::toggle_furniture_rotation(&mut owner),
             Control::HouseTransfer => super::game_ui::house_transfer::open(&owner),
             Control::HouseBrowsing => super::game_ui::house_browsing::open(&mut owner),
@@ -636,7 +644,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

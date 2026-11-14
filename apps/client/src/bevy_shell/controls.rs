@@ -94,6 +94,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::hireling::open_key(&routed) {
+            super::game_ui::hireling_services::toggle(self);
+            return;
+        }
         if play.link.guildhall_input(&routed) {
             return;
         }
