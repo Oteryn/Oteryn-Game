@@ -18,3 +18,9 @@ mod gallery;
 #[cfg(any(windows, test))]
 #[path = "view/portraits.rs"]
 mod portraits;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{BosstiaryControl, BosstiarySnapshot};

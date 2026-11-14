@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    Bosstiary(bool),
     Options,
     Market,
     Party,
@@ -59,6 +60,8 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Bosstiary(false) => "shell.bosstiary",
+            Self::Bosstiary(true) => "shell.bosstiary_cooldowns",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -162,6 +165,8 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::Bosstiary(false), "Bosstiary", 80.),
+        (Control::Bosstiary(true), "Boss cooldowns", 110.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
@@ -371,7 +376,8 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Options
+                Control::Bosstiary(_)
+                    | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -383,6 +389,9 @@ fn activate(
             return;
         }
         match control {
+            Control::Bosstiary(cooldowns) => {
+                super::game_ui::bosstiary::toggle(&mut owner, *cooldowns)
+            }
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
@@ -572,7 +581,8 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::Bosstiary(_))
+                | Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
