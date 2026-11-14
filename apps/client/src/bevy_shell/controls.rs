@@ -74,6 +74,7 @@ impl HostOwner {
             return;
         }
         if super::game_ui::highscores_character_info::input(&play.link, &routed)
+            || play.link.house_podium_input(&routed)
             || play.link.quest_input(&routed)
             || play.link.appearance_input(&routed)
             || play.link.pvp_expert_input(&routed)

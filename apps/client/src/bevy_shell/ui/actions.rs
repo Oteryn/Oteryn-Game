@@ -24,6 +24,7 @@ pub(super) fn activate(
                     | Control::HirelingServices
                     | Control::FurnitureRotation
                     | Control::HouseMoveOut
+                    | Control::HousePodium
                     | Control::HouseTransfer
                     | Control::HouseBrowsing
                     | Control::GuildhallLeadership
@@ -63,6 +64,7 @@ pub(super) fn activate(
             return;
         }
         match control {
+            Control::Achievements => game_ui::achievements::open(&mut owner),
             Control::Appearance => game_ui::appearance::open(&mut owner),
             Control::CastChat => game_ui::cast_chat::toggle(&mut owner),
             Control::Cast => game_ui::cast_control::open(&owner),
@@ -76,7 +78,7 @@ pub(super) fn activate(
             Control::AnimusMastery => game_ui::animus_mastery::open(&owner),
             Control::BrowseField => game_ui::browse_field::open(&owner),
             Control::ContainerSorting => game_ui::open_container_sorting(&mut owner),
-            Control::Achievements => game_ui::achievements::open(&mut owner),
+            Control::HousePodium => game_ui::open_house_podium(&mut owner),
             Control::Options => owner.open_graphics(),
             Control::HirelingServices => game_ui::hireling_services::toggle(&owner),
             Control::FurnitureRotation => game_ui::toggle_furniture_rotation(&mut owner),

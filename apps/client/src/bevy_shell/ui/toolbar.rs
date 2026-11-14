@@ -57,6 +57,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
             Some(
                 Control::Achievements
                     | Control::Appearance
+                    | Control::HousePodium
                     | Control::StatusDetails
                     | Control::CastChat
                     | Control::Cast

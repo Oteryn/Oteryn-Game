@@ -38,6 +38,8 @@ pub(super) mod highscores_character_info;
 pub(super) mod house_browsing;
 pub(super) mod house_move_out;
 pub(super) mod house_transfer;
+mod house_podium;
+pub(super) use house_podium::open as open_house_podium;
 mod hud;
 mod imbue;
 mod inventory;
@@ -108,6 +110,7 @@ pub(in crate::bevy_shell) struct ToolbarRegion;
 
 pub(super) fn install(app: &mut App) {
     achievement_notices::install(app);
+    achievements::install(app);
     actions::install(app);
     animus_mastery::install(app);
     appearance::install(app);
@@ -140,6 +143,7 @@ pub(super) fn install(app: &mut App) {
     hireling_services::install(app);
     house_browsing::install(app);
     house_move_out::install(app);
+    house_podium::install(app);
     house_transfer::install(app);
     hud::install(app);
     imbue::install(app);
@@ -149,7 +153,6 @@ pub(super) fn install(app: &mut App) {
     mail::install(app);
     market::install(app);
     minimap::install(app);
-    achievements::install(app);
     modal::install(app);
     npc_shop::install(app);
     options::install(app);
