@@ -61,6 +61,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    Training,
     Store,
     Login,
     CancelLogin,
@@ -93,6 +94,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::Training => "shell.training",
             Self::Store => "shell.store",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
@@ -221,6 +223,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::Training, "Training", 80.),
         (Control::Store, "Store", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
@@ -429,6 +432,7 @@ fn activate(
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
+                    | Control::Training
                     | Control::Store
                     | Control::Login
                     | Control::CancelLogin
@@ -458,6 +462,7 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::Training => super::game_ui::training::open(&owner),
             Control::Store => super::game_ui::store::open(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
@@ -644,7 +649,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

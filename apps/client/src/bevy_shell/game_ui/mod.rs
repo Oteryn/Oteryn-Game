@@ -42,6 +42,7 @@ pub(super) use projection::project;
 mod quick_loot;
 pub(super) mod store;
 mod trade;
+pub(super) mod training;
 pub(super) mod viewport;
 mod wheel;
 use super::{owner::HostOwner, ui::Skins};
@@ -287,6 +288,7 @@ pub(super) fn install(app: &mut App) {
     quick_loot::install(app);
     store::install(app);
     trade::install(app);
+    training::install(app);
     wheel::install(app);
     app.add_systems(
         Update,
