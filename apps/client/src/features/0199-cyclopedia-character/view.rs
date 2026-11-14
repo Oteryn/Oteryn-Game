@@ -6,7 +6,7 @@ impl PlayLink {
         lock(&self.mailbox).cyclopedia_character.clone()
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
 #[cfg(windows)]
@@ -16,3 +16,7 @@ pub(in crate::play) use native::open_window;
 pub(super) mod blessings;
 #[path = "view/sanctions.rs"]
 pub(super) mod sanctions;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+pub(crate) mod bound;
