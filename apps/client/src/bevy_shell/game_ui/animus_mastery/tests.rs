@@ -213,7 +213,7 @@ fn animus_mastery_window_registered() -> Result {
     let mut registered = App::new();
     super::super::install(&mut registered);
     assert!(registered.world().contains_resource::<State>());
-    let (mut app, mut commands, _) = fixture()?;
+    let (mut app, mut commands, outbox) = fixture()?;
     let toolbar = app
         .world_mut()
         .query::<(Entity, &crate::bevy_shell::ui::Control)>()
@@ -225,6 +225,8 @@ fn animus_mastery_window_registered() -> Result {
     app.update();
     assert!(panel(&app)?.open);
     assert_eq!(query(&mut commands)?.offset, 0);
+    reply(&outbox, 0, &[])?;
+    app.update();
     let close = control(&mut app, Kind::Close)?;
     app.world_mut().trigger(Activate { entity: close });
     app.update();
@@ -236,6 +238,43 @@ fn animus_mastery_window_registered() -> Result {
     app.world_mut()
         .resource_mut::<InputFocus>()
         .set(higher, FocusCause::Navigated);
+    let chord = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(4)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+        repeat: false,
+    };
+    assert!(oteryn_client_ui::animus_mastery::open_key(
+        std::slice::from_ref(&chord)
+    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&chord), true);
+    app.update();
+    assert!(!panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
+    app.world_mut().entity_mut(higher).despawn();
+    app.update();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[chord], false);
+    app.update();
+    assert!(
+        panel(&app)?.open,
+        "the default Ctrl+A owner chord must reach the bound window"
+    );
+    assert_eq!(query(&mut commands)?.offset, 0);
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    assert!(!panel(&app)?.open);
+    // F8 belongs to other features and must have no Animus window binding.
     app.world_mut().write_message(KeyboardInput {
         key_code: KeyCode::F8,
         logical_key: Key::F8,
@@ -247,20 +286,39 @@ fn animus_mastery_window_registered() -> Result {
     app.update();
     assert!(!panel(&app)?.open);
     assert!(commands.try_recv().is_err());
-    app.world_mut().entity_mut(higher).despawn();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Animus Mastery (Ctrl+A)")
+    );
+    app.add_systems(Update, crate::bevy_shell::ui::project_toolbar);
     app.update();
-    for expected in [true, false] {
-        app.world_mut().write_message(KeyboardInput {
-            key_code: KeyCode::F8,
-            logical_key: Key::F8,
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
-        app.update();
-        assert_eq!(panel(&app)?.open, expected);
-    }
+    assert_eq!(
+        app.world()
+            .get::<Node>(toolbar)
+            .ok_or("toolbar node")?
+            .display,
+        Display::Flex
+    );
+    let play = app.world_mut().non_send_mut::<HostOwner>().play.take();
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Node>(toolbar)
+            .ok_or("toolbar node")?
+            .display,
+        Display::None
+    );
+    app.world_mut().non_send_mut::<HostOwner>().play = play;
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Node>(toolbar)
+            .ok_or("toolbar node")?
+            .display,
+        Display::Flex
+    );
     assert_eq!(
         app.world_mut()
             .query::<&Overlay>()

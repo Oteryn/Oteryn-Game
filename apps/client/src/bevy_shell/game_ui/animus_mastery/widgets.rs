@@ -50,7 +50,12 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins) -> Widgets {
         ))
         .id();
     commands.entity(overlay).add_child(panel);
-    source::dialog_caption(commands, panel, "Animus Mastery — F8", skins.font.clone());
+    source::dialog_caption(
+        commands,
+        panel,
+        "Animus Mastery — Ctrl+A",
+        skins.font.clone(),
+    );
     Widgets {
         overlay,
         panel,

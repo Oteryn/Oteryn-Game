@@ -145,23 +145,7 @@ fn keyboard(
         .read()
         .filter(|event| !event.repeat && event.state == bevy::input::ButtonState::Pressed)
     {
-        if event.key_code == KeyCode::F8 {
-            if let Some(widgets) = &state.widgets {
-                if let Some((key, _)) = &state.snapshot {
-                    perform(
-                        &owner,
-                        &state,
-                        Control {
-                            key: *key,
-                            kind: Kind::Close,
-                        },
-                        guard.allows(widgets.panel),
-                    );
-                }
-            } else if guard.allows_focus(None) {
-                open(&owner);
-            }
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(widgets) = &state.widgets
             && let Some((key, _)) = &state.snapshot
         {
