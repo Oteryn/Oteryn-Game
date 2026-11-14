@@ -22,6 +22,8 @@ struct Key {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Request(Intent),
+    Confirm,
+    Cancel,
     Close,
 }
 #[derive(Component, Clone, Copy)]
@@ -39,10 +41,12 @@ struct State {
     revision: u64,
     root: Option<Entity>,
     pending: Option<(Control, Entity, Entity)>,
+    confirmation: Option<(Intent, String)>,
+    draft: Option<String>,
+    dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
@@ -68,25 +72,39 @@ fn valid(owner: &HostOwner, state: &State, control: Control) -> bool {
         && state.snapshot.as_ref().is_some_and(|(key, expected)| {
             *key == control.key
                 && key.generation == owner.generation()
+                && (control.kind == Kind::Close
+                    || expected.panel.selected && !expected.panel.pending)
                 && owner
                     .play
                     .as_ref()
                     .is_some_and(|play| play.link.house_transfer_snapshot() == *expected)
         })
 }
-fn perform(owner: &HostOwner, state: &State, control: Control, value: &str) {
+fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     if !valid(owner, state, control) {
         return;
     }
+    let request = match control.kind {
+        Kind::Confirm => state
+            .confirmation
+            .take()
+            .map(|(intent, house)| (Some(intent), house)),
+        Kind::Close => Some((None, String::new())),
+        _ => return,
+    };
+    let Some((intent, house)) = request else {
+        return;
+    };
+    // Consume consent before the atomic owner check, including a refusal.
+    state.confirmation = None;
+    state.pending = None;
+    state.dirty = true;
     if let (Some(play), Some((_, expected))) = (&owner.play, &state.snapshot) {
-        let intent = match control.kind {
-            Kind::Request(intent) => Some(intent),
-            Kind::Close => None,
-        };
         play.link
-            .house_transfer_dispatch_bound(expected, intent, value);
+            .house_transfer_dispatch_bound(expected, intent, &house);
     }
 }
+
 fn activate(
     event: On<Activate>,
     controls: Query<&Control>,
@@ -101,8 +119,11 @@ fn activate(
     if !guard.allows(event.entity) || !valid(&owner, &state, *control) {
         return;
     }
-    if control.kind == Kind::Close {
-        perform(&owner, &state, *control, "");
+    if matches!(control.kind, Kind::Close | Kind::Confirm) {
+        perform(&owner, &mut state, *control);
+    } else if control.kind == Kind::Cancel {
+        state.confirmation = None;
+        state.dirty = true;
     } else if let Ok(field) = fields.single()
         && guard.allows(field)
         && state.pending.is_none()
@@ -144,7 +165,12 @@ fn finish(
         state.pending = Some((control, source, field));
         return;
     }
-    perform(&owner, &state, control, &text.value().to_string());
+    if let Kind::Request(intent) = control.kind {
+        let house = text.value().to_string();
+        state.draft = Some(house.clone());
+        state.confirmation = Some((intent, house));
+        state.dirty = true;
+    }
 }
 fn inside(mut entity: Option<Entity>, root: Entity, parents: &Query<&ChildOf>) -> bool {
     while let Some(current) = entity {
@@ -168,16 +194,21 @@ fn project(
         .as_ref()
         .map(|play| play.link.house_transfer_snapshot())
         .filter(|snapshot| snapshot.panel.open && owner.phase == Phase::Playing);
-    if state
+    let unchanged = state
         .snapshot
         .as_ref()
         .map(|(key, old)| (key.generation, old))
         == snapshot
             .as_ref()
-            .map(|snapshot| (owner.generation(), snapshot))
-    {
+            .map(|snapshot| (owner.generation(), snapshot));
+    if unchanged && !state.dirty {
         return;
     }
+    if !unchanged {
+        state.confirmation = None;
+        state.draft = None;
+    }
+    state.dirty = false;
     if let Some(root) = state.root.take() {
         if inside(focus.get(), root, &parents) {
             focus.clear();
@@ -197,49 +228,34 @@ fn project(
         generation: owner.generation(),
         revision,
     };
-    state.root = Some(widgets::build(&mut commands, &skins, key, &snapshot.panel));
+    state.root = Some(widgets::build(
+        &mut commands,
+        &skins,
+        key,
+        &snapshot.panel,
+        state.confirmation.as_ref(),
+        state.draft.as_deref(),
+    ));
     state.snapshot = Some((key, snapshot));
 }
 fn keyboard(
     mut events: MessageReader<KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
 ) {
-    for event in events
-        .read()
-        .filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat)
+    if events.read().any(|event| {
+        event.key_code == KeyCode::Escape
+            && event.state == bevy::input::ButtonState::Pressed
+            && !event.repeat
+    }) && let (Some(root), Some((key, _))) = (state.root, &state.snapshot)
+        && guard.allows(root)
     {
-        let shortcut = event.key_code == KeyCode::F8
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-            && ![
-                KeyCode::ShiftLeft,
-                KeyCode::ShiftRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ]
-            .iter()
-            .any(|key| keys.pressed(*key));
-        if !shortcut && event.key_code != KeyCode::Escape {
-            continue;
-        }
-        if let (Some(root), Some((key, _))) = (state.root, &state.snapshot) {
-            if guard.allows(root) {
-                perform(
-                    &owner,
-                    &state,
-                    Control {
-                        key: *key,
-                        kind: Kind::Close,
-                    },
-                    "",
-                );
-            }
-        } else if shortcut && guard.allows_focus(None) {
-            open(&owner);
-        }
+        let control = Control {
+            key: *key,
+            kind: Kind::Close,
+        };
+        perform(&owner, &mut state, control);
     }
 }
 

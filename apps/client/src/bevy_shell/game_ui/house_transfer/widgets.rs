@@ -6,7 +6,14 @@ use bevy::{
     ui_widgets::TextInput,
 };
 use oteryn_client_ui_bevy as source;
-pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, model: &Panel) -> Entity {
+pub(super) fn build(
+    commands: &mut Commands,
+    skins: &Skins,
+    key: Key,
+    model: &Panel,
+    confirmation: Option<&(Intent, String)>,
+    draft: Option<&str>,
+) -> Entity {
     let root = commands
         .spawn((
             Overlay,
@@ -49,31 +56,44 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, model: &Pa
         .id();
     commands.entity(root).add_child(panel);
     source::dialog_caption(commands, panel, "House transfer", skins.font.clone());
-    text(commands, skins, panel, "House key");
-    let mut editable = EditableText::new(&model.fields[0]);
-    editable.max_characters = Some(512);
-    let mut field = commands.spawn((
-        HouseKey,
-        TextInput,
-        editable,
-        source::font(skins.font.clone(), false),
-        TextColor(source::TEXT_COLOR),
-        TextLayout::no_wrap(),
-        TextCursorStyle::default(),
-        TabIndex(0),
-        source::frame(skins.inset.clone(), [1.; 4]),
-        Node {
-            width: percent(100.),
-            min_height: px(26.),
-            padding: px(4.).all(),
-            ..default()
-        },
-    ));
-    if model.pending {
-        field.insert(InteractionDisabled);
+    if let Some((intent, house)) = confirmation {
+        let action = match intent {
+            Intent::Enter => "Enter",
+            Intent::Exit => "Exit",
+        };
+        text(
+            commands,
+            skins,
+            panel,
+            &format!("Confirm {action} for {house}?"),
+        );
+    } else {
+        text(commands, skins, panel, "House key");
+        let mut editable = EditableText::new(draft.unwrap_or(&model.fields[0]));
+        editable.max_characters = Some(512);
+        let mut field = commands.spawn((
+            HouseKey,
+            TextInput,
+            editable,
+            source::font(skins.font.clone(), false),
+            TextColor(source::TEXT_COLOR),
+            TextLayout::no_wrap(),
+            TextCursorStyle::default(),
+            TabIndex(0),
+            source::frame(skins.inset.clone(), [1.; 4]),
+            Node {
+                width: percent(100.),
+                min_height: px(26.),
+                padding: px(4.).all(),
+                ..default()
+            },
+        ));
+        if model.pending {
+            field.insert(InteractionDisabled);
+        }
+        let field = field.id();
+        commands.entity(panel).add_child(field);
     }
-    let field = field.id();
-    commands.entity(panel).add_child(field);
     text(
         commands,
         skins,
@@ -88,11 +108,20 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, model: &Pa
         })
         .id();
     commands.entity(panel).add_child(row);
-    for (kind, label) in [
-        (Kind::Request(Intent::Enter), "Enter"),
-        (Kind::Request(Intent::Exit), "Exit"),
-        (Kind::Close, "Close"),
-    ] {
+    let actions = if confirmation.is_some() {
+        [
+            (Kind::Confirm, "Confirm"),
+            (Kind::Cancel, "Cancel"),
+            (Kind::Close, "Close"),
+        ]
+    } else {
+        [
+            (Kind::Request(Intent::Enter), "Enter"),
+            (Kind::Request(Intent::Exit), "Exit"),
+            (Kind::Close, "Close"),
+        ]
+    };
+    for (kind, label) in actions {
         let mut button = commands.spawn((
             source::button(skins.buttons.clone(), 80.),
             Control { key, kind },
