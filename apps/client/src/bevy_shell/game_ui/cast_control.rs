@@ -221,6 +221,8 @@ fn project(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     keys: Res<ButtonInput<KeyCode>>,
+    focus: Res<bevy::input_focus::InputFocus>,
+    fields: Query<(), With<EditableText>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -233,6 +235,11 @@ fn keyboard(
             && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
             && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
             && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
+            && !focus.get().is_some_and(|entity| fields.contains(entity))
+            && !owner
+                .play
+                .as_ref()
+                .is_some_and(|play| play.link.preference_chat_open())
             && guard.allows_focus(state.root)
         {
             open(&owner);

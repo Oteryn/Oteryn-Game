@@ -357,3 +357,42 @@ fn open_link(
     outbox.bevy_cast_result(Message::End)?;
     Ok(())
 }
+
+#[test]
+fn cast_control_shortcut_preserves_text_input_context() -> Result {
+    let (mut app, mut rx, _outbox) = fixture()?;
+    let field = app.world_mut().spawn(EditableText::new("draft")).id();
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(field, bevy::input_focus::FocusCause::Navigated);
+    shortcut(&mut app);
+    assert!(app.world().resource::<State>().root.is_none());
+    assert!(rx.try_recv().is_err());
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .clear();
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.open_chat();
+    if !link.preference_chat_open() {
+        link.chat_console_mode();
+    }
+    assert!(link.preference_chat_open());
+    shortcut(&mut app);
+    assert!(app.world().resource::<State>().root.is_none());
+    assert!(rx.try_recv().is_err());
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    for _ in 0..3 {
+        if !link.preference_chat_open() {
+            break;
+        }
+        link.chat_console_mode();
+    }
+    assert!(!link.preference_chat_open());
+    shortcut(&mut app);
+    assert!(app.world().resource::<State>().root.is_some());
+    assert!(matches!(rx.try_recv()?, PlayCommand::ServerMechanic(_)));
+    assert!(rx.try_recv().is_err());
+    Ok(())
+}

@@ -134,27 +134,8 @@ impl PlayLink {
             draft.password = password;
             draft.access_revision = access_revision;
         }
-        let message = if (2..=4).contains(&action) {
-            oteryn_client_ui::cast_consent::protocol::request(
-                &draft,
-                match action {
-                    2 => None,
-                    3 => Some(true),
-                    _ => Some(false),
-                },
-            )
-        } else {
-            oteryn_client_ui::cast_control::command(&draft, action)
-        };
-        let Ok(payload) =
-            message.and_then(|message| message.encode().map_err(|_| "Invalid settings"))
-        else {
+        let Ok(command) = super::super::input::command(&draft, action) else {
             return false;
-        };
-        let command = oteryn_client_runtime::server_mechanic::ServerMechanicCommand {
-            capability: if (2..=4).contains(&action) { 292 } else { 290 },
-            command_type: if (2..=4).contains(&action) { 503 } else { 502 },
-            payload,
         };
         if self
             .commands
