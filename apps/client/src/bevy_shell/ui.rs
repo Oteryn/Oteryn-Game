@@ -575,16 +575,12 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if matches!(
-            control,
-            Some(
-                Control::CyclopediaMap
-                    | Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
+        } else if matches!(control, Some(Control::CyclopediaMap))
+            || matches!(
+                control,
+                Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
             )
-        ) {
+        {
             node.display = if playing {
                 Display::Flex
             } else {

@@ -14,36 +14,47 @@ pub(super) fn build(
     generation: u64,
     snapshot: &MapSnapshot,
     confirmation: Option<&MapControl>,
+    editor: Option<(EditableText, bool)>,
 ) -> Entity {
     let snapshot = std::sync::Arc::new(snapshot.clone());
     let root = commands
         .spawn((
-            super::super::GameModal,
-            GlobalZIndex(164),
+            GlobalZIndex(90),
+            bevy::picking::Pickable::IGNORE,
             TabGroup {
                 order: 2,
-                modal: true,
+                modal: confirmation.is_some(),
             },
             Node {
                 position_type: PositionType::Absolute,
                 width: percent(100.),
                 height: percent(100.),
-                justify_content: JustifyContent::Center,
+                justify_content: JustifyContent::FlexStart,
+                padding: UiRect::left(px(8.)),
                 align_items: AlignItems::Center,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
         ))
         .id();
+    if confirmation.is_some() {
+        commands.entity(root).insert((
+            super::super::GameModal,
+            bevy::picking::Pickable::default(),
+            BackgroundColor(Color::srgba(0., 0., 0., 0.45)),
+        ));
+    }
     let body = commands
         .spawn((
             source::frame(skins.frame.clone(), [4., 17., 4., 4.]),
             ScrollArea,
             Node {
                 width: px(940.),
-                max_width: percent(95.),
+                max_width: percent(75.),
                 max_height: percent(95.),
-                overflow: Overflow::scroll_y(),
+                overflow: Overflow {
+                    x: OverflowAxis::Scroll,
+                    y: OverflowAxis::Scroll,
+                },
                 padding: UiRect::all(px(16.)),
                 flex_direction: FlexDirection::Column,
                 row_gap: px(6.),
@@ -114,7 +125,11 @@ pub(super) fn build(
             false,
         );
     }
-    let mut edit = EditableText::new(&snapshot.panel.fields[0]);
+    let restore_focus = editor.as_ref().is_some_and(|(_, focused)| *focused);
+    let mut edit = editor.map_or_else(
+        || EditableText::new(&snapshot.panel.fields[0]),
+        |(text, _)| text,
+    );
     edit.max_characters = Some(64);
     let field = commands
         .spawn((
@@ -135,6 +150,13 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(body).add_child(field);
+    if restore_focus {
+        commands.queue(move |world: &mut World| {
+            world
+                .resource_mut::<bevy::input_focus::InputFocus>()
+                .set(field, bevy::input_focus::FocusCause::Navigated);
+        });
+    }
     button(
         commands,
         skins,

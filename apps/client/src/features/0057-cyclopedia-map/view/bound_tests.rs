@@ -54,12 +54,19 @@ fn cyclopedia_map_rejected_when_session_replaced_or_target_changed() {
         m.properties.cyclopedia_map.open = true;
     }
     let snapshot = link.cyclopedia_map_snapshot();
-    let (other, _, _) = play_channel();
+    let (other, mut other_commands, _) = play_channel();
+    {
+        let mut mailbox = lock(&other.mailbox);
+        mailbox.properties.cyclopedia_map.open = true;
+        mailbox.properties.cyclopedia_map.selected = true;
+    }
+    assert_eq!(snapshot, other.cyclopedia_map_snapshot());
     assert!(!other.cyclopedia_map_dispatch_bound(
         &snapshot,
         MapControl::Request(Intent::Query),
         false
     ));
+    assert!(other_commands.try_recv().is_err());
     let modal = link.bevy_server_modal_fixture();
     assert!(!link.cyclopedia_map_dispatch_bound(
         &snapshot,

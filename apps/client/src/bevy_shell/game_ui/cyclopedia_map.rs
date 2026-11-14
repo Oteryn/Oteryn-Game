@@ -39,6 +39,8 @@ fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
+    mut focus: ResMut<bevy::input_focus::InputFocus>,
+    fields: Query<(Entity, &bevy::text::EditableText), With<widgets::Donation>>,
 ) {
     let snapshot = owner
         .play
@@ -48,6 +50,25 @@ fn project(
     let current = snapshot.map(|s| (owner.generation(), s));
     if state.snapshot == current {
         return;
+    }
+    let editor = state
+        .snapshot
+        .as_ref()
+        .zip(current.as_ref())
+        .filter(|((old_generation, old), (generation, next))| {
+            old_generation == generation
+                && old.panel.fields == next.panel.fields
+                && std::sync::Arc::ptr_eq(
+                    &old.panel.geometry.lifetime,
+                    &next.panel.geometry.lifetime,
+                )
+        })
+        .and_then(|_| fields.single().ok())
+        .map(|(entity, text)| (text.clone(), focus.get() == Some(entity)));
+    if let Ok((entity, _)) = fields.single()
+        && focus.get() == Some(entity)
+    {
+        focus.clear();
     }
     if let Some(root) = state.root.take() {
         commands.entity(root).despawn();
@@ -60,6 +81,7 @@ fn project(
             *generation,
             snapshot,
             None,
+            editor,
         ));
     }
     state.snapshot = current;
@@ -106,6 +128,7 @@ fn activate(
             control.generation,
             &control.snapshot,
             state.confirmation.as_ref(),
+            None,
         ));
         return;
     }

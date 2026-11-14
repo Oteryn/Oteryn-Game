@@ -71,6 +71,14 @@ fn cyclopedia_map_window_registered() -> TestResult {
         .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
     app.update();
     assert!(app.world().resource::<State>().root.is_some());
+    app.world_mut()
+        .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    app.world_mut()
+        .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
+    app.update();
+    assert!(app.world().resource::<State>().root.is_some());
     let higher = app
         .world_mut()
         .spawn((super::super::GameModal, GlobalZIndex(220), Node::default()))
@@ -108,7 +116,10 @@ fn cyclopedia_map_window_shows_server_data_only() -> TestResult {
         .world_mut()
         .query::<(Entity, &Control)>()
         .iter(app.world())
-        .find_map(|(e, c)| (c.action == MapControl::Request(wire_intent())).then_some(e))
+        .find_map(|(e, c)| {
+            (c.action == MapControl::Request(oteryn_client_ui::cyclopedia_map::Intent::Query))
+                .then_some(e)
+        })
         .ok_or("query absent")?;
     app.world_mut().trigger(Activate { entity: query });
     let PlayCommand::Feature(command) = commands.try_recv()? else {
@@ -166,6 +177,69 @@ fn cyclopedia_map_window_shows_server_data_only() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
-fn wire_intent() -> oteryn_client_ui::cyclopedia_map::Intent {
-    oteryn_client_ui::cyclopedia_map::Intent::Query
+#[test]
+fn cyclopedia_map_toolbar_closes_window() -> TestResult {
+    let (mut app, _commands, _outbox) = fixture()?;
+    show(&mut app)?;
+    let toolbar = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(e, c)| matches!(c, crate::bevy_shell::ui::Control::CyclopediaMap).then_some(e))
+        .ok_or("toolbar absent")?;
+    app.world_mut().trigger(Activate { entity: toolbar });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+fn choose(app: &mut App, action: &MapControl, confirmed: bool) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(e, c)| (c.action == *action && c.confirmed == confirmed).then_some(e))
+        .ok_or("control absent")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
+#[test]
+fn cyclopedia_map_actions_are_bound_and_confirmed() -> TestResult {
+    use oteryn_client_ui::cyclopedia_map::Intent;
+    let (mut app, mut commands, _) = fixture()?;
+    show(&mut app)?;
+    {
+        let mut fields = app
+            .world_mut()
+            .query_filtered::<&mut bevy::text::EditableText, With<widgets::Donation>>();
+        *fields.single_mut(app.world_mut())? = bevy::text::EditableText::new("100");
+    }
+    choose(&mut app, &MapControl::Pois, false)?;
+    choose(&mut app, &MapControl::Donation(String::new()), false)?;
+    choose(&mut app, &MapControl::Request(Intent::Donate), false)?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Donate 100 gold?"))
+    );
+    choose(&mut app, &MapControl::Request(Intent::Donate), true)?;
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("donation absent".into());
+    };
+    let intent =
+        oteryn_client_runtime::cyclopedia_map::decode_request(command.kind, &command.payload)
+            .map_err(|e| format!("{e:?}"))?;
+    assert_eq!((intent.operation, intent.amount), (4, 100));
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world()
+            .resource::<State>()
+            .snapshot
+            .as_ref()
+            .is_some_and(|(_, s)| s.panel.pending && s.panel.map.is_none())
+    );
+    Ok(())
 }
