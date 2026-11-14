@@ -18,7 +18,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, panel: &Panel) -> Wi
     let root = commands
         .spawn((
             Overlay,
-            GlobalZIndex(165),
+            GlobalZIndex(90),
             TabGroup {
                 order: 2,
                 modal: false,
