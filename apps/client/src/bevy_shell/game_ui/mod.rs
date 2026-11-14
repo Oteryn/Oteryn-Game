@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+pub(super) mod cyclopedia_trackers;
 mod feature_dialogs;
 mod hud;
 mod inventory;
@@ -231,6 +232,7 @@ pub(super) fn install(app: &mut App) {
     options::install(app);
     journal::install(app);
     chat::install(app);
+    cyclopedia_trackers::install(app);
     actions::install(app);
     feature_dialogs::install(app);
     hud::install(app);
