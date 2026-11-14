@@ -1,4 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
+pub(super) use achievement_notices::open as open_achievement_notices;
+mod achievement_notices;
 mod actions;
 pub(super) mod appearance;
 pub(super) mod boss_difficulty;
@@ -95,6 +97,7 @@ pub(super) struct WorldRegion;
 pub(in crate::bevy_shell) struct ToolbarRegion;
 
 pub(super) fn install(app: &mut App) {
+    achievement_notices::install(app);
     actions::install(app);
     animus_mastery::install(app);
     appearance::install(app);

@@ -47,6 +47,7 @@ pub(super) fn activate(
                     | Control::Store
                     | Control::WeaponProficiency
                     | Control::Bosstiary(_)
+                    | Control::AchievementNotices
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -88,6 +89,7 @@ pub(super) fn activate(
             Control::Bosstiary(cooldowns) => {
                 game_ui::bosstiary::toggle(&mut owner, *cooldowns)
             }
+            Control::AchievementNotices => game_ui::open_achievement_notices(&mut owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),

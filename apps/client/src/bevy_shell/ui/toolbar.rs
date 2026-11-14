@@ -84,6 +84,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Quests
                     | Control::WeaponProficiency
                     | Control::Bosstiary(_)
+                    | Control::AchievementNotices
                     | Control::Spells
             )
         ) {

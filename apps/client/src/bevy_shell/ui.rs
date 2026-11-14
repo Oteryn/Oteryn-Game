@@ -46,6 +46,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    AchievementNotices,
     Bosstiary(bool),
     Appearance,
     CastChat,
@@ -90,6 +91,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::AchievementNotices => "shell.achievement_notices",
             Self::Bosstiary(false) => "shell.bosstiary",
             Self::Bosstiary(true) => "shell.bosstiary_cooldowns",
             Self::Appearance => "shell.appearance",
@@ -221,6 +223,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::AchievementNotices, "Achievement Notices", 140.),
         (Control::Bosstiary(false), "Bosstiary (Ctrl+Shift+J)", 190.),
         (Control::Bosstiary(true), "Cooldown Ctrl+Alt+Shift+J", 230.),
         (Control::Appearance, "Outfit (Ctrl+Alt+A)", 160.),
