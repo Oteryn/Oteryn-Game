@@ -349,7 +349,7 @@ async fn begin_close(
     i: &Intent,
     now: u64,
 ) -> Result<(), DurabilityError> {
-    let roots:Vec<(String,String)>=sqlx::query_as("SELECT character_id::text,character_revision::text FROM game_character_roots WHERE account_id=$1::uuid ORDER BY character_id LIMIT 65 FOR UPDATE")
+    let roots:Vec<(String,String)>=sqlx::query_as("SELECT character_id::text,character_revision::text FROM game_character_roots WHERE account_id=$1::uuid AND lifecycle<>4 ORDER BY character_id LIMIT 65 FOR UPDATE")
         .bind(&i.account_id).fetch_all(&mut **tx).await?;
     if roots.len() > 64 {
         return Err(DurabilityError::InvalidStoredState);
@@ -482,7 +482,7 @@ async fn commit(
         return Ok(pending());
     }
     let (manifest, count) = if state == ClosureState::ClosedDetached {
-        let complete:bool=sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_account_closure_members WHERE close_operation_id=$1::uuid AND step<>1) AND NOT EXISTS(SELECT 1 FROM game_character_roots r WHERE account_id=$2::uuid AND NOT EXISTS(SELECT 1 FROM game_account_closure_members m WHERE m.close_operation_id=$1::uuid AND m.character_id=r.character_id)) AND (SELECT count(*) FROM game_account_closure_members WHERE close_operation_id=$1::uuid)=$3")
+        let complete:bool=sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_account_closure_members WHERE close_operation_id=$1::uuid AND step<>1) AND NOT EXISTS(SELECT 1 FROM game_character_live_roots r WHERE account_id=$2::uuid AND NOT EXISTS(SELECT 1 FROM game_account_closure_members m WHERE m.close_operation_id=$1::uuid AND m.character_id=r.character_id)) AND (SELECT count(*) FROM game_account_closure_members WHERE close_operation_id=$1::uuid)=$3")
             .bind(c.try_get::<String,_>("close_key")?).bind(&i.account_id).bind(i64::from(c.try_get::<i16,_>("manifest_count")?)).fetch_one(&mut **tx).await?;
         if !complete {
             return Ok(pending());

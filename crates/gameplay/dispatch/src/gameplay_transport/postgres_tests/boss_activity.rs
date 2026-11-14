@@ -13,7 +13,7 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::{
-    AdmittedSession, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
+    AdmittedSession, ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use crate::gameplay_transport::{ComposedFreshAdmission, SeamRooms, item_fence_of};
@@ -57,6 +57,9 @@ mod state_effects;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
+    SecurityDead,
+    SecurityActive,
+    SecurityLost,
     Entry,
     Difficulty,
     AwardContinuity,
@@ -80,6 +83,18 @@ enum Case {
     SoulWarFinalDefeat,
     RottenBloodDefeat,
     PrimalDefeat,
+}
+
+#[test]
+fn revocation_activity_dead_forced_termination_postgres() -> TestResult { run_scenario(Case::SecurityDead) }
+
+#[test]
+fn revocation_activity_active_forced_termination_postgres() -> TestResult {
+    run_scenario(Case::SecurityActive)
+}
+#[test]
+fn revocation_activity_lost_forced_termination_postgres() -> TestResult {
+    run_scenario(Case::SecurityLost)
 }
 
 #[test]
@@ -321,7 +336,7 @@ fn scenario(case: Case) -> TestResult {
         let late = matches!(case, Case::LateRewards | Case::SoulWarLateDefeat);
         let with_death = matches!(
             case,
-            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline
+            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline | Case::SecurityDead
         );
         reset();
         // Real progression cases let the current Character admission owner
@@ -330,7 +345,13 @@ fn scenario(case: Case) -> TestResult {
         let h =
             Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
                 .await?;
-        let evidence = super::house_transfer::RecoverySource::start(&h).await?;
+        let security_now: Option<i64> = if matches!(case, Case::SecurityActive | Case::SecurityLost | Case::SecurityDead) {
+            Some(sqlx::query_scalar("SELECT ceil(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&h.pool).await?)
+        } else { None };
+        let _security_clock = if let Some(now) = security_now {
+            Some(super::preadmission::FrozenAdmissionClock::install(&h, now).await?)
+        } else { None };
+        let evidence = super::house_transfer::RecoverySource::start_at(&h, security_now.map(u64::try_from).transpose()?).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
         let (controller, source_pin) = if with_live_progression {
@@ -972,6 +993,13 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::SecurityActive | Case::SecurityLost | Case::SecurityDead => {
+                if case == Case::SecurityDead {
+                    assert_eq!(owner.lose_control(admitted,std::time::Duration::ZERO,None).await,crate::gameplay_transport::connection::ControlLossResult::Recorded);
+                    offline_death::train_and_kill(&h, &destination, admitted).await?;
+                }
+                recovery::assert_security_revocation(&h, &owner, admitted, case == Case::SecurityLost || case == Case::SecurityDead, case == Case::SecurityDead).await?
+            }
             Case::EndgameReceipts => {
                 endgame_receipts::assert_receipts(&h, &destination, admitted).await?
             }

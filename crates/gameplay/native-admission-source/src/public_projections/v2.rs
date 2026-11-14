@@ -1,6 +1,10 @@
 //! Owner-accepted G-4 V2 wire; V1 families and watermark remain closed.
+pub mod character_views;
 pub mod daily_kills;
 pub mod online_sessions;
+mod validation;
+pub(super) use validation::publication_supported;
+pub use validation::{decode_character_snapshot, decode_watermark};
 
 use super::*;
 use serde::{Deserialize, ser::SerializeMap};
@@ -11,14 +15,22 @@ pub enum Family {
     CharacterDeaths,
     Guild,
     House,
+    CharacterSkills,
+    CharacterAchievements,
+    CharacterEquipment,
+    CharacterOutfit,
     CharacterOnlineSessions,
     WorldDailyKills,
 }
 impl Family {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 9] = [
         Self::CharacterDeaths,
         Self::Guild,
         Self::House,
+        Self::CharacterSkills,
+        Self::CharacterAchievements,
+        Self::CharacterEquipment,
+        Self::CharacterOutfit,
         Self::CharacterOnlineSessions,
         Self::WorldDailyKills,
     ];
@@ -27,6 +39,10 @@ impl Family {
             Self::CharacterDeaths => "character_deaths",
             Self::Guild => "guild",
             Self::House => "house",
+            Self::CharacterSkills => "character_skills",
+            Self::CharacterAchievements => "character_achievements",
+            Self::CharacterEquipment => "character_equipment",
+            Self::CharacterOutfit => "character_outfit",
             Self::CharacterOnlineSessions => "character_online_sessions",
             Self::WorldDailyKills => "world_daily_kills",
         }
@@ -36,6 +52,10 @@ impl Family {
             Self::CharacterDeaths => Operation::PublishCharacterDeathsV2,
             Self::Guild => Operation::PublishGuildV2,
             Self::House => Operation::PublishHouseV2,
+            Self::CharacterSkills => Operation::PublishCharacterSkillsV2,
+            Self::CharacterAchievements => Operation::PublishCharacterAchievementsV2,
+            Self::CharacterEquipment => Operation::PublishCharacterEquipmentV2,
+            Self::CharacterOutfit => Operation::PublishCharacterOutfitV2,
             Self::CharacterOnlineSessions => Operation::PublishCharacterOnlineSessionV2,
             Self::WorldDailyKills => Operation::PublishWorldDailyKillsV2,
         }
@@ -43,15 +63,31 @@ impl Family {
 }
 
 /// Publication flags are independent of durable source capture and retention.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct Activation {
+    pub character_skills: bool,
+    pub character_achievements: bool,
+    pub character_equipment: bool,
+    pub character_outfit: bool,
     pub character_online_sessions: bool,
     pub world_daily_kills: bool,
 }
 impl Family {
+    /// All compiled snapshot families have durable sources; activation remains independent.
+    pub const fn produced(self) -> bool {
+        true
+    }
+    pub const fn publishable(self, activation: Activation) -> bool {
+        self.enabled(activation)
+    }
     pub const fn enabled(self, activation: Activation) -> bool {
         match self {
             Self::CharacterDeaths | Self::Guild | Self::House => true,
+            Self::CharacterSkills => activation.character_skills,
+            Self::CharacterAchievements => activation.character_achievements,
+            Self::CharacterEquipment => activation.character_equipment,
+            Self::CharacterOutfit => activation.character_outfit,
             Self::CharacterOnlineSessions => activation.character_online_sessions,
             Self::WorldDailyKills => activation.world_daily_kills,
         }
@@ -170,6 +206,11 @@ pub enum Body {
     Deaths(Vec<Death>),
     Guild(Vec<Guild>),
     House(Vec<House>),
+    Skills(Vec<character_views::Skills>),
+    Achievements(Vec<character_views::Achievements>),
+    Equipment(Vec<character_views::Equipment>),
+    Outfit(Vec<character_views::Outfit>),
+
     OnlineSessions(Vec<online_sessions::Session>),
     DailyKills(Vec<daily_kills::Day>),
 }
@@ -207,12 +248,40 @@ impl Snapshot {
             Body::Deaths(_) => Family::CharacterDeaths,
             Body::Guild(_) => Family::Guild,
             Body::House(_) => Family::House,
+            Body::Skills(_) => Family::CharacterSkills,
+            Body::Achievements(_) => Family::CharacterAchievements,
+            Body::Equipment(_) => Family::CharacterEquipment,
+            Body::Outfit(_) => Family::CharacterOutfit,
             Body::OnlineSessions(_) => Family::CharacterOnlineSessions,
             Body::DailyKills(_) => Family::WorldDailyKills,
         }
     }
     fn valid(&self) -> bool {
         match &self.body {
+            Body::Skills(rows) => {
+                id(&self.subject)
+                    && self.world_id.is_empty()
+                    && rows.len() <= 1
+                    && rows.iter().all(character_views::Skills::valid)
+            }
+            Body::Achievements(rows) => {
+                id(&self.subject)
+                    && self.world_id.is_empty()
+                    && rows.len() <= 1
+                    && rows.iter().all(character_views::Achievements::valid)
+            }
+            Body::Equipment(rows) => {
+                id(&self.subject)
+                    && self.world_id.is_empty()
+                    && rows.len() <= 1
+                    && rows.iter().all(character_views::Equipment::valid)
+            }
+            Body::Outfit(rows) => {
+                id(&self.subject)
+                    && self.world_id.is_empty()
+                    && rows.len() <= 1
+                    && rows.iter().all(character_views::Outfit::valid)
+            }
             Body::DailyKills(rows) => {
                 id(&self.world_id)
                     && daily_kills::valid(&self.subject, self.source_observed_at, rows)
@@ -332,6 +401,11 @@ impl Serialize for Wire<'_> {
             Family::CharacterDeaths => "PublishCharacterDeathsV2",
             Family::Guild => "PublishGuildV2",
             Family::House => "PublishHouseV2",
+            Family::CharacterSkills => "PublishCharacterSkillsV2",
+            Family::CharacterAchievements => "PublishCharacterAchievementsV2",
+            Family::CharacterEquipment => "PublishCharacterEquipmentV2",
+            Family::CharacterOutfit => "PublishCharacterOutfitV2",
+
             Family::CharacterOnlineSessions => "PublishCharacterOnlineSessionV2",
             Family::WorldDailyKills => "PublishWorldDailyKillsV2",
         };
@@ -346,7 +420,11 @@ impl Serialize for Wire<'_> {
                 map.serialize_entry("character_id", &s.world_id)?;
                 map.serialize_entry("statistics_id", &s.subject)?;
             }
-            Family::CharacterDeaths => map.serialize_entry("character_id", &s.subject)?,
+            Family::CharacterDeaths
+            | Family::CharacterSkills
+            | Family::CharacterAchievements
+            | Family::CharacterEquipment
+            | Family::CharacterOutfit => map.serialize_entry("character_id", &s.subject)?,
             Family::Guild => map.serialize_entry("guild_id", &s.subject)?,
             Family::House => {
                 map.serialize_entry("world_id", &s.world_id)?;
@@ -360,6 +438,11 @@ impl Serialize for Wire<'_> {
             Body::Deaths(v) => map.serialize_entry("deaths", v)?,
             Body::Guild(v) => map.serialize_entry("guild", v)?,
             Body::House(v) => map.serialize_entry("house", v)?,
+            Body::Skills(v) => map.serialize_entry("skills", v)?,
+            Body::Achievements(v) => map.serialize_entry("achievements", v)?,
+            Body::Equipment(v) => map.serialize_entry("equipment", v)?,
+            Body::Outfit(v) => map.serialize_entry("outfit", v)?,
+
             Body::OnlineSessions(v) => map.serialize_entry("sessions", v)?,
             Body::DailyKills(v) => map.serialize_entry("days", v)?,
         }
@@ -367,6 +450,14 @@ impl Serialize for Wire<'_> {
     }
 }
 pub fn encode(authority: &str, snapshot: &Snapshot) -> Result<String, SourceError> {
+    if let Body::Outfit(rows) = &snapshot.body
+        && rows.iter().any(|row| !row.mount.is_empty())
+    {
+        return Err(SourceError::InvalidInput);
+    }
+    encode_wire(authority, snapshot)
+}
+fn encode_wire(authority: &str, snapshot: &Snapshot) -> Result<String, SourceError> {
     if !envelope_valid(
         authority,
         snapshot.projection_epoch,
@@ -403,6 +494,50 @@ pub fn decode_response(raw: &[u8]) -> Result<Delivery, SourceError> {
     }
 }
 
+/// Shared closed watermark vocabulary; WorldDaily's payload remains owned by G-12.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WatermarkFamily {
+    CharacterDeaths,
+    Guild,
+    House,
+    CharacterSkills,
+    CharacterAchievements,
+    CharacterEquipment,
+    CharacterOutfit,
+    CharacterOnlineSessions,
+    WorldDailyKills,
+    WorldDaily,
+}
+impl WatermarkFamily {
+    pub const ALL: [Self; 10] = [
+        Self::CharacterDeaths,
+        Self::Guild,
+        Self::House,
+        Self::CharacterSkills,
+        Self::CharacterAchievements,
+        Self::CharacterEquipment,
+        Self::CharacterOutfit,
+        Self::CharacterOnlineSessions,
+        Self::WorldDailyKills,
+        Self::WorldDaily,
+    ];
+}
+impl From<Family> for WatermarkFamily {
+    fn from(value: Family) -> Self {
+        match value {
+            Family::CharacterDeaths => Self::CharacterDeaths,
+            Family::Guild => Self::Guild,
+            Family::House => Self::House,
+            Family::CharacterSkills => Self::CharacterSkills,
+            Family::CharacterAchievements => Self::CharacterAchievements,
+            Family::CharacterEquipment => Self::CharacterEquipment,
+            Family::CharacterOutfit => Self::CharacterOutfit,
+            Family::CharacterOnlineSessions => Self::CharacterOnlineSessions,
+            Family::WorldDailyKills => Self::WorldDailyKills,
+        }
+    }
+}
 #[derive(Debug, Clone, Copy)]
 pub struct Facts {
     pub projection_epoch: u64,
@@ -414,14 +549,14 @@ struct Watermark<'a> {
     contract_version: u8,
     operation: &'static str,
     source_authority: &'a str,
-    family: &'static str,
+    family: WatermarkFamily,
     projection_epoch: String,
     complete_through: String,
     observed_at: String,
 }
 pub fn encode_watermark(
     authority: &str,
-    family: Family,
+    family: impl Into<WatermarkFamily>,
     facts: Facts,
     max_transaction: Duration,
 ) -> Result<String, SourceError> {
@@ -442,7 +577,7 @@ pub fn encode_watermark(
             contract_version: 2,
             operation: "PublishPublicProjectionWatermarkV2",
             source_authority: authority,
-            family: family.wire(),
+            family: family.into(),
             projection_epoch: facts.projection_epoch.to_string(),
             complete_through: through.to_string(),
             observed_at: (facts.now_ms / 1000).to_string(),
@@ -450,18 +585,36 @@ pub fn encode_watermark(
         512,
     )
 }
+fn log_v2_hold(family: Family, alarms: u64) {
+    oteryn_error_codes::emit(
+        "oteryn-game-server",
+        &oteryn_error_codes::Line::new(
+            oteryn_error_codes::Level::Warn,
+            "admission",
+            "public_projection_held",
+        )
+        .field(
+            "family",
+            oteryn_error_codes::FieldValue::Token(family.wire()),
+        )
+        .field("alarms", oteryn_error_codes::FieldValue::U64(alarms)),
+    );
+}
 impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, S, K, F> {
     pub(super) async fn v2_loops(&self) {
         let _ = join_all(
             Family::ALL
                 .into_iter()
-                .filter(|family| family.enabled(self.v2_activation))
+                .filter(|family| family.publishable(self.v2_activation))
                 .map(|family| self.v2_family_loop(family))
                 .collect(),
         )
         .await;
     }
-    async fn v2_family_loop(&self, family: Family) {
+    pub(super) async fn v2_family_loop(&self, family: Family) {
+        while self.pass(|| self.store.prepare_v2(family)).await.is_err() {
+            self.clock.sleep(IDLE).await;
+        }
         let mut held: Vec<(String, Duration)> = Vec::new();
         let mut retry = Duration::ZERO;
         let mut backoff = Duration::ZERO;
@@ -481,8 +634,8 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                         self.max_transaction,
                     )
                 {
-                    let result = self
-                        .deliver(
+                    let (result, retry_after) = self
+                        .deliver_with_retry(
                             Operation::PublishPublicProjectionWatermarkV2,
                             &body,
                             EXCHANGE_BOUND,
@@ -494,12 +647,14 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                             watermark_retry = Duration::ZERO;
                         }
                         Err(e) if definite(e) => {
-                            self.alarm();
+                            log_v2_hold(family, self.alarm());
                             watermark_retry = self.clock.elapsed() + DEFINITE_HOLD;
                         }
                         Err(_) => {
                             watermark_backoff = next_backoff(watermark_backoff);
-                            watermark_retry = self.clock.elapsed() + watermark_backoff;
+                            watermark_retry = self.clock.elapsed().saturating_add(
+                                watermark_backoff.max(retry_after.unwrap_or_default()),
+                            );
                         }
                     }
                 }
@@ -517,15 +672,15 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     continue;
                 }
             };
-            let result = if self.admit(snapshot.projection_epoch).is_err() {
-                Err(NotDelivered::Unavailable)
+            let (result, retry_after) = if self.admit(snapshot.projection_epoch).is_err() {
+                (Err(NotDelivered::Unavailable), None)
             } else {
                 match encode(&self.source_authority, &snapshot) {
                     Ok(body) => {
-                        self.deliver(family.operation(), &body, EXCHANGE_BOUND)
+                        self.deliver_with_retry(family.operation(), &body, EXCHANGE_BOUND)
                             .await
                     }
-                    Err(_) => Err(NotDelivered::InvalidReport),
+                    Err(_) => (Err(NotDelivered::InvalidReport), None),
                 }
             };
             match result {
@@ -536,7 +691,7 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                     retry = Duration::ZERO;
                 }
                 Err(e) if definite(e) => {
-                    self.alarm();
+                    log_v2_hold(family, self.alarm());
                     held.push((
                         format!("{}:{}", snapshot.world_id, snapshot.subject),
                         self.clock.elapsed() + DEFINITE_HOLD,
@@ -544,7 +699,10 @@ impl<C: ReportClock, S: PublicStore, K: PublicSink, F: EpochFence> Publisher<C, 
                 }
                 Err(_) => {
                     backoff = next_backoff(backoff);
-                    retry = self.clock.elapsed() + backoff;
+                    retry = self
+                        .clock
+                        .elapsed()
+                        .saturating_add(backoff.max(retry_after.unwrap_or_default()));
                 }
             }
         }

@@ -95,6 +95,8 @@ pub struct ChannelSessionStates {
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
     pub(super) resting_areas: super::resting_area::RestingAreaSessions,
+    /// P1-a: only reconnect requires the successful revocation-stream read floor.
+    pub(super) security_revocation_stream_enabled: bool,
     /// RAIDS-GLOBAL: the Channel and its Activity scopes share current recipients.
     pub(super) server_messages: std::sync::Arc<super::raid_notices::ServerMessageHub>,
     pub(super) server_modals: std::sync::Arc<super::server_modal::ModalHub>,
@@ -190,6 +192,7 @@ impl ChannelSessionStates {
     /// connection recipients, and its existing node shutdown/input gate.
     pub(super) fn for_activity(&self) -> Self {
         Self {
+            security_revocation_stream_enabled: self.security_revocation_stream_enabled,
             casts: self.casts.clone(),
             analyser: std::sync::Arc::clone(&self.analyser),
             gameplay_idle_policy: self.gameplay_idle_policy,
@@ -289,5 +292,24 @@ mod tests {
                 .await
                 .expect("lost transfer notification");
         }
+    }
+}
+
+#[cfg(test)]
+mod revocation_policy_tests {
+    use super::ChannelSessionStates;
+
+    #[test]
+    fn revocation_freshness_policy_survives_activity_scope() {
+        assert!(
+            !ChannelSessionStates::default()
+                .for_activity()
+                .security_revocation_stream_enabled
+        );
+        let states = ChannelSessionStates {
+            security_revocation_stream_enabled: true,
+            ..Default::default()
+        };
+        assert!(states.for_activity().security_revocation_stream_enabled);
     }
 }

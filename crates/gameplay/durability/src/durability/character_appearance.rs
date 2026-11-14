@@ -257,6 +257,12 @@ impl DurabilityRoot {
                 .bind(request.after.mount_key.as_deref()).bind(&request.content_revision).bind(next.to_string()).bind(request.occurrence.0.as_slice())
                 .execute(&mut *tx).await?;
             if updated.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState); }
+            if let Some(fallback) = content.projection_fallback(sex) {
+                let shown = crate::domain::appearance::displayed_look(
+                    &request.after, &fallback, sex, &content, &unlocks);
+                super::public_projections::character_views::capture_displayed_look(
+                    &mut tx, fence.character_id.as_bytes(), &request.occurrence.0, shown).await?;
+            }
             let receipt = CommittedCharacterAppearance {
                 occurrence: request.occurrence, character_id: fence.character_id,
                 original_character_revision: fence.expected_character_revision,

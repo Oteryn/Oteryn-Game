@@ -276,3 +276,96 @@ fn each_stream_presents_its_own_identity_never_premium_or_the_other_streams() {
         Err(ClientConfigError::Invalid(SANCTION_IDENTITY_VAR))
     );
 }
+
+#[test]
+fn security_revocation_fixtures_and_closed_decoder() -> Result<(), &'static str> {
+    const PAGE: &[u8] = include_bytes!(
+        "../../../../../docs/contracts/fixtures/security-revocation-stream-v1/page.json"
+    );
+    const EMPTY: &[u8] = include_bytes!(
+        "../../../../../docs/contracts/fixtures/security-revocation-stream-v1/empty.json"
+    );
+    const REQUEST: &[u8] = include_bytes!(
+        "../../../../../docs/contracts/fixtures/security-revocation-stream-v1/request.json"
+    );
+    let stream = PlatformStream::SecurityRevocations;
+    assert_eq!(request_body(stream, None, 1).as_deref(), Some(REQUEST));
+    assert!(decode_page(stream, EMPTY, 1).is_some());
+    assert!(decode_page(stream, PAGE, 1).is_some());
+    let text = std::str::from_utf8(PAGE).map_err(|_| "fixture")?;
+    for bad in [
+        text.replace(
+            "\"schema\":\"oteryn.security_revocation_stream_page.v1\",\"items\":",
+            "\"items\":",
+        )
+        .replace(
+            ",\"next_cursor\":",
+            ",\"schema\":\"oteryn.security_revocation_stream_page.v1\",\"next_cursor\":",
+        ),
+        text.replace("\"cause\":1", "\"cause\":0"),
+        text.replace("\"cause\":1", "\"cause\":5"),
+        text.replace(
+            "019a0000-0000-7000-8000-000000000011",
+            "019a0000-0000-4000-8000-000000000011",
+        ),
+        text.replace(
+            "019a0000-0000-7000-8000-000000000002",
+            "019a0000-0000-4000-8000-000000000002",
+        ),
+        text.replace(
+            "\"native_security_generation\":2",
+            "\"native_security_generation\":0",
+        ),
+        text.replace(
+            "\"native_security_generation\":2",
+            "\"native_security_generation\":-1",
+        ),
+        text.replace(
+            "\"cause\":1,\"effective_at_ms\":1700000000000",
+            "\"effective_at_ms\":1700000000000,\"cause\":1",
+        ),
+        text.replace("\"cause\":1", "\"cause\":1,\"extra\":1"),
+        text.replace("\"cause\":1", "\"cause\":1,\"cause\":1"),
+        text.replace("v1:1", "v1:01"),
+        " ".repeat(MAX_PAGE_BYTES + 1),
+    ] {
+        assert!(
+            decode_page(stream, bad.as_bytes(), 1).is_none(),
+            "accepted invalid page"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn security_revocation_default_off_real_config_and_distinct_identity() -> Result<(), &'static str> {
+    assert!(
+        StreamPuller::from_lookup(|_| None)
+            .map_err(|_| "config")?
+            .is_empty()
+    );
+    assert!(
+        StreamPuller::from_lookup(
+            |key| (key == SECURITY_REVOCATIONS_ENABLED_VAR).then(|| "false".into())
+        )
+        .map_err(|_| "config")?
+        .is_empty()
+    );
+    assert!(
+        StreamPuller::from_lookup(
+            |key| (key == SECURITY_REVOCATIONS_ENABLED_VAR).then(|| "true".into())
+        )
+        .is_err()
+    );
+    let pem = b"-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----";
+    for other in [SANCTION_IDENTITY_VAR, LOYALTY_IDENTITY_VAR] {
+        assert!(
+            check_identities(
+                &[(other, pem), (SECURITY_REVOCATION_IDENTITY_VAR, pem)],
+                None
+            )
+            .is_err()
+        );
+    }
+    Ok(())
+}

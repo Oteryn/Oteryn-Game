@@ -257,6 +257,9 @@ impl CosmeticsCandidate {
 }
 
 impl AppearanceContent<String> for CosmeticsCandidate {
+    fn projection_fallback(&self, sex: Sex) -> Option<AppearanceSelection<String>> {
+        Some(self.fallback(sex))
+    }
     fn earned_grant_keys(&self) -> Vec<String> {
         self.document
             .grant_mappings

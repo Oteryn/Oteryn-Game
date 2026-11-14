@@ -48,6 +48,8 @@ pub mod character_progression;
 pub mod character_promotion;
 pub mod character_quick_loot;
 pub mod character_revision_sequencer;
+pub mod character_services;
+pub mod character_services_projection;
 pub mod character_stance;
 pub mod character_stash;
 pub mod character_title;
@@ -1170,14 +1172,14 @@ async fn insert_candidate_session_v2(
             runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
             control_loss_epoch, original_grace_deadline, predecessor_generation, \
             character_lease_generation, scope_ownership_generation, current_generation, \
-            attempt_count, session_state\
+            attempt_count, session_state, admission_security_generation\
          ) VALUES (\
             encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
             encode($4, 'hex')::uuid, $5, encode($6, 'hex')::uuid, \
             encode($7, 'hex')::uuid, encode($8, 'hex')::uuid, \
             $9::text::numeric(20, 0), $10, $11::text::numeric(20, 0), \
             $12::text::numeric(20, 0), $13::text::numeric(20, 0), \
-            $11::text::numeric(20, 0), $14, $15\
+            $11::text::numeric(20, 0), $14, $15, $16::text::numeric\
          )",
     )
     .bind(identity.game_session_id().as_bytes().as_slice())
@@ -1201,6 +1203,7 @@ async fn insert_candidate_session_v2(
     )
     .bind(retained_attempt_count)
     .bind(V2_RECONNECTABLE)
+    .bind(record.compatibility().account_security_generation().to_string())
     .execute(&mut **transaction)
     .await?;
     if inserted.rows_affected() != 1 {

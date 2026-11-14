@@ -12,6 +12,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .foreground_demand()
             .map_err(|_| AdmissionRefusal::Unavailable)?;
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if self.states.security_revocation_stream_enabled
+            && !budget
+                .retry_unavailable(async || {
+                    self.root
+                        .security_revocation_read_fresh_now()
+                        .await
+                        .map_err(|_| AdmissionRefusal::Unavailable)
+                })
+                .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
+
+        if budget
+            .retry_unavailable(async || {
+                self.root
+                    .security_session_revoked(attempt.game_session_id)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
+            .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
         if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);
         }
