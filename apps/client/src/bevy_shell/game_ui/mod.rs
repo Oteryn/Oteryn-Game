@@ -1,4 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
+mod achievement_notices;
+pub(super) use achievement_notices::open as open_achievement_notices;
 mod actions;
 mod chat;
 mod feature_dialogs;
@@ -227,6 +229,7 @@ fn region(commands: &mut Commands) -> Entity {
 }
 
 pub(super) fn install(app: &mut App) {
+    achievement_notices::install(app);
     modal::install(app);
     options::install(app);
     journal::install(app);
