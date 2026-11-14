@@ -12,6 +12,7 @@ mod login;
 mod owner;
 mod scene;
 mod selection;
+mod speech_bubbles;
 mod ui;
 mod window_drag;
 
@@ -119,6 +120,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     .insert_non_send(owner)
     .insert_resource(audit::AuditOutput::new(options.ui_audit))
     .init_resource::<scene::SceneCache>()
+    .init_resource::<speech_bubbles::SpeechBubbles>()
     .init_resource::<game_ui::viewport::WorldViewport>()
     .add_systems(
         Startup,
@@ -146,6 +148,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             project_window,
             game_ui::project,
             scene::project,
+            speech_bubbles::project,
         )
             .chain(),
     )
