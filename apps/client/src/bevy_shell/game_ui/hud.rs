@@ -8,6 +8,8 @@ use oteryn_session::{ChaseMode, EntityRef, FightMode};
 
 #[path = "hud/battle.rs"]
 mod battle;
+#[path = "hud/blessings.rs"]
+mod blessings;
 #[path = "hud/skills.rs"]
 mod skills;
 #[path = "hud/vip.rs"]
@@ -37,6 +39,7 @@ enum InfoText {
 }
 
 pub(super) fn install(app: &mut App) {
+    blessings::spawn(app);
     skills::install(app);
     vip::install(app);
     app.add_systems(
