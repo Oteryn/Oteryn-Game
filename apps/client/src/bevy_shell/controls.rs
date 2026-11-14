@@ -84,6 +84,10 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::hireling::open_key(&routed) {
+            super::game_ui::hireling_services::toggle(self);
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;

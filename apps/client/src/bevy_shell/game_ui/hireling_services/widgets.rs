@@ -8,6 +8,7 @@ pub(super) fn build(
     revision: u64,
     panel: &HirelingPanel,
     confirmation: Option<Intent>,
+    close_refusal: Option<&str>,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -47,6 +48,9 @@ pub(super) fn build(
             root,
             format!("Target: {x}, {y}, floor {floor}"),
         );
+    }
+    if let Some(refusal) = close_refusal {
+        text(commands, skins, root, refusal);
     }
     let choices = if let Some(intent) = confirmation {
         commands.entity(root).insert((

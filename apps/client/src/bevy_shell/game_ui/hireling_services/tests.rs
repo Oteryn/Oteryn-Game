@@ -65,7 +65,7 @@ fn panel(app: &App) -> std::result::Result<HirelingPanel, Box<dyn std::error::Er
         .hireling_panel())
 }
 fn open(app: &mut App) -> Result {
-    click(app, "Hireling services")?;
+    click(app, "Hireling services (Ctrl+Shift+H)")?;
     app.update();
     Ok(())
 }
@@ -219,10 +219,64 @@ fn hireling_services_window_registered() -> Result {
     open(&mut app)?;
     let _ = request(&mut commands)?;
     assert!(panel(&app)?.open);
-    click(&mut app, "Hireling services")?;
+    click(&mut app, "Hireling services (Ctrl+Shift+H)")?;
     app.update();
     assert!(!panel(&app)?.open);
+    owner_chord(&mut app)?;
+    app.update();
+    assert!(panel(&app)?.open);
+    click(&mut app, "Close")?;
+    app.update();
+    assert!(!panel(&app)?.open);
+    Ok(())
+}
+
+#[test]
+fn hireling_services_close_refusal_is_visible_without_changing_owner() -> Result {
+    let (mut app, mut commands, _) = fixture()?;
+    open(&mut app)?;
+    let _ = request(&mut commands)?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .hireling_target(8, 9, -1);
+    let before = panel(&app)?;
+    click(&mut app, "Close")?;
+    app.update();
+    assert_eq!(panel(&app)?, before);
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| { text.0 == "Could not close hireling services. Please try again." })
+    );
+    click(&mut app, "Close")?;
+    app.update();
+    assert!(!panel(&app)?.open);
+    Ok(())
+}
+
+fn owner_chord(app: &mut App) -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::new(11)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+            repeat: false,
+        }],
+        false,
+    );
+    Ok(())
+}
+#[test]
+fn hireling_services_owner_chord_opens_and_f8_is_unclaimed() -> Result {
     use bevy::input::keyboard::{Key, KeyboardInput};
+    let (mut app, mut commands, _) = fixture()?;
     app.world_mut().write_message(KeyboardInput {
         key_code: KeyCode::F8,
         logical_key: Key::F8,
@@ -232,9 +286,14 @@ fn hireling_services_window_registered() -> Result {
         window: Entity::PLACEHOLDER,
     });
     app.update();
-    assert!(panel(&app)?.open);
-    click(&mut app, "Close")?;
-    app.update();
     assert!(!panel(&app)?.open);
+    assert!(commands.try_recv().is_err());
+    owner_chord(&mut app)?;
+    app.update();
+    assert!(panel(&app)?.open);
+    assert_eq!(
+        request(&mut commands)?,
+        oteryn_client_ui::hireling::hireling::Request::Query
+    );
     Ok(())
 }

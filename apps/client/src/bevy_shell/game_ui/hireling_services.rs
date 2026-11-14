@@ -31,6 +31,7 @@ struct State {
     revision: u64,
     confirmation: Option<Intent>,
     dirty: bool,
+    close_refusal: Option<&'static str>,
     root: Option<Entity>,
 }
 pub(super) fn install(app: &mut App) {
@@ -86,6 +87,7 @@ fn project(
         return;
     };
     state.revision = revision;
+    let close_refusal = state.close_refusal.take();
     if let Some((generation, snapshot)) = &state.snapshot {
         state.root = Some(widgets::build(
             &mut commands,
@@ -94,6 +96,7 @@ fn project(
             revision,
             &snapshot.panel,
             state.confirmation,
+            close_refusal,
         ));
     }
 }
@@ -121,9 +124,13 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
             state.dirty = true;
         }
         Kind::Close => {
-            let _ = play
+            if !play
                 .link
-                .hireling_services_dispatch_bound(expected, Action::Close);
+                .hireling_services_dispatch_bound(expected, Action::Close)
+            {
+                state.close_refusal = Some("Could not close hireling services. Please try again.");
+                state.dirty = true;
+            }
         }
         Kind::Request(intent) if intent != Intent::Refresh => {
             if state.confirmation.is_none()
@@ -173,16 +180,7 @@ fn keyboard(
         if key.repeat || key.state != bevy::input::ButtonState::Pressed {
             continue;
         }
-        if key.key_code == KeyCode::F8 && guard.allows_focus(None) {
-            if let Some(root) = state.root
-                && !guard.allows(root)
-            {
-                continue;
-            }
-            if state.confirmation.is_none() {
-                toggle(&owner);
-            }
-        } else if key.key_code == KeyCode::Escape
+        if key.key_code == KeyCode::Escape
             && let Some(root) = state.root
             && guard.allows(root)
             && let Some((generation, _)) = &state.snapshot
