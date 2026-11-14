@@ -17,3 +17,9 @@ impl PlayLink {
 #[cfg(windows)]
 #[path = "native.rs"]
 mod native;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{HirelingAction, HirelingReview, HirelingRetry, HirelingSnapshot};
