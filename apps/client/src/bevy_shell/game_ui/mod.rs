@@ -7,6 +7,8 @@ pub(super) mod animus_mastery;
 pub(super) mod browse_field;
 mod bestiary;
 mod chat;
+mod exiva_settings;
+pub(super) use exiva_settings::open_exiva_settings;
 pub(super) mod cyclopedia_trackers;
 pub(super) mod cyclopedia_map;
 mod exaltation_forge;
@@ -257,6 +259,7 @@ pub(super) fn install(app: &mut App) {
     cyclopedia_map::install(app);
     cyclopedia_trackers::install(app);
     actions::install(app);
+    exiva_settings::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);
     animus_mastery::install(app);
