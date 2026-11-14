@@ -92,6 +92,8 @@ if [[ "$LL_HOST" != 127.0.0.1 ]]; then
 fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
+source "$GAME_SOURCE/tools/qualification/node_boot/activation_wait.sh"
+NODE_ACTIVATION_WAIT_SECONDS="$(node_activation_wait_seconds "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" 0)"
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
 [[ "$(git -C "$PLATFORM_SOURCE" rev-parse HEAD 2>/dev/null)" == "$PLATFORM_SHA" ]] || blocked exact_platform_checkout_missing
 
@@ -436,7 +438,62 @@ sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/projection"
 printf '0\n' > "$WORK/epoch-fence"
 sudo install -o "$SERVICE_UID" -m 0600 "$WORK/epoch-fence" "$BASE/projection/epoch-fence"
+LL_GAMEPLAY_ENV=()
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+  # Match node_boot: the bundle needs the full item index, not the fixture room.
+  # Stage only declared, hash-bound inputs; never publish unrelated siblings.
+  python3 - "$GAME_SOURCE/content/spells.manifest.json" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
+import hashlib
+import json
+import pathlib
+import sys
+
+manifest = pathlib.Path(sys.argv[1]).resolve(strict=True)
+repo_root = pathlib.Path(sys.argv[2]).resolve(strict=True)
+staged = pathlib.Path(sys.argv[3])
+fields = {
+    "catalog", "source_selection", "creature_profiles", "presentation_profiles",
+    "item_profiles", "spell_appearances", "build_training", "familiar_config",
+    "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
+    "loot_tables",
+    "cosmetics", "starting_loadout_item_profiles", "item_profile_updates",
+}
+manifest_bytes = manifest.read_bytes()
+document = json.loads(manifest_bytes)
+# Staged paths are repository-relative, so a locator that leaves the manifest directory
+# (the canonical manifest's source_world and wheel_profile) lands where it resolves.
+selected = {manifest.relative_to(repo_root).as_posix(): manifest_bytes}
+for field in fields:
+    pin = document.get(field)
+    if pin is None:
+        continue
+    raw = pin["path"]
+    locator = pathlib.PurePosixPath(raw)
+    if locator.is_absolute() or "\\" in raw:
+        raise ValueError("unsafe manifest locator")
+    source = manifest.parent.joinpath(*locator.parts).resolve(strict=True)
+    if not source.is_relative_to(repo_root):
+        raise ValueError("manifest input escapes repository root")
+    data = source.read_bytes()
+    if hashlib.sha256(data).hexdigest() != pin["sha256"]:
+        raise ValueError("manifest input digest mismatch")
+    name = source.relative_to(repo_root).as_posix()
+    if name in selected and selected[name] != data:
+        raise ValueError("conflicting manifest input")
+    selected[name] = data
+sys.path.insert(0, str(repo_root / "tools/qualification/spells"))
+from provisioning_inputs import select_cosmetics_inputs
+select_cosmetics_inputs(document, manifest, repo_root, selected)
+staged.mkdir(mode=0o700)
+for name, data in selected.items():
+    destination = staged / name
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+PY_STAGE
+  sudo install -d -o root -g root -m 0755 "$BASE/gameplay"
+  sudo cp -R "$WORK/gameplay/." "$BASE/gameplay/"
+  sudo chmod -R a+rX "$BASE/gameplay"
+  LL_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/content/spells.manifest.json")
   # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
   PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
   WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
@@ -542,7 +599,7 @@ write_node_config() {
   local required_gameplay_capabilities='[]'
   if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
     MAP_REVISION="$WB_DIGEST"
-    required_gameplay_capabilities='[11, 18]'
+    required_gameplay_capabilities='[11, 18, 21, 30]'
   fi
   cat > "$WORK/node.toml" <<TOML
 [listener]
@@ -624,9 +681,9 @@ PY
 }
 ops() {
   if [[ "$LL_RUST" == host ]]; then
-    sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+    sudo env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
   else
-    docker exec "$RUST_CONTAINER" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+    docker exec "$RUST_CONTAINER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
   fi
 }
 node_log="$WORK/node.log"
@@ -644,9 +701,9 @@ PROJECTION_EPOCH="$(ops projection resync --raise-epoch true)"
 evidence "projection resync=raised epoch=$PROJECTION_EPOCH fence=persisted"
 
 if [[ "$LL_RUST" == host ]]; then
-  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
+  sudo -u "$SERVICE_USER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
 else
-  docker exec --user "$SERVICE_UID:$SERVICE_UID" "$RUST_CONTAINER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+  docker exec --user "$SERVICE_UID:$SERVICE_UID" "$RUST_CONTAINER" env "${LL_GAMEPLAY_ENV[@]}" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
     < /dev/null > /dev/null 2> "$node_log" &
 fi
 NODE_PID=$!
@@ -658,11 +715,13 @@ ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CH
 ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision" \
   --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" --node-identity "$RUNTIME_IDENTITY" | tee "$WORK/assign.out"
 grep -q 'report=ReportScopeAssignmentV1' "$WORK/assign.out" || { echo "assignment was not reported to Platform"; exit 1; }
-await_log "event=readiness .*ready=true" 60
+await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_WAIT_SECONDS"
+# The full-world bundle prepares its map after activation and before readiness (about 70 s on the PC).
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
-  await_log "event=world_bundle state=booted map_revision=sha256:$WB_DIGEST" 5
+  await_log "event=world_bundle .*state=booted map_revision=sha256:$WB_DIGEST" "$NODE_ACTIVATION_WAIT_SECONDS"
   evidence "world_bundle=booted digest=$WB_DIGEST"
 fi
+await_log "event=readiness .*ready=true" 60
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"
 
 # Character from a real Platform intent; Platform verifies ownership from the projection feed (mode 33a off).
