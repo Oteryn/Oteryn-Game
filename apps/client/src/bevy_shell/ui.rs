@@ -45,6 +45,7 @@ pub(super) enum Control {
     Options,
     Market,
     Party,
+    Prey,
     Quests,
     Spells,
     Login,
@@ -62,6 +63,7 @@ impl Control {
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
+            Self::Prey => "shell.prey",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
             Self::Login => "shell.sign_in",
@@ -167,6 +169,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
+        (Control::Prey, "Prey", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
     ] {
@@ -374,6 +377,7 @@ fn activate(
                 Control::Options
                     | Control::Market
                     | Control::Party
+                    | Control::Prey
                     | Control::Quests
                     | Control::Spells
                     | Control::Login
@@ -386,6 +390,7 @@ fn activate(
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
+            Control::Prey => super::game_ui::open_prey(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
             Control::Login => owner.request_login(),
@@ -572,7 +577,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Prey
+                    | Control::Quests
+                    | Control::Spells
+            )
         ) {
             node.display = if playing {
                 Display::Flex
