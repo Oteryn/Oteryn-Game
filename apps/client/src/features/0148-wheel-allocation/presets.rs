@@ -9,7 +9,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tokio::sync::mpsc::UnboundedSender;
-fn path() -> Result<std::path::PathBuf, String> {
+pub(super) fn path() -> Result<std::path::PathBuf, String> {
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
 pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path) {

@@ -75,3 +75,9 @@ mod capability_tests {
         }
     }
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bevy_bound.rs"]
+mod bevy_bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bevy_bound::WheelControl;

@@ -23,6 +23,7 @@ mod quick_loot;
 pub(super) mod store;
 mod trade;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -248,6 +249,7 @@ pub(super) fn install(app: &mut App) {
     quick_loot::install(app);
     store::install(app);
     trade::install(app);
+    wheel::install(app);
     app.add_systems(
         Update,
         (
