@@ -1,5 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+pub(super) mod boss_difficulty;
 mod boss_reward_chest;
 pub(super) use boss_reward_chest::open as open_boss_reward_chest;
 pub(super) mod animus_mastery;
@@ -241,6 +242,7 @@ fn region(commands: &mut Commands) -> Entity {
 
 pub(super) fn install(app: &mut App) {
     actions::install(app);
+    boss_difficulty::install(app);
     boss_reward_chest::install(app);
     animus_mastery::install(app);
     browse_field::install(app);
