@@ -362,12 +362,12 @@ fn profile_b_failures_are_scoped() -> TestResult {
         for item in &mut expired.entitlements {
             item.entitlement_state = CommercialState::Expired;
         }
-        assert_eq!(refresh_at(&expired, 0), None);
+        assert_eq!(refresh_at(&expired, 0, true), None);
         let mut negative = a.clone();
         negative
             .entitlements
             .retain(|e| e.entitlement_state == CommercialState::None);
-        assert_eq!(refresh_at(&negative, 0), None);
+        assert_eq!(refresh_at(&negative, 0, true), None);
         let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")?;
         let client = Client::local("http://127.0.0.1:1", true)?;
         let tasks = Tasks::spawn(
@@ -388,11 +388,11 @@ fn profile_b_refresh_cadence_empty_list_and_reconnect_wake() -> TestResult {
     run(async {
         let (r, a) = sample()?;
         let issued = time(&a.authority_issued_at).ok_or("time")?;
-        assert_eq!(refresh_at(&a, 0), Some(issued + 1_800_000_000));
-        assert_eq!(refresh_at(&a, 120), Some(issued + 1_920_000_000));
+        assert_eq!(refresh_at(&a, 0, true), Some(issued + 1_800_000_000));
+        assert_eq!(refresh_at(&a, 120, true), Some(issued + 1_920_000_000));
         let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")?;
         let client = Client::local("http://127.0.0.1:1", true)?;
-        let refresher = Refresher::new(root, Some(client), vec![]);
+        let refresher = Refresher::new(root, Some(client), vec![], true);
         refresher.admit([0x61; 16]);
         assert_eq!(refresher.active_tasks(), 0);
         let active = Refresher::new(
@@ -402,6 +402,7 @@ fn profile_b_refresh_cadence_empty_list_and_reconnect_wake() -> TestResult {
                 .iter()
                 .map(|e| (e.product_id.clone(), e.product_version))
                 .collect(),
+            true,
         );
         let account = crate::platform_streams::uuid(&r.account_id).ok_or("account")?;
         let wake = Arc::new(Notify::new());
@@ -607,4 +608,21 @@ fn profile_b_hint_race_wakes_refresh_without_conflict() -> TestResult {
         );
         Ok(())
     })
+}
+
+#[test]
+fn profile_b_b1_only_no_benefit_schedules_later_refresh() -> TestResult {
+    let (_, mut answer) = sample()?;
+    answer
+        .entitlements
+        .retain(|e| e.entitlement_state == CommercialState::None);
+    assert!(answer.valid());
+    let issued = time(&answer.authority_issued_at).ok_or("time")?;
+    assert_eq!(refresh_at(&answer, 0, false), Some(issued + 3_600_000_000));
+    assert_eq!(
+        refresh_at(&answer, 0, true),
+        None,
+        "a healthy feed supplies the wake instead"
+    );
+    Ok(())
 }

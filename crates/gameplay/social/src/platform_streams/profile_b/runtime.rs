@@ -227,7 +227,7 @@ impl Consumer {
 }
 /// Renew at or before the conservative cutoff, including commercially clipped leases.
 /// The packet's 1..60s retry policy is shorter than §9.1's 15..120s maximums.
-pub fn refresh_at(answer: &Answer, jitter_seconds: u64) -> Option<i64> {
+pub fn refresh_at(answer: &Answer, jitter_seconds: u64, changes_enabled: bool) -> Option<i64> {
     let issued = time(&answer.authority_issued_at)?;
     let cutoff = answer
         .entitlements
@@ -239,7 +239,11 @@ pub fn refresh_at(answer: &Answer, jitter_seconds: u64) -> Option<i64> {
             )
         })
         .filter_map(|e| time(&e.authority_valid_until))
-        .min()?;
+        .min();
+    let Some(cutoff) = cutoff else {
+        // Without B2, discover purchases during an otherwise non-entitled session.
+        return (!changes_enabled).then(|| issued.saturating_add(MAX_LEASE_US));
+    };
     let refresh = answer
         .entitlements
         .iter()
@@ -271,14 +275,7 @@ async fn failed(peer: &impl Peer, operation: &'static str, error: Failure) -> Re
     }
     if error == Failure::Defect {
         peer.stop();
-        alarm(
-            operation,
-            if error == Failure::Defect {
-                "defect"
-            } else {
-                "configuration"
-            },
-        );
+        alarm(operation, "defect");
         return Ok(());
     }
     Err(error)
@@ -422,6 +419,7 @@ struct Inner {
     client: Option<Client>,
     products: Vec<(String, u64)>,
     consumer: Arc<Consumer>,
+    changes_enabled: bool,
 }
 #[derive(Clone)]
 pub struct Refresher {
@@ -429,13 +427,19 @@ pub struct Refresher {
     schedules: Arc<Schedules>,
 }
 impl Refresher {
-    pub fn new(root: DurabilityRoot, client: Option<Client>, products: Vec<(String, u64)>) -> Self {
+    pub fn new(
+        root: DurabilityRoot,
+        client: Option<Client>,
+        products: Vec<(String, u64)>,
+        changes_enabled: bool,
+    ) -> Self {
         Self {
             inner: Arc::new(Inner {
                 root,
                 client,
                 products,
                 consumer: Arc::default(),
+                changes_enabled,
             }),
             schedules: Arc::default(),
         }
@@ -581,7 +585,7 @@ async fn run_authority(
                     .and_then(|n| u64::from_str_radix(&n[..8], 16).ok())
                     .unwrap_or(0)
                     % 121;
-                let Some(refresh) = refresh_at(&answer, jitter) else {
+                let Some(refresh) = refresh_at(&answer, jitter, inner.changes_enabled) else {
                     let _idle = heartbeat.expected_idle();
                     wake.notified().await;
                     continue;
@@ -636,6 +640,7 @@ impl Tasks {
             root.clone(),
             clients.authority,
             clients.products,
+            clients.changes.is_some(),
         ));
         premium.install_profile_b(refresher.clone());
         let Some(client) = clients.changes else {
