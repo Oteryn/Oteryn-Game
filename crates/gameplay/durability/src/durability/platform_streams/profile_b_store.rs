@@ -106,8 +106,9 @@ impl DurabilityRoot {
             let mut tx=begin_semantic_transaction(holder,deadline).await?;account(&mut tx,&answer.account_id).await?;
             let high:i64=sqlx::query_scalar("SELECT authority_revision FROM game_profile_b_accounts WHERE account_id=$1::uuid").bind(&answer.account_id).fetch_one(&mut *tx).await?;
             if answer.authority_revision<=high as u64 {let v=view(&mut tx,&answer.account_id).await?;commit_semantic_transaction(tx,deadline).await?;return Ok(Acceptance::Ignored(v));}
-            let previous=view(&mut tx,&answer.account_id).await?;
+            let mut previous=view(&mut tx,&answer.account_id).await?;
             let mut conflicting=false;
+            let mut behind_hint=false;
             for e in &answer.entitlements {
                 let row=sqlx::query("SELECT lifecycle_revision,lifecycle_bytes,hint_revision FROM game_profile_b_products WHERE account_id=$1::uuid AND product_id=$2 AND product_version=$3").bind(&answer.account_id).bind(&e.product_id).bind(e.product_version as i64).fetch_optional(&mut *tx).await?;
                 if let Some(row)=row {
@@ -116,7 +117,9 @@ impl DurabilityRoot {
                         let (old_id,_,_,_):(Option<String>,bool,Option<String>,Option<String>)=serde_json::from_slice(bytes).map_err(|_|DurabilityError::InvalidStoredState)?;
                         conflicting |= old_id.is_some() && old_id!=e.entitlement_id;
                     }
-                    conflicting |= e.lifecycle_revision<(old.max(hint) as u64) || e.lifecycle_revision==old as u64 && bytes.is_some_and(|b|life(e).is_ok_and(|new|b!=new));
+                    behind_hint |= e.lifecycle_revision < hint as u64;
+                    if hint > 0 && !previous.hints.iter().any(|h| h.product_id == e.product_id && h.product_version == e.product_version) { previous.hints.push(Hint { account_id: answer.account_id.clone(), product_id: e.product_id.clone(), product_version: e.product_version, lifecycle_revision: hint as u64 }); }
+                    conflicting |= e.lifecycle_revision<(old as u64) || e.lifecycle_revision==old as u64 && bytes.is_some_and(|b|life(e).is_ok_and(|new|b!=new));
                 }
                 if let Some(old)=previous.answer.as_ref().and_then(|a|a.entitlements.iter().find(|p|p.product_id==e.product_id&&p.product_version==e.product_version))
                     && old.lifecycle_revision==e.lifecycle_revision {
@@ -126,6 +129,7 @@ impl DurabilityRoot {
                 }
             }
             if conflicting {commit_semantic_transaction(tx,deadline).await?;return Ok(Acceptance::Conflict(previous));}
+            if behind_hint {commit_semantic_transaction(tx,deadline).await?;return Ok(Acceptance::Ignored(previous));}
             for e in &answer.entitlements {
                 sqlx::query("INSERT INTO game_profile_b_products(account_id,product_id,product_version,lifecycle_revision,lifecycle_bytes) VALUES($1::uuid,$2,$3,$4,$5) ON CONFLICT(account_id,product_id,product_version) DO UPDATE SET lifecycle_revision=EXCLUDED.lifecycle_revision,lifecycle_bytes=EXCLUDED.lifecycle_bytes")
                     .bind(&answer.account_id).bind(&e.product_id).bind(e.product_version as i64).bind(e.lifecycle_revision as i64).bind(life(e)?).execute(&mut *tx).await?;

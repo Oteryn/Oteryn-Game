@@ -35,6 +35,17 @@ pub struct Clients {
     pub products: Vec<(String, u64)>,
     leaves: Vec<(&'static str, String)>,
 }
+#[cfg(test)]
+impl Clients {
+    pub(crate) fn authority_only(client: Client, products: Vec<(String, u64)>) -> Self {
+        Self {
+            authority: Some(client),
+            changes: None,
+            products,
+            leaves: Vec::new(),
+        }
+    }
+}
 fn flag(key: &'static str, value: Option<OsString>) -> Result<bool, ClientConfigError> {
     match value {
         None => Ok(false),

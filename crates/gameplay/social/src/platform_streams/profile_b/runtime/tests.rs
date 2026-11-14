@@ -58,7 +58,7 @@ impl Store for Memory {
                     && h.lifecycle_revision > e.lifecycle_revision
             })
         }) {
-            return Ok(Acceptance::Conflict(d.view.clone()));
+            return Ok(Acceptance::Ignored(d.view.clone()));
         }
         d.view.answer = Some(a);
         Ok(Acceptance::Accepted(d.view.clone()))
@@ -314,10 +314,10 @@ fn profile_b_hints_only_reduce_then_require_fresh_authority() -> TestResult {
     })
 }
 #[test]
-fn profile_b_defects_stop_requests_and_persist_feed_stop() -> TestResult {
+fn profile_b_failures_are_scoped() -> TestResult {
     run(async {
         let (r, a) = sample()?;
-        let p = a
+        let products = a
             .entitlements
             .iter()
             .map(|e| (e.product_id.clone(), e.product_version))
@@ -325,41 +325,61 @@ fn profile_b_defects_stop_requests_and_persist_feed_stop() -> TestResult {
         for error in [Failure::Defect, Failure::Configuration] {
             let store = Memory::default();
             let source = Source::new(Err(error));
-            let consumer = Consumer::default();
             assert_eq!(
-                refresh_once(&store, &consumer, &source, &r, &p).await,
-                Ok(Refresh::Stopped)
+                refresh_once(&store, &Consumer::default(), &source, &r, &products).await,
+                Err(error)
             );
-            assert!(source.stopped.load(Ordering::Acquire));
+            assert!(!source.stopped.load(Ordering::Acquire));
+            let result = changes_once(&store, &source, |_| {}).await;
             assert_eq!(
-                refresh_once(&store, &consumer, &source, &r, &p).await,
-                Ok(Refresh::Stopped)
-            );
-            assert_eq!(
-                source.requests.load(Ordering::Relaxed),
-                1,
-                "global client stop prevents unchanged retries"
-            );
-            let source = Source::new(Err(error));
-            let reduced = AtomicUsize::new(0);
-            assert_eq!(
-                changes_once(&store, &source, |_| {
-                    reduced.fetch_add(1, Ordering::Relaxed);
-                })
-                .await,
-                Ok(Changes::Stopped)
+                result,
+                if error == Failure::Defect {
+                    Ok(Changes::Stopped)
+                } else {
+                    Err(error)
+                }
             );
             assert_eq!(
-                changes_once(&store, &source, |_| {
-                    reduced.fetch_add(1, Ordering::Relaxed);
-                })
-                .await,
-                Ok(Changes::Stopped)
+                store.0.lock().map_err(|_| "mutex")?.stopped,
+                error == Failure::Defect
             );
-            assert_eq!(reduced.load(Ordering::Relaxed), 0);
-            assert_eq!(source.requests.load(Ordering::Relaxed), 1);
-            assert!(store.0.lock().map_err(|_| "mutex")?.stopped);
         }
+        // A bad answer for one account does not disable the same reader for another.
+        let source = Source::new(Ok(Message::Answer(a.clone()).encode().ok_or("answer")?));
+        let store = Memory::default();
+        let consumer = Consumer::default();
+        let mut wrong = r.clone();
+        wrong.nonce = "00000000000000000000000000000000".into();
+        assert_eq!(
+            refresh_once(&store, &consumer, &source, &wrong, &products).await,
+            Err(Failure::Defect)
+        );
+        assert!(matches!(
+            refresh_once(&store, &consumer, &source, &r, &products).await,
+            Ok(Refresh::Accepted(_))
+        ));
+        let mut expired = a.clone();
+        for item in &mut expired.entitlements {
+            item.entitlement_state = CommercialState::Expired;
+        }
+        assert_eq!(refresh_at(&expired, 0), None);
+        let mut negative = a.clone();
+        negative
+            .entitlements
+            .retain(|e| e.entitlement_state == CommercialState::None);
+        assert_eq!(refresh_at(&negative, 0), None);
+        let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")?;
+        let client = Client::local("http://127.0.0.1:1", true)?;
+        let tasks = Tasks::spawn(
+            root,
+            Some(Clients::authority_only(client, products)),
+            Arc::default(),
+        );
+        assert!(
+            !tasks.is_empty(),
+            "B1-only service is registered even before an account is admitted"
+        );
+        assert!(Tasks::default().is_empty());
         Ok(())
     })
 }
@@ -511,7 +531,7 @@ fn profile_b_other_node_cursor_cannot_hide_a_captured_hint() -> TestResult {
         .encode()
         .ok_or("page")?;
         assert!(store.apply(None, &page).await.map_err(|_| "apply")?);
-        sync_known_hints(&store, &[r.account_id.clone()], &p, |h| {
+        sync_known_hints(&store, std::slice::from_ref(&r.account_id), &p, |h| {
             consumer.hint(h);
         })
         .await
@@ -523,6 +543,67 @@ fn profile_b_other_node_cursor_cannot_hide_a_captured_hint() -> TestResult {
         assert_eq!(
             consumer.class_at(&r.account_id, &p[0].0, 1, now),
             Evaluation::Stale
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn profile_b_nonadvancing_cursor_is_durable_defect() -> TestResult {
+    run(async {
+        let store = Memory::default();
+        let bytes = fixture("changes-page")?;
+        let Some(Message::Page(page)) = Message::parse(&bytes) else {
+            return Err("page".into());
+        };
+        store.0.lock().map_err(|_| "mutex")?.cursor = page.next_cursor;
+        let source = Source::new(Ok(bytes));
+        let mut reduced = 0;
+        assert_eq!(
+            changes_once(&store, &source, |_| reduced += 1).await,
+            Ok(Changes::Stopped)
+        );
+        assert_eq!(reduced, 0, "must not reduce invalid page");
+        assert!(store.0.lock().map_err(|_| "mutex")?.stopped);
+        Ok(())
+    })
+}
+
+#[test]
+fn profile_b_hint_race_wakes_refresh_without_conflict() -> TestResult {
+    run(async {
+        let (r, a) = sample()?;
+        let products = a
+            .entitlements
+            .iter()
+            .map(|e| (e.product_id.clone(), e.product_version))
+            .collect::<Vec<_>>();
+        let store = Memory::default();
+        store.0.lock().map_err(|_| "mutex")?.view.hints.push(Hint {
+            account_id: r.account_id.clone(),
+            product_id: a.entitlements[0].product_id.clone(),
+            product_version: 1,
+            lifecycle_revision: a.entitlements[0].lifecycle_revision + 1,
+        });
+        let consumer = Consumer::default();
+        let source = Source::new(Ok(Message::Answer(a).encode().ok_or("answer")?));
+        assert_eq!(
+            refresh_once(&store, &consumer, &source, &r, &products).await,
+            Ok(Refresh::Wake)
+        );
+        assert_eq!(
+            refresh_once(&store, &consumer, &source, &r, &products).await,
+            Err(Failure::Retry(None)),
+            "same hint backs off rather than spinning"
+        );
+        assert!(
+            !consumer
+                .accounts
+                .lock()
+                .map_err(|_| "mutex")?
+                .get(&r.account_id)
+                .ok_or("account")?
+                .conflicting
         );
         Ok(())
     })

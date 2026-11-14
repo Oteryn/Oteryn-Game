@@ -125,13 +125,13 @@ async fn fence(h: &Harness) -> TestResult {
     a.authority_revision += 1;
     assert!(matches!(
         accept(h, &request, &a, &products).await?,
-        Acceptance::Conflict(_)
+        Acceptance::Ignored(_)
     ));
     let view = h.root.load_profile_b(&a.account_id).await.map_err(debug)?;
     assert_eq!(view.hints[0].lifecycle_revision, 5);
     let captured = h
         .root
-        .profile_b_known_hints(&[a.account_id.clone()], &products)
+        .profile_b_known_hints(std::slice::from_ref(&a.account_id), &products)
         .await
         .map_err(debug)?;
     assert_eq!(captured[0].lifecycle_revision, 5);

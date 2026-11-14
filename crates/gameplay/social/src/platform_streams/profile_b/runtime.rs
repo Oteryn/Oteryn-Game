@@ -126,7 +126,8 @@ pub struct Consumer {
     accounts: Mutex<HashMap<String, Account>>,
 }
 impl Consumer {
-    fn merge(&self, account: &str, view: View, fresh: bool) {
+    fn merge(&self, account: &str, view: View, fresh: bool) -> bool {
+        let mut advanced = false;
         let mut accounts = self.accounts.lock().unwrap_or_else(PoisonError::into_inner);
         let v = accounts.entry(account.into()).or_default();
         if let Some(answer) = view.answer {
@@ -144,8 +145,10 @@ impl Consumer {
                 .hints
                 .entry((h.product_id, h.product_version))
                 .or_default();
+            advanced |= h.lifecycle_revision > *old;
             *old = (*old).max(h.lifecycle_revision);
         }
+        advanced
     }
     pub fn hint(&self, h: &Hint) -> bool {
         let mut accounts = self.accounts.lock().unwrap_or_else(PoisonError::into_inner);
@@ -229,11 +232,23 @@ pub fn refresh_at(answer: &Answer, jitter_seconds: u64) -> Option<i64> {
     let cutoff = answer
         .entitlements
         .iter()
+        .filter(|e| {
+            matches!(
+                e.entitlement_state,
+                CommercialState::Active | CommercialState::NotYetEffective
+            )
+        })
         .filter_map(|e| time(&e.authority_valid_until))
         .min()?;
     let refresh = answer
         .entitlements
         .iter()
+        .filter(|e| {
+            matches!(
+                e.entitlement_state,
+                CommercialState::Active | CommercialState::NotYetEffective
+            )
+        })
         .filter_map(|e| time(&e.refresh_after))
         .min()?;
     Some(
@@ -246,10 +261,15 @@ pub fn refresh_at(answer: &Answer, jitter_seconds: u64) -> Option<i64> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Refresh {
     Accepted(Answer),
+    Wake,
     Stopped,
 }
 async fn failed(peer: &impl Peer, operation: &'static str, error: Failure) -> Result<(), Failure> {
-    if matches!(error, Failure::Defect | Failure::Configuration) {
+    if error == Failure::Configuration {
+        alarm(operation, "configuration");
+        return Err(error);
+    }
+    if error == Failure::Defect {
         peer.stop();
         alarm(
             operation,
@@ -276,17 +296,26 @@ pub async fn refresh_once(
     let raw = match peer.authority(request, products).await {
         Ok(raw) => raw,
         Err(error) => {
-            failed(peer, "authority", error).await?;
-            return Ok(Refresh::Stopped);
+            if matches!(error, Failure::Defect | Failure::Configuration) {
+                alarm(
+                    "authority",
+                    if error == Failure::Configuration {
+                        "configuration"
+                    } else {
+                        "defect"
+                    },
+                );
+            }
+            return Err(error);
         }
     };
     let Some(Message::Answer(answer)) = Message::parse(&raw) else {
-        failed(peer, "authority", Failure::Defect).await?;
-        return Ok(Refresh::Stopped);
+        alarm("authority", "defect");
+        return Err(Failure::Defect);
     };
     if !answer.bound_to(request, products) {
-        failed(peer, "authority", Failure::Defect).await?;
-        return Ok(Refresh::Stopped);
+        alarm("authority", "defect");
+        return Err(Failure::Defect);
     }
     match store
         .accept(request, products, &raw)
@@ -298,8 +327,11 @@ pub async fn refresh_once(
             Ok(Refresh::Accepted(answer))
         }
         Acceptance::Ignored(view) => {
-            consumer.merge(&request.account_id, view, false);
-            Err(Failure::Retry(None))
+            if consumer.merge(&request.account_id, view, false) {
+                Ok(Refresh::Wake)
+            } else {
+                Err(Failure::Retry(None))
+            }
         }
         Acceptance::Conflict(view) => {
             consumer.merge(&request.account_id, view, false);
@@ -340,6 +372,20 @@ pub async fn changes_once(
             return Ok(Changes::Stopped);
         }
     };
+    let position = |v: &str| {
+        v.strip_prefix("v1:")
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(0)
+    };
+    if page
+        .next_cursor
+        .as_deref()
+        .is_some_and(|next| position(next) <= after.as_deref().map_or(0, position))
+    {
+        failed(peer, "changes", Failure::Defect).await?;
+        store.stop().await.map_err(|_| Failure::Retry(None))?;
+        return Ok(Changes::Stopped);
+    }
     for hint in &page.items {
         reduce(hint);
     }
@@ -527,6 +573,7 @@ async fn run_authority(
         };
         let delay = match result {
             Ok(Refresh::Stopped) => return,
+            Ok(Refresh::Wake) => Duration::ZERO,
             Ok(Refresh::Accepted(answer)) => {
                 attempt = 0;
                 let jitter = nonce
@@ -534,15 +581,13 @@ async fn run_authority(
                     .and_then(|n| u64::from_str_radix(&n[..8], 16).ok())
                     .unwrap_or(0)
                     % 121;
-                Duration::from_micros(
-                    u64::try_from(
-                        refresh_at(&answer, jitter)
-                            .unwrap_or_else(now_us)
-                            .saturating_sub(now_us()),
-                    )
-                    .unwrap_or(0),
-                )
-                .max(Duration::from_secs(1))
+                let Some(refresh) = refresh_at(&answer, jitter) else {
+                    let _idle = heartbeat.expected_idle();
+                    wake.notified().await;
+                    continue;
+                };
+                Duration::from_micros(u64::try_from(refresh.saturating_sub(now_us())).unwrap_or(0))
+                    .max(Duration::from_secs(1))
             }
             Err(error) => {
                 let retry = match error {
@@ -576,7 +621,7 @@ pub async fn sync_known_hints(
     Ok(())
 }
 #[derive(Default)]
-pub struct Tasks(Option<JoinHandle<()>>);
+pub struct Tasks(Option<JoinHandle<()>>, bool);
 impl Tasks {
     pub fn spawn(
         root: DurabilityRoot,
@@ -586,6 +631,7 @@ impl Tasks {
         let Some(clients) = clients else {
             return Self::default();
         };
+        let authority_active = clients.authority.is_some() && !clients.products.is_empty();
         let refresher = Arc::new(Refresher::new(
             root.clone(),
             clients.authority,
@@ -593,10 +639,10 @@ impl Tasks {
         ));
         premium.install_profile_b(refresher.clone());
         let Some(client) = clients.changes else {
-            return Self::default();
+            return Self(None, authority_active);
         };
-        Self(Some(
-            oteryn_task_supervisor::spawn_supervised_with_heartbeat(
+        Self(
+            Some(oteryn_task_supervisor::spawn_supervised_with_heartbeat(
                 "profile_b_changes",
                 None,
                 move |heartbeat| async move {
@@ -666,11 +712,12 @@ impl Tasks {
                         tokio::time::sleep(delay).await;
                     }
                 },
-            ),
-        ))
+            )),
+            authority_active,
+        )
     }
     pub fn is_empty(&self) -> bool {
-        self.0.is_none()
+        self.0.is_none() && !self.1
     }
 }
 impl Drop for Tasks {
