@@ -18,6 +18,8 @@ pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod team_finder;
+pub(super) use team_finder::open as open_team_finder;
 mod trade;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
@@ -241,6 +243,7 @@ pub(super) fn install(app: &mut App) {
     npc_shop::install(app);
     party::install(app);
     quick_loot::install(app);
+    team_finder::install(app);
     trade::install(app);
     app.add_systems(
         Update,
