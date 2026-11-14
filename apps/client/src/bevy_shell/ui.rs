@@ -167,7 +167,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
-        (Control::CastChat, "Cast chat", 100.),
+        (Control::CastChat, "Cast chat (Ctrl+Alt+Shift+H)", 220.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),

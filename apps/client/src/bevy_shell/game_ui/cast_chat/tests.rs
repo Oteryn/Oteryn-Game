@@ -241,3 +241,31 @@ fn cast_chat_window_registered() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn cast_chat_refused_confirmation_remains_visible() -> TestResult {
+    let (mut app, mut commands, _) = fixture()?;
+    set_field(&mut app, Field::Subject, "invalid")?;
+    click(&mut app, Kind::Send(4))?;
+    click(&mut app, Kind::Confirm)?;
+    assert!(commands.try_recv().is_err());
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    assert!(text(&mut app).contains("Select a viewer handle from cast chat"));
+    assert!(text(&mut app).contains("Confirm Ban viewer invalid?"));
+    assert!(text(&mut app).contains("Cast action refused. Review the request or cancel."));
+    assert!(text(&mut app).contains("Cast chat (Ctrl+Alt+Shift+H)"));
+    click(&mut app, Kind::Confirm)?;
+    assert!(commands.try_recv().is_err());
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    click(&mut app, Kind::Cancel)?;
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    // Transport rejection has no owner feedback; the confirmation still explains it.
+    let (mut app, commands, _) = fixture()?;
+    set_field(&mut app, Field::Subject, &"04".repeat(16))?;
+    click(&mut app, Kind::Send(4))?;
+    drop(commands);
+    click(&mut app, Kind::Confirm)?;
+    assert!(app.world().resource::<State>().confirmation.is_some());
+    assert!(text(&mut app).contains("Cast action refused. Review the request or cancel."));
+    Ok(())
+}

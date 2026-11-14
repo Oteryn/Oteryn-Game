@@ -40,6 +40,7 @@ struct State {
     bound: Option<CastChatBound>,
     root: Option<Entity>,
     confirmation: Option<Confirmation>,
+    refused: bool,
     pending: Option<(u64, Kind)>,
     reply: String,
     subject: String,
@@ -116,6 +117,7 @@ fn project(
     }
     if changed {
         state.confirmation = None;
+        state.refused = false;
         state.pending = None;
         if state.generation != owner.generation() || bound.is_none() {
             state.reply.clear();
@@ -201,6 +203,7 @@ fn finish(
         }
         Kind::Cancel => {
             state.confirmation = None;
+            state.refused = false;
             state.dirty = true;
         }
         Kind::Send(action) if action != 0 => {
@@ -209,6 +212,7 @@ fn finish(
                 .as_ref()
                 .is_some_and(|bound| !bound.panel.pending && bound.panel.selected)
             {
+                state.refused = false;
                 state.confirmation = Some(Confirmation {
                     text: state.reply.clone(),
                     subject: state.subject.clone(),
@@ -230,15 +234,25 @@ fn finish(
         }
         Kind::Confirm => {
             if let (Some(bound), Some(confirm)) = (&state.bound, &state.confirmation) {
-                let _ = play.link.cast_chat_submit_bound(
+                if play.link.cast_chat_submit_bound(
                     bound,
                     &confirm.text,
                     &confirm.subject,
                     confirm.action,
                     true,
-                );
+                ) {
+                    state.confirmation = None;
+                    state.refused = false;
+                } else {
+                    state.refused = true;
+                    // Retain the confirmed target; only adopt the owner's refusal text.
+                    // Other owner changes still invalidate this confirmation in project.
+                    let feedback = play.link.cast_chat_panel().feedback;
+                    if let Some(bound) = &mut state.bound {
+                        bound.panel.feedback = feedback;
+                    }
+                }
             }
-            state.confirmation = None;
             state.dirty = true;
         }
     }

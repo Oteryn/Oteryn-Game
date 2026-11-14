@@ -78,6 +78,14 @@ pub(super) fn build(
         oteryn_client_ui::cast_chat::panel_text(&bound.panel),
     );
     if let Some(confirm) = &state.confirmation {
+        if state.refused {
+            label(
+                commands,
+                skins,
+                panel,
+                "Cast action refused. Review the request or cancel.",
+            );
+        }
         label(
             commands,
             skins,
