@@ -74,6 +74,7 @@ With no text field focused, the existing gameplay shortcuts open:
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+P:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
