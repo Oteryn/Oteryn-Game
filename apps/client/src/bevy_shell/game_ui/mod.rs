@@ -3,6 +3,7 @@ mod actions;
 mod chat;
 mod feature_dialogs;
 mod hud;
+mod imbue;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
@@ -234,6 +235,7 @@ pub(super) fn install(app: &mut App) {
     actions::install(app);
     feature_dialogs::install(app);
     hud::install(app);
+    imbue::install(app);
     inventory::install(app);
     item_details::install(app);
     market::install(app);
