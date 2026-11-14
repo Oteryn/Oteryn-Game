@@ -53,3 +53,25 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn furniture_wrapping_test_selected(&self) {
+        lock(&self.0).properties.house_furniture_wrap.selected = true;
+    }
+    pub(crate) fn furniture_wrapping_test_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+    pub(crate) fn furniture_wrapping_test_end(&self) {
+        self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    }
+}
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{FurnitureWrappingAction, FurnitureWrappingSnapshot};
