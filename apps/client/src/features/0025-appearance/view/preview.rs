@@ -75,6 +75,7 @@ impl PreviewAssets {
         }
         Ok((digest, mounts))
     }
+    #[cfg(any(windows, test))]
     pub(super) fn render_memorial(
         &mut self,
         panel: &oteryn_client_ui::appearance::MemorialPanel,

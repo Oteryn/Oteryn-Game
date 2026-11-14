@@ -86,7 +86,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     memorial::watch(link);
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 #[path = "view/preview.rs"]
 pub(in crate::play) mod gallery_preview;
 
@@ -103,3 +103,38 @@ mod native;
 #[cfg(any(windows, test))]
 #[path = "preview.rs"]
 pub(in crate::play) mod preview;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/bevy_window.rs"]
+pub(crate) mod bevy_window_tests;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub use bound::{AppearanceControl, AppearanceSnapshot};
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_appearance_end(&self) {
+        self.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+    }
+    pub(crate) fn bevy_appearance_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    ) {
+        use oteryn_client_runtime::{
+            appearance as wire,
+            raw_feature::{CommandStatus, GatedCommandResult},
+        };
+        let result = GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: wire::ChangeResult::Committed(8)
+                .encode()
+                .unwrap_or_default(),
+        };
+        super::protocol::apply(&mut lock(&self.0).properties.appearance, command, &result);
+    }
+}
