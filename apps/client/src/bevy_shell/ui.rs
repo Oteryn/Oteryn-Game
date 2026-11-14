@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    BrowseField,
     ContainerSorting,
     Options,
     Market,
@@ -61,6 +62,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::BrowseField => "shell.browse_field",
             Self::ContainerSorting => "shell.container_sorting",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
@@ -166,6 +168,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::BrowseField, "Browse Field", 100.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::ContainerSorting, "Container sorting", 130.),
@@ -377,8 +380,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::ContainerSorting
-                    | Control::Options
+                Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -391,6 +393,7 @@ fn activate(
             return;
         }
         match control {
+            Control::BrowseField => super::game_ui::browse_field::open(&owner),
             Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
@@ -582,8 +585,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::ContainerSorting | Control::Market | Control::Party)
-                | Some(Control::Quests | Control::Spells)
+            Some(Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex

@@ -1,5 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+pub(super) mod browse_field;
 mod bestiary;
 mod chat;
 mod exaltation_forge;
@@ -237,6 +238,7 @@ fn region(commands: &mut Commands) -> Entity {
 
 pub(super) fn install(app: &mut App) {
     actions::install(app);
+    browse_field::install(app);
     bestiary::install(app);
     exaltation_forge::install(app);
     container_sorting::install(app);
