@@ -92,6 +92,9 @@ impl HostOwner {
         {
             return;
         }
+        if play.link.guildhall_input(&routed) {
+            return;
+        }
         if oteryn_client_ui::cyclopedia_tracker::open_key(&routed) {
             super::game_ui::cyclopedia_trackers::open(self);
             return;

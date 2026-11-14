@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    GuildhallLeadership,
     CyclopediaTrackers,
     CyclopediaMap,
     BossDifficulty,
@@ -68,6 +69,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::GuildhallLeadership => "shell.guildhall_leadership",
             Self::CyclopediaTrackers => "shell.cyclopedia_trackers",
             Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::BossDifficulty => "shell.boss_difficulty",
@@ -190,6 +192,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::BrowseField, "Browse Field", 100.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
+        (Control::GuildhallLeadership, "Guildhall (Ctrl+Alt+G)", 190.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
         (Control::GuildWars, "Guild wars (Ctrl+Alt+W)", 160.),
@@ -402,7 +405,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -415,6 +418,9 @@ fn activate(
             return;
         }
         match control {
+            Control::GuildhallLeadership => {
+                super::game_ui::guildhall_leadership::toggle(&mut owner)
+            }
             Control::CyclopediaTrackers => super::game_ui::cyclopedia_trackers::open(&owner),
             Control::CyclopediaMap => super::game_ui::cyclopedia_map::open(&mut owner),
             Control::BossDifficulty => super::game_ui::boss_difficulty::open(&owner),
@@ -614,7 +620,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
