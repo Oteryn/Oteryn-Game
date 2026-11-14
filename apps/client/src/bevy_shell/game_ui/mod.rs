@@ -7,6 +7,7 @@ pub(super) mod animus_mastery;
 pub(super) mod browse_field;
 mod bestiary;
 mod chat;
+pub(super) mod cyclopedia_trackers;
 pub(super) mod cyclopedia_map;
 mod exaltation_forge;
 mod container_sorting;
@@ -243,6 +244,7 @@ fn region(commands: &mut Commands) -> Entity {
 
 pub(super) fn install(app: &mut App) {
     cyclopedia_map::install(app);
+    cyclopedia_trackers::install(app);
     actions::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);

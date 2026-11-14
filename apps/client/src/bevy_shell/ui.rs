@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    CyclopediaTrackers,
     CyclopediaMap,
     BossDifficulty,
     BossRewardChest,
@@ -66,6 +67,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::CyclopediaTrackers => "shell.cyclopedia_trackers",
             Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::BossDifficulty => "shell.boss_difficulty",
             Self::BossRewardChest => "shell.boss_reward_chest",
@@ -188,6 +190,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
+        (Control::CyclopediaTrackers, "Cyclopedia trackers", 145.),
         (Control::AnimusMastery, "Animus Mastery (Ctrl+A)", 140.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
@@ -396,7 +399,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -409,6 +412,7 @@ fn activate(
             return;
         }
         match control {
+            Control::CyclopediaTrackers => super::game_ui::cyclopedia_trackers::open(&owner),
             Control::CyclopediaMap => super::game_ui::cyclopedia_map::open(&mut owner),
             Control::BossDifficulty => super::game_ui::boss_difficulty::open(&owner),
             Control::BossRewardChest => super::game_ui::open_boss_reward_chest(&mut owner),
@@ -606,7 +610,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
