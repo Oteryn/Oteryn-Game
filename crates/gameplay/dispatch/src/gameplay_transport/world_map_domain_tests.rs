@@ -380,6 +380,53 @@ fn door_origin(revision: u64) -> MapOrigin {
 }
 
 #[test]
+fn served_bundle_snapshot_reports_map_tiles_and_origin() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result =
+                    run(async {
+                        let channel = BundleChannel::new();
+                        let sent = serve(&channel, bundle_session(), &[], NO_HOLD).await;
+                        let map = map_snapshot(&sent)?;
+                        assert_eq!(map.tiles.len(), 2);
+                        assert_eq!(map.header.origin, at(ACTOR));
+                        assert!(map.tiles.iter().any(
+                            |tile| tile.position == map.header.origin && !tile.items.is_empty()
+                        ));
+                        Ok(())
+                    })
+                    .map_err(|error| error.to_string());
+            });
+            result?;
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=map_view_snapshot")
+                        && line.contains("tiles=2")
+                        && line.contains("origin_tile=true")),
+                "missing map contents diagnostic: {lines:?}"
+            );
+            assert!(lines.iter().any(|line| {
+                line.contains("event=join_snapshot_summary")
+                    && line.contains("map_selected=true")
+                    && line.contains("map_present=true")
+            }));
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("phase=snapshot_flushed"))
+            );
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "map diagnostics thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn a_session_with_18_joins_steps_and_resumes_with_domain_17_and_never_domain_2() -> TestResult {
     run(async {
         let channel = BundleChannel::new();

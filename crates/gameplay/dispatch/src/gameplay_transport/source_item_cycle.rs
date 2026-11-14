@@ -47,6 +47,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
                     .chain(
+                        self.rooms()
+                            .gate_monster_ai()
+                            .map(|_| states.next_monster_ai_pass_us),
+                    )
+                    .chain(
                         npc_voices
                             .as_ref()
                             .and_then(super::npc_voice::NpcVoiceCycle::next_due_us),
@@ -100,8 +105,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
-            let start = self.background_start("source-cycle", 7);
-            for index in (start..7).chain(0..start) {
+            let start = self.background_start("source-cycle", 8);
+            for index in (start..8).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -131,9 +136,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 self.drain_source_party_deadlines_bounded().await;
                             }
                         }
-                        _ => {
+                        6 => {
                             if self.ensure_source_map_initialized().await {
                                 let _ = self.drain_native_ai_timers().await;
+                            }
+                        }
+                        _ => {
+                            if self.ensure_source_map_initialized().await {
+                                self.drain_monster_melee().await;
                             }
                         }
                     }

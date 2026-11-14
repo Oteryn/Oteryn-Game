@@ -563,6 +563,22 @@ impl SessionMapView {
                 }))
             }
         };
+        if matches!(&update, Some(MapUpdate::Snapshot(_))) {
+            let origin = plan.header.origin;
+            super::operator_event(&format!(
+                "event=map_view_snapshot revision={} tiles={} items={} origin_x={} origin_y={} origin_floor={} first_visible_floor={} origin_tile={}",
+                self.revision,
+                tiles.len(),
+                tiles.iter().map(|tile| tile.items.len()).sum::<usize>(),
+                origin.x,
+                origin.y,
+                origin.floor,
+                plan.header.first_visible_floor,
+                tiles
+                    .iter()
+                    .any(|tile| tile.position == origin && !tile.items.is_empty()),
+            ));
+        }
         self.sent = Some(SentView {
             header: plan.header,
             tiles,

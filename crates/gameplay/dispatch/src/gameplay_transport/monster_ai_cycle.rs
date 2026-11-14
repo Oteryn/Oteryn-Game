@@ -22,8 +22,8 @@ use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 use sha2::{Digest, Sha256};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// One coalesced creature think pass. The same Channel's scheduler is shared by
-    /// all connections; player count never multiplies monster attack frequency.
+    /// One coalesced creature think pass, driven by the shared source-owner cycle.
+    /// Player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
         let Some(permit) = self.spell_lane_permit().await else {
             return;
@@ -107,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // `CREATUREAI0-RL-05`, against the last swing pass's players at their current positions,
         // so a think backlog costs each window its thinks, not a census of every actor.
         let swing_pass = periodic_pass && now.get() >= states.monster_melee.next_swing_pass_us;
-        let census = if swing_pass {
+        let mut census = if swing_pass {
             let Ok(census) = runtime.positioned_melee_census() else {
                 return;
             };
@@ -115,6 +115,80 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             think_player_census(&runtime, &states.monster_melee.think_players)
         };
+        if swing_pass {
+            // Dormant distant creatures need no executable profile. In particular,
+            // native admission resolves a spawn origin by searching the spawn sources:
+            // doing that for every World creature makes the first pass quadratic.
+            let players = census
+                .iter()
+                .filter(|(_, _, session)| session.is_some())
+                .map(|(_, position, _)| position.position())
+                .collect::<Vec<_>>();
+            let pending = census
+                .iter()
+                .filter(|(actor, position, session)| {
+                    session.is_none()
+                        && states.monster_melee.creature_ai.state(*actor).is_none()
+                        && players.iter().any(|player| {
+                            crate::ai_think::targeting::sees(*player, position.position())
+                        })
+                })
+                .map(|(actor, ..)| *actor)
+                .collect::<Vec<_>>();
+            if !pending.is_empty() {
+                let previous_pass = states.next_monster_ai_pass_us;
+                let previous_sequence = states.monster_ai_sequence;
+                drop(states);
+                drop(runtime);
+                // A crowded visible area must also return Pending. Release the
+                // owner locks before yielding; revalidate each exact actor afterwards.
+                for chunk in pending.chunks(32) {
+                    tokio::task::yield_now().await;
+                    let runtime = self.runtime.lock().await;
+                    if runtime.owner_fence().is_err() {
+                        return;
+                    }
+                    let mut states = self.states.spell_states.lock().await;
+                    for &actor in chunk {
+                        if states.monster_melee.creature_ai.state(actor).is_some() {
+                            continue;
+                        }
+                        let Ok(snapshot) = runtime.companion_snapshot(actor) else {
+                            continue;
+                        };
+                        let creature = crate::content::ProjectV2DefinitionRef {
+                            family: crate::content::ProjectV2Family::Creature,
+                            key: snapshot.state.policy.definition_key.clone(),
+                            revision: snapshot.state.policy.definition_revision.clone(),
+                        };
+                        let _ = states.monster_melee.creature_ai.admit_native_creature(
+                            &runtime,
+                            content,
+                            actor,
+                            &creature,
+                            now.get(),
+                        );
+                    }
+                }
+                runtime = self.runtime.lock().await;
+                states = self.states.spell_states.lock().await;
+                // Another caller may have completed the coalesced pass while this
+                // one yielded. Never repeat its sequence or use a retired owner.
+                if runtime.owner_fence().is_err()
+                    || states.next_monster_ai_pass_us != previous_pass
+                    || states.monster_ai_sequence != previous_sequence
+                {
+                    return;
+                }
+                census.retain_mut(|(actor, position, _)| {
+                    let Ok(current) = runtime.read_actor_position(*actor) else {
+                        return false;
+                    };
+                    *position = current;
+                    true
+                });
+            }
+        }
         // ATTACK-1b: lock order runtime, spell states, attack.
         let mut attack = self.states.attack.lock().await;
         let semantic_now =
@@ -125,6 +199,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .filter(|(_, _, session)| session.is_none())
             .collect::<Vec<_>>();
         if swing_pass && monsters.is_empty() {
+            states.next_monster_ai_pass_us = due;
+            states.monster_melee.next_swing_pass_us = due;
             return;
         }
         let digest = content
@@ -146,33 +222,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
                 .collect();
-            // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
-            // decides its target; the swing below only swings at that target. A monster already
-            // admitted is not qualified again.
-            for (actor, ..) in &monsters {
-                if states.monster_melee.creature_ai.state(*actor).is_some() {
-                    continue;
-                }
-                let Ok(snapshot) = runtime.companion_snapshot(*actor) else {
-                    continue;
-                };
-                let creature = crate::content::ProjectV2DefinitionRef {
-                    family: crate::content::ProjectV2Family::Creature,
-                    key: snapshot.state.policy.definition_key.clone(),
-                    revision: snapshot.state.policy.definition_revision.clone(),
-                };
-                let _ = states.monster_melee.creature_ai.admit_native_creature(
-                    &runtime,
-                    content,
-                    *actor,
-                    &creature,
-                    now.get(),
-                );
-            }
             // An idle creature that died or despawned has no due think to remove it.
             states.monster_melee.creature_ai.forget_dead(&runtime);
         }
         if states.monster_melee.creature_ai.is_empty() {
+            // An empty or entirely passive area still parks until the next cadence.
+            states.next_monster_ai_pass_us = due;
+            if swing_pass {
+                states.monster_melee.next_swing_pass_us = due;
+            }
             return;
         }
         if swing_pass {
