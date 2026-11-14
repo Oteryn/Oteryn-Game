@@ -65,6 +65,7 @@ pub(super) enum Control {
     SkillsConfig,
     RaidSchedule,
     Spells,
+    SupportEvidence,
     TaskBoard,
     WeaponProficiency,
     StatusDetails,
@@ -125,6 +126,7 @@ impl Control {
             Self::SkillsConfig => "shell.skills_config",
             Self::RaidSchedule => "shell.raid_schedule",
             Self::Spells => "shell.spells",
+            Self::SupportEvidence => "shell.support_evidence",
             Self::TaskBoard => "shell.task_board",
             Self::WeaponProficiency => "shell.weapon_proficiency",
             Self::StatusDetails => "shell.status_details",
@@ -294,6 +296,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         ),
         (Control::StatusDetails, "Status details", 110.),
         (Control::StaffTools, "Staff tools (Ctrl+Alt+0)", 180.),
+        (Control::SupportEvidence, "Support-evidence", 130.),
         (Control::TaskBoard, "Task Board", 110.),
         (Control::WorldEvent, "World events", 100.),
         (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
@@ -301,6 +304,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Store, "Store", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
+        if matches!(control, Control::SupportEvidence) {
+            commands
+                .entity(button)
+                .observe(super::game_ui::support_evidence::toolbar_activate);
+        }
         commands.entity(toolbar).add_child(button);
     }
     condition_details::setup_toolbar(&mut commands, &skins, toolbar);
