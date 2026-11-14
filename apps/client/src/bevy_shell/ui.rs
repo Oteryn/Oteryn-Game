@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    BossRewardChest,
     Options,
     Market,
     Party,
@@ -59,6 +60,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::BossRewardChest => "shell.boss_reward_chest",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -162,6 +164,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (
+            Control::BossRewardChest,
+            "Boss rewards (Ctrl+Shift+A)",
+            210.,
+        ),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
@@ -371,7 +378,8 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Options
+                Control::BossRewardChest
+                    | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -383,6 +391,7 @@ fn activate(
             return;
         }
         match control {
+            Control::BossRewardChest => super::game_ui::open_boss_reward_chest(&mut owner),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
@@ -541,6 +550,7 @@ pub(super) fn project_toolbar(
         Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
     >,
 ) {
+    use Control::{BossRewardChest, Market, Party, Quests, Spells};
     let playing = owner.play.is_some();
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
@@ -572,7 +582,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(BossRewardChest | Market | Party | Quests | Spells)
         ) {
             node.display = if playing {
                 Display::Flex
