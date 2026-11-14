@@ -16,9 +16,6 @@ pub struct Clients {
     leaves: Vec<(&'static str, String)>,
 }
 impl Clients {
-    pub fn from_env() -> Result<Option<Self>, ClientConfigError> {
-        Self::from_lookup(|key| std::env::var_os(key))
-    }
     pub fn from_lookup(
         lookup: impl Fn(&str) -> Option<OsString>,
     ) -> Result<Option<Self>, ClientConfigError> {
@@ -95,10 +92,13 @@ impl Clients {
             leaves,
         }))
     }
-    pub fn check_other_identities(&self, others: &[Vec<u8>]) -> Result<(), ClientConfigError> {
-        for pem in others {
-            let leaf = super::super::leaf_certificate(pem)
-                .ok_or(ClientConfigError::Invalid(READER_IDENTITY_VAR))?;
+    pub fn check_other_identities(
+        &self,
+        others: &[(&'static str, Vec<u8>)],
+    ) -> Result<(), ClientConfigError> {
+        for (key, pem) in others {
+            let leaf =
+                super::super::leaf_certificate(pem).ok_or(ClientConfigError::Invalid(key))?;
             if let Some((key, _)) = self.leaves.iter().find(|(_, own)| own == &leaf) {
                 return Err(ClientConfigError::Invalid(key));
             }
@@ -212,6 +212,20 @@ pub fn backoff(attempt: u32, retry: Option<Duration>) -> Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn enforcement_other_client_missing_leaf_reports_its_key() -> Result<(), ClientConfigError> {
+        let clients = Clients::local("http://127.0.0.1:1".into())?;
+        assert!(matches!(
+            clients.check_other_identities(&[(
+                "platform.runtime_status.client_certificate_file",
+                vec![]
+            )]),
+            Err(ClientConfigError::Invalid(
+                "platform.runtime_status.client_certificate_file"
+            ))
+        ));
+        Ok(())
+    }
     #[test]
     fn enforcement_flag_off_constructs_no_clients() {
         assert!(matches!(Clients::from_lookup(|_| None), Ok(None)));

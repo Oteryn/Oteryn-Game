@@ -284,9 +284,11 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     let mut item = super::fixture::fence(1)?.item_fence();
     item.character_lease_generation = 2;
     deps.admitted.item_fence = Some(item);
-    deps.admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 7, 36, 42, 80, 240, 259])
-            .ok_or("chat capabilities")?;
+    deps.admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        &[6, 7, 36, 42, 80, 240, 259],
+    )
+    .ok_or("chat capabilities")?;
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -306,18 +308,29 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     }
     use crate::durability::guild_chat_fixture as gf;
     gf::prepare(&h.pool).await?;
-    let guild=crate::domain::guild::GuildId::from_bytes(gf::sid(990,3)).map_err(debug)?;
-    gf::initial_guild(&h.pool,guild,id(42),"Enforcement Guild",crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,id(40)).await?;
+    let guild = crate::domain::guild::GuildId::from_bytes(gf::sid(990, 3)).map_err(debug)?;
+    gf::initial_guild(
+        &h.pool,
+        guild,
+        id(42),
+        "Enforcement Guild",
+        crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+        id(40),
+    )
+    .await?;
     gf::guard(&h.pool).await?;
-    let mut party_tx=h.pool.begin().await?;
+    let mut party_tx = h.pool.begin().await?;
     sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,2)").bind(uuid(990)).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *party_tx).await?;
     sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,$2::uuid,1,1,encode($3,'hex')::uuid)").bind(id(41).as_slice()).bind(uuid(990)).bind(id(43).as_slice()).execute(&mut *party_tx).await?;
     party_tx.commit().await?;
-    use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator,purchase_fixture};
-    let (consumer,premium_clock,_,_)=purchase_fixture::current(id(40));
-    let coordinator=SpellPremiumCoordinator::new(consumer,Some(premium_clock),None,Some(h.root.clone()));
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        SpellPremiumCoordinator, purchase_fixture,
+    };
+    let (consumer, premium_clock, _, _) = purchase_fixture::current(id(40));
+    let coordinator =
+        SpellPremiumCoordinator::new(consumer, Some(premium_clock), None, Some(h.root.clone()));
     let mut owner = deps.owner(h, a);
-    owner.premium_coordinator=Some(&coordinator);
+    owner.premium_coordinator = Some(&coordinator);
     deps.initialize(&owner).await;
     owner.chat_open(deps.admitted.game_session_id).await;
     assert!(owner.states.chat.knows(deps.admitted.game_session_id));
@@ -327,14 +340,45 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
         .await;
     owner.private_channel_admit(deps.admitted, true).await;
     owner.guild_chat_admit(deps.admitted).await;
-    let ring=crate::chat::relay::RelayKeyRing::new(vec![crate::chat::relay::RelayKey::new(1,0,[1;32])]).map_err(debug)?;
-    let relay=crate::gameplay_transport::chat_relay::ChatRelay::new(ring,id(42),h.root.chat_relay_connect_options().ok_or("relay options")?).map_err(debug)?;
-    let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint").fetch_one(&h.pool).await?;
+    let ring = crate::chat::relay::RelayKeyRing::new(vec![crate::chat::relay::RelayKey::new(
+        1, 0, [1; 32],
+    )])
+    .map_err(debug)?;
+    let relay = crate::gameplay_transport::chat_relay::ChatRelay::new(
+        ring,
+        id(42),
+        h.root.chat_relay_connect_options().ok_or("relay options")?,
+    )
+    .map_err(debug)?;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
     relay.force_ready(u64::try_from(now)?);
     owner.states.chat.install_relay(std::sync::Arc::new(relay));
-    assert_eq!(owner.private_channel_command(deps.admitted,50,&PrivateChannelIntent::Create).await.ok_or("create")?.disposition,ChatDisposition::Ok);
-    let channel=owner.private_channel_list(deps.admitted).await.ok_or("private list")?.own_channel.ok_or("own channel")?;
-    assert_eq!(owner.public_chat_preflight(deps.admitted,51,&ChatIntent::OpenRoom(ChatRoom::World)).await.flatten().ok_or("open World")?.disposition,ChatDisposition::Ok);
+    assert_eq!(
+        owner
+            .private_channel_command(deps.admitted, 50, &PrivateChannelIntent::Create)
+            .await
+            .ok_or("create")?
+            .disposition,
+        ChatDisposition::Ok
+    );
+    let channel = owner
+        .private_channel_list(deps.admitted)
+        .await
+        .ok_or("private list")?
+        .own_channel
+        .ok_or("own channel")?;
+    assert_eq!(
+        owner
+            .public_chat_preflight(deps.admitted, 51, &ChatIntent::OpenRoom(ChatRoom::World))
+            .await
+            .flatten()
+            .ok_or("open World")?
+            .disposition,
+        ChatDisposition::Ok
+    );
     // OFF never asks Platform storage, even when the sole semantic holder is busy.
     crate::gameplay_transport::staff::test_clock::set_enforcement(false);
     let busy = h.root.try_issue_semantic_pass().map_err(debug)?;
@@ -421,7 +465,10 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     // A character-scoped delivery must not apply a previous owner's account binding.
     sqlx::query("UPDATE game_platform_enforcement_streams SET account_id=$1::uuid WHERE sanction_stream_id=$2::uuid")
         .bind(uuid(999)).bind(&c.sanction_stream_id).execute(&h.pool).await?;
-    assert_eq!(owner.staff_mute_wait(deps.admitted.game_session_id).await, None);
+    assert_eq!(
+        owner.staff_mute_wait(deps.admitted.game_session_id).await,
+        None
+    );
     sqlx::query("UPDATE game_platform_enforcement_streams SET account_id=$1::uuid WHERE sanction_stream_id=$2::uuid")
         .bind(&c.account_id).bind(&c.sanction_stream_id).execute(&h.pool).await?;
     clock(h, END).await?;
@@ -432,19 +479,61 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             .disposition,
         ChatDisposition::Ok
     );
-    owner.states.test_owner_time.store(100000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.guild_chat_send(deps.admitted,"guild restored".into()).await.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(110000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.party_chat_send(deps.admitted,"party restored".into()).await.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(120000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.public_chat_preflight(deps.admitted,103,&public).await.flatten().ok_or("public restored")?.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(130000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.private_channel_command(deps.admitted,203,&private).await.ok_or("private restored")?.disposition,ChatDisposition::Ok);
+    owner
+        .states
+        .test_owner_time
+        .store(100000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .guild_chat_send(deps.admitted, "guild restored".into())
+            .await
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(110000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .party_chat_send(deps.admitted, "party restored".into())
+            .await
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(120000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .public_chat_preflight(deps.admitted, 103, &public)
+            .await
+            .flatten()
+            .ok_or("public restored")?
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(130000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .private_channel_command(deps.admitted, 203, &private)
+            .await
+            .ok_or("private restored")?
+            .disposition,
+        ChatDisposition::Ok
+    );
     assert_eq!(
         owner.staff_mute_wait(deps.admitted.game_session_id).await,
         None
     );
-    owner.states.test_owner_time.store(190_000_001,std::sync::atomic::Ordering::Relaxed);
+    owner
+        .states
+        .test_owner_time
+        .store(190_000_001, std::sync::atomic::Ordering::Relaxed);
     clock(h, START + 500).await?;
     c.operation_id = uuid(102);
     c.intent = Intent::Revoke;
@@ -460,14 +549,53 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             .disposition,
         ChatDisposition::Ok
     );
-    owner.states.test_owner_time.store(200000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.guild_chat_send(deps.admitted,"guild restored".into()).await.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(210000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.party_chat_send(deps.admitted,"party restored".into()).await.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(220000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.public_chat_preflight(deps.admitted,104,&public).await.flatten().ok_or("public restored")?.disposition,ChatDisposition::Ok);
-    owner.states.test_owner_time.store(230000001,std::sync::atomic::Ordering::Relaxed);
-    assert_eq!(owner.private_channel_command(deps.admitted,204,&private).await.ok_or("private restored")?.disposition,ChatDisposition::Ok);
+    owner
+        .states
+        .test_owner_time
+        .store(200000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .guild_chat_send(deps.admitted, "guild restored".into())
+            .await
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(210000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .party_chat_send(deps.admitted, "party restored".into())
+            .await
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(220000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .public_chat_preflight(deps.admitted, 104, &public)
+            .await
+            .flatten()
+            .ok_or("public restored")?
+            .disposition,
+        ChatDisposition::Ok
+    );
+    owner
+        .states
+        .test_owner_time
+        .store(230000001, std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(
+        owner
+            .private_channel_command(deps.admitted, 204, &private)
+            .await
+            .ok_or("private restored")?
+            .disposition,
+        ChatDisposition::Ok
+    );
     assert_eq!(
         owner.staff_mute_wait(deps.admitted.game_session_id).await,
         None
@@ -575,12 +703,12 @@ fn scenario(which: u8) -> TestResult {
                 let c=command(&h,101).await?;
                 assert!(h.root.decide_platform_enforcement(&a,&h.node,&c.encode().ok_or("encode")?).await.is_err(),"default-off deciding configuration");
                 sqlx::query("UPDATE game_platform_enforcement_configuration SET enabled=true,supported_policy_revision=1 WHERE singleton").execute(&h.pool).await?;
-                match which {5=>pull_to_ack(&h,&a).await,0=>decisions(&h,&a).await,1=>chat(&h,&a).await,2=>race(&h,&a).await,3=>permissions(&h,&a).await,4=>{
+                match which {0=>decisions(&h,&a).await,1=>chat(&h,&a).await,2=>race(&h,&a).await,3=>permissions(&h,&a).await,4=>{
                     let sessions:i64=sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions WHERE session_state IN(1,2)").fetch_one(&h.pool).await?;
                     assert_eq!(sessions,0);
                     assert_eq!(decide(&h,&a,&c).await?.runtime_effect,RuntimeEffect::OnNextAdmission);
                     Ok(())
-                },_=>Err("unknown scenario".into())}
+                },5=>pull_to_ack(&h,&a).await,_=>Err("unknown scenario".into())}
             }.await;
             h.cleanup().await?;result
         }).map_err(|e|e.to_string())
@@ -608,80 +736,220 @@ fn platform_enforcement_without_session_is_on_next_admission() -> TestResult {
     scenario(4)
 }
 
-struct PgEnforcementStore<'a,'f,'s> { h:&'a Harness,authority:&'a ReconciledCharacterAuthority<'f,'s> }
+struct PgEnforcementStore<'a, 'f, 's> {
+    h: &'a Harness,
+    authority: &'a ReconciledCharacterAuthority<'f, 's>,
+}
 impl crate::platform_streams::enforcement::worker::Store for PgEnforcementStore<'_, '_, '_> {
-    async fn transact(&self,action:crate::platform_streams::enforcement::worker::Action)->Result<crate::platform_streams::enforcement::worker::Reply,()> {
-        super::maintain_ready(&self.h.root).await.map_err(|_|())?;
-        self.h.root.enforcement_transport(self.authority,action).await.map_err(|_|())
+    async fn transact(
+        &self,
+        action: crate::platform_streams::enforcement::worker::Action,
+    ) -> Result<crate::platform_streams::enforcement::worker::Reply, ()> {
+        super::maintain_ready(&self.h.root).await.map_err(|_| ())?;
+        self.h
+            .root
+            .enforcement_transport(self.authority, action)
+            .await
+            .map_err(|_| ())
     }
-    async fn decide(&self,raw:Vec<u8>)->Result<Vec<u8>,()> {
-        super::maintain_ready(&self.h.root).await.map_err(|_|())?;
-        self.h.root.decide_platform_enforcement(self.authority,&self.h.node,&raw).await.map_err(|_|())
+    async fn decide(&self, raw: Vec<u8>) -> Result<Vec<u8>, ()> {
+        super::maintain_ready(&self.h.root).await.map_err(|_| ())?;
+        self.h
+            .root
+            .decide_platform_enforcement(self.authority, &self.h.node, &raw)
+            .await
+            .map_err(|_| ())
     }
 }
-async fn pull_to_ack(h:&Harness,a:&ReconciledCharacterAuthority<'_, '_>)->TestResult {
-    use crate::platform_streams::enforcement::{Message,CommandPage,transport::Clients,worker::{self,Step}};
-    use tokio::io::{AsyncReadExt,AsyncWriteExt};
-    let apply=command(h,101).await?;let apply_raw=apply.encode().ok_or("encode apply")?;
-    let mut revoke=apply.clone();revoke.operation_id=uuid(102);revoke.intent=Intent::Revoke;revoke.decision_revision=2;revoke.prior_decision_revision=Some(1);revoke.effective_at_ms=None;revoke.expires_at_ms=None;
-    let page=|commands,next:Option<&str>|Message::Page(CommandPage{schema:"oteryn.enforcement_command_stream_page.v1".into(),items:commands,next_cursor:next.map(str::to_owned)}).encode().ok_or("page encode");
-    let ack=include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-ack.json")).to_vec();
-    let replies=vec![page(vec![apply],Some("v1:1"))?,ack.clone(),page(vec![],None)?,page(vec![revoke],Some("v1:2"))?,ack];
-    let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let clients=Clients::local(format!("http://{}",listener.local_addr()?)).map_err(debug)?;
-    let peer=tokio::spawn(async move {
-        let mut requests=Vec::new();
+async fn pull_to_ack(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResult {
+    use crate::platform_streams::enforcement::{
+        CommandPage, Message,
+        transport::Clients,
+        worker::{self, Step},
+    };
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let apply = command(h, 101).await?;
+    let apply_raw = apply.encode().ok_or("encode apply")?;
+    let mut revoke = apply.clone();
+    revoke.operation_id = uuid(102);
+    revoke.intent = Intent::Revoke;
+    revoke.decision_revision = 2;
+    revoke.prior_decision_revision = Some(1);
+    revoke.effective_at_ms = None;
+    revoke.expires_at_ms = None;
+    let page = |commands, next: Option<&str>| {
+        Message::Page(CommandPage {
+            schema: "oteryn.enforcement_command_stream_page.v1".into(),
+            items: commands,
+            next_cursor: next.map(str::to_owned),
+        })
+        .encode()
+        .ok_or("page encode")
+    };
+    let ack = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-ack.json"
+    ))
+    .to_vec();
+    let replies = vec![
+        page(vec![apply], Some("v1:1"))?,
+        ack.clone(),
+        page(vec![], None)?,
+        page(vec![revoke], Some("v1:2"))?,
+        ack,
+    ];
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let clients = Clients::local(format!("http://{}", listener.local_addr()?)).map_err(debug)?;
+    let peer = tokio::spawn(async move {
+        let mut requests = Vec::new();
         for body in replies {
-            let (mut socket,_)=listener.accept().await.map_err(|e|e.to_string())?;
-            let mut raw=Vec::new();let mut buffer=[0u8;4096];
-            let body_start=loop {
-                let n=socket.read(&mut buffer).await.map_err(|e|e.to_string())?;if n==0 {return Err("request disconnected".to_string());}raw.extend_from_slice(&buffer[..n]);
-                if let Some(end)=raw.windows(4).position(|bytes|bytes==b"\r\n\r\n") {
-                    let head=String::from_utf8_lossy(&raw[..end]);
-                    let length=head.lines().find_map(|line|line.to_ascii_lowercase().strip_prefix("content-length:").and_then(|s|s.trim().parse::<usize>().ok())).ok_or("request content length")?;
-                    if raw.len()>=end+4+length {break end+4;}
+            let (mut socket, _) = listener.accept().await.map_err(|e| e.to_string())?;
+            let mut raw = Vec::new();
+            let mut buffer = [0u8; 4096];
+            let body_start = loop {
+                let n = socket.read(&mut buffer).await.map_err(|e| e.to_string())?;
+                if n == 0 {
+                    return Err("request disconnected".to_string());
+                }
+                raw.extend_from_slice(&buffer[..n]);
+                if let Some(end) = raw.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
+                    let head = String::from_utf8_lossy(&raw[..end]);
+                    let length = head
+                        .lines()
+                        .find_map(|line| {
+                            line.to_ascii_lowercase()
+                                .strip_prefix("content-length:")
+                                .and_then(|s| s.trim().parse::<usize>().ok())
+                        })
+                        .ok_or("request content length")?;
+                    if raw.len() >= end + 4 + length {
+                        break end + 4;
+                    }
                 }
             };
             requests.push(raw[body_start..].to_vec());
-            let head=format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",body.len());
-            socket.write_all(head.as_bytes()).await.map_err(|e|e.to_string())?;socket.write_all(&body).await.map_err(|e|e.to_string())?;
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            socket
+                .write_all(head.as_bytes())
+                .await
+                .map_err(|e| e.to_string())?;
+            socket.write_all(&body).await.map_err(|e| e.to_string())?;
         }
-        Ok::<_,String>(requests)
+        Ok::<_, String>(requests)
     });
-    let first=PgEnforcementStore{h,authority:a};
-    assert_eq!(worker::pull(&first,&clients).await.map_err(debug)?,Step::More);
-    let count=|query:&'static str|sqlx::query_scalar::<_,i64>(query).fetch_one(&h.pool);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,1);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged").await?,1);
-    let stored:Vec<u8>=sqlx::query_scalar("SELECT result_bytes FROM game_platform_enforcement_receipts").fetch_one(&h.pool).await?;
-    let mut expected=EnforcementResult::parse(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"),"/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-applied.json"))).ok_or("result fixture")?;
-    expected.command_digest=crate::platform_streams::enforcement::digest(&apply_raw);
-    assert_eq!(stored,expected.encode().ok_or("result encode")?);
-    assert_eq!(worker::publish(&first,&clients,START+500).await.map_err(debug)?,Step::More);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged").await?,1);
-    let mut immutable=h.pool.begin().await?;
-    immutable.execute("SET LOCAL ROLE oteryn_game_runtime").await?;
-    let mut changed=stored.clone();changed.push(b' ');
-    let error=sqlx::query("UPDATE game_platform_enforcement_result_outbox SET result_bytes=$1").bind(changed).execute(&mut *immutable).await.err().ok_or("result history changed")?;
+    let first = PgEnforcementStore { h, authority: a };
+    assert_eq!(
+        worker::pull(&first, &clients).await.map_err(debug)?,
+        Step::More
+    );
+    let count = |query: &'static str| sqlx::query_scalar::<_, i64>(query).fetch_one(&h.pool);
+    assert_eq!(
+        count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,
+        1
+    );
+    assert_eq!(
+        count(
+            "SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged"
+        )
+        .await?,
+        1
+    );
+    let stored: Vec<u8> =
+        sqlx::query_scalar("SELECT result_bytes FROM game_platform_enforcement_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    let mut expected = EnforcementResult::parse(include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../docs/contracts/fixtures/game-enforcement-wire-v1/result-applied.json"
+    )))
+    .ok_or("result fixture")?;
+    expected.command_digest = crate::platform_streams::enforcement::digest(&apply_raw);
+    assert_eq!(stored, expected.encode().ok_or("result encode")?);
+    assert_eq!(
+        worker::publish(&first, &clients, START + 500)
+            .await
+            .map_err(debug)?,
+        Step::More
+    );
+    assert_eq!(
+        count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged")
+            .await?,
+        1
+    );
+    let mut immutable = h.pool.begin().await?;
+    immutable
+        .execute("SET LOCAL ROLE oteryn_game_runtime")
+        .await?;
+    let mut changed = stored.clone();
+    changed.push(b' ');
+    let error = sqlx::query("UPDATE game_platform_enforcement_result_outbox SET result_bytes=$1")
+        .bind(changed)
+        .execute(&mut *immutable)
+        .await
+        .err()
+        .ok_or("result history changed")?;
     assert!(matches!(error,sqlx::Error::Database(ref e) if e.code().as_deref()==Some("23514")));
     immutable.rollback().await?;
     // Restart the task over the same durable cursor and acknowledgements.
-    let restarted=PgEnforcementStore{h,authority:a};
-    assert_eq!(worker::pull(&restarted,&clients).await.map_err(debug)?,Step::Idle);
-    assert_eq!(worker::publish(&restarted,&clients,START+500).await.map_err(debug)?,Step::Idle);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,1);
+    let restarted = PgEnforcementStore { h, authority: a };
+    assert_eq!(
+        worker::pull(&restarted, &clients).await.map_err(debug)?,
+        Step::Idle
+    );
+    assert_eq!(
+        worker::publish(&restarted, &clients, START + 500)
+            .await
+            .map_err(debug)?,
+        Step::Idle
+    );
+    assert_eq!(
+        count("SELECT count(*) FROM game_platform_enforcement_receipts").await?,
+        1
+    );
     // Crash after the next decision/cursor commits but before any result publication.
-    assert_eq!(worker::pull(&restarted,&clients).await.map_err(debug)?,Step::More);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged").await?,1);
-    let after_crash=PgEnforcementStore{h,authority:a};
-    assert_eq!(worker::publish(&after_crash,&clients,START+500).await.map_err(debug)?,Step::More);
-    assert_eq!(count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged").await?,2);
-    let requests=peer.await.map_err(debug)?.map_err(debug)?;
-    assert_eq!(requests.len(),5);assert_eq!(requests[1],stored);
-    let Some(Message::Request(request))=Message::parse(&requests[2]) else {return Err("restart did not use stream request".into());};
-    assert_eq!(request.after.as_deref(),Some("v1:1"));
-    let latest:Vec<u8>=sqlx::query_scalar("SELECT result_bytes FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid").bind(uuid(102)).fetch_one(&h.pool).await?;
-    assert_eq!(requests[4],latest);Ok(())
+    assert_eq!(
+        worker::pull(&restarted, &clients).await.map_err(debug)?,
+        Step::More
+    );
+    assert_eq!(
+        count(
+            "SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE NOT acknowledged"
+        )
+        .await?,
+        1
+    );
+    let after_crash = PgEnforcementStore { h, authority: a };
+    assert_eq!(
+        worker::publish(&after_crash, &clients, START + 500)
+            .await
+            .map_err(debug)?,
+        Step::More
+    );
+    assert_eq!(
+        count("SELECT count(*) FROM game_platform_enforcement_result_outbox WHERE acknowledged")
+            .await?,
+        2
+    );
+    let requests = peer.await.map_err(debug)?.map_err(debug)?;
+    assert_eq!(requests.len(), 5);
+    assert_eq!(requests[1], stored);
+    let Some(Message::Request(request)) = Message::parse(&requests[2]) else {
+        return Err("restart did not use stream request".into());
+    };
+    assert_eq!(request.after.as_deref(), Some("v1:1"));
+    let latest: Vec<u8> = sqlx::query_scalar(
+        "SELECT result_bytes FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid",
+    )
+    .bind(uuid(102))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(requests[4], latest);
+    Ok(())
 }
 #[test]
-fn pull_to_ack_end_to_end()->TestResult {scenario(5)}
+fn pull_to_ack_end_to_end() -> TestResult {
+    scenario(5)
+}

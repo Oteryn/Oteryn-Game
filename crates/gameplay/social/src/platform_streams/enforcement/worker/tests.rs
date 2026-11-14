@@ -34,6 +34,7 @@ struct Data {
     alarms: Vec<&'static str>,
     committed: Vec<String>,
     fail_second: bool,
+    overdue_scans: usize,
 }
 #[derive(Default)]
 struct Memory(Mutex<Data>);
@@ -107,13 +108,16 @@ impl Store for Memory {
                 Reply::Done
             }
             Action::Overdue { now_ms } => {
+                s.overdue_scans += 1;
                 let due = s
                     .outbox
                     .iter()
                     .filter(|p| {
                         !s.acked.contains(&p.operation) && !s.alarmed.contains(&p.operation)
                     })
-                    .filter_map(|p| EnforcementResult::parse(&p.bytes))
+                    .map(|p| EnforcementResult::parse(&p.bytes).ok_or(()))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into_iter()
                     .filter(|r| now_ms.saturating_sub(r.decided_at_ms) >= 300_000)
                     .map(|r| r.operation_id)
                     .collect::<Vec<_>>();
@@ -371,18 +375,29 @@ fn enforcement_overdue_alarm_after_5_minutes_once() -> TestResult {
                 (503, None, vec![]),
                 (503, None, vec![]),
                 (503, None, vec![]),
+                (503, None, vec![]),
+                (503, None, vec![]),
             ],
             false,
         )
         .await?;
+        let mut publisher = Publisher::default();
         for now in [
+            result.decided_at_ms,
+            result.decided_at_ms + 240_000,
             result.decided_at_ms + 299_999,
             result.decided_at_ms + 300_000,
             result.decided_at_ms + 300_001,
         ] {
-            assert!(publish(&store, &peer, now).await.is_err());
+            assert!(publisher.step(&store, &peer, now).await.is_err());
+            assert_eq!(
+                store.0.lock().map_err(|_| "mutex")?.alarms.len(),
+                usize::from(now >= result.decided_at_ms + 300_000)
+            );
         }
-        assert_eq!(store.0.lock().map_err(|_| "mutex")?.alarms, vec!["overdue"]);
+        let s = store.0.lock().map_err(|_| "mutex")?;
+        assert_eq!(s.alarms, vec!["overdue"]);
+        assert_eq!(s.overdue_scans, 3);
         Ok(())
     })
 }
@@ -432,6 +447,101 @@ fn enforcement_results_unknown_or_oversize_ack_never_clears_outbox() -> TestResu
             assert_eq!(publish(&store, &peer, 1).await, Err(Failure::Retry(None)));
             assert!(store.0.lock().map_err(|_| "mutex")?.acked.is_empty());
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn enforcement_results_auth_failure_backs_off_without_holding_rows() -> TestResult {
+    run(async {
+        for status in [400, 401] {
+            let store = seeded().await?;
+            store
+                .decide(fixture("command-revoke")?)
+                .await
+                .map_err(|_| "seed")?;
+            let (peer, requests) = peer(
+                vec![
+                    (status, None, vec![]),
+                    (200, None, fixture("result-ack")?),
+                    (200, None, fixture("result-ack")?),
+                ],
+                false,
+            )
+            .await?;
+            assert_eq!(publish(&store, &peer, 1).await, Err(Failure::Retry(None)));
+            assert_eq!(backoff(0, None), Duration::from_secs(1));
+            {
+                let s = store.0.lock().map_err(|_| "mutex")?;
+                assert!(s.held.is_empty());
+                assert!(s.acked.is_empty());
+                assert_eq!(s.outbox.len(), 2);
+            }
+            assert_eq!(publish(&store, &peer, 2).await, Ok(Step::More));
+            assert_eq!(publish(&store, &peer, 2).await, Ok(Step::More));
+            assert_eq!(store.0.lock().map_err(|_| "mutex")?.acked.len(), 2);
+            assert_eq!(requests.lock().map_err(|_| "mutex")?.len(), 3);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn enforcement_stream_and_reconcile_read_404_409_stop_and_alarm() -> TestResult {
+    run(async {
+        for status in [404, 409] {
+            let store = Memory::default();
+            let (peer, requests) = peer(vec![(status, None, vec![])], false).await?;
+            assert_eq!(pull(&store, &peer).await, Ok(Step::Stopped));
+            assert_eq!(pull(&store, &peer).await, Ok(Step::Stopped));
+            assert_eq!(requests.lock().map_err(|_| "mutex")?.len(), 1);
+            assert_eq!(store.0.lock().map_err(|_| "mutex")?.alarms.len(), 1);
+            let store = Memory::default();
+            let mut page = ReconcilePage::parse(&fixture("reconcile-page")?).ok_or("page")?;
+            page.items.truncate(1);
+            page.items[0].state = "PENDING".into();
+            page.items[0].receipt_revision = None;
+            page.items[0].result_digest = None;
+            let (peer, requests) = self::peer(
+                vec![
+                    (200, None, Message::Reconcile(page).encode().ok_or("page")?),
+                    (status, None, vec![]),
+                ],
+                false,
+            )
+            .await?;
+            assert_eq!(reconcile(&store, &peer).await, Ok(Step::Stopped));
+            assert_eq!(reconcile(&store, &peer).await, Ok(Step::Stopped));
+            assert_eq!(requests.lock().map_err(|_| "mutex")?.len(), 2);
+            assert_eq!(store.0.lock().map_err(|_| "mutex")?.alarms.len(), 1);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn enforcement_overdue_rejects_corrupt_stored_result() -> TestResult {
+    run(async {
+        let store = seeded().await?;
+        store.0.lock().map_err(|_| "mutex")?.outbox[0].bytes = b"corrupt".to_vec();
+        assert!(store.transact(Action::Overdue { now_ms: 1 }).await.is_err());
+        Ok(())
+    })
+}
+
+#[test]
+fn enforcement_overdue_scan_is_independent_of_publication_throughput() -> TestResult {
+    run(async {
+        let store = Memory::default();
+        let (peer, requests) = peer(vec![], false).await?;
+        let mut publisher = Publisher::default();
+        for now in [100, 101, 102, 60_099] {
+            assert_eq!(publisher.step(&store, &peer, now).await, Ok(Step::Idle));
+        }
+        assert_eq!(store.0.lock().map_err(|_| "mutex")?.overdue_scans, 1);
+        assert_eq!(publisher.step(&store, &peer, 60_100).await, Ok(Step::Idle));
+        assert_eq!(store.0.lock().map_err(|_| "mutex")?.overdue_scans, 2);
+        assert!(requests.lock().map_err(|_| "mutex")?.is_empty());
         Ok(())
     })
 }

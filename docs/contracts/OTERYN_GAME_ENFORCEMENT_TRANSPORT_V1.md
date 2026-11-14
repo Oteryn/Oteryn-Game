@@ -58,12 +58,16 @@ Migration 2835 keeps immutable command bindings and immutable per-revision resul
 bytes. A3 marks acknowledgements; it never deletes history. A 409 holds its row;
 a 404 durably stops publication for the operation, including later receipt revisions,
 and marks operator reconciliation. Automatic reconciliation cannot release either
-hold. A1/A4 400 or 401 stops that durable cursor and alarms; fixing the defect or
-credentials requires operator reconciliation before the stop is cleared. There is
-no automatic retry of the unchanged defective request.
+hold. A3 400/401 alarms and backs off the whole publisher without holding any row;
+recovery retries the original stored bytes. A1/A2/A4 400, 401, 404 or 409 stops
+the affected durable pull/reconcile cursor and alarms; fixing the defect or
+credentials requires operator reconciliation before the stop is cleared.
+Stopped read requests are not retried automatically.
 
 Overdue delivery is claimed under the receipt lock at 300,000 ms after Game's
-decision time, at most once per operation across retries/restarts. Alarms use the
+decision time, at most once per operation across retries/restarts. The publisher
+checks overdue work at most once per 60-second alarm scan interval, independently
+of publication throughput. Alarms use the
 registered social `enforcement_alarm` event with a bounded reason; reconciliation
 drift also increments the bounded `enforcement_reconcile_drift_total` counter.
 No target identifiers, command/result bodies, client keys or bearer material are logged.

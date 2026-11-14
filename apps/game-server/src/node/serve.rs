@@ -3457,7 +3457,7 @@ async fn realize_activation_paced(
 
 fn enforcement_startup(
     lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
-    other_identities: impl FnOnce() -> Result<Vec<Vec<u8>>, BootError>,
+    other_identities: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
 ) -> Result<
     Option<oteryn_gameplay_social::platform_streams::enforcement::transport::Clients>,
     BootError,
@@ -3471,6 +3471,53 @@ fn enforcement_startup(
             .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
     }
     Ok(clients)
+}
+
+async fn enforcement_store_startup(
+    enabled: bool,
+    check: impl Future<
+        Output = Result<
+            oteryn_gameplay_social::platform_streams::enforcement::worker::Reply,
+            DurabilityError,
+        >,
+    >,
+) -> Result<(), BootError> {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+    if !enabled {
+        return Ok(());
+    }
+    match check.await {
+        Ok(Reply::Cursor(_, _)) => Ok(()),
+        _ => Err(invalid("game_platform_enforcement_configuration")),
+    }
+}
+
+async fn enforcement_owner<T, D, TF, DF>(
+    mut receiver: tokio::sync::mpsc::Receiver<
+        oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest,
+    >,
+    transact: T,
+    decide: D,
+) where
+    T: Fn(oteryn_gameplay_social::platform_streams::enforcement::worker::Action) -> TF,
+    D: Fn(Vec<u8>) -> DF,
+    TF: Future<
+        Output = Result<oteryn_gameplay_social::platform_streams::enforcement::worker::Reply, ()>,
+    >,
+    DF: Future<Output = Result<Vec<u8>, ()>>,
+{
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest;
+    while let Some(request) = receiver.recv().await {
+        match request {
+            StoreRequest::Transact(action, reply) => {
+                let _ = reply.send(transact(action).await);
+            }
+            StoreRequest::Decide(raw, reply) => {
+                let _ = reply.send(decide(raw).await);
+            }
+        }
+    }
+    std::future::pending::<()>().await
 }
 
 async fn boot_and_serve(
@@ -3547,6 +3594,7 @@ async fn boot_and_serve(
                 .into_iter()
                 .map(|(key, path)| {
                     read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
+                        .map(|pem| (key, pem))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(identities)
@@ -3592,7 +3640,7 @@ async fn boot_and_serve(
     .await
     .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
-    if enforcement_clients.is_some() {
+    enforcement_store_startup(enforcement_clients.is_some(), async {
         with_retries(
             root,
             "enforcement store configuration",
@@ -3609,8 +3657,8 @@ async fn boot_and_serve(
             },
         )
         .await
-        .map_err(|_| invalid("game_platform_enforcement_configuration"))?;
-    }
+    })
+    .await?;
 
     let Some(generation) = first(
         await_assignment(
@@ -3819,32 +3867,24 @@ async fn boot_and_serve(
     };
     // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
     // the boot future too; boxing only the outer node leaves stacked poll temporaries.
-    use oteryn_gameplay_social::platform_streams::enforcement::worker::{
-        StoreRequest, Tasks, store_channel,
-    };
-    let (requests, mut receiver) = store_channel();
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::{Tasks, store_channel};
+    let (requests, receiver) = store_channel();
     let _enforcement_tasks = Tasks::spawn(enforcement_clients, requests);
-    let enforcement_owner = Box::pin(async {
-        while let Some(request) = receiver.recv().await {
-            match request {
-                StoreRequest::Transact(action, reply) => {
-                    let _ = reply.send(
-                        root.enforcement_transport(&authority, action)
-                            .await
-                            .map_err(|_| ()),
-                    );
-                }
-                StoreRequest::Decide(raw, reply) => {
-                    let _ = reply.send(
-                        root.decide_platform_enforcement(&authority, &proof, &raw)
-                            .await
-                            .map_err(|_| ()),
-                    );
-                }
-            }
-        }
-        std::future::pending::<()>().await
-    });
+    let authority = &authority;
+    let proof = &proof;
+    let enforcement_owner = Box::pin(enforcement_owner(
+        receiver,
+        |action| async move {
+            root.enforcement_transport(authority, action)
+                .await
+                .map_err(|_| ())
+        },
+        |raw| async move {
+            root.decide_platform_enforcement(authority, proof, &raw)
+                .await
+                .map_err(|_| ())
+        },
+    ));
     let serving = Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
@@ -3873,6 +3913,78 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn enforcement_owner_routes_requests_and_preserves_errors() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::{
+            Action, Reply, Store, store_channel,
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let (store, receiver) = store_channel();
+            let calls = std::cell::Cell::new(0);
+            let owner = enforcement_owner(
+                receiver,
+                |action| {
+                    calls.set(calls.get() + 1);
+                    std::future::ready(match action {
+                        Action::Next => Ok(Reply::Publication(None)),
+                        _ => Err(()),
+                    })
+                },
+                |raw| std::future::ready(Ok(raw)),
+            );
+            let client = async {
+                assert!(matches!(
+                    store.transact(Action::Next).await,
+                    Ok(Reply::Publication(None))
+                ));
+                assert!(
+                    store
+                        .transact(Action::Stop { reconcile: false })
+                        .await
+                        .is_err()
+                );
+                let raw = b"original command bytes".to_vec();
+                assert_eq!(store.decide(raw.clone()).await, Ok(raw));
+            };
+            assert_eq!(first(client, owner).await, Some(()));
+            assert_eq!(calls.get(), 2);
+        });
+    }
+
+    #[test]
+    fn enforcement_startup_checks_durable_configuration_only_when_enabled() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let polled = std::cell::Cell::new(false);
+            assert!(
+                enforcement_store_startup(false, async {
+                    polled.set(true);
+                    Err(DurabilityError::Unavailable)
+                })
+                .await
+                .is_ok()
+            );
+            assert!(!polled.get(), "OFF must not poll storage");
+            assert!(matches!(
+                enforcement_store_startup(true, async { Err(DurabilityError::Unavailable) }).await,
+                Err(BootError::Startup(StartupError::Invalid {
+                    key: "game_platform_enforcement_configuration"
+                }))
+            ));
+            assert!(
+                enforcement_store_startup(true, async { Ok(Reply::Cursor(None, false)) })
+                    .await
+                    .is_ok()
+            );
+        });
+    }
 
     #[test]
     fn enforcement_flag_off_spawns_nothing() {

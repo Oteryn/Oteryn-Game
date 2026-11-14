@@ -67,15 +67,17 @@ async fn cursor(store: &impl Store, reconcile: bool) -> Result<(Option<String>, 
 }
 async fn terminal(store: &impl Store, reconcile: bool, failure: Failure) -> Result<Step, Failure> {
     match failure {
-        Failure::Defect | Failure::Configuration => {
+        Failure::Defect | Failure::Configuration | Failure::Missing | Failure::Conflict => {
             store
                 .transact(Action::Stop { reconcile })
                 .await
                 .map_err(|_| Failure::Retry(None))?;
-            store.alarm(if failure == Failure::Defect {
-                "defect"
-            } else {
-                "configuration"
+            store.alarm(match failure {
+                Failure::Defect => "defect",
+                Failure::Configuration => "configuration",
+                Failure::Missing => "missing",
+                Failure::Conflict => "conflict",
+                Failure::Retry(_) => "transport",
             });
             Ok(Step::Stopped)
         }
@@ -120,16 +122,7 @@ pub async fn pull(store: &impl Store, peer: &impl Peer) -> Result<Step, Failure>
         .map_err(|_| Failure::Retry(None))?;
     Ok(if more { Step::More } else { Step::Idle })
 }
-pub async fn publish(store: &impl Store, peer: &impl Peer, now_ms: i64) -> Result<Step, Failure> {
-    if let Reply::Alarms(count) = store
-        .transact(Action::Overdue { now_ms })
-        .await
-        .map_err(|_| Failure::Retry(None))?
-    {
-        for _ in 0..count {
-            store.alarm("overdue");
-        }
-    }
+pub async fn publish(store: &impl Store, peer: &impl Peer, _now_ms: i64) -> Result<Step, Failure> {
     let publication = match store
         .transact(Action::Next)
         .await
@@ -156,11 +149,11 @@ pub async fn publish(store: &impl Store, peer: &impl Peer, now_ms: i64) -> Resul
         }
         Err(Failure::Defect) => {
             store.alarm("defect");
-            Delivery::Hold
+            return Err(Failure::Retry(None));
         }
         Err(Failure::Configuration) => {
             store.alarm("configuration");
-            Delivery::Hold
+            return Err(Failure::Retry(None));
         }
         Err(other) => return Err(other),
     };
@@ -257,6 +250,34 @@ pub async fn reconcile(store: &impl Store, peer: &impl Peer) -> Result<Step, Fai
         .map_err(|_| Failure::Retry(None))?;
     Ok(if more { Step::More } else { Step::Idle })
 }
+/// Scan independently of outbox throughput; timestamps are injected for deterministic tests.
+pub const OVERDUE_SCAN_INTERVAL_MS: i64 = 60_000;
+#[derive(Default)]
+pub struct Publisher {
+    next_alarm_scan_ms: Option<i64>,
+}
+impl Publisher {
+    pub async fn step(
+        &mut self,
+        store: &impl Store,
+        peer: &impl Peer,
+        now_ms: i64,
+    ) -> Result<Step, Failure> {
+        if self.next_alarm_scan_ms.is_none_or(|next| now_ms >= next) {
+            self.next_alarm_scan_ms = Some(now_ms.saturating_add(OVERDUE_SCAN_INTERVAL_MS));
+            if let Reply::Alarms(count) = store
+                .transact(Action::Overdue { now_ms })
+                .await
+                .map_err(|_| Failure::Retry(None))?
+            {
+                for _ in 0..count {
+                    store.alarm("overdue");
+                }
+            }
+        }
+        publish(store, peer, now_ms).await
+    }
+}
 #[derive(Clone, Copy)]
 pub enum Task {
     Pull,
@@ -270,6 +291,7 @@ pub async fn run(
     heartbeat: oteryn_task_supervisor::Heartbeat,
 ) {
     let mut attempt = 0;
+    let mut publisher = Publisher::default();
     loop {
         heartbeat.beat();
         let now = std::time::SystemTime::now()
@@ -279,7 +301,7 @@ pub async fn run(
             .unwrap_or(0);
         let result = match task {
             Task::Pull => pull(store, peer).await,
-            Task::Publish => publish(store, peer, now).await,
+            Task::Publish => publisher.step(store, peer, now).await,
             Task::Reconcile => reconcile(store, peer).await,
         };
         let delay = match result {
