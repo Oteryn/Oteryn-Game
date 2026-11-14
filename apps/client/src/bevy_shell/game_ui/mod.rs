@@ -14,6 +14,7 @@ mod container_sorting;
 mod coin_market;
 mod depot;
 mod feature_dialogs;
+pub(super) mod house_browsing;
 pub(super) mod guildhall_leadership;
 mod guild_wars;
 pub(super) mod highscores_character_info;
@@ -259,6 +260,7 @@ pub(super) fn install(app: &mut App) {
     coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
+    house_browsing::install(app);
     guildhall_leadership::install(app);
     guild_wars::install(app);
     highscores_character_info::install(app);

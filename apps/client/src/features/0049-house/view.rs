@@ -91,3 +91,9 @@ fn text(panel: &oteryn_client_ui::house::Panel) -> String {
 #[cfg(windows)]
 #[path = "view/ownership_window.rs"]
 pub(super) mod ownership_window;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "view/browsing.rs"]
+mod browsing;
+#[cfg(feature = "bevy-shell")]
+pub use browsing::{HouseBrowsingAction, HouseBrowsingSnapshot};
