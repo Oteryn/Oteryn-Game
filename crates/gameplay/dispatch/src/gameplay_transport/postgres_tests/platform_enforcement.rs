@@ -285,7 +285,7 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
     item.character_lease_generation = 2;
     deps.admitted.item_fence = Some(item);
     deps.admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 7, 42, 80, 240, 259])
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[6, 7, 36, 42, 80, 240, 259])
             .ok_or("chat capabilities")?;
     {
         let mut runtime = deps.runtime.lock().await;
@@ -304,7 +304,20 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             )
             .map_err(debug)?;
     }
-    let owner = deps.owner(h, a);
+    use crate::durability::guild_chat_fixture as gf;
+    gf::prepare(&h.pool).await?;
+    let guild=crate::domain::guild::GuildId::from_bytes(gf::sid(990,3)).map_err(debug)?;
+    gf::initial_guild(&h.pool,guild,id(42),"Enforcement Guild",crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,id(40)).await?;
+    gf::guard(&h.pool).await?;
+    let mut party_tx=h.pool.begin().await?;
+    sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,2)").bind(uuid(990)).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *party_tx).await?;
+    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,$2::uuid,1,1,encode($3,'hex')::uuid)").bind(id(41).as_slice()).bind(uuid(990)).bind(id(43).as_slice()).execute(&mut *party_tx).await?;
+    party_tx.commit().await?;
+    use crate::gameplay_transport::spell_premium_coordinator::{SpellPremiumCoordinator,purchase_fixture};
+    let (consumer,premium_clock,_,_)=purchase_fixture::current(id(40));
+    let coordinator=SpellPremiumCoordinator::new(consumer,Some(premium_clock),None,Some(h.root.clone()));
+    let mut owner = deps.owner(h, a);
+    owner.premium_coordinator=Some(&coordinator);
     deps.initialize(&owner).await;
     owner.chat_open(deps.admitted.game_session_id).await;
     assert!(owner.states.chat.knows(deps.admitted.game_session_id));
@@ -313,6 +326,15 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
         .public_chat_admit(deps.admitted, ChatRoomSet::default())
         .await;
     owner.private_channel_admit(deps.admitted, true).await;
+    owner.guild_chat_admit(deps.admitted).await;
+    let ring=crate::chat::relay::RelayKeyRing::new(vec![crate::chat::relay::RelayKey::new(1,0,[1;32])]).map_err(debug)?;
+    let relay=crate::gameplay_transport::chat_relay::ChatRelay::new(ring,id(42),h.root.chat_relay_connect_options().ok_or("relay options")?).map_err(debug)?;
+    let now:i64=sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint").fetch_one(&h.pool).await?;
+    relay.force_ready(u64::try_from(now)?);
+    owner.states.chat.install_relay(std::sync::Arc::new(relay));
+    assert_eq!(owner.private_channel_command(deps.admitted,50,&PrivateChannelIntent::Create).await.ok_or("create")?.disposition,ChatDisposition::Ok);
+    let channel=owner.private_channel_list(deps.admitted).await.ok_or("private list")?.own_channel.ok_or("own channel")?;
+    assert_eq!(owner.public_chat_preflight(deps.admitted,51,&ChatIntent::OpenRoom(ChatRoom::World)).await.flatten().ok_or("open World")?.disposition,ChatDisposition::Ok);
     // OFF never asks Platform storage, even when the sole semantic holder is busy.
     crate::gameplay_transport::staff::test_clock::set_enforcement(false);
     let busy = h.root.try_issue_semantic_pass().map_err(debug)?;
@@ -381,7 +403,7 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
         ChatDisposition::Muted
     );
     let private = PrivateChannelIntent::Say {
-        channel_id: 65535,
+        channel_id: channel,
         text: "private probe".into(),
     };
     assert_eq!(
@@ -410,10 +432,19 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             .disposition,
         ChatDisposition::Ok
     );
+    owner.states.test_owner_time.store(100000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.guild_chat_send(deps.admitted,"guild restored".into()).await.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(110000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.party_chat_send(deps.admitted,"party restored".into()).await.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(120000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.public_chat_preflight(deps.admitted,103,&public).await.flatten().ok_or("public restored")?.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(130000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.private_channel_command(deps.admitted,203,&private).await.ok_or("private restored")?.disposition,ChatDisposition::Ok);
     assert_eq!(
         owner.staff_mute_wait(deps.admitted.game_session_id).await,
         None
     );
+    owner.states.test_owner_time.store(190_000_001,std::sync::atomic::Ordering::Relaxed);
     clock(h, START + 500).await?;
     c.operation_id = uuid(102);
     c.intent = Intent::Revoke;
@@ -429,6 +460,14 @@ async fn chat(h: &Harness, a: &ReconciledCharacterAuthority<'_, '_>) -> TestResu
             .disposition,
         ChatDisposition::Ok
     );
+    owner.states.test_owner_time.store(200000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.guild_chat_send(deps.admitted,"guild restored".into()).await.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(210000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.party_chat_send(deps.admitted,"party restored".into()).await.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(220000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.public_chat_preflight(deps.admitted,104,&public).await.flatten().ok_or("public restored")?.disposition,ChatDisposition::Ok);
+    owner.states.test_owner_time.store(230000001,std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(owner.private_channel_command(deps.admitted,204,&private).await.ok_or("private restored")?.disposition,ChatDisposition::Ok);
     assert_eq!(
         owner.staff_mute_wait(deps.admitted.game_session_id).await,
         None
