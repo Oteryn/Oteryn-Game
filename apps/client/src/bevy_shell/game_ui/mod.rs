@@ -42,6 +42,7 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 mod item_details;
 mod journal;
+mod mail;
 mod layout;
 pub(super) use layout::setup;
 mod market;
@@ -136,6 +137,7 @@ pub(super) fn install(app: &mut App) {
     imbue::install(app);
     inventory::install(app);
     item_details::install(app);
+    mail::install(app);
     journal::install(app);
     market::install(app);
     minimap::install(app);

@@ -77,7 +77,12 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
-    if panel.pending || !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&value, 7996) {
+    if panel.pending
+        || !oteryn_client_ui::modal_dialogs::TextEditor::accepts(
+            &value,
+            super::protocol::MAX_TEXT_BYTES,
+        )
+    {
         return;
     }
     if let Some(slot) = panel.fields.get_mut(field) {
