@@ -43,6 +43,7 @@ pub(super) mod player_report_report;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+pub(super) mod staff_tools;
 mod team_finder;
 pub(super) use team_finder::open as open_team_finder;
 pub(super) mod store;
@@ -294,6 +295,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     player_report_report::install(app);
     quick_loot::install(app);
+    staff_tools::install(app);
     team_finder::install(app);
     store::install(app);
     trade::install(app);

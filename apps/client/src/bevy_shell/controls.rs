@@ -146,6 +146,10 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if oteryn_client_ui::staff_tools::open_key(&routed) {
+            let _ = play.link.staff_tools_open_bound();
+            return;
+        }
         if oteryn_client_ui::player_report::open_key(&routed) {
             play.link.player_report_open();
             return;

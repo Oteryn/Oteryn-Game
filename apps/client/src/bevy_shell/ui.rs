@@ -63,6 +63,7 @@ pub(super) enum Control {
     PlayerReport,
     Quests,
     Spells,
+    StaffTools,
     WorldEvent,
     TeamFinder,
     Training,
@@ -100,6 +101,7 @@ impl Control {
             Self::PlayerReport => "shell.player_report",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::StaffTools => "shell.staff_tools",
             Self::WorldEvent => "shell.world_event",
             Self::TeamFinder => "shell.team_finder",
             Self::Training => "shell.training",
@@ -233,6 +235,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::PlayerReport, "Reports (Ctrl+Alt+R)", 170.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::StaffTools, "Staff tools (Ctrl+Alt+0)", 180.),
         (Control::WorldEvent, "World events", 100.),
         (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
         (Control::Training, "Training", 80.),
@@ -445,6 +448,7 @@ fn activate(
                     | Control::PlayerReport
                     | Control::Quests
                     | Control::Spells
+                    | Control::StaffTools
                     | Control::WorldEvent
                     | Control::Training
                     | Control::Store
@@ -478,6 +482,7 @@ fn activate(
             Control::PlayerReport => super::game_ui::player_report_report::open(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::StaffTools => super::game_ui::staff_tools::open(&mut owner),
             Control::WorldEvent => super::game_ui::world_event_window::open(&owner),
             Control::TeamFinder => super::game_ui::open_team_finder(&mut owner),
             Control::Training => super::game_ui::training::open(&owner),
@@ -637,6 +642,7 @@ pub(super) fn project_toolbar(
 ) {
     use Control::{BossRewardChest, Market, Party, Quests, Spells};
     let playing = owner.play.is_some();
+    let staff = super::game_ui::staff_tools::toolbar_visible(&owner);
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
             if playing {
@@ -667,9 +673,9 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
-            node.display = if playing {
+            node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
             } else {
                 Display::None
