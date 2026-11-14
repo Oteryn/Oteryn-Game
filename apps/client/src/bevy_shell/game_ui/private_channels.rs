@@ -136,7 +136,7 @@ fn project(
     owner: NonSend<HostOwner>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field)>,
 ) {
     let next = state.session.as_ref().and_then(|(generation, session)| {
         owner
@@ -151,7 +151,20 @@ fn project(
     if state.shown == next && !state.dirty {
         return;
     }
-    let values = drafts(&fields);
+    // Keep the live editor, cursor, focus and pending paste through owner updates.
+    // A replaced session always gets fresh owner drafts.
+    let same_session = state.shown.as_ref().zip(next.as_ref()).is_some_and(
+        |((old_generation, old), (generation, current))| {
+            old_generation == generation && old.same_session(current)
+        },
+    );
+    let mut retained = [None, None];
+    if same_session {
+        for (entity, field) in &fields {
+            retained[field.0] = Some(entity);
+            commands.entity(entity).remove::<ChildOf>();
+        }
+    }
     if state.shown != next {
         state.confirmation = None;
     }
@@ -166,7 +179,7 @@ fn project(
         return;
     };
     let panel = &bound.panel;
-    let values = values.unwrap_or_else(|| [panel.name.clone(), panel.text.clone()]);
+    let values = [&panel.name, &panel.text];
     let root = commands
         .spawn((
             GameModal,
@@ -219,7 +232,11 @@ fn project(
     }
     for (index, caption) in ["Player name", "Message"].iter().enumerate() {
         label(&mut commands, &skins, root, caption);
-        let mut editable = EditableText::new(values[index].clone());
+        if let Some(field) = retained[index] {
+            commands.entity(root).add_child(field);
+            continue;
+        }
+        let mut editable = EditableText::new(values[index]);
         editable.max_characters = Some(if index == 0 { 120 } else { 1_020 });
         editable.allow_newlines = false;
         let field = commands

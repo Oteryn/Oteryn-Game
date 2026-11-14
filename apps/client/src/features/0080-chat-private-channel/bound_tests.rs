@@ -125,3 +125,55 @@ fn private_channels_close_admission_ignores_pending_capability_and_input() {
     outbox.private_channels_test_end();
     assert!(!link.chat_private_admit_bound(&bound, true));
 }
+
+#[test]
+fn private_channels_selection_uses_only_owner_rows_and_rejects_pending() {
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.private_channels_test_panel(oteryn_client_ui::chat_private_channel::ChatPanel {
+        selected: true,
+        list: Some(oteryn_session::ChatChannelList {
+            own_channel: Some(42),
+            invited: vec![oteryn_session::InvitedChannel {
+                channel_id: 87,
+                owner_name: "Ada".into(),
+            }],
+            ..Default::default()
+        }),
+        channel: Some(42),
+        ..Default::default()
+    });
+    let bound = link.chat_private_bound();
+    assert!(!link.chat_private_select_bound(&bound, 999));
+    assert_eq!(link.chat_private_panel(), bound.panel);
+    assert!(link.chat_private_select_bound(&bound, 87));
+    assert_eq!(link.chat_private_panel().channel, Some(87));
+    lock(&link.mailbox).chat_private.pending = true;
+    let pending = link.chat_private_bound();
+    assert!(!link.chat_private_select_bound(&pending, 42));
+    assert_eq!(link.chat_private_panel(), pending.panel);
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn private_channels_invalid_draft_shows_existing_owner_validation_without_request() {
+    let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.private_channels_test_panel(oteryn_client_ui::chat_private_channel::ChatPanel {
+        selected: true,
+        channel: Some(42),
+        ..Default::default()
+    });
+    let bound = link.chat_private_bound();
+    assert!(!link.chat_private_dispatch_bound(&bound, Intent::Send, "", "", false));
+    let actual = link.chat_private_panel();
+    let mut native = bound.panel.clone();
+    assert!(oteryn_client_ui::chat_private_channel::request(&mut native, Intent::Send).is_none());
+    assert!(native.feedback.is_some());
+    assert_eq!(actual.feedback, native.feedback);
+    assert_eq!(actual.list, bound.panel.list);
+    assert_eq!(actual.lines, bound.panel.lines);
+    assert_eq!(actual.channel, bound.panel.channel);
+    assert!(!actual.pending);
+    assert!(commands.try_recv().is_err());
+}

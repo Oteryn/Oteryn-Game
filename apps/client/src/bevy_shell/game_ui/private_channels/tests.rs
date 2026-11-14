@@ -174,16 +174,15 @@ fn private_channels_window_close_preserves_pending_when_unavailable_and_blocked(
     assert_eq!(panel(&app)?, pending);
     assert!(commands.try_recv().is_err());
     outbox.private_channels_test_block(false);
-    let generation = app.world().non_send::<HostOwner>().generation();
-    let bound = app
-        .world()
-        .non_send::<HostOwner>()
-        .play
-        .as_ref()
-        .ok_or("play")?
-        .link
-        .chat_private_bound();
-    app.world_mut().resource_mut::<State>().session = Some((generation, bound));
+    let toolbar = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            matches!(control, crate::bevy_shell::ui::Control::PrivateChannels).then_some(entity)
+        })
+        .ok_or("toolbar")?;
+    app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert_eq!(panel(&app)?, pending);
     assert!(app.world().resource::<State>().root.is_some());
@@ -254,5 +253,104 @@ fn private_channels_window_rejects_replaced_session_with_identical_panel() -> Te
     assert!(old_commands.try_recv().is_err());
     app.update();
     assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+#[test]
+fn private_channels_escape_closes_pending_blocked_unavailable_window_and_arrows_keep_focus()
+-> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<Field>>()
+        .iter(app.world())
+        .next()
+        .ok_or("field")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(field, bevy::input_focus::FocusCause::Pressed);
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::ArrowLeft,
+            logical_key: bevy::input::keyboard::Key::ArrowLeft,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(field));
+    assert!(app.world().resource::<State>().root.is_some());
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Action::Request(Intent::Create))?;
+    let _ = commands.try_recv()?;
+    app.update();
+    let mut pending = panel(&app)?;
+    pending.selected = false;
+    outbox.private_channels_test_panel(pending.clone());
+    outbox.private_channels_test_block(true);
+    app.world_mut()
+        .spawn((GameModal, GlobalZIndex(900), Node::default()));
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert_eq!(panel(&app)?, pending);
+    assert!(pending.pending);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn private_channels_window_keeps_editor_across_owner_updates() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    let field = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 1).then_some(entity))
+        .ok_or("message field")?;
+    app.world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("editor")?
+        .editor_mut()
+        .set_text("Unsent draft");
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(field, bevy::input_focus::FocusCause::Pressed);
+    let mut updated = panel(&app)?;
+    updated.lines.push(oteryn_session::ChatLine::PrivateChannel(
+        oteryn_session::PrivateChannelLine {
+            channel_id: 42,
+            speaker_name: "Ada".into(),
+            text: "Incoming server line".into(),
+        },
+    ));
+    outbox.private_channels_test_panel(updated);
+    app.update();
+    assert!(app.world().get::<EditableText>(field).is_some());
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(field));
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(field)
+            .ok_or("retained editor")?
+            .value()
+            .to_string(),
+        "Unsent draft"
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Ada: Incoming server line"))
+    );
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

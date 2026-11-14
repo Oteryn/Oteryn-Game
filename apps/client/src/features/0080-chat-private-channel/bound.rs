@@ -11,9 +11,14 @@ pub(crate) struct PrivateChannelsBound {
     pub(crate) panel: ChatPanel,
     commands: UnboundedSender<PlayCommand>,
 }
+impl PrivateChannelsBound {
+    pub(crate) fn same_session(&self, other: &Self) -> bool {
+        self.commands.same_channel(&other.commands)
+    }
+}
 impl PartialEq for PrivateChannelsBound {
     fn eq(&self, other: &Self) -> bool {
-        self.commands.same_channel(&other.commands) && self.panel == other.panel
+        self.same_session(other) && self.panel == other.panel
     }
 }
 impl PlayLink {
@@ -89,11 +94,13 @@ impl PlayLink {
         {
             return false;
         }
-        // Prepare on a copy: invalid drafts and a closed command channel change nothing.
+        // Prepare through the existing owner validator before attempting one dispatch.
         let mut prepared = mailbox.chat_private.clone();
         prepared.name = name.into();
         prepared.text = text.into();
         let Some(command) = request(&mut prepared, intent) else {
+            // Match native draft validation feedback; server-backed data is untouched.
+            mailbox.chat_private = prepared;
             return false;
         };
         if self
