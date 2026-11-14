@@ -801,3 +801,25 @@ fn platform_fixtures_classify_as_the_contract_requires() {
     assert!(!consumer.premium_current(FIXTURE_ACCOUNT, at(FIXTURE_ISSUED)));
     assert!(consumer.premium_entitlement_ended(FIXTURE_ACCOUNT, at(FIXTURE_ISSUED)));
 }
+
+#[test]
+fn profile_b_premium_hint_stops_the_shared_gate_without_granting() {
+    let consumer = PremiumConsumer::default();
+    let now = TrustedNow::new(T0, 0);
+    let e = validate(&body(&[]), ACCOUNT, NONCE).unwrap();
+    consumer.prove_for_test(e.clone());
+    assert!(consumer.premium_current(ACCOUNT, now));
+    consumer.profile_b_hint(ACCOUNT, e.lifecycle_revision);
+    assert!(consumer.premium_current(ACCOUNT, now));
+    consumer.profile_b_hint(ACCOUNT, e.lifecycle_revision + 1);
+    assert_eq!(consumer.class(ACCOUNT, now), PremiumClass::StaleWithinBound);
+    assert!(consumer.current_premium(ACCOUNT, now).is_none());
+    let mut fresh = e.clone();
+    fresh.authority_revision += 1;
+    fresh.lifecycle_revision += 1;
+    consumer.prove_for_test(fresh);
+    assert!(consumer.premium_current(ACCOUNT, now));
+    let empty = PremiumConsumer::default();
+    empty.profile_b_hint(ACCOUNT, 10);
+    assert!(!empty.premium_current(ACCOUNT, now));
+}

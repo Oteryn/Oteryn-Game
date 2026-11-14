@@ -6,6 +6,11 @@
 //! after, so two pullers never both advance it; the loser's page rolls back as `Superseded`. Every
 //! record projects through its revisioned function (migrations 2800, 2803), so a replayed or
 //! reordered record never moves a projection backwards.
+pub mod enforcement;
+pub mod enforcement_transport;
+pub mod enforcement_wire;
+pub mod profile_b_store;
+pub mod profile_b_wire;
 mod security_revocation;
 
 use super::db::{begin_semantic_transaction, commit_semantic_transaction};
