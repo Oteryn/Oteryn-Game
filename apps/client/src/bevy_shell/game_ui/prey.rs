@@ -19,7 +19,7 @@ struct Control {
     expected: PreyPanel,
     intent: Option<Intent>,
     confirm: bool,
-    candidate: Option<(u8,u8)>,
+    candidate: Option<(u8, u8)>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>().add_systems(Update, project);
@@ -68,6 +68,7 @@ fn project(
         ))
         .id();
     state.root = Some(root);
+    source::dialog_caption(&mut commands, root, "Prey", skins.font.clone());
     let text = commands
         .spawn(source::text(
             panel_text(&panel),
@@ -75,15 +76,141 @@ fn project(
         ))
         .id();
     commands.entity(root).add_child(text);
+    if let Some(slot) = panel.offered_slot {
+        for row in &panel.offered_today {
+            let quote = oteryn_client_ui::prey::PickConfirmation {
+                slot,
+                creature: row.creature.clone(),
+                price_gold: row.price_gold,
+            };
+            button(
+                &mut commands,
+                &skins,
+                root,
+                &format!(
+                    "{}: {} gold",
+                    oteryn_client_ui::prey::creature_label(&row.creature),
+                    row.price_gold
+                ),
+                Control {
+                    generation,
+                    expected: panel.clone(),
+                    intent: Some(Intent::ConfirmPickAgain(quote)),
+                    confirm: true,
+                    candidate: None,
+                },
+            );
+        }
+        if !panel.offered_next.is_empty() {
+            button(
+                &mut commands,
+                &skins,
+                root,
+                "Next offers",
+                Control {
+                    generation,
+                    expected: panel.clone(),
+                    intent: Some(Intent::OfferedToday {
+                        slot,
+                        after: panel.offered_next.clone(),
+                    }),
+                    confirm: false,
+                    candidate: None,
+                },
+            );
+        }
+    }
     for slot in panel.confirmed.iter().flat_map(|p| &p.slots) {
-        let status = match slot.state { 0 => "Locked", 1 => "Inactive", 2 => "Active", _ => "Unknown" };
-        let text = commands.spawn(source::text(format!("Slot {}: {status}; {} seconds remaining; option {}",slot.slot,slot.hunting_seconds,slot.option),source::font(skins.font.clone(),false))).id();
+        button(
+            &mut commands,
+            &skins,
+            root,
+            &format!("Slot {}: offered today", slot.slot),
+            Control {
+                generation,
+                expected: panel.clone(),
+                intent: Some(Intent::OfferedToday {
+                    slot: slot.slot,
+                    after: String::new(),
+                }),
+                confirm: false,
+                candidate: None,
+            },
+        );
+
+        for (index, (label, _, enabled)) in oteryn_client_ui::prey::tier_choices(&panel, slot.slot)
+            .iter()
+            .enumerate()
+        {
+            if *enabled {
+                button(
+                    &mut commands,
+                    &skins,
+                    root,
+                    label,
+                    Control {
+                        generation,
+                        expected: panel.clone(),
+                        intent: Some(Intent::SetTier {
+                            slot: slot.slot,
+                            tier: index as u8 + 1,
+                        }),
+                        confirm: false,
+                        candidate: None,
+                    },
+                );
+            }
+        }
+
+        let status = match slot.state {
+            0 => "Locked",
+            1 => "Inactive",
+            2 => "Active",
+            _ => "Unknown",
+        };
+        let text = commands
+            .spawn(source::text(
+                format!(
+                    "Slot {}: {status}; {} seconds remaining; option {}",
+                    slot.slot, slot.hunting_seconds, slot.option
+                ),
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
         commands.entity(root).add_child(text);
 
         for (index, creature) in slot.creatures.iter().enumerate() {
-            button(&mut commands, &skins, root, &format!("Slot {}: {}", slot.slot, oteryn_client_ui::prey::creature_label(creature)), Control { generation, expected: panel.clone(), intent: None, confirm: false, candidate: Some((slot.slot, index as u8 + 1)) });
+            button(
+                &mut commands,
+                &skins,
+                root,
+                &format!(
+                    "Slot {}: {}",
+                    slot.slot,
+                    oteryn_client_ui::prey::creature_label(creature)
+                ),
+                Control {
+                    generation,
+                    expected: panel.clone(),
+                    intent: None,
+                    confirm: false,
+                    candidate: Some((slot.slot, index as u8 + 1)),
+                },
+            );
         }
-        button(&mut commands, &skins, root, "Select candidate", Control { generation, expected: panel.clone(), intent: Some(Intent::Select {slot:slot.slot}), confirm:false, candidate:None });
+        button(
+            &mut commands,
+            &skins,
+            root,
+            "Select candidate",
+            Control {
+                generation,
+                expected: panel.clone(),
+                intent: Some(Intent::Select { slot: slot.slot }),
+                confirm: false,
+                candidate: None,
+            },
+        );
 
         for (label, intent, confirm) in [
             (
@@ -97,7 +224,7 @@ fn project(
                 true,
             ),
             (
-                "Lock bonus",
+                "Auto reroll",
                 Intent::SetOption {
                     slot: slot.slot,
                     option: 1,
@@ -105,7 +232,7 @@ fn project(
                 true,
             ),
             (
-                "Auto reroll",
+                "Lock bonus",
                 Intent::SetOption {
                     slot: slot.slot,
                     option: 2,
@@ -195,12 +322,35 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    if play.view.gameplay_input_blocked(&play.link) { return; }
+    if play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
     if play.link.prey_panel() != control.expected {
         return;
     }
-    if let Some((slot,index)) = control.candidate {
-        if state.confirmation.is_none() { let _ = play.link.prey_choose_bound(&control.expected,slot,index); }
+    if let Some((slot, index)) = control.candidate {
+        if state.confirmation.is_none() {
+            let _ = play.link.prey_choose_bound(&control.expected, slot, index);
+        }
+        return;
+    }
+    if control.expected.pending.is_some() || !control.expected.selected {
+        return;
+    }
+    let slot = match &control.intent {
+        Some(
+            Intent::SetTier { slot, .. }
+            | Intent::ListReroll { slot }
+            | Intent::Select { slot }
+            | Intent::SelectAny { slot, .. }
+            | Intent::BonusReroll { slot }
+            | Intent::SetOption { slot, .. }
+            | Intent::OfferedToday { slot, .. },
+        ) => Some(*slot),
+        Some(Intent::ConfirmPickAgain(quote)) => Some(quote.slot),
+        Some(Intent::Refresh) | None => None,
+    };
+    if slot.is_some_and(|slot| !control.expected.unlocked(slot)) {
         return;
     }
     if control.confirm {
@@ -215,52 +365,38 @@ fn activate(
                 &mut commands,
                 &skins,
                 root,
-                "Confirm paid action",
+                "Confirm Prey action",
                 confirmed,
             );
         }
         return;
     }
-    if state.confirmation.is_some() && state.confirmation != control.intent {
+    if matches!(
+        &control.intent,
+        Some(
+            Intent::ListReroll { .. }
+                | Intent::BonusReroll { .. }
+                | Intent::SetOption { option: 1..=2, .. }
+                | Intent::ConfirmPickAgain(_)
+        )
+    ) && state.confirmation != control.intent
+    {
         return;
     }
-    let _ = play
+    if control.intent.is_some()
+        && state.confirmation.is_some()
+        && state.confirmation != control.intent
+    {
+        return;
+    }
+    if play
         .link
-        .prey_dispatch_bound(&control.expected, control.intent.clone());
+        .prey_dispatch_bound(&control.expected, control.intent.clone())
+    {
+        state.confirmation = None;
+        state.shown = None;
+    }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::play::{play_channel, mailbox::lock};
-    #[test]
-    fn prey_actions_rejected_when_session_replaced_or_slot_changed() {
-        let (link, mut commands, _outbox) = play_channel();
-        let expected = link.prey_panel();
-        assert!(!link.prey_dispatch_bound(&expected, Some(Intent::Refresh)));
-        assert!(!link.prey_choose_bound(&expected, 1, 1));
-        assert!(commands.try_recv().is_err());
-        assert_eq!(link.prey_panel(), expected);
-    }
-    #[test]
-    fn prey_window_shows_server_slots_only() {
-        let (link, _commands, _outbox) = play_channel();
-        let panel = link.prey_panel();
-        assert!(panel.confirmed.is_none());
-        assert!(!panel_text(&panel).contains("rat"));
-    }
-    #[test]
-    fn prey_actions_are_slot_bound_and_confirm_paid() {
-        let (link, mut commands, _outbox) = play_channel();
-        {
-            let mut mailbox = lock(&link.mailbox);
-            mailbox.prey.open = true;
-            mailbox.prey.selected = true;
-        }
-        let panel = link.prey_panel();
-        assert!(link.prey_dispatch_bound(&panel, Some(Intent::Refresh)));
-        assert!(matches!(commands.try_recv(), Ok(crate::combat_input::PlayCommand::Prey(oteryn_client_ui::prey::prey::Request::Query))));
-        assert!(!link.prey_dispatch_bound(&panel, Some(Intent::Refresh)));
-        assert!(commands.try_recv().is_err());
-    }
-}
+mod tests;
