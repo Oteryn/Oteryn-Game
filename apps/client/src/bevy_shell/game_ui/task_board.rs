@@ -11,6 +11,7 @@ use oteryn_client_ui_bevy as source;
 struct State {
     snapshot: Option<TaskBoardPanel>,
     generation: u64,
+    session: usize,
     root: Option<Entity>,
     tab: Tab,
     confirmation: Option<TaskBoardControl>,
@@ -18,6 +19,7 @@ struct State {
 #[derive(Component, Clone)]
 struct Control {
     generation: u64,
+    session: usize,
     snapshot: TaskBoardPanel,
     action: TaskBoardControl,
     confirm: bool,
@@ -35,13 +37,28 @@ fn project(
         .play
         .as_ref()
         .map(|p| p.link.task_board_panel())
-        .filter(|p| p.open);
-    if state.generation == owner.generation() && state.snapshot == panel {
+        .filter(|p| p.open || p.soulseals_open || p.weekly_results_open);
+    let session = owner
+        .play
+        .as_ref()
+        .map_or(0, |p| p.link.task_board_session_identity());
+    if state.generation == owner.generation() && state.session == session && state.snapshot == panel
+    {
         return;
     }
     if let Some(root) = state.root.take() {
         commands.entity(root).despawn();
     }
+    if state.generation != owner.generation()
+        || state.session != session
+        || state
+            .snapshot
+            .as_ref()
+            .is_some_and(|old| Some(old) != panel.as_ref())
+    {
+        state.confirmation = None;
+    }
+    state.session = session;
     state.generation = owner.generation();
     state.snapshot = panel;
     let Some(panel) = &state.snapshot else {
@@ -86,6 +103,7 @@ fn project(
                 source::button(skins.buttons.clone(), 140.),
                 Control {
                     generation: owner.generation(),
+                    session,
                     snapshot: panel.clone(),
                     action,
                     confirm: false,
@@ -106,7 +124,15 @@ fn project(
         ("Weekly results", Tab::Results),
     ] {
         let button = commands
-            .spawn((source::button(skins.buttons.clone(), 140.), TabControl(tab)))
+            .spawn((
+                source::button(skins.buttons.clone(), 140.),
+                TabControl {
+                    tab,
+                    generation: owner.generation(),
+                    session,
+                    snapshot: panel.clone(),
+                },
+            ))
             .observe(change_tab)
             .id();
         let caption = commands
@@ -164,6 +190,7 @@ fn project(
                 source::button(skins.buttons.clone(), 260.),
                 Control {
                     generation: owner.generation(),
+                    session,
                     snapshot: panel.clone(),
                     action,
                     confirm: state.confirmation.is_some(),
@@ -176,6 +203,64 @@ fn project(
             .id();
         commands.entity(button).add_child(caption);
         commands.entity(root).add_child(button);
+    }
+    if panel.weekly_results_open
+        && panel
+            .weekly
+            .as_ref()
+            .is_some_and(|r| r.weekly_results.is_some())
+    {
+        let results = commands
+            .spawn((
+                source::frame(skins.frame.clone(), [2., 17., 2., 2.]),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: px(40.),
+                    top: px(40.),
+                    width: px(500.),
+                    flex_direction: FlexDirection::Column,
+                    padding: px(20.).all(),
+                    ..default()
+                },
+                GlobalZIndex(20),
+            ))
+            .id();
+        source::dialog_caption(&mut commands, results, "Weekly results", skins.font.clone());
+        let text = commands
+            .spawn(source::text(
+                board_text(panel, Tab::Results),
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        commands.entity(results).add_child(text);
+        let mut actions = vec![("Close".into(), TaskBoardControl::CloseResults)];
+        for i in 0..4 {
+            actions.push((
+                format!("Start weekly: {}", task_board::difficulty_name(i)),
+                TaskBoardControl::Request(FullIntent::StartWeekly(i)),
+            ));
+        }
+        for (label, action) in actions {
+            let button = commands
+                .spawn((
+                    source::button(skins.buttons.clone(), 240.),
+                    Control {
+                        generation: owner.generation(),
+                        session,
+                        snapshot: panel.clone(),
+                        action,
+                        confirm: false,
+                    },
+                ))
+                .observe(activate)
+                .id();
+            let caption = commands
+                .spawn(source::button_caption(&label, skins.font.clone()))
+                .id();
+            commands.entity(button).add_child(caption);
+            commands.entity(results).add_child(button);
+        }
+        commands.entity(root).add_child(results);
     }
     state.root = Some(root);
 }
@@ -192,7 +277,12 @@ fn activate(
     let Ok(control) = controls.get(event.entity) else {
         return;
     };
-    if control.generation != owner.generation() {
+    if !valid(
+        &owner,
+        control.generation,
+        control.session,
+        &control.snapshot,
+    ) {
         return;
     }
     if paid(&control.action) && !control.confirm {
@@ -219,17 +309,27 @@ enum Tab {
     Results,
 }
 #[derive(Component)]
-struct TabControl(Tab);
+struct TabControl {
+    tab: Tab,
+    generation: u64,
+    session: usize,
+    snapshot: TaskBoardPanel,
+}
 fn change_tab(
     event: On<Activate>,
     tabs: Query<&TabControl>,
     mut state: ResMut<State>,
     guard: ModalGuard,
+    owner: NonSend<HostOwner>,
 ) {
-    if guard.allows(event.entity)
+    if !owner.modal_active()
+        && guard.allows(event.entity)
         && let Ok(tab) = tabs.get(event.entity)
     {
-        state.tab = tab.0;
+        if !valid(&owner, tab.generation, tab.session, &tab.snapshot) {
+            return;
+        }
+        state.tab = tab.tab;
         state.snapshot = None;
         state.confirmation = None;
     }
@@ -263,4 +363,14 @@ fn board_text(panel: &TaskBoardPanel, tab: Tab) -> String {
                 },
             ),
     }
+}
+
+fn valid(owner: &HostOwner, generation: u64, session: usize, panel: &TaskBoardPanel) -> bool {
+    owner.phase == super::super::owner::Phase::Playing
+        && !owner.modal_active()
+        && generation == owner.generation()
+        && owner.play.as_ref().is_some_and(|p| {
+            p.link.task_board_session_identity() == session
+                && p.link.task_board_snapshot_valid(panel)
+        })
 }

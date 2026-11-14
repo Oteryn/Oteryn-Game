@@ -48,10 +48,16 @@ pub(in crate::play) mod weekly_results_window;
 pub(crate) enum TaskBoardControl {
     Close,
     Catalogue,
+    CloseResults,
     Request(oteryn_client_ui::task_board::FullIntent),
 }
 #[cfg(feature = "bevy-shell")]
 impl PlayLink {
+    pub(crate) fn task_board_session_identity(&self) -> usize { std::sync::Arc::as_ptr(&self.mailbox) as usize }
+    pub(crate) fn task_board_snapshot_valid(&self, expected: &oteryn_client_ui::task_board::TaskBoardPanel) -> bool {
+        let mailbox = lock(&self.mailbox);
+        !self.commands.is_closed() && !mailbox.world_input_blocked() && !mailbox.server_modal.is_active() && mailbox.task_board == *expected && expected.selected && !expected.pending && (expected.open || expected.weekly_results_open || expected.soulseals_open)
+    }
     pub(crate) fn task_board_action_bound(
         &self,
         expected: &oteryn_client_ui::task_board::TaskBoardPanel,
@@ -63,13 +69,14 @@ impl PlayLink {
             || mailbox.server_modal.is_active()
             || mailbox.task_board != *expected
             || !expected.selected
-            || !expected.open
+            || !(expected.open || expected.weekly_results_open || expected.soulseals_open)
             || expected.pending
         {
             return false;
         }
         match action {
             TaskBoardControl::Catalogue => { super::input::soulseals::send(&mut mailbox, &self.commands, oteryn_client_ui::task_board::fights::FightIntent::Catalogue { after: 0 }); }
+            TaskBoardControl::CloseResults => mailbox.task_board.weekly_results_open = false,
             TaskBoardControl::Close => mailbox.task_board.open = false,
             TaskBoardControl::Request(intent) => {
                 let Some(command) = oteryn_client_ui::task_board::full_request(
@@ -83,5 +90,41 @@ impl PlayLink {
             }
         }
         true
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+mod bound_tests {
+    use super::*;
+    use oteryn_client_ui::task_board::FullIntent;
+    #[test]
+    fn task_board_actions_rejected_when_session_replaced() {
+        let (link, mut incoming, _) = crate::play::play_channel();
+        {
+            let mut m = lock(&link.mailbox);
+            m.task_board.selected = true;
+            m.task_board.open = true;
+        }
+        let snapshot = link.task_board_panel();
+        lock(&link.mailbox).task_board.open = false;
+        let before = link.task_board_panel();
+        for action in [TaskBoardControl::Close, TaskBoardControl::Catalogue, TaskBoardControl::CloseResults, TaskBoardControl::Request(FullIntent::Refresh), TaskBoardControl::Request(FullIntent::Reroll), TaskBoardControl::Request(FullIntent::ClaimBounty)] {
+            assert!(!link.task_board_action_bound(&snapshot, action));
+            assert_eq!(link.task_board_panel(), before);
+        }
+        assert!(incoming.try_recv().is_err());
+    }
+    #[test]
+    fn task_board_bound_request_waits_for_server_and_rejects_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+        let (link, mut incoming, _) = crate::play::play_channel();
+        { let mut m = lock(&link.mailbox); m.task_board.selected = true; m.task_board.open = true; }
+        let snapshot = link.task_board_panel();
+        assert!(link.task_board_action_bound(&snapshot, TaskBoardControl::Request(FullIntent::Refresh)));
+        assert!(link.task_board_panel().pending);
+        assert_eq!(link.task_board_panel().weekly, snapshot.weekly);
+        assert!(!link.task_board_action_bound(&snapshot, TaskBoardControl::Request(FullIntent::Refresh)));
+        assert!(matches!(incoming.try_recv()?, crate::combat_input::PlayCommand::Feature(_)));
+        assert!(incoming.try_recv().is_err());
+        Ok(())
     }
 }
