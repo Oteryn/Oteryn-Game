@@ -43,6 +43,7 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    HirelingServices,
     Market,
     Party,
     Quests,
@@ -60,6 +61,7 @@ impl Control {
     pub fn id(self) -> &'static str {
         match self {
             Self::Options => "shell.options",
+            Self::HirelingServices => "shell.hireling_services",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
@@ -165,6 +167,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
+        (
+            Control::HirelingServices,
+            "Hireling services (Ctrl+Shift+H)",
+            240.,
+        ),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
@@ -372,6 +379,7 @@ fn activate(
             && matches!(
                 control,
                 Control::Options
+                    | Control::HirelingServices
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -384,6 +392,7 @@ fn activate(
         }
         match control {
             Control::Options => owner.open_graphics(),
+            Control::HirelingServices => super::game_ui::hireling_services::toggle(&owner),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
@@ -572,7 +581,8 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::HirelingServices)
+                | Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
