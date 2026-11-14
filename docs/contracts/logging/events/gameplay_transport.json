@@ -31,6 +31,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "command_guard_deferred",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Transient holder failure refused one command without a disconnect (NBREL3)."
+    },
+    {
       "event": "command_guard_failed",
       "level": "info",
       "span": false,
