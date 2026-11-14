@@ -4738,3 +4738,87 @@ fn player_death_canonical_container_slot_500_item_boundary_preserves_every_child
         .map_err(|_| "maximum slot promotion thread panicked")?
         .map_err(Into::into)
 }
+
+async fn run_world_reset_proof_cache_qualification(admin: String, case: u8) -> TestResult {
+    let h = Harness::create(admin, "world_reset_proof_cache").await?;
+    let result: TestResult = async {
+        match case {
+            0 => {
+                prepare_nested_reset(&h, &h.root).await?;
+                let mut tx = h.pool.begin().await?;
+                let proof = "SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)";
+                assert!(sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM pg_temp.game_world_reset_proof_cache_state_v1 WHERE kind=1 AND xact_id=pg_current_xact_id()").fetch_one(&mut *tx).await?,1);
+                sqlx::query("SAVEPOINT before_drain_change").execute(&mut *tx).await?;
+                let changed=sqlx::query("DELETE FROM game_durability_admission_runtime_guards g USING game_runtime_scope_assignments a WHERE g.scope_key=a.scope_key AND a.world_id=encode($1,'hex')::uuid AND a.scope_kind=1").bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+                assert_eq!(changed.rows_affected(),1);
+                assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM pg_temp.game_world_reset_proof_cache_state_v1").fetch_one(&mut *tx).await?,0);
+                assert!(!sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                sqlx::query("ROLLBACK TO SAVEPOINT before_drain_change").execute(&mut *tx).await?;
+                assert!(sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                // This second connection cannot invalidate the first connection's TEMP
+                // rows. Visibility fencing must still reject its newly committed change.
+                let removed=sqlx::query("DELETE FROM game_world_reset_active WHERE world_id=encode($1,'hex')::uuid").bind(id(WORLD).as_slice()).execute(&h.pool).await?;
+                assert_eq!(removed.rows_affected(),1);
+                assert!(!sqlx::query_scalar::<_, bool>(proof).bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                tx.rollback().await?;
+            }
+            1 => {
+                let mut tx=h.pool.begin().await?;
+                sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ").execute(&mut *tx).await?;
+                sqlx::query("SELECT pg_current_xact_id()").execute(&mut *tx).await?;
+                sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+                sqlx::raw_sql("CREATE TEMP TABLE game_world_reset_proof_cache_state_v1(kind smallint,xact_id xid8,visibility_snapshot text,item_id uuid,world_id uuid,reset_epoch numeric,proven_items uuid[],batch_allowed boolean);").execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO pg_temp.game_world_reset_proof_cache_state_v1 VALUES(1,pg_current_xact_id(),pg_current_snapshot()::text,NULL,encode($1,'hex')::uuid,0,NULL,true),(2,pg_current_xact_id(),pg_current_snapshot()::text,encode($2,'hex')::uuid,NULL,NULL,ARRAY[encode($2,'hex')::uuid],true)").bind(id(WORLD).as_slice()).bind(id(99).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("RESET ROLE").execute(&mut *tx).await?;
+                assert!(!sqlx::query_scalar::<_,bool>("SELECT game_world_reset_drained(encode($1,'hex')::uuid,0)").bind(id(WORLD).as_slice()).fetch_one(&mut *tx).await?);
+                assert!(!sqlx::query_scalar::<_,bool>("SELECT game_world_reset_item_proven(encode($1,'hex')::uuid)").bind(id(99).as_slice()).fetch_one(&mut *tx).await?);
+                tx.rollback().await?;
+                for function in ["game_world_reset_proof_cache_init()","game_world_reset_proof_cache_invalidate()","game_world_reset_items_proven_set(uuid)","game_world_reset_item_proven_uncached(uuid)","game_world_reset_drained_uncached(uuid,numeric)"] {
+                    assert!(!sqlx::query_scalar::<_,bool>("SELECT has_function_privilege('oteryn_game_runtime',$1,'EXECUTE') OR has_function_privilege('oteryn_game_control',$1,'EXECUTE')").bind(function).fetch_one(&h.pool).await?,"private helper: {function}");
+                }
+            }
+            2 => {
+                let relations:Vec<String>=sqlx::query_scalar(r"SELECT DISTINCT found[1] FROM pg_proc p CROSS JOIN LATERAL regexp_matches(p.prosrc,'\m(?:FROM|JOIN)\s+(?:public\.)?(game_[a-z0-9_]+)\M','gi') found WHERE p.oid IN('game_world_reset_item_proven_uncached(uuid)'::regprocedure,'game_world_reset_drained_uncached(uuid,numeric)'::regprocedure,'game_world_reset_items_proven_set(uuid)'::regprocedure,'game_player_death_retirement_entry_proven(uuid)'::regprocedure,'game_player_death_retirement_root_bounds_proven(uuid)'::regprocedure,'game_node_lock_current_registration(uuid,numeric)'::regprocedure,'game_node_registration_history_valid()'::regprocedure) ORDER BY 1").fetch_all(&h.pool).await?;
+                assert!(relations.len()>=24,"complete full-proof dependency closure: {relations:?}");
+                for relation in relations {
+                    let triggers:Vec<i16>=sqlx::query_scalar("SELECT tgtype FROM pg_trigger WHERE tgrelid=to_regclass($1) AND tgfoid='game_world_reset_proof_cache_invalidate()'::regprocedure AND tgenabled='O' ORDER BY tgtype").bind(&relation).fetch_all(&h.pool).await?;
+                    // INSERT | DELETE | UPDATE | TRUNCATE, statement-level, BEFORE and AFTER.
+                    assert_eq!(triggers,vec![60,62],"every write invalidates {relation}");
+                }
+            }
+            _ => return Err("unknown cache qualification case".into()),
+        }
+        Ok(())
+    }.await;
+    h.cleanup().await?;
+    result
+}
+fn world_reset_proof_cache_qualification(case: u8) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_world_reset_proof_cache_qualification(admin, case))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "World reset proof cache test thread panicked")?
+        .map_err(Into::into)
+}
+#[test]
+fn player_death_world_reset_cache_invalidates_own_and_concurrent_changes() -> TestResult {
+    world_reset_proof_cache_qualification(0)
+}
+#[test]
+fn player_death_world_reset_cache_cannot_be_forged() -> TestResult {
+    world_reset_proof_cache_qualification(1)
+}
+#[test]
+fn player_death_world_reset_cache_tracks_full_proof_dependencies() -> TestResult {
+    world_reset_proof_cache_qualification(2)
+}
