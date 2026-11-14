@@ -82,6 +82,12 @@ pub enum ActorConditionTransition<'a> {
         facts: ApplicationFacts<'a>,
     },
     Cleanse(ApplicationFacts<'a>),
+    /// One index from the composed owner's single Cleanse draw. `None` records the
+    /// same occurrence atomically with a selection in the player's other owned store.
+    CleanseSelected {
+        facts: ApplicationFacts<'a>,
+        index: Option<usize>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -516,7 +522,8 @@ impl ChannelRuntimeV1 {
             ActorConditionTransition::Apply { facts, source, .. }
             | ActorConditionTransition::ApplyBatch { facts, source, .. }
             | ActorConditionTransition::RemoveType { facts, source, .. } => (*facts, Some(*source)),
-            ActorConditionTransition::Cleanse(facts) => (*facts, None),
+            ActorConditionTransition::Cleanse(facts)
+            | ActorConditionTransition::CleanseSelected { facts, .. } => (*facts, None),
         };
         if facts.target_is_player != session.is_some() || (source.is_none() && session.is_none()) {
             return Err(ConditionOwnerError::FactsMismatch);
@@ -591,6 +598,15 @@ impl ChannelRuntimeV1 {
                     .prepare_cleanse(&facts)
                     .map_err(ConditionOwnerError::Condition)?
                 {
+                    next.commit_cleanse(plan);
+                }
+            }
+            ActorConditionTransition::CleanseSelected { index, .. } => {
+                if let Some(index) = index {
+                    let plan = next
+                        .prepare_cleanse_at_index(&facts, index)
+                        .map_err(ConditionOwnerError::Condition)?
+                        .ok_or(ConditionOwnerError::FactsMismatch)?;
                     next.commit_cleanse(plan);
                 }
             }

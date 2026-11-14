@@ -8,6 +8,10 @@ use crate::foundation::{
 };
 use crate::monster_combat_lane::native_conditions::*;
 
+#[cfg(test)]
+#[path = "actor_charm_cleanse_tests.rs"]
+mod actor_charm_cleanse_tests;
+
 impl ChannelSpellStates {
     fn condition_player_current(
         &self,
@@ -1504,7 +1508,7 @@ impl ChannelSpellStates {
     )]
     pub(in crate::gameplay_transport) fn apply_player_charm_condition(
         &mut self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
         session: GameSessionId,
         effect: oteryn_gameplay_progression::charm_effects::CharmEffectOutcome,
@@ -1541,6 +1545,7 @@ impl ChannelSpellStates {
         }
         let mut conditions = before.owned_conditions().clone();
         conditions.expire_non_ticking(now);
+        let mut canonical_cleanse = None;
         match effect {
             oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::Haste { duration_ms } => {
                 // Canary 47dfd51f iobestiary.cpp:143-147, condition.cpp:2537-2563.
@@ -1553,10 +1558,36 @@ impl ChannelSpellStates {
                     native::ConditionSourceKind::SelfUse, &[], &facts).is_err() { return false; }
             }
             oteryn_gameplay_progression::charm_effects::CharmEffectOutcome::CleanseOneNegativeCondition => {
-                // Accepted native Cleanse owner selects one negative condition and retains
-                // its 11-second immunity; replay never picks a second replacement.
-                let Ok(Some(plan)) = conditions.prepare_cleanse(&facts) else { return false; };
+                let Ok(canonical) = runtime.actor_conditions(target, Some(session)) else { return false; };
+                let native_count = canonical.cleanse_candidate_count(now);
+                let Some(count) = native_count.checked_add(conditions.cleanse_candidate_count(now)) else { return false; };
+                // One draw across both existing stores, not one proc/removal per store.
+                // Native instances precede player-state instances; each keeps sequence order.
+                let index = match count {
+                    0 => return false,
+                    1 => 0,
+                    count => {
+                        let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
+                            root, occurrence, native::COND_CLEANSE_PICK, 0,
+                        ) else { return false; };
+                        let Ok(count) = u64::try_from(count) else { return false; };
+                        let Ok(index) = usize::try_from(draw % count) else { return false; };
+                        index
+                    }
+                };
+                let native_index = (index < native_count).then_some(index);
+                let Ok(receipt) = runtime.prepare_actor_condition(
+                    target, Some(session),
+                    ActorConditionTransition::CleanseSelected { facts, index: native_index },
+                    SemanticTimeMicros::from_micros(now),
+                ) else { return false; };
+                if native_index.is_some() {
+                    return runtime.commit_actor_condition(&receipt, SemanticTimeMicros::from_micros(now))
+                        .unwrap_or(false);
+                }
+                let Ok(Some(plan)) = conditions.prepare_cleanse_at_index(&facts, index - native_count) else { return false; };
                 if !conditions.commit_cleanse(plan) { return false; }
+                canonical_cleanse = Some(receipt);
             }
             _ => return false,
         }
@@ -1571,6 +1602,17 @@ impl ChannelSpellStates {
             return false;
         }
         next.source_set_batch_revision(revision);
+        if let Some(receipt) = canonical_cleanse {
+            // The existing owner validates before this immutable callback, then publishes
+            // the condition receipt only if the player-state compare-commit succeeds.
+            return runtime
+                .commit_actor_condition_with_vitals(
+                    &receipt,
+                    SemanticTimeMicros::from_micros(now),
+                    |runtime| self.commit(runtime, target, session, next).then_some(()),
+                )
+                .is_ok_and(|result| result.is_some());
+        }
         self.commit(runtime, target, session, next)
     }
 }
