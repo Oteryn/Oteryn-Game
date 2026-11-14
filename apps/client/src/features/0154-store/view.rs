@@ -70,3 +70,13 @@ fn open_gift(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{StoreAction, StoreCustomization, StoreSnapshot};
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "bound_test_support.rs"]
+mod bound_test_support;
