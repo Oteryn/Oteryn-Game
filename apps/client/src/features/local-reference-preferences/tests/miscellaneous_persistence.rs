@@ -169,3 +169,34 @@ fn miscellaneous_character_scope_uses_the_original_base_sidecar_and_retains_flag
     );
     Ok(())
 }
+
+#[test]
+fn portable_import_then_apply_preserves_session_options() -> TestResult {
+    let temp = Temp::new()?;
+    let flags = MiscellaneousPreferences {
+        stay_logged_in: true,
+        remember_device: true,
+        quick_login: true,
+        confirm_logout: false,
+        confirm_exit: false,
+    };
+    flags.save(&temp.sidecar())?;
+    let mut state = SettingsState::new(Some(temp.preferences()));
+    let transfer = temp.0.join("portable.json");
+    let mut portable = crate::play::ReferencePreferences::default();
+    portable.graphics.fullscreen = true;
+    PreferenceStore::export_to(&portable, &transfer)?;
+    state.import_from(&transfer)?;
+    assert!(state.preferences.graphics.fullscreen);
+    state.apply(state.preferences.clone());
+    assert_eq!(state.feedback, "Applied and saved");
+    assert_eq!(MiscellaneousPreferences::read(&temp.sidecar())?, flags);
+    assert_eq!(state.preferences.miscellaneous, flags);
+    state.restore_backup()?;
+    state.apply(state.preferences.clone());
+    assert_eq!(MiscellaneousPreferences::read(&temp.sidecar())?, flags);
+    state.reset_defaults()?;
+    state.apply(state.preferences.clone());
+    assert_eq!(MiscellaneousPreferences::read(&temp.sidecar())?, flags);
+    Ok(())
+}

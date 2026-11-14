@@ -123,7 +123,8 @@ impl SettingsState {
         self.import_from(&path)
     }
 
-    pub(super) fn replace_saved(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
+    pub(super) fn replace_saved(&mut self, mut preferences: ReferencePreferences) -> io::Result<()> {
+        preferences.miscellaneous = self.preferences.miscellaneous;
         let store = self
             .store
             .as_mut()
