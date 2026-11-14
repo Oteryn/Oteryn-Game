@@ -65,6 +65,7 @@ pub(super) enum Control {
     PlayerReport,
     Quests,
     Spells,
+    StatusDetails,
     StaffTools,
     WorldEvent,
     TeamFinder,
@@ -105,6 +106,7 @@ impl Control {
             Self::PlayerReport => "shell.player_report",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::StatusDetails => "shell.status_details",
             Self::StaffTools => "shell.staff_tools",
             Self::WorldEvent => "shell.world_event",
             Self::TeamFinder => "shell.team_finder",
@@ -241,6 +243,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::PlayerReport, "Reports (Ctrl+Alt+R)", 170.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (Control::StatusDetails, "Status details", 110.),
         (Control::StaffTools, "Staff tools (Ctrl+Alt+0)", 180.),
         (Control::WorldEvent, "World events", 100.),
         (Control::TeamFinder, "Team Finder (Ctrl+Alt+T)", 180.),
@@ -454,6 +457,7 @@ fn activate(
                     | Control::PlayerReport
                     | Control::Quests
                     | Control::Spells
+                    | Control::StatusDetails
                     | Control::StaffTools
                     | Control::WorldEvent
                     | Control::Training
@@ -490,6 +494,7 @@ fn activate(
             Control::PlayerReport => super::game_ui::player_report_report::open(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::StatusDetails => super::game_ui::status_details::toggle(&owner),
             Control::StaffTools => super::game_ui::staff_tools::open(&mut owner),
             Control::WorldEvent => super::game_ui::world_event_window::open(&owner),
             Control::TeamFinder => super::game_ui::open_team_finder(&mut owner),
@@ -681,7 +686,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::StatusDetails | Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
