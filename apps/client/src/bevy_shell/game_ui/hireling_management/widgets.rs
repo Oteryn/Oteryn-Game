@@ -110,7 +110,15 @@ pub(super) fn render(
     } else {
         let enabled =
             snapshot.panel.selected && snapshot.panel.pending.is_none() && !snapshot.store.pending;
-        if snapshot.store.confirmed_purchase.is_some() {
+        if snapshot
+            .store
+            .confirmed_purchase
+            .as_ref()
+            .is_some_and(|payload| {
+                oteryn_client_runtime::cui3::store::decode_purchase_request_with_hireling(payload)
+                    .is_ok_and(|(quote, _)| quote.offer_key.starts_with("store:hireling:"))
+            })
+        {
             button(
                 commands,
                 skins,

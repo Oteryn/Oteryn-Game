@@ -171,3 +171,38 @@ fn hireling_management_terminal_purchase_refusal_can_refresh_and_review_again() 
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn hireling_management_hides_retry_for_other_store_purchases() -> Result {
+    use bevy::ecs::system::RunSystemOnce;
+    let ((mut app, mut commands, _outbox), original) = pending_purchase()?;
+    let mut quote =
+        store::decode_purchase_request(&original.payload).map_err(|e| format!("{e:?}"))?;
+    quote.offer_key = "store:outfit:1001".into();
+    let (key, mut snapshot) = app
+        .world()
+        .resource::<State>()
+        .snapshot
+        .clone()
+        .ok_or("snapshot")?;
+    snapshot.store.confirmed_purchase =
+        Some(store::encode_purchase_request(&quote).map_err(|e| format!("{e:?}"))?);
+    app.world_mut()
+        .run_system_once(
+            move |mut commands: Commands, skins: Res<Skins>, mut state: ResMut<State>| {
+                let mut current = state.widgets.take().ok_or("widgets")?;
+                widgets::render(&mut commands, &skins, &mut current, key, &snapshot, &state);
+                state.widgets = Some(current);
+                Ok::<(), &str>(())
+            },
+        )
+        .map_err(|e| format!("{e:?}"))??;
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Retry configuration")
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

@@ -119,12 +119,21 @@ pub enum HousePodiumControl {
 }
 
 #[cfg(feature = "bevy-shell")]
-pub fn house_podium_artwork(
-    artwork: oteryn_session::property_services::house_podium::preview::Artwork,
-) -> Result<Vec<Vec<u8>>, String> {
-    let root = std::env::var_os(crate::map::ASSET_DIR_ENV)
-        .ok_or("Set OTERYN_ASSET_DIR to the existing pinned artwork root")?;
-    preview_assets::Assets::load(std::path::Path::new(&root))?.render(artwork)
+pub(crate) struct HousePodiumArtwork(preview_assets::Assets);
+
+#[cfg(feature = "bevy-shell")]
+impl HousePodiumArtwork {
+    pub(crate) fn load() -> Result<Self, String> {
+        let root = std::env::var_os(crate::map::ASSET_DIR_ENV)
+            .ok_or("Set OTERYN_ASSET_DIR to the existing pinned artwork root")?;
+        preview_assets::Assets::load(std::path::Path::new(&root)).map(Self)
+    }
+    pub(crate) fn render(
+        &mut self,
+        artwork: oteryn_session::property_services::house_podium::preview::Artwork,
+    ) -> Result<Vec<Vec<u8>>, String> {
+        self.0.render(artwork)
+    }
 }
 
 /// Dispatch against the exact retained projection captured by the presenter.

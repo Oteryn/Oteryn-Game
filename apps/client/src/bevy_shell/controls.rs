@@ -169,16 +169,7 @@ impl HostOwner {
             super::game_ui::furniture_wrapping::toggle(self);
             return;
         }
-        if oteryn_client_ui::account_achievements::open_key(&routed) {
-            let panel = play.link.achievements_panel();
-            let _ = play.link.achievements_open_bound(&panel);
-            return;
-        }
         if !chat && self.phase == super::owner::Phase::Playing {
-            if oteryn_client_ui::battle_instinct_status::open_key(&routed) {
-                condition_details::open_input(&play.link, Target::BattleInstinct);
-                return;
-            }
             if oteryn_client_ui::condition_status::open_key(&routed) {
                 condition_details::open_input(&play.link, Target::Conditions);
                 return;

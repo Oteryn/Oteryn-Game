@@ -55,51 +55,51 @@ pub(in crate::bevy_shell) fn project_toolbar(
         } else if matches!(
             control,
             Some(
-                Control::Achievements
+                Control::AchievementNotices
+                    | Control::Achievements
+                    | Control::AnimusMastery
                     | Control::Appearance
-                    | Control::Details(_)
-                    | Control::HirelingManagement
-                    | Control::HousePodium
-                    | Control::Prey
-                    | Control::StatusDetails
-                    | Control::CastChat
-                    | Control::Cast
-                    | Control::StaffTools
-                    | Control::PlayerReport
-                    | Control::SupportEvidence
-                    | Control::TaskBoard
-                    | Control::WorldEvent
-                    | Control::ExivaSettings
-                    | Control::TeamFinder
-                    | Control::Training
-                    | Control::HirelingServices
-                    | Control::FurnitureRotation
-                    | Control::HouseMoveOut
-                    | Control::HouseTransfer
-                    | Control::HouseBrowsing
-                    | Control::GuildhallLeadership
-                    | Control::GuildWars
-                    | Control::CyclopediaTrackers
-                    | Control::CyclopediaMap
+                    | Control::Arena
                     | Control::BossDifficulty
                     | Control::BossRewardChest
-                    | Control::AnimusMastery
+                    | Control::Bosstiary(_)
                     | Control::BrowseField
+                    | Control::Cast
+                    | Control::CastChat
                     | Control::ContainerSorting
+                    | Control::CyclopediaCharacter
+                    | Control::CyclopediaMap
+                    | Control::CyclopediaTrackers
+                    | Control::Details(_)
+                    | Control::ExivaSettings
+                    | Control::ExpertPvpModes
+                    | Control::FurnitureRotation
+                    | Control::FurnitureWrapping
+                    | Control::Guild(_)
+                    | Control::GuildWars
+                    | Control::GuildhallLeadership
+                    | Control::HirelingManagement
+                    | Control::HirelingServices
+                    | Control::HouseBrowsing
+                    | Control::HouseMoveOut
+                    | Control::HousePodium
+                    | Control::HouseTransfer
                     | Control::Market
                     | Control::Party
+                    | Control::PlayerReport
+                    | Control::Prey
                     | Control::Quests
-                    | Control::WeaponProficiency
-                    | Control::Bosstiary(_)
-                    | Control::AchievementNotices
-                    | Control::ExpertPvpModes
-                    | Control::Guild(_)
                     | Control::RaidSchedule
-                    | Control::Arena
-                    | Control::CyclopediaCharacter
-                    | Control::FurnitureWrapping
                     | Control::SkillsConfig
                     | Control::Spells
+                    | Control::StaffTools
+                    | Control::StatusDetails
+                    | Control::SupportEvidence
+                    | Control::TaskBoard
+                    | Control::TeamFinder
+                    | Control::Training
+                    | Control::WeaponProficiency
+                    | Control::WorldEvent
             )
         ) {
             node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {

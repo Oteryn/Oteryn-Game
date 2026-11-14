@@ -220,7 +220,7 @@ fn project(
             },
         );
 
-        let mut editable = bevy::text::EditableText::new("");
+        let mut editable = bevy::text::EditableText::new("oteryn:");
         editable.max_characters = Some(256);
         let editor = commands
             .spawn((
@@ -413,10 +413,6 @@ fn activate(
         Some(Intent::Refresh) | None => None,
     };
     if slot.is_some_and(|slot| !control.expected.unlocked(slot)) {
-        return;
-    }
-    if matches!(&control.intent,Some(Intent::SelectAny{slot,..}) if control.expected.slot(*slot).is_none_or(|s|s.state!=1))
-    {
         return;
     }
     if control.confirm {

@@ -4,8 +4,8 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
+use crate::play::feature_0150_house_podium::view::HousePodiumArtwork;
 use crate::play::feature_0150_house_podium::view::HousePodiumControl as Kind;
-use crate::play::feature_0150_house_podium::view::house_podium_artwork;
 use bevy::{
     prelude::*,
     text::{EditableText, TextCursorStyle},
@@ -13,6 +13,10 @@ use bevy::{
 };
 use oteryn_client_ui::house_podium::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
+/// Retain the pinned manifest, catalog, appearance index and decoded sprite cache.
+#[derive(Resource, Default)]
+struct ArtworkAssets(Option<Result<HousePodiumArtwork, String>>);
+
 #[derive(Resource, Default)]
 struct State {
     snapshot: Option<(u64, Panel)>,
@@ -28,7 +32,9 @@ struct Control {
 #[derive(Component)]
 struct Field(usize);
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .init_resource::<ArtworkAssets>()
+        .add_systems(Update, project);
 }
 pub(in crate::bevy_shell) fn open(owner: &mut HostOwner) {
     if !owner.modal_active()
@@ -72,6 +78,7 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     mut images: ResMut<Assets<Image>>,
+    mut artwork_assets: ResMut<ArtworkAssets>,
 ) {
     let current = owner
         .play
@@ -190,7 +197,13 @@ fn project(
         }
     }
     if let Some(artwork) = panel.artwork {
-        let rendered = house_podium_artwork(artwork);
+        let rendered = match artwork_assets
+            .0
+            .get_or_insert_with(HousePodiumArtwork::load)
+        {
+            Ok(assets) => assets.render(artwork),
+            Err(error) => Err(error.clone()),
+        };
         match rendered {
             Ok(rendered) => {
                 for rgba in rendered {

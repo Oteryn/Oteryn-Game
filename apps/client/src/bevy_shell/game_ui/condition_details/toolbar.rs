@@ -53,8 +53,18 @@ pub(in crate::bevy_shell) fn setup_toolbar(commands: &mut Commands, skin: &Skins
         // Resolve anchors after the other lanes' registrations have been materialized.
         commands.queue(move |world: &mut World| {
             let index = world.get::<Children>(parent).map_or(0, |children| {
+                let start = children
+                    .iter()
+                    .position(|child| {
+                        matches!(
+                            world.get::<ToolbarControl>(child),
+                            Some(ToolbarControl::Options)
+                        )
+                    })
+                    .map_or(0, |index| index + 1);
                 children
                     .iter()
+                    .skip(start)
                     .position(|child| {
                         world.get::<ToolbarControl>(child).is_some_and(|control| {
                             !matches!(
@@ -66,6 +76,7 @@ pub(in crate::bevy_shell) fn setup_toolbar(commands: &mut Commands, skin: &Skins
                                 && control.id() > target.id()
                         })
                     })
+                    .map(|index| start + index)
                     .unwrap_or(children.len())
             });
             world.entity_mut(parent).insert_children(index, &[button]);

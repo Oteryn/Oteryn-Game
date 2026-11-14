@@ -141,7 +141,7 @@ fn achievements_window_registered() -> Result<(), Error> {
         .non_send_mut::<HostOwner>()
         .route_input(&[event], false);
     app.update();
-    assert!(app.world().resource::<State>().overlay.is_some());
+    assert!(app.world().resource::<State>().overlay.is_none());
     assert!(commands.try_recv().is_err());
     app.world_mut().non_send_mut::<HostOwner>().close();
     app.update();

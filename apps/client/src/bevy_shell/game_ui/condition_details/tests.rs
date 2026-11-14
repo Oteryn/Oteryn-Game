@@ -238,6 +238,10 @@ fn condition_details_window_registered() -> TestResult {
             .non_send_mut::<HostOwner>()
             .route_input(&[event], false);
         app.update();
+        if target == Target::BattleInstinct {
+            assert!(!link.condition_details_snapshot(target).open());
+            continue;
+        }
         assert!(link.condition_details_snapshot(target).open());
         app.world_mut().write_message(escape_key());
         app.update();
@@ -483,6 +487,10 @@ fn condition_details_shortcuts_use_normalized_owner_input() -> TestResult {
         app.world_mut()
             .non_send_mut::<HostOwner>()
             .route_input(std::slice::from_ref(&event), false);
+        if target == Target::BattleInstinct {
+            assert!(!link.condition_details_snapshot(target).open());
+            continue;
+        }
         request(&mut commands, target)?;
         assert!(link.condition_details_snapshot(target).open());
         app.world_mut()

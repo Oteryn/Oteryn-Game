@@ -483,3 +483,47 @@ fn prey_toolbar_is_playing_only_and_opens_the_owner() -> ResultTest {
     );
     Ok(())
 }
+
+#[test]
+fn prey_select_any_accepts_active_unlocked_slot_with_prefilled_editor() -> ResultTest {
+    let (mut app, mut commands, _) = fixture()?;
+    let editor = app
+        .world_mut()
+        .query::<(&CreatureField, &bevy::text::EditableText)>()
+        .iter(app.world())
+        .find_map(|(field, value)| (field.0 == 3).then_some(value.value().to_string()))
+        .ok_or("active slot editor")?;
+    assert_eq!(editor, "oteryn:");
+    let intent = Intent::SelectAny {
+        slot: 3,
+        creature: "oteryn:creature.bear".into(),
+    };
+    let propose = control(
+        &mut app,
+        Some(Intent::SelectAny {
+            slot: 3,
+            creature: String::new(),
+        }),
+        true,
+        None,
+    )?;
+    let editor_entity = app
+        .world_mut()
+        .query::<(Entity, &CreatureField)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 3).then_some(entity))
+        .ok_or("editor")?;
+    app.world_mut()
+        .entity_mut(editor_entity)
+        .insert(bevy::text::EditableText::new("oteryn:creature.bear"));
+    app.world_mut().trigger(Activate { entity: propose });
+    assert!(commands.try_recv().is_err());
+    app.world_mut().flush();
+    let confirm = control(&mut app, Some(intent), false, None)?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::Prey(prey::Request::SelectAny { slot: 3, .. })
+    ));
+    Ok(())
+}
