@@ -38,7 +38,7 @@ pub(in crate::play) fn submit(
     }
     true
 }
-fn operation() -> Option<[u8; 16]> {
+pub(in crate::play) fn operation() -> Option<[u8; 16]> {
     use sha2::{Digest, Sha256};
     use std::sync::atomic::{AtomicU64, Ordering};
     static SEQUENCE: AtomicU64 = AtomicU64::new(0);
