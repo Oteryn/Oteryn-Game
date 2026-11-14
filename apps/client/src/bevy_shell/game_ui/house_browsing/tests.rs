@@ -213,17 +213,17 @@ fn house_browsing_window_registered() -> TestResult {
     choose(&mut app, Kind::Close)?;
     app.update();
     assert!(!link(&app)?.house_panel().model.open);
-    let event = bevy::input::keyboard::KeyboardInput {
-        key_code: KeyCode::F8,
-        logical_key: bevy::input::keyboard::Key::Unidentified(
-            bevy::input::keyboard::NativeKey::Unidentified,
-        ),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(11)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt)
+            .with(oteryn_input_actions::Modifier::Shift),
         repeat: false,
-        window: Entity::PLACEHOLDER,
     };
-    app.world_mut().write_message(event);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
     app.update();
     assert!(link(&app)?.house_panel().model.open);
     Ok(())
