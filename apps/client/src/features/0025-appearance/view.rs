@@ -112,7 +112,7 @@ pub(crate) mod bevy_window_tests;
 #[path = "view/bound.rs"]
 mod bound;
 #[cfg(feature = "bevy-shell")]
-pub use bound::{AppearanceControl, AppearanceSnapshot};
+pub use bound::{AppearanceControl, AppearancePreview, AppearanceSnapshot};
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl crate::play::Outbox {

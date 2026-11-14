@@ -156,3 +156,114 @@ fn appearance_window_lists_server_unlocks_only() -> Result {
     );
     Ok(())
 }
+
+fn fixture() -> std::result::Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    let (link, commands, outbox) = play_channel();
+    link.use_shared_frontend();
+    publish(&outbox, catalogue());
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    owner.phase = crate::bevy_shell::owner::Phase::Playing;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    Ok((app, commands))
+}
+#[test]
+fn appearance_owner_chord_opens_window_and_respects_blocking() -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, mut commands) = fixture()?;
+    let chord = [NormalizedInputEvent::Key {
+        code: KeyCode::new(4)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+        repeat: false,
+    }];
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&chord, true);
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Overlay>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&chord, false);
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Overlay>()
+            .iter(app.world())
+            .count(),
+        1
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+#[test]
+fn appearance_pending_edits_show_feedback_without_sending() -> Result {
+    use std::sync::{Arc, Mutex};
+    for paste in [false, true] {
+        let (mut app, mut commands) = fixture()?;
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_open();
+        app.update();
+        let revision = app
+            .world_mut()
+            .query_filtered::<Entity, With<Revision>>()
+            .single(app.world())?;
+        {
+            let mut field = app
+                .world_mut()
+                .get_mut::<EditableText>(revision)
+                .ok_or("revision")?;
+            if paste {
+                field.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(Arc::new(
+                    Mutex::new(None),
+                )));
+            } else {
+                field.queue_edit(bevy::text::TextEdit::Insert("r1".into()));
+            }
+        }
+        let apply = app
+            .world_mut()
+            .query::<(Entity, &Control)>()
+            .iter(app.world())
+            .find_map(|(entity, control)| matches!(control.kind, Kind::Apply(_)).then_some(entity))
+            .ok_or("apply")?;
+        app.world_mut().trigger(Activate { entity: apply });
+        app.update();
+        assert!(commands.try_recv().is_err());
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("Finish editing"))
+        );
+        assert!(app.world().get_entity(revision).is_ok());
+    }
+    Ok(())
+}

@@ -26,11 +26,14 @@ pub enum AppearanceControl {
     Apply(String),
     Close,
 }
-impl AppearanceSnapshot {
-    /// Read-only composition from the existing pinned-asset preview owner.
-    pub fn preview_pixels(&self, root: &std::path::Path) -> Result<Vec<u8>, String> {
-        let mut assets = super::gallery_preview::PreviewAssets::load(root)?;
-        assets.render(&self.panel).map(|image| image.rgba)
+/// Read-only preview assets retained across presentation rebuilds.
+pub struct AppearancePreview(super::gallery_preview::PreviewAssets);
+impl AppearancePreview {
+    pub fn load(root: &std::path::Path) -> Result<Self, String> {
+        super::gallery_preview::PreviewAssets::load(root).map(Self)
+    }
+    pub fn pixels(&mut self, snapshot: &AppearanceSnapshot) -> Result<Vec<u8>, String> {
+        self.0.render(&snapshot.panel).map(|image| image.rgba)
     }
 }
 impl PlayLink {

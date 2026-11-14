@@ -18,6 +18,7 @@ pub(super) fn build(
     key: Key,
     snapshot: &AppearanceSnapshot,
     images: &mut Assets<Image>,
+    preview: &mut preview::PreviewCache,
 ) -> Widgets {
     let panel = &snapshot.panel;
     let overlay = commands
@@ -107,9 +108,7 @@ pub(super) fn build(
             }
         ),
     );
-    let artwork = std::env::var_os("OTERYN_ASSET_DIR")
-        .ok_or_else(|| "Appearance artwork unavailable".to_owned())
-        .and_then(|root| snapshot.preview_pixels(std::path::Path::new(&root)));
+    let artwork = preview.pixels(snapshot);
     match artwork {
         Ok(pixels) => {
             let handle = images.add(Image::new(
@@ -272,6 +271,11 @@ pub(super) fn build(
     if !panel.feedback.is_empty() {
         label(commands, skins, body, &panel.feedback);
     }
+    let feedback = commands
+        .spawn(source::text("", source::font(skins.font.clone(), false)))
+        .insert(EditFeedback)
+        .id();
+    commands.entity(root).add_child(feedback);
     let footer = row(commands, root);
     button(
         commands,

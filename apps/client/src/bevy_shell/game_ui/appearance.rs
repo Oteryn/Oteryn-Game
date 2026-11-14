@@ -1,4 +1,5 @@
 //! Outfit and mount editor over the retained appearance owner.
+mod preview;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -28,12 +29,15 @@ struct Control {
 struct Overlay;
 #[derive(Component)]
 struct Revision;
+#[derive(Component)]
+struct EditFeedback;
 #[derive(Resource, Default)]
 struct State {
     snapshot: Option<(Key, AppearanceSnapshot)>,
     revision: u64,
     widgets: Option<widgets::Widgets>,
     pending_apply: Option<(Key, Entity)>,
+    preview: preview::PreviewCache,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -97,7 +101,14 @@ fn project(
         generation: owner.generation(),
         revision,
     };
-    let widgets = widgets::build(&mut commands, &skins, key, &snapshot, &mut images);
+    let widgets = widgets::build(
+        &mut commands,
+        &skins,
+        key,
+        &snapshot,
+        &mut images,
+        &mut state.preview,
+    );
     focus.set(widgets.panel, FocusCause::Navigated);
     state.widgets = Some(widgets);
     state.snapshot = Some((key, snapshot));
@@ -140,6 +151,7 @@ fn finish(
     mut state: ResMut<State>,
     guard: ModalGuard,
     fields: Query<&EditableText, With<Revision>>,
+    mut feedback: Query<&mut Text, With<EditFeedback>>,
 ) {
     let Some((key, entity)) = state.pending_apply.take() else {
         return;
@@ -156,7 +168,13 @@ fn finish(
             .iter()
             .any(bevy::text::TextEdit::is_destructive)
     {
+        if let Ok(mut text) = feedback.single_mut() {
+            text.0 = "Finish editing the content revision, then press Apply again.".into();
+        }
         return;
+    }
+    if let Ok(mut text) = feedback.single_mut() {
+        text.0.clear();
     }
     perform(&owner, &state, key, Kind::Apply(field.value().to_string()));
 }
