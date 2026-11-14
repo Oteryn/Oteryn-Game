@@ -164,7 +164,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::ExpertPvpModes, "Expert PvP modes", 120.),
+        (Control::ExpertPvpModes, "Expert PvP (Ctrl+Alt+E)", 230.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),
@@ -575,10 +575,12 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if matches!(
-            control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
-        ) {
+        } else if matches!(control, Some(Control::ExpertPvpModes))
+            || matches!(
+                control,
+                Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            )
+        {
             node.display = if playing {
                 Display::Flex
             } else {

@@ -30,7 +30,6 @@ fn fixture() -> std::result::Result<Fixture, Box<dyn std::error::Error>> {
         .init_asset::<Font>()
         .init_asset::<Image>()
         .init_resource::<bevy::input_focus::InputFocus>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -223,24 +222,20 @@ fn expert_pvp_modes_window_registered() -> Result {
     app.world_mut().trigger(Activate { entity });
     app.update();
     assert!(!panel(&app)?.open);
-    // Exercise the installed keyboard system using its actual unique chord.
+    // Route the canonical owner's Ctrl+Alt+E chord through the shared input router.
+    let chord = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(8)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    assert!(oteryn_client_ui::pvp_expert::open_key(
+        std::slice::from_ref(&chord)
+    ));
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::AltLeft);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::F8,
-            logical_key: bevy::input::keyboard::Key::Unidentified(
-                bevy::input::keyboard::NativeKey::Unidentified,
-            ),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+        .non_send_mut::<HostOwner>()
+        .route_input(&[chord], false);
     app.update();
     assert!(panel(&app)?.open);
     click(&mut app, Kind::Close)?;
@@ -248,5 +243,44 @@ fn expert_pvp_modes_window_registered() -> Result {
     assert!(commands.try_recv().is_err());
     let registrations = include_str!("../mod.rs");
     assert!(registrations.contains("expert_pvp_modes::install(app)"));
+    Ok(())
+}
+
+#[test]
+fn expert_pvp_modes_toolbar_is_playing_only() -> Result {
+    let (mut app, _commands, _) = fixture()?;
+    app.add_systems(Update, crate::bevy_shell::ui::project_toolbar);
+    let button = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            matches!(control, crate::bevy_shell::ui::Control::ExpertPvpModes).then_some(entity)
+        })
+        .ok_or("toolbar entry")?;
+    let play = app.world_mut().non_send_mut::<HostOwner>().play.take();
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Node>(button)
+            .ok_or("button node")?
+            .display,
+        Display::None
+    );
+    app.world_mut().non_send_mut::<HostOwner>().play = play;
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<Node>(button)
+            .ok_or("button node")?
+            .display,
+        Display::Flex
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Expert PvP (Ctrl+Alt+E)")
+    );
     Ok(())
 }
