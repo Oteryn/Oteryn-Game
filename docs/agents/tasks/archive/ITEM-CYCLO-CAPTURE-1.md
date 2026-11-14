@@ -37,8 +37,9 @@ production change.
 
 ## Closeout
 
-- Final push carries the complete native re-collection: 6369 records, `manifest.json` SHA-256
-  matches `items.jsonl`.
+- Final push carries the complete native re-collection: 6467 records (the 6228 catalog targets
+  plus the 98 the Cyclopedia search could not resolve, read per id through the client's item
+  inspection call); `manifest.json` SHA-256 matches `items.jsonl`.
 - Review: none requested; reference data only.
 - merge commit/result: squash merge of #3192 if the owner merges it.
 
