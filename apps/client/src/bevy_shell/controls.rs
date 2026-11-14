@@ -84,6 +84,11 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::account_achievements::open_key(&routed) {
+            let panel = play.link.achievements_panel();
+            let _ = play.link.achievements_open_bound(&panel);
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;
