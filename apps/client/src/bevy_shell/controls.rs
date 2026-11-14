@@ -95,6 +95,7 @@ impl HostOwner {
                     NormalizedInputEvent::Key { code, .. } if code.get() == 25
                 )
             }) && play.link.vip_input(&routed))
+            || play.link.wheel_input(&routed)
         {
             return;
         }

@@ -29,7 +29,16 @@ impl PlayLink {
             super::view::open_window(self);
         }
         if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).wheel.open = true;
+            {
+                let mut mailbox = lock(&self.mailbox);
+                mailbox.wheel.open = true;
+                if mailbox.shared_frontend {
+                    mailbox.wheel.diagram.last = None;
+                }
+            }
+            if self.uses_shared_frontend() {
+                self.wheel_presets_open();
+            }
         }
         true
     }
@@ -88,6 +97,10 @@ fn occurrence() -> Option<[u8; 16]> {
 
 #[path = "gem_presentation.rs"]
 pub(in crate::play) mod gem_presentation;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "shared.rs"]
+pub(crate) mod shared;
 
 #[path = "wheel_presentation.rs"]
 pub(in crate::play) mod wheel_presentation;

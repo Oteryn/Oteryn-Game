@@ -27,6 +27,7 @@ mod stash;
 mod trade;
 mod tutorial;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -255,6 +256,7 @@ pub(super) fn install(app: &mut App) {
     task_board::install(app);
     stash::install(app);
     trade::install(app);
+    wheel::install(app);
     tutorial::install(app);
     app.add_systems(
         Update,
