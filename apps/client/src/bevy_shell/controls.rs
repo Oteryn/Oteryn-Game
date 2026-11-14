@@ -84,6 +84,12 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::arena::open_key(&routed) {
+            if !play.view.gameplay_input_blocked(&play.link) {
+                let _ = play.link.arena_toggle_bound(&play.link.arena_snapshot());
+            }
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;

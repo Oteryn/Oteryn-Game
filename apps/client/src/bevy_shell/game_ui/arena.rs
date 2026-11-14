@@ -22,6 +22,8 @@ enum Action {
     Confirm,
     Cancel,
     Close,
+    RankMenu,
+    Rank(u8),
 }
 #[derive(Resource, Default)]
 struct State {
@@ -32,6 +34,8 @@ struct State {
     confirmation: Option<(Intent, String)>,
     dirty: bool,
     text: String,
+    rank: u8,
+    rank_menu: bool,
 }
 pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -69,6 +73,15 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
         return;
     }
     match &control.action {
+        Action::RankMenu if snapshot.panel.selected && snapshot.panel.pending.is_none() => {
+            state.rank_menu = !state.rank_menu;
+        }
+        Action::Rank(rank) if (1..=3).contains(rank) && snapshot.panel.pending.is_none() => {
+            state.rank = rank - 1;
+            state.rank_menu = false;
+            state.confirmation = None;
+        }
+        Action::RankMenu | Action::Rank(_) => return,
         Action::Close => {
             let _ = play.link.arena_toggle_bound(snapshot);
         }
@@ -84,6 +97,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
             state.dirty = true;
         }
         Action::Request(intent, label) => {
+            if matches!(intent, Intent::Action(oteryn_client_runtime::arena::ArenaAction::ClaimReward { rank, .. }) if *rank != state.rank + 1)
+            {
+                return;
+            }
             if state.confirmation.is_some()
                 || !snapshot.panel.selected
                 || snapshot.panel.pending.is_some()
@@ -91,7 +108,15 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
                 return;
             }
             if arena_needs_confirmation(*intent) {
-                state.confirmation = Some((*intent, label.clone()));
+                let label = if matches!(
+                    intent,
+                    Intent::Action(oteryn_client_runtime::arena::ArenaAction::ClaimReward { .. })
+                ) {
+                    format!("{}: {label}", widgets::RANKS[usize::from(state.rank)])
+                } else {
+                    label.clone()
+                };
+                state.confirmation = Some((*intent, label));
                 state.dirty = true;
             } else {
                 let _ = play.link.arena_dispatch_bound(snapshot, *intent, false);
@@ -155,6 +180,18 @@ fn project(
     if changed {
         state.confirmation = None;
     }
+    if state.generation != owner.generation()
+        || snapshot.as_ref().is_some_and(|current| {
+            current.panel.open
+                && state
+                    .snapshot
+                    .as_ref()
+                    .is_none_or(|old| !old.panel.open || !current.same_session(old))
+        })
+    {
+        state.rank = 0;
+        state.rank_menu = false;
+    }
     state.generation = owner.generation();
     state.revision = state.revision.saturating_add(1);
     state.snapshot = snapshot;
@@ -166,7 +203,6 @@ fn project(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -175,23 +211,7 @@ fn keyboard(
         .read()
         .filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat)
     {
-        if event.key_code == KeyCode::KeyZ
-            && keys.as_ref().is_some_and(|keys| {
-                keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-                    && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-                    && !keys.any_pressed([
-                        KeyCode::AltLeft,
-                        KeyCode::AltRight,
-                        KeyCode::SuperLeft,
-                        KeyCode::SuperRight,
-                    ])
-            })
-            && (guard.allows_focus(None) || state.root.is_some_and(|root| guard.allows(root)))
-        {
-            toggle(&owner);
-        } else if event.key_code == KeyCode::Escape
-            && state.root.is_some_and(|root| guard.allows(root))
-        {
+        if event.key_code == KeyCode::Escape && state.root.is_some_and(|root| guard.allows(root)) {
             let control = Control {
                 generation: state.generation,
                 revision: state.revision,

@@ -6,7 +6,7 @@ use oteryn_client_runtime::arena::{ArenaAction, DromeAction};
 use oteryn_client_ui::arena::{ArenaPanel, DROME_REWARDS};
 use oteryn_client_ui_bevy as source;
 
-pub(super) fn actions() -> Vec<(Intent, String)> {
+pub(super) fn actions_for_rank(rank: u8) -> Vec<(Intent, String)> {
     let mut actions = vec![
         (Intent::Catalogue, "Catalogue".into()),
         (Intent::Action(ArenaAction::Status), "Refresh status".into()),
@@ -14,7 +14,7 @@ pub(super) fn actions() -> Vec<(Intent, String)> {
         (Intent::Action(ArenaAction::Advance), "Next pit".into()),
         (Intent::Action(ArenaAction::Leave), "Leave".into()),
     ];
-    for (rank, name) in [(1, "Greenhorn"), (2, "Scrapper"), (3, "Warlord")] {
+    {
         for (category, choice, label) in [
             (1, 1, "Present"),
             (2, 1, "Supplies"),
@@ -29,7 +29,7 @@ pub(super) fn actions() -> Vec<(Intent, String)> {
                     category,
                     choice,
                 }),
-                format!("{name}: {label}"),
+                label.into(),
             ));
         }
     }
@@ -49,6 +49,17 @@ pub(super) fn actions() -> Vec<(Intent, String)> {
         ));
     }
     actions
+}
+pub(super) const RANKS: [&str; 3] = ["Greenhorn rewards", "Scrapper rewards", "Warlord rewards"];
+#[cfg(test)]
+pub(super) fn actions() -> Vec<(Intent, String)> {
+    (1..=3)
+        .flat_map(actions_for_rank)
+        .filter(|(intent, _)| matches!(intent, Intent::Action(ArenaAction::ClaimReward { .. })))
+        .chain(actions_for_rank(1).into_iter().filter(|(intent, _)| {
+            !matches!(intent, Intent::Action(ArenaAction::ClaimReward { .. }))
+        }))
+        .collect()
 }
 pub(super) fn build(commands: &mut Commands, skins: &Skins, state: &State) -> Entity {
     let root = commands
@@ -125,6 +136,59 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, state: &State) -> En
                 true,
             );
         } else {
+            let selector = commands
+                .spawn((
+                    Name::new("arena.rank.selector"),
+                    Node {
+                        position_type: PositionType::Relative,
+                        width: px(210.),
+                        min_height: px(24.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.entity(frame).add_child(selector);
+            button(
+                commands,
+                skins,
+                selector,
+                state,
+                Action::RankMenu,
+                RANKS[usize::from(state.rank)],
+                ready(&snapshot.panel),
+            );
+            if state.rank_menu {
+                let popup = commands
+                    .spawn((
+                        Name::new("arena.rank.options"),
+                        source::frame(skins.inset.clone(), [1.; 4]),
+                        Node {
+                            position_type: PositionType::Absolute,
+                            top: px(24.),
+                            left: px(0.),
+                            width: px(210.),
+                            flex_direction: FlexDirection::Column,
+                            flex_shrink: 0.,
+                            ..default()
+                        },
+                        ZIndex(20),
+                        BackgroundColor(Color::srgb(0.18, 0.18, 0.18)),
+                    ))
+                    .id();
+                commands.entity(selector).add_child(popup);
+                for (index, label) in RANKS.iter().enumerate() {
+                    button(
+                        commands,
+                        skins,
+                        popup,
+                        state,
+                        Action::Rank(index as u8 + 1),
+                        label,
+                        ready(&snapshot.panel),
+                    );
+                }
+            }
             let row = commands
                 .spawn(Node {
                     flex_wrap: FlexWrap::Wrap,
@@ -135,7 +199,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, state: &State) -> En
                 })
                 .id();
             commands.entity(frame).add_child(row);
-            for (intent, label) in actions() {
+            for (intent, label) in actions_for_rank(state.rank + 1) {
                 button(
                     commands,
                     skins,

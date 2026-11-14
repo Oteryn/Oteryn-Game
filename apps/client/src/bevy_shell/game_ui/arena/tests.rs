@@ -148,6 +148,13 @@ fn arena_all_controls_confirm_and_dispatch_once() -> Result {
         assert!(actions.iter().any(|(intent, _)| *intent == native));
     }
     for (intent, _) in actions {
+        if let Intent::Action(ArenaAction::ClaimReward { rank, .. }) = intent {
+            click(&mut app, |action| matches!(action, Action::RankMenu))?;
+            click(
+                &mut app,
+                |action| matches!(action, Action::Rank(selected) if *selected == rank),
+            )?;
+        }
         let before = app
             .world()
             .non_send::<HostOwner>()
@@ -238,37 +245,10 @@ fn arena_window_registered() -> Result {
     reply(&outbox, catalogue()?);
     app.update();
     assert!(app.world().resource::<State>().root.is_none());
-    use bevy::input::{
-        ButtonState,
-        keyboard::{Key, KeyboardInput},
-    };
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ShiftLeft);
-    let window = app.world_mut().spawn_empty().id();
-    app.world_mut().write_message(KeyboardInput {
-        key_code: KeyCode::KeyZ,
-        logical_key: Key::Character("Z".into()),
-        state: ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window,
-    });
-    app.update();
+    shortcut(&mut app, false)?;
     assert!(app.world().resource::<State>().root.is_some());
     assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
-    app.world_mut().write_message(KeyboardInput {
-        key_code: KeyCode::KeyZ,
-        logical_key: Key::Character("Z".into()),
-        state: ButtonState::Pressed,
-        text: None,
-        repeat: false,
-        window,
-    });
-    app.update();
+    shortcut(&mut app, false)?;
     assert!(app.world().resource::<State>().root.is_none());
     assert!(commands.try_recv().is_err());
     Ok(())
@@ -400,5 +380,127 @@ fn arena_shortcut_is_fenced_by_another_modal() -> Result {
     app.update();
     assert!(commands.try_recv().is_err());
     assert!(app.world().resource::<State>().root.is_none());
+    Ok(())
+}
+
+fn shortcut(app: &mut App, blocked: bool) -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(29)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], blocked);
+    app.update();
+    Ok(())
+}
+#[test]
+fn arena_rank_selector_limits_choices_and_binds_selection() -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    open(&mut app);
+    let _ = commands.try_recv()?;
+    reply(&outbox, catalogue()?);
+    app.update();
+    let stale = app
+        .world_mut()
+        .query::<&Control>()
+        .iter(app.world())
+        .find(|control| {
+            matches!(
+                control.action,
+                Action::Request(Intent::Action(ArenaAction::ClaimReward { rank: 1, .. }), _)
+            )
+        })
+        .cloned()
+        .ok_or("rank-one claim")?;
+    for rank in 1..=3 {
+        click(&mut app, |action| matches!(action, Action::RankMenu))?;
+        assert_eq!(
+            app.world_mut()
+                .query::<&Control>()
+                .iter(app.world())
+                .filter(|control| matches!(control.action, Action::Rank(_)))
+                .count(),
+            3
+        );
+        click(
+            &mut app,
+            |action| matches!(action, Action::Rank(selected) if *selected == rank),
+        )?;
+        let claims: Vec<_> = app
+            .world_mut()
+            .query::<&Control>()
+            .iter(app.world())
+            .filter_map(|control| match control.action {
+                Action::Request(Intent::Action(ArenaAction::ClaimReward { rank, .. }), _) => {
+                    Some(rank)
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(claims, vec![rank; 6]);
+        assert_eq!(
+            app.world_mut()
+                .query::<&Control>()
+                .iter(app.world())
+                .filter(|control| matches!(control.action, Action::RankMenu))
+                .count(),
+            1
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    app.world_mut()
+        .resource_scope(|world, mut state: Mut<State>| {
+            perform(world.non_send::<HostOwner>(), &mut state, &stale);
+        });
+    assert!(commands.try_recv().is_err());
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    Ok(())
+}
+#[test]
+fn arena_shortcut_routes_only_through_shared_controls() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    // A raw Bevy key cannot open the window; only the normalized shared router can.
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ControlLeft);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ShiftLeft);
+    let window = app.world_mut().spawn_empty().id();
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyZ,
+        logical_key: Key::Character("Z".into()),
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert!(commands.try_recv().is_err());
+    shortcut(&mut app, true)?;
+    assert!(commands.try_recv().is_err());
+    shortcut(&mut app, false)?;
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+    assert!(commands.try_recv().is_err());
+    assert!(app.world().resource::<State>().root.is_some());
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window,
+    });
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
