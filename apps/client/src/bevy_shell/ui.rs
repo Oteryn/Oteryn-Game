@@ -577,13 +577,8 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(
-                Control::GuildWars
-                    | Control::Market
-                    | Control::Party
-                    | Control::Quests
-                    | Control::Spells
-            )
+            Some(Control::GuildWars)
+                | Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
