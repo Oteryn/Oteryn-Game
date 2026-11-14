@@ -37,6 +37,8 @@ impl PlayView {
         }
         self.own = TileCoord::new(position.x, position.y);
         self.floor = position.floor;
+        // A placement is a snap; a walked step starts its glide after this.
+        self.walk = None;
     }
 }
 

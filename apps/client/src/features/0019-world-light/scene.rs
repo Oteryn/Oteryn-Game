@@ -21,43 +21,53 @@ impl Scene {
         }
         Ok(())
     }
-    pub(super) fn world_sprites(&self) -> Result<(SpriteBatch, Dimming), BatchError> {
+    /// The sprites in painter order, the dimmed floor ranges and the quads of the player's own
+    /// outfit (which a scrolling camera leaves in place).
+    pub(super) fn world_sprites(
+        &self,
+    ) -> Result<(SpriteBatch, Dimming, Option<std::ops::Range<usize>>), BatchError> {
         let (atlas, origin) = (self.atlas(), self.view.origin());
         let mut sprites = SpriteBatch::new();
         let mut dimmed = Vec::new();
+        let mut player = None::<std::ops::Range<usize>>;
         let limit = MAX_BATCH_QUADS - usize::from(self.target.is_some() && self.target_frame);
         for floor in self.world.draw_floors() {
             let own_floor = floor == self.world.center().2;
             let start = sprites.len();
+            let own_draws: &[Draw] = if own_floor {
+                self.own_draws
+                    .as_deref()
+                    .unwrap_or_else(|| self.world.player(self.facing))
+            } else {
+                &[]
+            };
             {
                 let emit = &mut |(x, y), draw: Draw| {
                     if sprites.len() >= limit {
                         return Ok(());
                     }
-                    sprites
-                        .push_offset(
-                            &self.view,
-                            atlas,
-                            TileCoord::new(x, y),
-                            draw.cell,
-                            draw.offset,
-                            oteryn_client_domain::world::CELL_PX,
-                        )
-                        .map(|_| ())
+                    let at = sprites.len();
+                    let pushed = sprites.push_offset(
+                        &self.view,
+                        atlas,
+                        TileCoord::new(x, y),
+                        draw.cell,
+                        draw.offset,
+                        oteryn_client_domain::world::CELL_PX,
+                    )?;
+                    // Elevation shifts a draw's offset, so the own outfit is told by its cell.
+                    if pushed
+                        && (x, y) == (self.own.x, self.own.y)
+                        && own_draws.iter().any(|own| own.cell == draw.cell)
+                    {
+                        player = Some(player.take().map_or(at..at + 1, |seen| seen.start..at + 1));
+                    }
+                    Ok(())
                 };
                 visit_scene_entities(
                     (origin.x, origin.y),
                     self.anchor.map(|anchor| (anchor.x, anchor.y)),
-                    (
-                        (self.own.x, self.own.y),
-                        if own_floor {
-                            self.own_draws
-                                .as_deref()
-                                .unwrap_or_else(|| self.world.player(self.facing))
-                        } else {
-                            &[]
-                        },
-                    ),
+                    ((self.own.x, self.own.y), own_draws),
                     |x, y| self.world.floor_tile(floor, x, y),
                     |x, y| {
                         let tile = TileCoord::new(x, y);
@@ -95,6 +105,6 @@ impl Scene {
         if let Some(target) = self.target.filter(|_| self.target_frame) {
             sprites.push(&self.view, atlas, target.tile, crate::map::TARGET_CELL)?;
         }
-        Ok((sprites, dimmed))
+        Ok((sprites, dimmed, player))
     }
 }
