@@ -2,6 +2,7 @@
 mod actions;
 mod chat;
 mod feature_dialogs;
+pub(super) mod highscores_character_info;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
@@ -233,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
+    highscores_character_info::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);

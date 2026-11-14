@@ -70,7 +70,8 @@ impl HostOwner {
             }
             return;
         }
-        if play.link.quest_input(&routed)
+        if super::game_ui::highscores_character_info::input(&play.link, &routed)
+            || play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)

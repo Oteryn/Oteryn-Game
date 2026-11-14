@@ -58,3 +58,25 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
 mod titles;
 #[cfg(windows)]
 pub(in crate::play) use titles::open_titles;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_uni16_character_initialize(&self) {
+        lock(&self.0).properties.character_info.selected = true;
+    }
+    pub(crate) fn bevy_uni16_character_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        super::protocol::apply(
+            &mut lock(&self.0).properties.character_info,
+            command,
+            result,
+        );
+    }
+}
