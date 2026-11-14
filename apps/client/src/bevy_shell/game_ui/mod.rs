@@ -19,6 +19,7 @@ mod projection;
 pub(super) use projection::project;
 mod quick_loot;
 mod trade;
+mod unjustified;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -188,6 +189,10 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let party_dock = region(&mut commands);
     commands.entity(party_dock).insert(party::PartyDock);
     let skills = region(&mut commands);
+    let unjustified_dock = region(&mut commands);
+    commands
+        .entity(unjustified_dock)
+        .insert(unjustified::UnjustifiedDock);
     let vip = region(&mut commands);
     let analyzers = region(&mut commands);
     commands.entity(root).add_children(&[vitals, middle]);
@@ -195,9 +200,14 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .entity(middle)
         .add_children(&[main, panels, inventory]);
     commands.entity(main).add_children(&[world, bars, chat]);
-    commands
-        .entity(panels)
-        .add_children(&[battle, party_dock, skills, vip, analyzers]);
+    commands.entity(panels).add_children(&[
+        battle,
+        party_dock,
+        skills,
+        unjustified_dock,
+        vip,
+        analyzers,
+    ]);
     commands
         .entity(inventory)
         .add_children(&[toolbar, minimap, equipment, trade_dock, containers]);
@@ -242,6 +252,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     quick_loot::install(app);
     trade::install(app);
+    unjustified::install(app);
     app.add_systems(
         Update,
         (
