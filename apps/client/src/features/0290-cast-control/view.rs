@@ -73,3 +73,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         },
     );
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::CastControlSnapshot;

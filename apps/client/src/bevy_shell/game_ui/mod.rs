@@ -1,5 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+pub(super) mod cast_control;
 pub(super) mod boss_difficulty;
 mod boss_reward_chest;
 pub(super) use boss_reward_chest::open as open_boss_reward_chest;
@@ -261,6 +262,7 @@ fn region(commands: &mut Commands) -> Entity {
 pub(super) fn install(app: &mut App) {
     cyclopedia_map::install(app);
     cyclopedia_trackers::install(app);
+    cast_control::install(app);
     actions::install(app);
     exiva_settings::install(app);
     boss_difficulty::install(app);
