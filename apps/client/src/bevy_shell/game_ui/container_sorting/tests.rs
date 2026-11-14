@@ -20,7 +20,6 @@ fn fixture()
         .init_asset::<Font>()
         .init_asset::<Image>()
         .init_resource::<InputFocus>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -153,15 +152,9 @@ fn container_sorting_toolbar_and_shortcut_open_and_close() -> TestResult {
     app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert!(owner_snapshot(&app)?.panel.open);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::AltLeft);
     let event = || KeyboardInput {
-        key_code: KeyCode::F9,
-        logical_key: Key::F9,
+        key_code: KeyCode::Escape,
+        logical_key: Key::Escape,
         state: ButtonState::Pressed,
         text: None,
         repeat: false,
@@ -171,7 +164,9 @@ fn container_sorting_toolbar_and_shortcut_open_and_close() -> TestResult {
     app.update();
     assert!(!owner_snapshot(&app)?.panel.open);
     app.update();
-    app.world_mut().write_message(event());
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[owner_shortcut()?], false);
     app.update();
     assert!(owner_snapshot(&app)?.panel.open);
     assert!(commands.try_recv().is_err());
@@ -208,5 +203,33 @@ fn container_sorting_keyboard_rejects_replaced_session_and_modal() -> TestResult
     assert!(owner_snapshot(&app)?.panel.open);
     assert!(commands.try_recv().is_err());
     assert!(replacement_commands.try_recv().is_err());
+    Ok(())
+}
+
+fn owner_shortcut() -> Result<oteryn_input_actions::NormalizedInputEvent, Box<dyn std::error::Error>>
+{
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    Ok(NormalizedInputEvent::Key {
+        code: KeyCode::new(22)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+        repeat: false,
+    })
+}
+
+#[test]
+fn container_sorting_owner_shortcut_routes_through_controls() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    choose(&mut app, Action::Owner(Kind::Close))?;
+    let event = owner_shortcut()?;
+    assert!(oteryn_client_ui::container_sort::open_key(
+        std::slice::from_ref(&event)
+    ));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), false);
+    app.update();
+    assert!(owner_snapshot(&app)?.panel.open);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

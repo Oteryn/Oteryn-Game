@@ -93,7 +93,6 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -102,26 +101,7 @@ fn keyboard(
         if event.state != ButtonState::Pressed || event.repeat {
             continue;
         }
-        let chord = keys.as_ref().is_some_and(|keys| {
-            (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-                && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-                && !keys.pressed(KeyCode::ShiftLeft)
-                && !keys.pressed(KeyCode::ShiftRight)
-                && !keys.pressed(KeyCode::SuperLeft)
-                && !keys.pressed(KeyCode::SuperRight)
-        });
-        if event.key_code == KeyCode::F9 && chord && guard.allows_focus(state.overlay) {
-            if let Some(play) = &owner.play
-                && !owner.modal_active()
-            {
-                let snapshot = play.link.container_sorting_snapshot();
-                if snapshot.panel.open {
-                    close(&owner, &mut state);
-                } else if !play.link.server_modal_active() {
-                    play.link.container_sort_open();
-                }
-            }
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && state.overlay.is_some_and(|overlay| guard.allows(overlay))
         {
             close(&owner, &mut state);
@@ -325,7 +305,7 @@ fn project(
         panel,
         &model,
         Action::Owner(Kind::Close),
-        "Close (Ctrl+Alt+F9)",
+        "Close",
     );
 }
 fn text(commands: &mut Commands, skins: &Skins, parent: Entity, value: &str) {
