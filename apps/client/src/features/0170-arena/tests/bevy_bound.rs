@@ -26,8 +26,14 @@ fn arena_actions_are_bound_and_confirmed() -> Result<(), Box<dyn std::error::Err
     let PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("feature command".into());
     };
-    assert_eq!(command.kind, oteryn_session::arena::COMMAND_TYPE_ARENA_MATCH);
-    assert_eq!(command.payload, oteryn_session::arena::encode_match_request(ArenaAction::Enter).map_err(|_| "request")?);
+    assert_eq!(
+        command.kind,
+        oteryn_session::arena::COMMAND_TYPE_ARENA_MATCH
+    );
+    assert_eq!(
+        command.payload,
+        oteryn_session::arena::encode_match_request(ArenaAction::Enter).map_err(|_| "request")?
+    );
     assert!(!link.arena_dispatch_bound(&snapshot, Intent::Action(ArenaAction::Enter), true));
     assert!(commands.try_recv().is_err());
     Ok(())
@@ -35,7 +41,8 @@ fn arena_actions_are_bound_and_confirmed() -> Result<(), Box<dyn std::error::Err
 
 #[cfg(feature = "bevy-shell")]
 #[test]
-fn arena_rejected_when_session_replaced_or_target_changed() -> Result<(), Box<dyn std::error::Error>> {
+fn arena_rejected_when_session_replaced_or_target_changed() -> Result<(), Box<dyn std::error::Error>>
+{
     use crate::play::play_channel;
     use oteryn_client_ui::arena::Intent;
     let (link, mut commands, outbox) = play_channel();
@@ -47,13 +54,27 @@ fn arena_rejected_when_session_replaced_or_target_changed() -> Result<(), Box<dy
     assert!(other_commands.try_recv().is_err());
     assert!(link.arena_toggle_bound(&old));
     let _ = commands.try_recv()?;
+    let pending = link.arena_snapshot();
+    outbox.arena_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: oteryn_session::arena::encode_catalogue().map_err(|_| "catalogue")?,
+    });
     let current = link.arena_snapshot();
+    assert!(!link.arena_dispatch_bound(&pending, Intent::Catalogue, true));
+    assert!(!replacement.arena_dispatch_bound(&current, Intent::Catalogue, true));
+    assert!(replacement.arena_panel().challenges.is_empty());
+    assert!(commands.try_recv().is_err());
+    assert!(other_commands.try_recv().is_err());
     assert!(link.arena_toggle_bound(&current));
     let closed = link.arena_panel();
     assert!(!link.arena_dispatch_bound(&current, Intent::Catalogue, true));
     assert_eq!(link.arena_panel(), closed);
     assert!(commands.try_recv().is_err());
-    outbox.end(crate::play::public_class(&oteryn_session::SessionError::SessionUnusable));
+    outbox.end(crate::play::public_class(
+        &oteryn_session::SessionError::SessionUnusable,
+    ));
     let ended = link.arena_snapshot();
     assert!(!link.arena_toggle_bound(&ended));
     assert!(commands.try_recv().is_err());

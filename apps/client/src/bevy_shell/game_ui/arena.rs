@@ -1,8 +1,11 @@
 //! Arena presentation over the retained capability-170 owner and shared Win32 formatter.
-mod widgets;
 #[cfg(test)]
 mod tests;
-use super::{super::{owner::HostOwner, ui::Skins}, modal::ModalGuard};
+mod widgets;
+use super::{
+    super::{owner::HostOwner, ui::Skins},
+    modal::ModalGuard,
+};
 use crate::play::feature_0170_arena::view::{ArenaSnapshot, arena_needs_confirmation};
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::arena::Intent;
@@ -28,6 +31,7 @@ struct State {
     root: Option<Entity>,
     confirmation: Option<(Intent, String)>,
     dirty: bool,
+    text: String,
 }
 pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -52,8 +56,12 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
     {
         return;
     }
-    let Some(play) = &owner.play else { return; };
-    let Some(snapshot) = &state.snapshot else { return; };
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let Some(snapshot) = &state.snapshot else {
+        return;
+    };
     if play.view.gameplay_input_blocked(&play.link)
         || play.link.arena_panel() != snapshot.panel
         || !snapshot.panel.open
@@ -76,7 +84,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
             state.dirty = true;
         }
         Action::Request(intent, label) => {
-            if state.confirmation.is_some() || !snapshot.panel.selected || snapshot.panel.pending.is_some() {
+            if state.confirmation.is_some()
+                || !snapshot.panel.selected
+                || snapshot.panel.pending.is_some()
+            {
                 return;
             }
             if arena_needs_confirmation(*intent) {
@@ -87,32 +98,67 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
             }
         }
     }
+    state.dirty = true;
     // Invalidate all controls immediately, including a second activation in this frame.
     state.revision = state.revision.saturating_add(1);
 }
 fn activate(
-    event: On<Activate>, controls: Query<&Control>, guard: ModalGuard,
-    owner: NonSend<HostOwner>, mut state: ResMut<State>,
+    event: On<Activate>,
+    controls: Query<&Control>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
 ) {
-    if guard.allows(event.entity) && let Ok(control) = controls.get(event.entity) {
+    if guard.allows(event.entity)
+        && let Ok(control) = controls.get(event.entity)
+    {
         perform(&owner, &mut state, control);
     }
 }
-fn project(mut commands: Commands, owner: NonSend<HostOwner>, skins: Res<Skins>, mut state: ResMut<State>, mut focus: ResMut<InputFocus>) {
+fn project(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    skins: Res<Skins>,
+    mut state: ResMut<State>,
+    mut focus: ResMut<InputFocus>,
+    parents: Query<&ChildOf>,
+) {
     let snapshot = owner.play.as_ref().map(|play| play.link.arena_snapshot());
-    let visible = snapshot.as_ref().is_some_and(|snapshot| snapshot.panel.open && snapshot.panel.selected);
+    let visible = snapshot
+        .as_ref()
+        .is_some_and(|snapshot| snapshot.panel.open && snapshot.panel.selected);
     let changed = state.generation != owner.generation()
+        || snapshot
+            .as_ref()
+            .zip(state.snapshot.as_ref())
+            .is_some_and(|(current, old)| !current.same_session(old))
         || snapshot.as_ref().map(|s| &s.panel) != state.snapshot.as_ref().map(|s| &s.panel);
-    if !changed && !state.dirty { return; }
+    // The shared formatter also owns Win32's labelled local rotation-time estimate.
+    let text = snapshot.as_ref().map_or_else(String::new, |snapshot| {
+        oteryn_client_ui::arena::panel_text(&snapshot.panel)
+    });
+    if !changed && !state.dirty && state.text == text {
+        return;
+    }
     if let Some(root) = state.root.take() {
         // All window controls are rebuilt from one owner snapshot.
-        focus.clear();
+        let mut focused = focus.get();
+        while let Some(entity) = focused {
+            if entity == root {
+                focus.clear();
+                break;
+            }
+            focused = parents.get(entity).ok().map(ChildOf::parent);
+        }
         commands.entity(root).despawn();
     }
-    if changed { state.confirmation = None; }
+    if changed {
+        state.confirmation = None;
+    }
     state.generation = owner.generation();
     state.revision = state.revision.saturating_add(1);
     state.snapshot = snapshot;
+    state.text = text;
     state.dirty = false;
     if visible {
         state.root = Some(widgets::build(&mut commands, &skins, &state));
@@ -120,24 +166,40 @@ fn project(mut commands: Commands, owner: NonSend<HostOwner>, skins: Res<Skins>,
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>, guard: ModalGuard, focus: Res<InputFocus>,
-    owner: NonSend<HostOwner>, mut state: ResMut<State>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
 ) {
-    for event in events.read().filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat) {
+    for event in events
+        .read()
+        .filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat)
+    {
         if event.key_code == KeyCode::KeyZ
-            && keys.as_ref().is_some_and(|keys|
+            && keys.as_ref().is_some_and(|keys| {
                 keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-                && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
-                && !keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight, KeyCode::SuperLeft, KeyCode::SuperRight]))
-            && (guard.allows_focus(focus.get()) || state.root.is_some_and(|root| guard.allows(root)))
+                    && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+                    && !keys.any_pressed([
+                        KeyCode::AltLeft,
+                        KeyCode::AltRight,
+                        KeyCode::SuperLeft,
+                        KeyCode::SuperRight,
+                    ])
+            })
+            && (guard.allows_focus(None) || state.root.is_some_and(|root| guard.allows(root)))
         {
             toggle(&owner);
         } else if event.key_code == KeyCode::Escape
             && state.root.is_some_and(|root| guard.allows(root))
         {
             let control = Control {
-                generation: state.generation, revision: state.revision,
-                action: if state.confirmation.is_some() { Action::Cancel } else { Action::Close },
+                generation: state.generation,
+                revision: state.revision,
+                action: if state.confirmation.is_some() {
+                    Action::Cancel
+                } else {
+                    Action::Close
+                },
             };
             perform(&owner, &mut state, &control);
         }
