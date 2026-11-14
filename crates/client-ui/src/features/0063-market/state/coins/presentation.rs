@@ -16,6 +16,15 @@ fn number(v: &Value) -> String {
         .map(str::to_owned)
         .unwrap_or_else(|| v.to_string())
 }
+fn balance(transferable: &Value, non_transferable: &Value) -> u64 {
+    let coins = |v: &Value| {
+        v.as_str()
+            .and_then(|s| s.parse::<u64>().ok())
+            .or_else(|| v.as_u64())
+            .unwrap_or(0)
+    };
+    coins(transferable).saturating_add(coins(non_transferable))
+}
 pub(super) fn targets(value: &Value) -> Vec<String> {
     let mut rows = Vec::new();
     for (array, key) in [
@@ -97,9 +106,8 @@ pub(super) fn render(v: &Value) -> String {
     }
     if v.get("transferable").is_some() {
         text.push_str(&format!(
-            "Transferable: {}\r\nNon-transferable: {}\r\nReserved: {}\r\n",
-            number(&v["transferable"]),
-            number(&v["non_transferable"]),
+            "Balance: {}\r\nReserved: {}\r\n",
+            balance(&v["transferable"], &v["non_transferable"]),
             number(&v["reserved"])
         ));
     }
@@ -131,12 +139,45 @@ pub(super) fn render(v: &Value) -> String {
         ));
         if receipt.get("transferable_after").is_some() {
             text.push_str(&format!(
-                "Transferable after: {}\r\nNon-transferable after: {}\r\nReserved after: {}\r\n",
-                number(&receipt["transferable_after"]),
-                number(&receipt["non_transferable_after"]),
+                "Balance after: {}\r\nReserved after: {}\r\n",
+                balance(
+                    &receipt["transferable_after"],
+                    &receipt["non_transferable_after"]
+                ),
                 number(&receipt["reserved_after"])
             ));
         }
     }
     text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn coin1_market_shows_one_balance_and_receipt_for_current_and_legacy_wire() {
+        for (transferable, non_transferable, total) in [
+            ("95", "0", "95"),
+            ("90", "5", "95"),
+            ("18446744073709551615", "1", "18446744073709551615"),
+        ] {
+            let text = render(&serde_json::json!({
+                "transferable": transferable, "non_transferable": non_transferable,
+                "reserved": "10", "receipt": {
+                    "transferable_after": transferable, "non_transferable_after": non_transferable,
+                    "reserved_after": "10"
+                }
+            }));
+            assert!(
+                text.contains(&format!("Balance: {total}\r\nReserved: 10\r\n")),
+                "{text}"
+            );
+            assert!(
+                text.contains(&format!("Balance after: {total}\r\nReserved after: 10\r\n")),
+                "{text}"
+            );
+            assert!(!text.to_lowercase().contains("transferable"), "{text}");
+        }
+    }
 }

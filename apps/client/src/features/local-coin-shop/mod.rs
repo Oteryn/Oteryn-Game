@@ -77,10 +77,8 @@ impl View {
         }
         if let Some(balance) = &self.balance {
             text.push_str(&lfmt!(
-                "\nBalance: {} coins; available {}; transferable {}.{}",
-                balance.total_coins,
+                "\nBalance: {} coins.{}",
                 balance.available_coins,
-                balance.transferable_coins,
                 if balance.review_required {
                     tr!(" Account review required; new purchases are disabled.")
                 } else {

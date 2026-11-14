@@ -31,8 +31,7 @@ impl PlayLink {
             tr!("Rest and food — Ctrl+Alt+Shift+R"),
             |mailbox| &mut mailbox.rest_status,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).rest_status.open = true;
         }
         true

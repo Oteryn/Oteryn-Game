@@ -41,9 +41,10 @@ impl PlayLink {
     }
     pub fn pvp_expert_open(&self) {
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).properties.pvp_expert.open = true;
         }
     }

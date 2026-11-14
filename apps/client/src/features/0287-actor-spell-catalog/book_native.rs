@@ -72,6 +72,9 @@ unsafe fn text(hwnd: HWND) -> String {
 }
 type Mailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 pub(super) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.spellbook_details.native_open {

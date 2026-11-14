@@ -201,12 +201,15 @@ fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> Test
                     &[86],
                 )
                 .ok_or("house transfer offer")?;
-            assert!(owner.house_transfer_input(admitted).await);
+            assert!(owner.house_transfer_input(admitted).await.is_ok());
             {
                 let held = h.root.try_issue_background_semantic_pass()?;
                 let mut missing = admitted;
                 missing.item_fence = None;
-                assert!(!owner.house_transfer_input(missing).await);
+                assert!(matches!(
+                    owner.house_transfer_input(missing).await,
+                    Err(crate::durability::DurabilityError::Unavailable)
+                ));
                 let input = crate::durability::DurabilityRoot::with_holder_owner(
                     owner.house_transfer_input(admitted),
                 );
@@ -227,7 +230,7 @@ fn seam_input_house_transfer_guard_retries_busy_holder_before_dispatch() -> Test
                         Err(crate::durability::DurabilityError::RootUnavailable)
                     ));
                 }
-                assert!(input.await);
+                assert!(input.await.is_ok());
             }
             h.root
                 .try_issue_background_semantic_pass()?

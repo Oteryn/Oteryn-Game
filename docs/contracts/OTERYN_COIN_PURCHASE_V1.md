@@ -64,7 +64,14 @@ coin counts are positive. No floating point arithmetic is used for money.
   recent view and provide support/audit access with authorization.
 - CoinBalance: `version`, `revision` (positive, monotonic per payer wallet),
   `total_coins`, `available_coins`, `transferable_coins`, `review_required`.
-  Available/transferable cannot exceed total. Reservations remain unavailable.
+  Platform has one coin class: all grants and purchases credit the same balance,
+  and all available coins are transferable. `available_coins` and
+  `transferable_coins` describe the same available balance; neither exceeds total.
+  Reservations remain unavailable. Legacy snapshots with a smaller
+  `transferable_coins` remain accepted; the UI presents `available_coins`.
+  The internal coin wire retains `transferable` / `transferable_after` for the
+  whole available balance and always-zero `non_transferable` /
+  `non_transferable_after`; history `coin_class` is always `transferable`.
   Client refuses revision regression or contradictory equal-revision snapshots.
 - CoinOrderRequest: `version`, `request_id`, `package_id`, `quote_id`, nullable
   `character_id`. Generate request ID once after confirmation and retain on

@@ -300,7 +300,7 @@ pub fn coin_result(p: &mut CoinPanel, r: &ServerMechanicResponse) {
 }
 pub fn coin_text(p: &CoinPanel) -> String {
     format!(
-        "Coin market — transferable coins only. Coins belong to your account; gold stays in this World. Pending trades retain their reserved coins or gold.\r\n{}\r\n{}\r\n{}",
+        "Coin market — Oteryn Coins. Coins belong to your account; gold stays in this World. Pending trades retain their reserved coins or gold.\r\n{}\r\n{}\r\n{}",
         p.feedback,
         if p.confirmed.is_some() {
             "An unresolved confirmation is retained for retry."

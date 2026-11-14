@@ -39,6 +39,9 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.weapon_proficiency.open {

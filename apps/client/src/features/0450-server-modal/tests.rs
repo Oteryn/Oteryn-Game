@@ -15,8 +15,8 @@ use std::{
     },
 };
 #[derive(Default)]
-struct Peer {
-    answers: usize,
+pub(super) struct Peer {
+    pub(super) answers: usize,
     terminal: bool,
     queries: Vec<Vec<u8>>,
     query_results: VecDeque<Result<GatedCommandResult, SessionError>>,
@@ -309,8 +309,8 @@ fn terminal_modal_ack_ends_the_session_before_queued_gameplay_or_idle_io() -> Re
 
 /// Serves one dialog that asks for an amount and records the raw answer it receives.
 #[derive(Default)]
-struct AmountPeer {
-    answer: Option<Vec<u8>>,
+pub(super) struct AmountPeer {
+    pub(super) answer: Option<Vec<u8>>,
 }
 impl Stepper for AmountPeer {
     fn feature_selected(&self, capability: u32) -> bool {

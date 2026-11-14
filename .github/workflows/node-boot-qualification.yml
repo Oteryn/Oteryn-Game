@@ -42,7 +42,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Validate harness
         run: |

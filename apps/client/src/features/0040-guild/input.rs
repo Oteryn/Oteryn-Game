@@ -22,9 +22,10 @@ impl PlayLink {
     pub fn open_guild(&self) {
         self.guild_request(Intent::RefreshOwn);
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).guild.open = true;
         }
     }

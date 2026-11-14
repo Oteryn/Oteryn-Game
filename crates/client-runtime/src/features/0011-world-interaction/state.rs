@@ -107,6 +107,7 @@ fn inventory_or_container_has<S: SessionStream>(
             .main_backpack
             .iter()
             .chain(&inventory.entries)
+            .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
             .any(|item| item.handle == handle)
     }) || session.container_views().is_some_and(|containers| {
         containers.views.iter().any(|view| {

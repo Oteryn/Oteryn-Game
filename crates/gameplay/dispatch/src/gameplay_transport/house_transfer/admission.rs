@@ -28,11 +28,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn note_house_input(
         &self,
         admitted: AdmittedSession,
-    ) -> bool {
-        let classify = |error| match error {
-            crate::durability::DurabilityError::RootUnavailable => AdmissionRefusal::Unavailable,
-            _ => AdmissionRefusal::Rejected,
-        };
+    ) -> Result<(), crate::durability::DurabilityError> {
+        use crate::durability::DurabilityError;
         if let (Some(actor), Some(fence), Some(controller)) = (
             admitted.runtime_actor,
             admitted.item_fence,
@@ -40,53 +37,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
             && actor.runtime_scope() == fence.runtime_scope
         {
-            let Ok(budget) =
-                crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
-            else {
-                return false;
-            };
-            let Ok((current, _)) = budget
-                .retry_unavailable(async || {
+            let budget =
+                crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)?;
+            let (current, _) = budget
+                .retry_command_guard(async || {
                     FreshAdmissionStore::from_root(self.root.clone())
                         .current_session_at(admitted.game_session_id)
                         .await
-                        .map_err(classify)
                 })
-                .await
-            else {
-                return false;
-            };
-            return crate::gameplay_transport::item_fence_of(current) == Some(fence)
+                .await?;
+            return if crate::gameplay_transport::item_fence_of(current) == Some(fence)
                 && current.session_state() == GameSessionState::Active
-                && current.current_transport() == Some(controller.transport);
+                && current.current_transport() == Some(controller.transport)
+            {
+                Ok(())
+            } else {
+                Err(DurabilityError::Unavailable)
+            };
         }
         if !admitted
             .continuity
             .selected_capabilities
             .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
         {
-            return true;
+            return Ok(());
         }
         let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
-            return false;
+            return Err(DurabilityError::Unavailable);
         };
-        // Background projections share this holder with mandatory pre-dispatch input.
-        // Re-prove the same fences/transport on each idempotent attempt; all non-busy
-        // failures and budget exhaustion still refuse before any command effect.
-        let Ok(budget) =
-            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)
-        else {
-            return false;
-        };
+        // Re-prove the same fences/transport on every idempotent attempt. A busy
+        // holder exhausts only this command's budget; all other failures are fatal.
+        let budget =
+            crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(self.root)?;
         budget
-            .retry_unavailable(async || {
+            .retry_command_guard(async || {
                 self.root
                     .note_house_transfer_input(self.holder, fence, controller.transport)
                     .await
-                    .map_err(classify)
             })
             .await
-            .is_ok()
     }
     /// Called after genuine fresh COMMIT and before its Channel first-entry
     /// participants can publish or overwrite a recorded House position.
@@ -433,5 +422,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence: Some(fence),
         })
+    }
+}
+
+#[cfg(test)]
+mod input_guard_tests {
+    use crate::durability::DurabilityError;
+    use crate::foundation::GameSessionId;
+    use crate::gameplay_transport::{
+        AdmissionRetryBudget, COMMAND_HOLDER_WINDOW, RECONCILE_BACKOFF,
+    };
+    use std::cell::Cell;
+
+    #[tokio::test(start_paused = true)]
+    async fn house_transfer_input_guard_retries_only_holder_failures_within_budget()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let session =
+            GameSessionId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16])?;
+        for failure in [
+            (|| DurabilityError::RootUnavailable) as fn() -> DurabilityError,
+            || DurabilityError::RootPassDeadlineExceeded,
+            || DurabilityError::Unavailable,
+            || DurabilityError::CommitOutcomeUnknown,
+        ] {
+            let started = tokio::time::Instant::now();
+            let budget = AdmissionRetryBudget {
+                deadline: started + COMMAND_HOLDER_WINDOW,
+                backoff: RECONCILE_BACKOFF,
+                ..AdmissionRetryBudget::new(&session)
+            };
+            let attempts = Cell::new(0);
+            let error = budget
+                .retry_command_guard::<()>(async || {
+                    attempts.set(attempts.get() + 1);
+                    Err(failure())
+                })
+                .await
+                .err()
+                .ok_or("guard unexpectedly accepted")?;
+            assert_eq!(
+                std::mem::discriminant(&error),
+                std::mem::discriminant(&failure())
+            );
+            if matches!(
+                error,
+                DurabilityError::RootUnavailable | DurabilityError::RootPassDeadlineExceeded
+            ) {
+                assert!(attempts.get() > 1);
+                assert!(started.elapsed() >= COMMAND_HOLDER_WINDOW - RECONCILE_BACKOFF);
+                assert!(started.elapsed() < COMMAND_HOLDER_WINDOW);
+            } else {
+                assert_eq!(attempts.get(), 1);
+                assert!(started.elapsed().is_zero());
+            }
+        }
+        Ok(())
     }
 }
