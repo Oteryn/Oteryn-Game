@@ -294,8 +294,8 @@ jobs:
               '              test "$(git hash-object -- "$path")" = "$(git rev-parse "$HEAD_SHA:$path")"\n',
               '              verify_registered_target_binding "$name" "$path"\n',
               '              archived_targets+=(--test "$name")\n',
-              '          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
-              '          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
+              '          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"\n',
+              '          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"\n',
               '          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\\n'
               '            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \\\n'
               '            --no-fail-fast "${filters[@]}"\n',
@@ -307,7 +307,7 @@ jobs:
               '          run_registered_target runtime_scope_assignment_postgres apps/game-server/tests/runtime_scope_assignment_postgres.rs\n',
               '          run_registered_target native_admission_source_postgres apps/game-server/tests/native_admission_source_postgres.rs\n',
               '    name: Merge Queue / World bundle\n',
-              '        run: cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
+              '        run: cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
               f'          WORLD_BUNDLE_REQUIRED: {world_bundle_required_expression}\n',
               f'          WORLD_BUNDLE: {world_bundle_result_expression}\n',
               '          if [[ "${WORLD_BUNDLE_REQUIRED:-}" == "false" ]]; then\n',
@@ -318,8 +318,8 @@ jobs:
               '          $client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"\n',
               '          if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {\n',
               '          & $client --smoke\n',
-              '          cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
-              '        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
+              '          cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
+              '        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
               f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',
           )

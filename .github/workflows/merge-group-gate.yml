@@ -144,7 +144,7 @@ jobs:
           HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
-          if ! rustup toolchain install 1.99.1 --profile minimal || ! cargo +1.99.1 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
+          if ! rustup toolchain install 1.100.0 --profile minimal || ! cargo +1.100.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/queue-metadata.json"; then
             printf '{}' > "$RUNNER_TEMP/queue-metadata.json"
           fi
           python - <<'PY'
@@ -426,10 +426,10 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Check the World pins and build the bundle twice
-        run: cargo +1.99.1 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+        run: cargo +1.100.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
 
       - name: Name the bundle artifact by its digest
         id: artifact
@@ -466,7 +466,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt
 
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -476,9 +476,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
@@ -488,9 +488,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.99.1 metadata --locked --format-version 1 >/dev/null
-          cargo +1.99.1 fmt --all --check
-          cargo +1.99.1 run --locked -p oteryn-architecture-check -- workspace .
+          cargo +1.100.0 metadata --locked --format-version 1 >/dev/null
+          cargo +1.100.0 fmt --all --check
+          cargo +1.100.0 run --locked -p oteryn-architecture-check -- workspace .
           python - <<'PY'
           import json
           from pathlib import Path
@@ -508,7 +508,7 @@ jobs:
         run: |
           set -euo pipefail
           for package in oteryn-client oteryn-game-server; do
-            cargo +1.99.1 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+            cargo +1.100.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
           done
           python - <<'PY'
           import re
@@ -561,8 +561,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.99.1 clippy --locked --workspace --all-targets -- -D warnings
-          cargo +1.99.1 clippy --locked --workspace --all-targets --message-format=json -- -D warnings > "$RUNNER_TEMP/clippy-messages.jsonl"
+          cargo +1.100.0 clippy --locked --workspace --all-targets -- -D warnings
+          cargo +1.100.0 clippy --locked --workspace --all-targets --message-format=json -- -D warnings > "$RUNNER_TEMP/clippy-messages.jsonl"
           python tools/repository/test_check_duplicate_test_sources.py
           python tools/repository/check_duplicate_test_sources.py "$RUNNER_TEMP/clippy-messages.jsonl"
 
@@ -586,8 +586,8 @@ jobs:
             # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
             # same pinned version from crates.io with its locked dependency set instead.
             echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
-            rustup toolchain install 1.99.1 --profile minimal --no-self-update
-            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            rustup toolchain install 1.100.0 --profile minimal --no-self-update
+            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
             cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
           fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
@@ -597,12 +597,12 @@ jobs:
       - name: Test workspace libraries (Content modules)
         if: matrix.shard == 'lib-content'
         run: |
-          cargo +1.99.1 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'
+          cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'test(content::)'
 
       - name: Test workspace libraries (all other modules)
         if: matrix.shard == 'lib-rest'
         run: |
-          cargo +1.99.1 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'
+          cargo +1.100.0 nextest run --locked --workspace --lib --no-fail-fast -E 'not test(content::)'
 
       - name: Test workspace integration targets
         if: matrix.shard == 'integration-heavy' || matrix.shard == 'integration-rest'
@@ -611,11 +611,11 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
+          cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$RUNNER_TEMP/metadata.json"
           python tools/repository/plan_rust_test_shards.py "$RUNNER_TEMP/metadata.json" "$SHARD" > "$RUNNER_TEMP/shard-args.txt"
           mapfile -t shard_args < "$RUNNER_TEMP/shard-args.txt"
           test "${#shard_args[@]}" -gt 0
-          cargo +1.99.1 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
+          cargo +1.100.0 nextest run --locked --workspace "${shard_args[@]}" --no-fail-fast
 
       # Library and integration-test harnesses compile in the test legs; this leg builds the
       # remaining targets, runs the binary unit tests and doctests, the harness and the smoke.
@@ -624,11 +624,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo +1.99.1 build --locked --workspace --bins --examples --benches
-          cargo +1.99.1 test --locked --workspace --bins --no-fail-fast
-          cargo +1.99.1 test --locked --workspace --doc --no-fail-fast
-          cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness
-          cargo +1.99.1 run --locked -p oteryn-game-server -- --smoke
+          cargo +1.100.0 build --locked --workspace --bins --examples --benches
+          cargo +1.100.0 test --locked --workspace --bins --no-fail-fast
+          cargo +1.100.0 test --locked --workspace --doc --no-fail-fast
+          cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness
+          cargo +1.100.0 run --locked -p oteryn-game-server -- --smoke
 
   durability_postgres_build:
     name: Merge Queue / Durability PostgreSQL harness build
@@ -664,7 +664,7 @@ jobs:
           test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       - name: Restore trimmed Cargo cache from protected main
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -674,15 +674,15 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify locked metadata
-        run: cargo +1.99.1 metadata --locked --format-version 1 >/dev/null
+        run: cargo +1.100.0 metadata --locked --format-version 1 >/dev/null
 
       # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
       - name: Install pinned cargo-nextest
@@ -701,8 +701,8 @@ jobs:
             # Hosted runners can lose GitHub release downloads for an hour at a time. Build the
             # same pinned version from crates.io with its locked dependency set instead.
             echo "::warning::cargo-nextest ${NEXTEST_VERSION} release download failed; building it from crates.io"
-            rustup toolchain install 1.99.1 --profile minimal --no-self-update
-            cargo +1.99.1 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
+            rustup toolchain install 1.100.0 --profile minimal --no-self-update
+            cargo +1.100.0 install --locked --quiet cargo-nextest --version "=${NEXTEST_VERSION}" --root "$RUNNER_TEMP/nextest-root"
             cp "$RUNNER_TEMP/nextest-root/bin/cargo-nextest" "$RUNNER_TEMP/nextest-bin/"
           fi
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
@@ -722,7 +722,7 @@ jobs:
             local path="$2"
             local metadata
             metadata="$(mktemp)"
-            cargo +1.99.1 metadata --locked --no-deps --format-version 1 > "$metadata"
+            cargo +1.100.0 metadata --locked --no-deps --format-version 1 > "$metadata"
             python - "$metadata" "$name" "$path" <<'PY'
           import json
           import pathlib
@@ -811,14 +811,14 @@ jobs:
             exit 1
           }
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
+          cargo +1.100.0 nextest archive --locked --workspace "${archived_targets[@]}" --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
 
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # this archive holds exactly the library tests the partitions run against the service.
       - name: Archive PostgreSQL-backed library tests
         run: |
           set -euo pipefail
-          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+          cargo +1.100.0 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
       - name: Record archive digests and candidate
         id: digest
@@ -1042,7 +1042,7 @@ jobs:
 
       - name: Install Rust toolchain
         shell: pwsh
-        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt
 
       - name: Derive release identity
         shell: pwsh
@@ -1054,7 +1054,7 @@ jobs:
           if ($env:TARGET_SHA -cnotmatch '^[0-9a-f]{40}$') {
             throw "target SHA is not a full lowercase commit id"
           }
-          $metadata = cargo +1.99.1 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
+          $metadata = cargo +1.100.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
           $version = @($metadata.packages | Where-Object { $_.name -eq 'oteryn-client' })[0].version
           if (-not $version) {
             throw "oteryn-client version not found"
@@ -1067,8 +1067,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo +1.99.1 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
-          cargo +1.99.1 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          cargo +1.100.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+          cargo +1.100.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
           $client = ".\target\x86_64-pc-windows-msvc\release\oteryn-client.exe"
           if (-not (Test-Path -LiteralPath $client -PathType Leaf)) {
             throw "release client artifact missing: $client"
@@ -1077,7 +1077,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "release client smoke failed with exit code $LASTEXITCODE"
           }
-          cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
+          cargo +1.100.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc
 
       - name: Install Inno Setup
         shell: pwsh
@@ -1127,11 +1127,11 @@ jobs:
 
       - name: Test Windows input platform
         shell: pwsh
-        run: cargo +1.99.1 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
+        run: cargo +1.100.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc
 
       - name: Verify deterministic simulation golden fixtures
         shell: pwsh
-        run: cargo +1.99.1 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+        run: cargo +1.100.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
 
   rust_supply_chain:
     name: Merge Queue / Rust supply chain
@@ -1151,7 +1151,7 @@ jobs:
       - name: Check advisories licenses bans and sources
         run: |
           set -euo pipefail
-          rustup toolchain install 1.99.1 --profile minimal --no-self-update
+          rustup toolchain install 1.100.0 --profile minimal --no-self-update
           archive="$RUNNER_TEMP/cargo-deny.tar.gz"
           deny_root="$RUNNER_TEMP/deny-root"
           mkdir -p "$deny_root/bin"
@@ -1162,7 +1162,7 @@ jobs:
             tar -xzf "$archive" --strip-components=1 -C "$deny_root/bin" \
               cargo-deny-0.20.2-x86_64-unknown-linux-musl/cargo-deny
           else
-            cargo +1.99.1 install --locked --quiet cargo-deny --version "=0.20.2" --root "$deny_root"
+            cargo +1.100.0 install --locked --quiet cargo-deny --version "=0.20.2" --root "$deny_root"
           fi
           "$deny_root/bin/cargo-deny" --all-features check
 
@@ -1201,7 +1201,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       # The qualification builds game-server in target/debug; protected-main artifacts make
       # that build incremental. A cache hit never substitutes for running the qualification.
@@ -1213,9 +1213,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py
@@ -1303,7 +1303,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal
+        run: rustup toolchain install 1.100.0 --profile minimal
 
       # The qualification builds game-server in target/debug; protected-main artifacts make
       # that build incremental. A cache hit never substitutes for running the qualification.
@@ -1315,9 +1315,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.100.0-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
         run: python tools/repository/normalize_cargo_mtimes.py

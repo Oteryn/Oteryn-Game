@@ -25,9 +25,9 @@ fn run_effects_sliders() -> Result<(), Box<dyn std::error::Error>> {
             let mut preferences = ReferencePreferences::default();
             preferences.set_effect_opacity_slider(index, percent)?;
             assert_eq!(preferences.effect_opacity[index], percent as u8);
-            for other in 0..3 {
+            for (other, value) in preferences.effect_opacity.iter().enumerate() {
                 if other != index {
-                    assert_eq!(preferences.effect_opacity[other], 100);
+                    assert_eq!(*value, 100);
                 }
             }
             settings.apply(preferences);
