@@ -205,3 +205,8 @@ impl Outbox {
 #[cfg(test)]
 #[path = "tests/e2e_s06.rs"]
 mod e2e_s06;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+pub(in crate::play) fn catalogue_for_bevy_test(panel: &mut Panel, value: wire::Catalogue) {
+    catalogue(panel, value);
+}
