@@ -48,6 +48,7 @@ pub(super) mod store;
 mod trade;
 pub(super) mod training;
 pub(super) mod viewport;
+pub(super) mod world_event_window;
 mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -294,6 +295,7 @@ pub(super) fn install(app: &mut App) {
     team_finder::install(app);
     store::install(app);
     trade::install(app);
+    world_event_window::install(app);
     training::install(app);
     wheel::install(app);
     app.add_systems(
