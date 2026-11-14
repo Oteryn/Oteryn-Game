@@ -165,10 +165,16 @@ impl Command {
     }
     pub fn parse(raw: &[u8]) -> Option<Self> {
         let c: Self = parse(raw, COMMAND_BYTES)?;
-        (c.valid() && c.encode()?.as_slice() == raw).then_some(c)
+        (c.command_version == 1 && c.valid() && c.encode()?.as_slice() == raw).then_some(c)
+    }
+    pub(super) fn parse_for_decision(raw: &[u8]) -> Option<Self> {
+        let c: Self = parse(raw, COMMAND_BYTES)?;
+        (c.valid() && encode(&c, COMMAND_BYTES)?.as_slice() == raw).then_some(c)
     }
     pub fn encode(&self) -> Option<Vec<u8>> {
-        self.valid().then(|| encode(self, COMMAND_BYTES)).flatten()
+        (self.command_version == 1 && self.valid())
+            .then(|| encode(self, COMMAND_BYTES))
+            .flatten()
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -335,7 +341,8 @@ impl Message {
                     return None;
                 }
                 for c in &p.items {
-                    if !c.valid()
+                    if c.command_version != 1
+                        || !c.valid()
                         || !ids.insert(&c.operation_id)
                         || revisions
                             .insert(&c.sanction_stream_id, c.decision_revision)
@@ -388,13 +395,18 @@ impl Message {
             _ => return None,
         };
         if !matches!(message, Self::Request(_) | Self::Read(_))
-            && message.encode()?.as_slice() != raw
+            && message.serialize_raw()?.as_slice() != raw
         {
             return None;
         }
         Some(message)
     }
     pub fn encode(&self) -> Option<Vec<u8>> {
+        let raw = self.serialize_raw()?;
+        Self::parse(&raw)?;
+        Some(raw)
+    }
+    fn serialize_raw(&self) -> Option<Vec<u8>> {
         match self {
             Self::Command(c) => c.encode(),
             Self::Result(r) => r.encode(),

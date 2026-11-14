@@ -6,6 +6,7 @@
 //! after, so two pullers never both advance it; the loser's page rolls back as `Superseded`. Every
 //! record projects through its revisioned function (migrations 2800, 2803), so a replayed or
 //! reordered record never moves a projection backwards.
+pub mod enforcement;
 pub mod enforcement_wire;
 mod security_revocation;
 
