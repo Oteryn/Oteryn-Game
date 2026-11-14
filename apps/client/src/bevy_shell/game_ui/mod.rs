@@ -25,6 +25,7 @@ mod quick_loot;
 mod task_board;
 mod stash;
 mod trade;
+mod tutorial;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -254,6 +255,7 @@ pub(super) fn install(app: &mut App) {
     task_board::install(app);
     stash::install(app);
     trade::install(app);
+    tutorial::install(app);
     app.add_systems(
         Update,
         (
