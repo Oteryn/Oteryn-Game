@@ -48,6 +48,7 @@ pub(super) fn activate(
                     | Control::StaffTools
                     | Control::TaskBoard
                     | Control::WorldEvent
+                    | Control::TouchControls
                     | Control::Training
                     | Control::Store
                     | Control::WeaponProficiency
@@ -99,6 +100,7 @@ pub(super) fn activate(
             Control::StaffTools => game_ui::staff_tools::open(&mut owner),
             Control::WorldEvent => game_ui::world_event_window::open(&owner),
             Control::TeamFinder => game_ui::open_team_finder(&mut owner),
+            Control::TouchControls => game_ui::touch_controls::open(&mut owner),
             Control::Training => game_ui::training::open(&owner),
             Control::Store => game_ui::store::open(&mut owner),
             Control::WeaponProficiency => game_ui::weapon_proficiency::open(&owner),

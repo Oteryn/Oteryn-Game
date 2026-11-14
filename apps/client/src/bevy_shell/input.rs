@@ -194,3 +194,72 @@ mod tests {
         Ok(())
     }
 }
+
+/// Route Bevy's native touch stream after desktop normalization. The desktop
+/// keyboard and mouse paths above remain owned by their existing adapters.
+#[derive(bevy::ecs::system::SystemParam)]
+pub(super) struct TouchUi<'w, 's> {
+    viewport: Res<'w, WorldViewport>,
+    regions: Res<'w, GameRegions>,
+    guard: ModalGuard<'w, 's>,
+    hits: super::game_ui::touch_controls::TouchHits<'w, 's>,
+    focus: Res<'w, bevy::input_focus::InputFocus>,
+    editors: Query<'w, 's, (), With<bevy::text::EditableText>>,
+    occlusion: MessageReader<'w, 's, bevy::window::WindowOccluded>,
+    focused: MessageReader<'w, 's, bevy::window::WindowFocused>,
+    occluded: Local<'s, bool>,
+}
+pub(super) fn route_touch(
+    mut touches: MessageReader<bevy::input::touch::TouchInput>,
+    mut gestures: ResMut<super::game_ui::touch_controls::Gestures>,
+    mut owner: NonSendMut<HostOwner>,
+    input: NonSend<NativeInput>,
+    mut ui: TouchUi,
+) {
+    for event in ui.occlusion.read() {
+        *ui.occluded = event.occluded;
+    }
+    let lost_focus = ui.focused.read().any(|event| !event.focused);
+    let allowed = input.adapter.focused()
+        && !lost_focus
+        && !*ui.occluded
+        && !ui
+            .focus
+            .get()
+            .is_some_and(|entity| ui.editors.contains(entity))
+        && ui.guard.allows_focus(None)
+        && !owner.modal_active();
+    let same_session_viewport = gestures.synchronize(&mut owner, *ui.viewport);
+    if !allowed {
+        gestures.cancel(&mut owner);
+        touches.clear();
+        return;
+    }
+    if !same_session_viewport {
+        touches.clear();
+        return;
+    }
+    for touch in touches.read() {
+        use bevy::input::touch::TouchPhase;
+        let phase = match touch.phase {
+            TouchPhase::Started => crate::play::TouchPhase::Started,
+            TouchPhase::Moved => crate::play::TouchPhase::Moved,
+            TouchPhase::Ended => crate::play::TouchPhase::Ended,
+            TouchPhase::Canceled => crate::play::TouchPhase::Cancelled,
+        };
+        let point = ui
+            .hits
+            .physical(touch.window, touch.position)
+            .filter(|p| p.is_finite())
+            .and_then(|p| {
+                PointerCoordinate::new(p.x as i32)
+                    .ok()
+                    .zip(PointerCoordinate::new(p.y as i32).ok())
+            })
+            .and_then(|(x, y)| map_pointer(&owner, *ui.viewport, PointerPosition::new(x, y)))
+            .map(|p| [f64::from(p.x().get()), f64::from(p.y().get())]);
+        let owned = phase != crate::play::TouchPhase::Started
+            || ui.hits.allows(ui.regions.world, touch.id, touch.position);
+        gestures.route(&mut owner, *ui.viewport, touch.id, phase, point, owned);
+    }
+}
