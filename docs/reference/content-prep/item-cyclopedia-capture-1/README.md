@@ -39,5 +39,6 @@ alias id.
 ## State
 
 `manifest.json` records the count, verdict totals and the SHA-256 of `items.jsonl`. The native
-re-collection was still running when this packet was cut (`collection_state`); later pushes replace
-`items.jsonl` and `manifest.json` with the larger set.
+re-collection is complete (`collection_state`): 6369 records over the 6228 catalog targets (alias
+ids add records). 98 targets could not be resolved through the Cyclopedia item search and have no
+record.

@@ -3,7 +3,7 @@
 ```yaml
 task_id: ITEM-CYCLO-CAPTURE-1
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-newton-oljapn
@@ -34,6 +34,13 @@ production change.
 - Each record carries its TibiaWiki per-field cross-check and verdict.
 - `manifest.json` SHA-256 matches `items.jsonl`.
 - The final push carries the complete native re-collection.
+
+## Closeout
+
+- Final push carries the complete native re-collection: 6369 records, `manifest.json` SHA-256
+  matches `items.jsonl`.
+- Review: none requested; reference data only.
+- merge commit/result: squash merge of #3192 if the owner merges it.
 
 ## Validation
 

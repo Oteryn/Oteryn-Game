@@ -1,26 +1,26 @@
 {
  "capture_scope": "Cyclopedia item ids with export status complete (Basic + item dialog values)",
  "client_build_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
- "collection_state": "partial: native re-collection in progress",
+ "collection_state": "complete: native re-collection finished 2026-11-14; 6228 catalog targets, 98 not resolvable through the Cyclopedia item search",
  "compatibility_target": "tibia-global",
- "id_max": 37546,
+ "id_max": 54768,
  "id_min": 107,
- "items_jsonl_bytes": 1689960,
- "items_jsonl_sha256": "9dddba0e62d0254493a420e5fd288e3b042d8e8f6cd458b6cfb7409a2066d8e9",
+ "items_jsonl_bytes": 4569951,
+ "items_jsonl_sha256": "7df7a2d0142e21c25826daf6405660d6e4e1f0a9507ce7aacfd988e3d25878f1",
  "record_source": "native-client-cyclopedia-item-dialog",
- "records": 2730,
+ "records": 6369,
  "schema": "OTERYN_ITEM_CYCLOPEDIA_CAPTURE_REFERENCE/v1",
  "task_id": "ITEM-CYCLO-CAPTURE-1",
  "verdicts": {
-  "CLIENT_VERIFIED_NO_WIKI_PAGE": 30,
-  "CLIENT_VERIFIED_WIKI_AGREES": 2675,
-  "CLIENT_VERIFIED_WIKI_DIFFERS": 25
+  "CLIENT_VERIFIED_NO_WIKI_PAGE": 82,
+  "CLIENT_VERIFIED_WIKI_AGREES": 6183,
+  "CLIENT_VERIFIED_WIKI_DIFFERS": 104
  },
  "wiki_field_checks": {
-  "differ": 26,
-  "match": 5016,
-  "only_client": 44,
-  "only_wiki": 47
+  "differ": 107,
+  "match": 12067,
+  "only_client": 127,
+  "only_wiki": 86
  },
  "wiki_source": "https://tibia.fandom.com (Template:Infobox Object pages, fetched 2026-11-14)"
 }
