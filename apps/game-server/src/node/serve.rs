@@ -762,6 +762,10 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_AUTHORITY_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_PROFILE_B_CHANGES_CLIENT_IDENTITY_PEM",
                 ] {
                     if let Some(path) = std::env::var_os(name) {
                         other_chains.push(chain(
@@ -3453,6 +3457,161 @@ async fn realize_activation_paced(
     }
 }
 
+fn enforcement_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    other_identities: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
+) -> Result<
+    Option<oteryn_gameplay_social::platform_streams::enforcement::transport::Clients>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::enforcement::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&other_identities()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients)
+}
+
+fn platform_client_identities(
+    config: &NodeConfig,
+) -> Result<Vec<(&'static str, Vec<u8>)>, BootError> {
+    let platform = &config.platform;
+    let mut paths = vec![(
+        "platform.client_certificate_file",
+        &platform.client_certificate_file,
+    )];
+    if let Some(v) = &platform.bootstrap_intents {
+        paths.push((
+            "platform.bootstrap_intents.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.runtime_status {
+        paths.push((
+            "platform.runtime_status.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.account_characters {
+        paths.push((
+            "platform.account_characters.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.character_commands {
+        paths.push((
+            "platform.character_commands.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.character_services {
+        paths.push((
+            "platform.character_services.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.bazaar {
+        paths.push((
+            "platform.bazaar.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &platform.public_projections {
+        paths.push((
+            "platform.public_projections.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = platform.world_event_outcomes.as_ref().filter(|v| v.enabled) {
+        paths.push((
+            "platform.world_event_outcomes.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    if let Some(v) = &config.journal {
+        paths.push((
+            "journal.client_certificate_file",
+            &v.client_certificate_file,
+        ));
+    }
+    let identities = paths
+        .into_iter()
+        .map(|(key, path)| {
+            read_file(key, path, FileClass::Secret, effective_uid(), MAX_PEM_BYTES)
+                .map(|pem| (key, pem))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(identities)
+}
+
+fn profile_b_startup(
+    lookup: impl Fn(&str) -> Option<std::ffi::OsString>,
+    others: impl FnOnce() -> Result<Vec<(&'static str, Vec<u8>)>, BootError>,
+) -> Result<
+    Option<Box<oteryn_gameplay_social::platform_streams::profile_b::transport::Clients>>,
+    BootError,
+> {
+    use oteryn_gameplay_social::platform_streams::profile_b::transport::Clients;
+    let clients = Clients::from_lookup(lookup)
+        .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    if let Some(clients) = &clients {
+        clients
+            .check_other_identities(&others()?)
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
+    }
+    Ok(clients.map(Box::new))
+}
+
+async fn enforcement_store_startup(
+    enabled: bool,
+    check: impl Future<
+        Output = Result<
+            oteryn_gameplay_social::platform_streams::enforcement::worker::Reply,
+            DurabilityError,
+        >,
+    >,
+) -> Result<(), BootError> {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+    if !enabled {
+        return Ok(());
+    }
+    match check.await {
+        Ok(Reply::Cursor(_, _)) => Ok(()),
+        _ => Err(invalid("game_platform_enforcement_configuration")),
+    }
+}
+
+async fn enforcement_owner<T, D, TF, DF>(
+    mut receiver: tokio::sync::mpsc::Receiver<
+        oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest,
+    >,
+    transact: T,
+    decide: D,
+) where
+    T: Fn(oteryn_gameplay_social::platform_streams::enforcement::worker::Action) -> TF,
+    D: Fn(Vec<u8>) -> DF,
+    TF: Future<
+        Output = Result<oteryn_gameplay_social::platform_streams::enforcement::worker::Reply, ()>,
+    >,
+    DF: Future<Output = Result<Vec<u8>, ()>>,
+{
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::StoreRequest;
+    while let Some(request) = receiver.recv().await {
+        match request {
+            StoreRequest::Transact(action, reply) => {
+                let _ = reply.send(transact(action).await);
+            }
+            StoreRequest::Decide(raw, reply) => {
+                let _ = reply.send(decide(raw).await);
+            }
+        }
+    }
+    std::future::pending::<()>().await
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -3461,6 +3620,14 @@ async fn boot_and_serve(
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
+    let profile_b_clients = profile_b_startup(
+        |key| std::env::var_os(key),
+        || platform_client_identities(config),
+    )?;
+    let enforcement_clients = enforcement_startup(
+        |key| std::env::var_os(key),
+        || platform_client_identities(config),
+    )?;
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();
@@ -3501,6 +3668,26 @@ async fn boot_and_serve(
     .await
     .map_err(|_| BootError::CharacterAuthority)?;
     event("event=character_authority state=open");
+    enforcement_store_startup(enforcement_clients.is_some(), async {
+        with_retries(
+            root,
+            "enforcement store configuration",
+            config.boot_pass_deadline(),
+            boot_step_retryable,
+            root_busy,
+            || {
+                root.enforcement_transport(
+                    &authority,
+                    oteryn_gameplay_social::platform_streams::enforcement::worker::Action::Cursor {
+                        reconcile: false,
+                    },
+                )
+            },
+        )
+        .await
+    })
+    .await?;
+
     let Some(generation) = first(
         await_assignment(
             root,
@@ -3650,12 +3837,20 @@ async fn boot_and_serve(
     // (PREMIUM-ACTIVATION-0 §1.1), durable latch and optional activation record (§1.2).
     // The serving path pulls into this coordinator's consumer using the existing client gate.
     let premium_reads = production_premium_reads(root, config.premium_activation.as_ref());
+    let _profile_b_tasks =
+        oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+            root.clone(),
+            profile_b_clients.map(|c| *c),
+            premium_reads.consumer(),
+        );
+
     // Local operator mode; the Platform runtime-status payload has a closed contract.
     eprintln!(
         "event=store_configuration store_purchases={}",
         config.store_purchases.as_str()
     );
     let owners = GameplaySeamOwners {
+        platform_enforcement_enabled: enforcement_clients.is_some(),
         cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
             *proof.fact().node_id().as_bytes(),
         )
@@ -3707,7 +3902,25 @@ async fn boot_and_serve(
     };
     // The long-lived supervisor owns its child jobs on the heap. Keep its state out of
     // the boot future too; boxing only the outer node leaves stacked poll temporaries.
-    Box::pin(supervision::supervise(supervision::Serving {
+    use oteryn_gameplay_social::platform_streams::enforcement::worker::{Tasks, store_channel};
+    let (requests, receiver) = store_channel();
+    let _enforcement_tasks = Tasks::spawn(enforcement_clients, requests);
+    let authority = &authority;
+    let proof = &proof;
+    let enforcement_owner = Box::pin(enforcement_owner(
+        receiver,
+        |action| async move {
+            root.enforcement_transport(authority, action)
+                .await
+                .map_err(|_| ())
+        },
+        |raw| async move {
+            root.decide_platform_enforcement(authority, proof, &raw)
+                .await
+                .map_err(|_| ())
+        },
+    ));
+    let serving = Box::pin(supervision::supervise(supervision::Serving {
         listener: &listener,
         control: &control,
         listener_config,
@@ -3721,8 +3934,10 @@ async fn boot_and_serve(
         generation,
         signalled,
         timed_npcs,
-    }))
-    .await
+    }));
+    first(serving, enforcement_owner)
+        .await
+        .unwrap_or(Err(BootError::Serve))
 }
 
 #[cfg(test)]
@@ -3733,6 +3948,139 @@ mod future_stack_tests;
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn profile_b_flags_off_spawn_nothing_and_skip_identity_reads() {
+        let config =
+            profile_b_startup(|_| None, || Err(invalid("unexpected identity read"))).expect("off");
+        assert!(config.is_none());
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            let tasks = oteryn_gameplay_social::platform_streams::profile_b::runtime::Tasks::spawn(
+                root,
+                None,
+                std::sync::Arc::default(),
+            );
+            assert!(tasks.is_empty());
+        });
+    }
+    #[test]
+    fn profile_b_missing_identity_fails_startup_with_its_key() {
+        use oteryn_gameplay_social::platform_streams::profile_b::transport::*;
+        for (flag, identity) in [
+            (AUTHORITY_ENABLED_VAR, AUTHORITY_IDENTITY_VAR),
+            (CHANGES_ENABLED_VAR, CHANGES_IDENTITY_VAR),
+        ] {
+            assert!(
+                matches!(profile_b_startup(|key|(key==flag).then(||"true".into()),||Err(invalid("unexpected identity read"))),Err(BootError::Startup(StartupError::Invalid{key})) if key==identity)
+            );
+        }
+    }
+
+    #[test]
+    fn enforcement_owner_routes_requests_and_preserves_errors() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::{
+            Action, Reply, Store, store_channel,
+        };
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let (store, receiver) = store_channel();
+            let calls = std::cell::Cell::new(0);
+            let owner = enforcement_owner(
+                receiver,
+                |action| {
+                    calls.set(calls.get() + 1);
+                    std::future::ready(match action {
+                        Action::Next => Ok(Reply::Publication(None)),
+                        _ => Err(()),
+                    })
+                },
+                |raw| std::future::ready(Ok(raw)),
+            );
+            let client = async {
+                assert!(matches!(
+                    store.transact(Action::Next).await,
+                    Ok(Reply::Publication(None))
+                ));
+                assert!(
+                    store
+                        .transact(Action::Stop { reconcile: false })
+                        .await
+                        .is_err()
+                );
+                let raw = b"original command bytes".to_vec();
+                assert_eq!(store.decide(raw.clone()).await, Ok(raw));
+            };
+            assert_eq!(first(client, owner).await, Some(()));
+            assert_eq!(calls.get(), 2);
+        });
+    }
+
+    #[test]
+    fn enforcement_startup_checks_durable_configuration_only_when_enabled() {
+        use oteryn_gameplay_social::platform_streams::enforcement::worker::Reply;
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let polled = std::cell::Cell::new(false);
+            assert!(
+                enforcement_store_startup(false, async {
+                    polled.set(true);
+                    Err(DurabilityError::Unavailable)
+                })
+                .await
+                .is_ok()
+            );
+            assert!(!polled.get(), "OFF must not poll storage");
+            assert!(matches!(
+                enforcement_store_startup(true, async { Err(DurabilityError::Unavailable) }).await,
+                Err(BootError::Startup(StartupError::Invalid {
+                    key: "game_platform_enforcement_configuration"
+                }))
+            ));
+            assert!(
+                enforcement_store_startup(true, async { Ok(Reply::Cursor(None, false)) })
+                    .await
+                    .is_ok()
+            );
+        });
+    }
+
+    #[test]
+    fn enforcement_flag_off_spawns_nothing() {
+        let clients = enforcement_startup(|_| None, || Err(invalid("unexpected identity read")))
+            .expect("off");
+        let (store, mut receiver) =
+            oteryn_gameplay_social::platform_streams::enforcement::worker::store_channel();
+        let tasks = oteryn_gameplay_social::platform_streams::enforcement::worker::Tasks::spawn(
+            clients, store,
+        );
+        assert!(tasks.is_empty());
+        assert!(receiver.try_recv().is_err());
+    }
+    #[test]
+    fn enforcement_flag_on_missing_identity_fails_startup() {
+        use oteryn_gameplay_social::platform_streams::enforcement::{
+            ENABLED_VAR, transport::READER_IDENTITY_VAR,
+        };
+        assert!(matches!(
+            enforcement_startup(
+                |key| (key == ENABLED_VAR).then(|| "true".into()),
+                || Err(invalid("unexpected identity read"))
+            ),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: READER_IDENTITY_VAR
+            }))
+        ));
+    }
 
     #[test]
     fn a_busy_holder_delays_the_privilege_answer_without_refusing() {

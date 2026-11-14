@@ -375,6 +375,8 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    /// Validated once by the composition root before serving.
+    pub platform_enforcement_enabled: bool,
     pub cast: Option<cast::CastRuntimeConfig>,
     /// Sealed bounded templates issued by the same existing Content activation owner.
     pub activity_templates:
