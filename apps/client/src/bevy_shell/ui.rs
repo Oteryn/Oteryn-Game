@@ -46,6 +46,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    ExpertPvpModes,
     AchievementNotices,
     Bosstiary(bool),
     Appearance,
@@ -91,6 +92,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::ExpertPvpModes => "shell.expert_pvp_modes",
             Self::AchievementNotices => "shell.achievement_notices",
             Self::Bosstiary(false) => "shell.bosstiary",
             Self::Bosstiary(true) => "shell.bosstiary_cooldowns",
@@ -223,6 +225,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
+        (Control::ExpertPvpModes, "Expert PvP (Ctrl+Alt+E)", 230.),
         (Control::AchievementNotices, "Achievement Notices", 140.),
         (Control::Bosstiary(false), "Bosstiary (Ctrl+Shift+J)", 190.),
         (Control::Bosstiary(true), "Cooldown Ctrl+Alt+Shift+J", 230.),

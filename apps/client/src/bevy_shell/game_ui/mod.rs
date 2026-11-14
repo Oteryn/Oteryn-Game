@@ -21,6 +21,7 @@ pub(super) mod cyclopedia_map;
 pub(super) mod cyclopedia_trackers;
 mod depot;
 mod exaltation_forge;
+pub(super) mod expert_pvp_modes;
 mod feature_dialogs;
 mod furniture_rotation;
 pub(super) mod hireling_services;
@@ -116,6 +117,7 @@ pub(super) fn install(app: &mut App) {
     coin_market::install(app);
     depot::install(app);
     exiva_settings::install(app);
+    expert_pvp_modes::install(app);
     feature_dialogs::install(app);
     furniture_rotation::install(app);
     guild_wars::install(app);

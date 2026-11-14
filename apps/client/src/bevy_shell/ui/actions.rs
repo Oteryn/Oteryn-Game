@@ -48,6 +48,7 @@ pub(super) fn activate(
                     | Control::WeaponProficiency
                     | Control::Bosstiary(_)
                     | Control::AchievementNotices
+                    | Control::ExpertPvpModes
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -90,6 +91,7 @@ pub(super) fn activate(
                 game_ui::bosstiary::toggle(&mut owner, *cooldowns)
             }
             Control::AchievementNotices => game_ui::open_achievement_notices(&mut owner),
+            Control::ExpertPvpModes => game_ui::expert_pvp_modes::toggle(&owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
