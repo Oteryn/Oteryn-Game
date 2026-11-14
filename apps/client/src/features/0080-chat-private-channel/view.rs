@@ -11,3 +11,13 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::Controls;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "bound_tests.rs"]
+mod bound_tests;
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::PrivateChannelsBound;

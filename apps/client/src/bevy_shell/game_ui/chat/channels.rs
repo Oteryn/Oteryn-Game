@@ -70,7 +70,17 @@ pub(super) fn setup(commands: &mut Commands, root: Entity, skins: &Skins) {
     });
     let open = widgets::button(commands, skins, "Private", 55., Action::Conversation, 0);
     let close = widgets::button(commands, skins, "×", 22., Action::ChannelCancel, 0);
-    commands.entity(footer).add_children(&[input, open, close]);
+    let manage = commands
+        .spawn(source::button(skins.buttons.clone(), 60.))
+        .observe(super::super::private_channels::entry)
+        .id();
+    let caption = commands
+        .spawn(source::button_caption("Manage", skins.font.clone()))
+        .id();
+    commands.entity(manage).add_child(caption);
+    commands
+        .entity(footer)
+        .add_children(&[input, open, manage, close]);
     commands.entity(panel).add_children(&[rows, footer]);
     commands.entity(root).add_child(panel);
 }

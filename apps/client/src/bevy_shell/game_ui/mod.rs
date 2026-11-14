@@ -62,6 +62,7 @@ pub(super) mod party;
 pub(super) mod player_report_report;
 mod prey;
 pub(super) use prey::open as open_prey;
+pub(super) mod private_channels;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
@@ -167,6 +168,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     player_report_report::install(app);
     prey::install(app);
+    private_channels::install(app);
     quick_loot::install(app);
     raid_schedule::install(app);
     skills_config::install(app);
