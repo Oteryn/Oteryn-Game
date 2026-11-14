@@ -138,7 +138,8 @@ impl HostOwner {
         let Some(play) = &mut self.play else {
             return false;
         };
-        if super::game_ui::highscores_character_info::input(&play.link, routed)
+        if play.link.action_bar_editor_input_bound(routed)
+            || super::game_ui::highscores_character_info::input(&play.link, routed)
             || play.link.house_podium_input(routed)
             || play.link.quest_input(routed)
             || play.link.appearance_input(routed)

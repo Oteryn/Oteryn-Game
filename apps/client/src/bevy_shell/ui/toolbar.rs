@@ -57,6 +57,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
             Some(
                 Control::AchievementNotices
                     | Control::Achievements
+                    | Control::ActionBarEditor
                     | Control::AnimusMastery
                     | Control::Appearance
                     | Control::Arena

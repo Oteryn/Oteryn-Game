@@ -20,6 +20,8 @@ mod assignments;
 mod item_cooldowns;
 use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
+#[cfg(feature = "bevy-shell")]
+pub use assignments::ActionBarEditorSnapshot;
 pub(crate) use assignments::BarActionsState;
 pub(in crate::play) use assignments::ItemCooldownRead;
 #[cfg(any(windows, test))]
@@ -350,4 +352,13 @@ impl PlayView {
         self.creature_drag.pointer = None;
         crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = None;
     }
+}
+
+/// Feed the production inventory reducer for action-bar presenter tests.
+#[cfg(all(test, feature = "bevy-shell"))]
+pub(crate) fn action_bar_editor_test_inventory(
+    outbox: &crate::play::Outbox,
+    inventory: oteryn_session::CharacterInventory,
+) {
+    outbox.inventory_initialize(Some(inventory), true);
 }

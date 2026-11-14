@@ -22,6 +22,7 @@ fn docked_row_viewport_stays_within_configured_buttons_at_every_offset() {
 #[test]
 fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     assert!(link.assign_bar_action(
         0,
         BarAction::Text {
@@ -79,6 +80,7 @@ fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn st
 #[test]
 fn third_bar_last_slot_uses_the_same_real_cast_caller() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     assert!(link.bar_gesture(BarGesture::Configure {
         bar: 2,
         dock: BarDock::Right,
@@ -101,6 +103,7 @@ fn action_amount_labels_follow_server_inventory_replacements()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::num::{NonZeroU32, NonZeroU64};
     let (link, _, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_items(vec![256]);
     assert!(link.assign_bar_action(
         0,
@@ -132,6 +135,7 @@ fn action_amount_labels_follow_server_inventory_replacements()
 fn fifty_button_count_is_configurable_persisted_and_keeps_hidden_assignments()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, _) = play_channel();
+    link.use_shared_frontend();
     assert!(link.assign_bar_action(
         49,
         BarAction::Text {

@@ -15,7 +15,9 @@ type Fixture = (
 );
 fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
-    let view = view()?;
+    link.use_shared_frontend();
+    let mut view = view()?;
+    view.use_shared_frontend();
     outbox.bar_item_cooldowns_initialize(true);
     outbox.targeting_initialize(true);
     outbox.spell_catalog_initialize(
@@ -250,6 +252,31 @@ fn unselected_item_cooldown_capability_sends_no_item_or_spell()
     outbox.bar_item_cooldowns_initialize(false);
     view.cast(NonZeroU32::MIN);
     view.tick(&link).map_err(|_| "unselected tick")?;
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[cfg(feature = "bevy-shell")]
+#[test]
+fn action_bar_editor_close_preserves_in_flight_item_settlement()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox, mut view, original) = fixture()?;
+    assert!(link.action_bar_editor_open());
+    let expected = link.action_bar_editor_snapshot();
+    view.cast(NonZeroU32::MIN);
+    view.tick(&link).map_err(|_| "query tick")?;
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Feature(_)
+    ));
+    assert!(link.action_bar_editor_close_bound(&expected));
+    assert!(link.action_bar_editor_open());
+    outbox.bar_item_cooldowns_result(&result(0)?);
+    view.tick(&link).map_err(|_| "settlement tick")?;
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command)
+        if command.target == Target::Position(original))
+    );
     assert!(commands.try_recv().is_err());
     Ok(())
 }

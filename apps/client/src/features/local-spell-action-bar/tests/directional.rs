@@ -202,6 +202,7 @@ fn check(targeted: bool, expected: SpellCastIntent, facing: bool) -> Result<(), 
                     assert_eq!(expected.spell, energy_wave);
                     // These are the same Apply/Cast callbacks used by the native form.
                     let (link, mut commands, outbox) = crate::play::play_channel();
+                    link.use_shared_frontend();
                     {
                         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
                         crate::play::feature_local_spell_action_bar::input::submit(
