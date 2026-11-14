@@ -10,14 +10,15 @@ Cyclopedia item dialog (Global client build `7f6555b1…af34`, see `manifest.jso
 client functions; no crafted packets. A record is emitted only when both parts were captured:
 
 - `basic`: the Basic panel as label → value (Weight, Armor, Attack, Defence, Vocations,
-  Required Level, Imbuement Slots, Classification, Protection, Skill Boost, …), and `basic_text`,
-  the same panel as the client renders it.
+  Required Level, Imbuement Slots, Classification, Protection, Skill Boost, Tradeable In
+  Market, …).
 - Item dialog values: `npc_sell_to` (NPCs that buy the item from the player), `npc_buy_from` (NPCs
-  that sell it to the player), each with NPC, location, price and currency,
-  `average_market_price`, `loot_value`, `loot_value_source` and `has_weapon_proficiency`.
+  that sell it to the player), each with NPC, location, price and currency when it is not gold;
+  `average_market_price`, `loot_value` with `loot_value_source`, and `has_weapon_proficiency`.
 
-`average_market_price` and `loot_value` were captured on a test-server session that reports 0;
-treat 0 there as "not observed", not as a Global market value.
+To keep the packet small, empty NPC lists, a `false` proficiency flag and zero market or loot
+values are omitted. The capture session's server reported 0 for every market and loot value, so
+an absent value means "not observed", not a Global market value of 0.
 
 ## Compatibility marker
 
