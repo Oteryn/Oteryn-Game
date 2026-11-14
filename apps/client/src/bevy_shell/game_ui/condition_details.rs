@@ -1,26 +1,13 @@
 //! Conditions, rest/food and Battle Instinct details from the retained status owners.
+mod toolbar;
 mod widgets;
 use super::super::{owner::HostOwner, ui::Skins};
 use super::modal::ModalGuard;
 pub(in crate::bevy_shell) use crate::play::feature_0276_condition_status::protocol::details::Target;
 use crate::play::feature_0276_condition_status::protocol::details::{Action, Snapshot};
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
+pub(in crate::bevy_shell) use toolbar::setup_toolbar;
 
-pub(in crate::bevy_shell) fn toolbar_window(
-    control: Option<&crate::bevy_shell::ui::Control>,
-) -> bool {
-    use crate::bevy_shell::ui::Control;
-    matches!(
-        control,
-        Some(
-            Control::Details(_)
-                | Control::Market
-                | Control::Party
-                | Control::Quests
-                | Control::Spells
-        )
-    )
-}
 impl Target {
     pub(in crate::bevy_shell) fn id(self) -> &'static str {
         match self {
@@ -34,13 +21,6 @@ impl Target {
             Self::Conditions => "Conditions",
             Self::Rest => "Rest and food",
             Self::BattleInstinct => "Battle Instinct",
-        }
-    }
-    fn shortcut(self) -> KeyCode {
-        match self {
-            Self::Conditions => KeyCode::KeyC,
-            Self::Rest => KeyCode::KeyR,
-            Self::BattleInstinct => KeyCode::KeyB,
         }
     }
 }
@@ -72,38 +52,14 @@ impl State {
     }
 }
 pub(super) fn install(app: &mut App) {
+    toolbar::install(app);
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
-        .init_resource::<OpeningWindow>()
-        .add_systems(Update, (window_focus, keyboard, project).chain());
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, (escape, project).chain());
 }
-#[derive(Resource, Default)]
-struct OpeningWindow {
-    focused: bool,
-}
-fn window_focus(
-    mut state: ResMut<OpeningWindow>,
-    windows: Query<&bevy::window::Window, With<bevy::window::PrimaryWindow>>,
-) {
-    state.focused = windows.iter().all(|window| window.focused);
-}
-#[derive(bevy::ecs::system::SystemParam)]
-pub(in crate::bevy_shell) struct OpeningInput<'w, 's> {
-    focus: Res<'w, InputFocus>,
-    editors: Query<'w, 's, (), With<bevy::text::EditableText>>,
-    // Keep Window queries in this window's installed systems. Shared toolbar
-    // observers must not register Window in other windows' headless fixtures.
-    window: Option<Res<'w, OpeningWindow>>,
-}
-impl OpeningInput<'_, '_> {
-    pub(in crate::bevy_shell) fn toggle(&self, owner: &HostOwner, target: Target) {
-        let blocked = self
-            .focus
-            .get()
-            .is_some_and(|entity| self.editors.contains(entity))
-            || self.window.as_ref().is_some_and(|window| !window.focused);
-        toggle(owner, target, blocked);
-    }
+pub(in crate::bevy_shell) fn open_input(link: &crate::play::PlayLink, target: Target) {
+    let snapshot = link.condition_details_snapshot(target);
+    link.condition_details_dispatch_bound(&snapshot, Action::Open, false);
 }
 pub(in crate::bevy_shell) fn toggle(owner: &HostOwner, target: Target, blocked: bool) {
     if blocked || owner.phase != crate::bevy_shell::owner::Phase::Playing {
@@ -221,37 +177,35 @@ fn activate(
         perform(&owner, &mut state, *control, !guard.allows(event.entity));
     }
 }
-fn keyboard(
-    input: OpeningInput,
-    keys: Res<ButtonInput<KeyCode>>,
+fn escape(
+    mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
-    let chord = (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-        && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-        && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight));
-    for target in Target::ALL {
-        let window = state.window(target);
-        let allowed = window.widgets.as_ref().map_or_else(
-            || guard.allows_focus(None),
-            |widgets| guard.allows(widgets.panel),
-        );
-        if !allowed {
+    for event in events.read() {
+        if event.repeat
+            || event.state != bevy::input::ButtonState::Pressed
+            || event.key_code != KeyCode::Escape
+        {
             continue;
         }
-        if chord && keys.just_pressed(target.shortcut()) {
-            input.toggle(&owner, target);
-        } else if keys.just_pressed(KeyCode::Escape)
-            && window.snapshot.as_ref().is_some_and(Snapshot::open)
-        {
-            let control = Control {
-                target,
-                generation: window.generation,
-                revision: window.revision,
-                action: Action::Close,
-            };
-            perform(&owner, &mut state, control, false);
+        for target in Target::ALL {
+            let window = state.window(target);
+            if window.snapshot.as_ref().is_some_and(Snapshot::open)
+                && window
+                    .widgets
+                    .as_ref()
+                    .is_some_and(|widgets| guard.allows(widgets.panel))
+            {
+                let control = Control {
+                    target,
+                    generation: window.generation,
+                    revision: window.revision,
+                    action: Action::Close,
+                };
+                perform(&owner, &mut state, control, false);
+            }
         }
     }
 }

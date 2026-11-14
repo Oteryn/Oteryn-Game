@@ -165,24 +165,18 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (
-            Control::Details(Target::BattleInstinct),
-            "Battle Instinct",
-            100.,
-        ),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
-        (Control::Details(Target::Conditions), "Conditions", 80.),
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
-        (Control::Details(Target::Rest), "Rest and food", 100.),
         (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
     }
+    condition_details::setup_toolbar(&mut commands, &skins, toolbar);
     // Full-window modal scrim blocks world pointer input while settings are open.
     let modal = commands
         .spawn((
@@ -373,7 +367,6 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
-    input: condition_details::OpeningInput,
 ) {
     if !modal.allows(event.entity) {
         return;
@@ -383,7 +376,6 @@ fn activate(
             && matches!(
                 control,
                 Control::Options
-                    | Control::Details(_)
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -395,7 +387,6 @@ fn activate(
             return;
         }
         match control {
-            Control::Details(target) => input.toggle(&owner, *target),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
@@ -583,7 +574,16 @@ pub(super) fn project_toolbar(
                 node.left = px(8.);
                 node.right = px(8.);
             }
-        } else if condition_details::toolbar_window(control) {
+        } else if matches!(
+            control,
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::Details(_)
+            )
+        ) {
             node.display = if playing {
                 Display::Flex
             } else {

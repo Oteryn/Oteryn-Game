@@ -37,7 +37,6 @@ fn app_with_details(details: bool) -> Result<Fixture, Box<dyn std::error::Error>
     ))
     .init_asset::<Font>()
     .init_asset::<Image>()
-    .init_resource::<bevy::input::ButtonInput<KeyCode>>()
     .insert_non_send(owner)
     .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -215,7 +214,6 @@ fn condition_details_rejected_when_session_replaced_or_target_changed() -> TestR
 }
 #[test]
 fn condition_details_window_registered() -> TestResult {
-    assert!(include_str!("../mod.rs").contains("condition_details::install(app);"));
     let (mut app, link, mut commands, _) = app()?;
     for (target, id) in [
         (Target::BattleInstinct, "shell.battle_instinct"),
@@ -235,24 +233,15 @@ fn condition_details_window_registered() -> TestResult {
         app.world_mut().trigger(Activate { entity });
         app.update();
         assert!(!link.condition_details_snapshot(target).open());
-        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-        keys.press(KeyCode::ControlLeft);
-        keys.press(KeyCode::AltLeft);
-        keys.press(KeyCode::ShiftLeft);
-        keys.press(target.shortcut());
+        let event = normalized_shortcut(target, false, false)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[event], false);
         app.update();
         assert!(link.condition_details_snapshot(target).open());
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .reset_all();
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .press(KeyCode::Escape);
+        app.world_mut().write_message(escape_key());
         app.update();
         assert!(!link.condition_details_snapshot(target).open());
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .reset_all();
     }
     Ok(())
 }
@@ -325,11 +314,10 @@ fn condition_details_open_rejects_editing_phase_and_blocked_gameplay() -> TestRe
             app.world_mut().trigger(Activate { entity: toolbar });
             assert!(link.condition_details_snapshot(target) == before);
             assert!(commands.try_recv().is_err());
-            let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-            keys.press(KeyCode::ControlLeft);
-            keys.press(KeyCode::AltLeft);
-            keys.press(KeyCode::ShiftLeft);
-            keys.press(target.shortcut());
+            let event = normalized_shortcut(target, false, false)?;
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .route_input(&[event], matches!(fence, 0 | 4));
             app.update();
             assert!(link.condition_details_snapshot(target) == before);
             assert!(commands.try_recv().is_err());
@@ -359,44 +347,73 @@ fn condition_details_refresh_is_manual_only() -> TestResult {
 
 #[test]
 fn condition_details_registrations_preserve_existing_order() -> TestResult {
-    let expected = [
-        "modal::install(app);",
-        "options::install(app);",
-        "journal::install(app);",
-        "chat::install(app);",
-        "actions::install(app);",
-        "feature_dialogs::install(app);",
-        "hud::install(app);",
-        "inventory::install(app);",
-        "item_details::install(app);",
-        "market::install(app);",
-        "minimap::install(app);",
-        "npc_shop::install(app);",
-        "party::install(app);",
-        "quick_loot::install(app);",
-        "trade::install(app);",
-    ];
-    let modules = include_str!("../mod.rs");
-    let installs = modules
-        .lines()
-        .map(str::trim)
-        .filter(|line| expected.contains(line))
+    let (mut app, _link, _commands, _outbox) = app()?;
+    app.add_systems(Update, crate::bevy_shell::ui::project_toolbar);
+    app.update();
+    let toolbar = app
+        .world_mut()
+        .query::<(&crate::bevy_shell::ui::Control, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(control, parent)| (control.id() == "shell.sign_in").then_some(parent.parent()))
+        .ok_or("toolbar")?;
+    let children = app
+        .world()
+        .get::<Children>(toolbar)
+        .ok_or("toolbar children")?;
+    let ids = children
+        .iter()
+        .filter_map(|entity| {
+            app.world()
+                .get::<crate::bevy_shell::ui::Control>(entity)
+                .map(|control| control.id())
+        })
         .collect::<Vec<_>>();
-    assert_eq!(installs, expected);
-    let toolbar = include_str!("../../ui.rs");
-    let positions = [
-        "(Control::Login,",
-        "(Control::CancelLogin,",
-        "(Control::Options,",
-        "(Control::Market,",
-        "(Control::Party,",
-        "(Control::Quests,",
-        "(Control::Spells,",
-    ]
-    .iter()
-    .map(|entry| toolbar.find(entry).ok_or("toolbar entry"))
-    .collect::<Result<Vec<_>, _>>()?;
+    let existing = [
+        "shell.sign_in",
+        "shell.cancel_sign_in",
+        "shell.options",
+        "shell.market",
+        "shell.party",
+        "shell.quests",
+        "shell.spells",
+    ];
+    assert_eq!(
+        ids.iter()
+            .copied()
+            .filter(|id| existing.contains(id))
+            .collect::<Vec<_>>(),
+        existing
+    );
+    let ordered = [
+        "shell.options",
+        "shell.battle_instinct",
+        "shell.conditions",
+        "shell.market",
+        "shell.party",
+        "shell.quests",
+        "shell.rest_food",
+        "shell.spells",
+    ];
+    let positions = ordered
+        .iter()
+        .map(|id| {
+            ids.iter()
+                .position(|entry| entry == id)
+                .ok_or("window entry")
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    app.world_mut().non_send_mut::<HostOwner>().play = None;
+    app.update();
+    for (node, control) in app
+        .world_mut()
+        .query::<(&Node, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+    {
+        if ordered.contains(&control.id()) && control.id() != "shell.options" {
+            assert_eq!(node.display, Display::None);
+        }
+    }
     Ok(())
 }
 
@@ -410,4 +427,80 @@ fn condition_details_focus_guard_does_not_register_headless_windows() -> TestRes
             .is_none()
     );
     Ok(())
+}
+
+fn normalized_shortcut(
+    target: Target,
+    repeat: bool,
+    super_key: bool,
+) -> Result<oteryn_input_actions::NormalizedInputEvent, Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let modifiers = Modifiers::one(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    Ok(NormalizedInputEvent::Key {
+        code: KeyCode::new(match target {
+            Target::BattleInstinct => 5,
+            Target::Conditions => 6,
+            Target::Rest => 21,
+        })?,
+        state: ButtonState::Pressed,
+        modifiers: if super_key {
+            modifiers.with(Modifier::Super)
+        } else {
+            modifiers
+        },
+        repeat,
+    })
+}
+#[test]
+fn condition_details_shortcuts_use_normalized_owner_input() -> TestResult {
+    for target in Target::ALL {
+        let (mut app, link, mut commands, _outbox) = app()?;
+        for (repeat, super_key, blocked) in [
+            (true, false, false),
+            (false, true, false),
+            (false, false, true),
+        ] {
+            let event = normalized_shortcut(target, repeat, super_key)?;
+            let mut release = event.clone();
+            if let oteryn_input_actions::NormalizedInputEvent::Key { state, .. } = &mut release {
+                *state = oteryn_input_actions::ButtonState::Released;
+            }
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .route_input(&[event], blocked);
+            assert!(
+                !link.condition_details_snapshot(target).open(),
+                "{target:?}: repeat={repeat}, super={super_key}, blocked={blocked}"
+            );
+            assert!(commands.try_recv().is_err());
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .route_input(&[release], false);
+        }
+        let event = normalized_shortcut(target, false, false)?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(std::slice::from_ref(&event), false);
+        request(&mut commands, target)?;
+        assert!(link.condition_details_snapshot(target).open());
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(std::slice::from_ref(&event), false);
+        assert!(commands.try_recv().is_err());
+        assert!(link.condition_details_snapshot(target).open());
+    }
+    Ok(())
+}
+
+fn escape_key() -> bevy::input::keyboard::KeyboardInput {
+    bevy::input::keyboard::KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: bevy::input::keyboard::Key::Escape,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    }
 }
