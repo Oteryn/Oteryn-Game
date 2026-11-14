@@ -214,7 +214,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     for (control, caption, width) in [
         (Control::Appearance, "Outfit (Ctrl+Alt+A)", 160.),
         (Control::Cast, "Cast settings", 100.),
-        (Control::HouseMoveOut, "House move-out (Ctrl+Alt+O)", 210.),
+        (Control::HouseMoveOut, "House move-out", 210.),
         (Control::CyclopediaMap, "Cyclopedia", 90.),
         (Control::BossDifficulty, "Boss difficulty", 120.),
         (
@@ -454,7 +454,25 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Appearance | Control::CastChat | Control::Cast | Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::Appearance
+                    | Control::CastChat
+                    | Control::Cast
+                    | Control::ExivaSettings
+                    | Control::HirelingServices
+                    | Control::FurnitureRotation
+                    | Control::HouseMoveOut
+                    | Control::HouseTransfer
+                    | Control::HouseBrowsing
+                    | Control::GuildhallLeadership
+                    | Control::GuildWars
+                    | Control::CyclopediaTrackers
+                    | Control::CyclopediaMap
+                    | Control::BossDifficulty
+                    | Control::BossRewardChest
+                    | Control::AnimusMastery
+                    | Control::BrowseField
+                    | Control::ContainerSorting
+                    | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::PlayerReport
@@ -657,7 +675,6 @@ pub(super) fn project_toolbar(
         Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
     >,
 ) {
-    use Control::{BossRewardChest, Market, Party, Quests, Spells};
     let playing = owner.play.is_some();
     let staff = super::game_ui::staff_tools::toolbar_visible(&owner);
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
@@ -690,7 +707,36 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Appearance | Control::StatusDetails | Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Appearance
+                    | Control::StatusDetails
+                    | Control::CastChat
+                    | Control::Cast
+                    | Control::StaffTools
+                    | Control::PlayerReport
+                    | Control::WorldEvent
+                    | Control::ExivaSettings
+                    | Control::TeamFinder
+                    | Control::Training
+                    | Control::HirelingServices
+                    | Control::FurnitureRotation
+                    | Control::HouseMoveOut
+                    | Control::HouseTransfer
+                    | Control::HouseBrowsing
+                    | Control::GuildhallLeadership
+                    | Control::GuildWars
+                    | Control::CyclopediaTrackers
+                    | Control::CyclopediaMap
+                    | Control::BossDifficulty
+                    | Control::BossRewardChest
+                    | Control::AnimusMastery
+                    | Control::BrowseField
+                    | Control::ContainerSorting
+                    | Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+            )
         ) {
             node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
