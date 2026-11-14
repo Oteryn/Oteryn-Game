@@ -527,3 +527,85 @@ fn prey_select_any_accepts_active_unlocked_slot_with_prefilled_editor() -> Resul
     ));
     Ok(())
 }
+
+#[test]
+fn review_regression_prey_edit_invalidates_paid_creature_confirmation() -> ResultTest {
+    for update_before_confirm in [false, true] {
+        let (mut app, mut commands, _) = fixture()?;
+        let editor = app
+            .world_mut()
+            .query::<(Entity, &CreatureField)>()
+            .iter(app.world())
+            .find_map(|(entity, field)| (field.0 == 2).then_some(entity))
+            .ok_or("editor")?;
+        app.world_mut()
+            .get_mut::<bevy::text::EditableText>(editor)
+            .ok_or("editable")?
+            .editor_mut()
+            .set_text("oteryn:creature.bear");
+        let propose = control(
+            &mut app,
+            Some(Intent::SelectAny {
+                slot: 2,
+                creature: String::new(),
+            }),
+            true,
+            None,
+        )
+        .map_err(|e| format!("proposal: {e}"))?;
+        app.world_mut().trigger(Activate { entity: propose });
+        app.world_mut().flush();
+        let confirm = control(
+            &mut app,
+            Some(Intent::SelectAny {
+                slot: 2,
+                creature: "oteryn:creature.bear".into(),
+            }),
+            false,
+            None,
+        )
+        .map_err(|e| format!("bear review: {e}"))?;
+        app.world_mut()
+            .get_mut::<bevy::text::EditableText>(editor)
+            .ok_or("editable")?
+            .editor_mut()
+            .set_text("oteryn:creature.dragon");
+        if update_before_confirm {
+            app.update();
+        }
+        app.world_mut().trigger(Activate { entity: confirm });
+        assert!(
+            commands.try_recv().is_err(),
+            "a changed target must not spend cards on bear"
+        );
+        assert!(app.world().resource::<State>().confirmation.is_none());
+        app.update();
+        assert_eq!(
+            app.world()
+                .get::<bevy::text::EditableText>(editor)
+                .ok_or("retained editor")?
+                .value(),
+            "oteryn:creature.dragon"
+        );
+        app.world_mut().trigger(Activate { entity: propose });
+        app.world_mut().flush();
+        assert!(app.world_mut().query::<&Text>().iter(app.world())
+            .any(|text| text.0.contains("oteryn:creature.dragon") && text.0.contains("5 cards")));
+        let confirm = control(
+            &mut app,
+            Some(Intent::SelectAny {
+                slot: 2,
+                creature: "oteryn:creature.dragon".into(),
+            }),
+            false,
+            None,
+        )
+        .map_err(|e| format!("dragon review: {e}"))?;
+        app.world_mut().trigger(Activate { entity: confirm });
+        assert!(
+            matches!(commands.try_recv()?, PlayCommand::Prey(prey::Request::SelectAny { slot: 2, creature }) if creature == "oteryn:creature.dragon")
+        );
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}

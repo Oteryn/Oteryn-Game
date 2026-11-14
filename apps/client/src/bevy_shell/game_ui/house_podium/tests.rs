@@ -174,3 +174,68 @@ fn house_podium_confirmation_modal_and_replaced_session() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn podium_editor_enforces_utf8_byte_limit_and_escape_is_frontmost() -> Result {
+    let mut app = fixture()?;
+    open(&mut app.world_mut().non_send_mut::<HostOwner>());
+    app.update();
+    let field = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 3).then_some(entity))
+        .ok_or("field")?;
+    for value in ["a".repeat(8000), "界".repeat(3000), "🦀".repeat(3000)] {
+        app.world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("editor")?
+            .editor_mut()
+            .set_text(&value);
+        app.update();
+        let text = app
+            .world()
+            .get::<EditableText>(field)
+            .ok_or("editor")?
+            .value()
+            .to_string();
+        assert!(text.len() <= MAX_DRAFT_BYTES);
+        assert!(value.starts_with(&text));
+        assert_eq!(
+            text.len(),
+            MAX_DRAFT_BYTES / value.chars().next().ok_or("character")?.len_utf8()
+                * value.chars().next().ok_or("character")?.len_utf8()
+        );
+    }
+    let blocker = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(999), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(blocker, bevy::input_focus::FocusCause::Navigated);
+    let escape = || bevy::input::keyboard::KeyboardInput {
+        key_code: KeyCode::Escape,
+        logical_key: bevy::input::keyboard::Key::Escape,
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    };
+    app.world_mut().write_message(escape());
+    app.update();
+    assert!(app.world().resource::<State>().root.is_some());
+    app.world_mut().despawn(blocker);
+    app.update();
+    app.world_mut().write_message(escape());
+    app.update();
+    assert!(app.world().resource::<State>().root.is_none());
+    assert!(
+        app.world_mut()
+            .resource_mut::<TestCommands>()
+            .0
+            .try_recv()
+            .is_err()
+    );
+    Ok(())
+}

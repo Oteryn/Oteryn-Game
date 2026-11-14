@@ -136,6 +136,9 @@ impl HousePodiumArtwork {
     }
 }
 
+#[cfg(feature = "bevy-shell")]
+pub(crate) const MAX_DRAFT_BYTES: usize = 7996;
+
 /// Dispatch against the exact retained projection captured by the presenter.
 #[cfg(feature = "bevy-shell")]
 impl PlayLink {
@@ -150,18 +153,19 @@ impl PlayLink {
             return false;
         }
         let panel = &mut mailbox.properties.house_podium;
-        if panel != expected
-            || !panel.open
-            || self.commands.is_closed()
-            || fields.iter().any(|v| v.len() > 7996 || v.contains('\0'))
-        {
+        if panel != expected || !panel.open || self.commands.is_closed() {
             return false;
         }
         if control == HousePodiumControl::Close {
             panel.open = false;
             return true;
         }
-        if !panel.selected || panel.pending {
+        if fields
+            .iter()
+            .any(|v| v.len() > MAX_DRAFT_BYTES || v.contains('\0'))
+            || !panel.selected
+            || panel.pending
+        {
             return false;
         }
         let mut draft = panel.clone();
@@ -352,4 +356,22 @@ mod bound_tests {
         ));
         assert_eq!(link.house_podium_panel(), ended);
     }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+#[test]
+fn review_regression_podium_close_ignores_unicode_draft_and_preserves_pending() {
+    let (link, mut commands, _) = crate::play::play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.properties.house_podium.open = true;
+        mailbox.properties.house_podium.pending = true;
+    }
+    let mut expected = link.house_podium_panel();
+    let mut draft = expected.fields.clone();
+    draft[3] = "界".repeat(3000);
+    assert!(link.house_podium_draft_bound(&expected, draft, HousePodiumControl::Close));
+    expected.open = false;
+    assert_eq!(link.house_podium_panel(), expected);
+    assert!(commands.try_recv().is_err());
 }

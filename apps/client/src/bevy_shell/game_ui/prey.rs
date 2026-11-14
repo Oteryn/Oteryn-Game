@@ -12,6 +12,8 @@ struct State {
     shown: Option<(u64, PreyPanel)>,
     root: Option<Entity>,
     confirmation: Option<Intent>,
+    confirmation_draft: Vec<(u8, String)>,
+    confirmation_root: Option<Entity>,
 }
 #[derive(Component, Clone)]
 struct Control {
@@ -24,7 +26,11 @@ struct Control {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(
+            PostUpdate,
+            invalidate_confirmation.after(bevy::text::EditableTextSystems),
+        );
 }
 fn project(
     mut commands: Commands,
@@ -45,6 +51,8 @@ fn project(
         commands.entity(root).despawn();
     }
     state.confirmation = None;
+    state.confirmation_draft.clear();
+    state.confirmation_root = None;
     state.shown = next.clone();
     let Some((generation, panel)) = next else {
         return;
@@ -344,6 +352,43 @@ fn button(commands: &mut Commands, skins: &Skins, parent: Entity, label: &str, c
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
 }
+fn editor_drafts(
+    editors: &Query<(&CreatureField, &bevy::text::EditableText)>,
+) -> Vec<(u8, String)> {
+    let mut drafts: Vec<_> = editors
+        .iter()
+        .map(|(field, editor)| (field.0, editor.value().to_string()))
+        .collect();
+    drafts.sort_by_key(|(slot, _)| *slot);
+    drafts
+}
+fn editing(editors: &Query<(&CreatureField, &bevy::text::EditableText)>) -> bool {
+    editors.iter().any(|(_, editor)| {
+        editor.pending_paste.is_some()
+            || editor
+                .pending_edits
+                .iter()
+                .any(bevy::text::TextEdit::is_destructive)
+    })
+}
+fn invalidate_confirmation(
+    mut commands: Commands,
+    editors: Query<(&CreatureField, &bevy::text::EditableText)>,
+    mut state: ResMut<State>,
+) {
+    if state.confirmation.is_some()
+        && (editing(&editors) || state.confirmation_draft != editor_drafts(&editors))
+    {
+        clear_confirmation(&mut state, &mut commands);
+    }
+}
+fn clear_confirmation(state: &mut State, commands: &mut Commands) {
+    state.confirmation = None;
+    state.confirmation_draft.clear();
+    if let Some(root) = state.confirmation_root.take() {
+        commands.entity(root).despawn();
+    }
+}
 // The observer needs the slot editor as well as the existing modal and owner guards.
 #[allow(clippy::too_many_arguments)]
 fn activate(
@@ -370,6 +415,14 @@ fn activate(
     };
     if control.intent.is_none() && control.candidate.is_none() {
         let _ = play.link.prey_dispatch_bound(&control.expected, None);
+        return;
+    }
+    let draft = editor_drafts(&editors);
+    if state.confirmation.is_some() && (editing(&editors) || state.confirmation_draft != draft) {
+        clear_confirmation(&mut state, &mut commands);
+        return;
+    }
+    if editing(&editors) {
         return;
     }
     let mut control = control.clone();
@@ -420,7 +473,16 @@ fn activate(
             return;
         }
         state.confirmation = control.intent.clone();
-        if let Some(root) = state.root {
+        state.confirmation_draft = draft;
+        if let Some(parent) = state.root {
+            let root = commands
+                .spawn(Node {
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                })
+                .id();
+            commands.entity(parent).add_child(root);
+            state.confirmation_root = Some(root);
             let cancel = commands
                 .spawn((
                     source::button(skins.buttons.clone(), 100.),
@@ -435,6 +497,15 @@ fn activate(
             commands.entity(root).add_child(cancel);
             let mut confirmed = control.clone();
             confirmed.confirm = false;
+            if let Some(Intent::SelectAny { slot, creature }) = &confirmed.intent {
+                let summary = commands
+                    .spawn(source::text(
+                        format!("Select {creature} for slot {slot}: 5 cards"),
+                        source::font(skins.font.clone(), false),
+                    ))
+                    .id();
+                commands.entity(root).add_child(summary);
+            }
             button(
                 &mut commands,
                 &skins,
@@ -486,6 +557,7 @@ fn cancel_confirmation(
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
+    mut commands: Commands,
 ) {
     if !guard.allows(event.entity) || owner.modal_active() {
         return;
@@ -501,8 +573,7 @@ fn cancel_confirmation(
     {
         return;
     }
-    state.confirmation = None;
-    state.shown = None;
+    clear_confirmation(&mut state, &mut commands);
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,

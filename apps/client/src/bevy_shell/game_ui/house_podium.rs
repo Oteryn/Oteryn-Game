@@ -4,8 +4,8 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use crate::play::feature_0150_house_podium::view::HousePodiumArtwork;
 use crate::play::feature_0150_house_podium::view::HousePodiumControl as Kind;
+use crate::play::feature_0150_house_podium::view::{HousePodiumArtwork, MAX_DRAFT_BYTES};
 use bevy::{
     prelude::*,
     text::{EditableText, TextCursorStyle},
@@ -34,7 +34,12 @@ struct Field(usize);
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .init_resource::<ArtworkAssets>()
-        .add_systems(Update, project);
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(
+            PostUpdate,
+            limit_fields.after(bevy::text::EditableTextSystems),
+        );
 }
 pub(in crate::bevy_shell) fn open(owner: &mut HostOwner) {
     if !owner.modal_active()
@@ -137,7 +142,7 @@ fn project(
     {
         label(&mut commands, &skins, root, caption);
         let mut editable = EditableText::new(panel.fields[index].clone());
-        editable.max_characters = Some(7996);
+        editable.max_characters = Some(MAX_DRAFT_BYTES);
         editable.allow_newlines = false;
         let field = commands
             .spawn((
@@ -282,6 +287,41 @@ fn activate(
     play.link
         .house_podium_draft_bound(&control.expected, values, control.kind.clone());
     state.confirm = None;
+}
+
+// Bevy limits characters; the owner wire limit is bytes. Trim only at UTF-8 boundaries.
+fn limit_fields(mut fields: Query<&mut EditableText, With<Field>>) {
+    for mut field in &mut fields {
+        if field.value().into_iter().map(str::len).sum::<usize>() > MAX_DRAFT_BYTES {
+            let mut value = field.value().to_string();
+            let mut end = MAX_DRAFT_BYTES;
+            while !value.is_char_boundary(end) {
+                end -= 1;
+            }
+            value.truncate(end);
+            field.editor_mut().set_text(&value);
+        }
+    }
+}
+fn keyboard(
+    mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    state: Res<State>,
+) {
+    if events.read().any(|event| {
+        event.key_code == KeyCode::Escape
+            && event.state == bevy::input::ButtonState::Pressed
+            && !event.repeat
+    }) && state.root.is_some_and(|root| guard.allows(root))
+        && let Some((generation, expected)) = &state.snapshot
+        && *generation == owner.generation()
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        play.link
+            .house_podium_draft_bound(expected, expected.fields.clone(), Kind::Close);
+    }
 }
 
 #[cfg(test)]
