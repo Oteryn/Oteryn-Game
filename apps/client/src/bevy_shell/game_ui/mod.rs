@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod chat;
+mod exiva_settings;
 mod feature_dialogs;
 mod hud;
 mod inventory;
@@ -232,6 +233,7 @@ pub(super) fn install(app: &mut App) {
     journal::install(app);
     chat::install(app);
     actions::install(app);
+    exiva_settings::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
@@ -259,6 +261,10 @@ pub(super) fn open_quests(owner: &mut HostOwner) {
 }
 pub(super) fn open_spells(owner: &mut HostOwner) {
     journal::open_spells(owner);
+}
+
+pub(super) fn open_exiva_settings(owner: &mut HostOwner) {
+    exiva_settings::open(owner);
 }
 
 pub(super) fn open_market(owner: &mut HostOwner) {
