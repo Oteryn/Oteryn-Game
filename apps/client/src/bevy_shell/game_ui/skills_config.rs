@@ -176,7 +176,7 @@ fn keyboard(
         );
     }
 }
-pub(super) fn open(owner: &HostOwner) {
+pub(in crate::bevy_shell) fn open(owner: &HostOwner) {
     if !owner.modal_active()
         && let Some(play) = &owner.play
         && !play.view.gameplay_input_blocked(&play.link)
