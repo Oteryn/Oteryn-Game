@@ -387,7 +387,7 @@ fn activate(
             return;
         }
         match control {
-            Control::ExivaSettings => super::game_ui::open_exiva_settings(&mut owner),
+            Control::ExivaSettings => super::game_ui::open_exiva_settings(&owner),
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),

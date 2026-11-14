@@ -45,7 +45,6 @@ struct State {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(
@@ -53,7 +52,7 @@ pub(super) fn install(app: &mut App) {
             finish_add.after(bevy::text::EditableTextSystems),
         );
 }
-pub(super) fn open(owner: &HostOwner) {
+pub(in crate::bevy_shell) fn open_exiva_settings(owner: &HostOwner) {
     if !available(owner) {
         return;
     }
@@ -320,7 +319,6 @@ fn finish_add(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -329,19 +327,6 @@ fn keyboard(
         .read()
         .filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat)
     {
-        if event.key_code == KeyCode::KeyE
-            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight])
-            && !keys.any_pressed([
-                KeyCode::ShiftLeft,
-                KeyCode::ShiftRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ])
-            && guard.allows_focus(None)
-        {
-            open(&owner);
-        }
         if event.key_code == KeyCode::Escape
             && state
                 .widgets

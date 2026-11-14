@@ -82,7 +82,7 @@ fn loaded(
     commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     outbox: &Outbox,
 ) -> TestResult {
-    open(app.world().non_send::<HostOwner>());
+    open_exiva_settings(app.world().non_send::<HostOwner>());
     assert_eq!(wire(commands)?, vec![5]);
     publish(outbox, &data())?;
     app.update();
@@ -91,7 +91,7 @@ fn loaded(
 #[test]
 fn exiva_settings_window_shows_server_data_only() -> TestResult {
     let (mut app, mut commands, outbox) = fixture()?;
-    open(app.world().non_send::<HostOwner>());
+    open_exiva_settings(app.world().non_send::<HostOwner>());
     assert_eq!(wire(&mut commands)?, vec![5]);
     app.update();
     assert!(panel(&app)?.list.is_none());
@@ -247,25 +247,31 @@ fn exiva_settings_window_registered() -> TestResult {
     click(&mut app, Kind::Close)?;
     app.update();
     assert!(!panel(&app)?.open);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
-    app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::AltLeft);
-    app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyE,
-            logical_key: bevy::input::keyboard::Key::Character("e".into()),
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
-    app.update();
-    assert!(panel(&app)?.open);
-    assert_eq!(wire(&mut commands)?, vec![5]);
-    assert!(include_str!("../mod.rs").contains("exiva_settings::install(app)"));
+    app.world_mut().init_resource::<ButtonInput<KeyCode>>();
+    for alt in [true, false] {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.release_all();
+        keys.press(KeyCode::ControlLeft);
+        if alt {
+            keys.press(KeyCode::AltLeft);
+        }
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: KeyCode::KeyE,
+                logical_key: bevy::input::keyboard::Key::Character("e".into()),
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+        assert!(!panel(&app)?.open, "Exiva must open only from its toolbar");
+        assert!(commands.try_recv().is_err());
+    }
+    let registration = include_str!("../mod.rs");
+    assert!(registration.contains("exiva_settings::install(app)"));
+    assert!(registration.contains("pub(super) use exiva_settings::open_exiva_settings;"));
+    assert!(!registration.contains("fn open_exiva_settings"));
     Ok(())
 }
 
