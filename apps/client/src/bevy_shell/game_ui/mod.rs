@@ -3,6 +3,7 @@ mod actions;
 mod bug_report;
 mod chat;
 mod feature_dialogs;
+pub(super) mod highscores;
 mod forge;
 mod hud;
 mod inventory;
@@ -236,6 +237,7 @@ pub(super) fn install(app: &mut App) {
     actions::install(app);
     bug_report::install(app);
     feature_dialogs::install(app);
+    highscores::install(app);
     forge::install(app);
     hud::install(app);
     inventory::install(app);
