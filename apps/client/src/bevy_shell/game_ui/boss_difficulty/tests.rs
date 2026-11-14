@@ -319,8 +319,8 @@ fn boss_difficulty_window_registered() -> TestResult {
     app.insert_resource(keys);
     app.world_mut()
         .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::KeyY,
-            logical_key: bevy::input::keyboard::Key::Character("y".into()),
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
             state: bevy::input::ButtonState::Pressed,
             text: None,
             repeat: false,
@@ -330,5 +330,40 @@ fn boss_difficulty_window_registered() -> TestResult {
     assert!(!panel(&app).open);
     let registry = include_str!("../mod.rs");
     assert!(registry.contains("boss_difficulty::install(app)"));
+    Ok(())
+}
+
+#[test]
+fn boss_difficulty_ctrl_y_toggles_once() -> TestResult {
+    let (mut app, _rx, _outbox) = fixture()?;
+    click(&mut app, Kind::Close)?;
+    app.update();
+    let mut keys = ButtonInput::<KeyCode>::default();
+    keys.press(KeyCode::ControlLeft);
+    app.insert_resource(keys);
+    for expected in [true, false, true, false] {
+        let event = oteryn_input_actions::NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::new(28)?,
+            state: oteryn_input_actions::ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::one(
+                oteryn_input_actions::Modifier::Control,
+            ),
+            repeat: false,
+        };
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[event], false);
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: KeyCode::KeyY,
+                logical_key: bevy::input::keyboard::Key::Character("y".into()),
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+        assert_eq!(panel(&app).open, expected);
+    }
     Ok(())
 }

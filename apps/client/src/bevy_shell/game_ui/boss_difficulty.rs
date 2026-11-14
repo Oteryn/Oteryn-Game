@@ -235,7 +235,6 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -253,21 +252,7 @@ fn keyboard(
         return;
     }
     if events.read().any(|e| {
-        (e.key_code == KeyCode::Escape
-            || e.key_code == KeyCode::KeyY
-                && keys.as_ref().is_some_and(|keys| {
-                    keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-                        && !keys.any_pressed([
-                            KeyCode::AltLeft,
-                            KeyCode::AltRight,
-                            KeyCode::ShiftLeft,
-                            KeyCode::ShiftRight,
-                            KeyCode::SuperLeft,
-                            KeyCode::SuperRight,
-                        ])
-                }))
-            && e.state == bevy::input::ButtonState::Pressed
-            && !e.repeat
+        e.key_code == KeyCode::Escape && e.state == bevy::input::ButtonState::Pressed && !e.repeat
     }) {
         if state.confirmation.is_some() {
             state.confirmation = None;
