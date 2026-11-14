@@ -276,19 +276,106 @@ fn furniture_wrapping_window_registered() -> Result {
     app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert!(!panel(&app).open);
-    app.world_mut()
-        .resource_mut::<Messages<bevy::input::keyboard::KeyboardInput>>()
-        .write(bevy::input::keyboard::KeyboardInput {
-            key_code: SHORTCUT,
-            logical_key: bevy::input::keyboard::Key::F8,
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[oteryn_input_actions::NormalizedInputEvent::Key {
+            code: oteryn_input_actions::KeyCode::new(9)?,
+            state: oteryn_input_actions::ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::one(
+                oteryn_input_actions::Modifier::Control,
+            )
+            .with(oteryn_input_actions::Modifier::Alt),
             repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+        }],
+        false,
+    );
     app.update();
     assert!(panel(&app).open);
     click(&mut app, Kind::Close)?;
     assert!(!panel(&app).open);
+    Ok(())
+}
+
+#[test]
+fn furniture_wrapping_shortcut_uses_exact_owner_chord_and_rejects_f8() -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Alt);
+    for modifiers in [Modifiers::NONE, chord] {
+        let (mut app, mut commands, _) = fixture(true)?;
+        let event = NormalizedInputEvent::Key {
+            code: KeyCode::new(65)?,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat: false,
+        };
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[event], false);
+        app.world_mut()
+            .resource_mut::<Messages<bevy::input::keyboard::KeyboardInput>>()
+            .write(bevy::input::keyboard::KeyboardInput {
+                key_code: bevy::prelude::KeyCode::F8,
+                logical_key: bevy::input::keyboard::Key::F8,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+        assert!(
+            !panel(&app).open,
+            "F8 must not open furniture wrapping: {modifiers:?}"
+        );
+        while let Ok(sent) = commands.try_recv() {
+            assert!(!matches!(sent, PlayCommand::Feature(command) if command.capability == 207));
+        }
+    }
+    let (mut app, mut commands, _) = fixture(true)?;
+    for modifiers in [
+        Modifiers::NONE,
+        Modifiers::one(Modifier::Control),
+        Modifiers::one(Modifier::Alt),
+        chord.with(Modifier::Shift),
+        chord.with(Modifier::Super),
+    ] {
+        app.world_mut().non_send_mut::<HostOwner>().route_input(
+            &[NormalizedInputEvent::Key {
+                code: KeyCode::new(9)?,
+                state: ButtonState::Pressed,
+                modifiers,
+                repeat: false,
+            }],
+            false,
+        );
+        app.update();
+        assert!(!panel(&app).open);
+        assert!(commands.try_recv().is_err());
+    }
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(9)?,
+        state: ButtonState::Pressed,
+        modifiers: chord,
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&key), true);
+    assert!(!panel(&app).open);
+    app.world_mut().non_send_mut::<HostOwner>().open_graphics();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&key), false);
+    assert!(!panel(&app).open);
+    assert!(commands.try_recv().is_err());
+    app.world_mut().non_send_mut::<HostOwner>().cancel();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[key], false);
+    app.update();
+    assert!(panel(&app).open);
+    assert_eq!(
+        wire::decode_catalogue_query(&command(&mut commands)?.payload),
+        Some(0)
+    );
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

@@ -164,7 +164,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::FurnitureWrapping, "Furniture (F8)", 110.),
+        (Control::FurnitureWrapping, "Furniture", 110.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),

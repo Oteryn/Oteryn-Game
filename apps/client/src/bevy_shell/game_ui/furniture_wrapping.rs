@@ -11,7 +11,6 @@ use crate::play::feature_0207_house_furniture_wrap::view::{
 };
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::house_furniture_wrap::{Intent, Panel};
-const SHORTCUT: KeyCode = KeyCode::F8;
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Key {
     generation: u64,
@@ -145,22 +144,14 @@ fn activate(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     state: Res<State>,
 ) {
     for event in events
         .read()
         .filter(|event| event.state == bevy::input::ButtonState::Pressed && !event.repeat)
     {
-        if event.key_code == SHORTCUT {
-            // Unrelated modals fence both opening and closing the window.
-            if state
-                .root
-                .map_or_else(|| guard.allows_focus(None), |root| guard.allows(root))
-            {
-                toggle(&mut owner);
-            }
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && state.root.is_some_and(|root| guard.allows(root))
             && let Some((key, _)) = state.snapshot.as_ref()
         {
