@@ -61,3 +61,6 @@ impl Outbox {
             .finish(accepted, &result.payload);
     }
 }
+
+#[cfg(feature = "bevy-shell")]
+pub(crate) mod details;

@@ -1,4 +1,5 @@
 //! Source-derived primitives only; actions edit the production owner's transient draft.
+use super::game_ui::condition_details::{self, Target};
 use super::owner::{GraphicsDraft, HostOwner};
 use bevy::{
     input_focus::{FocusCause, InputFocus, tab_navigation::TabGroup},
@@ -42,6 +43,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    Details(Target),
     Options,
     Market,
     Party,
@@ -59,6 +61,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Details(target) => target.id(),
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -173,6 +176,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
     }
+    condition_details::setup_toolbar(&mut commands, &skins, toolbar);
     // Full-window modal scrim blocks world pointer input while settings are open.
     let modal = commands
         .spawn((
@@ -572,7 +576,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::Details(_)
+            )
         ) {
             node.display = if playing {
                 Display::Flex
