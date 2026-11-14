@@ -1,24 +1,24 @@
 {
  "capture_scope": "Cyclopedia item ids with export status complete (Basic + item dialog values)",
  "client_build_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
- "collection_state": "complete: native re-collection finished 2026-11-14; 6228 catalog targets from the Cyclopedia item search plus the 98 targets the search could not resolve, captured one id at a time through the client's item inspection call",
+ "collection_state": "complete: native re-collection finished 2026-11-14; all 6228 Cyclopedia catalog targets (98 of them, which the Cyclopedia item search could not resolve, captured one id at a time through the client's item inspection call) plus all 242 appearance aliases",
  "compatibility_target": "tibia-global",
  "id_max": 55901,
  "id_min": 102,
- "items_jsonl_bytes": 4636782,
- "items_jsonl_sha256": "c7aa22f1f475de8769a249ccf17970f2a1fee4501aad81992a9a5c9ab9ae206e",
+ "items_jsonl_bytes": 4641252,
+ "items_jsonl_sha256": "880671945711975d6fa13985f5319f5656402c07fc3e58b6f9cbce6382b56959",
  "record_source": "native-client-cyclopedia-item-dialog",
- "records": 6467,
+ "records": 6470,
  "schema": "OTERYN_ITEM_CYCLOPEDIA_CAPTURE_REFERENCE/v1",
  "task_id": "ITEM-CYCLO-CAPTURE-1",
  "verdicts": {
   "CLIENT_VERIFIED_NO_WIKI_PAGE": 87,
-  "CLIENT_VERIFIED_WIKI_AGREES": 6276,
+  "CLIENT_VERIFIED_WIKI_AGREES": 6279,
   "CLIENT_VERIFIED_WIKI_DIFFERS": 104
  },
  "wiki_field_checks": {
   "differ": 107,
-  "match": 12206,
+  "match": 12212,
   "only_client": 166,
   "only_wiki": 87
  },

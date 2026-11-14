@@ -38,8 +38,11 @@ alias id.
 
 ## State
 
-`manifest.json` records the count, verdict totals and the SHA-256 of `items.jsonl`. The native
-re-collection covers the 6228 catalog targets (6369 records; alias ids add records). The 98
-targets the Cyclopedia item search could not resolve (mostly ids above 54768 added by the current
-client) were captured one id at a time through the client's own item inspection call, with the
-same record mapping. Total: 6467 records; every catalog target has one.
+`manifest.json` records the count, verdict totals and the SHA-256 of `items.jsonl`. The client
+marks 6470 appearance ids as Cyclopedia items: 6228 catalog targets (ids that are their own
+Cyclopedia item) and 242 aliases (appearance variants of a target, such as the four chest ids
+2472, 2480, 2481 and 2482). An alias record carries its target's dialog data and names the target
+in `details_from_alias_id`. The 98 targets the Cyclopedia item search could not resolve (mostly
+ids above 54768 added by the current client) were captured one id at a time through the client's
+own item inspection call, with the same record mapping. Total: 6470 records; every catalog target
+and every alias has one.
