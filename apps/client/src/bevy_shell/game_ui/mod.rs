@@ -3,6 +3,7 @@ pub(super) use achievement_notices::open as open_achievement_notices;
 mod achievement_notices;
 mod actions;
 pub(super) mod appearance;
+pub(super) mod arena;
 pub(super) mod boss_difficulty;
 mod boss_reward_chest;
 pub(super) mod bosstiary;
@@ -106,6 +107,7 @@ pub(super) fn install(app: &mut App) {
     actions::install(app);
     animus_mastery::install(app);
     appearance::install(app);
+    arena::install(app);
     bestiary::install(app);
     boss_difficulty::install(app);
     boss_reward_chest::install(app);
