@@ -173,24 +173,29 @@ fn browse_field_window_registered() -> Result {
     click(&mut app, Kind::Close)?;
     app.update();
     assert!(!panel(&app)?.open);
-    let event = bevy::input::keyboard::KeyboardInput {
-        key_code: KeyCode::KeyB,
-        logical_key: bevy::input::keyboard::Key::Character("B".into()),
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let code = KeyCode::new(5)?;
+    let event = |modifiers| NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers,
         repeat: false,
-        window: Entity::PLACEHOLDER,
     };
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Shift);
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ControlLeft);
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event(chord.with(Modifier::Super))], false);
+    app.update();
+    assert!(!panel(&app)?.open);
     app.world_mut()
-        .resource_mut::<ButtonInput<KeyCode>>()
-        .press(KeyCode::ShiftLeft);
-    app.world_mut().write_message(event.clone());
+        .non_send_mut::<HostOwner>()
+        .route_input(&[NormalizedInputEvent::DeviceLost], false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event(chord)], false);
     app.update();
     assert!(panel(&app)?.open);
-    app.world_mut().write_message(event);
+    click(&mut app, Kind::Close)?;
     app.update();
     assert!(!panel(&app)?.open);
     let button = app

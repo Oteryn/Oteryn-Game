@@ -56,7 +56,6 @@ impl Default for State {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());
 }
@@ -228,7 +227,6 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
@@ -236,26 +234,6 @@ fn keyboard(
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
-        }
-        if event.key_code == KeyCode::KeyB
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-            && !keys.pressed(KeyCode::AltLeft)
-            && !keys.pressed(KeyCode::AltRight)
-        {
-            if let Some(root) = state.root {
-                if guard.allows(root)
-                    && let Some((key, _)) = &state.snapshot
-                {
-                    let control = Control {
-                        key: *key,
-                        kind: Kind::Close,
-                    };
-                    perform(&owner, &mut state, &control);
-                }
-            } else if guard.allows_focus(None) {
-                open(&owner);
-            }
         }
         if event.key_code == KeyCode::Escape
             && let Some(root) = state.root

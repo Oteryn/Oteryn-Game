@@ -84,6 +84,16 @@ impl HostOwner {
         {
             return;
         }
+        if oteryn_client_ui::browse_field::open_key(&routed)
+            && !routed.iter().any(|event| {
+                matches!(event,
+                NormalizedInputEvent::Key { modifiers, .. }
+                    if modifiers.contains(oteryn_input_actions::Modifier::Super))
+            })
+        {
+            play.link.browse_field_set_open_bound(true);
+            return;
+        }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;
