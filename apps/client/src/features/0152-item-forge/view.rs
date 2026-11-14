@@ -18,3 +18,9 @@ pub(in crate::play) fn poll_resource_dialog(
 ) {
     native::open_resource_dialog(mailbox, commands);
 }
+
+#[cfg(feature = "bevy-shell")]
+#[path = "bound.rs"]
+mod bound;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use bound::{ForgeControl, ForgeSnapshot};
