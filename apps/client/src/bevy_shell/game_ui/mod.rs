@@ -27,6 +27,7 @@ mod exaltation_forge;
 pub(super) mod expert_pvp_modes;
 mod feature_dialogs;
 mod furniture_rotation;
+pub(super) mod furniture_wrapping;
 pub(super) mod guild;
 pub(super) mod hireling_services;
 pub(super) use furniture_rotation::toggle as toggle_furniture_rotation;
@@ -129,6 +130,7 @@ pub(super) fn install(app: &mut App) {
     expert_pvp_modes::install(app);
     feature_dialogs::install(app);
     furniture_rotation::install(app);
+    furniture_wrapping::install(app);
     guild::install(app);
     guild_wars::install(app);
     guildhall_leadership::install(app);

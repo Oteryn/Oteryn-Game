@@ -90,6 +90,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::RaidSchedule
                     | Control::Arena
                     | Control::CyclopediaCharacter
+                    | Control::FurnitureWrapping
                     | Control::Spells
             )
         ) {
