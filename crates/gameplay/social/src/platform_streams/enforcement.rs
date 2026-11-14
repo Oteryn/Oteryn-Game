@@ -1,4 +1,6 @@
 //! Frozen enforcement wire, shared with its durable deciding owner (no puller in Part A).
+pub mod transport;
+
 pub const ENABLED_VAR: &str = "OTERYN_PLATFORM_ENFORCEMENT_ENABLED";
 
 pub fn enabled() -> bool {

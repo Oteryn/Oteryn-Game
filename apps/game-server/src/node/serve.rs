@@ -762,6 +762,8 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                     "OTERYN_PLATFORM_SANCTION_STREAM_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_LOYALTY_STREAM_CLIENT_IDENTITY_PEM",
                     "OTERYN_PLATFORM_SECURITY_REVOCATION_STREAM_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_READER_CLIENT_IDENTITY_PEM",
+                    "OTERYN_PLATFORM_ENFORCEMENT_RESULTS_CLIENT_IDENTITY_PEM",
                 ] {
                     if let Some(path) = std::env::var_os(name) {
                         other_chains.push(chain(
@@ -3455,7 +3457,50 @@ async fn boot_and_serve(
     npc_boot: Option<bundle_npcs::NpcBoot>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
+    let _enforcement_clients =
+        oteryn_gameplay_social::platform_streams::enforcement::transport::Clients::from_env()
+            .map_err(|crate::premium::client::ClientConfigError::Invalid(key)| invalid(key))?;
     let config = &material.config;
+    if let Some(clients) = &_enforcement_clients {
+        let platform = &config.platform;
+        let mut paths = vec![&platform.client_certificate_file];
+        if let Some(v) = &platform.bootstrap_intents {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.runtime_status {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.account_characters {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.character_commands {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.character_services {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.bazaar {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.public_projections {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &platform.world_event_outcomes {
+            paths.push(&v.client_certificate_file);
+        }
+        if let Some(v) = &config.journal {
+            paths.push(&v.client_certificate_file);
+        }
+        let identities = paths
+            .into_iter()
+            .map(|path| {
+                read_file("platform.enforcement.identity_separation",path,FileClass::Secret,effective_uid(),MAX_PEM_BYTES)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        clients
+            .check_other_identities(&identities)
+            .map_err(|_| invalid("platform.enforcement.identity_separation"))?;
+    }
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let Some(proof) = first(register(root, &material.launch), signalled.cancelled()).await else {
         stopped_before_ready();

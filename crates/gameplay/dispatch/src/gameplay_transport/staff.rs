@@ -121,7 +121,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // This shared gate covers every player-chat path. Staff's spell gate
         // remains staff-only: Platform MUTE does not restrict spell casting.
         let mut platform_wait = None;
-        if platform_enforcement_enabled() {
+        if platform_enforcement_enabled(self.states.platform_enforcement_enabled) {
             use super::connection::AdmissionRefusal;
             use crate::durability::DurabilityError;
             let read = async {
@@ -177,10 +177,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
     }
 }
-fn platform_enforcement_enabled() -> bool {
+fn platform_enforcement_enabled(serving_enabled: bool) -> bool {
     #[cfg(test)]
     if let Some(enabled)=test_clock::enforcement() { return enabled; }
-    oteryn_gameplay_social::platform_streams::enforcement::enabled()
+    serving_enabled
 }
 
 macro_rules! composed_methods {
