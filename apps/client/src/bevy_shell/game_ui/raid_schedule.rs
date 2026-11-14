@@ -142,27 +142,6 @@ fn keyboard(
     owner: NonSend<HostOwner>,
     state: Res<State>,
 ) {
-    let keys: Vec<_> = events.read().cloned().collect();
-    if keys.iter().any(|event| {
-        event.key_code == KeyCode::F8
-            && event.state == bevy::input::ButtonState::Pressed
-            && !event.repeat
-    }) {
-        if state.widgets.as_ref().map_or_else(
-            || guard.allows_focus(None),
-            |widgets| guard.allows(widgets.panel),
-        ) && !owner.modal_active()
-            && let Some(play) = &owner.play
-        {
-            let panel = play.link.raid_schedule_panel();
-            if panel.open {
-                let _ = play.link.raid_schedule_dispatch_bound(&panel, Kind::Close);
-            } else {
-                play.link.raid_schedule_open();
-            }
-        }
-        return;
-    }
     let Some(widgets) = &state.widgets else {
         events.clear();
         return;
@@ -171,7 +150,7 @@ fn keyboard(
         events.clear();
         return;
     }
-    if keys.iter().any(|event| {
+    if events.read().any(|event| {
         event.key_code == KeyCode::Escape
             && event.state == bevy::input::ButtonState::Pressed
             && !event.repeat
