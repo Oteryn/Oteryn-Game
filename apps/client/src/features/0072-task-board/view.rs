@@ -47,6 +47,7 @@ pub(in crate::play) mod weekly_results_window;
 #[derive(Clone)]
 pub(crate) enum TaskBoardControl {
     Close,
+    Catalogue,
     Request(oteryn_client_ui::task_board::FullIntent),
 }
 #[cfg(feature = "bevy-shell")]
@@ -68,6 +69,7 @@ impl PlayLink {
             return false;
         }
         match action {
+            TaskBoardControl::Catalogue => { super::input::soulseals::send(&mut mailbox, &self.commands, oteryn_client_ui::task_board::fights::FightIntent::Catalogue { after: 0 }); }
             TaskBoardControl::Close => mailbox.task_board.open = false,
             TaskBoardControl::Request(intent) => {
                 let Some(command) = oteryn_client_ui::task_board::full_request(

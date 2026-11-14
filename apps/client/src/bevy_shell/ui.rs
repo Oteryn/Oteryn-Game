@@ -45,6 +45,7 @@ pub(super) enum Control {
     Options,
     Market,
     Party,
+    TaskBoard,
     Quests,
     Spells,
     Login,
@@ -61,6 +62,7 @@ impl Control {
         match self {
             Self::Options => "shell.options",
             Self::Market => "shell.market",
+            Self::TaskBoard => "shell.task_board",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
@@ -167,6 +169,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Options, "Options", 80.),
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
+        (Control::TaskBoard, "Task Board", 110.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
     ] {
@@ -373,6 +376,7 @@ fn activate(
                 control,
                 Control::Options
                     | Control::Market
+                    | Control::TaskBoard
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
@@ -385,6 +389,11 @@ fn activate(
         match control {
             Control::Options => owner.open_graphics(),
             Control::Market => super::game_ui::open_market(&mut owner),
+            Control::TaskBoard => {
+                if let Some(play) = &owner.play {
+                    play.link.open_task_board();
+                }
+            }
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
@@ -572,7 +581,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::TaskBoard
+            )
         ) {
             node.display = if playing {
                 Display::Flex
