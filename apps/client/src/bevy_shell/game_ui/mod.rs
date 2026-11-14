@@ -20,6 +20,7 @@ pub(super) use projection::project;
 mod quick_loot;
 mod trade;
 pub(super) mod viewport;
+pub(super) mod weapon_proficiency;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -242,6 +243,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     quick_loot::install(app);
     trade::install(app);
+    weapon_proficiency::install(app);
     app.add_systems(
         Update,
         (
