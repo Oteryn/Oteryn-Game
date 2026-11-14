@@ -68,6 +68,7 @@ pub(super) mod raid_schedule;
 pub(super) mod skills_config;
 pub(super) mod staff_tools;
 pub(super) mod status_details;
+mod task_board;
 mod team_finder;
 pub(super) use team_finder::open as open_team_finder;
 pub(super) mod store;
@@ -169,6 +170,7 @@ pub(super) fn install(app: &mut App) {
     staff_tools::install(app);
     status_details::install(app);
     store::install(app);
+    task_board::install(app);
     team_finder::install(app);
     trade::install(app);
     training::install(app);

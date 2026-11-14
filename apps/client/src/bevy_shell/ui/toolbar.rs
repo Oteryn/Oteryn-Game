@@ -65,6 +65,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Cast
                     | Control::StaffTools
                     | Control::PlayerReport
+                    | Control::TaskBoard
                     | Control::WorldEvent
                     | Control::ExivaSettings
                     | Control::TeamFinder

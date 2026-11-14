@@ -46,6 +46,7 @@ pub(super) fn activate(
                     | Control::Spells
                     | Control::StatusDetails
                     | Control::StaffTools
+                    | Control::TaskBoard
                     | Control::WorldEvent
                     | Control::Training
                     | Control::Store
@@ -110,6 +111,11 @@ pub(super) fn activate(
             Control::CyclopediaCharacter => super::open_cyclopedia_character(owner),
             Control::FurnitureWrapping => game_ui::furniture_wrapping::toggle(&mut owner),
             Control::SkillsConfig => super::open_skills_config(owner),
+            Control::TaskBoard => {
+                if let Some(play) = &owner.play {
+                    play.link.open_task_board();
+                }
+            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),

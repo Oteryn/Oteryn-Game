@@ -181,6 +181,14 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if oteryn_client_ui::task_board::open_key(&routed) {
+            play.link.open_task_board();
+            return;
+        }
+        if oteryn_client_ui::task_board::soulseals_key(&routed) {
+            play.link.open_soulseals();
+            return;
+        }
         if play.link.prey_input(&routed) {
             return;
         }
