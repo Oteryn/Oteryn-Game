@@ -70,6 +70,15 @@ impl HostOwner {
             }
             return;
         }
+        // Ctrl+Z stays native undo while an editor owns focus (the blocked path above).
+        if routed.iter().any(|event| matches!(event,
+            NormalizedInputEvent::Key { code, state: oteryn_input_actions::ButtonState::Pressed,
+                modifiers, repeat: false }
+            if code.get() == 29 && *modifiers == oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)))
+        {
+            play.link.bug_report_open();
+            return;
+        }
         if play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
