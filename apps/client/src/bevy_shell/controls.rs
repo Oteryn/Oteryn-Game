@@ -3,12 +3,14 @@ use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
 use oteryn_input_actions::{InputError, NormalizedInputEvent};
 pub(super) struct Controls {
+    pub(super) highscores_generation: Option<u64>,
     mouse: MouseActions,
     spells: SpellHotkeys,
 }
 impl Controls {
     pub fn new() -> Result<Self, InputError> {
         Ok(Self {
+            highscores_generation: None,
             mouse: MouseActions::new()?,
             spells: SpellHotkeys::new()?,
         })
@@ -43,6 +45,7 @@ impl HostOwner {
             }
             return;
         }
+        let generation = self.generation();
         let Some(play) = &mut self.play else {
             return;
         };
@@ -82,6 +85,12 @@ impl HostOwner {
                 )
             }) && play.link.vip_input(&routed))
         {
+            return;
+        }
+        if routed.iter().any(super::game_ui::highscores::shortcut) {
+            self.controls.highscores_generation = Some(generation);
+            play.link
+                .highscores_request(oteryn_client_ui::highscores::Action::Refresh);
             return;
         }
         if oteryn_client_ui::market::open_key(&routed) {
