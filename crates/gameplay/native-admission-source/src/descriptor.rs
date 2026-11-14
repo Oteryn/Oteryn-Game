@@ -69,6 +69,10 @@ pub enum Operation {
     PublishCharacterDeathsV2,
     PublishGuildV2,
     PublishHouseV2,
+    PublishCharacterSkillsV2,
+    PublishCharacterAchievementsV2,
+    PublishCharacterEquipmentV2,
+    PublishCharacterOutfitV2,
     PublishCharacterOnlineSessionV2,
     PublishWorldDailyKillsV2,
     PublishPublicProjectionWatermarkV2,
@@ -141,6 +145,12 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => "/internal/v2/game-public/character-deaths",
             Self::PublishGuildV2 => "/internal/v2/game-public/guild",
             Self::PublishHouseV2 => "/internal/v2/game-public/house",
+            Self::PublishCharacterSkillsV2 => "/internal/v2/game-public/character-skills",
+            Self::PublishCharacterAchievementsV2 => {
+                "/internal/v2/game-public/character-achievements"
+            }
+            Self::PublishCharacterEquipmentV2 => "/internal/v2/game-public/character-equipment",
+            Self::PublishCharacterOutfitV2 => "/internal/v2/game-public/character-outfit",
             Self::PublishWorldDailyKillsV2 => "/internal/v2/game-public/world-daily-kills",
             Self::PublishCharacterOnlineSessionV2 => {
                 "/internal/v2/game-public/character-online-session"
@@ -207,6 +217,10 @@ impl Operation {
             Self::PublishCharacterDeathsV2 => 32_768,
             Self::PublishGuildV2 => 393_216,
             Self::PublishHouseV2 => 2_048,
+            Self::PublishCharacterSkillsV2 => 4_096,
+            Self::PublishCharacterAchievementsV2 => 262_144,
+            Self::PublishCharacterEquipmentV2 => 8_192,
+            Self::PublishCharacterOutfitV2 => 2_048,
             Self::PublishWorldDailyKillsV2 => 2_048,
             Self::PublishCharacterOnlineSessionV2 => 2_048,
             Self::PublishPublicProjectionWatermarkV2 => 512,
