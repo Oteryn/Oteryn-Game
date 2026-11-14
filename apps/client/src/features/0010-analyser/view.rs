@@ -1,4 +1,13 @@
 use crate::play::{PlayLink, mailbox::lock};
+#[cfg(all(test, feature = "bevy-shell"))]
+#[path = "tests/analyser_tools.rs"]
+mod analyser_tools_tests;
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_analyser_initialize(&self, selected: bool) {
+        self.analyser_initialize(selected);
+    }
+}
 impl PlayLink {
     pub fn analyser_text(&self) -> String {
         panel_text(&lock(&self.mailbox))
@@ -7,7 +16,7 @@ impl PlayLink {
         lock(&self.mailbox).analyser.clone()
     }
 }
-fn panel_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
+pub(super) fn panel_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
     if mailbox.analyser.selected
         && mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Bosses
     {

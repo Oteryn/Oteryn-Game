@@ -211,7 +211,7 @@ fn activate(
         }
         Command::Analyser(tool) => {
             if play.link.analyser_panel().selected {
-                let _ = play.link.analyser_select(tool.key());
+                super::analyser_tools::select(&owner, tool);
             }
         }
     }

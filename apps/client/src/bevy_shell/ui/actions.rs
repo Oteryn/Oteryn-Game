@@ -34,6 +34,7 @@ pub(super) fn activate(
                     | Control::CyclopediaMap
                     | Control::BossDifficulty
                     | Control::BossRewardChest
+                    | Control::AnalyserTools
                     | Control::AnimusMastery
                     | Control::BrowseField
                     | Control::ContainerSorting
@@ -79,6 +80,7 @@ pub(super) fn activate(
             Control::CyclopediaMap => game_ui::cyclopedia_map::open(&mut owner),
             Control::BossDifficulty => game_ui::boss_difficulty::open(&owner),
             Control::BossRewardChest => game_ui::open_boss_reward_chest(&mut owner),
+            Control::AnalyserTools => game_ui::analyser_tools::open(&owner),
             Control::AnimusMastery => game_ui::animus_mastery::open(&owner),
             Control::BrowseField => game_ui::browse_field::open(&owner),
             Control::ContainerSorting => game_ui::open_container_sorting(&mut owner),
