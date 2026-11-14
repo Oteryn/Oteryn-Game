@@ -1,4 +1,3 @@
-use super::super::GameModal;
 use super::*;
 use crate::{
     combat_input::PlayCommand,
@@ -112,37 +111,44 @@ fn cyclopedia_character_window_registered() -> Result {
             .is_some_and(|p| !p.link.cyclopedia_character_panel().open)
     );
     assert!(commands.try_recv().is_err());
-    let mut app = App::new();
-    app.insert_non_send(owner)
-        .init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
-        .add_systems(Update, keyboard);
-    {
-        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-        keys.press(KeyCode::ControlLeft);
-        keys.press(KeyCode::ShiftLeft);
-        keys.press(KeyCode::F9);
-    }
-    let modal = app
-        .world_mut()
-        .spawn((GameModal, Node::default(), GlobalZIndex(999)))
-        .id();
-    app.update();
+    use oteryn_input_actions::{
+        ButtonState, KeyCode as Code, Modifier, Modifiers, NormalizedInputEvent,
+    };
+    let chord = NormalizedInputEvent::Key {
+        code: Code::new(24)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    };
+    owner.route_input(std::slice::from_ref(&chord), true);
     assert!(
-        app.world()
-            .non_send::<HostOwner>()
+        !owner
             .play
             .as_ref()
-            .is_some_and(|p| !p.link.cyclopedia_character_panel().open)
+            .ok_or("play")?
+            .link
+            .cyclopedia_character_panel()
+            .open
     );
-    app.world_mut().despawn(modal);
-    app.update();
+    owner.route_input(std::slice::from_ref(&chord), false);
     assert!(
-        app.world()
-            .non_send::<HostOwner>()
+        owner
             .play
             .as_ref()
-            .is_some_and(|p| p.link.cyclopedia_character_panel().open)
+            .ok_or("play")?
+            .link
+            .cyclopedia_character_panel()
+            .open
+    );
+    owner.route_input(&[chord], false);
+    assert!(
+        !owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .cyclopedia_character_panel()
+            .open
     );
     Ok(())
 }

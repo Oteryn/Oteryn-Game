@@ -63,18 +63,6 @@ fn keyboard(
     if owner.modal_active() {
         return;
     }
-    // Ctrl+Shift+F9 is unused by the other shell windows.
-    if keys.just_pressed(KeyCode::F9)
-        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-        && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-        && !keys.pressed(KeyCode::AltLeft)
-        && !keys.pressed(KeyCode::AltRight)
-        && !keys.pressed(KeyCode::SuperLeft)
-        && !keys.pressed(KeyCode::SuperRight)
-        && guard.allows_focus(state.root)
-    {
-        toggle(&owner);
-    }
     if keys.just_pressed(KeyCode::Escape)
         && let Some(root) = state.root
         && guard.allows(root)
