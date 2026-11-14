@@ -3,6 +3,7 @@ mod actions;
 mod chat;
 mod feature_dialogs;
 mod hud;
+pub(super) mod house_transfer;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
