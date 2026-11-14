@@ -139,6 +139,9 @@ impl HostOwner {
             return false;
         };
         if super::game_ui::highscores_character_info::input(&play.link, routed)
+            || (oteryn_client_ui::hotkey_equip::open_key(routed)
+                && play.link.hotkey_equip_open_bound())
+            || play.link.hotkey_equip_keys_bound(routed)
             || play.link.house_podium_input(routed)
             || play.link.quest_input(routed)
             || play.link.appearance_input(routed)

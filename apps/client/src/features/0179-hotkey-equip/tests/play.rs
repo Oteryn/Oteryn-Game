@@ -2,6 +2,7 @@ use crate::play::play_channel;
 #[test]
 fn hotkey_equip_panel_opens_and_sends() {
     let (link, mut rx, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_initialize(true);
     link.hotkey_equip_request(vec![]);
     assert!(matches!(
@@ -15,6 +16,7 @@ fn assigned_item_key_sends_the_definition_and_waits_for_the_server()
 -> Result<(), Box<dyn std::error::Error>> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
     let (link, mut commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_initialize(true);
     outbox.hotkey_equip_items(vec![256, 512]);
     assert!(link.hotkey_equip_assign(0, 256));
@@ -117,6 +119,7 @@ fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
     let mut settings = SettingsState::new(Some(base.clone()));
     settings.select_character(Some([41; 16]));
     let (link, _, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_items(vec![256]);
     settings.sync_item_hotkeys(&link);
     assert!(link.hotkey_equip_assign(11, 256));
@@ -158,6 +161,7 @@ fn item_hotkeys_persist_per_character_and_negotiate_smart_sources()
 #[test]
 fn t041_object_selector_and_smart_option_persist() -> Result<(), Box<dyn std::error::Error>> {
     let (link, _commands, outbox) = play_channel();
+    link.use_shared_frontend();
     outbox.hotkey_equip_initialize(true);
     outbox.hotkey_equip_items(vec![256, 512]);
     // The selector only offers carried items and a slot clears with 0.
