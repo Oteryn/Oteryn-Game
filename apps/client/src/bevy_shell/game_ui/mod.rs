@@ -1,4 +1,5 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
+pub(super) mod achievements;
 mod actions;
 mod chat;
 mod feature_dialogs;
@@ -227,6 +228,7 @@ fn region(commands: &mut Commands) -> Entity {
 }
 
 pub(super) fn install(app: &mut App) {
+    achievements::install(app);
     modal::install(app);
     options::install(app);
     journal::install(app);
