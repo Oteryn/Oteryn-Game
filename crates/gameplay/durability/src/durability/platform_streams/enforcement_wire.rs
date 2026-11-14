@@ -92,6 +92,20 @@ fn encode<T: Serialize>(value: &T, bound: usize) -> Option<Vec<u8>> {
     let raw = serde_json::to_vec(value).ok()?;
     (raw.len() <= bound && !raw.contains(&b'\\')).then_some(raw)
 }
+/// Safe attribution for a terminal refusal of malformed bytes. Duplicate identity
+/// members are rejected by serde; other command fields cannot establish authority.
+#[derive(Deserialize)]
+pub(super) struct CommandIdentity {
+    pub operation_id: String,
+    pub sanction_stream_id: String,
+}
+impl CommandIdentity {
+    pub fn parse(raw: &[u8]) -> Option<Self> {
+        let id: Self = parse(raw, COMMAND_BYTES)?;
+        (uuid7(&id.operation_id) && uuid7(&id.sanction_stream_id)).then_some(id)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Command {

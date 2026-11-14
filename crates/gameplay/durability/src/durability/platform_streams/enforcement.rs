@@ -59,7 +59,7 @@ async fn stream(tx: &mut Tx<'_>, id: &str) -> Result<Option<Stream>, DurabilityE
     .transpose()
 }
 fn result(
-    c: &Command,
+    id: &CommandIdentity,
     hash: &str,
     generation: i64,
     now: i64,
@@ -69,8 +69,8 @@ fn result(
     let state = current.map_or(StreamState::None, |s| s.view(now));
     EnforcementResult {
         schema: "oteryn.enforcement_result.v1".into(),
-        operation_id: c.operation_id.clone(),
-        sanction_stream_id: c.sanction_stream_id.clone(),
+        operation_id: id.operation_id.clone(),
+        sanction_stream_id: id.sanction_stream_id.clone(),
         command_digest: hash.into(),
         receipt_revision: 1,
         state: State::Rejected,
@@ -92,13 +92,13 @@ async fn outbox(tx: &mut Tx<'_>, r: &EnforcementResult, raw: &[u8]) -> Result<()
 }
 async fn persist(
     tx: &mut Tx<'_>,
-    c: &Command,
+    id: &CommandIdentity,
     command: &[u8],
     r: &EnforcementResult,
 ) -> Result<Vec<u8>, DurabilityError> {
     let raw = r.encode().ok_or(DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_platform_enforcement_receipts(operation_id,sanction_stream_id,command_bytes,command_digest,receipt_revision,result_bytes) VALUES($1::uuid,$2::uuid,$3,$4,$5,$6) ON CONFLICT(operation_id) DO UPDATE SET receipt_revision=EXCLUDED.receipt_revision,result_bytes=EXCLUDED.result_bytes WHERE game_platform_enforcement_receipts.command_bytes=EXCLUDED.command_bytes AND game_platform_enforcement_receipts.command_digest=EXCLUDED.command_digest")
-  .bind(&c.operation_id).bind(&c.sanction_stream_id).bind(command).bind(&r.command_digest).bind(i32::from(r.receipt_revision)).bind(&raw).execute(&mut **tx).await?;
+  .bind(&id.operation_id).bind(&id.sanction_stream_id).bind(command).bind(&r.command_digest).bind(i32::from(r.receipt_revision)).bind(&raw).execute(&mut **tx).await?;
     outbox(tx, r, &raw).await?;
     Ok(raw)
 }
@@ -109,7 +109,10 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         raw: &[u8],
     ) -> Result<Vec<u8>, DurabilityError> {
-        let c = Command::parse_for_decision(raw).ok_or(DurabilityError::InvalidStoredState)?;
+        // A malformed command can be refused only when its two unique UUIDv7
+        // identities are safely attributable; never manufacture wire identities.
+        let id = CommandIdentity::parse(raw).ok_or(DurabilityError::InvalidStoredState)?;
+        let parsed = Command::parse_for_decision(raw);
         let raw = raw.to_vec();
         let hash = digest(&raw);
         let recovery = authority
@@ -120,10 +123,10 @@ impl DurabilityRoot {
    let mut tx=begin_semantic_transaction(holder,deadline).await?;
    assert_recovery_fence(&mut tx,&recovery).await?;
    if !prove_current_incarnation(&mut tx,&node).await? {return Err(DurabilityError::Unavailable);}
-   for (namespace,key) in [("operation",&c.operation_id),("stream",&c.sanction_stream_id)] {
+   for (namespace,key) in [("operation",&id.operation_id),("stream",&id.sanction_stream_id)] {
     sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:platform-enforcement:'||$1||':'||$2,0))").bind(namespace).bind(key).execute(&mut *tx).await?;
    }
-   let previous=sqlx::query("SELECT command_bytes,command_digest,result_bytes FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid FOR UPDATE").bind(&c.operation_id).fetch_optional(&mut *tx).await?;
+   let previous=sqlx::query("SELECT command_bytes,command_digest,result_bytes FROM game_platform_enforcement_receipts WHERE operation_id=$1::uuid FOR UPDATE").bind(&id.operation_id).fetch_optional(&mut *tx).await?;
    let mut revision=1;
    if let Some(row)=&previous {
     let previous_raw:Vec<u8>=row.try_get("result_bytes")?;
@@ -133,41 +136,60 @@ impl DurabilityRoot {
       outbox(&mut tx,&previous_result,&previous_raw).await?;commit_semantic_transaction(tx,deadline).await?;return Ok(previous_raw);
      }
      revision=previous_result.receipt_revision.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
-    } else if let Some(bytes)=sqlx::query_scalar::<_,Vec<u8>>("SELECT result_bytes FROM game_platform_enforcement_result_outbox WHERE operation_id=$1::uuid AND command_digest=$2 AND receipt_revision=1").bind(&c.operation_id).bind(&hash).fetch_optional(&mut *tx).await? {
-     commit_semantic_transaction(tx,deadline).await?;return Ok(bytes);
+    } else {
+     // §4.3 cannot accept a conflicting digest or a second terminal body under
+     // this operation. Preserve a local OPERATION_CONFLICT and republish only
+     // the immutable result of the command originally served by Platform.
+     sqlx::query("INSERT INTO game_platform_enforcement_conflicts(operation_id,command_digest,command_bytes,result_code) VALUES($1::uuid,$2,$3,'OPERATION_CONFLICT') ON CONFLICT DO NOTHING")
+      .bind(&id.operation_id).bind(&hash).bind(&raw).execute(&mut *tx).await?;
+     outbox(&mut tx,&previous_result,&previous_raw).await?;
+     commit_semantic_transaction(tx,deadline).await?;return Ok(previous_raw);
     }
    }
-   // Portfolio-before-CharacterLease order, shared with admission and ownership transfer.
-   sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(&c.account_id).execute(&mut *tx).await?;
-   sqlx::query("SELECT 1 FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE").bind(&c.account_id).fetch_one(&mut *tx).await?;
-   lock_admission_relations(&mut tx).await?;
-   let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE").bind(&c.character_id).fetch_optional(&mut *tx).await?;
-   let current=stream(&mut tx,&c.sanction_stream_id).await?;
-   let now:i64=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
+   let current=stream(&mut tx,&id.sanction_stream_id).await?;
+   let mut now:i64=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
    if now<=0 {return Err(DurabilityError::Unavailable);}
    let generation=i64::try_from(recovery.recovery_generation).map_err(|_|DurabilityError::InvalidStoredState)?;
-   if previous.as_ref().is_some_and(|r| r.try_get::<String,_>("command_digest").ok().as_deref()!=Some(hash.as_str())) {
-    let r=result(&c,&hash,generation,now,current.as_ref(),Code::OperationConflict);let bytes=r.encode().ok_or(DurabilityError::InvalidStoredState)?;
-    outbox(&mut tx,&r,&bytes).await?;commit_semantic_transaction(tx,deadline).await?;return Ok(bytes);
-   }
    let (enabled,policy):(bool,Option<i64>)=sqlx::query_as("SELECT enabled,supported_policy_revision FROM game_platform_enforcement_configuration WHERE singleton FOR SHARE").fetch_one(&mut *tx).await?;
    if !enabled || policy.is_none() {return Err(DurabilityError::Unavailable);}
+   let Some(c)=parsed else {
+    // These exact immutable bytes can never execute. A terminal refusal leaves
+    // the attempt reconciliable rather than pending forever on a parser error.
+    let r=result(&id,&hash,generation,now,current.as_ref(),Code::InternalNonRetryable);
+    let bytes=persist(&mut tx,&id,&raw,&r).await?;
+    commit_semantic_transaction(tx,deadline).await?;return Ok(bytes);
+   };
+   let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid")
+    .bind(&c.character_id).fetch_optional(&mut *tx).await?;
    let stale=match c.intent {
     Intent::Apply=>current.is_some(),
     Intent::Replace|Intent::Revoke=>current.as_ref().is_none_or(|s|s.revision>=c.decision_revision || Some(s.revision)!=c.prior_decision_revision),
     Intent::Expire=>current.as_ref().is_none_or(|s|s.revision!=c.decision_revision),
    };
-   let rejection=if c.command_version!=1 || c.profile==Profile::Jail {Some(Code::Unsupported)}
-   else if policy!=Some(c.policy_revision) || current.as_ref().is_some_and(|s|s.profile!=c.profile) {Some(Code::CapabilityConflict)}
+   let mut rejection=if c.command_version!=1 || c.profile==Profile::Jail {Some(Code::Unsupported)}
+   else if policy.is_some_and(|supported|c.policy_revision>supported) || current.as_ref().is_some_and(|s|s.profile!=c.profile) {Some(Code::CapabilityConflict)}
    else if stale {Some(Code::StaleRevision)}
    else if root.is_none() {Some(Code::TargetNotApplicable)}
    else if root.as_ref().map(|r|r.try_get::<String,_>("account_id")).transpose()?.as_deref()!=Some(c.account_id.as_str()) {Some(Code::TargetMismatch)}
    else if root.as_ref().map(|r|r.try_get::<i16,_>("lifecycle")).transpose()?!=Some(1) {Some(Code::LifecycleConflict)}
    else {None};
-   // The wire does not define retargeting an existing stream. Hold a structurally
-   // eligible retarget instead of changing its binding or inventing a result code.
-   if rejection.is_none() && current.as_ref().is_some_and(|s|s.account!=c.account_id || s.character!=c.character_id) {return Err(DurabilityError::InvalidStoredState);}
-   let mut r=result(&c,&hash,generation,now,current.as_ref(),rejection.unwrap_or(Code::Ok));
+   if rejection.is_none() && current.as_ref().is_some_and(|s|s.account!=c.account_id || s.character!=c.character_id) {
+    rejection=Some(Code::TargetMismatch);
+   }
+   if rejection.is_none() {
+    // Validate the subject before creating portfolio state. Then take the
+    // canonical portfolio-before-CharacterLease fences and revalidate under lock.
+    sqlx::query("INSERT INTO game_character_account_guards(account_id) VALUES($1::uuid) ON CONFLICT DO NOTHING").bind(&c.account_id).execute(&mut *tx).await?;
+    sqlx::query("SELECT 1 FROM game_character_account_guards WHERE account_id=$1::uuid FOR UPDATE").bind(&c.account_id).fetch_one(&mut *tx).await?;
+    lock_admission_relations(&mut tx).await?;
+    let root=sqlx::query("SELECT account_id::text,lifecycle FROM game_character_roots WHERE character_id=$1::uuid FOR UPDATE").bind(&c.character_id).fetch_optional(&mut *tx).await?;
+    now=sqlx::query_scalar("SELECT game_platform_enforcement_now_ms()").fetch_one(&mut *tx).await?;
+    if now<=0 {return Err(DurabilityError::Unavailable);}
+    rejection=if root.is_none() {Some(Code::TargetNotApplicable)}
+     else if root.as_ref().map(|r|r.try_get::<String,_>("account_id")).transpose()?.as_deref()!=Some(c.account_id.as_str()) {Some(Code::TargetMismatch)}
+     else if root.as_ref().map(|r|r.try_get::<i16,_>("lifecycle")).transpose()?!=Some(1) {Some(Code::LifecycleConflict)} else {None};
+   }
+   let mut r=result(&id,&hash,generation,now,current.as_ref(),rejection.unwrap_or(Code::Ok));
    r.receipt_revision=revision;
    if rejection.is_none() {
     let live:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE character_id=$1::uuid AND account_id=$2::uuid AND session_state IN(1,2))").bind(&c.character_id).bind(&c.account_id).fetch_one(&mut *tx).await?;
@@ -201,7 +223,7 @@ impl DurabilityRoot {
      outbox(&mut tx,&old,&bytes).await?;commit_semantic_transaction(tx,deadline).await?;return Ok(bytes);
     }
    }
-   let bytes=persist(&mut tx,&c,&raw,&r).await?;commit_semantic_transaction(tx,deadline).await?;Ok(bytes)
+   let bytes=persist(&mut tx,&id,&raw,&r).await?;commit_semantic_transaction(tx,deadline).await?;Ok(bytes)
   })).await
     }
     pub async fn platform_mute_for_session(
