@@ -1,5 +1,6 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+mod bestiary;
 mod chat;
 mod feature_dialogs;
 mod hud;
@@ -230,6 +231,7 @@ pub(super) fn install(app: &mut App) {
     modal::install(app);
     options::install(app);
     journal::install(app);
+    bestiary::install(app);
     chat::install(app);
     actions::install(app);
     feature_dialogs::install(app);
