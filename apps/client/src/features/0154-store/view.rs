@@ -4,9 +4,10 @@ mod coin_shop;
 impl PlayLink {
     pub fn store_gift_open(&self) {
         #[cfg(windows)]
-        open_gift(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open_gift(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).store.gift_open = true;
         }
     }
@@ -30,6 +31,9 @@ mod premium_native;
 
 #[cfg(windows)]
 fn open_gift(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,

@@ -109,6 +109,30 @@ fn uuid(marker: u8) -> [u8; 16] {
 }
 
 pub async fn joined() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
+    joined_with_equipment(None).await
+}
+
+pub fn inventory(equipped: Option<u64>) -> Result<Vec<u8>, BoxError> {
+    item_view::encode_character_inventory_with_equip_drop(
+        &CharacterInventory {
+            main_backpack: Some(entry(1)),
+            entries: vec![entry(2)],
+            equipment: equipped
+                .into_iter()
+                .map(|source| item_view::EquippedItem {
+                    slot: item_view::EquipmentSlot::RightHand,
+                    item: entry(source),
+                })
+                .collect(),
+        },
+        true,
+    )
+    .map_err(|error| format!("inventory: {error:?}").into())
+}
+
+pub async fn joined_with_equipment(
+    equipped: Option<u64>,
+) -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
     let (client, mut peer) = tokio::io::duplex(64 * 1024);
     let mut accepted = message(&[
         field(1, &uuid(1)),
@@ -141,15 +165,7 @@ pub async fn joined() -> Result<(Session<DuplexStream>, DuplexStream), BoxError>
         field(3, &OWN.identity),
         field(4, &actor),
     ]);
-    let inventory = item_view::encode_character_inventory_with_equip_drop(
-        &CharacterInventory {
-            main_backpack: Some(entry(1)),
-            entries: vec![entry(2)],
-            equipment: vec![],
-        },
-        true,
-    )
-    .map_err(|error| format!("inventory: {error:?}"))?;
+    let inventory = inventory(equipped)?;
     let containers = oteryn_session::container_tree::encode_container_views(&views(10))
         .map_err(|error| format!("containers: {error:?}"))?;
     let map = world_map::encode_world_map_snapshot(&world_map::WorldMapViewSnapshot {

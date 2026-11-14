@@ -22,6 +22,9 @@ fn panel_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
 }
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     crate::play::feature_0115_mail::view::native::open(link, form());
 }
 
@@ -34,7 +37,7 @@ pub(in crate::play) fn open_shared(
     let ready = super::input::begin_shared_window(&mut lock(shared), commands);
     // Unit tests exercise the same mailbox transition without creating OS windows.
     #[cfg(all(windows, not(test)))]
-    if ready {
+    if ready && !lock(shared).shared_frontend {
         let weak = std::sync::Arc::downgrade(shared);
         let rollback = weak.clone();
         let commands = commands.clone();

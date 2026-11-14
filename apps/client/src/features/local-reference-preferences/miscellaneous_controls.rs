@@ -130,9 +130,6 @@ impl MiscellaneousControls {
                         && !preferences.miscellaneous.stay_logged_in
                         || state.preferences.miscellaneous.remember_device
                             && !preferences.miscellaneous.remember_device;
-                    if !save(preferences.miscellaneous, state) {
-                        return true;
-                    }
                     state.apply(preferences);
                     if revoke {
                         state.request_native_sign_out();
@@ -143,19 +140,17 @@ impl MiscellaneousControls {
                     let mut p = state.preferences.clone();
                     p.miscellaneous.confirm_exit = true;
                     p.miscellaneous.confirm_logout = true;
-                    if save(p.miscellaneous, state) {
-                        state.apply(p);
-                    }
+                    state.apply(p);
                     true
                 }
                 9108 => {
                     let mut p = state.preferences.clone();
                     p.miscellaneous.remember_device = false;
-                    if save(p.miscellaneous, state) {
-                        state.apply(p);
-                    }
+                    state.apply(p);
                     state.request_native_sign_out();
-                    state.feedback = "Signing out and clearing the OS credential vault.".into();
+                    state
+                        .feedback
+                        .push_str(" Signing out and clearing the OS credential vault.");
                     true
                 }
                 9109 => {
@@ -168,19 +163,6 @@ impl MiscellaneousControls {
                 }
                 _ => false,
             }
-        }
-    }
-}
-
-fn save(options: oteryn_client::play::MiscellaneousPreferences, state: &mut SettingsState) -> bool {
-    match oteryn_client::play::MiscellaneousPreferences::path()
-        .ok_or_else(|| std::io::Error::other("Session options storage unavailable"))
-        .and_then(|path| options.save(&path))
-    {
-        Ok(()) => true,
-        Err(error) => {
-            state.feedback = error.to_string();
-            false
         }
     }
 }

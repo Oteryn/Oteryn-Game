@@ -50,9 +50,10 @@ impl PlayLink {
     pub fn analyser_open(&self) {
         self.analyser_resolve_items();
         #[cfg(windows)]
-        super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             crate::play::mailbox::lock(&self.mailbox).analyser.open = true;
         }
     }

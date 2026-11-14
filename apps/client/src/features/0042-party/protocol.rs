@@ -59,3 +59,14 @@ impl Outbox {
         Ok(())
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_party_selected(&self, selected: bool, chat: bool, name: &str) {
+        self.party_initialize(selected, chat);
+        lock(&self.0).party.own_character_name = name.to_owned();
+    }
+    pub(crate) fn bevy_party_response(&self, response: &PartyResponse) {
+        self.party_result(response);
+    }
+}

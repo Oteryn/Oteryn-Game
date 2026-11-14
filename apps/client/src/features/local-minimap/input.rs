@@ -61,16 +61,17 @@ impl PlayView {
             }
             // A mark already sits at the player's position: edit it.
             #[cfg(windows)]
-            if matches!(created, Ok(false)) {
+            if !self.shared_frontend && matches!(created, Ok(false)) {
                 native::open(self.minimap.clone(), own);
             }
             return true;
         }
+        let edit = oteryn_client_ui::minimap::editor_key(events);
         #[cfg(windows)]
-        if oteryn_client_ui::minimap::editor_key(events) {
+        if edit && !self.shared_frontend {
             native::open(self.minimap.clone(), (self.own.x, self.own.y, self.floor));
         }
-        oteryn_client_ui::minimap::editor_key(events)
+        edit
     }
 }
 #[cfg(windows)]

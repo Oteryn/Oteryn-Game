@@ -57,7 +57,7 @@ pub(super) async fn authorize(
         .device_sessions
         .begin(
             client,
-            crate::play::MiscellaneousPreferences::load(),
+            session_options(config.preference_path.as_deref()),
             cancellation.clone(),
         )
         .await
@@ -271,4 +271,69 @@ async fn enroll_or_fresh_browser(
         return access_token(client, config, cancel, false).await;
     }
     Ok(token)
+}
+
+fn session_options(
+    preference_path: Option<&std::path::Path>,
+) -> crate::play::MiscellaneousPreferences {
+    preference_path
+        .and_then(|path| {
+            crate::play::MiscellaneousPreferences::read(
+                &path.with_extension("session-options.json"),
+            )
+            .ok()
+        })
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod session_options_tests {
+    use super::session_options;
+    use crate::play::{MiscellaneousPreferences, SettingsState};
+
+    #[test]
+    fn admission_reads_session_options_from_selected_preference_path()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let folder = std::env::temp_dir().join(format!("admission-options-{}", std::process::id()));
+        std::fs::create_dir_all(&folder)?;
+        let result = (|| -> Result<(), Box<dyn std::error::Error>> {
+            let first = folder.join("isolated.json");
+            let second = folder.join("other.json");
+            let global = MiscellaneousPreferences::load();
+            let flags = MiscellaneousPreferences {
+                stay_logged_in: !global.stay_logged_in,
+                remember_device: !global.remember_device,
+                quick_login: !global.quick_login,
+                confirm_logout: false,
+                confirm_exit: false,
+            };
+            flags.save(&first.with_extension("session-options.json"))?;
+            MiscellaneousPreferences::default()
+                .save(&second.with_extension("session-options.json"))?;
+            assert_eq!(session_options(Some(&first)), flags);
+            assert_eq!(
+                session_options(Some(&first)),
+                SettingsState::new(Some(first.clone()))
+                    .preferences
+                    .miscellaneous
+            );
+            assert_eq!(
+                session_options(Some(&second)),
+                MiscellaneousPreferences::default()
+            );
+            assert_eq!(session_options(None), MiscellaneousPreferences::default());
+            assert_eq!(
+                session_options(Some(&folder.join("missing.json"))),
+                MiscellaneousPreferences::default()
+            );
+            std::fs::write(first.with_extension("session-options.json"), b"invalid")?;
+            assert_eq!(
+                session_options(Some(&first)),
+                MiscellaneousPreferences::default()
+            );
+            Ok(())
+        })();
+        std::fs::remove_dir_all(folder)?;
+        result
+    }
 }

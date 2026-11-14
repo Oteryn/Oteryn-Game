@@ -111,9 +111,10 @@ pub(in crate::play) fn activate(
 impl PlayLink {
     pub fn bug_report_open(&self) {
         #[cfg(windows)]
-        open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).properties.player_report.bug.open = true;
         }
     }

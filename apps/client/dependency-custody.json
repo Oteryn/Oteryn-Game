@@ -1,0 +1,136 @@
+{
+  "purpose": "Bevy upstream system_clipboard for native connection-form text paste",
+  "feature": "bevy/system_clipboard",
+  "no_upstream_fork": true,
+  "license_review": {
+    "spdx": "BSL-1.0",
+    "upstream_license_commit": "ed27008ae5d1f10cfbb266de039f0fb35fd05a56",
+    "upstream_clipboard_license_matches_bundled_error_code_license": true,
+    "license_sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+    "exception_scope": [
+      "clipboard-win =5.4.3",
+      "error-code =3.4.0"
+    ]
+  },
+  "packages": [
+    {
+      "name": "alsa",
+      "version": "0.9.1",
+      "license": "Apache-2.0/MIT",
+      "repository": "https://github.com/diwic/alsa-rs",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "ed7572b7ba83a31e20d1b48970ee402d2e3e0537dcfe0a3ff4d6eb7508617d43",
+      "vcs": {
+        "git": {
+          "sha1": "3e3195cada635a73685066ec97315cfebd6e3bca"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "alsa-sys",
+      "version": "0.3.1",
+      "license": "MIT",
+      "repository": "https://github.com/diwic/alsa-sys",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "db8fee663d06c4e303404ef5f40488a53e062f89ba8bfed81f42325aafad1527",
+      "vcs": {
+        "git": {
+          "sha1": "f0fadd70b94fdc7482bbe383d4ac72025d54efda"
+        }
+      }
+    },
+    {
+      "name": "arboard",
+      "version": "3.7.0",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/1Password/arboard",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "aeb9553e62312c8756a5979254fc6d7da8bbeb5986a1e17037fab932f7037917",
+      "vcs": {
+        "git": {
+          "sha1": "5f5c8637911ba219edee619105a19b4f74e66a9f"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "clipboard-win",
+      "version": "5.4.3",
+      "license": "BSL-1.0",
+      "repository": "https://github.com/DoumanAsh/clipboard-win",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "052af7878466feccda12ba7a6a67d019d712f296809559b47c12c8cc196d3a9a",
+      "vcs": {
+        "git": {
+          "sha1": "ed27008ae5d1f10cfbb266de039f0fb35fd05a56"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "cpal",
+      "version": "0.16.0",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/rustaudio/cpal",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "cbd307f43cc2a697e2d1f8bc7a1d824b5269e052209e28883e5bc04d095aaa3f",
+      "vcs": {
+        "git": {
+          "sha1": "36b9fed079e3d3066acaa58b1ae935caf5c2bfb1"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "error-code",
+      "version": "3.4.0",
+      "license": "BSL-1.0",
+      "repository": "https://github.com/DoumanAsh/error-code",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7",
+      "vcs": {
+        "git": {
+          "sha1": "e4615e514db3ff64f5f1b328b4865b20a3dcdbc3"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "name": "objc2-app-kit",
+      "version": "0.3.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "repository": "https://github.com/madsmtm/objc2",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c",
+      "vcs": {
+        "git": {
+          "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+        },
+        "path_in_vcs": "framework-crates/objc2-app-kit"
+      }
+    },
+    {
+      "name": "rodio",
+      "version": "0.21.1",
+      "license": "MIT OR Apache-2.0",
+      "repository": "https://github.com/RustAudio/rodio",
+      "registry": "registry+https://github.com/rust-lang/crates.io-index",
+      "crate_sha256": "e40ecf59e742e03336be6a3d53755e789fd05a059fa22dfa0ed624722319e183",
+      "vcs": {
+        "git": {
+          "sha1": "7f10fcc57c9f1a7bbefb0c371a73d1224f8b5855"
+        },
+        "path_in_vcs": ""
+      }
+    }
+  ],
+  "additional_purposes": [
+    {
+      "purpose": "Portable native audio playback through the existing manifest-pinned SoundCatalog",
+      "feature": "bevy-shell/rodio",
+      "no_upstream_fork": true,
+      "existing_lockfile_versions_only": true
+    }
+  ]
+}

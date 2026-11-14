@@ -48,6 +48,9 @@ fn wide(s: &str) -> Vec<u16> {
 mod backend;
 use backend::Backend;
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     open_shared(
         Arc::downgrade(&link.mailbox),
         link.commands.clone(),

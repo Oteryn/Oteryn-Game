@@ -1,5 +1,14 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    /// Shared presentation visibility; avoids copying the retained server view.
+    #[must_use]
+    pub fn vip_is_open(&self) -> bool {
+        lock(&self.mailbox).vip.open
+    }
+    /// Closing the sidebar preserves authoritative data and an in-flight request.
+    pub fn vip_close(&self) {
+        lock(&self.mailbox).vip.open = false;
+    }
     #[must_use]
     pub fn vip_panel(&self) -> oteryn_client_ui::vip::VipPanel {
         lock(&self.mailbox).vip.clone()

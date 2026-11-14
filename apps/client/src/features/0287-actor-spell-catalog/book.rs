@@ -143,7 +143,9 @@ impl PlayLink {
         };
         self.spellbook_request(filter, 0);
         #[cfg(windows)]
-        super::book_native::open_window(self);
+        if !self.uses_shared_frontend() {
+            super::book_native::open_window(self);
+        }
         true
     }
     pub fn sync_spellbook_filter(&self, filter: &mut SpellbookFilter, edit: u64) -> Option<u64> {

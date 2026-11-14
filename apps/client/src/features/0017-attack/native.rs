@@ -69,6 +69,9 @@ unsafe fn read_text(hwnd: HWND) -> String {
     String::from_utf16_lossy(&buffer[..length.max(0) as usize])
 }
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.battle.native_running {

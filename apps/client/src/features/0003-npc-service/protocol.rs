@@ -39,3 +39,13 @@ impl Mailbox {
         }
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_npc_dialogue_supported(&self) {
+        lock(&self.0).dialogue.selected = true;
+    }
+    pub(crate) fn bevy_npc_dialogue_result(&self, result: oteryn_session::NpcIntentDisposition) {
+        lock(&self.0).dialogue.result(result);
+    }
+}

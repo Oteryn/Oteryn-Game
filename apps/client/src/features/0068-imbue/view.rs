@@ -10,9 +10,10 @@ impl PlayLink {
     pub fn open_imbue(&self) {
         self.imbue_request(oteryn_client_ui::imbue::Intent::Refresh);
         #[cfg(windows)]
-        open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).imbue.open = true;
         }
     }
@@ -30,7 +31,7 @@ impl PlayLink {
             return;
         }
         #[cfg(windows)]
-        {
+        if !self.uses_shared_frontend() {
             use crate::play::feature_0115_mail::view::native::{Form, open};
             open(
                 self,
@@ -58,8 +59,7 @@ impl PlayLink {
                 },
             );
         }
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).imbue.tracker_open = true;
         }
         self.imbue_tracker_refresh();

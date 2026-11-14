@@ -32,8 +32,7 @@ impl PlayLink {
             tr!("Conditions — Ctrl+Alt+Shift+C"),
             |mailbox| &mut mailbox.condition_status,
         );
-        #[cfg(not(windows))]
-        {
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).condition_status.open = true;
         }
         true

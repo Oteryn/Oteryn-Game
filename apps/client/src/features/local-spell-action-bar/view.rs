@@ -96,6 +96,9 @@ impl PlayView {
 
 #[cfg(windows)]
 pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     use crate::play::feature_0115_mail::view::native::{Form, open};
     open(
         link,
@@ -336,6 +339,9 @@ impl PlayView {
 mod multiaction_native;
 #[cfg(windows)]
 pub(in crate::play) fn open_multi(link: &crate::play::PlayLink, slot: usize) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     multiaction_native::open(link, slot);
 }
 

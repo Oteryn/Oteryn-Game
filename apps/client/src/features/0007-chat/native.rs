@@ -49,6 +49,9 @@ mod channel_dialog;
 mod console_controls;
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     open_shared(&link.mailbox, &link.commands);
 }
 

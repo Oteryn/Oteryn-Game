@@ -18,6 +18,9 @@ fn wide(text: &str) -> Vec<u16> {
 }
 
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     let weak = Arc::downgrade(&link.mailbox);
     let rollback = weak.clone();
     let commands = link.commands.clone();

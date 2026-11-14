@@ -27,9 +27,10 @@ impl PlayLink {
     pub fn item_catalogue_open(&self) {
         self.item_catalogue_request(0);
         #[cfg(windows)]
-        super::super::view::open_window(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::super::view::open_window(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).discovery.inspection.catalogue_open = true;
         }
     }

@@ -7,6 +7,18 @@ use winit::event::{
 use winit::keyboard::{KeyCode as WinitKeyCode, PhysicalKey};
 
 impl InputPlatformAdapter {
+    /// Discard a previous generation's actions while retaining the latest window focus.
+    /// The final device reset clears transient input state; no queued action is replayed.
+    pub fn reset_after_window_events<'a>(
+        &mut self,
+        events: impl IntoIterator<Item = &'a WindowEvent>,
+    ) -> Vec<NormalizedInputEvent> {
+        for event in events {
+            let _ = self.process_window_event(event);
+        }
+        self.notify_device_lost()
+    }
+
     /// Normalize one supported winit window event.
     ///
     /// Physical identity is derived only from `KeyEvent::physical_key`; logical-key data never
@@ -269,6 +281,10 @@ const fn physical_key_code(key: PhysicalKey) -> Option<u16> {
         _ => None,
     }
 }
+
+#[cfg(test)]
+#[path = "winit_reset_tests.rs"]
+mod reset_tests;
 
 #[cfg(test)]
 mod tests {
