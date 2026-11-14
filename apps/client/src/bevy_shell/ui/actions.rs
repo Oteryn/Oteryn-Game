@@ -21,6 +21,7 @@ pub(super) fn activate(
                     | Control::CastChat
                     | Control::Cast
                     | Control::ExivaSettings
+                    | Control::HirelingManagement
                     | Control::HirelingServices
                     | Control::FurnitureRotation
                     | Control::HouseMoveOut
@@ -69,6 +70,7 @@ pub(super) fn activate(
             Control::CastChat => game_ui::cast_chat::toggle(&mut owner),
             Control::Cast => game_ui::cast_control::open(&owner),
             Control::ExivaSettings => game_ui::open_exiva_settings(&owner),
+            Control::HirelingManagement => game_ui::hireling_management::open(&mut owner),
             Control::HouseMoveOut => game_ui::house_move_out::open(&mut owner),
             Control::GuildhallLeadership => game_ui::guildhall_leadership::toggle(&mut owner),
             Control::CyclopediaTrackers => game_ui::cyclopedia_trackers::open(&owner),

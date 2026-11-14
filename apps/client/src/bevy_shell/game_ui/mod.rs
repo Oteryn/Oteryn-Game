@@ -30,6 +30,7 @@ mod feature_dialogs;
 mod furniture_rotation;
 pub(super) mod furniture_wrapping;
 pub(super) mod guild;
+pub(super) mod hireling_management;
 pub(super) mod hireling_services;
 pub(super) use furniture_rotation::toggle as toggle_furniture_rotation;
 mod guild_wars;
@@ -140,6 +141,7 @@ pub(super) fn install(app: &mut App) {
     guild_wars::install(app);
     guildhall_leadership::install(app);
     highscores_character_info::install(app);
+    hireling_management::install(app);
     hireling_services::install(app);
     house_browsing::install(app);
     house_move_out::install(app);
