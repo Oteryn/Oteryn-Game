@@ -124,10 +124,10 @@ fn staff_tools_window_registered() -> TestResult {
     click(&mut app, Kind::Close)?;
     app.update();
     assert!(!current_panel(&app)?.open);
-    key(&mut app, KeyCode::F10);
+    owner_chord(&mut app)?;
     app.update();
     assert!(current_panel(&app)?.open);
-    key(&mut app, KeyCode::F10);
+    key(&mut app, KeyCode::Escape);
     app.update();
     assert!(!current_panel(&app)?.open);
     Ok(())
@@ -196,7 +196,11 @@ fn key(app: &mut App, code: KeyCode) {
     app.world_mut()
         .write_message(bevy::input::keyboard::KeyboardInput {
             key_code: code,
-            logical_key: bevy::input::keyboard::Key::F10,
+            logical_key: if code == KeyCode::Escape {
+                bevy::input::keyboard::Key::Escape
+            } else {
+                bevy::input::keyboard::Key::F10
+            },
             state: bevy::input::ButtonState::Pressed,
             text: None,
             repeat: false,
@@ -217,11 +221,126 @@ fn staff_tools_modal_keyboard_and_widgets_reject_changes() -> TestResult {
         .resource_mut::<InputFocus>()
         .set(higher, bevy::input_focus::FocusCause::Navigated);
     click(&mut app, Kind::Submit(false))?;
-    key(&mut app, KeyCode::F10);
+    key(&mut app, KeyCode::Escape);
     app.update();
     assert!(current_panel(&app)?.open);
     assert!(!current_panel(&app)?.pending);
     assert!(app.world().resource::<State>().confirmation.is_none());
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+fn route_key(app: &mut App, code: u16, modifiers: oteryn_input_actions::Modifiers) -> TestResult {
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(code)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers,
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
+    Ok(())
+}
+fn owner_chord(app: &mut App) -> TestResult {
+    route_key(
+        app,
+        39,
+        oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+    )
+}
+#[test]
+fn staff_tools_key_does_not_toggle_audio() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_staff_panel(Panel {
+        open: false,
+        ..ready()
+    });
+    app.update();
+    let muted = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .preferences()
+        .audio
+        .muted;
+    owner_chord(&mut app)?;
+    app.update();
+    assert!(current_panel(&app)?.open);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .preferences()
+            .audio
+            .muted,
+        muted
+    );
+    click(&mut app, Kind::Close)?;
+    app.update();
+    route_key(&mut app, 67, oteryn_input_actions::Modifiers::NONE)?;
+    key(&mut app, KeyCode::F10);
+    app.update();
+    assert!(
+        !current_panel(&app)?.open,
+        "F10 belongs to audio, not staff tools"
+    );
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .view
+            .preferences()
+            .audio
+            .muted,
+        !muted
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+#[test]
+fn staff_tools_toolbar_requires_selected_owner() -> TestResult {
+    let (mut app, _commands, outbox) = fixture()?;
+    app.add_systems(Update, crate::bevy_shell::ui::project_toolbar);
+    app.update();
+    let toolbar = app
+        .world_mut()
+        .query::<(Entity, &crate::bevy_shell::ui::Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            matches!(control, crate::bevy_shell::ui::Control::StaffTools).then_some(entity)
+        })
+        .ok_or("staff toolbar")?;
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::None
+    );
+    outbox.bevy_staff_panel(ready());
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::Flex
+    );
+    outbox.bevy_staff_end();
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::None
+    );
+    app.world_mut().non_send_mut::<HostOwner>().play = None;
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(toolbar).ok_or("node")?.display,
+        Display::None
+    );
     Ok(())
 }

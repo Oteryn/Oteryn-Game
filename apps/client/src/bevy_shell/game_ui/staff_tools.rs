@@ -53,6 +53,12 @@ pub(in crate::bevy_shell) fn open(owner: &mut HostOwner) {
         let _ = play.link.staff_tools_open_bound();
     }
 }
+pub(in crate::bevy_shell) fn toolbar_visible(owner: &HostOwner) -> bool {
+    owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.staff_panel().selected)
+}
 fn inside(mut entity: Option<Entity>, ancestor: Entity, parents: &Query<&ChildOf>) -> bool {
     while let Some(current) = entity {
         if current == ancestor {
@@ -205,7 +211,7 @@ fn activate(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     focus: Res<InputFocus>,
     fields: Query<(&Field, &EditableText)>,
@@ -217,21 +223,7 @@ fn keyboard(
         if !guard.allows_focus(state.overlay.or(focus.get())) {
             continue;
         }
-        if event.key_code == KeyCode::F10 {
-            if let Some(key) = state.key {
-                perform(
-                    &owner,
-                    &mut state,
-                    Control {
-                        key,
-                        kind: Kind::Close,
-                    },
-                    &fields,
-                );
-            } else {
-                open(&mut owner);
-            }
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(key) = state.key
         {
             let kind = if state.confirmation.is_some() {

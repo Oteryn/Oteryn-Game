@@ -171,7 +171,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
-        (Control::StaffTools, "Staff tools (F10)", 130.),
+        (Control::StaffTools, "Staff tools (Ctrl+Alt+0)", 180.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -547,6 +547,7 @@ pub(super) fn project_toolbar(
     >,
 ) {
     let playing = owner.play.is_some();
+    let staff = super::game_ui::staff_tools::toolbar_visible(&owner);
     for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
         if toolbar {
             if playing {
@@ -580,7 +581,7 @@ pub(super) fn project_toolbar(
             Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
                 | Some(Control::StaffTools)
         ) {
-            node.display = if playing {
+            node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
             } else {
                 Display::None
