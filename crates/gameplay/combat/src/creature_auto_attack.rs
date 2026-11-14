@@ -1205,6 +1205,25 @@ impl AutoAttackOwner {
                 })
                 .transpose()?
         };
+        // Cancel this admitted occurrence before consuming a shield block,
+        // reflecting damage or delivering attached conditions. The swing owner
+        // retains it under the same sequence/replay contract as ordinary hits.
+        if vitals.dodge_source_attack(
+            runtime,
+            facts.issuer,
+            facts.target,
+            facts.session,
+            &occurrence,
+        ) {
+            return Ok(SwingOutcome {
+                occurrence,
+                requested,
+                blocked: requested,
+                damage: None,
+                chance_passed: true,
+                source_critical,
+            });
+        }
         // Source-default bonus is ZERO; preserve actual base requested HP. Dynamic boosts/VFX remain qualified gaps.
         let mut remaining = requested;
         let mut budget_next = None;
@@ -1310,11 +1329,13 @@ impl AutoAttackOwner {
             let magnitude = u32::try_from(*magnitude).map_err(|_| AttackError::InvalidPlan)?;
             Some(
                 if source.conditions.is_empty() {
-                    vitals.apply_attack_damage(
+                    vitals.apply_source_typed_attack_damage(
                         runtime,
+                        facts.issuer,
                         facts.target,
                         facts.session,
                         magnitude,
+                        crate::player_lethal::PlayerHitKind::Mitigated,
                         &occurrence,
                         now,
                     )

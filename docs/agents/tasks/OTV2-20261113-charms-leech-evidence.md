@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone task writer
 created_at: 2026-11-13T20:38:46Z
-updated_at: 2026-11-13T22:36:09Z
+updated_at: 2026-11-14T00:25:15Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/combat-rules/src/resolution/equipped_offence.rs
@@ -44,6 +44,12 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_contracts.rs
   - docs/agents/evidence/OTV2-20261113-all-charms-audit.md
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/delayed_strikes.rs
+  - crates/gameplay/combat/src/ability/player_lethal.rs
+  - crates/gameplay/combat/src/creature_auto_attack.rs
+  - crates/gameplay/spell/src/creature_damage_spell/mod.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/attack/charm_combat/source_vitals.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_incoming.rs
+  - docs/agents/evidence/OTV2-20261114-charms-runtime-completion.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -129,3 +135,43 @@ AUTHORING resumed from a997547565218b9204752a73915f52b8537c5aa7 on the explicit 
 - `git diff --check`: pass.
 - `python3 tools/agents/validate_governance.py`: pass.
 - `python3 -m unittest discover -s tools/agents/tests`: OK (129 tests).
+
+## Complete-runtime continuation: native Dodge increment
+
+Owner expanded the task to finish all charm repairs and publish useful checked increments.
+AUTHORING resumed in #3183 comment 6867162021. The accepted incoming runtime contract is
+`CHARM4-INCOMING-EFFECT-ORDER-V1`; its historical live-Global evidence caveats are not
+permission to leave the accepted runtime cancellation path unwired.
+
+This increment wires Dodge into the native creature spell/condition/Mana Drain owner and
+the native auto-attack owner, before reflection, block consumption and attached effects.
+The outer source owner retains the actual cancellation in its ordinary occurrence result.
+Native auto damage also preserves its source for existing defensive charm consumers.
+Actual normal monster melee via `PlayerBiteVitals` is a separate existing route: it is not
+mislabelled as newly qualified by the AutoAttackOwner regression.
+
+The all-targets compilation check passed on the VPS. The actual Dodge failure was reproduced
+on the owner's PC before that device went offline. Full VPS dispatch-test code generation
+exceeded the safe process/memory budget before any tests ran; it is neither a test PASS nor
+a test failure. New runtime tests are mounted in the normal registered dispatch target and
+remain mandatory in CI. Exact commands/results and any resource limitation are retained in
+`docs/agents/evidence/OTV2-20261114-charms-runtime-completion.md`.
+
+The outgoing G1 helper's offline PC workspace is not recovered or declared successful.
+G1, ordered Parry/source ticks, secondary/delayed boundaries and the separately owned
+Cleanse/Hex #3176 composition remain active work. No completed global charm claim.
+
+Canonical publication remains single-writer. The VPS lacks an authenticated normal Git
+publisher; the explicitly selected fallback in #3183 comment 6867932865 is a new API-native
+candidate over the freshly read canonical predecessor, with one complete bounded tree,
+one sole-parent successor commit, one non-force task-branch update and immediate readback.
+The offline unpushed PC merge is not relabelled as that candidate. No inherited candidate
+review/CI proof, protected-main write, per-file Contents commits, force/reset or deployment.
+
+### Native-Dodge increment local gate
+
+All-targets check, strict Clippy, both format checks and diff validation passed.
+Combat/progression/spell library tests passed: 551 / 0 failures / 0 ignored.
+Governance validator and 129 governance tests passed. New full-dispatch native
+Dodge tests were compiled, not executed on the memory-constrained VPS; their
+actual CI execution is a required open gate. No final completion/merge claim.
