@@ -22,6 +22,7 @@ mod prey;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod stash;
 mod trade;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
@@ -249,6 +250,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     prey::install(app);
     quick_loot::install(app);
+    stash::install(app);
     trade::install(app);
     app.add_systems(
         Update,

@@ -80,6 +80,9 @@ With no text field focused, the existing gameplay shortcuts open:
   Opens locally and requests current forge candidates; this protocol has no server-open event.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+S:** Supply Stash, with search/category/trader filters, name/stock sort,
+  and a bounded withdrawal dialog. Stash rows show definition names because the
+  protocol supplies no verified artwork binding.
 - **Ctrl+Alt+I:** Inspection. Use **Inspect selected** to request the selected
   inventory item's data. Multi-item replies show a selectable list and one details
   pane, including equipment slots returned by player inspection. Cells use item
