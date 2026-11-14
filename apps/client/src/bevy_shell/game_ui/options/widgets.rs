@@ -287,7 +287,19 @@ pub(super) fn page(
     skins: &Skins,
     checks: &CheckSkins,
     draft: &crate::play::ReferencePreferences,
+    generation: u64,
 ) {
+    let tools_page = match page {
+        Page::SettingsTransfer => Some(crate::play::SettingsPage::Help),
+        Page::MinimapTransfer => Some(crate::play::SettingsPage::MinimapTransfer),
+        Page::Help => Some(crate::play::SettingsPage::HelpGuide),
+        Page::Language => Some(crate::play::SettingsPage::Language),
+        Page::Screenshots => Some(crate::play::SettingsPage::Screenshots),
+        _ => None,
+    };
+    if let Some(page) = tools_page {
+        super::super::settings_tools::launcher(commands, skins, parent, generation, page);
+    }
     if matches!(page, Page::Sound | Page::BattleSounds | Page::UiSounds) {
         let status = commands
             .spawn((

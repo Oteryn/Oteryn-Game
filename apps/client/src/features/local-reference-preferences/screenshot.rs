@@ -109,6 +109,23 @@ pub trait CaptureSource {
 }
 
 impl SettingsState {
+    /// Portable frontends fence the retained history and pending request to their live session.
+    pub fn bind_screenshot_session(&mut self, generation: u64) {
+        if self.screenshot_runtime.generation != Some(generation) {
+            self.reset_screenshot_session();
+            self.screenshot_runtime.generation = Some(generation);
+        }
+    }
+
+    pub fn request_screenshot_bound(&mut self, generation: u64) {
+        self.bind_screenshot_session(generation);
+        self.request_screenshot();
+    }
+
+    pub fn screenshot_pending(&self) -> bool {
+        self.screenshot_requested
+    }
+
     pub fn request_screenshot(&mut self) {
         self.screenshot_requested = true;
     }

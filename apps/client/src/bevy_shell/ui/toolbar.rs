@@ -90,6 +90,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::Prey
                     | Control::Quests
                     | Control::RaidSchedule
+                    | Control::SettingsTools
                     | Control::SkillsConfig
                     | Control::Spells
                     | Control::StaffTools
