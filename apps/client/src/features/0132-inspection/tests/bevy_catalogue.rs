@@ -108,21 +108,21 @@ fn item_catalogue_window_registered() {
 #[test]
 fn item_catalogue_every_action_matches_native_owner_dispatch() {
     use oteryn_client_ui::inspection::InspectedItem;
-    for action in 0..10 {
+    for (action, market_selected) in (0..10).map(|action| (action, true)).chain([(9, false)]) {
         let (link, mut receiver, _) = play_channel();
         link.use_shared_frontend();
         let (native, mut native_receiver, _) = play_channel();
         native.use_shared_frontend();
         for session in [&link, &native] {
             let mut m = lock(&session.mailbox);
-            m.market.selected = true;
+            m.market.selected = market_selected;
             let p = &mut m.discovery.inspection;
             p.selected = true;
             p.catalogue_open = true;
             p.catalogue_next = Some(9);
             p.catalogue_drop_next = Some(2);
             p.catalogue_query_categories = vec!["Weapons".into(), "Armor".into()];
-            p.catalogue_definition = "7".into();
+            p.catalogue_definition = "0000000000007".into();
             for id in [7, 8] {
                 p.catalogue.insert(
                     id,

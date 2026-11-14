@@ -89,13 +89,12 @@ impl PlayLink {
             return false;
         };
         // A repeated market browse must not alter even feedback while its reply is pending.
-        if action == 9 && (m.market.pending.is_some() || !m.market.selected || m.market_shutdown) {
+        if action == 9 && (m.market.pending.is_some() || m.market_shutdown) {
             return false;
         }
         // Same field limits as the existing search owner; definitions are unsigned wire references.
         if fields[0].len() > 256
             || fields[1].len() > 128
-            || fields[2].len() > 10
             || fields.iter().any(|field| field.contains('\0'))
         {
             return false;
