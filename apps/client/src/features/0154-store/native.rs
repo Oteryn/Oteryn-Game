@@ -70,13 +70,7 @@ pub(in crate::play) fn panel_text(panel: &StorePanel) -> String {
     } else {
         panel.catalogue.as_ref().map_or_else(
             || tr!("Load the server catalogue").into(),
-            |page| {
-                lfmt!(
-                    "Balance: {} coins; transferable: {}",
-                    page.total_coins,
-                    page.transferable_coins
-                )
-            },
+            |page| lfmt!("Balance: {} coins", page.total_coins),
         )
     };
     if let Some(preview) = store::offer_preview(panel) {
