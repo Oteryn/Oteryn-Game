@@ -44,7 +44,13 @@ fn skills_config_skills_rejected_when_session_replaced_or_target_changed() {
     let state = link.skills_config_snapshot();
     assert!(link.skills_config_dispatch_bound(&state, SkillsConfigControl::Family(2)));
     assert!(!link.skills_config_dispatch_bound(&state, SkillsConfigControl::Visible(false)));
+    assert!(!link.skills_config_dispatch_bound(&state, SkillsConfigControl::Family(2)));
     let current = link.skills_config_snapshot();
+    let modal = link.bevy_server_modal_fixture();
+    assert!(!link.skills_config_dispatch_bound(&current, SkillsConfigControl::Progress(false)));
+    assert_eq!(current, link.skills_config_snapshot());
+    drop(modal);
+
     let (replacement, _replacement_commands, _replacement_outbox) = play_channel();
     assert!(replacement.skills_config_open());
     assert!(!replacement.skills_config_dispatch_bound(&current, SkillsConfigControl::Progress(false)));

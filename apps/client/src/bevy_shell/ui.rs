@@ -170,7 +170,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Market, "Market", 80.),
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
-        (Control::SkillsConfig, "Skills (F24)", 100.),
+        (Control::SkillsConfig, "Skills", 100.),
         (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);

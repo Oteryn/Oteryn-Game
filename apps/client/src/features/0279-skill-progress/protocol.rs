@@ -5,7 +5,9 @@ use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_input_actions::NormalizedInputEvent;
 impl PlayLink {
     pub fn skill_progress_request(&self) {
-        let mut mailbox = lock(&self.mailbox);
+        self.skill_progress_request_locked(&mut lock(&self.mailbox));
+    }
+    pub(in crate::play) fn skill_progress_request_locked(&self, mailbox: &mut crate::play::mailbox::Mailbox) {
         if let Some(payload) =
             oteryn_client_ui::skill_progress::request(&mut mailbox.skill_progress)
             && self
@@ -70,5 +72,13 @@ impl Outbox {
         lock(&self.0)
             .skill_progress
             .finish(accepted, &result.payload);
+    }
+}
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn skills_config_test_progress(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.skill_progress.selected = true;
+        mailbox.skill_progress.pending = false;
     }
 }

@@ -4,7 +4,9 @@ use oteryn_input_actions::NormalizedInputEvent;
 
 impl PlayLink {
     pub fn loyalty_skills_request(&self) {
-        let mut mailbox = lock(&self.mailbox);
+        self.loyalty_skills_request_locked(&mut lock(&self.mailbox));
+    }
+    pub(in crate::play) fn loyalty_skills_request_locked(&self, mailbox: &mut crate::play::mailbox::Mailbox) {
         if let Some(payload) =
             oteryn_client_ui::loyalty_skills::request(&mut mailbox.loyalty_skills)
             && self

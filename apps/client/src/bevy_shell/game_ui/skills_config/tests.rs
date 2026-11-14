@@ -4,7 +4,7 @@ fn skills_config_skills_window_registered() {
     let registrations = include_str!("../mod.rs");
     let toolbar = include_str!("../../ui.rs");
     assert!(registrations.contains("skills_config::install(app)"));
-    assert!(toolbar.contains("(Control::SkillsConfig, \"Skills (F24)\", 100.)"));
+    assert!(toolbar.contains("(Control::SkillsConfig, \"Skills\", 100.)"));
     assert!(toolbar.contains("skills_config::open(&owner)"));
     assert_eq!(
         crate::bevy_shell::ui::Control::SkillsConfig.id(),
@@ -20,10 +20,9 @@ type Fixture = (
     tokio::sync::mpsc::UnboundedReceiver<PlayCommand>,
     Outbox,
 );
-fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
+fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let (link, commands, outbox) = play_channel();
     link.use_shared_frontend();
-    let _ = selected;
     let mut owner = HostOwner::new(None)?;
     let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
@@ -45,7 +44,7 @@ fn fixture(selected: bool) -> Result<Fixture, Box<dyn std::error::Error>> {
 #[test]
 fn skills_config_skills_window_opens_closes_and_rejects_modal()
 -> Result<(), Box<dyn std::error::Error>> {
-    let (mut app, _commands, _outbox) = fixture(false)?;
+    let (mut app, _commands, _outbox) = fixture()?;
     open(app.world().non_send::<HostOwner>());
     app.update();
     assert!(app.world().resource::<State>().widgets.is_some());
@@ -102,6 +101,80 @@ fn skills_config_skills_window_opens_closes_and_rejects_modal()
             .layout
             .preferences
             .progress
+    );
+    Ok(())
+}
+
+#[test]
+fn skills_config_skills_ctrl_k_and_visible_refresh() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.skills_config_test_progress();
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(14)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
+    app.update();
+    assert!(
+        app.world().resource::<State>().widgets.is_some(),
+        "Ctrl+K must open skills"
+    );
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+    Ok(())
+}
+#[test]
+fn skills_config_skills_visible_refresh() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.skills_config_test_progress();
+    open(app.world().non_send::<HostOwner>());
+    app.update();
+    assert!(matches!(commands.try_recv()?, PlayCommand::Feature(_)));
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(1),
+    ));
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "in-flight query must not repeat"
+    );
+    outbox.skills_config_test_progress();
+    app.update();
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Feature(_)),
+        "visible window refreshes each second"
+    );
+    let hidden = app
+        .world_mut()
+        .spawn(Window {
+            visible: false,
+            ..default()
+        })
+        .id();
+    outbox.skills_config_test_progress();
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "hidden window must not refresh"
+    );
+    app.world_mut().entity_mut(hidden).despawn();
+    app.world_mut().non_send_mut::<HostOwner>().phase = crate::bevy_shell::owner::Phase::Offline;
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "non-playing session must not refresh"
+    );
+    app.world_mut().non_send_mut::<HostOwner>().phase = crate::bevy_shell::owner::Phase::Playing;
+    open(app.world().non_send::<HostOwner>());
+    app.update();
+    outbox.skills_config_test_progress();
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "closed window must not refresh"
     );
     Ok(())
 }

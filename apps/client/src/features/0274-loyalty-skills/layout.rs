@@ -167,3 +167,16 @@ pub struct SkillsLayoutState {
     pub edit: u64,
     pub active: u8,
 }
+
+#[cfg(any(windows, feature = "bevy-shell"))]
+impl SkillsLayoutState {
+    pub(super) fn set_preferences(&mut self, candidate: SkillsLayout) -> bool {
+        if !candidate.valid() || candidate == self.preferences {
+            return false;
+        }
+        self.preferences = candidate;
+        self.dirty = true;
+        self.edit = crate::play::feature_0017_attack::view::next_edit();
+        true
+    }
+}

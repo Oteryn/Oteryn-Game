@@ -31,12 +31,13 @@ struct Overlay;
 struct State {
     snapshot: Option<(Key, Panel)>,
     revision: u64,
+    refresh_elapsed: std::time::Duration,
     widgets: Option<widgets::Widgets>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project, auto_refresh).chain());
 }
 fn inside(mut entity: Option<Entity>, ancestor: Entity, parents: &Query<&ChildOf>) -> bool {
     while let Some(current) = entity {
@@ -144,16 +145,6 @@ fn keyboard(
     state: Res<State>,
 ) {
     let events: Vec<_> = events.read().cloned().collect();
-    if events.iter().any(|event| {
-        event.key_code == KeyCode::F24
-            && event.state == bevy::input::ButtonState::Pressed
-            && !event.repeat
-    }) {
-        if guard.allows_focus(state.widgets.as_ref().map(|widgets| widgets.panel)) {
-            open(&owner);
-        }
-        return;
-    }
     let Some(widgets) = &state.widgets else {
         return;
     };
@@ -182,5 +173,39 @@ pub(in crate::bevy_shell) fn open(owner: &HostOwner) {
         && !play.view.gameplay_input_blocked(&play.link)
     {
         play.link.skills_config_open();
+    }
+}
+
+fn auto_refresh(
+    owner: NonSend<HostOwner>,
+    time: Res<Time<Real>>,
+    windows: Query<&Window>,
+    guard: ModalGuard,
+    mut state: ResMut<State>,
+) {
+    if owner.phase != crate::bevy_shell::owner::Phase::Playing
+        || windows.iter().any(|window| !window.visible)
+        || state
+            .widgets
+            .as_ref()
+            .is_none_or(|widgets| !guard.allows(widgets.panel))
+    {
+        state.refresh_elapsed = std::time::Duration::ZERO;
+        return;
+    }
+    state.refresh_elapsed += time.delta();
+    if state.refresh_elapsed < std::time::Duration::from_secs(1) {
+        return;
+    }
+    state.refresh_elapsed = std::time::Duration::ZERO;
+    if let Some((key, _)) = &state.snapshot {
+        perform(
+            &owner,
+            &state,
+            &Control {
+                key: *key,
+                kind: Kind::AutoRefresh,
+            },
+        );
     }
 }

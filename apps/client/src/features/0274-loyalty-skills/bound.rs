@@ -12,7 +12,7 @@ pub struct SkillsConfigSnapshot {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SkillsConfigControl {
-    Family(u8), Visible(bool), Up, Down, Numbers(SkillsNumbers), Progress(bool), Refresh, Close,
+    Family(u8), Visible(bool), Up, Down, Numbers(SkillsNumbers), Progress(bool), Refresh, AutoRefresh, Close,
 }
 impl PlayLink {
     fn skills_config_locked(&self, mailbox: &Mailbox) -> SkillsConfigSnapshot {
@@ -36,30 +36,24 @@ impl PlayLink {
         true
     }
     fn skills_config_refresh(&self, mailbox: &mut Mailbox) {
-        use crate::combat_input::PlayCommand;
-        if let Some(payload) = oteryn_client_ui::loyalty_skills::request(&mut mailbox.loyalty_skills)
-            && self.commands.send(PlayCommand::LoyaltySkills(payload)).is_err() {
-            mailbox.loyalty_skills.pending = false;
-            mailbox.loyalty_skills.error = Some(tr!("Session ended"));
-        }
-        if let Some(payload) = oteryn_client_ui::skill_progress::request(&mut mailbox.skill_progress)
-            && self.commands.send(PlayCommand::Feature(oteryn_client_runtime::raw_feature::FeatureCommand {
-                capability: if mailbox.skill_progress.complete_selected {370} else {279},
-                kind: if mailbox.skill_progress.complete_selected {640} else {495}, payload,
-            })).is_err() {
-            mailbox.skill_progress.pending = false;
-            mailbox.skill_progress.error = Some(tr!("Session ended"));
-        }
+        self.loyalty_skills_request_locked(mailbox);
+        self.skill_progress_request_locked(mailbox);
     }
+
     pub fn skills_config_dispatch_bound(&self, expected: &SkillsConfigSnapshot, control: SkillsConfigControl) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.quest_shutdown || mailbox.server_modal.is_active() || self.commands.is_closed()
             || !mailbox.loyalty_skills.open || self.skills_config_locked(&mailbox) != *expected { return false; }
         if control == SkillsConfigControl::Close { mailbox.loyalty_skills.open = false; return true; }
-        if control == SkillsConfigControl::Refresh {
-            if mailbox.loyalty_skills.pending || mailbox.skill_progress.pending
-                || !(mailbox.loyalty_skills.selected || mailbox.skill_progress.selected) { return false; }
-            self.skills_config_refresh(&mut mailbox);
+        if matches!(control, SkillsConfigControl::Refresh | SkillsConfigControl::AutoRefresh) {
+            if mailbox.skill_progress.pending { return false; }
+            if control == SkillsConfigControl::AutoRefresh && mailbox.skill_progress.selected {
+                self.skill_progress_request_locked(&mut mailbox);
+            } else {
+                if mailbox.loyalty_skills.pending
+                    || !(mailbox.loyalty_skills.selected || mailbox.skill_progress.selected) { return false; }
+                self.skills_config_refresh(&mut mailbox);
+            }
             return true;
         }
         let state = &mut mailbox.skills_layout;
@@ -84,10 +78,6 @@ impl PlayLink {
             SkillsConfigControl::Progress(progress) => candidate.progress = progress,
             _ => return false,
         }
-        if !candidate.valid() || candidate == state.preferences { return false; }
-        state.preferences = candidate;
-        state.dirty = true;
-        state.edit = crate::play::feature_0017_attack::view::next_edit();
-        true
+        state.set_preferences(candidate)
     }
 }
