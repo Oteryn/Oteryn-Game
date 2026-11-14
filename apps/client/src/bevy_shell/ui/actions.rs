@@ -45,6 +45,7 @@ pub(super) fn activate(
                     | Control::WorldEvent
                     | Control::Training
                     | Control::Store
+                    | Control::WeaponProficiency
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -82,6 +83,7 @@ pub(super) fn activate(
             Control::TeamFinder => game_ui::open_team_finder(&mut owner),
             Control::Training => game_ui::training::open(&owner),
             Control::Store => game_ui::store::open(&mut owner),
+            Control::WeaponProficiency => game_ui::weapon_proficiency::open(&owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),

@@ -56,6 +56,7 @@ pub(super) mod store;
 mod trade;
 pub(super) mod training;
 pub(super) mod viewport;
+pub(super) mod weapon_proficiency;
 mod wheel;
 pub(super) mod world_event_window;
 use super::{owner::HostOwner, ui::Skins};
@@ -138,6 +139,7 @@ pub(super) fn install(app: &mut App) {
     team_finder::install(app);
     trade::install(app);
     training::install(app);
+    weapon_proficiency::install(app);
     wheel::install(app);
     world_event_window::install(app);
     app.add_systems(
