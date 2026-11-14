@@ -75,7 +75,6 @@ impl HostOwner {
         }
         if super::game_ui::highscores_character_info::input(&play.link, &routed)
             || play.link.quest_input(&routed)
-            || play.link.house_input(&routed)
             || play.link.appearance_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)
