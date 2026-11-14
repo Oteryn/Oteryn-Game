@@ -1,9 +1,32 @@
 //! Numeric draft presentation over the retained movement prompt; only Confirm submits a move.
 use super::*;
 use bevy::text::EditableText;
+mod caller;
 mod input;
 mod presentation;
+pub(in crate::bevy_shell::game_ui) use caller::{AmountTarget, CallerAmount};
 pub(super) use input::prepare_confirm;
+
+#[derive(Clone, Copy)]
+enum DialogSource {
+    Movement(Prompt),
+    Caller(u64),
+}
+#[derive(Clone, Copy)]
+enum AmountAction {
+    All,
+    Change(i32),
+    Confirm,
+    Cancel,
+}
+struct DialogSpec<'a> {
+    source: DialogSource,
+    title: &'a str,
+    confirm: &'a str,
+    value: &'a str,
+    maximum: u32,
+    item: Option<ItemEntry>,
+}
 
 #[derive(Component)]
 pub(super) struct Field(pub Prompt);
@@ -14,8 +37,10 @@ struct Feedback;
 #[derive(Component)]
 struct Range;
 
-pub(super) fn install(app: &mut App) {
-    app.init_resource::<bevy::input_focus::InputFocus>()
+pub(in crate::bevy_shell::game_ui) fn install(app: &mut App) {
+    caller::install(app);
+    app.init_resource::<InventoryUi>()
+        .init_resource::<bevy::input_focus::InputFocus>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(
             Update,
@@ -95,6 +120,9 @@ fn validate(owner: &HostOwner, ui: &InventoryUi, prompt: Prompt, raw: &str) -> R
     let Some(maximum) = maximum(owner, ui, prompt) else {
         return Err("The selected item is no longer available.".into());
     };
+    validate_amount(raw, maximum)
+}
+fn validate_amount(raw: &str, maximum: u32) -> Result<u32, String> {
     let parsed = (!raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()))
         .then(|| raw.parse::<u32>().ok())
         .flatten();

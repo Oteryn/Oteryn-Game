@@ -6,7 +6,7 @@ use oteryn_client_ui::inventory::movement::DragItem;
 use oteryn_session::{ItemEntry, ItemMoveDestination, item_movement::EquipmentSlot};
 
 mod actions;
-mod amount;
+pub(super) mod amount;
 mod bulk;
 #[cfg(test)]
 mod bulk_tests;
