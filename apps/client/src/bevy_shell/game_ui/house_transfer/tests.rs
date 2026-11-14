@@ -140,6 +140,7 @@ fn house_transfer_window_shows_server_data_only() -> Result {
     assert!(text(&mut app).contains("House key"));
     draft(&mut app, "oteryn:content.house.test")?;
     click(&mut app, Kind::Request(Intent::Enter))?;
+    click(&mut app, Kind::Confirm)?;
     let command = feature(&mut receiver)?;
     assert!(panel(&app).summary.is_empty());
     assert!(text(&mut app).contains("Waiting for the server"));
@@ -153,6 +154,7 @@ fn house_transfer_window_shows_server_data_only() -> Result {
     assert!(text(&mut app).contains(&oteryn_client_ui::house_transfer::panel_text(&owner)));
     draft(&mut app, "oteryn:content.house.other")?;
     click(&mut app, Kind::Request(Intent::Enter))?;
+    click(&mut app, Kind::Confirm)?;
     let refused = feature(&mut receiver)?;
     response(&outbox, &refused, CommandStatus::Rejected)?;
     app.update();
@@ -167,8 +169,30 @@ fn house_transfer_actions_are_bound_and_confirmed() -> Result {
     open(&mut app);
     for intent in [Intent::Enter, Intent::Exit] {
         draft(&mut app, "oteryn:content.house.test")?;
+        let before_review = panel(&app);
         click(&mut app, Kind::Request(intent))?;
+        assert_eq!(panel(&app), before_review);
+        assert!(receiver.try_recv().is_err(), "review must not send");
+        assert!(!before_review.pending);
+        let action = match intent {
+            Intent::Enter => "Enter",
+            Intent::Exit => "Exit",
+        };
+        assert!(
+            text(&mut app).contains(&format!("Confirm {action} for oteryn:content.house.test?"))
+        );
+        click(&mut app, Kind::Cancel)?;
+        assert_eq!(panel(&app), before_review);
+        assert!(receiver.try_recv().is_err(), "cancel must not send");
+        click(&mut app, Kind::Request(intent))?;
+        assert!(receiver.try_recv().is_err());
+        let confirm = control(&mut app, Kind::Confirm)?;
+        app.world_mut().trigger(Activate { entity: confirm });
+        app.world_mut().trigger(Activate { entity: confirm });
+        app.update();
+        app.update();
         let command = feature(&mut receiver)?;
+        assert!(receiver.try_recv().is_err(), "consent can send only once");
         let request =
             wire::decode_house_transfer_intent(&command.payload).map_err(|e| format!("{e:?}"))?;
         assert_eq!(request.house, "oteryn:content.house.test");
@@ -184,6 +208,40 @@ fn house_transfer_actions_are_bound_and_confirmed() -> Result {
         assert!(text(&mut app).contains("Transfer committed"));
     }
     assert!(panel(&app).summary.starts_with("Channel at 121,234,7"));
+    Ok(())
+}
+
+#[test]
+fn house_transfer_confirmation_rejects_changed_target_and_modal() -> Result {
+    let (mut app, mut receiver, _outbox) = fixture()?;
+    open(&mut app);
+    draft(&mut app, "oteryn:content.house.test")?;
+    click(&mut app, Kind::Request(Intent::Enter))?;
+    let confirm = control(&mut app, Kind::Confirm)?;
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(220), Node::default()))
+        .id();
+    let before = panel(&app);
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert!(receiver.try_recv().is_err());
+    assert_eq!(panel(&app), before);
+    app.world_mut().entity_mut(higher).despawn();
+    app.update();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .house_transfer_edit(0, "oteryn:content.house.changed".into());
+    let changed = panel(&app);
+    app.world_mut().trigger(Activate { entity: confirm });
+    app.update();
+    assert!(receiver.try_recv().is_err());
+    assert_eq!(panel(&app), changed);
+    assert!(control(&mut app, Kind::Confirm).is_err());
     Ok(())
 }
 
@@ -276,13 +334,25 @@ fn house_transfer_window_registered() -> Result {
     assert!(panel(&app).open);
     key(&mut app, KeyCode::Escape);
     assert!(!panel(&app).open);
-    {
-        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-        keys.press(KeyCode::ControlLeft);
-        keys.press(KeyCode::AltLeft);
-    }
-    key(&mut app, KeyCode::F8);
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(22)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), true);
+    app.update();
+    assert!(!panel(&app).open);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
+    app.update();
     assert!(panel(&app).open);
+    key(&mut app, KeyCode::Escape);
+    assert!(!panel(&app).open);
     key(&mut app, KeyCode::F8);
     assert!(!panel(&app).open);
     assert!(receiver.try_recv().is_err());
