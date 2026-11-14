@@ -39,6 +39,7 @@ pub(super) use furniture_rotation::toggle as toggle_furniture_rotation;
 mod guild_wars;
 pub(super) mod guildhall_leadership;
 pub(super) mod highscores_character_info;
+pub(super) mod hotkey_equip;
 pub(super) mod house_browsing;
 pub(super) mod house_move_out;
 mod house_podium;
@@ -155,6 +156,7 @@ pub(super) fn install(app: &mut App) {
     highscores_character_info::install(app);
     hireling_management::install(app);
     hireling_services::install(app);
+    hotkey_equip::install(app);
     house_browsing::install(app);
     house_move_out::install(app);
     house_podium::install(app);

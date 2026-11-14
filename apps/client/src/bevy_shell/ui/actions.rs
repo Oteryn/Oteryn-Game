@@ -25,6 +25,7 @@ pub(super) fn activate(
                     | Control::HirelingManagement
                     | Control::HirelingServices
                     | Control::FurnitureRotation
+                    | Control::HotkeyEquip
                     | Control::HouseMoveOut
                     | Control::HousePodium
                     | Control::HouseTransfer
@@ -78,6 +79,7 @@ pub(super) fn activate(
             Control::Cast => game_ui::cast_control::open(&owner),
             Control::ExivaSettings => game_ui::open_exiva_settings(&owner),
             Control::HirelingManagement => game_ui::hireling_management::open(&mut owner),
+            Control::HotkeyEquip => game_ui::hotkey_equip::open(&mut owner),
             Control::HouseMoveOut => game_ui::house_move_out::open(&mut owner),
             Control::GuildhallLeadership => game_ui::guildhall_leadership::toggle(&mut owner),
             Control::CyclopediaTrackers => game_ui::cyclopedia_trackers::open(&owner),

@@ -82,6 +82,7 @@ pub(in crate::bevy_shell) fn project_toolbar(
                     | Control::GuildhallLeadership
                     | Control::HirelingManagement
                     | Control::HirelingServices
+                    | Control::HotkeyEquip
                     | Control::HouseBrowsing
                     | Control::HouseMoveOut
                     | Control::HousePodium
