@@ -42,6 +42,7 @@ pub(super) struct Skins {
 }
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
+    CastChat,
     Cast,
     ExivaSettings,
     HouseMoveOut,
@@ -81,6 +82,7 @@ pub(super) enum Control {
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::CastChat => "shell.cast_chat",
             Self::Cast => "shell.cast_control",
             Self::ExivaSettings => "shell.exiva_settings",
             Self::HouseMoveOut => "shell.house_move_out",
@@ -221,6 +223,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::GuildhallLeadership, "Guildhall (Ctrl+Alt+G)", 190.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
+        (Control::CastChat, "Cast chat (Ctrl+Alt+Shift+H)", 220.),
         (Control::ExivaSettings, "Exiva settings", 110.),
         (
             Control::HirelingServices,
@@ -445,7 +448,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::Cast | Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::CastChat | Control::Cast | Control::ExivaSettings | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::PlayerReport
@@ -462,6 +465,7 @@ fn activate(
             return;
         }
         match control {
+            Control::CastChat => super::game_ui::cast_chat::toggle(&mut owner),
             Control::Cast => super::game_ui::cast_control::open(&owner),
             Control::ExivaSettings => super::game_ui::open_exiva_settings(&owner),
             Control::HouseMoveOut => super::game_ui::house_move_out::open(&mut owner),
@@ -677,7 +681,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::CastChat | Control::Cast | Control::StaffTools | Control::PlayerReport | Control::WorldEvent | Control::ExivaSettings | Control::TeamFinder | Control::Training | Control::HirelingServices | Control::FurnitureRotation | Control::HouseMoveOut | Control::HouseTransfer | Control::HouseBrowsing | Control::GuildhallLeadership | Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing && (staff || !matches!(control, Some(Control::StaffTools))) {
                 Display::Flex
