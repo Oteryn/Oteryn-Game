@@ -92,6 +92,10 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if oteryn_client_ui::weapon_proficiency::open_key(&routed) {
+            super::game_ui::weapon_proficiency::open(self);
+            return;
+        }
         play.view.cursor_spell_input(&routed);
         if let Some(direction) = crate::input::arrow_step(&routed) {
             play.view.arrow(direction);

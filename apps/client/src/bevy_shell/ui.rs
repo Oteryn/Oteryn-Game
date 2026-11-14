@@ -47,6 +47,7 @@ pub(super) enum Control {
     Party,
     Quests,
     Spells,
+    WeaponProficiency,
     Login,
     CancelLogin,
     Fullscreen,
@@ -64,6 +65,7 @@ impl Control {
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
             Self::Spells => "shell.spells",
+            Self::WeaponProficiency => "shell.weapon_proficiency",
             Self::Login => "shell.sign_in",
             Self::CancelLogin => "shell.cancel_sign_in",
             Self::Fullscreen => "graphics.fullscreen",
@@ -169,6 +171,11 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::Party, "Party", 80.),
         (Control::Quests, "Quest Log", 80.),
         (Control::Spells, "Spellbook", 80.),
+        (
+            Control::WeaponProficiency,
+            "Weapon proficiency (Ctrl+Shift+P)",
+            210.,
+        ),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
         commands.entity(toolbar).add_child(button);
@@ -376,6 +383,7 @@ fn activate(
                     | Control::Party
                     | Control::Quests
                     | Control::Spells
+                    | Control::WeaponProficiency
                     | Control::Login
                     | Control::CancelLogin
             )
@@ -388,6 +396,7 @@ fn activate(
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
             Control::Spells => super::game_ui::open_spells(&mut owner),
+            Control::WeaponProficiency => super::game_ui::weapon_proficiency::open(&owner),
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -572,7 +581,13 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(
+                Control::Market
+                    | Control::Party
+                    | Control::Quests
+                    | Control::Spells
+                    | Control::WeaponProficiency
+            )
         ) {
             node.display = if playing {
                 Display::Flex
