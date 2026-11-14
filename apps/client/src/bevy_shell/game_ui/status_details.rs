@@ -11,7 +11,7 @@ use crate::play::feature_0280_party_effects::protocol::bound::{
     StatusDetailsAction as Action, StatusDetailsPanel as Panel, StatusDetailsTab as Tab,
 };
 use bevy::{input_focus::InputFocus, prelude::*, ui::ScrollPosition, ui_widgets::Activate};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Key {
@@ -30,12 +30,11 @@ struct State {
     snapshot: Option<(Key, Panel)>,
     revision: u64,
     widgets: Option<widgets::Widgets>,
-    next_refresh: Option<Instant>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project, refresh).chain());
+        .add_systems(Update, (keyboard, project).chain());
 }
 pub(in crate::bevy_shell) fn toggle(owner: &HostOwner) {
     if owner.phase != Phase::Playing || owner.modal_active() {
@@ -88,7 +87,6 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Option<Res<ButtonInput<KeyCode>>>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     state: Res<State>,
@@ -97,16 +95,7 @@ fn keyboard(
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
         }
-        let chord = keys.as_ref().is_some_and(|keys| {
-            (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-                && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-                && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-                && !keys.pressed(KeyCode::SuperLeft)
-                && !keys.pressed(KeyCode::SuperRight)
-        });
-        if event.key_code == KeyCode::F11 && chord && guard.allows_focus(None) {
-            toggle(&owner);
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(widgets) = &state.widgets
             && guard.allows(widgets.root)
             && let Some((key, panel)) = &state.snapshot
@@ -143,7 +132,6 @@ fn project(
     let Some(panel) = panel.filter(|panel| panel.active().is_some()) else {
         remove(&mut commands, &mut state, &mut focus, &parents);
         state.snapshot = None;
-        state.next_refresh = None;
         return;
     };
     if state
@@ -185,9 +173,6 @@ fn project(
         if let Some(tab) = panel.active() {
             widgets::render(&mut commands, &skins, widgets, key, &panel, tab, scroll);
         }
-        if changed_tab {
-            state.next_refresh = Some(Instant::now() + Duration::from_secs(1));
-        }
         state.snapshot = Some((key, panel));
     }
     if let Some((_, panel)) = &state.snapshot
@@ -220,25 +205,5 @@ fn clear_focus(root: Entity, focus: &mut InputFocus, parents: &Query<&ChildOf>) 
             break;
         }
         current = parents.get(entity).ok().map(ChildOf::parent);
-    }
-}
-fn refresh(owner: NonSend<HostOwner>, mut state: ResMut<State>, guard: ModalGuard) {
-    if state.next_refresh.is_none_or(|next| Instant::now() < next) {
-        return;
-    }
-    state.next_refresh = Some(Instant::now() + Duration::from_secs(1));
-    if let Some(widgets) = &state.widgets
-        && guard.allows(widgets.root)
-        && let Some((key, panel)) = &state.snapshot
-        && let Some(tab) = panel.active()
-    {
-        let _ = perform(
-            &owner,
-            &state,
-            &Control {
-                key: *key,
-                action: Action::Refresh(tab),
-            },
-        );
     }
 }

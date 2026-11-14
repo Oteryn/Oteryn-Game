@@ -275,15 +275,9 @@ fn key(key_code: KeyCode, repeat: bool) -> bevy::input::keyboard::KeyboardInput 
     }
 }
 #[test]
-fn status_details_refresh_and_shortcut_respect_other_modals() -> Result {
+fn status_details_refresh_and_escape_respect_other_modals() -> Result {
     let (mut app, mut commands, outbox) = fixture()?;
-    app.init_resource::<ButtonInput<KeyCode>>();
-    for modifier in [KeyCode::ControlLeft, KeyCode::AltLeft, KeyCode::ShiftLeft] {
-        app.world_mut()
-            .resource_mut::<ButtonInput<KeyCode>>()
-            .press(modifier);
-    }
-    app.world_mut().write_message(key(KeyCode::F11, false));
+    toggle(app.world().non_send::<HostOwner>());
     app.update();
     query(&mut commands, Tab::Party)?;
     publish(&outbox, Tab::Party)?;
@@ -312,7 +306,6 @@ fn status_details_refresh_and_shortcut_respect_other_modals() -> Result {
         .resource_mut::<InputFocus>()
         .set(modal, bevy::input_focus::FocusCause::Navigated);
     app.world_mut().trigger(Activate { entity: refresh });
-    app.world_mut().resource_mut::<State>().next_refresh = Some(Instant::now());
     app.world_mut().write_message(key(KeyCode::F11, false));
     app.update();
     let after = app
@@ -327,7 +320,7 @@ fn status_details_refresh_and_shortcut_respect_other_modals() -> Result {
     assert!(commands.try_recv().is_err());
     app.world_mut().despawn(modal);
     app.update();
-    app.world_mut().resource_mut::<State>().next_refresh = Some(Instant::now());
+    app.world_mut().trigger(Activate { entity: refresh });
     app.update();
     query(&mut commands, Tab::Party)?;
     assert_eq!(
@@ -344,7 +337,7 @@ fn status_details_refresh_and_shortcut_respect_other_modals() -> Result {
     app.world_mut().write_message(key(KeyCode::F11, true));
     app.update();
     assert!(!shown(&mut app).is_empty());
-    app.world_mut().write_message(key(KeyCode::F11, false));
+    app.world_mut().write_message(key(KeyCode::Escape, false));
     app.update();
     assert!(shown(&mut app).is_empty());
     Ok(())
@@ -389,5 +382,61 @@ fn status_details_refresh_preserves_scroll() -> Result {
             .map(|value| value.0),
         Some(position)
     );
+    Ok(())
+}
+
+#[test]
+fn status_details_review_does_not_open_from_focused_text_keys() -> Result {
+    let (mut app, mut commands, _) = fixture()?;
+    app.init_resource::<ButtonInput<KeyCode>>();
+    for modifier in [KeyCode::ControlLeft, KeyCode::AltLeft, KeyCode::ShiftLeft] {
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(modifier);
+    }
+    for name in ["chat input", "preference input"] {
+        let field = app
+            .world_mut()
+            .spawn((
+                Node::default(),
+                Name::new(name),
+                bevy::text::EditableText::new("draft"),
+            ))
+            .id();
+        app.world_mut()
+            .resource_mut::<InputFocus>()
+            .set(field, bevy::input_focus::FocusCause::Navigated);
+        for code in [KeyCode::F11, KeyCode::KeyP] {
+            app.world_mut().write_message(key(code, false));
+            app.update();
+            assert!(commands.try_recv().is_err());
+            assert!(shown(&mut app).is_empty());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn status_details_review_refresh_is_manual() -> Result {
+    let (mut app, mut commands, outbox) = fixture()?;
+    assert!(dispatch(&app, Action::Open(Tab::Party)));
+    query(&mut commands, Tab::Party)?;
+    publish(&outbox, Tab::Party)?;
+    app.update();
+    // Observe the former one-second polling interval without pressing Refresh.
+    let deadline = Instant::now() + std::time::Duration::from_millis(1100);
+    while Instant::now() < deadline {
+        app.update();
+        assert!(
+            commands.try_recv().is_err(),
+            "refresh must require an explicit action"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    app.update();
+    assert!(commands.try_recv().is_err());
+    let refresh = control(&mut app, Action::Refresh(Tab::Party))?;
+    app.world_mut().trigger(Activate { entity: refresh });
+    query(&mut commands, Tab::Party)?;
     Ok(())
 }

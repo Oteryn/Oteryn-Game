@@ -47,12 +47,7 @@ pub(super) fn render(
 ) {
     let root = widgets.root;
     commands.entity(root).despawn_children();
-    source::dialog_caption(
-        commands,
-        root,
-        "Status details — Ctrl+Alt+Shift+F11",
-        skins.font.clone(),
-    );
+    source::dialog_caption(commands, root, "Status details", skins.font.clone());
     let tabs = commands
         .spawn(Node {
             flex_wrap: FlexWrap::Wrap,
