@@ -288,18 +288,20 @@ fn cyclopedia_trackers_window_registered() -> TestResult {
     app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert!(panel(&app)?.open);
-    let event = bevy::input::keyboard::KeyboardInput {
-        key_code: KeyCode::F8,
-        logical_key: bevy::input::keyboard::Key::F8,
-        state: bevy::input::ButtonState::Pressed,
-        text: None,
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(21)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
         repeat: false,
-        window: Entity::PLACEHOLDER,
     };
-    app.world_mut().write_message(event.clone());
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), false);
     app.update();
     assert!(!panel(&app)?.open);
-    app.world_mut().write_message(event);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(std::slice::from_ref(&event), false);
     app.update();
     assert!(panel(&app)?.open);
     Ok(())

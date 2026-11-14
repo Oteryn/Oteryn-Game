@@ -46,7 +46,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, panel: &Panel) -> Wi
     source::dialog_caption(
         commands,
         root,
-        "Cyclopedia trackers (F8)",
+        "Cyclopedia trackers (Ctrl+R)",
         skins.font.clone(),
     );
     label(commands, skins, root, "Creature key to add/remove");

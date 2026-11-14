@@ -60,7 +60,6 @@ struct State {
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(PostUpdate, search.after(bevy::text::EditableTextSystems));
@@ -328,27 +327,10 @@ fn keyboard(
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
     state: Res<State>,
-    focus: Res<InputFocus>,
-    keys: Res<ButtonInput<KeyCode>>,
 ) {
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
-        }
-        if event.key_code == KeyCode::F8
-            && !keys.any_pressed([
-                KeyCode::ControlLeft,
-                KeyCode::ControlRight,
-                KeyCode::AltLeft,
-                KeyCode::AltRight,
-                KeyCode::ShiftLeft,
-                KeyCode::ShiftRight,
-                KeyCode::SuperLeft,
-                KeyCode::SuperRight,
-            ])
-            && guard.allows_focus(focus.get())
-        {
-            open(&owner);
         }
         if event.key_code == KeyCode::Escape
             && let (Some(widgets), Some(binding), Some(play)) =
