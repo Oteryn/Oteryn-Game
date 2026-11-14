@@ -48,6 +48,7 @@ pub(crate) enum StoreAction {
     },
     Select(usize),
     Purchase(StoreCustomization),
+    RetryPurchase,
     History(bool),
     Ledger(bool),
     Filter {
@@ -145,6 +146,16 @@ impl PlayLink {
                     return false;
                 }
                 None
+            }
+            StoreAction::RetryPurchase => {
+                if panel.confirmed_purchase.is_none() || panel.gift.confirmed.is_some() {
+                    return false;
+                }
+                panel.purchase_confirmed = true;
+                let Some(c) = store::purchase(&mut panel) else {
+                    return false;
+                };
+                Some(c)
             }
             StoreAction::Purchase(custom) => {
                 // Uncertain purchases must retain their original bytes; a new review cannot replace them.

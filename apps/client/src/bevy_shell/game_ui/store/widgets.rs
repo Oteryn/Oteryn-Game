@@ -67,6 +67,17 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, state: &State) -> En
     if pending {
         text(commands, skins, panel, "Waiting for the server…");
     }
+    if store.confirmed_purchase.is_some() {
+        button(
+            commands,
+            skins,
+            panel,
+            state,
+            Action::RetryPurchase,
+            "Retry purchase",
+            pending,
+        );
+    }
     if let Some(result) = &store.purchase {
         text(
             commands,
@@ -269,7 +280,7 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, state: &State) -> En
                     state,
                     Action::ReviewPurchase,
                     "Review selected purchase",
-                    pending,
+                    pending || store.confirmed_purchase.is_some(),
                 );
                 button(
                     commands,

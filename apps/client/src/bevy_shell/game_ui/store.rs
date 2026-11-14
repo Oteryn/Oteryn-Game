@@ -22,6 +22,7 @@ enum Action {
     Select(usize),
     ReviewPurchase,
     ConfirmPurchase,
+    RetryPurchase,
     CancelPurchase,
     History,
     Ledger,
@@ -288,6 +289,7 @@ fn perform(owner: &HostOwner, state: &mut State, action: Action) {
             }
             StoreAction::Purchase(custom.clone())
         }
+        Action::RetryPurchase => StoreAction::RetryPurchase,
         Action::Close => StoreAction::Close,
         Action::Select(index) => StoreAction::Select(index),
         Action::History => StoreAction::History(false),

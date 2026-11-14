@@ -463,3 +463,62 @@ fn store_identical_replacement_session_invalidates_existing_consent() -> TestRes
     assert!(app.world().resource::<State>().consent.is_none());
     Ok(())
 }
+
+#[test]
+fn store_unresolved_purchase_retries_with_original_bytes() -> TestResult {
+    for malformed in [false, true] {
+        let (mut app, mut commands, outbox) = fixture()?;
+        load(&mut app, &mut commands, &outbox)?;
+        click(&mut app, Action::ReviewPurchase)?;
+        app.update();
+        click(&mut app, Action::ConfirmPurchase)?;
+        let original = sent(&mut commands)?;
+        outbox.bevy_store_response(&ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: if malformed {
+                CommandStatus::Accepted
+            } else {
+                CommandStatus::Rejected
+            },
+            payload: vec![],
+        });
+        app.update();
+        assert!(!snapshot(&app)?.panel.pending);
+        assert_eq!(
+            snapshot(&app)?.panel.confirmed_purchase,
+            Some(original.payload.clone())
+        );
+        let retry = app
+            .world_mut()
+            .query::<(Entity, &Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(_, text, parent)| (text.0 == "Retry purchase").then_some(parent.parent()))
+            .ok_or("Retry purchase action missing")?;
+        app.world_mut().trigger(Activate { entity: retry });
+        let retried = sent(&mut commands)?;
+        assert_eq!(retried, original);
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let unresolved = link.store_snapshot();
+        reply(
+            &outbox,
+            wire::encode_purchase_result(&wire::StorePurchaseResult {
+                code: wire::StorePurchaseCode::Accepted,
+                order_id: Some(uuid()),
+                operation_id: Some(uuid()),
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        );
+        app.update();
+        assert!(snapshot(&app)?.panel.confirmed_purchase.is_none());
+        app.world_mut().trigger(Activate { entity: retry });
+        assert!(commands.try_recv().is_err());
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(!link.store_dispatch_bound(&unresolved, StoreAction::RetryPurchase));
+        assert!(!link.store_dispatch_bound(&link.store_snapshot(), StoreAction::RetryPurchase));
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
