@@ -14,6 +14,7 @@ mod container_sorting;
 mod coin_market;
 mod depot;
 mod feature_dialogs;
+mod guild_wars;
 pub(super) mod highscores_character_info;
 mod hud;
 mod imbue;
@@ -257,6 +258,7 @@ pub(super) fn install(app: &mut App) {
     coin_market::install(app);
     depot::install(app);
     feature_dialogs::install(app);
+    guild_wars::install(app);
     highscores_character_info::install(app);
     hud::install(app);
     imbue::install(app);
@@ -294,6 +296,10 @@ pub(super) fn open_quests(owner: &mut HostOwner) {
 }
 pub(super) fn open_spells(owner: &mut HostOwner) {
     journal::open_spells(owner);
+}
+
+pub(super) fn open_guild_wars(owner: &HostOwner) {
+    guild_wars::open(owner);
 }
 
 pub(super) fn open_market(owner: &mut HostOwner) {

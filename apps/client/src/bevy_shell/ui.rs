@@ -50,6 +50,7 @@ pub(super) enum Control {
     BrowseField,
     ContainerSorting,
     Options,
+    GuildWars,
     Market,
     Party,
     Quests,
@@ -75,6 +76,7 @@ impl Control {
             Self::BrowseField => "shell.browse_field",
             Self::ContainerSorting => "shell.container_sorting",
             Self::Options => "shell.options",
+            Self::GuildWars => "shell.guild_wars",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
             Self::Quests => "shell.quests",
@@ -190,6 +192,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::ContainerSorting, "Container sorting", 130.),
         (Control::Options, "Options", 80.),
+        (Control::GuildWars, "Guild wars (Ctrl+Alt+W)", 160.),
         (Control::CyclopediaTrackers, "Cyclopedia trackers", 145.),
         (Control::AnimusMastery, "Animus Mastery (Ctrl+A)", 140.),
         (Control::Market, "Market", 80.),
@@ -399,7 +402,7 @@ fn activate(
         if owner.modal_active()
             && matches!(
                 control,
-                Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
+                Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Options
                     | Control::Market
                     | Control::Party
                     | Control::Quests
@@ -420,6 +423,7 @@ fn activate(
             Control::BrowseField => super::game_ui::browse_field::open(&owner),
             Control::ContainerSorting => super::game_ui::open_container_sorting(&mut owner),
             Control::Options => owner.open_graphics(),
+            Control::GuildWars => super::game_ui::open_guild_wars(&owner),
             Control::Market => super::game_ui::open_market(&mut owner),
             Control::Party => super::game_ui::open_party(&mut owner),
             Control::Quests => super::game_ui::open_quests(&mut owner),
@@ -610,7 +614,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(Control::GuildWars | Control::CyclopediaTrackers | Control::CyclopediaMap | Control::BossDifficulty | Control::BossRewardChest | Control::AnimusMastery | Control::BrowseField | Control::ContainerSorting | Control::Market | Control::Party | Control::Quests | Control::Spells)
         ) {
             node.display = if playing {
                 Display::Flex
