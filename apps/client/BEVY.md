@@ -73,6 +73,8 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
+- **Ctrl+W:** Wheel of Destiny allocation and saved point presets. Left click a
+  reachable node to add one point; right click removes one when permitted.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
