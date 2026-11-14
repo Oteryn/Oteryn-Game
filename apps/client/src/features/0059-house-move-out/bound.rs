@@ -43,21 +43,29 @@ impl PlayLink {
         mailbox.properties.house_move_out.open = !mailbox.properties.house_move_out.open;
         true
     }
-    /// Validate, prepare and enqueue under the same lock. Rejection never changes the owner.
     pub(crate) fn house_move_out_dispatch_bound(
         &self,
         expected: &Snapshot,
         action: Action,
     ) -> bool {
+        self.house_move_out_try_dispatch_bound(expected, action)
+            .is_ok()
+    }
+    /// Validate, prepare and enqueue under the same lock. Rejection never changes the owner.
+    pub(crate) fn house_move_out_try_dispatch_bound(
+        &self,
+        expected: &Snapshot,
+        action: Action,
+    ) -> Result<(), String> {
         let mut mailbox = lock(&self.mailbox);
-        if !self.commands.same_channel(&expected.commands)
-            || self.commands.is_closed()
-            || mailbox.world_input_blocked()
-            || mailbox.server_modal.is_active()
-            || mailbox.properties.house_move_out != expected.panel
-            || !expected.panel.open
-        {
-            return false;
+        if !self.commands.same_channel(&expected.commands) || self.commands.is_closed() {
+            return Err(tr!("The session has ended").into());
+        }
+        if mailbox.world_input_blocked() || mailbox.server_modal.is_active() {
+            return Err("Another dialog or activity is blocking this action".into());
+        }
+        if mailbox.properties.house_move_out != expected.panel || !expected.panel.open {
+            return Err("The move-out target or panel has changed".into());
         }
         let Action::Request {
             intent,
@@ -66,29 +74,34 @@ impl PlayLink {
         } = action
         else {
             mailbox.properties.house_move_out.open = false;
-            return true;
+            return Ok(());
         };
-        if !expected.panel.selected
-            || expected.panel.pending
-            || (intent != Intent::Query && !confirmed)
-            || fields
-                .iter()
-                .any(|field| field.len() > 512 || field.contains('\0'))
+        if !expected.panel.selected {
+            return Err(tr!("Unavailable in this session").into());
+        }
+        if expected.panel.pending {
+            return Err(tr!("Waiting for the server").into());
+        }
+        if intent != Intent::Query && !confirmed {
+            return Err("Confirm the move-out action".into());
+        }
+        if fields
+            .iter()
+            .any(|field| field.len() > 512 || field.contains('\0'))
         {
-            return false;
+            return Err(tr!("Enter a valid house key and notice time").into());
         }
         let mut prepared = expected.panel.clone();
         prepared.fields = fields;
-        let Ok(command) = super::super::protocol::command(&prepared, intent) else {
-            return false;
-        };
-        if !oteryn_client_ui::house_move_out::request(&mut prepared, command.kind)
-            || self.commands.send(PlayCommand::Feature(command)).is_err()
-        {
-            return false;
+        let command = super::super::protocol::command(&prepared, intent)?;
+        if !oteryn_client_ui::house_move_out::request(&mut prepared, command.kind) {
+            return Err(prepared.feedback);
         }
+        self.commands
+            .send(PlayCommand::Feature(command))
+            .map_err(|_| tr!("The session has ended").to_string())?;
         mailbox.properties.house_move_out = prepared;
-        true
+        Ok(())
     }
 }
 

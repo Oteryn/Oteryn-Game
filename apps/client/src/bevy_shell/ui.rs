@@ -164,7 +164,7 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         .entity(shell)
         .add_children(&[status, toolbar, shell_feedback]);
     for (control, caption, width) in [
-        (Control::HouseMoveOut, "House move-out (F24)", 170.),
+        (Control::HouseMoveOut, "House move-out (Ctrl+Alt+O)", 210.),
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
         (Control::Options, "Options", 80.),

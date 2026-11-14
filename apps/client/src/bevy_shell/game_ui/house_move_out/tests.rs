@@ -261,6 +261,71 @@ fn house_move_out_window_registered() -> Result {
     app.world_mut().trigger(Activate { entity: toolbar });
     app.update();
     assert!(panel(&app)?.open);
+    click(&mut app, Kind::Close)?;
+    assert!(!panel(&app)?.open);
+    assert!(app.world().resource::<State>().root.is_none());
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(24)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
+    app.update();
+    assert!(panel(&app)?.open);
+    assert!(app.world().resource::<State>().root.is_some());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn house_move_out_refusal_preserves_confirmation_and_reason() -> Result {
+    for ended in [false, true] {
+        let (mut app, commands, _) = fixture()?;
+        let mut commands = Some(commands);
+        let reason = if ended {
+            drop(commands.take());
+            "The session has ended"
+        } else {
+            let field = app
+                .world_mut()
+                .query::<(Entity, &Field)>()
+                .iter(app.world())
+                .find_map(|(entity, field)| (field.0 == 1).then_some(entity))
+                .ok_or("due field")?;
+            app.world_mut()
+                .entity_mut(field)
+                .insert(EditableText::new("invalid"));
+            "Enter a positive Unix time in milliseconds"
+        };
+        click(&mut app, Kind::Request(Intent::Notice))?;
+        let consent = app.world().resource::<State>().confirmation.clone();
+        assert!(consent.is_some());
+        let before = panel(&app)?;
+        click(&mut app, Kind::Confirm)?;
+        assert_eq!(app.world().resource::<State>().confirmation, consent);
+        assert_eq!(app.world().resource::<State>().feedback, reason);
+        assert_eq!(panel(&app)?, before);
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == reason)
+        );
+        if let Some(commands) = &mut commands {
+            assert!(commands.try_recv().is_err());
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn house_move_out_owner_chord_is_routed() -> Result {
+    let (mut app, mut commands, _) = fixture()?;
+    click(&mut app, Kind::Close)?;
     app.world_mut()
         .write_message(bevy::input::keyboard::KeyboardInput {
             key_code: KeyCode::F24,
@@ -272,19 +337,21 @@ fn house_move_out_window_registered() -> Result {
         });
     app.update();
     assert!(!panel(&app)?.open);
-    assert!(app.world().resource::<State>().root.is_none());
+    let event = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(24)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)
+            .with(oteryn_input_actions::Modifier::Alt),
+        repeat: false,
+    };
+    assert!(oteryn_client_ui::house_move_out::open_key(
+        std::slice::from_ref(&event)
+    ));
     app.world_mut()
-        .write_message(bevy::input::keyboard::KeyboardInput {
-            key_code: KeyCode::F24,
-            logical_key: bevy::input::keyboard::Key::F24,
-            state: bevy::input::ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        });
+        .non_send_mut::<HostOwner>()
+        .route_input(&[event], false);
     app.update();
     assert!(panel(&app)?.open);
-    assert!(app.world().resource::<State>().root.is_some());
     assert!(commands.try_recv().is_err());
     Ok(())
 }

@@ -75,6 +75,7 @@ impl HostOwner {
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
             || play.link.discovery_input(&routed)
+            || play.link.house_move_out_input(&routed)
             || (routed.iter().any(|event| {
                 matches!(
                     event,

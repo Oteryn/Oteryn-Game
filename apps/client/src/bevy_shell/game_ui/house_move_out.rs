@@ -153,7 +153,7 @@ fn activate(
                 values[field.0] = text.value().to_string();
             }
             if intent == Intent::Query {
-                if !play.link.house_move_out_dispatch_bound(
+                if let Err(reason) = play.link.house_move_out_try_dispatch_bound(
                     snapshot,
                     Action::Request {
                         intent,
@@ -161,7 +161,7 @@ fn activate(
                         confirmed: false,
                     },
                 ) {
-                    state.feedback = "Enter a valid house key and notice time".into();
+                    state.feedback = reason;
                     state.dirty = true;
                 }
             } else {
@@ -173,7 +173,7 @@ fn activate(
             let Some((intent, values)) = &state.confirmation else {
                 return;
             };
-            let sent = play.link.house_move_out_dispatch_bound(
+            let result = play.link.house_move_out_try_dispatch_bound(
                 snapshot,
                 Action::Request {
                     intent: *intent,
@@ -181,9 +181,9 @@ fn activate(
                     confirmed: true,
                 },
             );
-            state.confirmation = None;
-            if !sent {
-                state.feedback = "Enter a valid house key and notice time".into();
+            match result {
+                Ok(()) => state.confirmation = None,
+                Err(reason) => state.feedback = reason,
             }
             state.dirty = true;
         }
@@ -192,17 +192,12 @@ fn activate(
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
     for event in events.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
-        }
-        if event.key_code == KeyCode::F24
-            && (state.root.is_some_and(|root| guard.allows(root)) || guard.allows_focus(None))
-        {
-            open(&mut owner);
         }
         if event.key_code == KeyCode::Escape
             && state.root.is_some_and(|root| guard.allows(root))
