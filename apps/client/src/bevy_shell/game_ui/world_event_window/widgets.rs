@@ -54,7 +54,6 @@ pub(super) fn build(commands: &mut Commands, skins: &Skins, key: Key, panel: &Pa
                 oteryn_client_ui::world_event::panel_text(panel),
                 source::font(skins.font.clone(), false),
             ),
-            TextLayout::default(),
         ))
         .id();
     commands.entity(body).add_child(text);
