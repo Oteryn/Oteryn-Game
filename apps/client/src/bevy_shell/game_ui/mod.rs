@@ -231,9 +231,9 @@ pub(super) fn install(app: &mut App) {
     modal::install(app);
     options::install(app);
     journal::install(app);
-    bestiary::install(app);
     chat::install(app);
     actions::install(app);
+    bestiary::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
