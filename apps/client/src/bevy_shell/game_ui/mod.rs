@@ -1,5 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+mod boss_reward_chest;
+pub(super) use boss_reward_chest::open as open_boss_reward_chest;
 mod chat;
 mod feature_dialogs;
 mod hud;
@@ -232,6 +234,7 @@ pub(super) fn install(app: &mut App) {
     journal::install(app);
     chat::install(app);
     actions::install(app);
+    boss_reward_chest::install(app);
     feature_dialogs::install(app);
     hud::install(app);
     inventory::install(app);
