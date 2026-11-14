@@ -416,8 +416,10 @@ evidence "platform_seed=account=1 admission_trust=published_public_key_only oaut
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.100.0 build --locked -p oteryn-game-server -p oteryn-client --bins
-  TARGET="$GAME_SOURCE/target/debug"
+  # Release: a debug node spends ~800 ms per connection poll on the full World Bundle, so
+  # durability passes miss their 2 s deadline and the live session is closed.
+  cargo +1.100.0 build --locked --release -p oteryn-game-server -p oteryn-client --bins
+  TARGET="$GAME_SOURCE/target/release"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
 else
@@ -425,8 +427,8 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
-  TARGET="$GAME_SOURCE/target/login-local-container/debug"
+    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked --release -p oteryn-game-server --bins
+  TARGET="$GAME_SOURCE/target/login-local-container/release"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/node"
