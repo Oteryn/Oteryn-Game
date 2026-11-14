@@ -19,6 +19,7 @@ mod projection;
 pub(super) use projection::project;
 mod quick_loot;
 mod trade;
+mod uni15_window;
 pub(super) mod viewport;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
@@ -242,6 +243,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     quick_loot::install(app);
     trade::install(app);
+    uni15_window::install(app);
     app.add_systems(
         Update,
         (
