@@ -20,7 +20,6 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         .init_asset::<Font>()
         .init_asset::<Image>()
         .init_resource::<InputFocus>()
-        .init_resource::<ButtonInput<KeyCode>>()
         .insert_non_send(owner)
         .add_systems(Startup, crate::bevy_shell::ui::setup);
     super::super::modal::install(&mut app);
@@ -53,12 +52,6 @@ fn cyclopedia_map_window_registered() -> TestResult {
     app.world_mut().trigger(Activate { entity: close });
     app.update();
     assert!(app.world().resource::<State>().root.is_none());
-    {
-        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
-        keys.press(KeyCode::ControlLeft);
-        keys.press(KeyCode::AltLeft);
-        keys.press(KeyCode::ShiftLeft);
-    }
     let key = |key_code, logical_key| bevy::input::keyboard::KeyboardInput {
         key_code,
         logical_key,
@@ -67,17 +60,11 @@ fn cyclopedia_map_window_registered() -> TestResult {
         repeat: false,
         window: Entity::PLACEHOLDER,
     };
-    app.world_mut()
-        .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
-    app.update();
+    owner_shortcut(&mut app, false)?;
     assert!(app.world().resource::<State>().root.is_some());
-    app.world_mut()
-        .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
-    app.update();
+    owner_shortcut(&mut app, false)?;
     assert!(app.world().resource::<State>().root.is_none());
-    app.world_mut()
-        .write_message(key(KeyCode::F8, bevy::input::keyboard::Key::F8));
-    app.update();
+    owner_shortcut(&mut app, false)?;
     assert!(app.world().resource::<State>().root.is_some());
     let higher = app
         .world_mut()
@@ -240,6 +227,114 @@ fn cyclopedia_map_actions_are_bound_and_confirmed() -> TestResult {
             .snapshot
             .as_ref()
             .is_some_and(|(_, s)| s.panel.pending && s.panel.map.is_none())
+    );
+    Ok(())
+}
+
+fn owner_shortcut(app: &mut App, blocked: bool) -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(24)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+        repeat: false,
+    };
+    let events = [event];
+    assert!(oteryn_client_ui::cyclopedia_map::open_key(&events));
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&events, blocked);
+    app.update();
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_map_owner_shortcut_respects_input_gate() -> TestResult {
+    let (mut app, mut commands, _) = fixture()?;
+    owner_shortcut(&mut app, true)?;
+    assert!(app.world().resource::<State>().root.is_none());
+    owner_shortcut(&mut app, false)?;
+    assert!(app.world().resource::<State>().root.is_some());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_map_invalid_marker_kinds_are_skipped() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_map::atlas::{Atlas, HEIGHT, Marker, Query, WIDTH};
+    let (mut app, _commands, _) = fixture()?;
+    let mut snapshot = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play absent")?
+        .link
+        .cyclopedia_map_snapshot();
+    snapshot.panel.atlas_layers = 0x81;
+    snapshot.panel.atlas = Some(Atlas {
+        query: Query {
+            floor: -7,
+            x: 100,
+            y: 100,
+            zoom: 0,
+            page: 0,
+        },
+        digest: [0; 32],
+        floors: 1 << 7,
+        progress: None,
+        cells: vec![0; WIDTH * HEIGHT],
+        areas: Vec::new(),
+        marker_total: 6,
+        markers: [
+            (0, "invalid zero"),
+            (9, "invalid nine"),
+            (255, "invalid max"),
+            (1, "visible NPC"),
+            (2, "hidden passage"),
+            (8, "visible high bit"),
+        ]
+        .into_iter()
+        .map(|(kind, label)| Marker {
+            kind,
+            x: 101,
+            y: 101,
+            label: label.into(),
+        })
+        .collect(),
+    });
+    app.world_mut().resource_scope(|world, skins: Mut<Skins>| {
+        widgets::build(&mut world.commands(), &skins, 0, &snapshot, None, None);
+    });
+    app.world_mut().flush();
+    for label in [
+        "invalid zero",
+        "invalid nine",
+        "invalid max",
+        "hidden passage",
+    ] {
+        assert!(
+            !app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains(label))
+        );
+    }
+    for label in ["visible NPC", "visible high bit"] {
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains(label))
+        );
+    }
+    assert_eq!(
+        app.world_mut()
+            .query::<&Node>()
+            .iter(app.world())
+            .filter(|node| node.width == px(8.) && node.height == px(8.))
+            .count(),
+        2
     );
     Ok(())
 }

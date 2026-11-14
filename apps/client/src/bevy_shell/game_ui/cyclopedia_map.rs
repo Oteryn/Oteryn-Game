@@ -148,23 +148,15 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
     guard: ModalGuard,
-    mut owner: NonSendMut<HostOwner>,
+    owner: NonSend<HostOwner>,
     state: Res<State>,
 ) {
     for event in events
         .read()
         .filter(|e| e.state == bevy::input::ButtonState::Pressed && !e.repeat)
     {
-        if event.key_code == KeyCode::F8
-            && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-            && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-            && (keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight))
-            && guard.allows_focus(state.root)
-        {
-            open(&mut owner);
-        } else if event.key_code == KeyCode::Escape
+        if event.key_code == KeyCode::Escape
             && let Some(root) = state.root
             && guard.allows(root)
             && let Some((generation, snapshot)) = &state.snapshot

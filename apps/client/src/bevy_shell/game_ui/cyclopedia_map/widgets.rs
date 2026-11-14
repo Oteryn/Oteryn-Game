@@ -63,12 +63,7 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(body);
-    source::dialog_caption(
-        commands,
-        body,
-        "Cyclopedia — Ctrl+Alt+Shift+F8",
-        skins.font.clone(),
-    );
+    source::dialog_caption(commands, body, "Cyclopedia", skins.font.clone());
     let close = row(commands, body);
     button(
         commands,
@@ -250,7 +245,7 @@ pub(super) fn build(
         }
         let step = 1u32 << a.query.zoom;
         for marker in &a.markers {
-            if snapshot.panel.atlas_layers & (1 << (marker.kind - 1)) == 0 {
+            if !marker_visible(snapshot.panel.atlas_layers, marker.kind) {
                 continue;
             }
             let col = u32::from(marker.x)
@@ -299,7 +294,7 @@ pub(super) fn build(
             );
         }
         for marker in &a.markers {
-            if snapshot.panel.atlas_layers & (1 << (marker.kind - 1)) != 0 {
+            if marker_visible(snapshot.panel.atlas_layers, marker.kind) {
                 label(
                     commands,
                     skins,
@@ -393,6 +388,11 @@ pub(super) fn build(
         );
     }
     root
+}
+fn marker_visible(layers: u8, kind: u8) -> bool {
+    kind.checked_sub(1)
+        .and_then(|bit| 1u8.checked_shl(u32::from(bit)))
+        .is_some_and(|mask| layers & mask != 0)
 }
 fn rgb(value: u32) -> Color {
     Color::srgb(
