@@ -540,6 +540,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Ok(awards) => awards,
                         Err(error) => return Ok(Err(error)),
                     };
+                    // A copied death callback settles XP before the ordinary reward
+                    // drain. Record its same captured room victory here so the
+                    // Quest gate observes it in this pre-taint XP transaction.
+                    if source.is_some()
+                        && let Some(captured) = &entry.activity_death
+                        && !crate::durability::activity_handoff::boss_room::record_defeat_in_transaction(
+                            &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
+                            &captured.creature, super::kill_reward::personal_death_id(entry.facts.death),
+                            entry.boss_reward.as_ref().map_or(Ok(captured.died_at_unix_ms), |reward|
+                                i64::try_from(reward.died_at_unix_ms).map_err(|_| DurabilityError::InvalidStoredState))?,
+                        ).await? {
+                            return Err(DurabilityError::Unavailable);
+                        }
                     if endgame_kill && crate::durability::activity_handoff::boss_room::native_defeat_earned_in_transaction(
                         &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
                         &entry.creature, super::kill_reward::personal_death_id(entry.facts.death),

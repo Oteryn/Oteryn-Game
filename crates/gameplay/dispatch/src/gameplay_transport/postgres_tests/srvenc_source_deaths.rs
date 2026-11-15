@@ -103,6 +103,9 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         pin,
     )
     .map_err(debug)?;
+    // This fixture has mission coordinates, not a qualified native callback
+    // room. Match generic activity runtimes: quest credit still uses real damage.
+    runtime.use_classic_creature_deaths().map_err(debug)?;
     let reservation = runtime
         .reserve_fresh_session(deps.admitted.game_session_id)
         .map_err(debug)?;

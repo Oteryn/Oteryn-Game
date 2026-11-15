@@ -112,7 +112,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(head)) = self.runtime.lock().await.next_source_creature_death() else {
             return false;
         };
-        eprintln!("QMDIAG drive_head start room={}", self.rooms().gate_monster_ai().is_some()); // QMDIAG
+        eprintln!(
+            "QMDIAG drive_head start room={}",
+            self.rooms().gate_monster_ai().is_some()
+        ); // QMDIAG
         for _ in 0..TURNS {
             let Some(permit) = self.spell_lane_permit().await else {
                 eprintln!("QMDIAG no permit"); // QMDIAG
@@ -625,6 +628,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             (None, Vec::new(), true)
         };
+        // A split source callback retains this pass's reservation, but its
+        // periodic admission is already consumed. Advance the cadence before
+        // continuing it so completion cannot start endless empty fresh passes.
+        if periodic_pass && !ran_profile {
+            states.next_monster_ai_pass_us = due;
+            states.monster_ai_sequence = sequence;
+            if swing_pass {
+                states.monster_melee.next_swing_pass_us = due;
+            }
+        }
         if states
             .primal_callbacks
             .normal_pending()
@@ -654,6 +667,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         if !ran_profile || (retained_work && thought_actors.is_empty()) {
+            if ran_profile {
+                states.next_monster_ai_pass_us = next_monster_ai_pass_us(
+                    now.get(),
+                    states.monster_melee.next_swing_pass_us,
+                    next_think
+                        .into_iter()
+                        .chain(states.monster_melee.creature_ai.earliest_due())
+                        .min(),
+                );
+            }
             let source_action = states.source_death_action_ready;
             drop(attack);
             drop(states);
@@ -682,7 +705,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if swing_pass {
             states.monster_melee.next_swing_pass_us = due;
         }
-        let next_pass = if periodic_pass {
+        let next_pass = if periodic_pass || (retained_work && ran_profile) {
             next_monster_ai_pass_us(
                 now.get(),
                 states.monster_melee.next_swing_pass_us,
@@ -1130,7 +1153,11 @@ fn next_monster_ai_pass_us(now_us: u64, swing_due_us: u64, earliest_think_us: Op
     };
     let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
     let next_window = (now_us / window).saturating_add(1).saturating_mul(window);
-    earliest.max(next_window).min(swing_due_us)
+    if earliest <= now_us {
+        next_window.min(swing_due_us)
+    } else {
+        earliest.min(swing_due_us)
+    }
 }
 
 /// SPAWN-CEILINGS-1 (Codex 4242381774): the swings of one pass over the `len` monsters whose
@@ -1472,6 +1499,11 @@ mod tests {
         assert_eq!(
             next_monster_ai_pass_us(1_234_567, 2_234_567, Some(1_600_000)),
             1_600_000
+        );
+        assert_eq!(
+            next_monster_ai_pass_us(1_234_567, 2_234_567, Some(1_234_568)),
+            1_234_568,
+            "a future think keeps its own deadline even within this owner window"
         );
         // N thinks due at once run 1,024 per owner window, oldest due first; each think is due
         // again one interval later. Returns the passes until every first think ran, the last

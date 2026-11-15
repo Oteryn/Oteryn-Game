@@ -747,7 +747,7 @@ pub async fn native_defeat_earned_in_transaction(
 
 /// Compatibility for the existing nonreward death owner: a deterministic late
 /// room kill is handled, while uncertain/conflicting authority remains refused.
-pub(crate) async fn record_defeat_in_transaction(
+pub async fn record_defeat_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,

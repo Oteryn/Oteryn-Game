@@ -375,7 +375,15 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                             );
                         }
                         // pg_stat_activity truncates at configured1kB. Match the
-                        // exact visible TILE_ROWS prefix, not its FROM at byte1959.
+                        // exact visible TILE_ROWS prefix, including retained origin data.
+                        let tile_rows_pattern = concat!(
+                            "SELECT ARRAY[r.world_id::text,r.channel_id::text,r.creature_actor_generation::text,",
+                            "r.creature_definition_key,r.creature_definition_revision,r.spell_production_key,",
+                            "r.spell_revision,r.character_id::text,r.game_session_id::text,r.command_id::text,",
+                            "r.ownership_generation::text,r.caster_lease_generation::text] AS origin_text,",
+                            "i.item_instance_id::text,i.definition_family,i.definition_production_key,",
+                            "i.definition_revision_ref,i.quantity,i.state_revision::text,%",
+                        );
                         let (drained, observed) = tokio::join!(
                             Box::pin(super::srx3_primal::drain_actual_native_through(
                                 &view, normal_now, true,
@@ -387,8 +395,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                                 let observation: TestResult = async {
                                     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(8);
                                     loop {
-                                        let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE 'SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,%')")
-                                            .bind(blocker_pid).fetch_one(&h.pool).await?;
+                                        let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE $2)")
+                                            .bind(blocker_pid).bind(tile_rows_pattern).fetch_one(&h.pool).await?;
                                         if blocked {
                                             eprintln!("SRX3_PRIMAL_MAP_SQL_BLOCK_OBSERVED blocker_pid={blocker_pid} epoch_before={epoch_before} epoch_now={}",crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test());
                                             if crate::gameplay_transport::primal_callbacks::normal_map_read_epoch_for_test() <= epoch_before {
@@ -408,8 +416,8 @@ fn run_actual_primal_core_cutoff(pod_expiry_case: bool, lock_normal_read: bool) 
                                         return Err("actual Primal map SQL wait must release the canonical runtime owner BEFORE external SQL unblock".into());
                                     }
                                     drop(acquired);
-                                    let still_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE 'SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,%')")
-                                        .bind(blocker_pid).fetch_one(&h.pool).await?;
+                                    let still_blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)) AND wait_event_type='Lock' AND query LIKE $2)")
+                                        .bind(blocker_pid).bind(tile_rows_pattern).fetch_one(&h.pool).await?;
                                     assert!(still_blocked, "runtime acquisition must precede SQL unblock, not follow source read timeout");
                                     Ok(())
                                 }.await;
