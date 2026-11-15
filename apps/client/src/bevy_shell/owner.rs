@@ -210,6 +210,7 @@ impl HostOwner {
     pub fn modal_active(&self) -> bool {
         self.draft.is_some()
             || self.login.visible
+            || self.login.bulletin.visible
             || self.selection.pending().is_some()
             || self.services.pending().is_some()
             || self.dialogs.active()
@@ -330,6 +331,11 @@ impl HostOwner {
         if result.is_ok() {
             self.login.visible = false;
         }
+        if let Some(document) = &bulletin
+            && let Err(error) = self.login.bulletin.receive(document)
+        {
+            self.login.form.feedback(error);
+        }
         match result {
             Ok((view, link)) => {
                 if self.install_play(view, link)
@@ -380,6 +386,7 @@ impl HostOwner {
         self.selection.clear_known_worlds();
         self.dialogs.clear();
         self.login.visible = false;
+        self.login.bulletin.visible = false;
         drop(self.play.take());
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();

@@ -49,6 +49,10 @@ impl HostOwner {
             }
             return;
         }
+        if crate::bulletin::open_key(&routed) {
+            self.login.bulletin.visible = true;
+            return;
+        }
         let generation = self.generation();
         let Some(play) = &mut self.play else {
             return;
