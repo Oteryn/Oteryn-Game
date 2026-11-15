@@ -109,7 +109,10 @@ const FACTS: &str = "SELECT e.projection_epoch, \
      floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms \
      FROM game_public_projection_epoch e WHERE e.epoch_scope = 1";
 
-const HIGHSCORES_HEAD: &str = "\
+// Revision, filters and snapshot contents share one statement snapshot. Read one
+// row beyond the six lists' bound so an oversized snapshot refuses.
+const HIGHSCORES: &str = "\
+WITH head AS (\
 SELECT o.world_id::text AS world_id, o.category, e.projection_epoch, h.projection_revision, \
        h.revised_at / 1000 AS observed_at \
   FROM game_public_highscore_outbox o \
@@ -118,20 +121,16 @@ SELECT o.world_id::text AS world_id, o.category, e.projection_epoch, h.projectio
  WHERE e.epoch_scope = 1 \
    AND NOT ((o.world_id::text || ':' || o.category::text) = ANY($1::text[])) \
    AND NOT EXISTS(SELECT 1 FROM game_account_closure_members qm JOIN game_account_closures qc ON qc.account_id=qm.account_id AND qc.close_operation_id=qm.close_operation_id JOIN game_character_roots qr ON qr.character_id=qm.character_id WHERE qr.world_id=o.world_id AND qm.step=2 AND qc.state='CANCELLING') \
- ORDER BY o.created_at, o.world_id, o.category LIMIT 1";
-
-// The HIGHSCORES-0 tables (RANK-1, HS-1). Read only once `SOURCE` holds, in
-// the same transaction. One row more than all six lists' bound is read, so an
-// oversized snapshot refuses instead of being truncated.
-const HIGHSCORES_ROWS: &str = "\
-SELECT s.computed_at_ms, r.filter::int AS filter, r.rank::text AS rank, \
+ ORDER BY o.created_at, o.world_id, o.category LIMIT 1) \
+SELECT head.*, COALESCE(s.computed_at_ms, head.observed_at * 1000) AS computed_at_ms, \
+       r.filter::int AS filter, r.rank::text AS rank, \
        r.character_id::text AS character_id, r.name, r.vocation::text AS vocation, \
        r.level::text AS level, r.value_primary::text AS value \
-  FROM game_world_highscore_heads h \
-  JOIN game_world_highscore_snapshots s ON s.snapshot_id = h.current_snapshot_id \
+  FROM head \
+  LEFT JOIN game_world_highscore_heads h ON h.world_id = head.world_id::uuid AND h.category = head.category \
+  LEFT JOIN game_world_highscore_snapshots s ON s.snapshot_id = h.current_snapshot_id \
   LEFT JOIN game_world_highscore_rows r ON r.snapshot_id = s.snapshot_id AND NOT game_account_closure_detached(r.character_id) \
- WHERE h.world_id = $1::uuid AND h.category = $2 \
- ORDER BY r.filter, r.position LIMIT $3";
+ ORDER BY r.filter, r.position LIMIT $2";
 
 const CLEAR_HIGHSCORES: &str = "DELETE FROM game_public_highscore_outbox \
      WHERE world_id = $1::uuid AND category = $2 \
@@ -375,28 +374,25 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let source: bool = sqlx::query_scalar(SOURCE).fetch_one(&mut *tx).await?;
-                    let head = if source {
-                        sqlx::query(HIGHSCORES_HEAD)
+                    let rows = if source {
+                        sqlx::query(HIGHSCORES)
                             .bind(held)
-                            .fetch_optional(&mut *tx)
+                            .bind(limit)
+                            .fetch_all(&mut *tx)
                             .await?
                     } else {
-                        None
+                        Vec::new()
                     };
-                    let Some(head) = head else {
+                    let Some(head) = rows.first() else {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(None));
                     };
+                    #[cfg(test)]
+                    tests::pause_after_highscore_read().await?;
                     let world_id: String = head.try_get("world_id")?;
                     let category: i16 = head.try_get("category")?;
-                    let rows = sqlx::query(HIGHSCORES_ROWS)
-                        .bind(&world_id)
-                        .bind(category)
-                        .bind(limit)
-                        .fetch_all(&mut *tx)
-                        .await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    highscores_batch(world_id, category, &head, &rows)
+                    highscores_batch(world_id, category, head, &rows)
                 })
             })
             .await?
@@ -881,3 +877,7 @@ impl PublicStore for PublicProjectionsStore<'_, '_, '_, '_> {
             .map_err(|_| ())
     }
 }
+
+#[cfg(test)]
+#[path = "public_projections_tests.rs"]
+mod tests;
