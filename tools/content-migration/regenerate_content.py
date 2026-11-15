@@ -703,6 +703,12 @@ def main() -> int:
         run(["python3", "tools/contracts/refresh_quest_custody_" + census + ".py"])
     run(["python3", "tools/content-migration/refresh_equipment_profile_pin.py"])
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
+         "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_rollout_authoring.py"])
+    run(["python3", "tools/content-schema/quest-authoring/quest_binding_authoring.py"])
+    run(["python3", "tools/content-schema/quest-authoring/collect_claim_candidates.py"])
+    run(["python3", "tools/content-schema/quest-authoring/use_trigger_candidates.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
