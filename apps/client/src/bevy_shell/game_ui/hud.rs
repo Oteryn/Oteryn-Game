@@ -210,9 +210,7 @@ fn activate(
             let _ = play.link.battle_select_list(index);
         }
         Command::Analyser(tool) => {
-            if play.link.analyser_panel().selected {
-                let _ = play.link.analyser_select(tool.key());
-            }
+            super::analyser::open(&owner, tool);
         }
     }
 }
