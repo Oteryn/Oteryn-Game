@@ -8,6 +8,19 @@ use crate::{
 use oteryn_client_ui::inspection::{Request, catalogue, request};
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn item_catalogue_set_open(&self, open: bool) {
+        lock(&self.mailbox).discovery.inspection.catalogue_open = open;
+    }
+    pub fn item_catalogue_select(&self, definition: u32) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        if panel.selected && !panel.pending && panel.catalogue.contains_key(&definition) {
+            panel.catalogue_definition = definition.to_string();
+            panel.catalogue_drop_next = None;
+            panel.catalogue_market = None;
+        }
+    }
+
     pub fn item_catalogue_filter(&self, search: &str, category: &str) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.discovery.inspection;

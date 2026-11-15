@@ -92,6 +92,7 @@ impl HostOwner {
             || play.link.appearance_input(&routed)
             || play.link.charm_progression_input(&routed)
             || play.link.cyclopedia_character_input(&routed)
+            || play.link.item_catalogue_input(&routed)
             || play.link.daily_reward_input(&routed)
             || play.link.depot_input(&routed)
             || play.link.quest_input(&routed)

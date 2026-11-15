@@ -236,6 +236,15 @@ no mount IDs or ownership are inferred. The catalogue arrives in appearance
 snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
 
+Cyclopedia Items: open **Item encyclopedia** from Character Cyclopedia or press
+**Ctrl+Alt+Shift+I**. Browse/search public item templates, cycle the server's
+categories, select an item, request details, and view live market offers plus
+30-day completed-trade prices. Next page restarts the search if its text changed.
+NPC/city price directories need a contract for an item-scoped, paged response
+containing NPC name, city, buy/sell side, price and currency; neither the public
+item catalogue nor local NPC trade windows provide that directory. Loot-value
+editing and Drop Tracker integration belong to a separate batch.
+
 Bestiary is available from the **Bestiary** toolbar button (and the retained
 Bestiary shortcut). The dedicated window loads capability-67 progress followed
 by its catalogue, with category navigation, first/next pages, creature selection,
