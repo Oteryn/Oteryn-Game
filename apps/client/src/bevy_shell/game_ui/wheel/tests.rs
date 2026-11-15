@@ -383,3 +383,5 @@ fn wheel_preset_shortcut_opens_closed_panel() -> TestResult {
     assert_eq!(request.action, 0);
     Ok(())
 }
+#[path = "presets_tests.rs"]
+mod presets_tests;

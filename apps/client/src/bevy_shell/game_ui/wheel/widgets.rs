@@ -64,6 +64,7 @@ pub(super) fn render(
     widgets: &mut Widgets,
     key: Key,
     panel: &WheelPanel,
+    fields: &[String; 2],
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -277,6 +278,7 @@ pub(super) fn render(
             format!("Selected: {}", panel.preset_fields[0]),
         );
     }
+    presets::render(commands, skins, presets, key, panel, fields, ready);
     let buttons = row(commands, content);
     for (kind, caption, enabled) in [
         (
@@ -322,7 +324,12 @@ fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn label(commands: &mut Commands, skins: &Skins, parent: Entity, value: impl Into<String>) {
+pub(super) fn label(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    value: impl Into<String>,
+) {
     let entity = commands
         .spawn((
             source::text(value, source::font(skins.font.clone(), false)),
@@ -334,22 +341,34 @@ fn label(commands: &mut Commands, skins: &Skins, parent: Entity, value: impl Int
         .id();
     commands.entity(parent).add_child(entity);
 }
-fn button(
+pub(super) fn button(
     commands: &mut Commands,
     skins: &Skins,
     parent: Entity,
     control: Control,
     caption: &str,
     enabled: bool,
-) {
-    let mut entity = commands.spawn((source::button(skins.buttons.clone(), 100.), control));
+) -> Entity {
+    let entity = action_button(commands, skins, parent, caption, enabled);
+    commands.entity(entity).insert(control).observe(activate);
+    entity
+}
+pub(super) fn action_button(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    caption: &str,
+    enabled: bool,
+) -> Entity {
+    let mut entity = commands.spawn(source::button(skins.buttons.clone(), 100.));
     if !enabled {
         entity.insert(InteractionDisabled);
     }
-    let entity = entity.observe(activate).id();
+    let entity = entity.id();
     let text = commands
         .spawn(source::button_caption(caption, skins.font.clone()))
         .id();
     commands.entity(entity).add_child(text);
     commands.entity(parent).add_child(entity);
+    entity
 }

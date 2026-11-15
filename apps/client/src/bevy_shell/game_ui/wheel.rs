@@ -1,4 +1,5 @@
 //! Wheel of Destiny allocation and point presets over the retained model and intents.
+mod presets;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -54,8 +55,12 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
-    parents: Query<&ChildOf>,
+    queries: (
+        Query<&ChildOf>,
+        Query<(&presets::Field, &bevy::text::EditableText)>,
+    ),
 ) {
+    let (parents, fields) = queries;
     let panel = owner.play.as_ref().map(|play| {
         play.link.wheel_poll_preview();
         play.link.wheel_panel()
@@ -96,6 +101,14 @@ fn project(
         }
         commands.entity(widgets.overlay).despawn();
     }
+    let mut values = panel.preset_fields.clone();
+    if state.snapshot.as_ref().is_some_and(|(old_key, old)| {
+        old_key.generation == key.generation && old.preset_fields == panel.preset_fields
+    }) {
+        for (field, text) in &fields {
+            values[field.0] = text.value().to_string();
+        }
+    }
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skins));
@@ -105,7 +118,7 @@ fn project(
     {
         focus.set(widgets.panel, FocusCause::Navigated);
     }
-    widgets::render(&mut commands, &skins, widgets, key, &panel);
+    widgets::render(&mut commands, &skins, widgets, key, &panel, &values);
     state.snapshot = Some((key, panel));
 }
 fn perform(owner: &HostOwner, state: &State, control: &Control, remove: Option<bool>) {
