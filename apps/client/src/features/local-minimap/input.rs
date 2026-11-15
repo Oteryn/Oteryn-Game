@@ -92,3 +92,40 @@ impl PlayView {
         read(&map.cells, &map.markers)
     }
 }
+
+impl PlayView {
+    /// Local camera only; navigation never queues a movement command.
+    pub fn navigate_minimap(
+        &mut self,
+        action: super::view::MinimapNavigation,
+    ) -> Result<(), oteryn_renderer::BatchError> {
+        use super::view::MinimapNavigation as Nav;
+        use oteryn_client_ui::minimap;
+        {
+            let mut map = super::state::lock(&self.minimap);
+            match action {
+                Nav::Pan(x, y) => map.pan(x, y),
+                Nav::Centre => {
+                    map.tracking = true;
+                    map.follow(self.own.x, self.own.y, self.floor);
+                }
+                Nav::ZoomIn => map.zoom = minimap::zoom_in(map.zoom),
+                Nav::ZoomOut => map.zoom = minimap::zoom_out(map.zoom),
+                Nav::FloorUp => {
+                    map.tracking = false;
+                    map.floor = minimap::floor_up(map.floor);
+                }
+                Nav::FloorDown => {
+                    map.tracking = false;
+                    map.floor = minimap::floor_down(map.floor);
+                }
+            }
+        }
+        self.rebuild()
+    }
+    /// Camera coordinates, floor, tiles per cell, and player-follow mode.
+    pub fn minimap_camera(&self) -> (i32, i32, i16, i32, bool) {
+        let map = super::state::lock(&self.minimap);
+        (map.x, map.y, map.floor, map.zoom, map.tracking)
+    }
+}

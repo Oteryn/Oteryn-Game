@@ -174,3 +174,14 @@ impl crate::play::PlayView {
         self.scene.minimap_origin = self.local.minimap_origin;
     }
 }
+
+/// Sidebar navigation changes the same camera used for drawing and click-to-walk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MinimapNavigation {
+    Pan(i32, i32),
+    Centre,
+    ZoomIn,
+    ZoomOut,
+    FloorUp,
+    FloorDown,
+}
