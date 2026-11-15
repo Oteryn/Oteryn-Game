@@ -1081,7 +1081,7 @@
     "Little Bowl of Myrrh": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "3f38cb83a6566dba06c6249b219654d17589023e3402471a841cabd6f6252e29",
+          "definition_sha256": "8e645f71820ebad5b45e19da8dbcac399f0a17f148a42aaa4decac9d78d11443",
           "name": "little bowl of myrrh",
           "path": "content/items/definitions/items-14000-14499.json"
         },
@@ -1273,7 +1273,7 @@
     "Ogre Nose Ring": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "d05e447fd93a620dd386ba390d3e6beac9c54ebe3ca2851e5f3ef11dcf93efb6",
+          "definition_sha256": "3e1cadb2bc0a3ccad3a58ea538822df8317be69f3bf35bee2ded4fff0e757b34",
           "name": "ogre nose ring",
           "path": "content/items/definitions/items-11000-11499.json"
         },
@@ -2169,7 +2169,7 @@
     "Waspoid Wing": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "c90cac424bdac6750d45357f7bcf7e89a09a6af3e2d378bac0714b406b9da495",
+          "definition_sha256": "8e955deeda6b1b6507fe8915c974251df7b3e6b3cd215351c7cb8f4c5d09c8db",
           "name": "waspoid wing",
           "path": "content/items/definitions/items-04000-04499.json"
         },
