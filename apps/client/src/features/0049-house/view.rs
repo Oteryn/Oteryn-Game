@@ -94,6 +94,13 @@ pub(super) mod ownership_window;
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl PlayLink {
+    pub(crate) fn bevy_house_ownership_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        lock(&self.mailbox).properties.house.apply(command, result);
+    }
     pub(crate) fn bevy_house_list_fixture(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.house;
