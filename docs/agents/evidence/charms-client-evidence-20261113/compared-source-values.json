@@ -1,0 +1,536 @@
+[
+  {
+    "name": "Freeze",
+    "source_key": "oteryn:charm.freeze",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 480,
+      "stage": 2,
+      "value": 10
+    },
+    "charged_stage": {
+      "cost": 1600,
+      "stage": 3,
+      "value": 11
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "ice",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Low Blow",
+    "source_key": "oteryn:charm.low_blow",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 1200,
+      "stage": 2,
+      "value": 8
+    },
+    "charged_stage": {
+      "cost": 4000,
+      "stage": 3,
+      "value": 9
+    },
+    "currency": "charm_points",
+    "effect": {
+      "type": "critical_hit_chance"
+    }
+  },
+  {
+    "name": "Parry",
+    "source_key": "oteryn:charm.parry",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 600,
+      "stage": 2,
+      "value": 10
+    },
+    "charged_stage": {
+      "cost": 2000,
+      "stage": 3,
+      "value": 11
+    },
+    "currency": "charm_points",
+    "effect": {
+      "element": "physical",
+      "ignores_resistances": true,
+      "reduced_by_armor": true,
+      "type": "reflect_damage_taken"
+    }
+  },
+  {
+    "name": "Poison",
+    "source_key": "oteryn:charm.poison",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 360,
+      "stage": 2,
+      "value": 10
+    },
+    "charged_stage": {
+      "cost": 1200,
+      "stage": 3,
+      "value": 11
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "earth",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Savage Blow",
+    "source_key": "oteryn:charm.savage_blow",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 1200,
+      "stage": 2,
+      "value": 40
+    },
+    "charged_stage": {
+      "cost": 4000,
+      "stage": 3,
+      "value": 44
+    },
+    "currency": "charm_points",
+    "effect": {
+      "type": "critical_extra_damage"
+    }
+  },
+  {
+    "name": "Enflame",
+    "source_key": "oteryn:charm.enflame",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 400,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 600,
+      "stage": 2,
+      "value": 10
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "fire",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Carnage",
+    "source_key": "oteryn:charm.carnage",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 10
+    },
+    "charged_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 10
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 6,
+      "element": "physical",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 15,
+      "reduced_by_armor": true,
+      "type": "kill_area_damage"
+    }
+  },
+  {
+    "name": "Curse",
+    "source_key": "oteryn:charm.curse",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 360,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 360,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "death",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Divine Wrath",
+    "source_key": "oteryn:charm.divine_wrath",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "holy",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Dodge",
+    "source_key": "oteryn:charm.dodge",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 240,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 240,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "type": "dodge_attack"
+    }
+  },
+  {
+    "name": "Overflux",
+    "source_key": "oteryn:charm.overflux",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_percent_of_creature_max_health": 8,
+      "element": "physical",
+      "ignores_resistances": true,
+      "percent_of_own_maximum": 2.5,
+      "reduced_by_armor": false,
+      "resource": "mana",
+      "type": "attack_proc_resource_damage"
+    }
+  },
+  {
+    "name": "Overpower",
+    "source_key": "oteryn:charm.overpower",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 600,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_percent_of_creature_max_health": 8,
+      "element": "physical",
+      "ignores_resistances": true,
+      "percent_of_own_maximum": 5,
+      "reduced_by_armor": false,
+      "resource": "health",
+      "type": "attack_proc_resource_damage"
+    }
+  },
+  {
+    "name": "Wound",
+    "source_key": "oteryn:charm.wound",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 240,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 240,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "physical",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Zap",
+    "source_key": "oteryn:charm.zap",
+    "category": "major",
+    "current_or_preview_stage": {
+      "cost": 320,
+      "stage": 1,
+      "value": 5
+    },
+    "charged_stage": {
+      "cost": 320,
+      "stage": 1,
+      "value": 5
+    },
+    "currency": "charm_points",
+    "effect": {
+      "damage_cap_level_multiplier": 2,
+      "element": "energy",
+      "ignores_resistances": false,
+      "percent_of_creature_max_health": 5,
+      "reduced_by_armor": false,
+      "type": "attack_proc_damage"
+    }
+  },
+  {
+    "name": "Vampiric Embrace",
+    "source_key": "oteryn:charm.vampiric_embrace",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 150,
+      "stage": 2,
+      "value": 2.4
+    },
+    "charged_stage": {
+      "cost": 225,
+      "stage": 3,
+      "value": 3.2
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "life_leech"
+    }
+  },
+  {
+    "name": "Void Inversion",
+    "source_key": "oteryn:charm.void_inversion",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 150,
+      "stage": 2,
+      "value": 30
+    },
+    "charged_stage": {
+      "cost": 225,
+      "stage": 3,
+      "value": 40
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "mana_drain_inversion"
+    }
+  },
+  {
+    "name": "Void's Call",
+    "source_key": "oteryn:charm.voids_call",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 150,
+      "stage": 2,
+      "value": 1.2
+    },
+    "charged_stage": {
+      "cost": 225,
+      "stage": 3,
+      "value": 1.6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "mana_leech"
+    }
+  },
+  {
+    "name": "Fatal Hold",
+    "source_key": "oteryn:charm.fatal_hold",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 30
+    },
+    "charged_stage": {
+      "cost": 150,
+      "stage": 2,
+      "value": 45
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "duration_ms": 30000,
+      "type": "prevent_creature_flee"
+    }
+  },
+  {
+    "name": "Adrenaline Burst",
+    "source_key": "oteryn:charm.adrenaline_burst",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "duration_ms": 10000,
+      "type": "haste_after_hit"
+    }
+  },
+  {
+    "name": "Bless",
+    "source_key": "oteryn:charm.bless",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "death_loss_reduction"
+    }
+  },
+  {
+    "name": "Cleanse",
+    "source_key": "oteryn:charm.cleanse",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "cleanse_after_hit"
+    }
+  },
+  {
+    "name": "Cripple",
+    "source_key": "oteryn:charm.cripple",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "duration_ms": 10000,
+      "type": "paralyse_creature_on_attack"
+    }
+  },
+  {
+    "name": "Gut",
+    "source_key": "oteryn:charm.gut",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "creature_product_bonus"
+    }
+  },
+  {
+    "name": "Numb",
+    "source_key": "oteryn:charm.numb",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 6
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "duration_ms": 10000,
+      "type": "paralyse_creature_after_its_attack"
+    }
+  },
+  {
+    "name": "Scavenge",
+    "source_key": "oteryn:charm.scavenge",
+    "category": "minor",
+    "current_or_preview_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 60
+    },
+    "charged_stage": {
+      "cost": 100,
+      "stage": 1,
+      "value": 60
+    },
+    "currency": "minor_charm_echoes",
+    "effect": {
+      "type": "skinning_chance_bonus"
+    }
+  }
+]

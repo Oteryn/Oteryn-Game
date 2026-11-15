@@ -235,7 +235,7 @@ async fn scenario(admin: String) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("Instance player")?;
     // Crystal :195-206 varies the count, rather than promising three beasts.
     // Resolve the source oracle against this exact native boss occurrence.
-    let boss_identity = {
+    let (boss, boss_position) = {
         let runtime = destination.runtime.lock().await;
         runtime
             .positioned_melee_census()
@@ -246,12 +246,13 @@ async fn scenario(admin: String) -> TestResult {
                     .companion_snapshot(*actor)
                     .is_ok_and(|row| row.state.policy.definition_key == rules::PRIMAL_MENACE_KEY)
             })
-            .map(|row| row.0.placement_identity())
+            .map(|row| (row.0, row.1.position()))
             .ok_or("source boss identity")?
     };
     let root =
         oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(native.source_digest());
-    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(boss_identity);
+    let occurrence =
+        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(boss.placement_identity());
     let draw = |ordinal| -> TestResult<u32> {
         let value = oteryn_simulation_determinism::deterministic_decision_u64(
             &root,
@@ -262,7 +263,7 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?;
         Ok(((u128::from(value) * u128::from(rules::DRAW_PPM)) >> 64) as u32)
     };
-    let expected_wave = usize::try_from(rules::wave_count(
+    let requested_wave = usize::try_from(rules::wave_count(
         &rules::BEAST_WAVE,
         rules::hazard_points(&[]),
         draw(0)?,
@@ -274,11 +275,96 @@ async fn scenario(admin: String) -> TestResult {
         |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
     destination.drain_monster_melee_at(later(10_001_000)).await;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
+    let duplicate_cell = MovementLocalPosition {
+        x: 27708,
+        y: 27459,
+        floor: -15,
+    };
+    let expected_cells = {
+        let runtime = destination.runtime.lock().await;
+        let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
+        let health = u64::try_from(snapshot.health)?;
+        let max_health = u64::try_from(snapshot.maximum_health)?;
+        let tile_free = |at| {
+            crate::gameplay_transport::arena_match::walkable(&destination, &runtime, at)
+                && runtime.native_summon_cell_free(at)
+        };
+        // Replay the source schedule, including its six placement attempts. The
+        // three-second delay means earlier requests have not occupied cells yet.
+        let draw_budget =
+            2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
+        let mut draws = (0..draw_budget)
+            .map(draw)
+            .collect::<TestResult<Vec<_>>>()?
+            .into_iter();
+        let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
+        let mut schedule = rules::PrimalMenaceThinkOwner::default();
+        let facts = |now_ms| rules::PrimalMenaceThinkFacts {
+            position: boss_position,
+            now_ms,
+            health,
+            max_health,
+            damage_map_levels: &[],
+        };
+        schedule
+            .think(&facts(0), &mut next_draw, tile_free, |_| None)
+            .map_err(debug)?;
+        let scheduled_cells: Vec<_> = schedule
+            .think(&facts(10_001), &mut next_draw, tile_free, |_| None)
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|effect| match effect {
+                rules::PrimalMenaceEffect::ScheduledSpawn {
+                    kind: rules::WaveKind::Beast,
+                    position,
+                    ..
+                } => Some(position),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            scheduled_cells.len(),
+            requested_wave,
+            "source wave requests"
+        );
+        assert_eq!(
+            scheduled_cells
+                .iter()
+                .filter(|at| **at == duplicate_cell)
+                .count(),
+            2,
+            "corrected content schedules the duplicate cell twice"
+        );
+        // Crystal spawnMonster calls Game.createMonster without force=true:
+        // existing occupants and earlier successful requests prevent admission.
+        let mut admitted_cells = std::collections::BTreeSet::new();
+        for at in scheduled_cells {
+            if tile_free(at) {
+                admitted_cells.insert((at.x, at.y, at.floor));
+            }
+        }
+        admitted_cells
+    };
+    let expected_wave = expected_cells.len();
     destination.drain_monster_melee_at(later(13_001_000)).await;
+    let spawned = beast_positions(&destination).await?;
     assert_eq!(
-        beasts(&destination).await?,
+        spawned.len(),
         expected_wave,
         "actual scheduled native Primal beasts match the source oracle"
+    );
+    assert_eq!(
+        spawned.iter().filter(|at| **at == duplicate_cell).count(),
+        1,
+        "the duplicate scheduled cell admits exactly one beast"
+    );
+    assert_eq!(
+        spawned
+            .iter()
+            .map(|at| (at.x, at.y, at.floor))
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_cells,
+        "native beast positions match successful source admissions"
     );
     destination.drain_monster_melee_at(later(13_001_000)).await;
     assert_eq!(
@@ -469,15 +555,23 @@ async fn scenario(admin: String) -> TestResult {
 async fn beasts(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<usize> {
+    Ok(beast_positions(owner).await?.len())
+}
+
+async fn beast_positions(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<Vec<MovementLocalPosition>> {
     let runtime = owner.runtime.lock().await;
     Ok(runtime
         .positioned_melee_census()
         .map_err(debug)?
         .iter()
-        .filter(|(actor, _, _)| {
-            runtime.companion_snapshot(*actor).is_ok_and(|row| {
-                rules::PRIMAL_BEAST_POOL.contains(&row.state.policy.definition_key.as_str())
+        .filter_map(|(actor, position, _)| {
+            runtime.companion_snapshot(*actor).ok().and_then(|row| {
+                rules::PRIMAL_BEAST_POOL
+                    .contains(&row.state.policy.definition_key.as_str())
+                    .then_some(position.position())
             })
         })
-        .count())
+        .collect())
 }

@@ -5874,7 +5874,8 @@ impl ForgeClient {
                 .payload,
         )
         .map_err(|e| format!("forge container:{e:?}"))?;
-        native::container_tree::decode_container_views(
+        let tree = selected_container_views(
+            &accepted.selected_capabilities,
             domains
                 .iter()
                 .find(|d| d.domain_id == 14)
@@ -5901,14 +5902,7 @@ impl ForgeClient {
             inventory,
             container,
             released: false,
-            tree: native::container_tree::decode_container_views(
-                domains
-                    .iter()
-                    .find(|d| d.domain_id == 14)
-                    .ok_or("forge tree absent")?
-                    .payload,
-            )
-            .map_err(|e| format!("forge tree:{e:?}"))?,
+            tree,
         })
     }
 
@@ -6018,7 +6012,7 @@ impl ForgeClient {
                     .map_err(|e| format!("forge container:{e:?}"))?
             }
             14 => {
-                self.tree = native::container_tree::decode_container_views(delta.payload)
+                self.tree = selected_container_views(&self.selected, delta.payload)
                     .map_err(|e| format!("forge tree:{e:?}"))?
             }
             21 => match delta.delta_type {

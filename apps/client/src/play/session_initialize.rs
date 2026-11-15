@@ -88,7 +88,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     );
     outbox.browse_field_initialize(session.server_mechanic_selected(230));
     if let Some(payload) = session.feature_snapshot(14) {
-        outbox.browse_field_views(&payload);
+        outbox.browse_field_views(&payload, session.feature_selected(499));
     }
     if let Some(inventory) = session.inventory() {
         outbox.browse_field_inventory(inventory);

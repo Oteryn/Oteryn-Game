@@ -169,6 +169,7 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
             capacity: 20,
             browse: None,
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: 2u64.try_into()?,
                 item_definition_ref: 900u32.try_into()?,
                 count: 1u32.try_into()?,

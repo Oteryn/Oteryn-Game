@@ -385,6 +385,7 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
     ) -> Option<InventoryItems> {
         Some(InventoryItems {
             main_backpack: Some(ViewItem {
+                appearance_id: 0,
                 key: ItemKey::Instance([0xa5; 16]),
                 item_definition_ref: std::num::NonZeroU32::MIN,
                 count: std::num::NonZeroU32::MIN,
@@ -394,6 +395,7 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
                 .backpack_entry
                 .get()
                 .then_some(ViewItem {
+                    appearance_id: 0,
                     key: ItemKey::Instance([0xa6; 16]),
                     item_definition_ref: std::num::NonZeroU32::MIN,
                     count: std::num::NonZeroU32::MIN,

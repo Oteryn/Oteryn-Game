@@ -336,6 +336,7 @@ fn handle(value: u64) -> ItemHandle {
 
 fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(handle_value),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),
@@ -973,3 +974,6 @@ fn a_pushed_item_delta_with_a_wrong_revision_or_a_duplicate_handle_fails_closed(
         Ok(())
     })?
 }
+
+#[path = "tests/item_appearance.rs"]
+mod item_appearance;

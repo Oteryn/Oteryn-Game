@@ -1,0 +1,921 @@
+{
+  "schema": "CHARMS_UI_DESCRIPTION_AND_STAGE_COST_OBSERVATIONS/v1",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "scope": "ONE_VISIBLE_CURRENT_OR_LOCKED_PREVIEW_AND_ONE_COST_PER_CHARM_NOT_ALL_STAGES",
+  "count": 25,
+  "counts_by_category": {
+    "major": 14,
+    "minor": 11
+  },
+  "rows": [
+    {
+      "name": "Freeze",
+      "category": "major",
+      "source_key": "oteryn:charm.freeze",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-freeze-initial.png",
+        "sha256": "5c12247e2d052d77726a6f655ca5f4305e7b237b754461cebb610990052be076",
+        "bytes": 238341
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 10% chance to deal ice damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 10,
+      "button_literal": "Upgrade to 11%",
+      "next_value_percent": 11,
+      "visible_unlock_or_upgrade_cost": 1600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/10/definition/stages/2",
+      "current_value_pointer": "/records/10/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "ice",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Low Blow",
+      "category": "major",
+      "source_key": "oteryn:charm.low_blow",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-low-blow.png",
+        "sha256": "044c594b87cd46ec3e2cbe5b564562826cc53ec0aa255e916221d3aad88b8ad7",
+        "bytes": 235953
+      },
+      "description_literal_joined_visual_lines": "Adds +8% critical hit chance.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 8,
+      "button_literal": "Upgrade to 9%",
+      "next_value_percent": 9,
+      "visible_unlock_or_upgrade_cost": 4000,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/12/definition/stages/2",
+      "current_value_pointer": "/records/12/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "critical_hit_chance"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Parry",
+      "category": "major",
+      "source_key": "oteryn:charm.parry",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-parry.png",
+        "sha256": "3417b2284b2c0d340571d2d9eef38f71c669edea0b89074b70a9670bb0e7fec1",
+        "bytes": 236924
+      },
+      "description_literal_joined_visual_lines": "Each time you take damage, you have a 10% chance to reflect it back to the aggressor.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 10,
+      "button_literal": "Upgrade to 11%",
+      "next_value_percent": 11,
+      "visible_unlock_or_upgrade_cost": 2000,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/16/definition/stages/2",
+      "current_value_pointer": "/records/16/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "element": "physical",
+        "ignores_resistances": true,
+        "reduced_by_armor": true,
+        "type": "reflect_damage_taken"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Poison",
+      "category": "major",
+      "source_key": "oteryn:charm.poison",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-poison.png",
+        "sha256": "31691325c52f2f67b1ea0582138f6873b349129de2b016539178fc99a9ff0125",
+        "bytes": 239201
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 10% chance to deal earth damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 10,
+      "button_literal": "Upgrade to 11%",
+      "next_value_percent": 11,
+      "visible_unlock_or_upgrade_cost": 1200,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/17/definition/stages/2",
+      "current_value_pointer": "/records/17/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "earth",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Savage Blow",
+      "category": "major",
+      "source_key": "oteryn:charm.savage_blow",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-savage-blow.png",
+        "sha256": "3b0b6b772db1974b5caaad4cbff9712302b8b12916dcb18214b8e32d4691899e",
+        "bytes": 237219
+      },
+      "description_literal_joined_visual_lines": "Adds +40% critical extra damage.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 40,
+      "button_literal": "Upgrade to 44%",
+      "next_value_percent": 44,
+      "visible_unlock_or_upgrade_cost": 4000,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/18/definition/stages/2",
+      "current_value_pointer": "/records/18/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "critical_extra_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Enflame",
+      "category": "major",
+      "source_key": "oteryn:charm.enflame",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-enflame.png",
+        "sha256": "5294456f25d73b6670884913724ea45956ac503962e1f66ae714a1899b309d5d",
+        "bytes": 239721
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal fire damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Upgrade to 10%",
+      "next_value_percent": 10,
+      "visible_unlock_or_upgrade_cost": 600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 1,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 2,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/8/definition/stages/1",
+      "current_value_pointer": "/records/8/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "fire",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Carnage",
+      "category": "major",
+      "source_key": "oteryn:charm.carnage",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-carnage.png",
+        "sha256": "5909fb2305d5969bcac551bf3b0ce766f3d7e36fccd9c2a044c822150453d41b",
+        "bytes": 236566
+      },
+      "description_literal_joined_visual_lines": "Killing a monster has 10% chance to deal physical damage equal to 15% of its maximum health to all monsters in a small radius.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 10,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/2/definition/stages/0",
+      "current_value_pointer": "/records/2/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 6,
+        "element": "physical",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 15,
+        "reduced_by_armor": true,
+        "type": "kill_area_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Curse",
+      "category": "major",
+      "source_key": "oteryn:charm.curse",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-curse.png",
+        "sha256": "7fbe7b8d55517efee3491bd2560881b4a5b6f677ae8c86399dd1a4377883e2a9",
+        "bytes": 235705
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal death damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 360,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/5/definition/stages/0",
+      "current_value_pointer": "/records/5/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "death",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Divine Wrath",
+      "category": "major",
+      "source_key": "oteryn:charm.divine_wrath",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-divine-wrath.png",
+        "sha256": "f467df905cd6db2b729b2de6942345008fe70bae7d95e0bdfcdeeac508f35779",
+        "bytes": 220236
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal holy damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/6/definition/stages/0",
+      "current_value_pointer": "/records/6/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "holy",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Dodge",
+      "category": "major",
+      "source_key": "oteryn:charm.dodge",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-dodge.png",
+        "sha256": "2d0337940bb2e4303db73373d56263422c9aceba45f9de7bde9f6c5731680a63",
+        "bytes": 217644
+      },
+      "description_literal_joined_visual_lines": "Grants a 5% chance to dodge an attack.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 240,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/7/definition/stages/0",
+      "current_value_pointer": "/records/7/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "dodge_attack"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Overflux",
+      "category": "major",
+      "source_key": "oteryn:charm.overflux",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-overflux.png",
+        "sha256": "ba152777649d35889bad3925f99ad47c18a87f57844bb02a1a0bbc948264de0f",
+        "bytes": 218353
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal damage equal to 2.5% of your maximum mana.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/14/definition/stages/0",
+      "current_value_pointer": "/records/14/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_percent_of_creature_max_health": 8,
+        "element": "physical",
+        "ignores_resistances": true,
+        "percent_of_own_maximum": 2.5,
+        "reduced_by_armor": false,
+        "resource": "mana",
+        "type": "attack_proc_resource_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Overpower",
+      "category": "major",
+      "source_key": "oteryn:charm.overpower",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-overpower.png",
+        "sha256": "df5d00d17a862ef5aa9479529bbf7116534daef543702e18c5c3933f8a52fc56",
+        "bytes": 219114
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal damage equal to 5% of your maximum health.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 600,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/15/definition/stages/0",
+      "current_value_pointer": "/records/15/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_percent_of_creature_max_health": 8,
+        "element": "physical",
+        "ignores_resistances": true,
+        "percent_of_own_maximum": 5,
+        "reduced_by_armor": false,
+        "resource": "health",
+        "type": "attack_proc_resource_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Wound",
+      "category": "major",
+      "source_key": "oteryn:charm.wound",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-wound.png",
+        "sha256": "a104901e87425f0c8e49f28a66af1bae73b86dca70730fb3995f4d191b16f2cf",
+        "bytes": 219684
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal physical damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 240,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/23/definition/stages/0",
+      "current_value_pointer": "/records/23/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "physical",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Zap",
+      "category": "major",
+      "source_key": "oteryn:charm.zap",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\major-zap.png",
+        "sha256": "27e48c51b3475ca54ee9c0d8229406885bb62684e84592790860e2aa8b9b3530",
+        "bytes": 219729
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 5% chance to deal energy damage equal to 5% of the target's initial hit points.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 5,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 320,
+      "currency": "charm_points",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/24/definition/stages/0",
+      "current_value_pointer": "/records/24/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "damage_cap_level_multiplier": 2,
+        "element": "energy",
+        "ignores_resistances": false,
+        "percent_of_creature_max_health": 5,
+        "reduced_by_armor": false,
+        "type": "attack_proc_damage"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Vampiric Embrace",
+      "category": "minor",
+      "source_key": "oteryn:charm.vampiric_embrace",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-catalogue-initial.png",
+        "sha256": "be706dd9ffe65d3527d038369580eb8eecfc6b70df5d286192d6220fc0f3e46c",
+        "bytes": 232015
+      },
+      "description_literal_joined_visual_lines": "Increases your current life leech by 2.4%.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 2.4,
+      "button_literal": "Upgrade to 3.2%",
+      "next_value_percent": 3.2,
+      "visible_unlock_or_upgrade_cost": 225,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/20/definition/stages/2",
+      "current_value_pointer": "/records/20/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "life_leech"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Void Inversion",
+      "category": "minor",
+      "source_key": "oteryn:charm.void_inversion",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-void-inversion.png",
+        "sha256": "ef2628f334795d1a19664f280a40b99bf78ada7252dfedbd755077fa426473e8",
+        "bytes": 233216
+      },
+      "description_literal_joined_visual_lines": "30% chance to gain mana instead of losing it when taking mana drain damage.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 30,
+      "button_literal": "Upgrade to 40%",
+      "next_value_percent": 40,
+      "visible_unlock_or_upgrade_cost": 225,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/21/definition/stages/2",
+      "current_value_pointer": "/records/21/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "mana_drain_inversion"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Void's Call",
+      "category": "minor",
+      "source_key": "oteryn:charm.voids_call",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-voids-call.png",
+        "sha256": "dea7af83783433ab23933890e065828c8fde10871ca3d421ec124c045661ebdb",
+        "bytes": 229933
+      },
+      "description_literal_joined_visual_lines": "Increases your current mana leech by 1.2%.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 1.2,
+      "button_literal": "Upgrade to 1.6%",
+      "next_value_percent": 1.6,
+      "visible_unlock_or_upgrade_cost": 225,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 2,
+      "preview_stage_candidate": 2,
+      "charged_stage_candidate": 3,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/22/definition/stages/2",
+      "current_value_pointer": "/records/22/definition/stages/1/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "mana_leech"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Fatal Hold",
+      "category": "minor",
+      "source_key": "oteryn:charm.fatal_hold",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-fatal-hold.png",
+        "sha256": "89d9147578e7031a9c67a3042bdcf97a7be54ed47beb78639cc6a84533fb6093",
+        "bytes": 234368
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 30% chance to prevent creatures from fleeing due to low health for 30 seconds.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 30,
+      "button_literal": "Upgrade to 45%",
+      "next_value_percent": 45,
+      "visible_unlock_or_upgrade_cost": 150,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 1,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 2,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/9/definition/stages/1",
+      "current_value_pointer": "/records/9/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "duration_ms": 30000,
+        "type": "prevent_creature_flee"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Adrenaline Burst",
+      "category": "minor",
+      "source_key": "oteryn:charm.adrenaline_burst",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-adrenaline-burst.png",
+        "sha256": "c9ae3015320704ac416f4cf8804453905879c3da745d48fe5c3d31c3f7f844aa",
+        "bytes": 231998
+      },
+      "description_literal_joined_visual_lines": "Each time you're hit, you have a 6% chance to trigger a burst of adrenaline, boosting your speed by 150% for 10 seconds.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/0/definition/stages/0",
+      "current_value_pointer": "/records/0/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "duration_ms": 10000,
+        "type": "haste_after_hit"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Bless",
+      "category": "minor",
+      "source_key": "oteryn:charm.bless",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-bless.png",
+        "sha256": "3490a78b502bfdc803609e887f23d00c9694de8aec6453275aa67c9ccb326bbd",
+        "bytes": 228658
+      },
+      "description_literal_joined_visual_lines": "Blesses you, reducing skill and experience loss by 6% when killed by the chosen creature.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/1/definition/stages/0",
+      "current_value_pointer": "/records/1/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "death_loss_reduction"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Cleanse",
+      "category": "minor",
+      "source_key": "oteryn:charm.cleanse",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-cleanse.png",
+        "sha256": "49d8fdc1f51800850045f24e9ca2982f624066edf5b3decc458dae44ff60e202",
+        "bytes": 231071
+      },
+      "description_literal_joined_visual_lines": "Each time you're hit, you have a 6% chance to cleanse one random negative status effect and gain temporary immunity to it for 11 seconds.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/3/definition/stages/0",
+      "current_value_pointer": "/records/3/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "cleanse_after_hit"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Cripple",
+      "category": "minor",
+      "source_key": "oteryn:charm.cripple",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-cripple.png",
+        "sha256": "cae5a5a17c12da34bce11ae598ca89c9312dad3cab3fdc6b005c5772b10c5c1d",
+        "bytes": 229517
+      },
+      "description_literal_joined_visual_lines": "Your attacks have a 6% chance to paralyse the target for 10 seconds.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/4/definition/stages/0",
+      "current_value_pointer": "/records/4/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "duration_ms": 10000,
+        "type": "paralyse_creature_on_attack"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Gut",
+      "category": "minor",
+      "source_key": "oteryn:charm.gut",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-gut.png",
+        "sha256": "dfd95c0cc71ed56f4525b2deb0c8c5c23657e5dda5edbdc8d559047f9a8035e7",
+        "bytes": 218520
+      },
+      "description_literal_joined_visual_lines": "Gutting the creature yields 6% more creature products.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/11/definition/stages/0",
+      "current_value_pointer": "/records/11/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "creature_product_bonus"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Numb",
+      "category": "minor",
+      "source_key": "oteryn:charm.numb",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-numb.png",
+        "sha256": "cb620608ba08d289e7577dc53a1c7065d7e9826ce11f33406fbf554d58bb9c65",
+        "bytes": 220344
+      },
+      "description_literal_joined_visual_lines": "After being attacked, you have a 6% chance to paralyse the aggressor for 10 seconds.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 6,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/13/definition/stages/0",
+      "current_value_pointer": "/records/13/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "duration_ms": 10000,
+        "type": "paralyse_creature_after_its_attack"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    },
+    {
+      "name": "Scavenge",
+      "category": "minor",
+      "source_key": "oteryn:charm.scavenge",
+      "proof": {
+        "private_file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\minor-scavenge.png",
+        "sha256": "7a1e22edb0de4a3b7e84636c056297bc4e09f50736b6b2328aa2ae4b4c9accf4",
+        "bytes": 220392
+      },
+      "description_literal_joined_visual_lines": "Increases your chance of successfully skinning/dusting a skinnable/dustable creature by 60%.",
+      "description_transcription": "VISUALLY_REVIEWED_FROM_CAPTURE; LINE_WRAPS_JOINED",
+      "visible_stage_value_percent": 60,
+      "button_literal": "Unlock",
+      "next_value_percent": null,
+      "visible_unlock_or_upgrade_cost": 100,
+      "currency": "minor_charm_echoes",
+      "current_owned_stage_candidate": 0,
+      "preview_stage_candidate": 1,
+      "charged_stage_candidate": 1,
+      "stage_interpretation": "DERIVED_FROM_UNIQUE_CATALOGUE_VALUE_AND_UNLOCK_OR_UPGRADE_LABEL",
+      "catalogue_stage_pointer": "/records/19/definition/stages/0",
+      "current_value_pointer": "/records/19/definition/stages/0/value",
+      "comparison": "CURRENT_OR_PREVIEW_VALUE_AND_VISIBLE_COST_MATCH",
+      "source_effect": {
+        "type": "skinning_chance_bonus"
+      },
+      "runtime_effect_verified": false,
+      "excluded_dynamic_fields": [
+        "Clear charm gold fee",
+        "Reset all charms gold fee",
+        "current creature assignment",
+        "character point/echo balances"
+      ]
+    }
+  ]
+}

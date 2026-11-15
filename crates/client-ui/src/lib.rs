@@ -387,3 +387,6 @@ pub mod store_cosmetic_tokens;
 pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;
+
+#[path = "features/0499-item-appearance/protocol.rs"]
+pub mod item_appearance;

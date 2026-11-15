@@ -59,6 +59,7 @@ fn managed_container_session_sends_in_order_and_keeps_remaining_items_after_refu
             let entries = (11..=13)
                 .map(|id| {
                     Ok(oteryn_session::ItemEntry {
+                        appearance_id: 0,
                         handle: handle(id)?,
                         item_definition_ref: std::num::NonZeroU32::MIN,
                         count: std::num::NonZeroU32::MIN,

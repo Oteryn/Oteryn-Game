@@ -136,6 +136,31 @@ pub struct CombatPlan {
     pub dispel_paralysis_targets: Vec<u64>,
     pub resolve_critical_and_fatal_once: bool,
 }
+impl CombatPlan {
+    /// Count an immediate AoE's qualified targets before target immunity may
+    /// remove zero-damage physical effects. Beam sides form one group together.
+    /// Non-area/delayed executions retain their owner's existing group policy.
+    #[must_use]
+    pub fn leech_target_count(&self, source_id: u64) -> Option<usize> {
+        if self.element == Element::Healing
+            || (self.area.is_none() && !self.resolve_critical_and_fatal_once)
+        {
+            return None;
+        }
+        let hit = self
+            .hits
+            .iter()
+            .find(|hit| hit.target == source_id && hit.delay_ms == 0)?;
+        let side = hit.side_percent.is_some();
+        Some(
+            self.hits
+                .iter()
+                .filter(|hit| hit.delay_ms == 0 && hit.side_percent.is_some() == side)
+                .count(),
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AvatarPlan {
     pub expires_ms: u64,
@@ -860,6 +885,10 @@ fn combat(
         .unwrap_or(0)
         .checked_mul(u64::from(count))
         .ok_or_else(|| Error("cooldown reduction overflow".into()))?;
+    // Every immediate damaging area is one critical/fatal execution, not only
+    // an enhanced beam. Chain bounces and healing keep their independent owner paths.
+    let shared_extensions =
+        !healing && p.get("chain").is_none() && (area_plan.is_some() || beam.is_some());
     Ok(NativeCombatPlan::Combat(CombatPlan {
         element: element(p, f)?,
         area: area_plan,
@@ -881,7 +910,7 @@ fn combat(
         weapon_missile: p.get("missile_selection").and_then(Value::as_str)
             == Some("equipped_weapon_type"),
         dispel_paralysis_targets: dispels,
-        resolve_critical_and_fatal_once: beam.is_some(),
+        resolve_critical_and_fatal_once: shared_extensions,
     }))
 }
 
@@ -1097,6 +1126,52 @@ mod tests {
         assert_eq!(draws, 0);
     }
     #[test]
+    fn global_native_area_crit_is_shared_without_beam_mastery() {
+        for name in [
+            "energy wave",
+            "energy beam",
+            "great energy beam",
+            "strong ice wave",
+        ] {
+            let (key, parameters) = profile(name);
+            let mut f = visible_facts();
+            f.stage = 0;
+            f.targets = vec![target(2, 10, 9), target(3, 10, 8)];
+            let NativeCombatPlan::Combat(combat) =
+                plan(&key, &parameters, &f, &mut |lo, _| lo).expect("real native planner")
+            else {
+                panic!("combat plan")
+            };
+            assert!(combat.area.is_some(), "{name}");
+            assert_eq!(combat.hits.len(), 2, "{name}");
+            assert!(
+                combat.resolve_critical_and_fatal_once,
+                "{name}: one shared area critical draw"
+            );
+        }
+        let (key, parameters) = profile("executioner's throw");
+        let NativeCombatPlan::Combat(chain) =
+            plan(&key, &parameters, &visible_facts(), &mut |lo, _| lo).expect("chain planner")
+        else {
+            panic!("chain plan")
+        };
+        assert!(
+            !chain.resolve_critical_and_fatal_once,
+            "chain bounces stay independent"
+        );
+        let (key, parameters) = profile("mass healing");
+        let NativeCombatPlan::Combat(heal) =
+            plan(&key, &parameters, &visible_facts(), &mut |lo, _| lo).expect("heal planner")
+        else {
+            panic!("heal plan")
+        };
+        assert!(
+            !heal.resolve_critical_and_fatal_once,
+            "healing extensions retain their owner path"
+        );
+    }
+
+    #[test]
     fn canonical_executioner_chain_draws_independently_per_bounce() {
         let (key, p) = profile("executioner's throw");
         let f = visible_facts();
@@ -1260,5 +1335,62 @@ mod tests {
         assert_eq!(area(&a, &f).unwrap().central_tiles, BTreeSet::from([hit]));
         f.floor_change_tiles.insert(hit);
         assert!(area(&a, &f).unwrap().central_tiles.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod global_leech_tests {
+    use super::*;
+
+    fn plan() -> CombatPlan {
+        CombatPlan {
+            element: Element::Energy,
+            area: None,
+            hits: (1..=8)
+                .map(|target| MagnitudePlan {
+                    target,
+                    magnitude: if target == 1 { 0 } else { 100 },
+                    bonus_percent: 0,
+                    side_percent: (target > 2).then_some(70),
+                    delay_ms: 0,
+                })
+                .collect(),
+            cooldown_ms: None,
+            shared_cooldown: None,
+            reduce_all_spell_cooldowns_ms: 0,
+            block_armor: false,
+            use_weapon_charges: false,
+            weapon_missile: false,
+            dispel_paralysis_targets: vec![],
+            resolve_critical_and_fatal_once: true,
+        }
+    }
+
+    #[test]
+    fn global_leech_plan_keeps_zero_damage_and_combines_both_side_columns() {
+        let p = plan();
+        assert_eq!(p.leech_target_count(1), Some(2));
+        assert_eq!(p.leech_target_count(2), Some(2));
+        for id in 3..=8 {
+            assert_eq!(p.leech_target_count(id), Some(6));
+        }
+        assert_eq!(p.leech_target_count(9), None);
+    }
+
+    #[test]
+    fn global_leech_plan_does_not_count_future_delayed_hits() {
+        let mut p = plan();
+        p.hits[2].delay_ms = 100;
+        assert_eq!(p.leech_target_count(3), None);
+        assert_eq!(p.leech_target_count(4), Some(5));
+        p.resolve_critical_and_fatal_once = false;
+        assert_eq!(
+            p.leech_target_count(4),
+            None,
+            "non-area owner retains its group policy"
+        );
+        p.resolve_critical_and_fatal_once = true;
+        p.element = Element::Healing;
+        assert_eq!(p.leech_target_count(4), None);
     }
 }

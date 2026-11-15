@@ -438,6 +438,7 @@ async fn observe_look_item(
     let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
     let observed = ObservedLookItem {
         item: ViewItem {
+            appearance_id: super::item_view::appearance_of(&definition),
             key,
             item_definition_ref: definition_ref(index, &definition).ok_or(unavailable)?,
             count: NonZeroU32::new(count).ok_or(unavailable)?,

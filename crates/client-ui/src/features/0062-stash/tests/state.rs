@@ -68,6 +68,7 @@ fn stow_rejects_handles_not_in_the_visible_carried_picker() {
 fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
 -> Result<(), &'static str> {
     let item = oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::MIN,
         item_definition_ref: std::num::NonZeroU32::MIN,
         count: std::num::NonZeroU32::MIN,
@@ -101,6 +102,7 @@ fn visible_carried_selection_stows_the_server_handle_and_blocks_repeated_input()
 #[test]
 fn carried_click_rejects_a_changed_projection_and_invalid_row() {
     let item = oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::MIN,
         item_definition_ref: std::num::NonZeroU32::MIN,
         count: std::num::NonZeroU32::MIN,

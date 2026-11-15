@@ -95,6 +95,7 @@ fn wait_for(mut condition: impl FnMut() -> bool) -> Result<(), String> {
 }
 fn scenario() -> Result<(), String> {
     let entry = ItemEntry {
+        appearance_id: 0,
         handle: 2.try_into().map_err(|_| "handle")?,
         item_definition_ref: 3031.try_into().map_err(|_| "definition")?,
         count: 20.try_into().map_err(|_| "count")?,

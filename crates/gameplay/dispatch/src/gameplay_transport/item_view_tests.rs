@@ -20,6 +20,7 @@ fn corpse(n: u8) -> ItemKey {
 
 fn item(key: ItemKey) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key,
         item_definition_ref: NonZeroU32::new(2854).expect("fixture"),
         count: NonZeroU32::new(1).expect("fixture"),
@@ -1224,5 +1225,50 @@ mod connection {
             assert_eq!(ended(end)?.item_view.handle_counter, 4);
             Ok(())
         })
+    }
+}
+
+#[test]
+fn inventory_snapshot_uses_the_world_map_appearance_binding() {
+    for (key, appearance) in [
+        ("oteryn:item.tibia.i2854", 2854),
+        ("donor:crystalserver@201189f:item/28827", 28827),
+        ("oteryn:item.no-appearance", 0),
+    ] {
+        let backpack = CharacterBackpack {
+            backpack: InventoryItem {
+                item_instance_id: [1; 16],
+                definition: TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: key.into(),
+                    revision_ref: "r1".into(),
+                },
+                quantity: 1,
+            },
+            entries: vec![],
+            fluids: Default::default(),
+        };
+        // A generation-specific compact reference deliberately differs from the appearance.
+        let inventory = inventory_from_backpack(Some(&backpack), |_| NonZeroU32::new(17))
+            .expect("indexed backpack");
+        let mut session = SessionItemView::resume(ItemViewContinuity::default()).with_appearances();
+        let [inventory, _] = session.snapshot(inventory, None).expect("snapshot");
+        let item = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_appearances(
+            &inventory.payload,
+            false,
+            true,
+        )
+        .expect("wire inventory")
+        .main_backpack
+        .expect("backpack");
+        assert_eq!(item.item_definition_ref.get(), 17);
+        assert_eq!(
+            item.appearance_id,
+            crate::map::view::appearance_id(
+                key,
+                crate::map::palette_appearance(key).map(u32::from)
+            )
+        );
+        assert_eq!(item.appearance_id, appearance);
     }
 }

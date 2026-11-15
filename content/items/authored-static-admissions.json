@@ -4,7 +4,7 @@
     {
       "binding": {
         "source_key": "oteryn:source.oteryn_authored",
-        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "source_revision": "c43d55668d0ab0ffb0a33f28afd494bf3eb0475fb2601f7b6cefa88c7de40751",
         "identity_namespace": "oteryn/static_item_constructor",
         "external_id": "50335",
         "target": {
@@ -14,12 +14,12 @@
         },
         "disposition": "EXACT"
       },
-      "profile_sha256": "7c215c72302ac15df5fc3ccaf4adcdbd0652f1098bf3816fcd5aa6dc218a2166"
+      "profile_sha256": "e8ff16ce6afcf98ea741a57add801e5c70ec7875aa3f31ff587293b47a31b32a"
     },
     {
       "binding": {
         "source_key": "oteryn:source.oteryn_authored",
-        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "source_revision": "c43d55668d0ab0ffb0a33f28afd494bf3eb0475fb2601f7b6cefa88c7de40751",
         "identity_namespace": "oteryn/static_item_constructor",
         "external_id": "50336",
         "target": {
@@ -29,12 +29,12 @@
         },
         "disposition": "EXACT"
       },
-      "profile_sha256": "354f7b3994752f444da0b72e8c271527cbebba21d74b2261c343f658c1732247"
+      "profile_sha256": "626c8e12d08a3947653522babcfd6a93e895c9617fbe23c808c39f60c11b4db8"
     },
     {
       "binding": {
         "source_key": "oteryn:source.oteryn_authored",
-        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "source_revision": "c43d55668d0ab0ffb0a33f28afd494bf3eb0475fb2601f7b6cefa88c7de40751",
         "identity_namespace": "oteryn/static_item_constructor",
         "external_id": "50337",
         "target": {
@@ -44,12 +44,12 @@
         },
         "disposition": "EXACT"
       },
-      "profile_sha256": "0457cbcd133990a618fd9b7bd96b69ec7a38e6bb63f88ee8ad947a4e96953779"
+      "profile_sha256": "e30c7fc52f1b01a5ac11bd6196d9bdce8874cd83ba7504dde9e0e051e786d18f"
     },
     {
       "binding": {
         "source_key": "oteryn:source.oteryn_authored",
-        "source_revision": "729c89f8143bffbbda795f54f89c866d78eefb57cf7473e9f5a6fa6bfe1f93a9",
+        "source_revision": "c43d55668d0ab0ffb0a33f28afd494bf3eb0475fb2601f7b6cefa88c7de40751",
         "identity_namespace": "oteryn/static_item_constructor",
         "external_id": "50338",
         "target": {
@@ -59,7 +59,7 @@
         },
         "disposition": "EXACT"
       },
-      "profile_sha256": "9a440476f8c1e1d912321292aa5ffe0373df14576f852497cd46b1520974ee4e"
+      "profile_sha256": "f29bb9de3fdb4d4263a600ad98b9ef28bbae653096fd9ef97709d707e5671390"
     }
   ]
 }
