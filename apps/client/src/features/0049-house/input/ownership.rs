@@ -96,9 +96,10 @@ impl PlayLink {
     }
     pub fn house_ownership_open(&self) {
         #[cfg(windows)]
-        super::super::view::ownership_window::open(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            super::super::view::ownership_window::open(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             let mut mailbox = lock(&self.mailbox);
             if mailbox.properties.house.ownership.model.available() {
                 mailbox.properties.house.ownership.open = true;

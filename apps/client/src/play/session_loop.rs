@@ -71,6 +71,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     outbox: Outbox,
     mut modal: super::feature_0450_server_modal::protocol::Driver,
 ) {
+    modal = modal.with_outbox(&outbox);
     outbox.performance_reset();
     let personal_marks_selected = session.feature_selected(451);
     if personal_marks_selected {

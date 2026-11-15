@@ -20,7 +20,7 @@ pub(super) async fn verify(
                 || int2send(octet_length(r.ruleset_revision)::int2) || convert_to(r.ruleset_revision, 'UTF8') \
                 || int2send(octet_length(r.content_revision)::int2) || convert_to(r.content_revision, 'UTF8') \
                 || int2send(octet_length(r.starter_template_revision)::int2) || convert_to(r.starter_template_revision, 'UTF8') \
-                || int2send(octet_length(r.name)::int2) || convert_to(r.name, 'UTF8') \
+                || int2send(octet_length(coalesce((SELECT t.old_name FROM game_character_service_changes t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.name))::int2) || convert_to(coalesce((SELECT t.old_name FROM game_character_service_changes t WHERE t.character_id=r.character_id ORDER BY t.new_revision LIMIT 1),r.name), 'UTF8') \
                 || (CASE WHEN r.sex IS NULL THEN ''::bytea ELSE substring(int2send(r.sex) from 2 for 1) END) \
              OR (a.event_id IS NOT NULL AND (a.character_id <> r.character_id \
                  OR a.transaction_id <> c.transaction_id OR a.server_build_id <> c.server_build_id \
@@ -44,7 +44,7 @@ pub(super) async fn verify(
          SELECT 1 FROM game_character_roots r \
            LEFT JOIN game_character_name_reservations n \
              ON n.name_key = r.name_key AND n.character_id = r.character_id \
-          WHERE n.name_key IS NULL AND NOT EXISTS (SELECT 1 FROM game_account_closure_members q JOIN game_account_closures qc USING(account_id) WHERE q.character_id=r.character_id AND q.step=3 AND q.close_operation_id=qc.close_operation_id AND qc.state IN ('FINALIZING','FINALIZED') AND qc.decision='FINALIZE') \
+          WHERE n.name_key IS NULL AND r.lifecycle<>4 AND NOT EXISTS (SELECT 1 FROM game_account_closure_members q JOIN game_account_closures qc USING(account_id) WHERE q.character_id=r.character_id AND q.step=3 AND q.close_operation_id=qc.close_operation_id AND qc.state IN ('FINALIZING','FINALIZED') AND qc.decision='FINALIZE') \
          UNION ALL \
          SELECT 1 FROM game_character_audit_legal_holds h \
            LEFT JOIN game_character_audit_outbox a USING (event_id) \

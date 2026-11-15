@@ -12,6 +12,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .foreground_demand()
             .map_err(|_| AdmissionRefusal::Unavailable)?;
         let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        if self.states.security_revocation_stream_enabled
+            && !budget
+                .retry_unavailable(async || {
+                    self.root
+                        .security_revocation_read_fresh_now()
+                        .await
+                        .map_err(|_| AdmissionRefusal::Unavailable)
+                })
+                .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
+
+        if budget
+            .retry_unavailable(async || {
+                self.root
+                    .security_session_revoked(attempt.game_session_id)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
+            .await?
+        {
+            return Err(AdmissionRefusal::Rejected);
+        }
         if let Some(admitted) = self.recover_activity_session(&budget, &attempt).await? {
             return Ok(admitted);
         }
@@ -85,39 +109,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // NBGRANT: only the final spell repair was pending on this positioned actor.
         // Complete it under the new controller's current fence before making it playable;
         // other refused entry participants retain their own refusal and are never promoted.
-        if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
-            && let Some(fence) = admitted.item_fence
-        {
-            let retry = AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root);
-            let repaired = retry
-                .retry_unavailable(async || {
-                    use spell_character_facts::{CastFactsLoad, load_character_cast_facts};
-                    match load_character_cast_facts(self.root, self.character, fence.character_id)
-                        .await
-                    {
-                        CastFactsLoad::NoVocation { .. } => Ok(()),
-                        CastFactsLoad::Ready {
-                            facts,
-                            character_revision,
-                        } if self
-                            .reconcile_automatic_spells(
-                                fence.character_id,
-                                admitted.game_session_id,
-                                character_revision,
-                                facts.level,
-                                facts.vocation,
-                            )
-                            .await =>
-                        {
-                            Ok(())
-                        }
-                        _ => Err(AdmissionRefusal::Unavailable),
-                    }
-                })
-                .await;
-            if repaired.is_ok() {
-                admitted.first_entry = FirstEntryOutcome::Reconciled;
-            }
+        if self.repair_pending_spell_entry(admitted).await {
+            admitted.first_entry = FirstEntryOutcome::Reconciled;
         }
         self.finish_resumed_session(admitted, recovered_transfer)
             .await;

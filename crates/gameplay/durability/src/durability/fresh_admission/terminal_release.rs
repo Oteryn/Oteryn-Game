@@ -44,7 +44,7 @@ impl FreshAdmissionStore {
                 let inherited:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_activity_runtime_returns a JOIN game_durability_reconnect_sessions s ON s.game_session_id=a.source_game_session_id JOIN game_durability_reconnect_sessions d ON d.game_session_id=a.destination_game_session_id WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND $2::text::numeric=1 AND s.control_loss_epoch IS NOT NULL AND s.original_grace_deadline=d.original_grace_deadline AND d.control_loss_epoch=1)")
                     .bind(session_id.as_bytes().as_slice()).bind(epoch.get().to_string()).fetch_one(&mut *tx).await?;
                 if !inherited && !has_owning_loss_receipt(&mut tx,session_id.as_bytes().as_slice(),epoch.get()).await? { return Err(DurabilityError::Unavailable); }
-                let signed:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=encode($1,'hex')::uuid OR EXISTS(SELECT 1 FROM game_activity_runtime_returns a WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND a.source_game_session_id=d.game_session_id))")
+                let signed:bool=sqlx::query_scalar("SELECT game_security_session_revoked(encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_staff_disconnects d WHERE d.game_session_id=encode($1,'hex')::uuid OR EXISTS(SELECT 1 FROM game_activity_runtime_returns a WHERE a.destination_game_session_id=encode($1,'hex')::uuid AND a.source_game_session_id=d.game_session_id))")
                     .bind(session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
                 if !signed { return Err(DurabilityError::Unavailable); }
             }

@@ -1,4 +1,129 @@
 #[test]
+fn pending_spell_repair_keeps_liveness_and_promotes_on_the_same_connection()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                struct RepairAuthority(tokio::sync::Notify);
+                impl FreshAdmissionAuthority for RepairAuthority {
+                    async fn admit(
+                        &self,
+                        _: FreshAdmissionAttempt<'_>,
+                    ) -> Result<AdmittedSession, AdmissionRefusal> {
+                        Err(AdmissionRefusal::Rejected)
+                    }
+                    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+                        Some(at(0))
+                    }
+                    async fn repair_pending_spells(&self, _: AdmittedSession) -> bool {
+                        self.0.notified().await;
+                        true
+                    }
+                }
+                tokio::time::pause();
+                let authority = RepairAuthority(tokio::sync::Notify::new());
+                let mut admitted = positioned()?;
+                admitted.first_entry = FirstEntryOutcome::AwaitingSpellRepair;
+                let (mut server, mut client) = tokio::io::duplex(1 << 16);
+                let serving = serve_admitted(&mut server, admitted, &authority, FAST);
+                let reading = async {
+                    let mut probes = 0;
+                    loop {
+                        let length = client.read_u32().await? as usize;
+                        let mut frame = vec![0; length];
+                        client.read_exact(&mut frame).await?;
+                        let envelope = decode_wire_envelope(&frame)?;
+                        match envelope.message_type() {
+                            MessageType::LivenessProbe => {
+                                probes += 1;
+                                let id = oteryn_protocol_oteryn::decode_liveness_probe(
+                                    envelope.payload(),
+                                )?;
+                                client
+                                    .write_all(&framed(&ack(ADMITTED_GENERATION, id)))
+                                    .await?;
+                                if probes == 2 {
+                                    authority.0.notify_one();
+                                }
+                            }
+                            MessageType::SnapshotBegin => assert!(probes >= 2),
+                            MessageType::SnapshotCommit => break,
+                            MessageType::SnapshotChunk => {}
+                            kind => return Err(format!("unexpected repair frame: {kind:?}").into()),
+                        }
+                    }
+                    // An ACK already in flight when repair completes remains valid after setup.
+                    client
+                        .write_all(&framed(&ack(ADMITTED_GENERATION, 2)))
+                        .await?;
+                    client.shutdown().await?;
+                    Ok::<(), Box<dyn Error>>(())
+                };
+                let (end, read) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                    tokio::join!(serving, reading)
+                })
+                .await
+                .map_err(|_| "pending spell repair did not complete its connection")?;
+                read?;
+                assert!(
+                    matches!(end, ConnectionEnd::AdmittedThenDisconnected(session)
+            if session.first_entry == FirstEntryOutcome::Reconciled)
+                );
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "spell repair connection thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn refused_entry_participants_never_invoke_spell_repair() -> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                struct RepairAuthority(Cell<usize>);
+                impl FreshAdmissionAuthority for RepairAuthority {
+                    async fn admit(
+                        &self,
+                        _: FreshAdmissionAttempt<'_>,
+                    ) -> Result<AdmittedSession, AdmissionRefusal> {
+                        Err(AdmissionRefusal::Rejected)
+                    }
+                    async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+                        Some(at(0))
+                    }
+                    async fn repair_pending_spells(&self, _: AdmittedSession) -> bool {
+                        self.0.set(self.0.get() + 1);
+                        true
+                    }
+                }
+                let authority = RepairAuthority(Cell::new(0));
+                for outcome in [
+                    FirstEntryOutcome::NotApplicable,
+                    FirstEntryOutcome::RefusedByChannel,
+                    FirstEntryOutcome::RefusedStaleAuthority,
+                    FirstEntryOutcome::RefusedUnavailable,
+                ] {
+                    let mut admitted = positioned()?;
+                    admitted.first_entry = outcome;
+                    let (_, frames) = drive_session(&authority, admitted, &[]).await?;
+                    assert!(frames.is_empty());
+                }
+                assert_eq!(authority.0.get(), 0);
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "spell repair connection thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn admitted_session_closes_on_gap_foreign_message_and_stale_generation()
 -> Result<(), Box<dyn Error>> {
     run(async {
@@ -85,6 +210,149 @@ fn admission_refusal_writes_no_acceptance() -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })
+}
+
+#[test]
+fn join_progress_distinguishes_refused_baseline_and_flushed_snapshot()
+-> Result<(), Box<dyn Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            struct JoinAuthority(bool);
+            impl FreshAdmissionAuthority for JoinAuthority {
+                async fn admit(
+                    &self,
+                    _: FreshAdmissionAttempt<'_>,
+                ) -> Result<AdmittedSession, AdmissionRefusal> {
+                    Err(AdmissionRefusal::Rejected)
+                }
+
+                async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+                    self.0.then(|| at(0))
+                }
+            }
+            for (entry, observed, expected) in [
+                (
+                    FirstEntryOutcome::RefusedUnavailable,
+                    true,
+                    "held_unplayable",
+                ),
+                (FirstEntryOutcome::Positioned, false, "held_no_baseline"),
+                (FirstEntryOutcome::Positioned, true, "snapshot_flushed"),
+            ] {
+                let mut result = Ok(());
+                let lines = oteryn_error_codes::capture(|| {
+                    result = run(async {
+                        let mut admitted = positioned()?;
+                        admitted.first_entry = entry;
+                        let (_, frames) =
+                            drive_session(&JoinAuthority(observed), admitted, &[]).await?;
+                        assert_eq!(frames.is_empty(), expected != "snapshot_flushed");
+                        if expected == "snapshot_flushed" {
+                            assert_eq!(
+                                decode_wire_envelope(frames.last().ok_or("snapshot commit")?)?
+                                    .message_type(),
+                                MessageType::SnapshotCommit,
+                            );
+                        }
+                        Ok(())
+                    })
+                    .map_err(|error| error.to_string());
+                });
+                result?;
+                assert!(
+                    lines.iter().any(|line| {
+                        line.contains("level=info module=gameplay_transport event=join_progress")
+                            && line.contains(&format!("phase={expected}"))
+                            && line.contains(&format!("first_entry={entry:?}"))
+                    }),
+                    "missing {expected}: {lines:?}"
+                );
+            }
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "join progress test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn post_snapshot_wait_reports_phase_before_socket_polling()
+-> Result<(), Box<dyn Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            struct SlowLiveSetup;
+            impl FreshAdmissionAuthority for SlowLiveSetup {
+                async fn admit(
+                    &self,
+                    _: FreshAdmissionAttempt<'_>,
+                ) -> Result<AdmittedSession, AdmissionRefusal> {
+                    Err(AdmissionRefusal::Rejected)
+                }
+                async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+                    Some(at(0))
+                }
+                async fn gameplay_idle_exemptions(
+                    &self,
+                    _: AdmittedSession,
+                ) -> Option<(bool, bool)> {
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    Some((false, false))
+                }
+            }
+            let mut result = Ok(());
+            let lines = oteryn_error_codes::capture(|| {
+                result = run(async {
+                    tokio::time::pause();
+                    let (end, frames) = drive_session(&SlowLiveSetup, positioned()?, &[]).await?;
+                    assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                    assert_eq!(
+                        decode_wire_envelope(frames.last().ok_or("snapshot commit")?)?
+                            .message_type(),
+                        MessageType::SnapshotCommit
+                    );
+                    Ok(())
+                })
+                .map_err(|error| error.to_string());
+            });
+            result?;
+            let flushed = lines
+                .iter()
+                .position(|line| line.contains("phase=snapshot_flushed"))
+                .ok_or("flushed")?;
+            let waiting = lines
+                .iter()
+                .position(|line| {
+                    line.contains("event=connection_phase_wait")
+                        && line.contains("phase=idle_exemptions")
+                        && line.contains("state=pending")
+                })
+                .ok_or("missing pending idle_exemptions diagnostic")?;
+            let completed = lines
+                .iter()
+                .position(|line| {
+                    line.contains("event=connection_phase_wait")
+                        && line.contains("phase=idle_exemptions")
+                        && line.contains("state=completed")
+                })
+                .ok_or("completed")?;
+            let ready = lines
+                .iter()
+                .position(|line| line.contains("phase=live_ready"))
+                .ok_or("live ready")?;
+            assert!(flushed < waiting && waiting < completed && completed < ready);
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.contains("event=connection_live_started")
+                        && line.contains("phase=frame_error"))
+            );
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "post snapshot diagnostic thread panicked")?
+        .map_err(Into::into)
 }
 
 #[test]

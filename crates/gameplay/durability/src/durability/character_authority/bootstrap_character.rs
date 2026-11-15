@@ -61,7 +61,7 @@ impl DurabilityRoot {
             sqlx::query("SELECT account_id FROM game_character_account_guards WHERE account_id = encode($1, 'hex')::uuid FOR UPDATE")
                 .bind(account.as_slice()).fetch_one(&mut *tx).await?;
             // One operation identity is held by at most one receipt table (migration 0087).
-            if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid UNION ALL SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=encode($1, 'hex')::uuid LIMIT 1")
+            if sqlx::query("SELECT 1 FROM game_character_command_receipts WHERE operation_id = encode($1, 'hex')::uuid UNION ALL SELECT 1 FROM game_character_service_receipts WHERE operation_id=encode($1,'hex')::uuid UNION ALL SELECT 1 FROM game_bazaar_decisions WHERE issuer='OTERYN_PLATFORM_CHARACTER_AUTHORITY' AND operation_id=encode($1, 'hex')::uuid LIMIT 1")
                 .bind(operation.as_slice()).fetch_optional(&mut *tx).await?.is_some() {
                 return Ok(Err(CharacterAuthorityError::Conflict));
             }
@@ -107,7 +107,8 @@ impl DurabilityRoot {
             // concurrent same-name bootstrap sees the committed reservation.
             sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-name:' || $1, 0))")
                 .bind(&name_key).execute(&mut *tx).await?;
-            if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
+            sqlx::query("SELECT game_character_service_release_name($1)").bind(&name_key).execute(&mut *tx).await?;
+    if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
                 .bind(&name_key).fetch_optional(&mut *tx).await?.is_some() {
                 return Ok(Err(CharacterAuthorityError::NameUnavailable));
             }

@@ -382,7 +382,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                         (2, "ReadRecoveryAccountSecurityV2")
                     }
                     Operation::ReadRecoverySigningTrustV2 => (2, "ReadRecoverySigningTrustV2"),
-                    Operation::ReadCharacterBootstrapIntentV1
+                    Operation::ListPendingCharacterCommandsV2
+                    | Operation::ReadCharacterCommandIntentV2
+                    | Operation::PublishCharacterCommandReceiptV2
+                    | Operation::PublishCharacterServiceStateV2
+                    | Operation::PublishCharacterServiceWatermarkV2
+                    | Operation::ReadCharacterBootstrapIntentV1
                     | Operation::ReadPremiumSnapshotV1
                     | Operation::ReportRuntimeStatusV1
                     | Operation::PublishAccountCharactersV1
@@ -407,6 +412,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::PublishCharacterDeathsV2
                     | Operation::PublishGuildV2
                     | Operation::PublishHouseV2
+                    | Operation::PublishCharacterSkillsV2
+                    | Operation::PublishCharacterAchievementsV2
+                    | Operation::PublishCharacterEquipmentV2
+                    | Operation::PublishCharacterOutfitV2
                     | Operation::PublishCharacterOnlineSessionV2
                     | Operation::PublishWorldDailyKillsV2
                     | Operation::PublishPublicProjectionWatermarkV2
@@ -471,7 +480,12 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     key_id: "key-1",
                     key_purpose: "existing_actor_recovery",
                 },
-                Operation::ReadCharacterBootstrapIntentV1
+                Operation::ListPendingCharacterCommandsV2
+                | Operation::ReadCharacterCommandIntentV2
+                | Operation::PublishCharacterCommandReceiptV2
+                | Operation::PublishCharacterServiceStateV2
+                | Operation::PublishCharacterServiceWatermarkV2
+                | Operation::ReadCharacterBootstrapIntentV1
                 | Operation::ReadPremiumSnapshotV1
                 | Operation::ReportRuntimeStatusV1
                 | Operation::PublishAccountCharactersV1
@@ -496,6 +510,10 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::PublishCharacterDeathsV2
                 | Operation::PublishGuildV2
                 | Operation::PublishHouseV2
+                | Operation::PublishCharacterSkillsV2
+                | Operation::PublishCharacterAchievementsV2
+                | Operation::PublishCharacterEquipmentV2
+                | Operation::PublishCharacterOutfitV2
                 | Operation::PublishCharacterOnlineSessionV2
                 | Operation::PublishWorldDailyKillsV2
                 | Operation::PublishPublicProjectionWatermarkV2
@@ -1120,4 +1138,82 @@ fn stalled_eof_body_preserves_exchange_deadline() -> Result<(), Box<dyn std::err
         tokio::time::timeout(std::time::Duration::from_secs(2), server).await???;
         Ok::<(), Box<dyn std::error::Error>>(())
     })
+}
+
+fn public_sink(
+    port: u16,
+    activation: native_admission_source::public_projections::v2::Activation,
+) -> Result<native_admission_source::public_projections::MtlsPublicSink, Box<dyn std::error::Error>>
+{
+    use native_admission_source::public_projections::{MtlsPublicSink, PublicProjectionDescriptor};
+    Ok(MtlsPublicSink::new(PublicProjectionDescriptor::new(
+        ("127.0.0.1".into(), port),
+        "source.test".into(),
+        vec![CertificateDer::from(CA.to_vec())],
+        vec![CertificateDer::from(CLIENT.to_vec())],
+        PrivateKeyDer::try_from(CLIENT_KEY.to_vec())?,
+        &[],
+    )?)
+    .with_v2_activation(activation))
+}
+#[test]
+fn public_v2_new_families_flag_off_never_published() -> Result<(), Box<dyn std::error::Error>> {
+    use native_admission_source::{
+        public_projections::{PublicSink, v2::Activation},
+        runtime_status::NotDelivered,
+    };
+    runtime()?.block_on(async {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+        listener.set_nonblocking(true)?;
+        let sink = public_sink(listener.local_addr()?.port(), Activation::default())?;
+        for op in [
+            Operation::PublishCharacterSkillsV2,
+            Operation::PublishCharacterAchievementsV2,
+            Operation::PublishCharacterEquipmentV2,
+            Operation::PublishCharacterOutfitV2,
+        ] {
+            assert_eq!(sink.send(op, "{}").await, Err(NotDelivered::Unavailable));
+        }
+        assert_eq!(
+            listener
+                .accept()
+                .err()
+                .ok_or("unexpected connection")?
+                .kind(),
+            io::ErrorKind::WouldBlock
+        );
+        Ok::<_, Box<dyn std::error::Error>>(())
+    })
+}
+#[test]
+fn public_v2_skills_flag_on_publishes_golden_bytes() -> Result<(), Box<dyn std::error::Error>> {
+    use native_admission_source::{
+        account_characters::Delivery,
+        public_projections::{PublicSink, v2::Activation},
+    };
+    runtime()?.block_on(async {
+ let listener=tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+ let sink=public_sink(listener.local_addr()?.port(),Activation{character_skills:true,..Default::default()})?;
+ let golden=include_str!("../../../docs/contracts/fixtures/public-projections/character_skills_v2.json").trim_end();
+ let acceptor=tokio_rustls::TlsAcceptor::from(server_config(1)?);
+ let server=async {
+ let (tcp,_)=listener.accept().await?;let mut tls=acceptor.accept(tcp).await?;
+ let mut raw=Vec::new();let head_end=loop {
+ let mut byte=[0;1];tls.read_exact(&mut byte).await?;raw.push(byte[0]);
+ if raw.ends_with(b"\r\n\r\n") {break raw.len();}
+ if raw.len()>2048 {return Err(io::Error::other("oversize request head"));}
+ };
+ let head=std::str::from_utf8(&raw).map_err(io::Error::other)?;
+ assert!(head.starts_with("POST /internal/v2/game-public/character-skills HTTP/1.1\r\n"));
+ assert!(head.contains("Connection: close\r\n"));
+ let length=head.lines().find_map(|s|s.strip_prefix("Content-Length: ")).ok_or_else(||io::Error::other("length"))?.parse::<usize>().map_err(io::Error::other)?;
+ raw.resize(head_end+length,0);tls.read_exact(&mut raw[head_end..]).await?;
+ assert_eq!(&raw[head_end..],golden.as_bytes());
+ let ack=r#"{"contract_version":2,"result":"accepted"}"#;
+ tls.write_all(format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n{ack}",ack.len()).as_bytes()).await?;
+ tls.shutdown().await?;Ok::<_,io::Error>(())
+ };
+ let (sent,served)=tokio::join!(sink.send(Operation::PublishCharacterSkillsV2,golden),tokio::time::timeout(std::time::Duration::from_secs(4),server));
+ served??;assert_eq!(sent,Ok(Delivery::Accepted));Ok::<_,Box<dyn std::error::Error>>(())
+ })
 }

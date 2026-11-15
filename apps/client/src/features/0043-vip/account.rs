@@ -11,9 +11,10 @@ impl PlayLink {
     pub fn account_friends_open(&self) {
         submit(&mut lock(&self.mailbox), &self.commands, 0);
         #[cfg(windows)]
-        open(self);
-        #[cfg(not(windows))]
-        {
+        if !self.uses_shared_frontend() {
+            open(self);
+        }
+        if cfg!(not(windows)) || self.uses_shared_frontend() {
             lock(&self.mailbox).vip.account_open = true;
         }
     }

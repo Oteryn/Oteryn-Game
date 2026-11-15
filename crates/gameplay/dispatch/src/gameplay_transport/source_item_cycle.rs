@@ -50,6 +50,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                     .chain(self.states.quest_callbacks.next_encounter_due_us())
                     .chain(
+                        self.rooms()
+                            .gate_monster_ai()
+                            .map(|_| states.next_monster_ai_pass_us),
+                    )
+                    .chain(
                         npc_voices
                             .as_ref()
                             .and_then(super::npc_voice::NpcVoiceCycle::next_due_us),
@@ -105,9 +110,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             // Rotate independent units, including empty discoveries. The two
             // Rotten slots retain cyclic pre/AI/post order across resumed sweeps;
-            // no whole-population grant is introduced.
-            let start = self.background_start("source-cycle", 14);
-            for index in (start..14).chain(0..start) {
+            // monster melee runs with the AI phase, between them.
+            // No whole-population grant is introduced.
+            let start = self.background_start("source-cycle", 15);
+            for index in (start..15).chain(0..start) {
                 self.background_turn("source-cycle", index + 1, async {
                     match index {
                         0 => {
@@ -165,6 +171,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         9 => {
                             if self.ensure_source_map_initialized().await {
+                                self.drain_monster_melee().await;
+                            }
+                        }
+                        10 => {
+                            if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
                                         self.drain_rotten_movement_callback_unit(),
@@ -172,14 +183,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .await;
                             }
                         }
-                        10 => {
+                        11 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(self.drain_bak_first_think_claims())
                                     .await;
                             }
                         }
-                        11 => {
+                        12 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(
@@ -188,7 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     .await;
                             }
                         }
-                        12 => {
+                        13 => {
                             if self.ensure_source_map_initialized().await {
                                 self.root
                                     .with_background_operation(self.drain_primal_pod_expiries())

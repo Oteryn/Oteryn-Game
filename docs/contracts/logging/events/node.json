@@ -139,6 +139,14 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "character_services",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "G-3 bounded operation/result/timing only; never subject identifiers, names or payloads."
+    },
+    {
       "event": "charm_catalogue",
       "level": "info",
       "span": false,

@@ -3,6 +3,19 @@
   "owner": "crates",
   "events": [
     {
+      "event": "admission_entry_decision",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "outcome",
+        "attempts",
+        "elapsed_ms",
+        "phase"
+      ],
+      "codes": [],
+      "note": "First-entry retry decision and pre-snapshot callback phase completion. Outcome is phase-local playable, unplayable or retries_exhausted; attempts counts actual first-entry calls (one for each callback phase); elapsed_ms covers the retry loop or named callback phase. Phase identifies the last first-entry participant or callback phase. Connection trace when available; no player identity or raw errors."
+    },
+    {
       "event": "appearance_initial_failed",
       "level": "warn",
       "span": false,
@@ -39,6 +52,14 @@
       ],
       "codes": [],
       "note": "Merged quest mechanics owner refusal; pending obligations are retained."
+    },
+    {
+      "event": "command_guard_deferred",
+      "level": "info",
+      "span": false,
+      "fields": [],
+      "codes": [],
+      "note": "Transient holder failure refused one command without a disconnect (NBREL3)."
     },
     {
       "event": "command_guard_failed",
@@ -87,6 +108,28 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
+    },
+    {
+      "event": "connection_live_started",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase"
+      ],
+      "codes": [],
+      "note": "First selected input or timer after each join snapshot; phase uses the closed poll Next labels. Emitted once per live setup, before activity/staff revalidation and inbound work."
+    },
+    {
+      "event": "connection_phase_wait",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "phase",
+        "state",
+        "elapsed_ms"
+      ],
+      "codes": [],
+      "note": "A serve owner future pending for one second emits pending once, then completed if it returns. Diagnostic only: no cancellation, timeout or retry. Covers idle_exemptions, step_deadline, sounds, activity_switch, staff_refresh, analyser, inbound poll phase labels and command. A pending event without completed locates a stalled socket polling path; trace when available."
     },
     {
       "event": "connection_served",
@@ -157,6 +200,30 @@
       "note": "Seeded from current server code."
     },
     {
+      "event": "join_progress",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "phase",
+        "first_entry"
+      ],
+      "codes": [],
+      "note": "Join boundary before awaiting baseline or each snapshot preparation group, encoding, or writing. held_unplayable and held_no_baseline identify admission-only holds; snapshot_flushed means all snapshot frames including commit completed write_frame and flush. live_sounds and live_movement_effects precede post-snapshot initialization; live_ready means setup completed and socket polling can start. first_entry is the current FirstEntryOutcome, including changes after initial positioning. Connection trace when available; no player identity or raw errors."
+    },
+    {
+      "event": "join_snapshot_summary",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "domains",
+        "map_selected",
+        "map_present",
+        "spatial_floor"
+      ],
+      "codes": [],
+      "note": "Join immediately before encoding: total domains, capability-selected map versus included map and domain 1 runtime spatial floor. Correlate map_view_snapshot native origin with spatial_floor using the legacy z conversion."
+    },
+    {
       "event": "listener_connection_poll_slow",
       "level": "info",
       "span": false,
@@ -171,27 +238,6 @@
       "fields": [],
       "codes": [],
       "note": "Node boot diagnostics (NBDIAG, #3057)."
-    },
-    {
-      "event": "native_owner_turn",
-      "level": "info",
-      "span": false,
-      "fields": [
-        "phase",
-        "class"
-      ],
-      "codes": [],
-      "note": "PR3056 test-only (cfg(test)): finite native profile boundary observations for actual pinned Primal/Bakragore rooms. Phase and class are static source tokens only; no identifiers, numeric clocks, payloads or raw errors. No production logging or authority is added."
-    },
-    {
-      "event": "rotten_wave_refused",
-      "level": "warn",
-      "span": false,
-      "fields": [
-        "current_owner"
-      ],
-      "codes": [],
-      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
       "event": "logout_busy",
@@ -213,6 +259,34 @@
       ],
       "codes": [],
       "note": "NBEOF-2: closed-schema logout stage and unknown/authority failure kind before transport closure."
+    },
+    {
+      "event": "map_view_snapshot",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "revision",
+        "tiles",
+        "items",
+        "origin_x",
+        "origin_y",
+        "origin_floor",
+        "first_visible_floor",
+        "origin_tile"
+      ],
+      "codes": [],
+      "note": "Successfully encoded domain 17 map replacement (not delivery): exact encoded nonempty tile/item counts and native map origin, including whether its tile has items. Join delivery is established by snapshot_flushed. No player identity, item identity or payload."
+    },
+    {
+      "event": "native_owner_turn",
+      "level": "info",
+      "span": false,
+      "fields": [
+        "phase",
+        "class"
+      ],
+      "codes": [],
+      "note": "PR3056 test-only (cfg(test)): finite native profile boundary observations for actual pinned Primal/Bakragore rooms. Phase and class are static source tokens only; no identifiers, numeric clocks, payloads or raw errors. No production logging or authority is added."
     },
     {
       "event": "player_trade_refused",
@@ -240,6 +314,16 @@
       ],
       "codes": [],
       "note": "An expired grace release was put off on this attempt (LOGDBG-C): closed reason set, ms since the grace deadline, generation numbers only; rate-limited per reason."
+    },
+    {
+      "event": "rotten_wave_refused",
+      "level": "warn",
+      "span": false,
+      "fields": [
+        "current_owner"
+      ],
+      "codes": [],
+      "note": "Merged quest mechanics owner refusal; pending obligations are retained."
     },
     {
       "event": "serve_command_end",

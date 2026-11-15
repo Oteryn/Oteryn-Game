@@ -180,6 +180,9 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/primal_callbacks.rs", 3),
             ("gameplay_transport/soul_war_cloak_blood.rs", 1),
             ("gameplay_transport/monster_ai_cycle.rs", 5),
+            // LIVEJOIN-1: the composed source cycle wakes for the next monster AI pass
+            // only while the same live-world gate is open.
+            ("gameplay_transport/source_item_cycle.rs", 1),
             // S10: source NPC wandering uses the same live-world movement gate.
             ("gameplay_transport/npc_actor/current_map.rs", 1),
             (

@@ -850,7 +850,21 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 .await
                 .map_err(|_| ())?;
             let owner = ActivityHandoffOwner::new(self.root.clone());
-            let result = if let Some(proof) = attempt.source_exit.as_ref()
+            let result = if matches!(attempt.request.reason, ActivityReturnReason::Death { .. })
+                && matches!(
+                    attempt.trigger_reason,
+                    ActivityReturnReason::StaffKick { .. }
+                        | ActivityReturnReason::StaffKickLost { .. }
+                ) {
+                owner
+                    .return_forced_death(
+                        self.character,
+                        self.holder,
+                        attempt.request.clone(),
+                        attempt.trigger_reason,
+                    )
+                    .await
+            } else if let Some(proof) = attempt.source_exit.as_ref()
                 && matches!(attempt.request.reason, ActivityReturnReason::Exit)
             {
                 owner

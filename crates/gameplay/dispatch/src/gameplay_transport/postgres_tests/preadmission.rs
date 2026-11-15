@@ -176,9 +176,9 @@ fn assert_refusal_frame(bytes: &[u8], error: FoundationProtocolError) -> TestRes
 
 // The existing verifier host-clock hook, the fake Platform's timestamps, and
 // the commit query all use one fixed instant in this disposable test database.
-struct FrozenAdmissionClock(Option<i64>);
+pub(super) struct FrozenAdmissionClock(Option<i64>);
 impl FrozenAdmissionClock {
-    async fn install(h: &super::fixture::Harness, now: i64) -> TestResult<Self> {
+    pub(super) async fn install(h: &super::fixture::Harness, now: i64) -> TestResult<Self> {
         sqlx::query("CREATE SCHEMA preadm_clock")
             .execute(&h.pool)
             .await?;

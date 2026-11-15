@@ -338,7 +338,7 @@ impl ActivityHandoffOwner {
                 ActivityRefusal::InvalidInput,
             ));
         }
-        self.return_inner(authority, node, request, false, None)
+        self.return_inner(authority, node, request, false, None, None)
             .await
     }
 
@@ -351,7 +351,7 @@ impl ActivityHandoffOwner {
         request: ActivityReturnRequest,
         movement: ActivityNativeStepExit,
     ) -> Result<ActivityReturnOutcome> {
-        self.return_inner(authority, node, request, false, Some(movement))
+        self.return_inner(authority, node, request, false, None, Some(movement))
             .await
     }
 
@@ -364,7 +364,27 @@ impl ActivityHandoffOwner {
         request.reason = ActivityReturnReason::OwnerLost;
         request.command_id = None;
         request.destination_transport = None;
-        self.return_inner(authority, node, request, true, None)
+        self.return_inner(authority, node, request, true, None, None)
+            .await
+    }
+
+    /// Retain the independently proven terminal trigger when native settlement converts it to Death.
+    pub async fn return_forced_death(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: ActivityReturnRequest,
+        trigger: ActivityReturnReason,
+    ) -> Result<ActivityReturnOutcome> {
+        if !matches!(request.reason, ActivityReturnReason::Death { .. })
+            || !matches!(trigger, ActivityReturnReason::StaffKick { .. } | ActivityReturnReason::StaffKickLost { .. })
+            || request.command_id.is_some()
+            || matches!(trigger, ActivityReturnReason::StaffKick { .. } if request.destination_transport.is_none())
+            || matches!(trigger, ActivityReturnReason::StaffKickLost { .. } if request.destination_transport.is_some())
+        {
+            return Ok(ActivityReturnOutcome::Refused(ActivityRefusal::InvalidInput));
+        }
+        self.return_inner(authority, node, request, false, Some(trigger), None)
             .await
     }
 
@@ -374,6 +394,7 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         request: ActivityReturnRequest,
         recovering: bool,
+        terminal_trigger: Option<ActivityReturnReason>,
         movement: Option<ActivityNativeStepExit>,
     ) -> Result<ActivityReturnOutcome> {
         if request.command_id == Some(0)
@@ -427,6 +448,7 @@ impl ActivityHandoffOwner {
                         &node,
                         &request,
                         recovering,
+                        terminal_trigger,
                         movement.as_ref(),
                     )
                     .await?;

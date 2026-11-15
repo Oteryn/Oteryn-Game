@@ -121,9 +121,9 @@ def shared_cache_completion_regressions() -> None:
     # The package-scoped units that MQ build-smoke, node_boot and server_seam reuse stay cached;
     # running the harness and the smoke is left to MQ build-smoke on the same SHA.
     package_build = steps[names.index("Build synthetic harness and native game-server")]
-    assert "cargo +1.99.1 build --locked -p oteryn-synthetic-client-harness\n" in package_build
-    assert "cargo +1.99.1 build --locked -p oteryn-game-server --bin oteryn-game-server\n" in package_build
-    assert "cargo +1.99.1 run" not in linux
+    assert "cargo +1.100.0 build --locked -p oteryn-synthetic-client-harness\n" in package_build
+    assert "cargo +1.100.0 build --locked -p oteryn-game-server --bin oteryn-game-server\n" in package_build
+    assert "cargo +1.100.0 run" not in linux
     assert save == len(steps) - 1
     assert "timeout-minutes: 60\n" in linux
     fence = "if: github.ref == 'refs/heads/main' && github.ref_protected\n"
@@ -170,7 +170,7 @@ def shared_cache_completion_regressions() -> None:
     # The protected-main producer only compiles tests. Full test execution is
     # retained in MQ; cache hits never stand in for candidate qualification.
     test_commands = re.findall(r"(?m)^        run: (cargo .+ test .+)$", source)
-    assert test_commands == ["cargo +1.99.1 test --locked --workspace --no-run"]
+    assert test_commands == ["cargo +1.100.0 test --locked --workspace --no-run"]
     assert "services:" not in source and "runs-on: windows" not in source
     assert not re.search(r"(?m)^  (durability-postgres|windows):$", source)
     assert "github.ref == 'refs/heads/main' && github.ref_protected" in linux

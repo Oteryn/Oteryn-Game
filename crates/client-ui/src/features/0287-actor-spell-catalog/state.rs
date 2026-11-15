@@ -16,6 +16,16 @@ pub struct Panel {
 }
 
 impl Panel {
+    /// The exact confirmed rows used by both the legacy and shared presenters.
+    pub fn visible_spells(
+        &self,
+    ) -> impl Iterator<Item = &oteryn_client_runtime::spell_catalog::SpellCatalogEntry> {
+        self.catalog
+            .entries()
+            .iter()
+            .filter(|entry| self.selected && !self.filter_error && self.matches(entry))
+    }
+
     #[must_use]
     pub fn selected_spell(
         &self,

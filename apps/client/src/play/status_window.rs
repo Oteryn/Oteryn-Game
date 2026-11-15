@@ -139,6 +139,9 @@ pub(super) fn open_window<P: StatusPanel>(
     title: &'static str,
     get: fn(&mut Mailbox) -> &mut P,
 ) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut mailbox = lock(&link.mailbox);
         if get(&mut mailbox).open() {

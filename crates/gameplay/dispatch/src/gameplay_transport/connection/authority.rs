@@ -25,6 +25,11 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Complete only the final spell participant under this connection's admitted fence.
+    fn repair_pending_spells(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// One bounded cadence body; production retains its root's fairness grant across passes.
     fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
         future
@@ -183,8 +188,13 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
-    fn activity_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    /// Holder unavailability/deadline refuses this command; every other error
+    /// means the admitted authority was lost and still closes the connection.
+    fn activity_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
     fn activity_scope_snapshot(
         &self,
@@ -193,8 +203,11 @@ pub trait FreshAdmissionAuthority {
         async { Ok(None) }
     }
 
-    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
-        async { true }
+    fn house_transfer_input(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<(), crate::durability::DurabilityError>> {
+        async { Ok(()) }
     }
     fn observe_house_map(
         &self,

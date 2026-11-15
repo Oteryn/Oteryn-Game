@@ -494,7 +494,7 @@ async fn decide(
             result_code: row.try_get("result_code")?,
         })));
     }
-    if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid")
+    if sqlx::query("SELECT 1 FROM game_character_operation_receipts WHERE operation_id = encode($1, 'hex')::uuid UNION ALL SELECT 1 FROM game_character_service_receipts WHERE operation_id=encode($1,'hex')::uuid LIMIT 1")
         .bind(request.operation.as_slice()).fetch_optional(&mut **tx).await?.is_some() {
         return Ok(Some(None));
     }
@@ -604,7 +604,7 @@ async fn check_create(
         return Ok(if known { Check::Transient } else { Check::Rejected(WORLD_NOT_ACCEPTED) });
     }
     let listed: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM game_character_roots WHERE account_id = encode($1, 'hex')::uuid",
+        "SELECT count(*) FROM game_character_roots WHERE account_id = encode($1, 'hex')::uuid AND lifecycle<>4",
     )
     .bind(intent.account_id.as_slice())
     .fetch_one(&mut **tx)
@@ -619,6 +619,7 @@ async fn check_create(
     .bind(&name_key)
     .execute(&mut **tx)
     .await?;
+    sqlx::query("SELECT game_character_service_release_name($1)").bind(&name_key).execute(&mut **tx).await?;
     if sqlx::query("SELECT 1 FROM game_character_name_reservations WHERE name_key = $1")
         .bind(&name_key)
         .fetch_optional(&mut **tx)

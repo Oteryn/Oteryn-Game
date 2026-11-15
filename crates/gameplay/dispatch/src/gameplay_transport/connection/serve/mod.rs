@@ -3,6 +3,7 @@ mod vip_presence;
 
 use super::*;
 use crate::gameplay_transport::operator_event;
+use crate::gameplay_transport::record_join_progress;
 
 mod achievement_notices;
 mod activity_transfer;
@@ -26,6 +27,7 @@ mod refresh;
 mod setup;
 mod snapshot;
 mod spell_catalog;
+mod spell_repair;
 mod target_move;
 use command::CommandOutcome;
 mod effects;
@@ -34,6 +36,36 @@ mod outbound;
 mod result;
 mod route;
 mod use_effects;
+
+/// Observe a slow owner without cancelling, retrying or extending its work. One pending
+/// event is emitted even if it never returns; normal fast calls remain silent.
+async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output = T>) -> T {
+    let started = tokio::time::Instant::now();
+    let mut work = std::pin::pin!(work);
+    let mut warning = std::pin::pin!(tokio::time::sleep(std::time::Duration::from_secs(1)));
+    let mut reported = false;
+    let result = std::future::poll_fn(|cx| {
+        if let std::task::Poll::Ready(result) = work.as_mut().poll(cx) {
+            return std::task::Poll::Ready(result);
+        }
+        if !reported && warning.as_mut().poll(cx).is_ready() {
+            operator_event(&format!(
+                "event=connection_phase_wait phase={phase} state=pending elapsed_ms={}",
+                started.elapsed().as_millis(),
+            ));
+            reported = true;
+        }
+        std::task::Poll::Pending
+    })
+    .await;
+    if reported {
+        operator_event(&format!(
+            "event=connection_phase_wait phase={phase} state=completed elapsed_ms={}",
+            started.elapsed().as_millis(),
+        ));
+    }
+    result
+}
 
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
@@ -261,14 +293,27 @@ where
                 Err(end) => return *end,
             };
         }
+        let repaired_io = if admitted.first_entry == FirstEntryOutcome::AwaitingSpellRepair
+            && admitted.runtime_actor.is_some()
+        {
+            match spell_repair::wait(stream, &mut admitted, authority, policy).await {
+                Ok(io) => Some(io),
+                Err(end) => return end.finish(admitted),
+            }
+        } else {
+            None
+        };
         let playable = matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         );
         let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
+            record_join_progress("held_unplayable", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
+        record_join_progress("baseline", admitted.first_entry);
         let Some(baseline) = authority.observe(actor).await else {
+            record_join_progress("held_no_baseline", admitted.first_entry);
             return hold_refused(stream, admitted, policy).await;
         };
         let mut session = match setup::prepare(
@@ -285,6 +330,11 @@ where
             Ok(session) => session,
             Err(end) => return end.finish(admitted),
         };
+        if let Some((frames, liveness, cadence)) = repaired_io {
+            session.frames = frames;
+            session.liveness = liveness;
+            session.cadence = cadence;
+        }
         if let Some((frames, expected)) = activity_input.take() {
             session.frames = frames;
             if let Some(expected) = expected
@@ -308,11 +358,17 @@ where
                 return ServeEnd::Disconnected.finish(session.admitted);
             }
         }
+        let mut live_started = false;
         loop {
             if !authority.remember_activity_connection(session.admitted) {
                 return ServeEnd::Disconnected.finish(session.admitted);
             }
-            match activity_transfer::pending(stream, authority, &mut session).await {
+            match observed(
+                "activity_switch",
+                activity_transfer::pending(stream, authority, &mut session),
+            )
+            .await
+            {
                 Ok(Some((next, cursor))) => {
                     require_session_binding = true;
                     handoff_effect_start = cursor;
@@ -330,7 +386,12 @@ where
             // A committed handoff has retired the source actor. Cross its
             // barrier before refreshing staff facts through the new owner.
             if tokio::time::Instant::now() >= next_staff_refresh {
-                match activity_transfer::refresh_staff(stream, authority, &mut session).await {
+                match observed(
+                    "staff_refresh",
+                    activity_transfer::refresh_staff(stream, authority, &mut session),
+                )
+                .await
+                {
                     Ok(Some((next, cursor))) => {
                         require_session_binding = true;
                         handoff_effect_start = cursor;
@@ -347,15 +408,29 @@ where
                 }
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
-            if let Err(end) = analyser::emit(stream, authority, &mut session).await {
+            if let Err(end) =
+                observed("analyser", analyser::emit(stream, authority, &mut session)).await
+            {
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(authority.current_activity_connection(session.admitted));
             }
             let next = poll::next(stream, authority, &mut session).await;
+            if !live_started {
+                operator_event(&format!(
+                    "event=connection_live_started phase={}",
+                    next.phase()
+                ));
+                live_started = true;
+            }
             // A member who did not issue the lever may have changed owner while
             // waiting for input. Its buffered source command never reaches the
             // destination's fresh command stream.
-            match activity_transfer::pending(stream, authority, &mut session).await {
+            match observed(
+                "activity_switch",
+                activity_transfer::pending(stream, authority, &mut session),
+            )
+            .await
+            {
                 Ok(Some((next, cursor))) => {
                     require_session_binding = true;
                     handoff_effect_start = cursor;
@@ -371,7 +446,12 @@ where
                 Err(end) => return end.finish(session.admitted),
             }
             if tokio::time::Instant::now() >= next_staff_refresh {
-                match activity_transfer::refresh_staff(stream, authority, &mut session).await {
+                match observed(
+                    "staff_refresh",
+                    activity_transfer::refresh_staff(stream, authority, &mut session),
+                )
+                .await
+                {
                     Ok(Some((next, cursor))) => {
                         require_session_binding = true;
                         handoff_effect_start = cursor;
@@ -389,7 +469,11 @@ where
                 next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
             }
             let inbound_phase = next.phase();
-            let received = inbound::receive(stream, authority, &mut session, next).await;
+            let received = observed(
+                inbound_phase,
+                inbound::receive(stream, authority, &mut session, next),
+            )
+            .await;
             let input = match received {
                 Ok(Some(input)) => input,
                 Ok(None) => continue,
@@ -401,7 +485,12 @@ where
                     );
                 }
             };
-            if let Err(end) = command::execute(stream, authority, &mut session, input).await {
+            if let Err(end) = observed(
+                "command",
+                command::execute(stream, authority, &mut session, input),
+            )
+            .await
+            {
                 if let ServeEnd::Transferred(next) = end {
                     activity_input = Some((
                         std::mem::take(&mut session.frames),

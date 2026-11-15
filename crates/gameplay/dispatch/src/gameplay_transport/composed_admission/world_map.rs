@@ -88,6 +88,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let frame = self.wire_position_frame(&runtime)?;
         let visible = runtime.visible_entities();
+        let origin = visible
+            .players
+            .iter()
+            .find(|entry| entry.actor == actor)?
+            .position;
+        let origin =
+            crate::movement::interest::VisibilityPosition::new(origin.x, origin.y, origin.floor)
+                .ok()?;
+        let in_view = |position: crate::foundation::MovementLocalPosition| {
+            crate::movement::interest::VisibilityPosition::new(
+                position.x,
+                position.y,
+                position.floor,
+            )
+            .is_ok_and(|position| {
+                crate::movement::interest::VisibilitySettings::REFERENCE.can_see(origin, position)
+            })
+        };
+        // Use the wire interest owner's exact floor/rectangle rules before cloning
+        // health/policy and reading conditions. A full World has tens of thousands
+        // of distant creatures; none need per-connection enrichment.
         // Reuse the same spell-state guard for visibility, source icons and
         // LIGHTS; never reacquire the held mutex during this projection.
         let census = runtime.positioned_melee_census().ok();
@@ -102,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map(|entry| (VisibleKind::Creature, entry)),
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
+        .filter(|(_, entry)| in_view(entry.position))
         .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
             source_icons: source_icons(
@@ -169,7 +191,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let now_us = self.owner_now().get();
         let mut lights = world_spatial::EntityLights::new();
         if let Some(census) = census {
-            for (actor, _, session) in census {
+            for (actor, position, session) in census {
+                if !in_view(position.position()) {
+                    continue;
+                }
                 let spell = session
                     .and_then(|session| states.get(&runtime, actor, session))
                     .map(|state| state.owned_conditions())

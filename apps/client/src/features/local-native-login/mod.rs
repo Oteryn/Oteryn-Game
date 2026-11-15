@@ -153,13 +153,7 @@ impl LoginSettings {
 }
 
 pub fn settings_path() -> Result<PathBuf, String> {
-    #[cfg(windows)]
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
-    #[cfg(not(windows))]
-    let base = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")));
-    base.map(|base| base.join("Oteryn").join("native-login.json"))
+    crate::play::PreferenceStore::configuration_path("native-login.json")
         .ok_or_else(|| tr!("Cannot locate the user configuration directory.").into())
 }
 

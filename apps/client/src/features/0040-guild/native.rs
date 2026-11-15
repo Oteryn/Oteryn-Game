@@ -27,6 +27,9 @@ fn wide(s: &str) -> Vec<u16> {
 }
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 pub(in crate::play) fn open_window(link: &PlayLink) {
+    if link.uses_shared_frontend() {
+        return;
+    }
     {
         let mut m = lock(&link.mailbox);
         if m.guild.open {
