@@ -319,6 +319,9 @@ async fn pause_after_next_physical(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     now: u64,
 ) -> TestResult<bool> {
+    // This fixture has no node maintenance pump. Cancellation retires the SQL
+    // holder; observe the root's real ready window before the next owner turn.
+    owner.root.await_ready().await?;
     let signal = owner
         .states
         .spell_states
@@ -366,6 +369,7 @@ async fn finish_profile(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) ->
         {
             return Ok(());
         }
+        owner.root.await_ready().await?;
         owner
             .drain_monster_melee_at(SemanticTimeMicros::from_micros(now))
             .await;
@@ -399,6 +403,7 @@ fn effects(
 }
 
 async fn drain_attacks_at(owner: &ComposedFreshAdmission<'_, '_, '_>, now: u64) -> TestResult {
+    owner.root.await_ready().await?;
     use crate::durability::DurabilityError;
     use crate::durability::spell_item_transaction::{
         assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,

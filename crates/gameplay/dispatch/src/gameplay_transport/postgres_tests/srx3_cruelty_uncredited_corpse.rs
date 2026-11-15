@@ -277,25 +277,55 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                 command_id: 1000,
                 item_fence: Some(fence),
             };
-            let movement = crate::gameplay_transport::item_move::LoopMove {
-                item: crate::gameplay_transport::item_view::ItemKey::Instance(item),
-                count: None,
-                target: crate::gameplay_transport::item_move::LoopTarget::MainBackpack,
+            use crate::gameplay_transport::item_move::{ItemMoveStep, item_move};
+            use crate::gameplay_transport::item_view::{ItemKey, ItemViewError, SessionItemView};
+            use oteryn_protocol_oteryn::item_view::{
+                ItemMoveDestination, ItemMoveIntent, ItemMoveOutcome, ItemMoveSelection,
+                encode_item_move_intent_for,
+            };
+            // Command 9 resolves its receipt before deriving today's Ground cell.
+            // Calling the low-level writer again would invent a different request
+            // after the first pickup removed that cell; exercise the real handler.
+            let key = ItemKey::Instance(item);
+            let mut items = SessionItemView::resume(admitted.continuity.item_view).with_map_view();
+            let source = items
+                .map_view(&[key], |table| {
+                    table.handle(&key).ok_or(ItemViewError::Encode)
+                })
+                .map_err(debug)?;
+            let selection = ItemMoveSelection::default();
+            let payload = encode_item_move_intent_for(
+                &ItemMoveIntent {
+                    source,
+                    destination: ItemMoveDestination::MainBackpack,
+                },
+                selection,
+            )
+            .map_err(debug)?;
+            let outcome = |step| {
+                let ItemMoveStep::Result(outcome, _) = step else {
+                    panic!("actual pickup command must return a result: {step:?}");
+                };
+                outcome
             };
             assert_eq!(
-                crate::gameplay_transport::loop_move::move_loop_item(
-                    &view, player, command, movement
-                )
-                .await,
-                crate::gameplay_transport::item_move::LoopMoveResult::Committed
+                outcome(
+                    item_move(
+                        &view, player, command, &payload, selection, false, &mut items
+                    )
+                    .await
+                ),
+                ItemMoveOutcome::Moved
             );
             assert_eq!(
-                crate::gameplay_transport::loop_move::move_loop_item(
-                    &view, player, command, movement
-                )
-                .await,
-                crate::gameplay_transport::item_move::LoopMoveResult::Committed,
-                "same actual pickup wire replays"
+                outcome(
+                    item_move(
+                        &view, player, command, &payload, selection, false, &mut items
+                    )
+                    .await
+                ),
+                ItemMoveOutcome::Moved,
+                "same actual pickup command replays"
             );
             view.drain_monster_melee_at(owner.owner_now()).await;
             assert_eq!(sqlx::query_as::<_, (String, String, String)>("SELECT event_id::text,transaction_id::text,item_instance_id::text FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION' ORDER BY event_id")
