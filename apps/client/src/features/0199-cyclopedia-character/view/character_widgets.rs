@@ -16,12 +16,12 @@ pub(super) struct Widgets {
     pub(super) training_bar: HWND,
 }
 
-pub(super) unsafe fn create(hwnd: HWND) -> Widgets {
+pub(super) unsafe fn create(hwnd: HWND, values: [String; 3]) -> Widgets {
     unsafe {
         let fields = [
-            (tr!("Page offset"), "0"),
-            (tr!("Page size (1-50)"), "20"),
-            (tr!("Target UUID (blank = self)"), ""),
+            (tr!("Page offset"), values[0].as_str()),
+            (tr!("Page size (1-50)"), values[1].as_str()),
+            (tr!("Target UUID (blank = self)"), values[2].as_str()),
         ];
         let mut edits = [null_mut(); 3];
         for (i, (label, value)) in fields.iter().enumerate() {

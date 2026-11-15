@@ -4,8 +4,12 @@ impl Outbox {
     pub(in crate::play) fn chat_party_room_initialize(&self, selected: bool) {
         lock(&self.0).chat_party_room.selected = selected;
     }
-    pub(in crate::play) fn chat_party_room_result(&self) {
-        oteryn_client_ui::chat_party_room::apply_result(&mut lock(&self.0).chat_party_room);
+    pub(in crate::play) fn chat_party_room_result(&self, outcome: &oteryn_session::ChatOutcome) {
+        let mut mailbox = lock(&self.0);
+        oteryn_client_ui::chat_party_room::apply_result(&mut mailbox.chat_party_room);
+        let mut result = oteryn_client_ui::chat_public_channels::ChatPanel::default();
+        oteryn_client_ui::chat_public_channels::apply_result(&mut result, outcome);
+        mailbox.chat_party_room.feedback = result.feedback;
     }
     pub(in crate::play) fn chat_result(
         &self,
@@ -15,8 +19,31 @@ impl Outbox {
         if self.chat_private_result(intent, outcome) {
             return;
         }
+        // Clear the accepted draft before releasing pending to the native composer.
+        if matches!(
+            outcome.status,
+            oteryn_session::CommandStatus::Accepted
+                | oteryn_session::CommandStatus::DuplicateReplay
+        ) && outcome.disposition == oteryn_session::ChatDisposition::Ok
+        {
+            let mut mailbox = lock(&self.0);
+            let submitted = match intent {
+                oteryn_session::ChatIntent::Party { text } => {
+                    Some((&mut mailbox.chat_party_room.text, text))
+                }
+                oteryn_session::ChatIntent::Room { text, .. } => {
+                    Some((&mut mailbox.chat_public.text, text))
+                }
+                _ => None,
+            };
+            if let Some((draft, submitted)) = submitted
+                && draft == submitted
+            {
+                draft.clear();
+            }
+        }
         if matches!(intent, oteryn_session::ChatIntent::Party { .. }) {
-            self.chat_party_room_result();
+            self.chat_party_room_result(outcome);
         } else if matches!(
             intent,
             oteryn_session::ChatIntent::Say { .. }

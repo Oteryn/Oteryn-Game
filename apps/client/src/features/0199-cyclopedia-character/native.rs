@@ -4,6 +4,16 @@ use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, r
 
 pub(in crate::play) const OVERVIEW_CARD_COUNT: usize = 15;
 
+pub(in crate::play) fn initial_character_fields(p: &CyclopediaCharacterPanel) -> [String; 3] {
+    [
+        p.offset.to_string(),
+        p.limit.to_string(),
+        p.target
+            .map(|id| id.iter().map(|byte| format!("{byte:02x}")).collect())
+            .unwrap_or_default(),
+    ]
+}
+
 pub(in crate::play) fn display(p: &CyclopediaCharacterPanel) -> String {
     let badges = oteryn_client_ui::cyclopedia_character::badge_text(p);
     format!(
@@ -81,6 +91,17 @@ pub(in crate::play) fn submit(
     p.offset = offset;
     p.limit = limit;
     p.change_target(target);
+    if tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements {
+        if id == 113 {
+            return oteryn_client_ui::cyclopedia_character::achievement_next_request(p);
+        }
+        if id == 112 {
+            return oteryn_client_ui::cyclopedia_character::achievement_request(
+                p,
+                oteryn_client_ui::account_achievements::Intent::Previous,
+            );
+        }
+    }
     request(
         p,
         match id {

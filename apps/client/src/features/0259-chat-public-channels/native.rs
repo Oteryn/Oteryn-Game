@@ -165,6 +165,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            if let Some(previous) = &held
+                && previous.text != mailbox.chat_public.text
+                && read_text(message) == previous.text
+            {
+                SetWindowTextW(message, wide(&mailbox.chat_public.text).as_ptr());
+            }
             for action in std::mem::take(&mut actions.0) {
                 let movement = match action {
                     LEVITATE_UP => Some(MovementSpell::LevitateUp),

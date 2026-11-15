@@ -89,20 +89,22 @@ impl PlayView {
     }
 
     pub(in crate::play) fn pump_touch_step(&mut self, link: &PlayLink) {
-        if lock(&link.mailbox).world_input_blocked()
-            || self.death.dead
-            || crate::play::feature_0450_server_modal::view::active()
-        {
+        let (blocked, diagonals) = {
+            let mailbox = lock(&link.mailbox);
+            (
+                mailbox.world_input_blocked(),
+                mailbox.diagonal_movement_selected,
+            )
+        };
+        if blocked || self.death.dead || crate::play::feature_0450_server_modal::view::active() {
             self.cancel_touch_controls();
             return;
         }
         // Never buffer a held step: release before the next receipt stops immediately.
         if !self.in_flight
             && self.inputs.is_empty()
-            && let Some(directions) = self.touch.direction
+            && let Some(direction) = self.touch.next_direction(diagonals)
         {
-            let direction = directions[usize::from(self.touch.alternate)];
-            self.touch.alternate = !self.touch.alternate;
             self.arrow(direction);
         }
     }

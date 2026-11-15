@@ -84,6 +84,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             (&mut *actions as *mut Actions) as isize,
         );
         SetWindowLongPtrW(hwnd, GWLP_WNDPROC, proc as *const () as isize);
+        let Some(shared) = weak.upgrade() else {
+            DestroyWindow(hwnd);
+            return;
+        };
+        let fields = initial_character_fields(&lock(&shared).cyclopedia_character);
+        drop(shared);
         let character_widgets::Widgets {
             badge_id,
             edits,
@@ -97,7 +103,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             cards,
             stamina_bar,
             training_bar,
-        } = character_widgets::create(hwnd);
+        } = character_widgets::create(hwnd, fields);
         let mut tables = super::character_paint::Tables::default();
         let mut message: MSG = std::mem::zeroed();
         loop {

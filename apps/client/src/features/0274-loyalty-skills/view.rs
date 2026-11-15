@@ -7,6 +7,7 @@ pub use layout::{SkillsLayout, SkillsLayoutState, SkillsWidget};
 
 impl PlayLink {
     pub fn skills_widget(&self) -> SkillsWidget {
+        self.refresh_skill_progress_if_due();
         let mailbox = lock(&self.mailbox);
         mailbox
             .skills_layout

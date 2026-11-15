@@ -275,3 +275,41 @@ fn touch_default_tap_dead_zone_and_contact_ownership() -> Result<(), Box<dyn std
     assert!(commands.try_recv().is_err(), "cancel is not a world tap");
     Ok(())
 }
+
+#[test]
+fn negotiated_touch_diagonals_submit_one_diagonal_step_per_receipt()
+-> Result<(), Box<dyn std::error::Error>> {
+    for (offset, expected) in [
+        ([48.0, -48.0], StepDir::NorthEast),
+        ([48.0, 48.0], StepDir::SouthEast),
+        ([-48.0, 48.0], StepDir::SouthWest),
+        ([-48.0, -48.0], StepDir::NorthWest),
+    ] {
+        let mut view = view()?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.diagonal_movement_initialize(true);
+        let center = Layout::new(view.scene().view()).center;
+        touch(&mut view, &link, 1, Phase::Started, center);
+        touch(
+            &mut view,
+            &link,
+            1,
+            Phase::Moved,
+            [center[0] + offset[0], center[1] + offset[1]],
+        );
+        for _ in 0..2 {
+            view.tick(&link).map_err(|_| "play ended")?;
+            assert_eq!(
+                commands.try_recv()?,
+                crate::combat_input::PlayCommand::Step(expected)
+            );
+            view.tick(&link).map_err(|_| "play ended")?;
+            assert!(commands.try_recv().is_err());
+            outbox.stepped(moved_to(100, 200, 0));
+        }
+        touch(&mut view, &link, 1, Phase::Ended, center);
+        view.tick(&link).map_err(|_| "play ended")?;
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
