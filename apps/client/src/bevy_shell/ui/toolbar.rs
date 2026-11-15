@@ -7,6 +7,7 @@ use bevy::prelude::*;
 pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Analysers", Control::Analysers),
     ("Battle", Control::Panel("battle")),
+    ("Bosstiary", Control::Panel("bosstiary")),
     ("Chat", Control::Panel("chat")),
     ("Inspection", Control::Inspection),
     ("Inventory", Control::Panel("inventory")),
@@ -21,7 +22,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Spellbook", Control::Spells),
     ("VIP", Control::Panel("vip")),
 ];
-pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
+pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
     if owner.modal_active() {
         return false;
     }
@@ -34,9 +35,19 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Panel(id) => {
             if let Some(play) = &owner.play {
                 let mut preferences = owner.settings.preferences.clone();
+                if id == "bosstiary" && preferences.panel_visible(id) {
+                    preferences.visible_panels.retain(|panel| panel != id);
+                    owner.settings.apply(preferences);
+                    return true;
+                }
                 if !preferences.panel_visible(id) {
                     preferences.visible_panels.push(id.into());
                     owner.settings.apply(preferences);
+                }
+                if id == "bosstiary" {
+                    play.link.boss_encounter_request(
+                        oteryn_client_ui::boss_encounter::Intent::Catalogue,
+                    );
                 }
                 if id == "vip" {
                     play.link

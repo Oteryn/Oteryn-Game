@@ -62,7 +62,7 @@ pub(super) enum Control {
     Ok,
     Cancel,
 }
-mod toolbar;
+pub(super) mod toolbar;
 pub(super) use toolbar::project_toolbar;
 use toolbar::{TOOLBAR, open_toolbar};
 impl Control {
