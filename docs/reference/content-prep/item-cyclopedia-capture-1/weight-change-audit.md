@@ -824,21 +824,21 @@ resolve every conflict independently; uncertain values remain unchanged.
 
 | Item | Name | Before | #3213 | Capture | Verdict |
 |---|---|---:|---:|---|---|
-| i12045 | a music box | 200 | 2700 | 27.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12057 | a reward box | 100 | 1800 | 18.00 oz | Capture/wiki conflict; Global value uncertain; retained |
-| i12147 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12148 | cake with a cherry | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12152 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12153 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12154 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i12155 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i24949 | a costume bag | 100 | 3800 | 38.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i25689 | a golden brush | 1240 | 100 | 1.00 oz | Capture/wiki conflict; Global value uncertain; retained |
-| i32626 | an amber | 1250 | 100 | 1.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i33935 | a crown | 1900 | 90 | 0.90 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i39395 | a mercurial wing | 10 | 470 | 4.70 oz | Capture/wiki conflict; Global value uncertain; retained |
-| i46626 | a greater fragment | 500 | 10 | 0.10 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
-| i903 | a badger fur | 65 | 1000 | 10.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12045 | a music box | 200 | 2700 | 27.00 oz | Capture and retained TibiaWiki rev 1015879 agree; retained |
+| i12057 | a reward box | 100 | 1800 | 18.00 oz | Capture conflicts with retained TibiaWiki rev 1115007 (1.00 oz); Global unconfirmed; retained |
+| i12147 | cake | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008829 agree; retained |
+| i12148 | cake with a cherry | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008840 agree; retained |
+| i12152 | cake | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008829 agree; retained |
+| i12153 | cake | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008829 agree; retained |
+| i12154 | cake | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008829 agree; retained |
+| i12155 | cake | 500 | 1 | 0.01 oz | Capture and retained TibiaWiki rev 1008829 agree; retained |
+| i24949 | a costume bag | 100 | 3800 | 38.00 oz | Capture and retained TibiaWiki rev 1009688 agree; retained |
+| i25689 | a golden brush | 1240 | 100 | 1.00 oz | Capture conflicts with retained TibiaWiki rev 1115738 (12.40 oz); Global unconfirmed; retained |
+| i32626 | an amber | 1250 | 100 | 1.00 oz | Capture and retained TibiaWiki rev 1008324 agree; retained |
+| i33935 | a crown | 1900 | 90 | 0.90 oz | Capture and retained TibiaWiki rev 1202896 agree; retained |
+| i39395 | a mercurial wing | 10 | 470 | 4.70 oz | Capture conflicts with retained TibiaWiki rev 1203047 (0.10 oz); Global unconfirmed; retained |
+| i46626 | a greater fragment | 500 | 10 | 0.10 oz | Capture and retained TibiaWiki rev 1066519 agree; retained |
+| i903 | a badger fur | 65 | 1000 | 10.00 oz | Capture and retained TibiaWiki rev 1007953 agree; retained |
 
 ## Starter/capacity and node-boot triage
 
@@ -871,3 +871,67 @@ would change gameplay policy and conceal that missing route. No starter weight
 correction is supported by this evidence. A boot custody `Unavailable` alone
 does not establish a weight cause; recovery/fence/database failures can produce
 that result before any weight accounting.
+
+## Local PostgreSQL evidence
+
+PostgreSQL 18.6; `OTERYN_TEST_POSTGRES_ADMIN_URL` was required nonempty. The same
+unmodified dispatch binary was compiled from origin/main and loaded each content
+snapshot through the production `NativeGameplayInput::from_manifest` fixture.
+No PostgreSQL case was skipped; the hireling cases also emitted their completion marker.
+The repaired native Item provider tested below has SHA-256
+`b94db86a0e5c81ae2edbc764fafef41e080333788bff91adfc0b73a1cc81b61e`.
+
+All names below have prefix `gameplay_transport::monk_save::postgres_tests::`.
+
+| Exact remaining name | origin/main | Repaired data |
+|---|---|---|
+| quick_loot::quick_loot_pouch_postgres_dispatch_unlimited_slots_coin_only_and_weight | 1 failed at quick_loot.rs:413 | 1 passed |
+| quick_loot::quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences | Not rerun | 1 passed |
+| hireling_lifecycle::hireling_postgres_cook_bank_only_payment_without_backpack | 1 passed | 1 passed |
+| hireling_lifecycle::hireling_postgres_cook_carrot_purchase_package_and_replay | 1 passed | 1 passed |
+| hireling_lifecycle::hireling_postgres_steward_native_stash_replay_and_revoked_acl | 1 passed | 1 passed |
+| reaudit_starting_progression::reaudit_starting_progression_first_entry_postgres | Not rerun | 1 passed |
+| reaudit_starting_progression::reaudit_starting_progression_vocations_and_departure_postgres | Not rerun | 1 passed |
+
+The expanded audit also found 27 zero-to-positive changes. A ratio from zero is
+undefined, so these are excluded from the 792 positive-weight ratios. None is a
+starter item. The retained Global capture supplies their following values; they
+are unchanged by this repair:
+
+| Item | Name | Before | #3213 (centi-oz) |
+|---|---|---:|---:|
+| i2632 | a wall mirror | 0 | 1000 |
+| i36809 | curl of hair | 0 | 130 |
+| i37354 | a folded dragon lord carpet | 0 | 900 |
+| i37357 | a folded dragon carpet | 0 | 900 |
+| i37358 | a folded elemental carpet | 0 | 900 |
+| i37360 | a folded Morgaroth carpet | 0 | 900 |
+| i37362 | a folded Ghazbaran carpet | 0 | 900 |
+| i37364 | a folded Orshabaal carpet | 0 | 900 |
+| i37366 | a folded red cake carpet | 0 | 900 |
+| i37374 | a folded orange cake carpet | 0 | 900 |
+| i37375 | a folded yellow cake carpet | 0 | 900 |
+| i37376 | a folded green cake carpet | 0 | 900 |
+| i37377 | a folded sky cake carpet | 0 | 900 |
+| i37378 | a folded blue cake carpet | 0 | 900 |
+| i37379 | a folded purple cake carpet | 0 | 900 |
+| i37380 | a folded pink cake carpet | 0 | 900 |
+| i37382 | a folded red Tibia carpet | 0 | 900 |
+| i37390 | a folded orange Tibia carpet | 0 | 900 |
+| i37391 | a folded yellow Tibia carpet | 0 | 900 |
+| i37392 | a folded green Tibia carpet | 0 | 900 |
+| i37393 | a folded sky Tibia carpet | 0 | 900 |
+| i37394 | a folded blue Tibia carpet | 0 | 900 |
+| i37395 | a folded purple Tibia carpet | 0 | 900 |
+| i37396 | a folded pink Tibia carpet | 0 | 900 |
+| i37810 | Morshabaal's extract | 0 | 3150 |
+| i43899 | cursed wood | 0 | 450 |
+| i43900 | a darklight geode | 0 | 450 |
+
+The precise boot custody call is `node/serve.rs:2282-2289` →
+`durability/native_admission_source.rs:367-392`. Its only argument is a
+`NodeIncarnationProof`. It checks current incarnation, the source-registration
+row, and whether an existing custody holder is still current; no Item weights
+or capacity enter this function. These branches can return `Unavailable`
+without any starter grant. The exact CI branch is unconfirmed: GitHub identified
+the failed node-boot step, but its log download returned HTTP 403.
