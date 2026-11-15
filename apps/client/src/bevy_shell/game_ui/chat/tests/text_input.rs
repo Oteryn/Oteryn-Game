@@ -63,6 +63,7 @@ fn app() -> Result<Fixture, Box<dyn std::error::Error>> {
         submission::finish.after(bevy::text::EditableTextSystems),
     )
     .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
+    install_history(&mut app);
     let font = app
         .world_mut()
         .resource_mut::<Assets<Font>>()
@@ -125,6 +126,15 @@ fn last_character_and_enter_in_one_frame_send_the_completed_editor() -> TestResu
     key(&mut app, KeyCode::Enter, Key::Enter, None);
     app.update();
     assert!(matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "hello"));
+    assert_eq!(
+        app.world()
+            .resource::<ChatState>()
+            .history
+            .lines
+            .back()
+            .map(String::as_str),
+        Some("hello")
+    );
     assert!(commands.try_recv().is_err());
     Ok(())
 }
@@ -270,5 +280,40 @@ fn pending_send_cancels_when_destination_or_modal_scope_changes() -> TestResult 
         );
         assert!(app.world().resource::<ChatState>().pending.is_none());
     }
+    Ok(())
+}
+
+#[test]
+fn sent_history_shift_arrows_restore_the_unsent_draft() -> TestResult {
+    let (mut app, editor, mut commands) = app()?;
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
+    app.update();
+    assert!(sent(&mut commands).is_some());
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?
+        .editor_mut()
+        .set_text("unsent draft");
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ShiftLeft);
+    key(&mut app, KeyCode::ArrowUp, Key::ArrowUp, None);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "hell"
+    );
+    key(&mut app, KeyCode::ArrowDown, Key::ArrowDown, None);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "unsent draft"
+    );
     Ok(())
 }

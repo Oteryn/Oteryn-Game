@@ -55,7 +55,11 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     let text = commands
         .spawn((
             Transcript,
-            source::text("", source::font(skins.font.clone(), false)),
+            Node {
+                width: percent(100.),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
         ))
         .id();
     commands.entity(history).add_child(text);
@@ -206,7 +210,7 @@ pub(super) fn activate(
         Action::Send => {
             for (entity, field, mut text) in &mut fields {
                 if *field == Field::Message
-                    && submission::request(&owner, &mut state, entity, *field, &mut text, true)
+                    && request(&owner, &mut state, entity, *field, &mut text, true)
                 {
                     focus.set(entity, FocusCause::Navigated);
                 }
@@ -227,8 +231,7 @@ pub(super) fn activate(
             let mut opened = false;
             for (entity, field, mut text) in &mut fields {
                 if *field == Field::Recipient {
-                    opened =
-                        submission::request(&owner, &mut state, entity, *field, &mut text, true);
+                    opened = request(&owner, &mut state, entity, *field, &mut text, true);
                 }
             }
             if opened {
@@ -241,5 +244,275 @@ pub(super) fn activate(
             }
         }
         _ => {}
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub(super) struct RenderedRow {
+    text: String,
+    line: Option<oteryn_session::ChatLine>,
+}
+pub(super) fn transcript_rows(panel: &oteryn_client_ui::chat::ChatPanel) -> Vec<RenderedRow> {
+    let mut single = panel.clone();
+    single.lines.clear();
+    single.recipients.clear();
+    let mut rows = vec![RenderedRow {
+        text: oteryn_client_ui::chat::panel_text(&single),
+        line: None,
+    }];
+    single.feedback = None;
+    single.console.show_server_messages = false;
+    single.console.display.time = false;
+    let prefix = oteryn_client_ui::chat::panel_text(&single);
+    for (index, line) in panel.lines.iter().enumerate().skip(
+        panel
+            .lines
+            .len()
+            .saturating_sub(usize::from(panel.console.presentation.limit)),
+    ) {
+        single.lines.clear();
+        single.lines.push(line.clone());
+        single.recipients.clear();
+        single
+            .recipients
+            .push(panel.recipients.get(index).cloned().flatten());
+        let rendered = oteryn_client_ui::chat::panel_text(&single);
+        if let Some(text) = rendered
+            .strip_prefix(&prefix)
+            .filter(|text| !text.is_empty())
+        {
+            rows.push(RenderedRow {
+                text: format!(
+                    "{}{text}",
+                    panel.console.metadata.prefix(panel.console.display, index)
+                ),
+                line: Some(line.clone()),
+            });
+        }
+    }
+    rows
+}
+#[derive(Component, Clone)]
+struct MessageRow {
+    generation: u64,
+    row: RenderedRow,
+}
+pub(super) fn message_row(
+    commands: &mut Commands,
+    skins: &Skins,
+    generation: u64,
+    row: &RenderedRow,
+) -> Entity {
+    commands
+        .spawn((
+            MessageRow {
+                generation,
+                row: row.clone(),
+            },
+            TextInput,
+            EditableText::new(&row.text),
+            bevy::text::TextReadWriteMode::ReadOnly,
+            TextCursorStyle::default(),
+            source::font(skins.font.clone(), false),
+            TextColor(speech_color(row.line.as_ref())),
+            Node {
+                width: percent(100.),
+                min_height: px(16.),
+                ..default()
+            },
+        ))
+        .observe(message_menu)
+        .id()
+}
+fn speech_color(line: Option<&oteryn_session::ChatLine>) -> Color {
+    use oteryn_session::{ChatLine, ChatRoom, ChatSpeechMode};
+    match line {
+        Some(ChatLine::Private { .. }) => Color::srgb_u8(95, 247, 247),
+        Some(ChatLine::Local {
+            mode: ChatSpeechMode::MonsterSay,
+            ..
+        }) => Color::srgb_u8(255, 154, 0),
+        Some(ChatLine::Room {
+            room: ChatRoom::Gamemaster,
+            ..
+        }) => Color::srgb_u8(250, 96, 96),
+        Some(
+            ChatLine::Local { .. }
+            | ChatLine::Room { .. }
+            | ChatLine::Guild(_)
+            | ChatLine::Party { .. }
+            | ChatLine::PrivateChannel(_),
+        ) => Color::srgb_u8(255, 255, 0),
+        _ => source::TEXT_COLOR,
+    }
+}
+fn speaker(line: &oteryn_session::ChatLine) -> Option<&str> {
+    use oteryn_session::ChatLine;
+    match line {
+        ChatLine::Local {
+            speaker_name, mode, ..
+        } if *mode != oteryn_session::ChatSpeechMode::MonsterSay => Some(speaker_name),
+        ChatLine::Private { speaker_name, .. }
+        | ChatLine::Room { speaker_name, .. }
+        | ChatLine::Party { speaker_name, .. } => Some(speaker_name),
+        ChatLine::Guild(line) => Some(&line.speaker_name),
+        ChatLine::PrivateChannel(line) => Some(&line.speaker_name),
+        _ => None,
+    }
+}
+#[derive(Clone, Copy)]
+enum MessageAction {
+    Copy,
+    Private,
+    Ignore,
+    Report,
+    Save,
+    Close,
+}
+#[derive(Component)]
+struct MessageControl {
+    message: MessageRow,
+    action: MessageAction,
+}
+fn message_menu(
+    event: On<PointerClick>,
+    rows: Query<&MessageRow>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut commands: Commands,
+    skins: Res<Skins>,
+    mut state: ResMut<ChatState>,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Secondary
+        || owner.modal_active()
+        || !guard.allows(event.entity)
+    {
+        return;
+    }
+    let Ok(message) = rows.get(event.entity) else {
+        return;
+    };
+    if message.generation != owner.generation() {
+        return;
+    }
+    if let Some(old) = state.menu.take() {
+        commands.entity(old).despawn();
+    }
+    let position = event.pointer.location().position;
+    let root = commands
+        .spawn((
+            super::super::GameModal,
+            GlobalZIndex(200),
+            source::frame(skins.frame.clone(), [4.; 4]),
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(position.x),
+                top: px(position.y),
+                width: px(210.),
+                padding: UiRect::all(px(4.)),
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+        ))
+        .id();
+    let name = message.row.line.as_ref().and_then(speaker);
+    let mut actions = vec![(MessageAction::Copy, "Copy message".to_string())];
+    if let Some(name) = name {
+        actions.extend([
+            (MessageAction::Private, format!("Message {name}")),
+            (MessageAction::Ignore, format!("Ignore {name}")),
+            (MessageAction::Report, format!("Report {name}")),
+        ]);
+    }
+    actions.extend([
+        (MessageAction::Save, "Save messages".into()),
+        (MessageAction::Close, "Close".into()),
+    ]);
+    for (action, label) in actions {
+        let button = commands
+            .spawn((
+                source::button(skins.buttons.clone(), 200.),
+                MessageControl {
+                    message: message.clone(),
+                    action,
+                },
+            ))
+            .observe(message_action)
+            .id();
+        let caption = commands
+            .spawn(source::button_caption(&label, skins.font.clone()))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(root).add_child(button);
+    }
+    state.menu = Some(root);
+}
+fn message_action(
+    event: On<bevy::ui_widgets::Activate>,
+    controls: Query<&MessageControl>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut commands: Commands,
+    mut state: ResMut<ChatState>,
+    mut clipboard: ResMut<bevy::clipboard::Clipboard>,
+) {
+    if owner.modal_active() || !guard.allows(event.entity) {
+        return;
+    }
+    let Ok(control) = controls.get(event.entity) else {
+        return;
+    };
+    let Some(play) = &owner.play else { return };
+    if control.message.generation != owner.generation() {
+        return;
+    }
+    if !matches!(control.action, MessageAction::Close)
+        && control
+            .message
+            .row
+            .line
+            .as_ref()
+            .is_some_and(|line| !play.link.chat_panel().lines.contains(line))
+    {
+        return;
+    }
+    let name = control.message.row.line.as_ref().and_then(speaker);
+    match control.action {
+        MessageAction::Copy => {
+            let _ = clipboard.set_text(control.message.row.text.clone());
+        }
+        MessageAction::Private => {
+            if let Some(name) = name {
+                play.link.chat_open_conversation(name);
+            }
+        }
+        MessageAction::Ignore => {
+            if let Some(name) = name {
+                play.link.chat_communication(
+                    Some(oteryn_client_ui::chat::CommunicationList::Ignore),
+                    name,
+                    true,
+                );
+            }
+        }
+        MessageAction::Report => {
+            if let Some(name) = name {
+                play.link.rule_violation_open(name);
+            }
+        }
+        MessageAction::Save => {
+            let _ = play
+                .link
+                .chat_save_log(std::path::Path::new("chat.log"), true);
+        }
+        MessageAction::Close => {
+            if let Some(menu) = state.menu.take() {
+                commands.entity(menu).despawn();
+            }
+            return;
+        }
+    }
+    if let Some(menu) = state.menu.take() {
+        commands.entity(menu).despawn();
     }
 }

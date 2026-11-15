@@ -138,3 +138,60 @@ fn escape_belongs_to_top_server_dialog_before_action_editor() -> TestResult {
     assert!(!app.world().resource::<EditorState>().active());
     Ok(())
 }
+
+#[test]
+fn assignment_waits_for_pending_edits_and_revalidates_slot() -> TestResult {
+    let (mut app, _) = super::super::tests::fixture()?;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    set(&mut app, 2, "previous");
+    let field = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 2).then_some(entity))
+        .ok_or("text field")?;
+    app.world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("editor")?
+        .queue_edit(bevy::text::TextEdit::Insert("last".into()));
+    let save = control(&mut app, |edit| matches!(edit, Edit::InsertText))?;
+    app.world_mut().trigger(Activate { entity: save });
+    assert!(
+        app.world().resource::<EditorState>().message.is_empty(),
+        "must not assign stale text while edits are queued"
+    );
+    {
+        let mut text = app
+            .world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("editor")?;
+        text.pending_edits.clear();
+        text.editor_mut().set_text("completed");
+    }
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("completed")
+    );
+    app.world_mut()
+        .get_mut::<EditableText>(field)
+        .ok_or("editor")?
+        .queue_edit(bevy::text::TextEdit::Insert("stale".into()));
+    app.world_mut().trigger(Activate { entity: save });
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(1, generation);
+    app.update();
+    assert!(app.world().resource::<EditorState>().message.is_empty());
+    Ok(())
+}

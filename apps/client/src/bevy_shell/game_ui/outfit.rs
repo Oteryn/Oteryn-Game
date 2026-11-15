@@ -111,10 +111,47 @@ fn activate(
         return;
     };
     if matches!(action.kind, Kind::Close) {
-        play.link.appearance_close();
+        cancel(&play.link);
         return;
     }
     send(&play.link, &action.kind);
+}
+fn restore_draft(link: &crate::play::PlayLink) {
+    let panel = link.appearance_panel();
+    if panel.pending {
+        return;
+    }
+    let selection = panel
+        .confirmed
+        .as_ref()
+        .map(|confirmed| &confirmed.selection);
+    let fields = if let Some(selection) = selection {
+        let [head, body, legs, feet] = selection.colours;
+        [
+            selection.outfit_key.clone(),
+            selection.addons.to_string(),
+            selection.mount_key.clone().unwrap_or_default(),
+            format!("{head},{body},{legs},{feet}"),
+        ]
+    } else {
+        [
+            panel
+                .catalogue
+                .as_ref()
+                .and_then(|catalogue| catalogue.outfits.first())
+                .map_or_else(String::new, |outfit| outfit.key.clone()),
+            "0".into(),
+            String::new(),
+            "0,0,0,0".into(),
+        ]
+    };
+    for (index, value) in fields.into_iter().enumerate() {
+        link.appearance_edit(index, value);
+    }
+}
+fn cancel(link: &crate::play::PlayLink) {
+    restore_draft(link);
+    link.appearance_close();
 }
 fn send(link: &crate::play::PlayLink, kind: &Kind) {
     let mut panel = link.appearance_panel();
@@ -164,6 +201,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<State>,
     mut images: ResMut<Assets<Image>>,
+    guard: ModalGuard,
 ) {
     let Some(play) = &owner.play else {
         for entity in &windows {
@@ -172,8 +210,14 @@ fn project(
         state.rendered = None;
         return;
     };
-    if keys.just_pressed(KeyCode::Escape) {
-        play.link.appearance_close();
+    if keys.just_pressed(KeyCode::Escape)
+        && !owner.modal_active()
+        && windows.iter().any(|entity| guard.allows(entity))
+    {
+        cancel(&play.link);
+    }
+    if state.rendered.is_none() && play.link.appearance_panel().open {
+        restore_draft(&play.link);
     }
     let panel = play.link.appearance_panel();
     if !panel.open {

@@ -22,6 +22,7 @@ pub(super) struct EditorState {
     message: String,
     page: usize,
     catalog_key: Option<catalog::Key>,
+    pending: Option<Pending>,
 }
 impl EditorState {
     pub(super) fn active(&self) -> bool {
@@ -29,10 +30,78 @@ impl EditorState {
     }
     pub(super) fn open(&mut self, slot: usize, generation: u64) {
         self.selected = Some((slot, generation));
+        self.pending = None;
         self.message.clear();
         self.page = 0;
         self.catalog_key = None;
     }
+}
+struct Pending {
+    selected: (usize, u64),
+    entity: Entity,
+    action: Edit,
+}
+fn editing(fields: &Query<(&Field, &EditableText)>) -> bool {
+    fields.iter().any(|(_, text)| {
+        text.pending_paste.is_some()
+            || text
+                .pending_edits
+                .iter()
+                .any(bevy::text::TextEdit::is_destructive)
+    })
+}
+fn finish_assignment(
+    fields: Query<(&Field, &EditableText)>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<EditorState>,
+    guard: ModalGuard,
+) {
+    let Some(pending) = &state.pending else {
+        return;
+    };
+    if state.selected != Some(pending.selected)
+        || pending.selected.1 != owner.generation()
+        || owner.modal_active()
+        || !guard.allows(pending.entity)
+        || owner.play.is_none()
+    {
+        state.pending = None;
+        return;
+    }
+    if editing(&fields) {
+        return;
+    }
+    let Some(pending) = state.pending.take() else {
+        return;
+    };
+    if let Some(play) = &owner.play {
+        save(
+            &play.link,
+            &mut state,
+            pending.selected.0,
+            pending.action,
+            &fields,
+        );
+    }
+}
+fn save(
+    link: &crate::play::PlayLink,
+    state: &mut EditorState,
+    slot: usize,
+    action: Edit,
+    fields: &Query<(&Field, &EditableText)>,
+) {
+    let mut values: [String; 4] = Default::default();
+    for (field, text) in fields {
+        if let Some(value) = values.get_mut(field.0) {
+            *value = text.value().to_string();
+        }
+    }
+    state.message = if apply(link, slot, action, &values) {
+        "Saved action assignment".into()
+    } else {
+        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
+    };
 }
 #[derive(Component)]
 pub(super) struct EditorRoot;
@@ -268,12 +337,6 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    let mut values: [String; 4] = Default::default();
-    for (field, text) in &fields {
-        if let Some(value) = values.get_mut(field.0) {
-            *value = text.value().to_string();
-        }
-    }
     match action {
         Edit::PreviousSpells => {
             state.page = state.page.saturating_sub(1);
@@ -285,11 +348,18 @@ fn activate(
         }
         _ => {}
     }
-    state.message = if apply(&play.link, slot, *action, &values) {
-        "Saved action assignment".into()
+    if state.pending.is_some() {
+        return;
+    }
+    if editing(&fields) {
+        state.pending = Some(Pending {
+            selected: (slot, generation),
+            entity: event.entity,
+            action: *action,
+        });
     } else {
-        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
-    };
+        save(&play.link, &mut state, slot, *action, &fields);
+    }
 }
 
 fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[String; 4]) -> bool {
@@ -459,6 +529,10 @@ fn keyboard(
     }
 }
 pub(super) fn install(app: &mut App) {
+    app.add_systems(
+        PostUpdate,
+        finish_assignment.after(bevy::text::EditableTextSystems),
+    );
     app.add_systems(Update, keyboard.before(project));
     app.add_systems(Update, catalog::project.after(project));
 }

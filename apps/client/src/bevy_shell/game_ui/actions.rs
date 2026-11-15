@@ -30,6 +30,8 @@ struct Generation(u64);
 #[derive(Component)]
 struct BarRow(usize);
 #[derive(Component)]
+struct DockAnchor(crate::play::BarDock);
+#[derive(Component)]
 struct SlotCaption(usize);
 #[derive(Component)]
 struct ToolCaption(ActionControl);
@@ -73,6 +75,47 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
         commands.entity(tools).add_children(&[toggle, lock]);
     }
     commands.entity(regions.bars).add_child(tools);
+    for dock in [
+        crate::play::BarDock::Bottom,
+        crate::play::BarDock::Left,
+        crate::play::BarDock::Right,
+    ] {
+        let side = dock != crate::play::BarDock::Bottom;
+        let anchor = commands
+            .spawn((
+                DockAnchor(dock),
+                Node {
+                    position_type: if side {
+                        PositionType::Absolute
+                    } else {
+                        PositionType::Relative
+                    },
+                    left: if dock == crate::play::BarDock::Left {
+                        px(0.)
+                    } else {
+                        Val::Auto
+                    },
+                    right: if dock == crate::play::BarDock::Right {
+                        px(0.)
+                    } else {
+                        Val::Auto
+                    },
+                    top: if side { px(0.) } else { Val::Auto },
+                    width: if side { Val::Auto } else { percent(100.) },
+                    height: if side { percent(100.) } else { Val::Auto },
+                    flex_direction: if side {
+                        FlexDirection::Row
+                    } else {
+                        FlexDirection::Column
+                    },
+                    ..default()
+                },
+            ))
+            .id();
+        commands
+            .entity(if side { regions.world } else { regions.bars })
+            .add_child(anchor);
+    }
     for bar in 0..3 {
         let row = commands
             .spawn((
@@ -83,6 +126,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     height: px(SLOT_SIZE),
                     flex_shrink: 0.,
                     column_gap: px(SLOT_GAP),
+                    row_gap: px(SLOT_GAP),
                     overflow: Overflow::clip(),
                     ..default()
                 },

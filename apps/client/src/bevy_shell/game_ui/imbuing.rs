@@ -74,7 +74,28 @@ struct State {
     dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, (keyboard, project).chain());
+}
+fn keyboard(
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        || owner.modal_active()
+        || state.generation != owner.generation()
+        || !state.root.is_some_and(|root| guard.allows(root))
+    {
+        return;
+    }
+    if let Some(play) = &owner.play {
+        state.selection.confirmation = None;
+        state.dirty = true;
+        play.link
+            .imbue_dispatch_bound(&play.link.imbue_panel(), ImbueViewAction::Close);
+    }
 }
 fn slot_rows(panel: &ImbuePanel) -> Vec<String> {
     panel.window.as_ref().map_or_else(Vec::new, |window| {

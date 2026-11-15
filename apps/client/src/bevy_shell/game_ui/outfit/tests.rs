@@ -144,3 +144,119 @@ fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
     assert!(open(&owner), "the rebound chord opens the outfit window");
     Ok(())
 }
+
+#[test]
+fn outfit_escape_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(HostOwner::new(None)?)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    let (link, _, outbox) = crate::play::play_channel();
+    let mut p = panel();
+    p.open = true;
+    outbox.bevy_outfit_test_panel(p);
+    app.world_mut().non_send_mut::<HostOwner>().play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    app.init_resource::<ButtonInput<KeyCode>>();
+    install(&mut app);
+    app.update();
+    let top = app
+        .world_mut()
+        .spawn((GameModal, Node::default(), GlobalZIndex(999)))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    app.world_mut().entity_mut(top).despawn();
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn outfit_cancel_and_escape_restore_confirmed_selection() -> Result<(), Box<dyn std::error::Error>>
+{
+    for escape in [false, true] {
+        let mut p = panel();
+        p.open = true;
+        p.confirmed = Some(oteryn_client_runtime::appearance::Selected {
+            selection: oteryn_client_runtime::appearance::Selection {
+                outfit_key: "knight".into(),
+                colours: [0; 4],
+                addons: 0,
+                mount_key: None,
+            },
+            revision: 1,
+            provenance: "confirmed".into(),
+        });
+        let expected = p.fields.clone();
+        let (link, _, outbox) = crate::play::play_channel();
+        outbox.bevy_outfit_test_panel(p);
+        let mut owner = HostOwner::new(None)?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+            link,
+        });
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Image>()
+            .init_asset::<Font>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(owner)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        {
+            let owner = app.world().non_send::<HostOwner>();
+            let link = &owner.play.as_ref().ok_or("play")?.link;
+            for (field, value) in ["mage", "3", "horse", "1,2,3,4"].iter().enumerate() {
+                link.appearance_edit(field, (*value).into());
+            }
+        }
+        if escape {
+            app.world_mut()
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+            app.update();
+        } else {
+            let button = app
+                .world_mut()
+                .query::<(Entity, &Action)>()
+                .iter(app.world())
+                .find_map(|(entity, action)| matches!(action.kind, Kind::Close).then_some(entity))
+                .ok_or("cancel")?;
+            app.world_mut().trigger(Activate { entity: button });
+        }
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        assert!(!link.appearance_panel().open);
+        assert_eq!(link.appearance_panel().fields, expected);
+        link.appearance_open();
+        assert_eq!(link.appearance_panel().fields, expected);
+    }
+    Ok(())
+}

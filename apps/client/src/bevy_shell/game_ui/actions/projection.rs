@@ -8,7 +8,13 @@ pub(super) struct Projection<'w, 's> {
     rows: Query<
         'w,
         's,
-        (&'static BarRow, &'static mut Node, &'static ComputedNode),
+        (
+            Entity,
+            &'static BarRow,
+            &'static mut Node,
+            &'static ComputedNode,
+            &'static ChildOf,
+        ),
         Without<ActionControl>,
     >,
     controls: Query<
@@ -66,7 +72,12 @@ pub(super) struct Projection<'w, 's> {
     hovered: Query<'w, 's, (&'static Hovered, &'static ActionControl)>,
 }
 
-pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
+pub(super) fn project(
+    mut commands: Commands,
+    anchors: Query<(Entity, &DockAnchor)>,
+    owner: NonSend<HostOwner>,
+    mut ui: Projection,
+) {
     let Some(play) = &owner.play else {
         return;
     };
@@ -74,9 +85,26 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
     let labels = play.link.spell_slot_labels();
     let tips = play.link.spell_slot_tooltips();
     let mut capacities = [12; 3];
-    for (bar, mut node, computed) in &mut ui.rows {
+    for (entity, bar, mut node, computed, parent) in &mut ui.rows {
         let row = &layout.rows[bar.0];
-        let available = computed.size().x * computed.inverse_scale_factor;
+        let side = row.dock != crate::play::BarDock::Bottom;
+        if let Some((anchor, _)) = anchors.iter().find(|(_, anchor)| anchor.0 == row.dock)
+            && parent.parent() != anchor
+        {
+            commands.entity(anchor).add_child(entity);
+        }
+        node.flex_direction = if side {
+            FlexDirection::Column
+        } else {
+            FlexDirection::Row
+        };
+        node.width = if side { px(SLOT_SIZE) } else { percent(100.) };
+        node.height = if side { percent(100.) } else { px(SLOT_SIZE) };
+        let available = if side {
+            computed.size().y
+        } else {
+            computed.size().x
+        } * computed.inverse_scale_factor;
         if available > 0. {
             capacities[bar.0] =
                 ((available - 38.) / (SLOT_SIZE + SLOT_GAP)).floor().max(1.) as usize;
@@ -92,6 +120,13 @@ pub(super) fn project(owner: NonSend<HostOwner>, mut ui: Projection) {
     }
     for (control, mut generation, mut node) in &mut ui.controls {
         generation.0 = owner.generation();
+        if let ActionControl::Scroll(bar, _) = control {
+            let side = layout.rows[*bar].dock != crate::play::BarDock::Bottom;
+            node.width = px(if side { SLOT_SIZE } else { 17. });
+            node.height = px(if side { 17. } else { SLOT_SIZE });
+            node.min_height = node.height;
+            node.flex_shrink = 0.;
+        }
         if let ActionControl::Slot(slot) = control {
             let row = &layout.rows[slot / ROW_SLOTS];
             let visible = row.visible_slots(capacities[slot / ROW_SLOTS]);
