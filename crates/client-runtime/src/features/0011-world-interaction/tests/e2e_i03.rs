@@ -182,6 +182,13 @@ async fn exchange() -> Result<(), BoxError> {
 // Foundation wire fixtures keep this client test on its existing Session dependency; Session
 // itself decodes and validates every admission, snapshot and result frame.
 async fn admit_peer(stream: &mut DuplexStream) -> Result<(), BoxError> {
+    admit_peer_with_carried(stream, None).await
+}
+
+async fn admit_peer_with_carried(
+    stream: &mut DuplexStream,
+    carried: Option<(Vec<u8>, Vec<u8>)>,
+) -> Result<(), BoxError> {
     let mut bootstrap = vec![8, 1, 16, 1, 24, 1];
     for &capability in CLIENT_SUPPORTED_CAPABILITIES {
         scalar(&mut bootstrap, 4, u64::from(capability));
@@ -196,8 +203,14 @@ async fn admit_peer(stream: &mut DuplexStream) -> Result<(), BoxError> {
         bytes(&mut accepted, marker, &identity(marker as u8));
     }
     accepted.extend_from_slice(&[32, 1, 48, 7, 56, 1, 64, 1, 72, 1]);
-    scalar(&mut accepted, 10, 6);
-    scalar(&mut accepted, 10, 28);
+    let capabilities: &[u64] = if carried.is_some() {
+        &[4, 6, 12, 14, 28]
+    } else {
+        &[6, 28]
+    };
+    for &capability in capabilities {
+        scalar(&mut accepted, 10, capability);
+    }
     write_frame(stream, &envelope(2, 0, 0, &accepted)).await?;
 
     // Capability-6 snapshot: the own player and one other creature at SPOT.
@@ -229,6 +242,13 @@ async fn admit_peer(stream: &mut DuplexStream) -> Result<(), BoxError> {
         let mut entry = vec![8, domain, 16, revision, 24, snapshot_type];
         bytes(&mut entry, 4, payload);
         bytes(&mut body, 1, &entry);
+    }
+    if let Some((inventory, containers)) = carried {
+        for (domain, payload) in [(9, inventory), (14, containers)] {
+            let mut entry = vec![8, domain, 16, 1, 24, 1];
+            bytes(&mut entry, 4, &payload);
+            bytes(&mut body, 1, &entry);
+        }
     }
     let mut begin = vec![8, 1, 16, 1];
     scalar(&mut begin, 3, body.len() as u64);
@@ -313,3 +333,6 @@ fn varint(output: &mut Vec<u8>, mut value: u64) {
     }
     output.push(value as u8);
 }
+
+#[path = "tileless.rs"]
+mod tileless;

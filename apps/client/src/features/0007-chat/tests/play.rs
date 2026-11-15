@@ -241,3 +241,7 @@ fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Er
         .join()
         .map_err(|_| "chat clear test thread panicked")?
 }
+
+#[cfg(not(windows))]
+#[path = "../chat_dialog.rs"]
+mod native_composer;

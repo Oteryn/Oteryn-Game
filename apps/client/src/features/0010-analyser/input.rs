@@ -122,16 +122,6 @@ pub(in crate::play) fn submit(
         oteryn_client_ui::analyser::set_item_price(&mut mailbox.analyser, item, price);
     } else if action == tools + 3 {
         resolve_items(mailbox, commands);
-    } else if action == tools + 4
-        && let Some(path) = values.get(3)
-    {
-        mailbox.analyser.export_path = path.clone();
-        mailbox.analyser.feedback = Some(
-            match save_session(&mailbox.analyser, std::path::Path::new(path)) {
-                Ok(()) => tr!("Session report exported"),
-                Err(_) => tr!("Session export failed; choose a writable file path"),
-            },
-        );
     } else if action == tools + 5 {
         refresh_party(mailbox, commands);
     } else if action == tools + 6
@@ -177,12 +167,6 @@ pub(in crate::play) fn submit(
             (action == tools + 20).then_some(cost.as_str()),
             (action != tools + 20).then_some(action == tools + 21),
         );
-    } else if (tools + 18..=tools + 19).contains(&action) {
-        party_import::submit(
-            mailbox,
-            action == tools + 18,
-            values.get(3).map(String::as_str),
-        );
     }
 }
 
@@ -221,7 +205,8 @@ impl PlayLink {
         refresh_party(&mut lock(&self.mailbox), &self.commands);
     }
     pub fn analyser_save_session(&self, path: &std::path::Path) -> std::io::Result<()> {
-        save_session(&lock(&self.mailbox).analyser, path)
+        let panel = lock(&self.mailbox).analyser.clone();
+        save_session(&panel, path)
     }
 }
 
@@ -262,4 +247,52 @@ pub(in crate::play) fn begin_shared_window(
     resolve_items(mailbox, commands);
     mailbox.analyser.open = true;
     true
+}
+
+#[cfg(any(windows, test))]
+pub(in crate::play) fn submit_shared(
+    shared: &crate::play::mailbox::SharedMailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    action: usize,
+    values: Vec<String>,
+) {
+    let tools = oteryn_client_ui::analyser::Tool::ALL.len();
+    if ![tools + 4, tools + 18, tools + 19].contains(&action) {
+        submit(&mut lock(shared), commands, action, values);
+        return;
+    }
+    // A mailbox belongs to one session. Work on a snapshot and recheck selection after I/O;
+    // never replace measurements that the session published while the file was being read.
+    let mut panel = {
+        let mailbox = lock(shared);
+        if !mailbox.analyser.selected {
+            return;
+        }
+        mailbox.analyser.clone()
+    };
+    let imported = if action == tools + 4 {
+        let Some(path) = values.get(3) else { return };
+        panel.export_path = path.clone();
+        panel.feedback = Some(match save_session(&panel, std::path::Path::new(path)) {
+            Ok(()) => tr!("Session report exported"),
+            Err(_) => tr!("Session export failed; choose a writable file path"),
+        });
+        false
+    } else {
+        party_import::submit(
+            &mut panel,
+            action == tools + 18,
+            values.get(3).map(String::as_str),
+        ) && action == tools + 18
+    };
+    let mut mailbox = lock(shared);
+    if !mailbox.analyser.selected {
+        return;
+    }
+    if imported {
+        mailbox.analyser.party_import = panel.party_import;
+        mailbox.analyser.tool = panel.tool;
+    }
+    mailbox.analyser.export_path = panel.export_path;
+    mailbox.analyser.feedback = panel.feedback;
 }

@@ -277,3 +277,47 @@ fn use_with_sets_crosshair_cursor() {
     super::super::mailbox::lock(&link.mailbox).world_context.cancel_targeting();
     assert!(!link.use_with_armed());
 }
+
+#[test]
+fn pending_look_does_not_consume_primary_click() -> Result<(), BatchError> {
+    let mut view = view()?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.world_context_initialize(true, false);
+    let mut map = super::feature_local_world_view::live_snapshot(101);
+    map.tiles[0].items[0].origin =
+        oteryn_session::world_map::MapOrigin::Handle(std::num::NonZeroU64::MIN);
+    view.set_live_map(&map)?;
+    let menu = view
+        .world_context(TileCoord::new(101, 200), &link)
+        .ok_or(BatchError::InvalidView)?;
+    assert!(view.world_context_choose(&link, &menu, Action::Look));
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(crate::combat_input::PlayCommand::WorldContext(_))
+    ));
+    view.primary_click(TileCoord::new(98, 200), &link)?;
+    assert!(matches!(view.inputs.front(), Some(Input::TargetWalk(_))));
+    view.inputs.pop_front();
+    let creature = WorldSpatialEntity {
+        display_name: None,
+        entity: EntityRef {
+            identity: [7; 16],
+            generation: 1,
+        },
+        kind: oteryn_session::EntityKind::Creature,
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    view = view.with_entities(vec![creature])?;
+    view.primary_click(TileCoord::new(101, 200), &link)?;
+    assert_eq!(view.inputs.front(), Some(&Input::Attack(creature.entity)));
+    Ok(())
+}

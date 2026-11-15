@@ -17,7 +17,7 @@ pub(super) fn current<S: SessionStream>(session: &Session<S>, command: &Command)
     let Some(selection) = &command.selection else {
         return matches!(
             (command.action, &command.target),
-            (super::Action::Use, Target::Item(handle))
+            (super::Action::Use | super::Action::Look | super::Action::Open, Target::Item(handle))
                 if inventory_or_container_has(session, *handle)
         );
     };

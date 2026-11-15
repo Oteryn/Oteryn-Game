@@ -284,15 +284,21 @@ pub(in crate::play) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayComm
                 }
                 // Read HWNDs outside the mailbox lock; the session never waits for Win32.
                 let values: Vec<String> = edits.iter().map(|edit| text(*edit)).collect();
-                let (open, pending, fields, body) = {
-                    let mut mailbox = lock(&shared);
-                    for action in submitted {
-                        if let Some(index) = action.checked_sub(100) {
-                            (form.submit)(&mut mailbox, &commands, index, values.clone());
+                for action in submitted {
+                    if let Some(index) = action.checked_sub(100) {
+                        if form.title == "Analysers" {
+                            crate::play::feature_0010_analyser::input::submit_shared(
+                                &shared,
+                                &commands,
+                                index,
+                                values.clone(),
+                            );
+                        } else {
+                            (form.submit)(&mut lock(&shared), &commands, index, values.clone());
                         }
                     }
-                    (form.snapshot)(&mailbox)
-                };
+                }
+                let (open, pending, fields, body) = (form.snapshot)(&lock(&shared));
                 if !open {
                     break;
                 }

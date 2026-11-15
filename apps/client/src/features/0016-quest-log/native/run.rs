@@ -145,7 +145,7 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&mailbox);
-            if mailbox.quest_shutdown {
+            if mailbox.quest_shutdown || !mailbox.quest.open {
                 break;
             }
             if !options_initialized {
@@ -254,32 +254,10 @@ fn run(
                 wide(&format!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
             );
             if held.as_ref() != Some(panel) {
-                let text = oteryn_client_ui::quest_log::tracker_lines(panel)
-                    .iter()
-                    .map(|line| {
-                        format!(
-                            "Quest {}{}\r\n{}",
-                            line.quest_index,
-                            if line.completed { " (completed)" } else { "" },
-                            line.missions
-                                .iter()
-                                .map(|m| format!(
-                                    "{}{}: {}",
-                                    m.name,
-                                    if m.done { " (done)" } else { "" },
-                                    m.text
-                                ))
-                                .collect::<Vec<_>>()
-                                .join("\r\n")
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\r\n\r\n");
+                let text = oteryn_client_ui::quest_log::tracker_text(panel);
                 SetWindowTextW(tracker, wide(&text).as_ptr());
                 if held.as_ref().is_none_or(|old: &QuestPanel| {
-                    old.state.list != panel.state.list
-                        || old.list_search != panel.list_search
-                        || old.list_sort != panel.list_sort
+                    oteryn_client_ui::quest_log::quest_rows(old) != quest_rows(panel)
                 }) {
                     let selected = usize::try_from(SendMessageW(quests, LB_GETCURSEL, 0, 0))
                         .ok()

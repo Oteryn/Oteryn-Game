@@ -66,6 +66,7 @@ impl PlayLink {
                 return false;
             }
             mailbox.world_context.pending = true;
+            mailbox.use_with_pending = true;
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
@@ -104,7 +105,9 @@ impl PlayView {
 
     pub fn use_with_click(&self, tile: TileCoord, link: &PlayLink) -> bool {
         let mut mailbox = lock(&link.mailbox);
-        if mailbox.world_context.pending {
+        if mailbox.world_context.pending
+            && (mailbox.use_with_pending || mailbox.world_context.targeting.is_some())
+        {
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),
@@ -151,6 +154,7 @@ impl PlayView {
             .is_ok()
         {
             mailbox.world_context.pending = true;
+            mailbox.use_with_pending = true;
             mailbox.world_context.set_feedback(
                 tr!("Use with: waiting for server").into(),
                 std::time::Instant::now(),

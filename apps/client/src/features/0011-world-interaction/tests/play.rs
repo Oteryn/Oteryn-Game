@@ -227,3 +227,55 @@ fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), 
     assert!(view.inputs.is_empty());
     Ok(())
 }
+
+#[test]
+fn tileless_context_revalidates_carried_items() -> Result<(), Box<dyn std::error::Error>> {
+    let view = view()?;
+    let item = oteryn_session::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: NonZeroU32::MIN,
+        count: NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    for action in [
+        Action::Use,
+        Action::Look,
+        Action::Open,
+        Action::UseWith,
+        Action::UseRune,
+    ] {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.world_context_initialize(true, false);
+        outbox.targeting_initialize(true);
+        outbox.inventory_initialize(
+            Some(oteryn_session::CharacterInventory {
+                main_backpack: Some(item),
+                ..Default::default()
+            }),
+            false,
+        );
+        let menu = oteryn_client_ui::world_interaction::menu::Menu::new(
+            Target::Item(item.handle),
+            true,
+            false,
+        )
+        .with_targeting(true);
+        assert!(
+            view.world_context_choose(&link, &menu, action),
+            "{action:?}"
+        );
+        if matches!(action, Action::UseWith | Action::UseRune) {
+            assert!(link.use_with_armed());
+        } else {
+            assert!(
+                matches!(commands.try_recv(), Ok(crate::combat_input::PlayCommand::WorldContext(command)) if command.action == action && command.selection.is_none())
+            );
+        }
+        super::super::mailbox::lock(&link.mailbox)
+            .world_context
+            .pending = false;
+        outbox.inventory_initialize(Some(Default::default()), false);
+        assert!(!view.world_context_choose(&link, &menu, action));
+    }
+    Ok(())
+}

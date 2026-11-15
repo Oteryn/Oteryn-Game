@@ -1,9 +1,13 @@
 //! Local chat dialog message pump on its owning thread.
+#[cfg(windows)]
 use super::*;
+#[cfg(windows)]
 #[path = "console_font.rs"]
 mod console_font;
+#[cfg(windows)]
 #[path = "../local-spell-action-bar/cooldown_native.rs"]
 mod cooldown_bar;
+#[cfg(windows)]
 pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -181,7 +185,13 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         loop {
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 mirror.input(&msg, tabs, &weak);
-                if keyboard(&msg, &weak, &commands, &mut actions.keyboard_input) {
+                let utility_consumed =
+                    keyboard(&msg, &weak, &commands, &mut actions.keyboard_input);
+                if route_keyboard(
+                    utility_consumed,
+                    msg.hwnd == message && msg.message == WM_KEYDOWN && msg.wParam == 13,
+                    &mut actions.pending,
+                ) {
                     continue;
                 }
                 TranslateMessage(&msg);
@@ -290,13 +300,7 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     _ => Mode::Say,
                 };
                 mailbox.chat.text = read_text(message);
-                crate::play::feature_0007_chat::input::enqueue(
-                    &mut mailbox,
-                    &commands,
-                    mode,
-                    &read_text(recipient),
-                );
-                if mailbox.chat.pending {
+                if submit_composer(&mut mailbox, &commands, mode, &read_text(recipient)) {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }
@@ -339,3 +343,37 @@ pub(super) fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         close(&weak);
     }
 }
+
+/// Whether this Send invocation queued a message and may clear the native composer.
+pub(in crate::play) fn submit_composer(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+    mode: oteryn_client_ui::chat::Mode,
+    recipient: &str,
+) -> bool {
+    let was_pending = mailbox.chat.pending;
+    crate::play::feature_0007_chat::input::enqueue(mailbox, commands, mode, recipient);
+    !was_pending && mailbox.chat.pending
+}
+
+/// Keep utility shortcuts and composer submission on the same message-pump route.
+pub(in crate::play) fn route_keyboard(
+    utility_consumed: bool,
+    composer_enter: bool,
+    actions: &mut Vec<usize>,
+) -> bool {
+    if utility_consumed {
+        return true;
+    }
+    if composer_enter {
+        if actions.len() < 16 {
+            actions.push(105); // SEND uses the existing button handler below the message pump.
+        }
+        return true;
+    }
+    false
+}
+
+#[cfg(test)]
+#[path = "tests/native_composer.rs"]
+mod tests;

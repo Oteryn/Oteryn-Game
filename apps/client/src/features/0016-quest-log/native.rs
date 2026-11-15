@@ -1,30 +1,48 @@
 //! Windows system controls provide a readable panel without a new rendering dependency.
 //! Handles and the window-procedure context stay on this thread. The context outlives HWND.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::combat_input::PlayCommand;
+#[cfg(windows)]
 use crate::play::{PlayLink, mailbox::lock};
+#[cfg(windows)]
 use oteryn_client_ui::quest_log::{
-    QUEST_SORT_LABELS, QuestLogQuery, QuestLogView, QuestPanel, QuestSort, panel_text,
-    quest_row_query, quest_rows, request, tracking_query,
+    QUEST_SORT_LABELS, QuestLogQuery, QuestLogView, QuestSort, panel_text, quest_row_query,
+    quest_rows, request, tracking_query,
 };
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use std::sync::{Arc, Weak};
+#[cfg(windows)]
 use std::time::Duration;
+#[cfg(windows)]
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[cfg(windows)]
 const QUESTS: usize = 101;
+#[cfg(windows)]
 const MISSIONS: usize = 102;
+#[cfg(windows)]
 const REFRESH: usize = 103;
+#[cfg(windows)]
 const TRACK: usize = 104;
+#[cfg(windows)]
 const AUTO_ADD: usize = 106;
+#[cfg(windows)]
 const AUTO_REMOVE: usize = 107;
+#[cfg(windows)]
 const FILTER: usize = 108;
 
 #[derive(Default)]
+#[cfg(windows)]
 struct Actions(Vec<usize>);
 
+#[cfg(windows)]
 unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: only our thread installs this procedure and sets userdata to its live Actions.
     unsafe {
@@ -46,6 +64,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM
     }
 }
 
+#[cfg(windows)]
 fn wide(text: &str) -> Vec<u16> {
     // Wire text may contain NUL; display a replacement rather than silently truncating it.
     text.replace('\0', "\u{fffd}")
@@ -54,6 +73,7 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 
+#[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
         return;
@@ -78,6 +98,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     }
 }
 
+#[cfg(windows)]
 fn run(
     weak: Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
     commands: UnboundedSender<PlayCommand>,
@@ -163,7 +184,7 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&mailbox);
-            if mailbox.quest_shutdown {
+            if window_should_close(&mailbox) {
                 break;
             }
             if !options_initialized {
@@ -273,33 +294,9 @@ fn run(
                 wide(&lfmt!("Tracker: {:?}", panel.tracker.filter)).as_ptr(),
             );
             if held.as_ref() != Some(panel) {
-                let text = oteryn_client_ui::quest_log::tracker_lines(panel)
-                    .iter()
-                    .map(|line| {
-                        lfmt!(
-                            "Quest {}{}\r\n{}",
-                            line.quest_index,
-                            if line.completed { " (completed)" } else { "" },
-                            line.missions
-                                .iter()
-                                .map(|m| format!(
-                                    "{}{}: {}",
-                                    m.name,
-                                    if m.done { " (done)" } else { "" },
-                                    m.text
-                                ))
-                                .collect::<Vec<_>>()
-                                .join("\r\n")
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\r\n\r\n");
+                let text = inline_tracker_text(panel);
                 SetWindowTextW(tracker, wide(&text).as_ptr());
-                if held.as_ref().is_none_or(|old: &QuestPanel| {
-                    old.state.list != panel.state.list
-                        || old.list_search != panel.list_search
-                        || old.list_sort != panel.list_sort
-                }) {
+                if quest_rows_changed(held.as_ref(), panel) {
                     let selected = usize::try_from(SendMessageW(quests, LB_GETCURSEL, 0, 0))
                         .ok()
                         .and_then(|i| shown_quests.get(i))
@@ -368,11 +365,37 @@ fn run(
     }
 }
 
+#[cfg(windows)]
 fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     if let Some(mailbox) = weak.upgrade() {
         lock(&mailbox).quest.open = false;
     }
 }
 
+#[cfg(windows)]
 #[path = "native/controls.rs"]
 mod controls;
+
+pub(in crate::play) fn window_should_close(mailbox: &crate::play::mailbox::Mailbox) -> bool {
+    mailbox.quest_shutdown || !mailbox.quest.open
+}
+
+pub(in crate::play) fn inline_tracker_text(
+    panel: &oteryn_client_ui::quest_log::QuestPanel,
+) -> String {
+    oteryn_client_ui::quest_log::tracker_text(panel)
+}
+
+pub(in crate::play) fn quest_rows_changed(
+    old: Option<&oteryn_client_ui::quest_log::QuestPanel>,
+    panel: &oteryn_client_ui::quest_log::QuestPanel,
+) -> bool {
+    old.is_none_or(|old| {
+        oteryn_client_ui::quest_log::quest_rows(old)
+            != oteryn_client_ui::quest_log::quest_rows(panel)
+    })
+}
+
+#[cfg(test)]
+#[path = "tests/native_projection.rs"]
+mod tests;

@@ -69,9 +69,7 @@ impl PlayView {
         if !menu.entries.iter().any(|(_, entry)| *entry == action)
             || menu
                 .tile
-                .and_then(|tile| self.world_context_target(tile))
-                .as_ref()
-                != Some(&menu.target)
+                .is_some_and(|tile| self.world_context_target(tile).as_ref() != Some(&menu.target))
         {
             lock(&link.mailbox)
                 .world_context
@@ -92,6 +90,38 @@ impl PlayView {
         let mut mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             return false;
+        }
+        if menu.tile.is_none() {
+            use oteryn_client_runtime::world_interaction::Target;
+            let carried = match menu.target {
+                Target::Item(handle) => {
+                    mailbox
+                        .inventory
+                        .inventory
+                        .as_ref()
+                        .is_some_and(|inventory| {
+                            inventory
+                                .main_backpack
+                                .iter()
+                                .chain(&inventory.entries)
+                                .chain(inventory.equipment.iter().map(|equipped| &equipped.item))
+                                .any(|item| item.handle == handle)
+                        })
+                        || mailbox.containers.views.as_ref().is_some_and(|containers| {
+                            containers.views.iter().any(|view| {
+                                view.container_handle == handle
+                                    || view.entries.iter().any(|item| item.handle == handle)
+                            })
+                        })
+                }
+                _ => false,
+            };
+            if !carried {
+                mailbox
+                    .world_context
+                    .set_feedback(tr!("Target changed").into(), std::time::Instant::now());
+                return false;
+            }
         }
         let current = Menu::new(
             menu.target.clone(),
