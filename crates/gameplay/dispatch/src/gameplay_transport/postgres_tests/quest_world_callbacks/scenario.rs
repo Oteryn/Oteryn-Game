@@ -1386,6 +1386,16 @@ fn scenario_case(
                 .bind(id(41).as_slice()).bind(i64::from(initial_level)).bind(xp).bind(&binding.context.simulation).bind(&binding.context.evidence)
                 .bind(&binding.context.declaration).bind(&binding.policy_revision).bind(&binding.reward_revision).execute(&h.pool).await?;
             assert_eq!(inserted.rows_affected(), 1);
+            // The live actor is initialized as a Monk; the durable build carries the same
+            // class, so the classed level projection is the one eligibility reads.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            let built = sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
+                .bind(id(41).as_slice()).bind(id(119).as_slice()).execute(&mut *tx).await?;
+            assert_eq!(built.rows_affected(), 1);
+            tx.commit().await?;
         }
 
         let world = if name.starts_with("qengine-rewards-l2-djinn-") {

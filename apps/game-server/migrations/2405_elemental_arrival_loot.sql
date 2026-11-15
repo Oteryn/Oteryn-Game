@@ -74,26 +74,17 @@ CREATE TRIGGER game_elemental_loot_retire_no_truncate BEFORE TRUNCATE ON game_el
 DO $migration$
 DECLARE name TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
- FOREACH name IN ARRAY ARRAY['game_item_instance_change_proven','game_item_corpse_entry_removal_proven'] LOOP
+ -- Item instance retirement admission is composed after accepted audit guards by migrations 2838 and 2843.
+ FOREACH name IN ARRAY ARRAY['game_item_corpse_entry_removal_proven'] LOOP
    body:=pg_get_functiondef((name||'()')::regprocedure);
    at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
    IF at=0 THEN RAISE EXCEPTION 'missing elemental loot predecessor %',name; END IF;
-   IF name='game_item_instance_change_proven' THEN
-     arm:=$arm$
-     IF EXISTS(SELECT 1 FROM game_elemental_loot_retire_receipts r WHERE r.transaction_id=NEW.last_transaction_id
-       AND r.created_xact_id=pg_current_xact_id() AND r.item_before=to_jsonb(OLD)) THEN
-       PERFORM game_elemental_loot_retire_complete(NEW.item_instance_id); RETURN NULL;
-     END IF;
-     $arm$;
-   ELSE
      arm:=$arm$
      IF EXISTS(SELECT 1 FROM game_elemental_loot_retire_receipts r WHERE r.created_xact_id=pg_current_xact_id()
        AND r.entry_before=to_jsonb(OLD)) THEN
        PERFORM game_elemental_loot_retire_complete(OLD.item_instance_id); RETURN NULL;
      END IF;
      $arm$;
-   END IF;
    EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
  END LOOP;
 END $migration$;

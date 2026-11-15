@@ -95,19 +95,11 @@ CREATE TRIGGER game_dreamer_ring_no_truncate BEFORE TRUNCATE ON game_dreamer_rin
 DO $migration$
 DECLARE n TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
- FOREACH n IN ARRAY ARRAY['game_item_instance_change_proven','game_item_ground_removal_proven'] LOOP
+ -- Item instance retirement admission is composed after accepted audit guards by migrations 2838 and 2843.
+ FOREACH n IN ARRAY ARRAY['game_item_ground_removal_proven'] LOOP
   body:=pg_get_functiondef((n||'()')::regprocedure);
   at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
   IF at=0 THEN RAISE EXCEPTION 'missing Dreamer offering predecessor guard %',n; END IF;
-  IF n='game_item_instance_change_proven' THEN
-   arm:=$arm$
-    IF EXISTS(SELECT 1 FROM game_dreamer_ring_offerings r WHERE r.transaction_id=NEW.last_transaction_id
-     AND r.item_instance_id=OLD.item_instance_id AND r.created_xact_id=pg_current_xact_id() AND r.before_item=to_jsonb(OLD)) THEN
-     PERFORM game_dreamer_ring_complete(NEW.last_transaction_id); RETURN NULL;
-    END IF;
-$arm$;
-  ELSE
    arm:=$arm$
     IF EXISTS(SELECT 1 FROM game_dreamer_ring_offerings r WHERE r.item_instance_id=OLD.item_instance_id
      AND r.created_xact_id=pg_current_xact_id() AND r.before_ground=to_jsonb(OLD)) THEN
@@ -115,7 +107,6 @@ $arm$;
       WHERE item_instance_id=OLD.item_instance_id AND created_xact_id=pg_current_xact_id())); RETURN NULL;
     END IF;
 $arm$;
-  END IF;
   EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
  END LOOP;
  FOREACH n IN ARRAY ARRAY['game_dreamer_ring_admit()','game_dreamer_ring_complete(uuid)','game_dreamer_ring_consistent()'] LOOP

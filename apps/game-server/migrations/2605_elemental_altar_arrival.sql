@@ -186,20 +186,11 @@ CREATE TRIGGER game_elemental_latch_admit BEFORE INSERT ON game_elemental_boss_l
 DO $migration$
 DECLARE n TEXT; body TEXT; arm TEXT; at INTEGER;
 BEGIN
- -- Item instance retirement admission is composed after accepted audit guards by migration 2815.
- FOREACH n IN ARRAY ARRAY['game_item_instance_change_proven',
-   'game_item_ground_removal_proven','game_item_corpse_entry_removal_proven','game_item_container_entry_removal_proven'] LOOP
+ -- Item instance retirement admission is composed after accepted audit guards by migrations 2838 and 2843.
+ FOREACH n IN ARRAY ARRAY['game_item_ground_removal_proven','game_item_corpse_entry_removal_proven','game_item_container_entry_removal_proven'] LOOP
    body:=pg_get_functiondef((n||'()')::regprocedure);
    at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
    IF at=0 THEN RAISE EXCEPTION 'missing altar predecessor guard %',n; END IF;
-   IF n='game_item_instance_change_proven' THEN
-     arm:=$arm$
-     IF EXISTS(SELECT 1 FROM game_elemental_altar_receipts r,LATERAL jsonb_array_elements(r.inputs) v
-       WHERE r.transaction_id=NEW.last_transaction_id AND r.created_xact_id=pg_current_xact_id() AND v->'item'=to_jsonb(OLD)) THEN
-       PERFORM game_elemental_altar_complete(NEW.last_transaction_id); RETURN NULL;
-     END IF;
-     $arm$;
-   ELSE
      arm:=$arm$
      IF EXISTS(SELECT 1 FROM game_elemental_altar_receipts r,LATERAL jsonb_array_elements(r.inputs) v
        WHERE r.created_xact_id=pg_current_xact_id() AND v->'custody'=to_jsonb(OLD)) THEN
@@ -208,7 +199,6 @@ BEGIN
        RETURN NULL;
      END IF;
      $arm$;
-   END IF;
    EXECUTE overlay(body placing E'BEGIN\n'||arm FROM at FOR 5);
  END LOOP;
  FOREACH n IN ARRAY ARRAY['game_elemental_altar_admit()','game_elemental_altar_complete(uuid)',

@@ -1,7 +1,7 @@
 -- Compose pending QMECH owners after the accepted audit optimizations.
 -- Earlier QMECH migrations create their objects but defer Item-guard changes
 -- until here, so both fresh and accepted-main upgrades retain the exact
--- accepted2808/2809 history before this forward-only composition.
+-- accepted 2808/2809/2837 history before this forward-only composition.
 -- Every original fallback branch remains byte-identical; row images stay
 -- invocation-local and the terminal shortcut retains all deferred proofs.
 DO $migration$
@@ -23,7 +23,7 @@ BEGIN
            original_acl, definition, original_source
       FROM pg_proc p WHERE p.oid='game_item_instance_guard()'::regprocedure;
     IF encode(sha256(convert_to(original_source,'UTF8')),'hex')
-           <> '5cfab2acfadeac9485fb3c34030eaf736f516fd65ea243e2a0d16538df4a3b37'
+           <> 'd81ea8c420283e501106d6af0dc855c37e6c59e34e5fdea6bda33413f93e3677'
        OR (length(definition)-length(replace(definition,original_source,'')))
               /length(original_source)<>1 THEN
         RAISE EXCEPTION 'unexpected accepted Item guard before QMECH composition';
@@ -128,7 +128,7 @@ BEGIN
 
     -- Pin the complete reviewed successor, including unchanged old owners.
     IF encode(sha256(convert_to(source,'UTF8')),'hex')
-           <> '7980797b9d2a45234462062c4bd59e1f184cdbdc626f26713c4eacc1f8ca7bb0' THEN
+           <> '457795e7100d210898de0d342afafa8ec598efa35892720157028d92290e4bd5' THEN
         RAISE EXCEPTION 'unexpected composed QMECH Item guard';
     END IF;
     EXECUTE replace(definition,original_source,source);
@@ -141,7 +141,7 @@ BEGIN
            AND p.proconfig IS NOT DISTINCT FROM original_config
            AND p.proacl IS NOT DISTINCT FROM original_acl
            AND encode(sha256(convert_to(p.prosrc,'UTF8')),'hex')
-               = '7980797b9d2a45234462062c4bd59e1f184cdbdc626f26713c4eacc1f8ca7bb0'
+               = '457795e7100d210898de0d342afafa8ec598efa35892720157028d92290e4bd5'
     ) THEN
         RAISE EXCEPTION 'QMECH Item guard metadata or body changed during composition';
     END IF;
