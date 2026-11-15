@@ -19,9 +19,6 @@ enum LaunchError {
     DanglingPointer(String),
     #[cfg_attr(not(windows), allow(dead_code))]
     SetupStillRunning,
-    // Only the Windows launcher waits for the client mutex.
-    #[cfg_attr(not(windows), allow(dead_code))]
-    ClientStillRunning,
     #[cfg_attr(not(windows), allow(dead_code))]
     Os(io::Error),
 }
@@ -47,7 +44,6 @@ impl Display for LaunchError {
                     release = release
                 )
             }
-            Self::ClientStillRunning => formatter.write_str(tr!("the client did not exit in time")),
             Self::SetupStillRunning => {
                 formatter.write_str(tr!("the installer did not finish in time"))
             }
@@ -167,7 +163,10 @@ fn launch() -> Result<(), LaunchError> {
         let deadline = Instant::now() + Duration::from_secs(120);
         while oteryn_client::win_mutex::exists(&name).map_err(LaunchError::Os)? {
             if Instant::now() >= deadline {
-                return Err(LaunchError::ClientStillRunning);
+                return Err(LaunchError::Os(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "client did not exit in time; close the client and retry maintenance",
+                )));
             }
             std::thread::sleep(Duration::from_millis(250));
         }
