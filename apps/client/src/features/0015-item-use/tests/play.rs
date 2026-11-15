@@ -77,6 +77,7 @@ fn pending_and_self_targets_preserve_targeting_and_send_nothing() -> Result<(), 
 
 fn carried(handle: u64) -> Result<oteryn_session::ItemEntry, Box<dyn std::error::Error>> {
     Ok(oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: handle.try_into()?,
         item_definition_ref: 1.try_into()?,
         count: 1.try_into()?,

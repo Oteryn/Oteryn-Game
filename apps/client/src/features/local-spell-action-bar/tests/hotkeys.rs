@@ -111,6 +111,7 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: NonZeroU64::MIN,
                 item_definition_ref: NonZeroU32::new(256).ok_or("item")?,
                 count: NonZeroU32::MIN,

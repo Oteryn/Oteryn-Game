@@ -55,12 +55,14 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         &outbox,
         Some(oteryn_session::CharacterInventory {
             main_backpack: Some(oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: 99.try_into()?,
                 item_definition_ref: std::num::NonZeroU32::MIN,
                 count: std::num::NonZeroU32::MIN,
                 sub_type: 0,
             }),
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: 7.try_into()?,
                 item_definition_ref: 3.try_into()?,
                 count: 3.try_into()?,

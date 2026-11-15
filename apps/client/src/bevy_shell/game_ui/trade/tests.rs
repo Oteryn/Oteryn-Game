@@ -230,6 +230,7 @@ fn picker_binds_exact_live_item_and_never_uses_a_reused_row() -> TestResult {
     update(&outbox, incoming);
     let handle = std::num::NonZeroU64::new(41).ok_or("handle")?;
     let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle,
         item_definition_ref: std::num::NonZeroU32::new(99123).ok_or("definition")?,
         count: std::num::NonZeroU32::new(3).ok_or("count")?,

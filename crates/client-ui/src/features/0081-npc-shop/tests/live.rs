@@ -88,6 +88,7 @@ fn sellable_counts_aggregate_carried_stacks_by_server_item_identity() -> Result<
     use oteryn_client_runtime::npc_shop::{CharacterInventory, ItemEntry};
     let entry = |handle, item, count| -> Result<ItemEntry, String> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(handle).ok_or("handle")?,
             item_definition_ref: std::num::NonZeroU32::new(item).ok_or("item")?,
             count: std::num::NonZeroU32::new(count).ok_or("count")?,
@@ -186,6 +187,7 @@ fn side_totals_and_backpack_free_slots_follow_server_limits() -> Result<(), Stri
         100
     ));
     let backpack = ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
         item_definition_ref: std::num::NonZeroU32::new(10).ok_or("item")?,
         count: std::num::NonZeroU32::new(1).ok_or("count")?,

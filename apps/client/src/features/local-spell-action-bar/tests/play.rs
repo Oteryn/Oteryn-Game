@@ -519,6 +519,7 @@ fn t058_rune_amounts_use_live_inventory_stacks() -> Result<(), Box<dyn std::erro
             .inventory
             .apply(Some(oteryn_session::CharacterInventory {
                 entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: 1_u64.try_into()?,
                     item_definition_ref: 42_u32.try_into()?,
                     count: 7_u32.try_into()?,
