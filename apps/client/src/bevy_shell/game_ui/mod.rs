@@ -7,6 +7,7 @@ mod cyclopedia;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;
+mod depot;
 mod feature_dialogs;
 mod forge;
 pub(super) mod highscores;
