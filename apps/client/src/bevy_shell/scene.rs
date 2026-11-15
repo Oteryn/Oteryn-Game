@@ -11,6 +11,7 @@ use oteryn_renderer::{AtlasImage, QuadInstance, lighting::QuadLayer};
 
 #[cfg(test)]
 mod tests;
+pub(super) mod typing;
 
 #[derive(Resource, Default)]
 pub(super) struct SceneCache {

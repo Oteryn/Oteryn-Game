@@ -401,3 +401,73 @@ fn foreground_game_modal_blocks_enter_from_previous_composer_focus()
 }
 
 mod text_input;
+
+#[test]
+fn chat_input_sends_typing() -> Result<(), Box<dyn std::error::Error>> {
+    use super::{ChatState, Field, HostOwner};
+    use bevy::{
+        input_focus::{FocusCause, InputFocus},
+        prelude::*,
+        text::EditableText,
+    };
+    let (link, mut commands, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    crate::play::feature_0233_player_typing::protocol::bevy_typing_fixture(&outbox);
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let generation = host.generation();
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<InputFocus>()
+        .insert_resource(ChatState {
+            generation: Some(generation),
+            ..default()
+        })
+        .insert_resource(crate::bevy_shell::ui::Skins {
+            buttons: oteryn_client_ui_bevy::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        })
+        .add_systems(Update, super::project);
+    let editor = app
+        .world_mut()
+        .spawn((Field::Message, EditableText::new("")))
+        .id();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, FocusCause::Navigated);
+    app.update();
+    assert!(commands.try_recv().is_err());
+    for (text, expected) in [
+        ("hello", Some(true)),
+        ("hello again", None),
+        ("", Some(false)),
+    ] {
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .ok_or("editor")?
+            .editor_mut()
+            .set_text(text);
+        app.update();
+        if let Some(typing) = expected {
+            assert!(
+                matches!(commands.try_recv()?, PlayCommand::PlayerTyping(command) if command.typing == typing)
+            );
+        }
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
