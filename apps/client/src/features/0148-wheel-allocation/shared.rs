@@ -93,6 +93,26 @@ impl PlayLink {
         }
     }
 
+    pub(crate) fn wheel_preset_bound(
+        &self,
+        expected: &WheelPanel,
+        action: usize,
+        fields: [String; 2],
+    ) -> bool {
+        let mut m = lock(&self.mailbox);
+        if !m.shared_frontend || m.wheel_shutdown || self.commands.is_closed()
+            || !m.wheel.open || m.wheel != *expected
+            || m.world_input_blocked() || m.server_modal.is_active()
+            || !editable(&m.wheel)
+        {
+            return false;
+        }
+        let selected = m.wheel.preset_fields[0].clone();
+        m.wheel.preset_fields = fields;
+        super::super::view::presets::submit_named(&mut m, action, &selected);
+        true
+    }
+
     pub(crate) fn wheel_control_bound(
         &self,
         expected: &WheelPanel,

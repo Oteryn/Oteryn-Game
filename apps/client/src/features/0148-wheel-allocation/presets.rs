@@ -12,7 +12,16 @@ use tokio::sync::mpsc::UnboundedSender;
 fn path() -> Result<std::path::PathBuf, String> {
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
+pub(in crate::play) fn submit_named(mailbox: &mut Mailbox, action: usize, selected: &str) {
+    match path() {
+        Ok(path) => submit_at(mailbox, action, selected, &path),
+        Err(message) => mailbox.wheel.preset_feedback = message,
+    }
+}
 pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path) {
+    submit_at(mailbox, action, "", path);
+}
+fn submit_at(mailbox: &mut Mailbox, action: usize, selected: &str, path: &Path) {
     let panel = &mut mailbox.wheel;
     let result: Result<(), &str> = (|| {
         match action {
@@ -20,6 +29,7 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                 let mut book = panel.preset_book.clone();
                 book.insert(&panel.preset_fields[0], &panel.build_code())?;
                 book.save(path)?;
+                panel.preset_fields[0] = panel.preset_fields[0].trim().into();
                 panel.preset_book = book;
             }
             1 => {
@@ -38,6 +48,7 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                 }
                 book.save(path)?;
                 panel.preset_book = book;
+                panel.preset_fields[0].clear();
             }
             3 => panel.preset_fields[1] = panel.build_code(),
             4 => {
@@ -45,10 +56,26 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
             5 => panel.import_build(&panel.preset_fields[1].clone())?,
+            6 => {
+                let mut book = panel.preset_book.clone();
+                let name = panel.preset_fields[0].trim();
+                if name != selected && book.0.contains_key(name) {
+                    return Err("A preset with that name already exists");
+                }
+                let code = book.0.remove(selected)
+                    .ok_or("Select a saved preset name")?;
+                book.insert(name, &code)?;
+                book.save(path)?;
+                panel.preset_fields[0] = name.into();
+                panel.preset_book = book;
+            }
             _ => return Err(tr!("Unknown preset action")),
         }
         Ok(())
     })();
+    if action == 6 && result.is_err() {
+        panel.preset_fields[0] = selected.into();
+    }
     panel.preset_feedback = result.map_or_else(str::to_owned, |()| {
         tr!("Preset updated. Loaded points are proposals; Save Wheel submits them.").into()
     });
@@ -163,3 +190,47 @@ fn open_window(shared: &Arc<Mutex<Mailbox>>, commands: &UnboundedSender<PlayComm
 #[cfg(test)]
 #[path = "tests/e2e_n02.rs"]
 mod e2e_n02;
+
+#[cfg(test)]
+mod management_tests {
+    use super::*;
+    #[test]
+    fn wheel_presets_create_rename_delete_are_durable_and_collision_safe()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        let mut m = lock(&link.mailbox);
+        let path = std::env::temp_dir().join(format!("oteryn-gap38-{}.json", std::process::id()));
+        m.wheel.points[14] = 7;
+        m.wheel.preset_fields[0] = "Hunting".into();
+        submit_at(&mut m, 0, "", &path);
+        let code = m.wheel.build_code();
+        assert_eq!(PresetBook::load(&path)?.0.get("Hunting"), Some(&code));
+        m.wheel.points[14] = 9;
+        m.wheel.preset_fields[0] = "Other".into();
+        submit_at(&mut m, 0, "", &path);
+        let before = m.wheel.preset_book.clone();
+        submit_at(&mut m, 6, "Hunting", &path);
+        assert_eq!(m.wheel.preset_feedback, "A preset with that name already exists");
+        assert_eq!(m.wheel.preset_book, before);
+        assert_eq!(PresetBook::load(&path)?, before);
+        m.wheel.preset_fields[0] = "  Bosses  ".into();
+        submit_at(&mut m, 6, "Hunting", &path);
+        assert_eq!(m.wheel.preset_fields[0], "Bosses");
+        let loaded = PresetBook::load(&path)?;
+        assert!(!loaded.0.contains_key("Hunting"));
+        assert_eq!(loaded.0.get("Bosses"), Some(&code));
+        assert_eq!(m.wheel.points[14], 9, "rename keeps the saved allocation");
+        m.wheel.preset_fields[0] = " ".into();
+        submit_at(&mut m, 6, "Bosses", &path);
+        assert_eq!(m.wheel.preset_book, loaded);
+        m.wheel.preset_fields[0] = "Failed write".into();
+        submit_at(&mut m, 6, "Bosses", &path.join("not-a-directory"));
+        assert_eq!(m.wheel.preset_book, loaded);
+        assert_eq!(PresetBook::load(&path)?, loaded);
+        m.wheel.preset_fields[0] = "Bosses".into();
+        submit_at(&mut m, 2, "", &path);
+        assert!(!PresetBook::load(&path)?.0.contains_key("Bosses"));
+        std::fs::remove_file(path)?;
+        Ok(())
+    }
+}
