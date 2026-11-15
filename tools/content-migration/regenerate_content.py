@@ -690,6 +690,7 @@ def main() -> int:
     for tool in AUTHORING_TOOLS:
         if tool.endswith("/reward_claim_authoring.py"):
             run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
+            run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
     # Claims above may add complete native container recipes. Rebuild their

@@ -935,3 +935,30 @@ row, and whether an existing custody holder is still current; no Item weights
 or capacity enter this function. These branches can return `Unavailable`
 without any starter grant. The exact CI branch is unconfirmed: GitHub identified
 the failed node-boot step, but its log download returned HTTP 403.
+
+## Runtime source and proof closure
+
+Before #3213, the legacy/canonical gold definition already weighed 1 centi-ounce,
+but the native coin provider and Q14A shared Hireling policy used 10. The raw
+capture's gold row (`items.jsonl:423`) says `0.01 oz`. `load_weights` correctly
+multiplies ounces by 100; the wrong input therefore becomes 1. #3213 rewrote the
+generated coin/event profiles and changed the accepted shared Hireling tuple
+from `(10, 1, 6818)` to `(1, 1, 6818)`. The active native Item provider then
+supplied 1 to `NativeItemWeights`, so a stack of 100 weighed 100 instead of
+1,000 centi-ounces. This is a fact/import-input error, not a unit-conversion bug.
+
+The correction input is replayed before canonical and native generation. The
+Hireling accepted tuple is restored to 10 while its Crystal observation remains
+1. Coin/event output digests are generated from the validated original closure.
+Immutable Hireling, Soulpit, writing and boss donor snapshots remain untouched;
+their admission owners apply Global facts in memory or retain accepted owners.
+
+Mechanical-rod and recipe proofs share affected Item shards. Their existing
+owner tools verify selected facts before refreshing input hashes. The reward
+stack proof seals the complete canonical gold definition, which historically
+included weight 1. `refresh_reward_stack_weight_proof.py` verifies the old
+definition against that seal, permits only the physical weight leaf, and requires
+the new value to equal the corrected Global input. It regenerates the sealed
+definition hash and the proof's code pin. Both source claims, all donor/wire
+witnesses, quantities 200, serialized counts 100+100, and admission holds remain
+unchanged. The original source/stack mutation rejection tests pass unchanged.
