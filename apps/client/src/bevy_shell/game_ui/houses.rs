@@ -1,4 +1,4 @@
-//! House access lists use the retained catalogue, ACL reads and mutation intents.
+//! House catalogue, auctions, access lists and reviewed ownership transfers.
 use super::*;
 use crate::play::PlayLink;
 use bevy::{
@@ -26,6 +26,9 @@ struct HouseWindow {
     model: Option<Panel>,
     fields: [String; 7],
     request: Option<usize>,
+    ownership: Option<oteryn_client_ui::house::sale::OwnershipPanel>,
+    review: Option<oteryn_client_ui::house::sale::Confirmation>,
+    feedback: String,
 }
 
 pub(super) fn install(app: &mut App) {
@@ -54,6 +57,7 @@ fn keyboard(
     if close && state.root.is_some_and(|root| guard.allows(root)) {
         state.open = false;
         state.request = None;
+        state.review = None;
     }
     if open
         && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
@@ -81,7 +85,12 @@ fn project(
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
+        state.review = None;
     }
+    let ownership = owner
+        .play
+        .as_ref()
+        .map(|play| play.link.house_ownership_panel().model);
     let projected = owner
         .play
         .as_ref()
@@ -90,6 +99,7 @@ fn project(
     if let Some(panel) = &projected
         && state.model.as_ref() == Some(&panel.model)
         && state.fields == panel.fields
+        && state.ownership == ownership
     {
         return;
     }
@@ -104,7 +114,21 @@ fn project(
     let Some(panel) = projected else {
         return;
     };
-    let message = oteryn_client_ui::house::panel_text(&panel.model);
+    let mut message = oteryn_client_ui::house::panel_text(&panel.model);
+    if let Some(model) = &ownership {
+        message.push_str("\nOwnership / incoming transfers:\n");
+        if let Some(data) = model.data() {
+            for (index, row) in data.rows.iter().enumerate() {
+                message.push_str(&format!("{}. {}\n", index + 1, row.name));
+            }
+        }
+        message.push_str(&oteryn_client_ui::house::ownership_text(model));
+    }
+    if let Some(review) = &state.review {
+        message.push_str(review.text());
+    }
+    message.push_str(&state.feedback);
+    state.ownership = ownership;
     state.root = Some(build(
         &mut commands,
         &skin,
@@ -136,6 +160,7 @@ fn activate(
         state.request = Some(selection);
     } else {
         state.open = false;
+        state.review = None;
     }
 }
 fn finish(
@@ -174,7 +199,65 @@ fn finish(
     for (field, text) in &fields {
         values[field.0] = text.value().to_string();
     }
-    submit(&play.link, model, &state.fields, values, selection);
+    if selection >= 20 {
+        if state.ownership.as_ref() != Some(&play.link.house_ownership_panel().model) {
+            state.review = None;
+            return;
+        }
+        match selection {
+            20 => {
+                state.review = None;
+                if play.link.house_ownership_panel().model.available() {
+                    state.feedback.clear();
+                    play.link.house_ownership_open();
+                } else {
+                    state.feedback = "House ownership is unavailable in this session".into();
+                }
+            }
+            21..=26 => {
+                state.review = None;
+                let result = values[2]
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+                    .and_then(|row| row.checked_sub(1))
+                    .ok_or("Select an ownership row".to_owned())
+                    .and_then(|row| play.link.house_ownership_select(row).map_err(str::to_owned))
+                    .and_then(|()| {
+                        play.link.house_ownership_review(
+                            (selection - 20) as u8,
+                            [values[4].clone(), values[5].clone(), values[3].clone()],
+                        )
+                    });
+                match result {
+                    Ok(review) => {
+                        state.review = Some(review);
+                        state.feedback.clear();
+                    }
+                    Err(error) => state.feedback = error,
+                }
+            }
+            27 | 28 => {
+                if let Some(review) = state.review.take() {
+                    play.link.house_ownership_confirm(review, selection == 27);
+                }
+                state.feedback.clear();
+            }
+            29 => {
+                state.review = None;
+                play.link.house_ownership_page(1);
+            }
+            30 => {
+                state.review = None;
+                play.link.house_ownership_page(-1);
+            }
+            _ => {}
+        }
+        state.model = None;
+    } else {
+        submit(&play.link, model, &state.fields, values, selection);
+        state.review = None;
+    }
 }
 pub(super) fn submit(
     link: &PlayLink,
@@ -243,7 +326,12 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(panel);
-    source::dialog_caption(commands, panel, "Edit House List", skin.font.clone());
+    source::dialog_caption(
+        commands,
+        panel,
+        "Houses — Browser, Auctions and Transfers",
+        skin.font.clone(),
+    );
     let content = commands
         .spawn((
             ScrollArea,
@@ -264,8 +352,12 @@ pub(super) fn build(
         (0, "World UUID"),
         (1, "Town key"),
         (2, "House row (1 onwards)"),
+        (3, "Maximum auction bid / transfer price (gold)"),
         (4, "Enter one name per line."),
-        (5, "Door: x y floor"),
+        (
+            5,
+            "Door: x y floor / transfer date: YYYY-MM-DD HH:MM:SS UTC",
+        ),
         (6, "Type CONFIRM for changes"),
     ] {
         label(commands, skin, content, prompt);
@@ -274,7 +366,7 @@ pub(super) fn build(
                 commands,
                 skin,
                 content,
-                "This server requires member UUIDs; names cannot be resolved.",
+                "Access lists require member UUIDs. For transfers, enter the recipient character name here.",
             );
         }
         let mut editable = EditableText::new(&fields[index]);
@@ -314,6 +406,18 @@ pub(super) fn build(
     for (selection, caption) in [
         (Some(0), "Query"),
         (Some(1), "Next"),
+        (Some(2), "Bid"),
+        (Some(20), "Owned / incoming"),
+        (Some(30), "Previous owned"),
+        (Some(29), "Next owned"),
+        (Some(21), "Review move-out"),
+        (Some(22), "Review cancel move-out"),
+        (Some(23), "Review transfer"),
+        (Some(24), "Review cancel transfer"),
+        (Some(25), "Review accept transfer"),
+        (Some(26), "Review reject transfer"),
+        (Some(27), "Confirm reviewed action"),
+        (Some(28), "Cancel review"),
         (Some(11), "Load guests"),
         (Some(12), "Load subowners"),
         (Some(13), "Load door"),

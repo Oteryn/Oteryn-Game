@@ -105,7 +105,17 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+P:** Weapon proficiency. Requests the existing server catalogue,
   shows weapon levels and XP progress, and offers perks only at reached levels.
   This protocol has no server event that opens this window.
-- **Ctrl+Shift+H:** house access lists. Query the town catalogue, select a row,
+- **Ctrl+Shift+H:** Houses. Query the town catalogue and select a numbered row.
+  Enter a maximum gold bid and CONFIRM, then Bid to submit an auction bid.
+  Owned / incoming loads the separate ownership catalogue; its Previous/Next
+  buttons page through owned houses and incoming offers. Use its numbered row
+  for disposition actions. For a transfer, enter the recipient character name
+  in the member field, the gold price in the amount field, and the effective
+  date as YYYY-MM-DD HH:MM:SS UTC in the door/date field. Review the transfer,
+  acceptance, rejection, cancellation or move-out terms, then use Confirm
+  reviewed action (or Cancel review). Review alone sends no mutation.
+  Podium and hireling management remain separate, unimplemented presentations.
+  For access lists, select a town catalogue row,
   load guests/subowners/a door, then edit the multiline list and enter CONFIRM
   before saving. The current server requires member UUIDs; name resolution and
   book/sign author/date descriptors are not available on the current wire.
