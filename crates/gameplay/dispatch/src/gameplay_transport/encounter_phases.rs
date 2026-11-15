@@ -73,7 +73,7 @@ impl Registry {
     pub(super) fn has_terminal(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
         self.active.lock().is_ok_and(|active| {
             active.iter().any(|phase| {
-                phase.fight.contains(actor)
+                phase.fight.contains_terminal(actor)
                     && phase
                         .fight
                         .victors(runtime)
