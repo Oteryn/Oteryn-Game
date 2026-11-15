@@ -1848,6 +1848,7 @@ mod tests {
                         owner: TargetOwner::Player(Box::new(target)),
                     }],
                     shared_extensions: None,
+                    charm_critical: Vec::new(),
                     pvp_targets: vec![(actor, false)],
                     delayed_damage_percent: None,
                     wheel_positions: vec![],
