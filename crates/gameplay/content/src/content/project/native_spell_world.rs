@@ -174,7 +174,7 @@ pub struct QualifiedNativeSpellWorld {
     immutable_tiles: BTreeMap<LogicalCell, QualifiedSpellTile>,
     pending_placements: Vec<QualifiedMutableSourcePlacement>,
     native_item_bindings: BTreeMap<u32, ProjectV2SourceIdentityBinding>,
-    bounds: [i32; 6],
+    captured_regions: Vec<[i32; 6]>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 impl QualifiedNativeSpellWorld {
@@ -209,7 +209,22 @@ impl QualifiedNativeSpellWorld {
                 && cell.z <= z1
         };
         let mut view = self.clone();
-        view.bounds = bounds;
+        view.captured_regions = self
+            .captured_regions
+            .iter()
+            .filter_map(|r| {
+                let clipped = [
+                    r[0].max(x0),
+                    r[1].max(y0),
+                    r[2].min(x1),
+                    r[3].min(y1),
+                    r[4].max(z0),
+                    r[5].min(z1),
+                ];
+                (clipped[0] <= clipped[2] && clipped[1] <= clipped[3] && clipped[4] <= clipped[5])
+                    .then_some(clipped)
+            })
+            .collect();
         view.cells.retain(|cell, _| inside(*cell));
         view.immutable_tiles.retain(|cell, _| inside(*cell));
         view.pending_placements
@@ -254,10 +269,13 @@ impl QualifiedNativeSpellWorld {
             .ok_or(StaticCellEngineError::Absent)
     }
     pub fn contains_capture_cell(&self, cell: LogicalCell) -> bool {
-        let [min_x, min_y, max_x, max_y, min_z, max_z] = self.bounds;
-        (min_x..=max_x).contains(&cell.x)
-            && (min_y..=max_y).contains(&cell.y)
-            && (min_z..=max_z).contains(&cell.z)
+        self.captured_regions
+            .iter()
+            .any(|&[min_x, min_y, max_x, max_y, min_z, max_z]| {
+                (min_x..=max_x).contains(&cell.x)
+                    && (min_y..=max_y).contains(&cell.y)
+                    && (min_z..=max_z).contains(&cell.z)
+            })
     }
     pub fn spell_tiles(&self) -> super::QualifiedSpellTiles {
         super::QualifiedSpellTiles::from_source_world(self)
@@ -301,8 +319,8 @@ impl QualifiedNativeSpellWorld {
     pub(super) fn qualified_cells(&self) -> &BTreeMap<LogicalCell, Option<QualifiedSpellTile>> {
         &self.cells
     }
-    pub(super) const fn native_bounds(&self) -> [i32; 6] {
-        self.bounds
+    pub(super) fn captured_regions(&self) -> &[[i32; 6]] {
+        &self.captured_regions
     }
 }
 fn invalid() -> ProjectError {
@@ -325,12 +343,9 @@ pub fn qualify(
             if let Some(known) = &tile {
                 world.immutable_tiles.insert(cell, known.clone());
             }
-            world.bounds[0] = world.bounds[0].min(cell.x);
-            world.bounds[1] = world.bounds[1].min(cell.y);
-            world.bounds[2] = world.bounds[2].max(cell.x);
-            world.bounds[3] = world.bounds[3].max(cell.y);
-            world.bounds[4] = world.bounds[4].min(cell.z);
-            world.bounds[5] = world.bounds[5].max(cell.z);
+            world
+                .captured_regions
+                .push([cell.x, cell.y, cell.x, cell.y, cell.z, cell.z]);
             world.cells.insert(cell, tile);
         }
         return Ok(world);
@@ -621,7 +636,7 @@ pub fn qualify(
             z: -doc.source_town.temple[2],
         },
         cells,
-        bounds: [-14, -15, 17, 16, -8, -5],
+        captured_regions: vec![[-14, -15, 17, 16, -8, -5]],
         bindings: doc.source_identity_bindings,
         immutable_tiles,
         pending_placements,
@@ -880,6 +895,27 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn disconnected_capture_gap_is_unknown() {
+        let bundle = serde_json::to_vec(&serde_json::json!({
+            "schema": "OTERYN_NATIVE_SOURCE_REGION_BUNDLE/v1",
+            "channel": std::str::from_utf8(SOURCE).unwrap(),
+            "primal": std::str::from_utf8(PRIMAL_SOURCE).unwrap(),
+        }))
+        .unwrap();
+        let map = qualify(&bundle, scope()).unwrap();
+        let gap = LogicalCell {
+            x: 1000,
+            y: 1000,
+            z: -7,
+        };
+        assert!(!map.contains_capture_cell(gap));
+        assert_eq!(
+            map.spell_tiles().lookup(map.scope(), gap),
+            Err(super::super::native_spell_tiles::SpellTileLookupError::Unknown)
+        );
+        assert!(map.activity_region([0, 0, 1000, 1000, -7, -7]).is_none());
+    }
     #[test]
     fn source_region_bundle_admits_primal_and_projects_both_regions() {
         let bundle = serde_json::to_vec(&serde_json::json!({
