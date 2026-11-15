@@ -155,12 +155,78 @@ pub(super) fn render(
             ),
         );
     }
+    if matches!(
+        tab,
+        Tab::Familiars | Tab::Character(CharacterTab::Appearances)
+    ) {
+        text(
+            commands,
+            skin,
+            rows,
+            "Familiars are content catalogue entries, not account unlocks.",
+        );
+        if let Some(page) = &panel.gallery.page {
+            text(
+                commands,
+                skin,
+                rows,
+                format!(
+                    "Appearance catalogue: {}–{} of {}. Familiar filtering applies to this page.",
+                    if page.total == 0 {
+                        0
+                    } else {
+                        usize::from(page.offset) + 1
+                    },
+                    usize::from(page.offset) + page.entries.len(),
+                    page.total,
+                ),
+            );
+        }
+    }
+    let gallery = rows::gallery_entries(tab, panel);
     let projected = rows::project(tab, panel);
     if projected.is_empty() {
-        text(commands, skin, rows, "No confirmed rows");
+        text(
+            commands,
+            skin,
+            rows,
+            if tab == Tab::Familiars && tab.can_page(true, panel) {
+                "No confirmed familiars on this appearance page. Use Next to browse further pages."
+            } else if tab == Tab::Familiars {
+                "No confirmed familiars on this appearance page."
+            } else {
+                "No confirmed rows"
+            },
+        );
     }
-    for row in projected {
-        text(commands, skin, rows, row);
+    for (index, row) in projected.into_iter().enumerate() {
+        let parent = if let Some(entry) = gallery.get(index) {
+            let card = commands
+                .spawn(Node {
+                    column_gap: px(8.),
+                    align_items: AlignItems::Center,
+                    flex_shrink: 0.,
+                    ..default()
+                })
+                .id();
+            let portrait = commands
+                .spawn((
+                    artwork::Portrait(entry.look_type),
+                    Node {
+                        width: px(96.),
+                        height: px(96.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.entity(card).add_child(portrait);
+            commands.entity(rows).add_child(card);
+            card
+        } else {
+            rows
+        };
+        text(commands, skin, parent, row);
     }
     let footer = commands
         .spawn(Node {
@@ -179,7 +245,7 @@ pub(super) fn render(
             && (panel.pending
                 || !panel.selected
                 || (matches!(kind, Kind::Previous | Kind::Next)
-                    && tab.page(kind == Kind::Next).is_none()));
+                    && !tab.can_page(kind == Kind::Next, panel)));
         button(
             commands,
             skin,
