@@ -97,3 +97,12 @@ Item entries and NPC offers without a negotiated, server-verified presentation
 binding use neutral unavailable labels/icons. A definition reference is not an
 appearance ID. The existing Look/inspection commands remain the source of item
 details; the client does not guess a mapping.
+
+## Outfit editor
+
+Press Ctrl+Alt+A while playing to open Outfit. Select a granted outfit, owned
+addons, four palette colours and a mount, then OK to send the existing appearance
+change. Cancel closes the editor. The standing preview uses local verified sprite
+sheets; mounts display their catalogue keys because the model has no mount sprite
+IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
+no separate outfit-window event or catalogue request command.
