@@ -11,7 +11,9 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
         panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
         return None;
     }
-    let intent = if mode == Mode::Guild {
+    let intent = if let Some(intent) = prefixed_intent(panel)? {
+        intent
+    } else if mode == Mode::Guild {
         return crate::chat_guild_room::request(panel);
     } else if mode == Mode::Private {
         let name = recipient.trim();
@@ -52,27 +54,77 @@ pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
         return None;
     }
     let text = panel.text.clone();
-    let intent = match channel {
-        // Receive-only tabs redirect typed text to local chat, as the Global client does.
-        ChannelTab::Loot | ChannelTab::ServerLog | ChannelTab::Npc => ChatIntent::Say {
-            mode: ChatSpeechMode::Say,
-            text,
-        },
-        ChannelTab::Room(room) => ChatIntent::Room { room, text },
-        ChannelTab::Private(channel_id) => ChatIntent::PrivateChannel(
-            oteryn_client_runtime::chat_private_channel::PrivateChannelIntent::Say {
-                channel_id,
+    let intent = if let Some(intent) = prefixed_intent(panel)? {
+        intent
+    } else {
+        match channel {
+            // Receive-only tabs redirect typed text to local chat, as the Global client does.
+            ChannelTab::Loot | ChannelTab::ServerLog => ChatIntent::Say {
+                mode: ChatSpeechMode::Say,
                 text,
             },
-        ),
-        ChannelTab::Conversation(recipient_name) => ChatIntent::Private {
-            recipient_name,
-            text,
-        },
+            ChannelTab::Npc => {
+                // The console caller submits plain replies through the NPC dialogue owner.
+                panel.feedback = None;
+                return None;
+            }
+            ChannelTab::Room(room) => ChatIntent::Room { room, text },
+            ChannelTab::Private(channel_id) => ChatIntent::PrivateChannel(
+                oteryn_client_runtime::chat_private_channel::PrivateChannelIntent::Say {
+                    channel_id,
+                    text,
+                },
+            ),
+            ChannelTab::Conversation(recipient_name) => ChatIntent::Private {
+                recipient_name,
+                text,
+            },
+        }
     };
     panel.pending = true;
     panel.feedback = None;
     Some(intent)
+}
+
+/// Prefixes override the selected destination before any intent is constructed.
+fn prefixed_intent(panel: &mut ChatPanel) -> Option<Option<ChatIntent>> {
+    let text = panel.text.trim_start();
+    let parsed = if let Some(delimiter) = text.chars().next().filter(|c| matches!(c, '*' | '@')) {
+        let Some((name, text)) = text[delimiter.len_utf8()..].split_once(delimiter) else {
+            panel.feedback = Some(tr!("Enter a player name of at most 120 bytes").into());
+            return None;
+        };
+        let name = name.trim();
+        if name.is_empty() || name.len() > 120 || name.contains('\0') {
+            panel.feedback = Some(tr!("Enter a player name of at most 120 bytes").into());
+            return None;
+        }
+        Some(ChatIntent::Private {
+            recipient_name: name.into(),
+            text: text.trim_start().into(),
+        })
+    } else {
+        [
+            ("#w", ChatSpeechMode::Whisper),
+            ("#y", ChatSpeechMode::Yell),
+            ("#s", ChatSpeechMode::Say),
+        ]
+        .into_iter()
+        .find_map(|(prefix, mode)| {
+            text.strip_prefix(prefix)
+                .filter(|rest| rest.is_empty() || rest.starts_with(char::is_whitespace))
+                .map(|rest| ChatIntent::Say {
+                    mode,
+                    text: rest.trim_start().into(),
+                })
+        })
+    };
+    if matches!(&parsed, Some(ChatIntent::Private { text, .. } | ChatIntent::Say { text, .. }) if text.trim().is_empty())
+    {
+        panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
+        return None;
+    }
+    Some(parsed)
 }
 
 type Private = crate::chat_private_channel::ChatPanel;
@@ -252,3 +304,7 @@ pub fn console_request(panel: &mut super::ChatPanel) -> Option<Vec<u8>> {
     panel.console.metadata.pending = Some(names);
     Some(payload)
 }
+
+#[cfg(test)]
+#[path = "tests/regressions.rs"]
+mod regression_tests;

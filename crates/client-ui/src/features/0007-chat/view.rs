@@ -29,7 +29,11 @@ fn tab_text(
     if let Some(local) = channel.filter(|channel| channel.receive_only()) {
         return local_tab_text(panel, local);
     }
-    let show_messages = panel.console.shows_messages(tab);
+    let show_messages = if channel.is_some() {
+        panel.console.show_messages
+    } else {
+        panel.console.shows_messages(tab)
+    };
     let mut text = String::from(tr!("Local Chat — Say / Whisper / Yell / Private\n"));
     if let Some(super::ChannelTab::Private(id)) = channel
         && let Some(names) = panel.console.participants.get(id)
@@ -239,27 +243,33 @@ fn tab_text(
 fn local_tab_text(panel: &ChatPanel, tab: &super::ChannelTab) -> String {
     use super::{ChannelTab, NoticeScope};
     let console = &panel.console;
-    let mut text = match tab {
-        ChannelTab::Loot | ChannelTab::ServerLog if !console.show_server_messages => String::new(),
-        ChannelTab::Loot => {
-            console
-                .notices
-                .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+    let mut text = if !console.show_messages {
+        String::new()
+    } else {
+        match tab {
+            ChannelTab::Loot | ChannelTab::ServerLog if !console.show_server_messages => {
+                String::new()
+            }
+            ChannelTab::Loot => {
+                console
+                    .notices
+                    .scoped_text(console.filters, console.display, NoticeScope::LootOnly)
+            }
+            ChannelTab::ServerLog => console.notices.scoped_text(
+                console.filters,
+                console.display,
+                NoticeScope::Combined {
+                    loot_tab_open: console.channels.contains(&ChannelTab::Loot),
+                },
+            ),
+            _ => console
+                .npc_lines
+                .iter()
+                .fold(String::new(), |mut text, line| {
+                    let _ = writeln!(text, "{line}");
+                    text
+                }),
         }
-        ChannelTab::ServerLog => console.notices.scoped_text(
-            console.filters,
-            console.display,
-            NoticeScope::Combined {
-                loot_tab_open: console.channels.contains(&ChannelTab::Loot),
-            },
-        ),
-        _ => console
-            .npc_lines
-            .iter()
-            .fold(String::new(), |mut text, line| {
-                let _ = writeln!(text, "{line}");
-                text
-            }),
     };
     if let Some(feedback) = &panel.feedback
         && console.presentation.feedback

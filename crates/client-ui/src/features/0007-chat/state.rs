@@ -23,7 +23,7 @@ pub enum ChannelTab {
     Room(oteryn_client_runtime::chat_public_channels::ChatRoom),
     Private(u16),
     Conversation(String),
-    /// Client-local views over messages the client already receives; they take no input.
+    /// Client-local views over messages the client already receives.
     Loot,
     ServerLog,
     Npc,
@@ -40,7 +40,7 @@ impl ChannelTab {
             ChannelTab::Npc => tr!("NPC").to_owned(),
         }
     }
-    /// Loot, Server Log and NPC are receive-only: typed text goes to local chat instead.
+    /// Local transcript views; NPC input is submitted through the dialogue owner.
     pub fn receive_only(&self) -> bool {
         matches!(self, Self::Loot | Self::ServerLog | Self::Npc)
     }
@@ -79,6 +79,7 @@ pub struct Console {
     pub filters: super::ConsoleFilters,
     pub notices: super::ConsoleNotices,
     tab_filters: [bool; 4],
+    channel_filters: Vec<(ChannelTab, bool)>,
     /// Opened channel tabs after the fixed tabs, in opening order.
     pub channels: Vec<ChannelTab>,
     /// The selected channel tab; `None` while a fixed tab is selected.
@@ -115,6 +116,7 @@ impl Default for Console {
             filters: Default::default(),
             notices: Default::default(),
             tab_filters: [true; 4],
+            channel_filters: Vec::new(),
             channels: Vec::new(),
             current: None,
             focus: None,
@@ -131,13 +133,30 @@ impl Default for Console {
 }
 impl Console {
     pub fn select(&mut self, tab: ConsoleTab) {
-        self.tab_filters[self.tab as usize] = self.show_messages;
+        self.save_filter();
         self.tab = tab;
         self.current = None;
         self.show_messages = self.tab_filters[tab as usize];
     }
+    fn save_filter(&mut self) {
+        if let Some(channel) = &self.current {
+            if let Some((_, visible)) = self
+                .channel_filters
+                .iter_mut()
+                .find(|(tab, _)| tab == channel)
+            {
+                *visible = self.show_messages;
+            } else {
+                self.channel_filters
+                    .push((channel.clone(), self.show_messages));
+            }
+        } else {
+            self.tab_filters[self.tab as usize] = self.show_messages;
+        }
+    }
     /// Open a channel tab (once) and select it.
     pub fn open_channel(&mut self, channel: ChannelTab) {
+        self.save_filter();
         if let Some(existing) = self.channels.iter().find(|tab| match (tab, &channel) {
             (ChannelTab::Conversation(open), ChannelTab::Conversation(name)) => {
                 open.eq_ignore_ascii_case(name)
@@ -149,16 +168,27 @@ impl Console {
             self.channels.push(channel.clone());
             self.current = Some(channel);
         }
+        self.show_messages = self
+            .channel_filters
+            .iter()
+            .find(|(tab, _)| Some(tab) == self.current.as_ref())
+            .is_none_or(|(_, visible)| *visible);
     }
     /// Close the selected channel tab and fall back to its left neighbour. The fixed tabs,
     /// the default channel among them, cannot be closed.
     pub fn close_current(&mut self) -> Option<ChannelTab> {
+        self.save_filter();
         let closed = self.current.take()?;
         let at = self.channels.iter().position(|tab| *tab == closed)?;
         self.channels.remove(at);
-        match at.checked_sub(1) {
-            Some(left) => self.current = self.channels.get(left).cloned(),
-            None => self.select(self.tab),
+        self.channel_filters.retain(|(tab, _)| *tab != closed);
+        self.show_messages = self.tab_filters[self.tab as usize];
+        if let Some(left) = at
+            .checked_sub(1)
+            .and_then(|left| self.channels.get(left))
+            .cloned()
+        {
+            self.open_channel(left);
         }
         Some(closed)
     }
@@ -168,6 +198,7 @@ impl Console {
             self.close_current();
         } else {
             self.channels.retain(|tab| tab != channel);
+            self.channel_filters.retain(|(tab, _)| tab != channel);
         }
     }
     /// Tab positions: the fixed tabs, then the opened channels.
@@ -192,7 +223,7 @@ impl Console {
             .get(index.wrapping_sub(FIXED_TABS.len()))
             .cloned()
         {
-            self.current = Some(channel);
+            self.open_channel(channel);
         } else {
             return false;
         }
@@ -233,7 +264,7 @@ impl Console {
             }
             if rooms.contains(room) && self.focus == Some(PendingFocus::Tab(tab.clone())) {
                 self.focus = None;
-                self.current = Some(tab);
+                self.open_channel(tab);
             }
         }
     }
@@ -290,7 +321,7 @@ impl Console {
         true
     }
     pub fn shows_messages(&self, tab: ConsoleTab) -> bool {
-        if tab == self.tab {
+        if self.current.is_none() && tab == self.tab {
             self.show_messages
         } else {
             self.tab_filters[tab as usize]

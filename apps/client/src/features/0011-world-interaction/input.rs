@@ -47,12 +47,40 @@ impl PlayView {
         if mailbox.world_context.pending {
             return None;
         }
+        let actor = match &target {
+            oteryn_client_runtime::world_interaction::Target::Creature(target) => self
+                .entities
+                .iter()
+                .any(|entity| {
+                    entity.entity == *target
+                        && Some(target.identity) != self.scene.own_identity()
+                        && matches!(
+                            entity.kind,
+                            oteryn_session::EntityKind::Player
+                                | oteryn_session::EntityKind::Creature
+                        )
+                })
+                .then_some(*target),
+            _ => None,
+        };
         let mut menu = Menu::new(
             target,
             mailbox.world_context.look,
             mailbox.world_context.bed,
         )
-        .with_targeting(mailbox.world_context.use_with);
+        .with_targeting(mailbox.world_context.use_with)
+        .with_combat(
+            actor.and_then(|target| {
+                mailbox
+                    .battle
+                    .combat
+                    .filter(|_| !mailbox.battle.shutdown && !mailbox.battle.pending)
+                    .map(|state| state.target == Some(target))
+            }),
+            actor
+                .filter(|_| mailbox.target_move_selected)
+                .map(|target| mailbox.world_context.following == Some(target)),
+        );
         menu.tile = Some(tile);
         if let Some(crate::play::GroundItem::Map { header, .. }) =
             self.scene.target_at(tile).and_then(|target| target.item)
@@ -63,7 +91,14 @@ impl PlayView {
                 header.reset_epoch,
             ));
         }
-        (!menu.entries.is_empty()).then_some(menu)
+        (!oteryn_client_ui::world_interaction::menu::context_entries(
+            Some(&menu),
+            false,
+            false,
+            false,
+        )
+        .is_empty())
+        .then_some(menu)
     }
     pub fn world_context_choose(&self, link: &PlayLink, menu: &Menu, action: Action) -> bool {
         if !menu.entries.iter().any(|(_, entry)| *entry == action)
@@ -142,5 +177,58 @@ impl PlayLink {
         lock(&self.mailbox)
             .world_context
             .feedback(std::time::Instant::now())
+    }
+}
+
+impl PlayView {
+    pub fn context_choose(
+        &self,
+        link: &PlayLink,
+        menu: &Menu,
+        action: oteryn_client_ui::world_interaction::menu::ContextAction,
+    ) -> bool {
+        use oteryn_client_ui::world_interaction::menu::{ContextAction, context_entries};
+        if let ContextAction::World(action) = action {
+            return self.world_context_choose(link, menu, action);
+        }
+        if self.gameplay_input_blocked(link) {
+            return false;
+        }
+        let Some(current) = menu.tile.and_then(|tile| self.world_context(tile, link)) else {
+            return false;
+        };
+        if current.target != menu.target
+            || current.binding != menu.binding
+            || !context_entries(Some(menu), false, false, false)
+                .iter()
+                .any(|(_, entry)| *entry == action)
+            || !context_entries(Some(&current), false, false, false)
+                .iter()
+                .any(|(_, entry)| *entry == action)
+        {
+            return false;
+        }
+        let oteryn_client_runtime::world_interaction::Target::Creature(target) = menu.target else {
+            return false;
+        };
+        match action {
+            ContextAction::Attack => {
+                link.request_combat(crate::combat_input::CombatCommand::Attack(target))
+            }
+            ContextAction::StopAttack => {
+                link.request_combat(crate::combat_input::CombatCommand::Stop)
+            }
+            ContextAction::Follow => {
+                return link.request_target_move(
+                    oteryn_session::target_move::TargetMoveIntent::Follow(target),
+                );
+            }
+            ContextAction::StopFollow => {
+                return link
+                    .request_target_move(oteryn_session::target_move::TargetMoveIntent::Stop);
+            }
+            _ => return false,
+        }
+        true
     }
 }

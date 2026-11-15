@@ -632,3 +632,82 @@ fn channel_dialog_reuses_a_conversation_with_different_name_case()
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn npc_tab_composer_uses_the_current_conversation_and_never_public_chat()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use crate::play::mailbox::lock;
+    use oteryn_client_ui::chat::{ChannelTab, Mode};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    let npc = oteryn_session::EntityRef {
+        identity: [4; 16],
+        generation: 1,
+    };
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.dialogue.selected = true;
+        mailbox.dialogue.open = true;
+        mailbox.dialogue.target = Some(npc);
+        mailbox.dialogue.lines = vec!["Buy this?".into()];
+        mailbox.chat.console.open_channel(ChannelTab::Npc);
+    }
+    link.chat_text("yes".into());
+    link.chat_request(Mode::Say, "");
+    let sent: Vec<_> = std::iter::from_fn(|| commands.try_recv().ok()).collect();
+    assert!(sent.iter().any(|command| matches!(command,
+        PlayCommand::NpcTalk(intent) if intent.npc_actor == npc && intent.text == "yes")));
+    assert!(
+        !sent
+            .iter()
+            .any(|command| matches!(command, PlayCommand::ChatPublic(_)))
+    );
+    assert!(lock(&outbox.0).dialogue.pending);
+    {
+        let mut mailbox = lock(&outbox.0);
+        mailbox.dialogue.pending = false;
+        mailbox.dialogue.open = false;
+        mailbox.dialogue.target = None;
+    }
+    link.chat_request(Mode::Say, "");
+    assert!(
+        !std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(
+            command,
+            PlayCommand::ChatPublic(_) | PlayCommand::NpcTalk(_)
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn npc_tab_keeps_explicit_chat_destinations_and_rejects_invalid_prefixes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use crate::play::mailbox::lock;
+    use oteryn_client_ui::chat::{ChannelTab, Mode};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    lock(&outbox.0).chat.console.open_channel(ChannelTab::Npc);
+    link.chat_text("*Alice* secret".into());
+    link.chat_request(Mode::Say, "");
+    let sent: Vec<_> = std::iter::from_fn(|| commands.try_recv().ok()).collect();
+    assert!(sent.iter().any(|command| matches!(command,
+        PlayCommand::ChatPublic(oteryn_session::ChatIntent::Private { recipient_name, text })
+            if recipient_name == "Alice" && text == "secret")));
+    assert!(
+        !sent
+            .iter()
+            .any(|command| matches!(command, PlayCommand::NpcTalk(_)))
+    );
+    lock(&outbox.0).chat.pending = false;
+    link.chat_text("*Alice".into());
+    link.chat_request(Mode::Say, "");
+    assert!(
+        !std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(
+            command,
+            PlayCommand::ChatPublic(_) | PlayCommand::NpcTalk(_)
+        ))
+    );
+    Ok(())
+}

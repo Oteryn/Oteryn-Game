@@ -126,6 +126,7 @@ impl Outbox {
         mailbox.combat.clear();
         mailbox.logout_refused = None;
         mailbox.world_context.pending = false;
+        mailbox.world_context.following = None;
         mailbox.world_context.targeting = None;
         mailbox.world_context.rune_targeting = false;
         mailbox.item_movement = Default::default();

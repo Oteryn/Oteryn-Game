@@ -6,12 +6,33 @@ pub struct Menu {
     pub binding: Option<([u8; 32], [u8; 32], u64)>,
     pub target: Target,
     pub entries: Vec<(&'static str, Action)>,
+    combat: Vec<(&'static str, ContextAction)>,
 }
 impl Menu {
     pub fn with_targeting(mut self, enabled: bool) -> Self {
         if enabled && matches!(self.target, Target::Item(_)) {
             self.entries.push((tr!("Use with…"), Action::UseWith));
             self.entries.push((tr!("Use rune…"), Action::UseRune));
+        }
+        self
+    }
+
+    pub fn with_combat(mut self, attack: Option<bool>, follow: Option<bool>) -> Self {
+        if matches!(self.target, Target::Creature(_)) {
+            if let Some(attacking) = attack {
+                self.combat.push(if attacking {
+                    (tr!("Stop Attack"), ContextAction::StopAttack)
+                } else {
+                    (tr!("Attack"), ContextAction::Attack)
+                });
+            }
+            if let Some(following) = follow {
+                self.combat.push(if following {
+                    (tr!("Stop Follow"), ContextAction::StopFollow)
+                } else {
+                    (tr!("Follow"), ContextAction::Follow)
+                });
+            }
         }
         self
     }
@@ -33,6 +54,7 @@ impl Menu {
             binding: None,
             target,
             entries,
+            combat: Vec::new(),
         }
     }
 }
@@ -40,6 +62,10 @@ impl Menu {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ContextAction {
     World(Action),
+    Attack,
+    StopAttack,
+    Follow,
+    StopFollow,
     Talk,
     NpcTrade,
     PlayerTrade,
@@ -61,6 +87,7 @@ pub fn context_entries(
                 .iter()
                 .map(|(label, action)| (*label, ContextAction::World(*action))),
         );
+        entries.extend_from_slice(&world.combat);
     }
     if npc {
         entries.extend([
@@ -82,6 +109,8 @@ pub fn context_entries(
 
 #[derive(Debug, Default)]
 pub struct State {
+    /// Last server-accepted follow request, used only for local action labels.
+    pub following: Option<oteryn_client_runtime::world_interaction::EntityRef>,
     pub targeting: Option<oteryn_client_runtime::inventory::ItemHandle>,
     pub rune_targeting: bool,
     pub use_with: bool,

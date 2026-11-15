@@ -3,10 +3,12 @@ use crate::play::{Outbox, Stepper, mailbox::lock};
 use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
 use oteryn_session::{ActorPosition, SessionError};
 impl Outbox {
-    pub(in crate::play) fn target_move_initialize(&self, selected: bool) {
-        lock(&self.0).target_move_selected = selected;
+    pub(crate) fn target_move_initialize(&self, selected: bool) {
+        let mut mailbox = lock(&self.0);
+        mailbox.target_move_selected = selected;
+        mailbox.world_context.following = None;
     }
-    pub(in crate::play) fn target_move_result(
+    pub(crate) fn target_move_result(
         &self,
         request: &oteryn_client_runtime::server_mechanic::ServerMechanicCommand,
         response: &ServerMechanicResponse,
@@ -26,6 +28,27 @@ impl Outbox {
                 oteryn_session::StepDirection::West => crate::input::StepDir::West,
                 _ => return,
             });
+        }
+        if let Ok(intent) = oteryn_session::target_move::decode_target_move_intent(&request.payload)
+            && matches!(
+                response.status,
+                CommandStatus::Accepted | CommandStatus::DuplicateReplay
+            )
+        {
+            use oteryn_session::target_move::TargetMoveIntent;
+            if let (TargetMoveIntent::Follow(target), [8, 1]) =
+                (intent, response.payload.as_slice())
+            {
+                mailbox.world_context.following = Some(target);
+            } else if matches!(
+                (intent, response.payload.as_slice()),
+                (
+                    TargetMoveIntent::Follow(_) | TargetMoveIntent::Walk(_),
+                    [8, 2]
+                ) | (TargetMoveIntent::Walk(_) | TargetMoveIntent::Stop, [8, 1])
+            ) {
+                mailbox.world_context.following = None;
+            }
         }
         mailbox.movement_feedback = Some(match (response.status, response.payload.as_slice()) {
             (CommandStatus::Accepted | CommandStatus::DuplicateReplay, [8, 1]) => {
@@ -70,7 +93,17 @@ impl Outbox {
         position: ActorPosition,
     ) -> Result<(), SessionError> {
         let response = session.target_walk(position).await?;
-        oteryn_client_ui::target_move::apply(&mut lock(&self.0).target_walk, response);
+        let mut mailbox = lock(&self.0);
+        if matches!(
+            response.disposition,
+            Some(
+                oteryn_client_runtime::target_move::WalkDisposition::Accepted
+                    | oteryn_client_runtime::target_move::WalkDisposition::NoPath
+            )
+        ) {
+            mailbox.world_context.following = None;
+        }
+        oteryn_client_ui::target_move::apply(&mut mailbox.target_walk, response);
         Ok(())
     }
 }

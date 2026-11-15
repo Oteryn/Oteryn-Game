@@ -219,3 +219,56 @@ fn input_preserves_wire_sources_elements_rates_and_reset() -> Result<(), &'stati
     assert!(panel_text(&panel).contains("No damage received yet"));
     Ok(())
 }
+
+#[test]
+fn local_reset_keeps_inflight_catalogue_request_until_its_reply() -> Result<(), &'static str> {
+    use oteryn_client_runtime::{
+        CommandStatus,
+        analyser::{AnalyserItemCount, ItemInfo, encode_reply},
+    };
+    let mut panel = Panel {
+        selected: true,
+        tool: Tool::Supply,
+        ..Default::default()
+    };
+    let observe = |panel: &mut Panel, id: u32| -> Result<(), &'static str> {
+        apply_at(
+            panel,
+            &[AnalyserFact::SupplyUsed(AnalyserItemCount {
+                item_type: id.try_into().map_err(|_| "item")?,
+                count: 1.try_into().map_err(|_| "count")?,
+            })],
+            0,
+        );
+        Ok(())
+    };
+    observe(&mut panel, 3)?;
+    catalogue_request(&mut panel).ok_or("A query")?;
+    reset(&mut panel);
+    observe(&mut panel, 9)?;
+    assert!(
+        catalogue_request(&mut panel).is_none(),
+        "A is still outstanding"
+    );
+    let reply = |id, command_id| -> Result<_, &'static str> {
+        Ok(oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id,
+            status: CommandStatus::Accepted,
+            server_sequence: command_id,
+            payload: encode_reply(&[ItemInfo {
+                item_type: id,
+                name: format!("Item {id}"),
+                coin_worth: 0,
+            }])?,
+        })
+    };
+    assert!(catalogue_result(&mut panel, &reply(3, 1)?));
+    assert!(!panel.supply.contains_key(&3));
+    catalogue_request(&mut panel).ok_or("B query")?;
+    assert_eq!(panel.catalogue_pending, [9]);
+    assert!(catalogue_result(&mut panel, &reply(9, 2)?));
+    assert!(super::set_item_price(&mut panel, "9", "25"));
+    assert_eq!(panel.supply_cost(), 25);
+    assert!(panel.catalogue_pending.is_empty());
+    Ok(())
+}

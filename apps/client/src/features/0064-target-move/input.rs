@@ -64,20 +64,7 @@ impl PlayView {
                         | crate::play::Input::TargetWalk(_)
                 )
             });
-            if !crate::play::mailbox::lock(&link.mailbox).target_move_selected {
-                return true;
-            }
-            if let Ok(payload) = encode_target_move_intent(intent) {
-                let _ = link
-                    .commands
-                    .send(crate::combat_input::PlayCommand::ServerMechanic(
-                        ServerMechanicCommand {
-                            capability: 64,
-                            command_type: 81,
-                            payload,
-                        },
-                    ));
-            }
+            link.request_target_move(intent);
             return true;
         }
         false
@@ -95,6 +82,23 @@ impl PlayView {
 }
 
 impl PlayLink {
+    pub(in crate::play) fn request_target_move(&self, intent: TargetMoveIntent) -> bool {
+        let mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() || !mailbox.target_move_selected {
+            return false;
+        }
+        let Ok(payload) = encode_target_move_intent(intent) else {
+            return false;
+        };
+        self.commands
+            .send(PlayCommand::ServerMechanic(ServerMechanicCommand {
+                capability: 64,
+                command_type: 81,
+                payload,
+            }))
+            .is_ok()
+    }
+
     pub(in crate::play) fn request_target_walk(&self, position: ActorPosition) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {

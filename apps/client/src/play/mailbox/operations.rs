@@ -4,6 +4,7 @@ impl Outbox {
     pub(in crate::play) fn stepped(&self, outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
         mailbox.movement_turn = None;
+        mailbox.world_context.following = None;
         let older = std::mem::take(&mut mailbox.pushed);
         mailbox.before.absorb(older);
         mailbox.check_server_messages();

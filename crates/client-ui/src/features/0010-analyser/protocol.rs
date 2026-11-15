@@ -123,6 +123,7 @@ pub fn reset(panel: &mut Panel) {
         loot_prices: std::mem::take(&mut panel.loot_prices),
         supply_prices: std::mem::take(&mut panel.supply_prices),
         item_info: std::mem::take(&mut panel.item_info),
+        catalogue_pending: std::mem::take(&mut panel.catalogue_pending),
         price_input: std::mem::take(&mut panel.price_input),
         goal_xp: remaining,
         goal_input: remaining.map_or_else(String::new, |value| value.to_string()),

@@ -128,9 +128,13 @@ fn open(
                     return;
                 };
                 match action {
-                    ContextAction::World(action) => {
+                    ContextAction::World(_)
+                    | ContextAction::Attack
+                    | ContextAction::StopAttack
+                    | ContextAction::Follow
+                    | ContextAction::StopFollow => {
                         if let Some(menu) = menu {
-                            view.world_context_choose(link, menu, action);
+                            view.context_choose(link, menu, action);
                         }
                     }
                     ContextAction::Talk | ContextAction::NpcTrade => {

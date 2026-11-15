@@ -689,12 +689,10 @@ mod channels {
             ["Loot", "Server Log", "NPC"]
         );
         assert_eq!(chat.console.current, Some(ChannelTab::Npc));
-        // Typing in a local tab speaks locally; nothing is sent to a channel.
+        // NPC replies belong to the conversation owner, never to public speech.
         chat.text = "hi".into();
-        assert!(matches!(
-            channel_request(&mut chat),
-            Some(ChatIntent::Say { .. })
-        ));
+        assert_eq!(channel_request(&mut chat), None);
+        assert!(!chat.pending);
         assert_eq!(close_current(&mut chat, &mut public, &mut private), None);
         assert_eq!(chat.console.channels.len(), 2);
         assert!(dialog_rows(&entries, &chat.console)[entries.len() - 1].contains("closed"));

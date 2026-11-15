@@ -227,3 +227,185 @@ fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), 
     assert!(view.inputs.is_empty());
     Ok(())
 }
+
+#[test]
+fn creature_context_offers_combat_and_follow_actions() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_ui::world_interaction::menu::context_entries;
+    let target = EntityRef {
+        identity: [42; 16],
+        generation: 1,
+    };
+    for kind in [EntityKind::Creature, EntityKind::Player, EntityKind::Npc] {
+        let entity = WorldSpatialEntity {
+            display_name: None,
+            kind,
+            entity: target,
+            position: ActorPosition {
+                x: 101,
+                y: 200,
+                floor: 0,
+            },
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let view = view()?.with_entities(vec![entity])?;
+        let (link, _, outbox) = play_channel();
+        outbox.world_context_initialize(true, false);
+        outbox.target_move_initialize(true);
+        outbox.battle_publish(
+            Some(oteryn_session::ActorCombatState {
+                target: None,
+                modes: oteryn_session::FightModes::DEFAULT,
+                in_fight: false,
+            }),
+            Some(0),
+            &[entity],
+        );
+        let menu = view
+            .world_context(TileCoord::new(101, 200), &link)
+            .ok_or("menu")?;
+        let entries = context_entries(Some(&menu), false, false, false);
+        if kind == EntityKind::Npc {
+            assert_eq!(
+                entries,
+                vec![(
+                    "Look",
+                    oteryn_client_ui::world_interaction::menu::ContextAction::World(Action::Look)
+                )]
+            );
+        } else {
+            assert!(entries.iter().any(|(label, _)| *label == "Attack"));
+            assert!(entries.iter().any(|(label, _)| *label == "Follow"));
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn creature_context_dispatches_toggles_and_revalidates_target_and_capabilities()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_ui::world_interaction::menu::{ContextAction as C, context_entries};
+    use oteryn_session::target_move::{TargetMoveIntent, decode_target_move_intent};
+    let target = EntityRef {
+        identity: [42; 16],
+        generation: 1,
+    };
+    let entity = WorldSpatialEntity {
+        display_name: None,
+        kind: EntityKind::Creature,
+        entity: target,
+        position: ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
+        },
+        detail: oteryn_session::EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    let mut view = view()?.with_entities(vec![entity])?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.world_context_initialize(true, false);
+    outbox.target_move_initialize(true);
+    let mut combat = oteryn_session::ActorCombatState {
+        target: None,
+        modes: oteryn_session::FightModes::DEFAULT,
+        in_fight: false,
+    };
+    outbox.battle_publish(Some(combat), Some(0), &[entity]);
+    let tile = TileCoord::new(101, 200);
+    let menu = view.world_context(tile, &link).ok_or("menu")?;
+    assert!(view.context_choose(&link, &menu, C::Attack));
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Combat(CombatCommand::Attack(target))
+    );
+    combat.target = Some(target);
+    outbox.battle_publish(Some(combat), Some(0), &[entity]);
+    assert!(!view.context_choose(&link, &menu, C::Attack));
+    let menu = view.world_context(tile, &link).ok_or("attacking menu")?;
+    assert!(
+        context_entries(Some(&menu), false, false, false).contains(&("Stop Attack", C::StopAttack))
+    );
+    assert!(view.context_choose(&link, &menu, C::StopAttack));
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Combat(CombatCommand::Stop)
+    );
+    assert!(view.context_choose(&link, &menu, C::Follow));
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("follow command".into());
+    };
+    assert_eq!(
+        decode_target_move_intent(&command.payload),
+        Ok(TargetMoveIntent::Follow(target))
+    );
+    let accepted = oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: vec![8, 1],
+    };
+    outbox.target_move_result(&command, &accepted);
+    assert!(!view.context_choose(&link, &menu, C::Follow));
+    let menu = view.world_context(tile, &link).ok_or("following menu")?;
+    assert!(
+        context_entries(Some(&menu), false, false, false).contains(&("Stop Follow", C::StopFollow))
+    );
+    assert!(view.context_choose(&link, &menu, C::StopFollow));
+    let PlayCommand::ServerMechanic(stop) = commands.try_recv()? else {
+        return Err("stop follow command".into());
+    };
+    assert_eq!(
+        decode_target_move_intent(&stop.payload),
+        Ok(TargetMoveIntent::Stop)
+    );
+    outbox.target_move_result(&stop, &accepted);
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .world_context
+            .following,
+        None
+    );
+    outbox.target_move_result(&command, &accepted);
+    outbox.target_move_result(
+        &command,
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            payload: vec![8, 2],
+            ..accepted.clone()
+        },
+    );
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .world_context
+            .following,
+        None
+    );
+    outbox.target_move_result(&command, &accepted);
+    outbox.stepped(moved_to(100, 200, 0));
+    assert_eq!(
+        crate::play::mailbox::lock(&outbox.0)
+            .world_context
+            .following,
+        None
+    );
+    outbox.target_move_initialize(false);
+    outbox.battle_publish(None, Some(0), &[entity]);
+    let unavailable = view.world_context(tile, &link).ok_or("look menu")?;
+    assert_eq!(
+        context_entries(Some(&unavailable), false, false, false),
+        vec![("Look", C::World(Action::Look))]
+    );
+    assert!(!view.context_choose(&link, &menu, C::StopAttack));
+    assert!(!view.context_choose(&link, &menu, C::Follow));
+    view.entities.clear();
+    assert!(!view.context_choose(&link, &menu, C::StopFollow));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

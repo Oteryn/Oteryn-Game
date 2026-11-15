@@ -8,7 +8,7 @@ use bevy::{
     prelude::*,
     ui_widgets::Activate,
 };
-use oteryn_client_ui::world_interaction::menu::Menu;
+use oteryn_client_ui::world_interaction::menu::{Menu, context_entries};
 use oteryn_client_ui_bevy as source;
 use oteryn_renderer::TileCoord;
 
@@ -129,9 +129,9 @@ impl HostOwner {
                 },
                 Choice::Context(index),
             ) => self.play.as_ref().is_some_and(|play| {
-                menu.entries.get(index).is_some_and(|(_, action)| {
-                    play.view.world_context_choose(&play.link, &menu, *action)
-                })
+                context_entries(Some(&menu), false, false, false)
+                    .get(index)
+                    .is_some_and(|(_, action)| play.view.context_choose(&play.link, &menu, *action))
             }),
             (
                 Content::Context {
@@ -336,8 +336,8 @@ fn project(
                     Choice::Report,
                 );
             }
-            for (index, (label, _)) in menu.iter().flat_map(|menu| menu.entries.iter()).enumerate()
-            {
+            let entries = context_entries(menu.as_deref(), false, false, false);
+            for (index, (label, _)) in entries.iter().enumerate() {
                 button(
                     &mut commands,
                     &skin,
@@ -489,21 +489,18 @@ mod tests {
         request.generation = request.generation.saturating_add(1);
         let id = request.id;
         assert!(!host.choose_dialog(id, Choice::Logout));
-        let menu = Menu {
-            tile: Some(TileCoord::new(i32::MAX, i32::MAX)),
-            binding: None,
-            target: oteryn_client_runtime::world_interaction::Target::Position(
+        let mut menu = Menu::new(
+            oteryn_client_runtime::world_interaction::Target::Position(
                 oteryn_session::ActorPosition {
                     x: 100,
                     y: 100,
                     floor: 7,
                 },
             ),
-            entries: vec![(
-                "Look",
-                oteryn_client_runtime::world_interaction::Action::Look,
-            )],
-        };
+            true,
+            false,
+        );
+        menu.tile = Some(TileCoord::new(i32::MAX, i32::MAX));
         host.dialogs.open(
             host.generation(),
             Content::Context {

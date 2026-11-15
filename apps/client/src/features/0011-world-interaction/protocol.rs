@@ -5,7 +5,7 @@ impl Outbox {
         lock(&self.0).world_context.use_with = enabled;
     }
 
-    pub(in crate::play) fn world_context_initialize(&self, look: bool, bed: bool) {
+    pub(crate) fn world_context_initialize(&self, look: bool, bed: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.world_context.look = look;
         mailbox.world_context.bed = bed;

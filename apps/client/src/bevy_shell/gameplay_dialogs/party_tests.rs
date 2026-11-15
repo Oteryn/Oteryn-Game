@@ -379,3 +379,65 @@ fn rule_violation_shortcut_respects_text_focus() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn combat_and_follow_context_buttons_use_existing_command_owners() -> Result {
+    use oteryn_session::target_move::{TargetMoveIntent, decode_target_move_intent};
+    let (mut app, mut commands, events) = app()?;
+    events.world_context_initialize(true, false);
+    events.target_move_initialize(true);
+    let mut combat = oteryn_session::ActorCombatState {
+        target: None,
+        modes: oteryn_session::FightModes::DEFAULT,
+        in_fight: false,
+    };
+    events.battle_publish(Some(combat), Some(7), &[player()]);
+    let open = |app: &mut App| {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .request_world_context(TileCoord::new(101, 100));
+        app.update();
+    };
+    open(&mut app);
+    choose(&mut app, "Attack")?;
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Combat(crate::combat_input::CombatCommand::Attack(player().entity))
+    );
+    combat.target = Some(player().entity);
+    events.battle_publish(Some(combat), Some(7), &[player()]);
+    open(&mut app);
+    choose(&mut app, "Stop Attack")?;
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Combat(crate::combat_input::CombatCommand::Stop)
+    );
+    open(&mut app);
+    choose(&mut app, "Follow")?;
+    let PlayCommand::ServerMechanic(follow) = commands.try_recv()? else {
+        return Err("follow".into());
+    };
+    assert_eq!(
+        decode_target_move_intent(&follow.payload),
+        Ok(TargetMoveIntent::Follow(player().entity))
+    );
+    events.target_move_result(
+        &follow,
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: vec![8, 1],
+        },
+    );
+    open(&mut app);
+    choose(&mut app, "Stop Follow")?;
+    let PlayCommand::ServerMechanic(stop) = commands.try_recv()? else {
+        return Err("stop follow".into());
+    };
+    assert_eq!(
+        decode_target_move_intent(&stop.payload),
+        Ok(TargetMoveIntent::Stop)
+    );
+    Ok(())
+}
