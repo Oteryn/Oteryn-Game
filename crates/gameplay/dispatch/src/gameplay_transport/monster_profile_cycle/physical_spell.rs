@@ -857,14 +857,16 @@ async fn prepare_source_reader_checked<'native>(
             })
             .collect();
     } else if area && callback.is_none() {
-        // Ordinary damage/condition areas affect the current player census.
         // Empty tiles do not receive a hit: requiring their mutable metadata
         // can retain an entire cast forever at a usable door or map boundary.
-        // Each actual target and its sight path are still read below.
+        // Composed casts also have authored creature callbacks, so retain their
+        // occupied creature cells. The composed owner still checks each exact
+        // named/side filter, top creature and combat admission before any hit.
+        let composed = matches!(&source, SourceShape::Composed(_));
         cast_tiles.retain(|&(x, y, floor)| {
             census.iter().any(|(_, position, session)| {
                 let at = position.position();
-                session.is_some() && (at.x, at.y, at.floor) == (x, y, floor)
+                (session.is_some() || composed) && (at.x, at.y, at.floor) == (x, y, floor)
             })
         });
     }
