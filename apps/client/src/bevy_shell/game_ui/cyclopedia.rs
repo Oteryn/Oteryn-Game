@@ -11,7 +11,7 @@ use super::{
 };
 use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_runtime::cyclopedia_character::CharacterTab;
-use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent};
+use oteryn_client_ui::cyclopedia_character::{AugmentIntent, CyclopediaCharacterPanel, Intent};
 const WINDOW: &str = "0199-cyclopedia-character-open";
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum Tab {
@@ -41,6 +41,7 @@ impl Tab {
             Self::General => Intent::SelectTab(CharacterTab::GeneralStats),
             Self::Character(CharacterTab::Appearances) => Intent::Appearances,
             Self::Character(CharacterTab::Inspection) => Intent::ProfileInspection,
+            Self::Character(CharacterTab::Offence) => Intent::SpellAugments(AugmentIntent::Refresh),
             Self::Character(tab) => Intent::SelectTab(tab),
             Self::Items => Intent::Items,
             Self::Badges => Intent::ProfileBadges,
@@ -64,6 +65,11 @@ impl Tab {
     }
     fn page(self, next: bool) -> Option<Intent> {
         Some(match self {
+            Self::Character(CharacterTab::Offence) => Intent::SpellAugments(if next {
+                AugmentIntent::Next
+            } else {
+                AugmentIntent::Previous
+            }),
             Self::Items => {
                 if next {
                     Intent::ItemsNext
@@ -95,9 +101,10 @@ pub(super) struct Control {
     serial: u64,
     pub(super) kind: Kind,
 }
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Kind {
     Tab(Tab),
+    AugmentSources(u8),
     Refresh,
     Previous,
     Next,
@@ -204,6 +211,8 @@ fn project(
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skins));
+
+    let retained = super::refresh::preserve(&mut commands, widgets.panel, focus.get());
     if let Some(content) = widgets.content.take() {
         if inside(focus.get(), content, &parents) {
             focus.clear();
@@ -218,6 +227,8 @@ fn project(
         tab,
         &panel,
     ));
+
+    retained.restore(&mut commands, widgets.panel);
     state.snapshot = Some(panel);
 }
 fn perform(owner: &HostOwner, state: &mut State, control: Control) {
@@ -246,6 +257,7 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             state.tab = tab;
             tab.intent()
         }
+        Kind::AugmentSources(sources) => Intent::SpellAugments(AugmentIntent::Sources(sources)),
         Kind::Refresh => state.tab.intent(),
         Kind::Previous => {
             let Some(intent) = state.tab.page(false) else {

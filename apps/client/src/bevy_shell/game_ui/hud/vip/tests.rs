@@ -92,6 +92,7 @@ fn vip_add_and_edit_use_actual_canonical_action_queue_without_local_echo() -> Te
     );
     publish(&outbox, CONTACTS, 5, VipPresenceStatus::Online);
     app.update();
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
     click(&mut app, |action| matches!(action, Action::Edit(73)))?;
     set_text(&mut app, "Hunting partner")?;
     click(&mut app, |action| matches!(action, Action::Notify(_)))?;
@@ -113,6 +114,7 @@ fn vip_remove_keeps_the_authoritative_contact_until_the_server_refreshes() -> Te
     let (mut app, mut commands, outbox) = super::super::tests::app()?;
     publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
     app.update();
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
     click(&mut app, |action| matches!(action, Action::Edit(73)))?;
     click(&mut app, |action| matches!(action, Action::Remove(73)))?;
     let remove = request(&mut commands)?;
@@ -133,11 +135,11 @@ fn vip_rows_are_retained_and_presence_is_authoritative_and_malformed_reply_is_cl
     publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
     app.update();
     app.update();
-    let row = control(&mut app, |action| matches!(action, Action::Edit(73)))?;
+    let row = control(&mut app, |action| matches!(action, Action::Contact(73)))?;
     publish(&outbox, CONTACTS, 5, VipPresenceStatus::Offline);
     app.update();
     assert_eq!(
-        control(&mut app, |action| matches!(action, Action::Edit(73)))?,
+        control(&mut app, |action| matches!(action, Action::Contact(73)))?,
         row
     );
     assert!(
@@ -283,6 +285,7 @@ fn vip_cancelled_clipboard_submission_cannot_reach_a_replacement_editor() -> Tes
     )));
     click(&mut app, |action| matches!(action, Action::Save(_)))?;
     click(&mut app, |action| matches!(action, Action::Cancel(_)))?;
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
     click(&mut app, |action| matches!(action, Action::Edit(73)))?;
     *pending.lock().map_err(|_| "clipboard fixture lock")? = Some(Ok("Late value".into()));
     app.update();
@@ -304,6 +307,7 @@ fn vip_native_checkbox_uses_typed_value_change_and_missing_edit_metadata_is_not_
     let (mut app, mut commands, outbox) = super::super::tests::app()?;
     publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
     app.update();
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
     click(&mut app, |action| matches!(action, Action::Edit(73)))?;
     let notify = control(&mut app, |action| matches!(action, Action::Notify(_)))?;
     assert!(
@@ -333,6 +337,7 @@ fn vip_native_checkbox_uses_typed_value_change_and_missing_edit_metadata_is_not_
         VipPresenceStatus::Unconfirmed,
     );
     app.update();
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
     click(&mut app, |action| matches!(action, Action::Edit(73)))?;
     assert!(control(&mut app, |action| matches!(action, Action::Notify(_))).is_err());
     click(&mut app, |action| matches!(action, Action::Save(_)))?;
@@ -462,5 +467,174 @@ fn vip_close_hides_a_saved_visible_sidebar_and_preserves_a_pending_canonical_que
             .is_some_and(|raw| raw == CONTACTS)
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn vip_message_control_opens_existing_private_conversation() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    click(&mut app, |action| matches!(action, Action::Contact(73)))?;
+    let message = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "vip.message").then_some(entity))
+        .ok_or("VIP Message action")?;
+    app.world_mut().trigger(Activate { entity: message });
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .chat_panel();
+    assert_eq!(
+        panel.console.current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    assert!(app.world().resource::<State>().draft.is_none());
+    Ok(())
+}
+
+#[test]
+fn vip_projects_saved_icon_description_and_membership_section() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    let names: Vec<_> = app
+        .world_mut()
+        .query::<&Name>()
+        .iter(app.world())
+        .map(|name| name.as_str().to_owned())
+        .collect();
+    assert!(names.iter().any(|name| name == "vip.contacts.group.1"));
+    assert!(names.iter().any(|name| name == "vip.icon.2"));
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Friend")
+    );
+    Ok(())
+}
+
+#[test]
+fn vip_offline_filter_control_hides_confirmed_offline_contacts() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Offline);
+    app.update();
+    let filter = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "vip.hide_offline").then_some(entity))
+        .ok_or("offline filter")?;
+    app.world_mut().trigger(Activate { entity: filter });
+    app.update();
+    assert!(
+        !app.world_mut()
+            .query::<&Row>()
+            .iter(app.world())
+            .any(|row| row.entry == 73)
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Row>()
+            .iter(app.world())
+            .any(|row| row.entry == 91)
+    );
+    click(&mut app, |action| matches!(action, Action::Sort(1)))?;
+    let preferences = &app.world().non_send::<HostOwner>().settings.preferences;
+    let saved: crate::play::ReferencePreferences =
+        serde_json::from_str(&serde_json::to_string(preferences)?)?;
+    assert_eq!(saved.vip_sort, 1);
+    assert!(saved.vip_hide_offline);
+    Ok(())
+}
+
+#[test]
+fn vip_sorting_uses_name_type_and_confirmed_status() {
+    let alice = Contact {
+        entry: 73,
+        name: "Alice".into(),
+        description: None,
+        icon: Some(2),
+        notify: None,
+        groups: None,
+    };
+    let bob = Contact {
+        entry: 91,
+        name: "Bob".into(),
+        icon: Some(0),
+        ..alice.clone()
+    };
+    let presence = [VipPresenceEntry {
+        entry: 73,
+        name: "Alice".into(),
+        status: VipPresenceStatus::Online,
+        announce: false,
+        confirmed_for_ms: 1000,
+    }];
+    assert!(
+        view::contact_sort_key(&alice, 0, &presence) < view::contact_sort_key(&bob, 0, &presence)
+    );
+    assert!(
+        view::contact_sort_key(&alice, 1, &presence) > view::contact_sort_key(&bob, 1, &presence)
+    );
+    assert!(
+        view::contact_sort_key(&alice, 2, &presence) < view::contact_sort_key(&bob, 2, &presence)
+    );
+}
+
+#[test]
+fn vip_double_click_opens_conversation_after_first_activation() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerClick},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    let row = control(&mut app, |action| matches!(action, Action::Contact(73)))?;
+    app.world_mut().trigger(Activate { entity: row });
+    app.update();
+    app.world_mut().trigger(PointerClick {
+        entity: row,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 2,
+    });
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .chat_panel();
+    assert_eq!(
+        panel.console.current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    assert!(app.world().resource::<State>().draft.is_none());
     Ok(())
 }

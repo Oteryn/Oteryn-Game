@@ -32,6 +32,7 @@ struct State {
     serial: u64,
     draft: Option<Draft>,
     pending: Option<Pending>,
+    contact_menu: Option<u64>,
 }
 #[derive(Clone)]
 struct Draft {
@@ -68,8 +69,12 @@ enum Action {
     GroupRename(u8),
     GroupRemove(u8),
     Refresh,
+    Sort(u8),
+    HideOffline,
     Next(u64),
+    Contact(u64),
     Edit(u64),
+    MessageContact(u64),
     Remove(u64),
     Save(u64),
     Cancel(u64),
@@ -83,6 +88,7 @@ struct List;
 struct Row {
     generation: u64,
     entry: u64,
+    group: Option<u8>,
 }
 #[derive(Component)]
 struct Message;
@@ -118,6 +124,8 @@ pub(super) fn install(app: &mut App) {
             Update,
             (
                 view::project,
+                view::contact_menu,
+                view::descriptions,
                 groups::project,
                 view::dialog,
                 input::keyboard,

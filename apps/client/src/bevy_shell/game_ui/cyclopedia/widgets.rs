@@ -125,6 +125,36 @@ pub(super) fn render(
     {
         text(commands, skin, content, error);
     }
+    if tab == Tab::Character(CharacterTab::Offence) {
+        let sources = commands
+            .spawn(Node {
+                column_gap: px(4.),
+                ..default()
+            })
+            .id();
+        commands.entity(content).add_child(sources);
+        for (mask, label) in [
+            (7, "All sources"),
+            (1, "Equipment"),
+            (2, "Proficiency"),
+            (4, "Wheel"),
+        ] {
+            let entity = button(
+                commands,
+                skin,
+                sources,
+                Control {
+                    kind: Kind::AugmentSources(mask),
+                    ..control
+                },
+                label,
+                panel.pending || !panel.selected,
+            );
+            if panel.augments.query.sources == mask {
+                commands.entity(entity).insert(Checked);
+            }
+        }
+    }
     let rows = commands
         .spawn((
             ScrollArea,
@@ -152,7 +182,8 @@ pub(super) fn render(
             rows,
             oteryn_client_ui::cyclopedia_death_details::history_columns(
                 panel.extensions.death_details && tab == Tab::Character(CharacterTab::RecentDeaths),
-            ),
+            )
+            .replace("Time (server Unix ms)", "Time (UTC)"),
         );
     }
     let projected = rows::project(tab, panel);
@@ -212,7 +243,11 @@ fn button(
     disabled: bool,
 ) -> Entity {
     let button = commands
-        .spawn((source::button(skin.buttons.clone(), 140.), control))
+        .spawn((
+            source::button(skin.buttons.clone(), 140.),
+            control,
+            Name::new(format!("cyclopedia.{:?}", control.kind)),
+        ))
         .observe(activate)
         .id();
     if disabled {

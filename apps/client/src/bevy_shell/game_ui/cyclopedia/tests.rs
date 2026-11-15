@@ -87,7 +87,7 @@ fn cyclopedia_tab_requests_data() -> TestResult {
     assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
     let expected_tabs: [(Tab, &[u8]); 12] = [
         (Tab::General, &[1, 0, 0, 20]),
-        (Tab::Character(CharacterTab::Offence), &[8, 0, 0, 20]),
+        (Tab::Character(CharacterTab::Offence), &[133, 0, 7]),
         (Tab::Character(CharacterTab::Defence), &[9, 0, 0, 20]),
         (Tab::Character(CharacterTab::Misc), &[10, 0, 0, 20]),
         (Tab::Character(CharacterTab::RecentDeaths), &[2, 0, 0, 20]),
@@ -175,10 +175,11 @@ fn cyclopedia_death_rows() -> TestResult {
     app.update();
     let rows = texts(&mut app);
     assert!(
-        rows.iter().any(|row| row.contains("1700000000123")
-            && row.contains("Died by a dragon")
-            && row.contains("dragon")
-            && row.contains("41")),
+        rows.iter()
+            .any(|row| row.contains("2023-11-14 22:13:20 UTC")
+                && row.contains("Died by a dragon")
+                && row.contains("dragon")
+                && row.contains("41")),
         "{rows:?}"
     );
     Ok(())
@@ -398,5 +399,94 @@ fn cyclopedia_reopened_while_pending_sends_its_tab_once_the_builder_accepts() ->
     app.update();
     assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_equivalent_refresh_preserves_scroll_and_focus() -> TestResult {
+    let (mut app, _commands, outbox) = fixture()?;
+    let refresh = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.kind == Kind::Refresh).then_some(entity))
+        .ok_or("refresh")?;
+    let scroll = cyclopedia_scroller(app.world(), refresh).ok_or("scroller")?;
+    app.world_mut()
+        .entity_mut(scroll)
+        .insert(ScrollPosition(Vec2::new(0., 120.)));
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(refresh, bevy::input_focus::FocusCause::Navigated);
+    response(&outbox, vec![]);
+    app.update();
+    let refreshed = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.kind == Kind::Refresh).then_some(entity))
+        .ok_or("new refresh")?;
+    let scroll = cyclopedia_scroller(app.world(), refreshed).ok_or("new scroller")?;
+    assert_eq!(
+        app.world()
+            .get::<ScrollPosition>(scroll)
+            .ok_or("offset")?
+            .0
+            .y,
+        120.
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(refreshed));
+    Ok(())
+}
+
+fn cyclopedia_scroller(world: &World, refresh: Entity) -> Option<Entity> {
+    let footer = world.get::<ChildOf>(refresh)?.parent();
+    let content = world.get::<ChildOf>(footer)?.parent();
+    world
+        .get::<Children>(content)?
+        .iter()
+        .find(|entity| world.get::<bevy::ui_widgets::ScrollArea>(*entity).is_some())
+}
+
+#[test]
+fn cyclopedia_offence_requests_confirmed_spell_augments() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Character(CharacterTab::Offence)))?;
+    assert_eq!(command(&mut commands)?.payload, [133, 0, 7]);
+    use oteryn_client_runtime::cyclopedia_character::{
+        combat::CombatStats,
+        offence::{Augment, Effect, Page, Query, Snapshot, Source, SourceKind},
+    };
+    let page = Page::from_snapshot(
+        [7; 16],
+        Query::default(),
+        CombatStats::new(CharacterTab::Offence, 1234, 2, 3).map_err(|_| "stats")?,
+        Some(Snapshot {
+            known_sources: 7,
+            sources: vec![Source {
+                kind: SourceKind::Equipment,
+                slot: 5,
+                key: "oteryn:item/weapon".into(),
+            }],
+            rows: vec![Augment {
+                source: 0,
+                spell: "A spell".into(),
+                effect: Effect::BaseDamage,
+                value: 1250,
+            }],
+        }),
+    )
+    .map_err(|_| "page")?;
+    response(&outbox, page.encode().map_err(|_| "page encode")?);
+    app.update();
+    let rows = texts(&mut app);
+    assert!(rows.iter().any(|row| row.contains("A spell")
+        && row.contains("12.50%")
+        && row.contains("oteryn:item/weapon")));
+    click(&mut app, Kind::AugmentSources(1))?;
+    assert_eq!(command(&mut commands)?.payload, [133, 0, 1]);
     Ok(())
 }

@@ -188,6 +188,7 @@ fn project(
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skins));
+    let retained = super::refresh::preserve(&mut commands, widgets.panel, focus.get());
     if widgets
         .content
         .is_some_and(|content| inside(focus.get(), content, &parents))
@@ -195,6 +196,7 @@ fn project(
         focus.set(widgets.panel, FocusCause::Navigated);
     }
     widgets::render(&mut commands, &skins, widgets, key, &panel);
+    retained.restore(&mut commands, widgets.panel);
     state.snapshot = Some((key, panel));
 }
 fn perform(owner: &HostOwner, state: &mut State, control: &Control) {

@@ -215,19 +215,34 @@ pub(super) fn build(
             commands,
             skins,
             window,
-            &format!(
-                "Clear {} for {} gold?",
-                slot_label(expected, expected.slot),
-                quote.clear_gold
-            ),
+            &if selection.confirmation_intent == Some(Intent::Apply) {
+                format!(
+                    "Apply this imbuement?\n{}",
+                    oteryn_client_ui::imbue::selected_detail_text(expected)
+                )
+            } else {
+                format!(
+                    "Clear {} for {} gold?",
+                    slot_label(expected, expected.slot),
+                    quote.clear_gold
+                )
+            },
         );
         button(
             commands,
             skins,
             window,
             control(Kind::Confirm),
-            "Confirm clear",
-            panel.can_clear(),
+            if selection.confirmation_intent == Some(Intent::Apply) {
+                "Confirm imbue"
+            } else {
+                "Confirm clear"
+            },
+            if selection.confirmation_intent == Some(Intent::Apply) {
+                selection.can_apply(panel)
+            } else {
+                panel.can_clear()
+            },
         );
         button(
             commands,
@@ -322,7 +337,11 @@ fn button(
     enabled: bool,
 ) {
     let entity = commands
-        .spawn((source::button(skins.buttons.clone(), 220.), control))
+        .spawn((
+            source::button(skins.buttons.clone(), 220.),
+            control,
+            Name::new(format!("imbuing.{:?}", control.kind)),
+        ))
         .insert(Node {
             width: percent(100.),
             min_height: px(24.),

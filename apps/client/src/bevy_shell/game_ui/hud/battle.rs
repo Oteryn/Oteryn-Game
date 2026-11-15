@@ -29,7 +29,12 @@ pub(super) fn project(
     regions: Res<super::super::GameRegions>,
     skins: Res<Skins>,
     mut shown: Local<Snapshot>,
-    actions: Query<(Entity, &HudAction, Has<InteractionDisabled>)>,
+    actions: Query<(
+        Entity,
+        &HudAction,
+        Has<InteractionDisabled>,
+        Has<bevy::ui::Checked>,
+    )>,
     mut health: Query<(&HealthFill, &mut Node, &mut BackgroundColor)>,
     mut feedback: Query<&mut Text, With<Feedback>>,
     mut frames: Query<(&TargetFrame, &mut BorderColor)>,
@@ -53,7 +58,18 @@ pub(super) fn project(
         .map(|list| list.name.clone())
         .collect::<Vec<_>>();
     let disabled = panel.pending || panel.combat.is_none() || panel.shutdown || modal;
-    for (entity, action, was_disabled) in &actions {
+    for (entity, action, was_disabled, was_checked) in &actions {
+        let selected = panel.combat.is_some_and(|combat| match action.command {
+            Command::Fight(mode) => combat.modes.fight_mode == mode,
+            Command::Chase(mode) => combat.modes.chase == mode,
+            _ => false,
+        });
+        if selected && !was_checked {
+            commands.entity(entity).insert(bevy::ui::Checked);
+        }
+        if !selected && was_checked {
+            commands.entity(entity).remove::<bevy::ui::Checked>();
+        }
         if matches!(
             action.command,
             Command::Attack(_) | Command::Stop | Command::Fight(_) | Command::Chase(_)

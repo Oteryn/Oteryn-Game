@@ -481,6 +481,7 @@ fn button(
     let mut entity = commands.spawn((
         source::button(skins.buttons.clone(), 150.),
         Control { key, kind },
+        Name::new(format!("forge.{kind:?}")),
     ));
     if !enabled {
         entity.insert(InteractionDisabled);

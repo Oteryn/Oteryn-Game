@@ -12,7 +12,11 @@ pub(super) fn button(
     width: f32,
 ) {
     let entity = commands
-        .spawn((control, source::button(skins.buttons.clone(), width)))
+        .spawn((
+            control,
+            source::button(skins.buttons.clone(), width),
+            Name::new(format!("inventory.{control:?}")),
+        ))
         .observe(activate)
         .id();
     let caption = commands

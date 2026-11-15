@@ -86,6 +86,8 @@ pub(super) fn project(
     if previous.0.as_ref() == Some(&snapshot) {
         return;
     }
+    let equipment_state = super::super::refresh::preserve(&mut commands, regions.equipment, None);
+    let container_state = super::super::refresh::preserve(&mut commands, regions.containers, None);
     for entity in &roots {
         commands.entity(entity).despawn();
     }
@@ -136,6 +138,8 @@ pub(super) fn project(
     if let Some((slot, position)) = snapshot.menu {
         context(&mut commands, &skins, slot, position);
     }
+    equipment_state.restore(&mut commands, regions.equipment);
+    container_state.restore(&mut commands, regions.containers);
     previous.0 = Some(snapshot);
 }
 fn panel(commands: &mut Commands, skins: &Skins, parent: Entity, title: &str) -> Entity {
@@ -297,6 +301,11 @@ fn slot_node(
     let entity = commands
         .spawn((
             slot,
+            Name::new(format!(
+                "inventory.slot.{:?}.{:?}",
+                slot.location,
+                slot.item.map(|item| item.handle)
+            )),
             Button,
             source::frame(skins.inset.clone(), [1.; 4]),
             Node {

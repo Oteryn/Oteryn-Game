@@ -190,9 +190,13 @@ pub(super) fn body(
     }
     let updated = label(commands, skin, root, &updated_text(panel, now));
     commands.entity(updated).insert(Updated);
-    if let Some(feedback) = feedback.or(panel.feedback.as_deref()) {
-        label(commands, skin, root, feedback);
-    }
+    let feedback = label(
+        commands,
+        skin,
+        root,
+        feedback.or(panel.feedback.as_deref()).unwrap_or(""),
+    );
+    commands.entity(feedback).insert(Feedback);
     let paging = row(commands, root);
     for (kind, caption) in [
         (Kind::First, "First"),

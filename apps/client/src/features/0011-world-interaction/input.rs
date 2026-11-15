@@ -67,11 +67,24 @@ impl PlayView {
     }
     pub fn world_context_choose(&self, link: &PlayLink, menu: &Menu, action: Action) -> bool {
         if !menu.entries.iter().any(|(_, entry)| *entry == action)
-            || menu
-                .tile
-                .and_then(|tile| self.world_context_target(tile))
-                .as_ref()
-                != Some(&menu.target)
+            || menu.tile.is_some_and(|tile| {
+                self.world_context_target(tile).as_ref() != Some(&menu.target)
+            })
+            || (menu.tile.is_none() && {
+                let mailbox = lock(&link.mailbox);
+                match menu.target {
+                    oteryn_client_runtime::world_interaction::Target::Item(handle) => {
+                        !mailbox.inventory.rows().iter().any(|item| item.handle == handle)
+                            && !mailbox.inventory.inventory.as_ref().is_some_and(|inventory| {
+                                inventory.equipment.iter().any(|item| item.item.handle == handle)
+                            })
+                            && !mailbox.containers.views.as_ref().is_some_and(|views| {
+                                views.views.iter().any(|view| view.entries.iter().any(|item| item.handle == handle))
+                            })
+                    }
+                    _ => true,
+                }
+            })
         {
             lock(&link.mailbox)
                 .world_context

@@ -226,7 +226,18 @@ fn activate(
         return;
     }
     match action.command {
-        Command::Attack(target) => play.link.battle_request(Action::Attack(target)),
+        Command::Attack(target) => {
+            let attacking = play
+                .link
+                .battle_panel()
+                .combat
+                .is_some_and(|combat| combat.target == Some(target));
+            play.link.battle_request(if attacking {
+                Action::Stop
+            } else {
+                Action::Attack(target)
+            });
+        }
         Command::Stop => play.link.battle_request(Action::Stop),
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),

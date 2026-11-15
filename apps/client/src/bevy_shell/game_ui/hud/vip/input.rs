@@ -23,28 +23,57 @@ pub(super) fn activate(
     if panel.revision != control.revision {
         return;
     }
-    if matches!(control.command, Action::Close) {
-        if owner.settings.preferences.panel_visible("vip") {
-            let mut preferences = owner.settings.preferences.clone();
-            preferences.visible_panels.retain(|panel| panel != "vip");
-            owner.settings.apply(preferences);
-        }
-        if let Some(play) = &owner.play {
-            play.link.vip_close();
-        }
-        state.draft = None;
-        state.pending = None;
-        return;
-    }
-    if !panel.selected || panel.pending {
+    if (!panel.selected || panel.pending)
+        && !matches!(
+            control.command,
+            Action::Close | Action::Sort(_) | Action::HideOffline
+        )
+    {
         return;
     }
     let Some(play) = &owner.play else { return };
     match control.command {
+        Action::Contact(entry) => {
+            state.contact_menu = Some(entry);
+        }
+        Action::MessageContact(entry) => {
+            if let Ok(snapshot) = Snapshot::read(&panel)
+                && let Some(contact) = snapshot
+                    .entries
+                    .iter()
+                    .find(|contact| contact.entry == entry)
+            {
+                play.link.chat_open_conversation(&contact.name);
+                state.draft = None;
+                state.contact_menu = None;
+            }
+        }
         Action::GroupAdd | Action::GroupRename(_) | Action::GroupRemove(_) => {
             groups::activate(control.command, &owner, &mut state)
         }
-        Action::Close => {}
+        Action::Close => {
+            if owner.settings.preferences.panel_visible("vip") {
+                let mut preferences = owner.settings.preferences.clone();
+                preferences.visible_panels.retain(|panel| panel != "vip");
+                owner.settings.apply(preferences);
+            }
+            if let Some(play) = &owner.play {
+                play.link.vip_close();
+            }
+            state.draft = None;
+            state.pending = None;
+            state.contact_menu = None;
+        }
+        Action::Sort(sort) => {
+            let mut preferences = owner.settings.preferences.clone();
+            preferences.vip_sort = sort.min(2);
+            owner.settings.apply(preferences);
+        }
+        Action::HideOffline => {
+            let mut preferences = owner.settings.preferences.clone();
+            preferences.vip_hide_offline = !preferences.vip_hide_offline;
+            owner.settings.apply(preferences);
+        }
         Action::Refresh => play.link.vip_request(Intent::Query(0)),
         Action::Next(cursor) => {
             if Snapshot::read(&panel)
@@ -321,5 +350,39 @@ pub(super) fn toggle(
             }
         }
         _ => {}
+    }
+}
+
+pub(super) fn contact_click(
+    event: On<bevy::picking::events::PointerClick>,
+    guard: ModalGuard,
+    rows: Query<&Row>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    use bevy::picking::pointer::PointerButton;
+    if !guard.allows(event.entity) || !available(&owner) {
+        return;
+    }
+    let Ok(row) = rows.get(event.entity) else {
+        return;
+    };
+    if row.generation != owner.generation() {
+        return;
+    }
+    if event.button == PointerButton::Secondary {
+        state.contact_menu = Some(row.entry);
+    } else if event.button == PointerButton::Primary
+        && event.count >= 2
+        && let Some(play) = &owner.play
+        && let Ok(snapshot) = Snapshot::read(&play.link.vip_panel())
+        && let Some(contact) = snapshot
+            .entries
+            .iter()
+            .find(|contact| contact.entry == row.entry)
+    {
+        play.link.chat_open_conversation(&contact.name);
+        state.draft = None;
+        state.contact_menu = None;
     }
 }

@@ -37,6 +37,8 @@ struct Overlay;
 struct WorldField;
 #[derive(Component)]
 struct Updated;
+#[derive(Component)]
+struct Feedback;
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
@@ -81,6 +83,7 @@ fn project(
     mut focus: ResMut<InputFocus>,
     fields: Query<(), With<WorldField>>,
     mut updated: Query<&mut Text, With<Updated>>,
+    mut feedback: Query<&mut Text, (With<Feedback>, Without<Updated>)>,
 ) {
     let Ok((overlay, mut node)) = overlay.single_mut() else {
         return;
@@ -118,6 +121,16 @@ fn project(
             play.link.highscores_request(action);
         } else {
             state.seek = None;
+        }
+    }
+    for mut text in &mut feedback {
+        let value = state
+            .feedback
+            .as_deref()
+            .or(panel.feedback.as_deref())
+            .unwrap_or("");
+        if text.0 != value {
+            text.0 = value.into();
         }
     }
     let now = now_millis();
@@ -246,7 +259,6 @@ fn finish(
         else {
             state.feedback =
                 Some("Enter a valid World ID, or leave blank for the current World".into());
-            state.seen = None;
             return;
         };
         Kind::World(world)

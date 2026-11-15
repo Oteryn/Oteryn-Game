@@ -16,14 +16,27 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
                     .into_iter()
                     .map(|(name, value)| format!("{name}: {value}")),
             );
+            if tab == Tab::Character(CharacterTab::Offence) {
+                rows.push(model::augment_heading(panel));
+                rows.extend(
+                    model::augment_rows(panel)
+                        .into_iter()
+                        .map(|row| format!("{}\n{}", row.label, row.detail)),
+                );
+            }
             rows
         }
         Tab::Character(CharacterTab::RecentDeaths | CharacterTab::RecentPvpKills) => {
             model::history_rows(panel)
                 .into_iter()
                 .map(|row| {
-                    oteryn_client_ui::cyclopedia_death_details::history_label(row)
-                        .replace('\t', " | ")
+                    let label = oteryn_client_ui::cyclopedia_death_details::history_label(row);
+                    let detail = label.split_once('\t').map_or("", |(_, detail)| detail);
+                    format!(
+                        "{} | {}",
+                        oteryn_client_ui::house::format_ownership_date(row.at),
+                        detail.replace('\t', " | ")
+                    )
                 })
                 .collect()
         }
@@ -42,8 +55,12 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
             };
             rows.extend(confirmed.iter().map(|r| {
                 format!(
-                    "{} | Grade {} | {} points | Earned: {} (server Unix ms)\n{}",
-                    r.name, r.grade, r.points, r.earned_at, r.description
+                    "{} | Grade {} | {} points | Earned: {}\n{}",
+                    r.name,
+                    r.grade,
+                    r.points,
+                    oteryn_client_ui::house::format_ownership_date(r.earned_at),
+                    r.description
                 )
             }));
             rows
@@ -88,5 +105,49 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
             );
             rows
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn cyclopedia_histories_and_achievements_use_calendar_dates() {
+        let mut panel = CyclopediaCharacterPanel::default();
+        for tab in [CharacterTab::RecentDeaths, CharacterTab::RecentPvpKills] {
+            panel.tab = tab;
+            panel.history_tab = Some(tab);
+            panel.history = vec![model::HistoryRow {
+                at: 1700000000123,
+                status: None,
+                description: "History".into(),
+                death: None,
+            }];
+            let rows = project(Tab::Character(tab), &panel);
+            assert!(rows[0].contains("2023-11-14 22:13:20 UTC"));
+        }
+        panel.achievements.page = Some(
+            oteryn_client_runtime::account_achievements::AccountAchievementsResult {
+                total_points: 1,
+                fact_count: 1,
+                page: 0,
+                has_more: false,
+                rows: vec![
+                    oteryn_client_runtime::account_achievements::AccountAchievementRow {
+                        key: "oteryn:achievement/test".into(),
+                        name: "Earned".into(),
+                        description: "Description".into(),
+                        grade: 1,
+                        points: 1,
+                        earned_at: 1700000000123,
+                        secret: false,
+                    },
+                ],
+            },
+        );
+        assert!(
+            project(Tab::Character(CharacterTab::Achievements), &panel)[1]
+                .contains("2023-11-14 22:13:20 UTC")
+        );
     }
 }

@@ -180,6 +180,37 @@ fn scenario() -> Result {
         .add_systems(Update, project)
         .add_systems(PostUpdate, finish);
     settle(&mut app)?;
+    let draft = app
+        .world_mut()
+        .query_filtered::<Entity, With<WorldField>>()
+        .single(app.world())
+        .map_err(|e| e.to_string())?;
+    app.world_mut()
+        .entity_mut(draft)
+        .insert(EditableText::new("invalid-world"));
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(draft, bevy::input_focus::FocusCause::Navigated);
+    click(&mut app, Kind::WorldInput)?;
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(draft)
+            .ok_or("world editor identity lost")?
+            .value()
+            .to_string(),
+        "invalid-world"
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(draft));
+    assert!(
+        app.world()
+            .resource::<State>()
+            .feedback
+            .as_ref()
+            .is_some_and(|text| text.contains("valid World ID"))
+    );
+    app.world_mut()
+        .entity_mut(draft)
+        .insert(EditableText::new(""));
     for kind in [Kind::Category, Kind::Vocation] {
         click(&mut app, kind)?;
     }

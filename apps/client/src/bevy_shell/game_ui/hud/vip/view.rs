@@ -14,6 +14,7 @@ pub(super) fn setup(
         .spawn(Node {
             width: percent(100.),
             column_gap: px(3.),
+            flex_wrap: FlexWrap::Wrap,
             align_items: AlignItems::Center,
             ..default()
         })
@@ -30,6 +31,10 @@ pub(super) fn setup(
     commands.entity(header).add_child(title);
     for (label, command, id) in [
         ("Add", Action::Add, "vip.add"),
+        ("Name", Action::Sort(0), "vip.sort.name"),
+        ("Type", Action::Sort(1), "vip.sort.type"),
+        ("Status", Action::Sort(2), "vip.sort.status"),
+        ("Hide offline", Action::HideOffline, "vip.hide_offline"),
         ("↻", Action::Refresh, "vip.refresh"),
         ("Next", Action::Next(0), "vip.next"),
         ("×", Action::Close, "vip.close"),
@@ -45,6 +50,10 @@ pub(super) fn setup(
             label,
             if matches!(command, Action::Close | Action::Refresh) {
                 18.
+            } else if matches!(command, Action::HideOffline) {
+                90.
+            } else if matches!(command, Action::Sort(_)) {
+                45.
             } else {
                 30.
             },
@@ -95,14 +104,17 @@ pub(super) fn project(
     rows: Query<(Entity, &Row)>,
     mut names: Query<(&NameLabel, &mut Text, &mut TextColor), Without<Message>>,
     mut messages: Query<&mut Text, With<Message>>,
-    mut controls: Query<(Entity, &mut Control)>,
+    mut controls: Query<(Entity, &mut Control, Has<bevy::ui::Checked>)>,
     mut entered: Local<Option<u64>>,
+    mut sections: Local<std::collections::HashMap<Option<u8>, (Entity, Entity)>>,
+    mut shown: Local<Option<(u64, Vec<Contact>, Vec<model::Group>)>>,
 ) {
     let generation = owner.generation();
     if state.generation != Some(generation) || owner.play.is_none() {
         state.generation = Some(generation);
         state.draft = None;
         state.pending = None;
+        state.contact_menu = None;
     }
     let Some(play) = &owner.play else {
         for (entity, _) in &rows {
@@ -139,30 +151,111 @@ pub(super) fn project(
             text.0.clone_from(&message);
         }
     }
+    let groups = snapshot
+        .as_ref()
+        .map(|snapshot| snapshot.groups.as_slice())
+        .unwrap_or(&[]);
+    let current = (generation, entries.to_vec(), groups.to_vec());
+    let rebuild = shown.as_ref() != Some(&current);
+    if rebuild {
+        for (_, (section, _)) in sections.drain() {
+            commands.entity(section).despawn();
+        }
+        if let Ok(list) = lists.single() {
+            for (id, title) in std::iter::once((None, "Ungrouped")).chain(
+                groups
+                    .iter()
+                    .map(|group| (Some(group.group), group.name.as_str())),
+            ) {
+                let section = commands
+                    .spawn((
+                        Name::new(format!("vip.contacts.group.{}", id.unwrap_or(0))),
+                        Node {
+                            width: percent(100.),
+                            flex_direction: FlexDirection::Column,
+                            ..default()
+                        },
+                    ))
+                    .id();
+                let heading = commands
+                    .spawn(source::text(title, source::font(skins.font.clone(), false)))
+                    .id();
+                commands.entity(section).add_child(heading);
+                commands.entity(list).add_child(section);
+                sections.insert(id, (section, heading));
+            }
+        }
+        *shown = Some(current);
+    }
+    let mut desired = Vec::new();
+    for entry in entries {
+        if owner.settings.preferences.vip_hide_offline
+            && presence.presence.entries.iter().any(|value| {
+                value.entry == entry.entry && value.status == VipPresenceStatus::Offline
+            })
+        {
+            continue;
+        }
+        let mut membership = Vec::new();
+        for group in groups {
+            if entry
+                .groups
+                .as_ref()
+                .is_some_and(|ids| ids.contains(&group.group))
+            {
+                membership.push(Some(group.group));
+            }
+        }
+        if membership.is_empty() {
+            membership.push(None);
+        }
+        desired.extend(membership.into_iter().map(|group| (entry, group)));
+    }
+    desired.sort_by_key(|(entry, _)| {
+        contact_sort_key(
+            entry,
+            owner.settings.preferences.vip_sort,
+            &presence.presence.entries,
+        )
+    });
+    let mut entities = std::collections::HashMap::new();
     let mut retained = std::collections::HashSet::new();
     for (entity, row) in &rows {
-        if row.generation != generation || !entries.iter().any(|entry| entry.entry == row.entry) {
-            commands.entity(entity).despawn();
+        if rebuild
+            || row.generation != generation
+            || !desired
+                .iter()
+                .any(|(entry, group)| entry.entry == row.entry && *group == row.group)
+        {
+            if !rebuild {
+                commands.entity(entity).despawn();
+            }
         } else {
-            retained.insert(row.entry);
+            retained.insert((row.entry, row.group));
+            entities.insert((row.entry, row.group), entity);
         }
     }
-    if let Ok(list) = lists.single() {
-        for entry in entries
+    {
+        for &(entry, group) in desired
             .iter()
-            .filter(|entry| !retained.contains(&entry.entry))
+            .filter(|(entry, group)| !retained.contains(&(entry.entry, *group)))
         {
+            let Some(&(list, _)) = sections.get(&group) else {
+                continue;
+            };
             let row = commands
                 .spawn((
                     Row {
                         generation,
                         entry: entry.entry,
+                        group,
                     },
                     bevy::ui_widgets::Button,
+                    bevy::picking::hover::Hovered::default(),
                     Control {
                         generation,
                         revision: panel.revision,
-                        command: Action::Edit(entry.entry),
+                        command: Action::Contact(entry.entry),
                     },
                     Name::new("vip.entry"),
                     TabIndex(0),
@@ -174,7 +267,35 @@ pub(super) fn project(
                     },
                 ))
                 .observe(input::activate)
+                .observe(input::contact_click)
                 .id();
+            if let Some(icon) = entry.icon {
+                let icon = commands
+                    .spawn((
+                        Name::new(format!("vip.icon.{icon}")),
+                        source::text(icon_glyph(icon), source::font(skins.font.clone(), false)),
+                    ))
+                    .id();
+                commands.entity(row).add_child(icon);
+            }
+            if let Some(description) = entry.description.as_deref().filter(|text| !text.is_empty())
+            {
+                let tooltip = commands
+                    .spawn((
+                        Description(row),
+                        source::text(description, source::font(skins.font.clone(), false)),
+                        Node {
+                            display: Display::None,
+                            position_type: PositionType::Absolute,
+                            top: px(18.),
+                            ..default()
+                        },
+                        GlobalZIndex(200),
+                        BackgroundColor(Color::srgb(0.1, 0.1, 0.1)),
+                    ))
+                    .id();
+                commands.entity(row).add_child(tooltip);
+            }
             let name = commands
                 .spawn((
                     NameLabel {
@@ -192,7 +313,18 @@ pub(super) fn project(
                 .id();
             commands.entity(row).add_child(name);
             commands.entity(list).add_child(row);
+            entities.insert((entry.entry, group), row);
         }
+    }
+    for (group, &(section, heading)) in sections.iter() {
+        let mut children = vec![heading];
+        children.extend(
+            desired
+                .iter()
+                .filter(|(_, membership)| membership == group)
+                .filter_map(|(entry, group)| entities.get(&(entry.entry, *group)).copied()),
+        );
+        commands.entity(section).replace_children(&children);
     }
     for (label, mut text, mut color) in &mut names {
         if label.generation != generation {
@@ -217,15 +349,31 @@ pub(super) fn project(
             _ => Color::srgb_u8(255, 165, 0),
         };
     }
-    for (entity, mut control) in &mut controls {
+    for (entity, mut control, checked) in &mut controls {
+        let selected = match control.command {
+            Action::Sort(sort) => sort == owner.settings.preferences.vip_sort,
+            Action::HideOffline => owner.settings.preferences.vip_hide_offline,
+            _ => false,
+        };
+        if selected && !checked {
+            commands.entity(entity).insert(bevy::ui::Checked);
+        }
+        if !selected && checked {
+            commands.entity(entity).remove::<bevy::ui::Checked>();
+        }
         // Retiring rows are already queued for despawn; never queue more component writes.
-        if matches!(control.command,Action::Edit(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
+        if matches!(control.command,Action::Edit(entry) | Action::Contact(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
         {
             continue;
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort(_)
+                | Action::HideOffline
         ) {
             control.generation = generation;
         } else if control.generation != generation {
@@ -233,7 +381,14 @@ pub(super) fn project(
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close | Action::Edit(_)
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort(_)
+                | Action::HideOffline
+                | Action::Edit(_)
+                | Action::Contact(_)
         ) {
             control.revision = panel.revision;
             if matches!(control.command, Action::Next(_)) {
@@ -342,4 +497,118 @@ pub(super) fn dialog(
             text.0 = value;
         }
     }
+}
+
+#[derive(Component)]
+pub(super) struct ContactMenu;
+pub(super) fn contact_menu(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    skins: Res<Skins>,
+    state: Res<State>,
+    lists: Query<Entity, With<List>>,
+    menus: Query<Entity, With<ContactMenu>>,
+    mut shown: Local<Option<(u64, u64, u64)>>,
+) {
+    let key = state.contact_menu.and_then(|entry| {
+        owner
+            .play
+            .as_ref()
+            .map(|play| (owner.generation(), play.link.vip_panel().revision, entry))
+    });
+    if *shown == key {
+        return;
+    }
+    *shown = key;
+    for entity in &menus {
+        commands.entity(entity).despawn();
+    }
+    let Some(entry) = state.contact_menu else {
+        return;
+    };
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.vip_panel();
+    if !Snapshot::read(&panel)
+        .is_ok_and(|snapshot| snapshot.entries.iter().any(|row| row.entry == entry))
+    {
+        return;
+    }
+    let Ok(list) = lists.single() else {
+        return;
+    };
+    let menu = commands
+        .spawn((
+            ContactMenu,
+            Node {
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(list).add_child(menu);
+    for (label, command, name) in [
+        ("Message", Action::MessageContact(entry), "vip.message"),
+        ("Edit", Action::Edit(entry), "vip.edit"),
+    ] {
+        let action = button(
+            &mut commands,
+            &skins,
+            Control {
+                generation: owner.generation(),
+                revision: panel.revision,
+                command,
+            },
+            label,
+            100.,
+            name,
+        );
+        commands.entity(menu).add_child(action);
+    }
+}
+
+fn icon_glyph(icon: u8) -> &'static str {
+    const ICONS: [&str; 20] = [
+        "•", "★", "♥", "◆", "♠", "♣", "♦", "●", "■", "▲", "✓", "!", "?", "+", "×", "☀", "☾", "⚑",
+        "⚔", "♜",
+    ];
+    ICONS.get(usize::from(icon)).copied().unwrap_or("•")
+}
+#[derive(Component)]
+pub(super) struct Description(Entity);
+pub(super) fn descriptions(
+    rows: Query<&bevy::picking::hover::Hovered, With<Row>>,
+    mut descriptions: Query<(&Description, &mut Node)>,
+) {
+    for (description, mut node) in &mut descriptions {
+        node.display = if rows
+            .get(description.0)
+            .is_ok_and(|interaction| interaction.0)
+        {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    }
+}
+
+pub(super) fn contact_sort_key(
+    entry: &Contact,
+    sort: u8,
+    presence: &[oteryn_session::VipPresenceEntry],
+) -> (u8, String, u64) {
+    let rank = match sort {
+        1 => entry.icon.unwrap_or(0),
+        2 => presence
+            .iter()
+            .find(|value| value.entry == entry.entry)
+            .map_or(1, |value| match value.status {
+                VipPresenceStatus::Online => 0,
+                VipPresenceStatus::Offline => 2,
+                _ => 1,
+            }),
+        _ => 0,
+    };
+    (rank, entry.name.to_lowercase(), entry.entry)
 }

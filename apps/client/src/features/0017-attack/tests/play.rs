@@ -519,3 +519,10 @@ impl crate::play::Outbox {
         Ok(())
     }
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_confirmed_combat_fixture(&self, combat: ActorCombatState, rows: &[oteryn_session::WorldSpatialEntity]) {
+        self.battle_publish(Some(combat), Some(7), rows);
+    }
+}

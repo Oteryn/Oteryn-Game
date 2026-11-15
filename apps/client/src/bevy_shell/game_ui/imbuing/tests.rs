@@ -65,7 +65,8 @@ fn imbuing_apply_guard() {
     assert_eq!(selection.intent(&p, Kind::Apply), None);
     selection.slot = Some(1);
     selection.offer = Some(0);
-    assert_eq!(selection.intent(&p, Kind::Apply), Some(Intent::Apply));
+    assert_eq!(selection.intent(&p, Kind::Apply), None);
+    assert_eq!(selection.intent(&p, Kind::Confirm), Some(Intent::Apply));
     p.pending = true;
     assert_eq!(selection.intent(&p, Kind::Apply), None);
 }
@@ -225,6 +226,8 @@ fn imbuing_commands_require_confirmation_and_show_result() -> TestResult {
     assert!(commands.try_recv().is_err());
     click(&owner, &mut state, Kind::Offer(0));
     click(&owner, &mut state, Kind::Apply);
+    assert!(commands.try_recv().is_err());
+    click(&owner, &mut state, Kind::Confirm);
     let crate::combat_input::PlayCommand::Imbue(command) = commands.try_recv()? else {
         return Err("apply missing".into());
     };
@@ -279,5 +282,88 @@ fn imbuing_stale_controls_cannot_send_or_confirm() -> TestResult {
         },
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn imbuing_apply_requires_snapshot_bound_confirmation() {
+    let mut p = panel();
+    p.slot = 1;
+    let mut selection = Selection {
+        slot: Some(1),
+        offer: Some(0),
+        ..Default::default()
+    };
+    assert_eq!(selection.intent(&p, Kind::Apply), None);
+    assert!(selection.confirmation.is_some());
+    assert_eq!(selection.intent(&p, Kind::Confirm), Some(Intent::Apply));
+    assert_eq!(selection.intent(&p, Kind::Confirm), None);
+    selection.intent(&p, Kind::Apply);
+    if let Some(window) = p.window.as_mut() {
+        window.offers[0].gold += 1;
+    }
+    assert_eq!(selection.intent(&p, Kind::Confirm), None);
+}
+
+#[test]
+fn imbuing_escape_cancels_confirmation_then_closes() -> TestResult {
+    let (owner, mut commands, outbox) = host()?;
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.imbue_item(NonZeroU64::MIN);
+    link.open_imbue();
+    let _query = commands.try_recv()?;
+    publish(&outbox, &panel());
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    {
+        let mut state = app.world_mut().resource_mut::<State>();
+        state.selection.confirmation = state.panel.clone();
+        state.selection.confirmation_intent = Some(Intent::Clear);
+    }
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .resource::<State>()
+            .selection
+            .confirmation
+            .is_none()
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
     Ok(())
 }

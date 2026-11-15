@@ -378,3 +378,22 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
 
 #[path = "tests/amount.rs"]
 mod amount;
+
+#[test]
+fn initial_backpack_contents_can_drag_to_equipment_or_ground() -> TestResult {
+    let (link, _commands, outbox) = play_channel();
+    let item = entry(88, 1)?;
+    inventory(&outbox, vec![item]);
+    let owner = host(link)?;
+    let slot = Slot {
+        generation: owner.generation(),
+        location: Location::Inventory,
+        item: Some(item),
+        destination: Some(ItemMoveDestination::MainBackpack),
+    };
+    assert_eq!(
+        slot.drag(&owner).ok_or("backpack content drag")?.handle,
+        item.handle
+    );
+    Ok(())
+}

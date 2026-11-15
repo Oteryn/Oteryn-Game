@@ -20,7 +20,7 @@ struct Control {
     serial: u64,
     kind: Kind,
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Kind {
     Close,
     Refresh,
@@ -39,6 +39,7 @@ struct Selection {
     offer: Option<usize>,
     base_type: Option<u8>,
     confirmation: Option<ImbuePanel>,
+    confirmation_intent: Option<Intent>,
 }
 impl Selection {
     fn can_apply(&self, panel: &ImbuePanel) -> bool {
@@ -46,16 +47,30 @@ impl Selection {
     }
     fn intent(&mut self, panel: &ImbuePanel, kind: Kind) -> Option<Intent> {
         match kind {
-            Kind::Apply if self.can_apply(panel) => Some(Intent::Apply),
-            Kind::Clear if panel.can_clear() => {
+            Kind::Apply if self.can_apply(panel) => {
                 self.confirmation = Some(panel.clone());
+                self.confirmation_intent = Some(Intent::Apply);
                 None
             }
-            Kind::Confirm => self
-                .confirmation
-                .take()
-                .filter(|expected| expected == panel && panel.can_clear())
-                .map(|_| Intent::Clear),
+            Kind::Clear if panel.can_clear() => {
+                self.confirmation = Some(panel.clone());
+                self.confirmation_intent = Some(Intent::Clear);
+                None
+            }
+            Kind::Confirm => {
+                let intent = self.confirmation_intent.take()?;
+                self.confirmation
+                    .take()
+                    .filter(|expected| {
+                        expected == panel
+                            && match intent {
+                                Intent::Apply => self.can_apply(panel),
+                                Intent::Clear => panel.can_clear(),
+                                Intent::Refresh => false,
+                            }
+                    })
+                    .map(|_| intent)
+            }
             _ => {
                 self.confirmation = None;
                 None
@@ -74,7 +89,8 @@ struct State {
     dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, (keyboard, project).chain());
 }
 fn slot_rows(panel: &ImbuePanel) -> Vec<String> {
     panel.window.as_ref().map_or_else(Vec::new, |window| {
@@ -166,6 +182,10 @@ fn project(
     {
         state.selection.confirmation = None;
     }
+    let retained = state
+        .root
+        .filter(|_| state.generation == owner.generation())
+        .map(|root| super::refresh::preserve(&mut commands, root, None));
     if let Some(root) = state.root.take() {
         commands.entity(root).despawn();
     }
@@ -184,6 +204,9 @@ fn project(
             &state.items,
             &state.selection,
         ));
+        if let (Some(retained), Some(root)) = (retained, state.root) {
+            retained.restore(&mut commands, root);
+        }
     }
 }
 fn activate(
@@ -249,4 +272,29 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
     };
     state.dirty = true;
     play.link.imbue_dispatch_bound(panel, action);
+}
+
+fn keyboard(
+    guard: ModalGuard,
+    keys: Res<ButtonInput<KeyCode>>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    if !keys.just_pressed(KeyCode::Escape)
+        || !state.root.is_some_and(|root| guard.allows(root))
+        || state.generation != owner.generation()
+    {
+        return;
+    }
+    if state.selection.confirmation.take().is_some() {
+        state.selection.confirmation_intent = None;
+        state.dirty = true;
+    } else {
+        let control = Control {
+            generation: state.generation,
+            serial: state.serial,
+            kind: Kind::Close,
+        };
+        perform(&owner, &mut state, &control);
+    }
 }

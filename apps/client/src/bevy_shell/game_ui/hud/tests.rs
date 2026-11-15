@@ -236,3 +236,61 @@ fn inventory_modal_blocks_prior_battle_focus_enter_and_direct_activation() -> Te
     }
     Ok(())
 }
+
+#[test]
+fn battle_activate_current_confirmed_target_stops() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("attack row")?;
+    outbox.bevy_confirmed_combat_fixture(
+        oteryn_session::ActorCombatState {
+            target: Some(row(7).entity),
+            modes: oteryn_session::FightModes::DEFAULT,
+            in_fight: true,
+        },
+        &[row(7)],
+    );
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::Battle(CombatCommand::Stop)
+    ));
+    Ok(())
+}
+
+#[test]
+fn confirmed_combat_modes_are_checked() -> TestResult {
+    let (mut app, _commands, outbox) = app()?;
+    outbox.bevy_confirmed_combat_fixture(
+        oteryn_session::ActorCombatState {
+            target: None,
+            modes: oteryn_session::FightModes {
+                fight_mode: FightMode::Defensive,
+                chase: ChaseMode::Chase,
+                ..oteryn_session::FightModes::DEFAULT
+            },
+            in_fight: false,
+        },
+        &[row(7)],
+    );
+    app.update();
+    for (action, checked) in app
+        .world_mut()
+        .query::<(&HudAction, Has<bevy::ui::Checked>)>()
+        .iter(app.world())
+    {
+        let expected = match action.command {
+            Command::Fight(mode) => Some(mode == FightMode::Defensive),
+            Command::Chase(mode) => Some(mode == ChaseMode::Chase),
+            _ => None,
+        };
+        if let Some(expected) = expected {
+            assert_eq!(checked, expected);
+        }
+    }
+    Ok(())
+}

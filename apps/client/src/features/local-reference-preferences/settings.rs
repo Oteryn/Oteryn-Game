@@ -97,6 +97,10 @@ use defaults::*;
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
     #[serde(default)]
+    pub vip_sort: u8,
+    #[serde(default)]
+    pub vip_hide_offline: bool,
+    #[serde(default)]
     pub performance: PerformanceSettings,
     #[serde(default)]
     pub stash_stock_order: bool,
@@ -275,6 +279,8 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            vip_sort: 0,
+            vip_hide_offline: false,
             performance: PerformanceSettings::default(),
             stash_stock_order: false,
             miscellaneous: Default::default(),

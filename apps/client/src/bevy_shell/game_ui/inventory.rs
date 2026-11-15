@@ -96,7 +96,13 @@ impl Slot {
         let item = self.current_item(owner)?;
         // The backpack equipment cell is a container destination, not a movable backpack.
         if self.location == Location::Inventory
-            && self.destination == Some(ItemMoveDestination::MainBackpack)
+            && self.item.is_some()
+            && self.item
+                == owner
+                    .play
+                    .as_ref()
+                    .and_then(|play| play.link.inventory_panel().inventory)
+                    .and_then(|inventory| inventory.main_backpack)
         {
             return None;
         }
@@ -126,7 +132,7 @@ struct InventoryUi {
     prompt: Option<Prompt>,
     ground_source: Option<world_drag::GroundSource>,
 }
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Debug)]
 enum Control {
     Open(Slot),
     Context(Slot, oteryn_client_ui::world_interaction::menu::Action),

@@ -227,3 +227,24 @@ fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), 
     assert!(view.inputs.is_empty());
     Ok(())
 }
+
+#[test]
+fn carried_context_use_dispatches_and_rejects_removed_handle() -> Result<(), Box<dyn std::error::Error>> {
+    let view = view()?;
+    let (link, mut commands, outbox) = play_channel();
+    let item = oteryn_session::ItemEntry {
+        handle: 77.try_into()?, item_definition_ref: 42.try_into()?, count: 1.try_into()?, sub_type: 0,
+    };
+    outbox.inventory_initialize(Some(oteryn_session::CharacterInventory {
+        main_backpack: None, entries: vec![item], equipment: vec![],
+    }), false);
+    outbox.world_context_initialize(true, true);
+    let menu = oteryn_client_ui::world_interaction::menu::Menu::new(Target::Item(item.handle), true, false);
+    assert!(view.world_context_choose(&link, &menu, Action::Use));
+    assert!(matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(_)));
+    super::super::mailbox::lock(&outbox.0).world_context.pending = false;
+    outbox.inventory_initialize(None, false);
+    assert!(!view.world_context_choose(&link, &menu, Action::Use));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
