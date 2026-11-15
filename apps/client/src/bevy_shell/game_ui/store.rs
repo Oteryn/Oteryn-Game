@@ -148,6 +148,14 @@ fn project(
         return;
     };
     node.display = Display::Flex;
+    if snapshot.store.page == store::StorePage::History
+        && state
+            .seen
+            .as_ref()
+            .is_none_or(|seen| seen.store.page != store::StorePage::History)
+    {
+        state.page = Page::History;
+    }
     let generation = owner.generation();
     let same_session = state.key.is_some_and(|key| key.generation == generation);
     if same_session && state.seen.as_ref() == Some(&snapshot) && !state.dirty {
@@ -181,6 +189,9 @@ fn project(
     }
     if focus.get().is_some_and(|id| fields.contains(id)) {
         focus.clear();
+    }
+    if !same_session && snapshot.store.page == store::StorePage::History {
+        state.page = Page::History;
     }
     let key = Key {
         generation,

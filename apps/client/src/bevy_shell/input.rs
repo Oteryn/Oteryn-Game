@@ -16,6 +16,9 @@ pub(super) struct WorldInputUi<'w, 's> {
     guard: ModalGuard<'w, 's>,
     hits: hits::WorldPointerHits<'w, 's>,
 }
+#[derive(Component)]
+pub(in crate::bevy_shell) struct ChatComposer;
+
 pub(super) struct NativeInput {
     adapter: InputPlatformAdapter,
     generation: Option<u64>,
@@ -26,7 +29,7 @@ pub(super) fn route(
     mut input: NonSendMut<NativeInput>,
     mut owner: NonSendMut<HostOwner>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
-    editors: Query<(), With<bevy::text::EditableText>>,
+    editors: Query<Option<&ChatComposer>, With<bevy::text::EditableText>>,
     ui: WorldInputUi,
     mut capture: super::game_ui::ItemPointerCapture,
 ) {
@@ -49,6 +52,9 @@ pub(super) fn route(
     }
     let modal = !ui.guard.allows_focus(None);
     let mut editing = focus.get().is_some_and(|e| editors.contains(e));
+    let composer = focus
+        .get()
+        .is_some_and(|entity| editors.get(entity).is_ok_and(|marker| marker.is_some()));
     for event in raw.read() {
         let events = match input.adapter.process_window_event(&event.event) {
             Ok(events) => events,
@@ -67,7 +73,7 @@ pub(super) fn route(
             let consumed = capture.before(&owner, *ui.viewport, physical, &event, allowed);
             let world_owned =
                 physical.is_some_and(|point| ui.hits.allows_world_start(ui.regions.world, point));
-            let blocked = !input.adapter.focused() || editing || modal || consumed;
+            let blocked = !input.adapter.focused() || modal || consumed;
             match event {
                 NormalizedInputEvent::PointerMoved { position, motion } => {
                     if consumed || !world_owned {
@@ -136,11 +142,32 @@ pub(super) fn route(
                     ) {
                         input.physical_pointer = None;
                     }
-                    owner.route_input(&[event], blocked);
+                    route_keyboard(&mut owner, event, blocked, editing.then_some(composer));
                 }
             }
         }
     }
+}
+fn route_keyboard(
+    owner: &mut HostOwner,
+    event: NormalizedInputEvent,
+    blocked: bool,
+    editor: Option<bool>,
+) {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    let shortcut = matches!(&event, NormalizedInputEvent::Key { code, modifiers, .. }
+        if !matches!(code.get(), 79..=82)
+            && ((modifiers.contains(Modifier::Control)
+                    && !matches!(code.get(), 4 | 6 | 25 | 27..=29))
+                || modifiers.contains(Modifier::Alt)
+                || modifiers.contains(Modifier::Super)
+                || matches!(code.get(), 58..=69 | 104..=115)
+                || (code.get() == 43 && (*modifiers == Modifiers::NONE
+                    || *modifiers == Modifiers::one(Modifier::Shift)))));
+    owner.route_input(
+        &[event],
+        blocked || editor.is_some_and(|composer| !composer || !shortcut),
+    );
 }
 // Keep scene pixels for fixed controls; PlayView::click_tile reverses world scrolling.
 fn map_pointer(
@@ -203,6 +230,43 @@ mod tests {
         assert_eq!((shifted.x().get(), shifted.y().get()), (10, 20));
         viewport.origin.x += 100;
         assert!(map_pointer(&owner, viewport, position).is_none());
+        Ok(())
+    }
+    #[test]
+    fn focused_composer_preserves_help_channel_shortcut() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers};
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+            &outbox,
+            Default::default(),
+            vec![],
+        );
+        owner.play = Some(super::super::owner::ActivePlay {
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+            link,
+        });
+        owner.phase = super::super::owner::Phase::Playing;
+        route_keyboard(
+            &mut owner,
+            NormalizedInputEvent::Key {
+                code: KeyCode::new(23)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control),
+                repeat: false,
+            },
+            false,
+            Some(true),
+        );
+        assert!(
+            std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(
+                command,
+                crate::combat_input::PlayCommand::ChatPublic(oteryn_session::ChatIntent::OpenRoom(
+                    oteryn_session::ChatRoom::Help
+                ))
+            ))
+        );
         Ok(())
     }
 }

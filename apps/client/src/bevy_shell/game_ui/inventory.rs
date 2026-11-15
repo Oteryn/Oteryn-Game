@@ -99,6 +99,12 @@ impl Slot {
         // The backpack equipment cell is a container destination, not a movable backpack.
         if self.location == Location::Inventory
             && self.destination == Some(ItemMoveDestination::MainBackpack)
+            && owner
+                .play
+                .as_ref()
+                .and_then(|play| play.link.inventory_panel().inventory)
+                .and_then(|inventory| inventory.main_backpack)
+                .is_some_and(|backpack| backpack.handle == item.handle)
         {
             return None;
         }
@@ -239,4 +245,66 @@ pub(super) fn current_drag_item(
                 && item.sub_type == source.item.sub_type
         })
         .copied()
+}
+
+use super::super::controls::ContainerTool;
+use bevy::ui::InteractionDisabled;
+#[derive(Clone, PartialEq, Eq)]
+pub(super) enum ToolSnapshot {
+    Browse(oteryn_client_ui::browse_field::BrowseFieldPanel),
+    Depot(oteryn_client_ui::depot::DepotPanel),
+    Search(oteryn_client_ui::depot_search::DepotSearchPanel),
+    Sort(
+        oteryn_client_ui::container_sort::Panel,
+        oteryn_client_ui::container_tree::ContainerPanel,
+    ),
+}
+impl ToolSnapshot {
+    pub(super) fn read(link: &crate::play::PlayLink, tool: ContainerTool) -> Self {
+        match tool {
+            ContainerTool::BrowseField => Self::Browse(link.browse_field_panel()),
+            ContainerTool::Depot => Self::Depot(link.depot_panel()),
+            ContainerTool::Search => Self::Search(link.depot_search_panel()),
+            ContainerTool::Sort => Self::Sort(link.container_sort_panel(), link.container_panel()),
+        }
+    }
+    pub(super) fn ready(&self) -> bool {
+        match self {
+            Self::Browse(panel) => panel.selected && !panel.pending,
+            Self::Depot(panel) => panel.selected && !panel.pending,
+            Self::Search(panel) => panel.selected && !panel.pending,
+            Self::Sort(panel, _) => panel.selected && !panel.pending,
+        }
+    }
+    pub(super) fn text(&self) -> String {
+        match self {
+            Self::Browse(panel) => oteryn_client_ui::browse_field::panel_text(panel),
+            Self::Depot(panel) => oteryn_client_ui::depot::panel_text(panel),
+            Self::Search(panel) => oteryn_client_ui::depot_search::panel_text(panel),
+            Self::Sort(panel, _) => oteryn_client_ui::container_sort::panel_text(panel),
+        }
+    }
+}
+#[derive(Component)]
+pub(super) struct ContainerToolLaunch {
+    pub generation: u64,
+    pub view: u8,
+    pub handle: oteryn_session::ItemHandle,
+}
+pub(super) fn launch_container_tool(
+    event: On<Activate>,
+    guard: ModalGuard,
+    controls: Query<(&ContainerToolLaunch, Has<InteractionDisabled>)>,
+    mut owner: NonSendMut<HostOwner>,
+) {
+    if guard.allows(event.entity)
+        && let Ok((control, false)) = controls.get(event.entity)
+        && control.generation == owner.generation()
+    {
+        owner.request_container_tool(
+            ContainerTool::Sort,
+            None,
+            Some((control.view, control.handle)),
+        );
+    }
 }

@@ -45,8 +45,8 @@ fn minimap_projects_live_tiles_creatures_floor_changes_and_reset() -> Result<(),
     #[cfg(feature = "bevy-shell")]
     {
         let range = play.scene().minimap_quad_range();
-        assert_eq!(range.len(),base.len());
-        assert_eq!(&play.scene().sprites().instances()[range],base.as_slice());
+        assert_eq!(range.len(), base.len());
+        assert_eq!(&play.scene().sprites().instances()[range], base.as_slice());
     }
     assert_eq!(base.len(), 31 * 25 + 2);
     assert!(
@@ -386,6 +386,22 @@ fn minimap_edge_clicks_never_queue_out_of_world_navigation() -> Result<(), Batch
         }))
     );
     Ok(())
+}
+
+#[cfg(feature = "bevy-shell")]
+impl PlayView {
+    pub(crate) fn bevy_minimap_colours_fixture(&mut self) {
+        let mut map = crate::play::feature_local_minimap::state::lock(&self.minimap);
+        map.cells.insert((self.floor, self.own.x, self.own.y), 180);
+        map.markers
+            .push(crate::play::feature_local_minimap::state::Marker {
+                x: self.own.x + 1,
+                y: self.own.y,
+                floor: self.floor,
+                label: "Blue marker".into(),
+                color: 1,
+            });
+    }
 }
 
 #[test]

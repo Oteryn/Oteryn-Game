@@ -91,6 +91,7 @@ pub(super) fn render(
     let scroll = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("item_details", 0),
             Node {
                 width: percent(100.),
                 max_height: px(460.),
@@ -164,6 +165,7 @@ pub(super) fn render(
             let chrome = commands
                 .spawn((
                     ScrollArea,
+                    crate::bevy_shell::game_ui::install::RememberScroll("item_details", 1),
                     source::frame(skin.inset.clone(), [1.; 4]),
                     Node {
                         width: percent(100.),

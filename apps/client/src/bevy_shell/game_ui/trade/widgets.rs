@@ -106,6 +106,7 @@ pub(super) fn build(
     let details = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("trade", 0),
             Node {
                 width: percent(100.),
                 max_height: px(80.),
@@ -167,6 +168,7 @@ pub(super) fn build(
         let list = commands
             .spawn((
                 ScrollArea,
+                crate::bevy_shell::game_ui::install::RememberScroll("trade", 1),
                 Node {
                     width: percent(100.),
                     max_height: px(120.),

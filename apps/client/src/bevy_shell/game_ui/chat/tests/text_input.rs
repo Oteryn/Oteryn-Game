@@ -284,6 +284,196 @@ fn pending_send_cancels_when_destination_or_modal_scope_changes() -> TestResult 
 }
 
 #[test]
+fn transcript_supports_read_only_selection_and_copy() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::text::TextReadWriteMode;
+    let (mut app, _, _) = app()?;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let root = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(GameRegions {
+        vitals: root,
+        minimap: root,
+        equipment: root,
+        containers: root,
+        battle: root,
+        skills: root,
+        vip: root,
+        analyzers: root,
+        chat: root,
+        bars: root,
+        world: root,
+    });
+    app.world_mut()
+        .run_system_once(widgets::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Transcript>>()
+        .single(app.world())?;
+    assert_eq!(
+        app.world().get::<TextReadWriteMode>(entity),
+        Some(&TextReadWriteMode::ReadOnly)
+    );
+    assert!(app.world().get::<TextInput>(entity).is_some());
+    assert!(app.world().get::<EditableText>(entity).is_some());
+    assert_ne!(app.world().get::<Pickable>(entity), Some(&Pickable::IGNORE));
+    Ok(())
+}
+
+#[test]
+fn sent_chat_history_recall_restores_the_unsent_draft() -> TestResult {
+    let (mut app, editor, mut commands) = app()?;
+    super::super::set_text(
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .as_deref_mut()
+            .ok_or("editor")?,
+        "sent message",
+    );
+    app.update();
+    key(&mut app, KeyCode::Enter, Key::Enter, None);
+    app.update();
+    assert!(
+        matches!(sent(&mut commands), Some(ChatIntent::Say { text, .. }) if text == "sent message")
+    );
+    super::super::set_text(
+        app.world_mut()
+            .get_mut::<EditableText>(editor)
+            .as_deref_mut()
+            .ok_or("editor")?,
+        "unsent draft",
+    );
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ShiftLeft);
+    key(&mut app, KeyCode::ArrowUp, Key::ArrowUp, None);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "sent message"
+    );
+    key(&mut app, KeyCode::ArrowDown, Key::ArrowDown, None);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "unsent draft"
+    );
+    app.world_mut().spawn((
+        super::super::super::GameModal,
+        GlobalZIndex(300),
+        Node::default(),
+    ));
+    key(&mut app, KeyCode::ArrowUp, Key::ArrowUp, None);
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .ok_or("editor")?
+            .value(),
+        "unsent draft"
+    );
+    Ok(())
+}
+
+#[test]
+fn chat_transcript_preserves_retained_speech_colours() -> TestResult {
+    use bevy::ecs::system::RunSystemOnce;
+    use oteryn_session::{
+        ActorPosition, ChatLine, ChatRoom, ChatSpeaker, ChatSpeechMode, GuildChatLine,
+    };
+    let (mut app, _, _) = app()?;
+    let (link, _, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        vec![
+            ChatLine::Local {
+                speaker: ChatSpeaker {
+                    identity: [1; 16],
+                    generation: std::num::NonZeroU64::MIN,
+                },
+                speaker_name: "Alice".into(),
+                mode: ChatSpeechMode::Say,
+                text: "local words".into(),
+                position: ActorPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 0,
+                },
+            },
+            ChatLine::Private {
+                speaker_name: "Bob".into(),
+                text: "private words".into(),
+            },
+            ChatLine::Guild(GuildChatLine {
+                guild_id: [1; 16],
+                rank: 1,
+                speaker_name: "Carol".into(),
+                text: "guild words".into(),
+            }),
+            ChatLine::Room {
+                room: ChatRoom::Help,
+                speaker_name: "Dave".into(),
+                text: "room words".into(),
+            },
+        ],
+    );
+    outbox.bevy_chat_guild_member();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    app.world_mut()
+        .run_system_once(crate::bevy_shell::ui::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    let root = app.world_mut().spawn(Node::default()).id();
+    app.insert_resource(GameRegions {
+        vitals: root,
+        minimap: root,
+        equipment: root,
+        containers: root,
+        battle: root,
+        skills: root,
+        vip: root,
+        analyzers: root,
+        chat: root,
+        bars: root,
+        world: root,
+    });
+    app.world_mut()
+        .run_system_once(widgets::setup)
+        .map_err(|error| format!("{error:?}"))?;
+    app.add_systems(Update, project);
+    app.update();
+    for (message, colour) in [
+        ("local words", Color::srgb_u8(255, 255, 0)),
+        ("private words", Color::srgb_u8(95, 195, 195)),
+        ("guild words", Color::srgb_u8(255, 165, 0)),
+        ("room words", Color::srgb_u8(255, 255, 0)),
+    ] {
+        assert!(
+            app.world_mut()
+                .query::<(&Text, &TextColor)>()
+                .iter(app.world())
+                .any(|(text, color)| text.0.contains(message) && color.0 == colour),
+            "{message} needs its retained speech colour"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn sent_history_shift_arrows_restore_the_unsent_draft() -> TestResult {
     let (mut app, editor, mut commands) = app()?;
     key(&mut app, KeyCode::Enter, Key::Enter, None);

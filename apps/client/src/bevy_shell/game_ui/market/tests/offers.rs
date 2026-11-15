@@ -372,6 +372,48 @@ fn market_accept_buy_offer_without_items_is_disabled() -> TestResult {
 }
 
 #[test]
+fn market_numeric_correction_preserves_editor_configuration() -> TestResult {
+    let (mut app, mut commands, outbox, root) = setup()?;
+    let item = button(&mut app, root, Kind::Item(0))?;
+    app.world_mut().trigger(Activate { entity: item });
+    let book = feature(&mut commands)?;
+    outbox.bevy_market_reply(
+        &book,
+        &result(&wire::Reply::Book {
+            definition: 42,
+            page: 0,
+            rows: vec![row()],
+            statistics: wire::Statistics {
+                definition: 42,
+                as_of_us: 2592000000000,
+                ..default()
+            },
+            has_next: false,
+        })?,
+    );
+    app.update();
+    click(&mut app, "market.offer.select.0")?;
+    let field = find(&mut app, "market.offer.quantity")?;
+    {
+        let mut text = app
+            .world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("quantity")?;
+        assert_eq!(text.max_characters, Some(20));
+        text.cursor_width = 0.7;
+        text.visible_lines = Some(3.);
+        text.editor_mut().set_text("999");
+    }
+    app.update();
+    let text = app.world().get::<EditableText>(field).ok_or("quantity")?;
+    assert_eq!(text.value().to_string(), "5");
+    assert_eq!(text.max_characters, Some(20));
+    assert_eq!(text.cursor_width, 0.7);
+    assert_eq!(text.visible_lines, Some(3.));
+    Ok(())
+}
+
+#[test]
 fn market_anonymous_checkbox_is_retained_in_buy_and_sell_requests() -> TestResult {
     let (mut app, mut commands, outbox, root) = setup()?;
     let item = button(&mut app, root, Kind::Item(0))?;

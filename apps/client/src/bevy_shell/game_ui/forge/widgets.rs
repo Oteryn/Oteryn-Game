@@ -91,6 +91,7 @@ pub(super) fn render(
     let body = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("forge", 0),
             Node {
                 width: percent(100.),
                 height: px(440.),

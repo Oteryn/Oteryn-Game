@@ -91,6 +91,7 @@ pub(super) fn build(
     let body = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("reward_wall", 0),
             Node {
                 width: percent(100.),
                 max_height: px(420.),

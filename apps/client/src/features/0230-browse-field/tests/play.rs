@@ -245,3 +245,10 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
     }
     Ok(())
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_browse_field_supported(&self) {
+        crate::play::mailbox::lock(&self.0).browse_field.selected = true;
+    }
+}

@@ -14,6 +14,7 @@ struct Snapshot {
     selection: Option<Slot>,
     menu: Option<(Slot, Vec2)>,
     world_feedback: Option<String>,
+    sort_available: bool,
     windows: std::collections::BTreeMap<u8, presentation::Window>,
     browse: bool,
 }
@@ -22,6 +23,8 @@ pub(super) struct Projection;
 #[derive(Default)]
 pub(super) struct ProjectionState(Option<Snapshot>);
 
+// The projection reads independent retained regions and slot decorations.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -30,6 +33,7 @@ pub(super) fn project(
     mut ui: ResMut<InventoryUi>,
     mut previous: Local<ProjectionState>,
     roots: Query<Entity, With<Projection>>,
+    mut cells: Query<(&Slot, &mut BorderColor)>,
 ) {
     let Some(play) = &owner.play else {
         for entity in &roots {
@@ -92,8 +96,35 @@ pub(super) fn project(
         selection: ui.selection,
         menu: ui.menu,
         world_feedback: play.link.world_context_feedback(),
+        sort_available: play.link.container_sort_panel().selected,
     };
-    if previous.0.as_ref() == Some(&snapshot) {
+    // Selection changes decoration, not the pointer identities used for double clicks.
+    for (slot, mut border) in &mut cells {
+        *border = BorderColor::all(
+            if snapshot.selection.is_some_and(|selected| {
+                selected.item.is_some()
+                    && selected.item.map(|item| item.handle) == slot.item.map(|item| item.handle)
+            }) {
+                Color::WHITE
+            } else {
+                Color::NONE
+            },
+        );
+    }
+    if previous.0.as_ref().is_some_and(|old| {
+        old.generation == snapshot.generation
+            && old.inventory.inventory == snapshot.inventory.inventory
+            && old.containers.views == snapshot.containers.views
+            && old.containers.feedback == snapshot.containers.feedback
+            && old.slots == snapshot.slots
+            && old.movement == snapshot.movement
+            && old.menu == snapshot.menu
+            && old.world_feedback == snapshot.world_feedback
+            && old.sort_available == snapshot.sort_available
+            && old.windows == snapshot.windows
+            && old.browse == snapshot.browse
+    }) {
+        previous.0 = Some(snapshot);
         return;
     }
     for entity in &roots {
@@ -409,6 +440,27 @@ fn container(
         },
         42.,
     );
+    if view.browse.is_none() {
+        let sort = commands
+            .spawn((
+                source::button(skins.buttons.clone(), 45.),
+                super::ContainerToolLaunch {
+                    generation: snapshot.generation,
+                    view: view.view_id,
+                    handle: view.container_handle,
+                },
+            ))
+            .observe(super::launch_container_tool)
+            .id();
+        if !snapshot.sort_available {
+            commands.entity(sort).insert(bevy::ui::InteractionDisabled);
+        }
+        let caption = commands
+            .spawn(source::button_caption("Sort", skins.font.clone()))
+            .id();
+        commands.entity(sort).add_child(caption);
+        commands.entity(row).add_child(sort);
+    }
     super::bulk::header(commands, skins, row, snapshot.generation, view);
     let body = presentation::body(
         commands,

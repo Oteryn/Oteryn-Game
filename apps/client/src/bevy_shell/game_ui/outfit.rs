@@ -34,6 +34,7 @@ struct State {
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
+    super::install::install_scroll_memory(app);
     app.init_resource::<State>()
         .add_systems(Update, (project, animation::animate).chain());
 }
@@ -260,6 +261,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("outfit", 0),
             BackgroundColor(Color::srgb(0.16, 0.16, 0.16)),
         ))
         .id();

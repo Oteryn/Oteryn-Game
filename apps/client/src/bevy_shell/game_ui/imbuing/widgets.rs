@@ -91,7 +91,7 @@ pub(super) fn build(
         })
         .id();
     commands.entity(window).add_child(body);
-    let left = column(commands, body);
+    let left = column(commands, body, 0);
     text(
         commands,
         skins,
@@ -143,7 +143,7 @@ pub(super) fn build(
             );
         }
     }
-    let right = column(commands, body);
+    let right = column(commands, body, 1);
     text(commands, skins, right, "Base type");
     if let Some(model) = &panel.window {
         let tiers: std::collections::BTreeSet<_> =
@@ -296,10 +296,11 @@ pub(super) fn build(
     }
     root
 }
-fn column(commands: &mut Commands, parent: Entity) -> Entity {
+fn column(commands: &mut Commands, parent: Entity, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("imbuing", role),
             Node {
                 width: percent(50.),
                 min_width: px(0.),

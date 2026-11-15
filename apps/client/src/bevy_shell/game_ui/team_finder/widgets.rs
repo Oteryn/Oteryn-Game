@@ -261,6 +261,7 @@ fn button(
     let mut entity = commands.spawn((
         source::button(skins.buttons.clone(), 150.),
         Control { key, kind },
+        Name::new(format!("Team Finder: {caption}")),
     ));
     if listing_row {
         entity.insert(Node {

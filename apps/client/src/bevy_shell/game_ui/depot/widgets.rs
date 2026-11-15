@@ -27,6 +27,7 @@ impl Widgets<'_, '_, '_> {
             .commands
             .spawn((
                 GameModal,
+                Name::new("Depot"),
                 GlobalZIndex(165),
                 TabGroup {
                     order: 3,

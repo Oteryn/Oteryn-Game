@@ -2,11 +2,36 @@
 use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
 use oteryn_input_actions::{InputError, NormalizedInputEvent};
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ContainerTool {
+    BrowseField,
+    Depot,
+    Search,
+    Sort,
+}
+impl ContainerTool {
+    pub(super) fn title(self) -> &'static str {
+        match self {
+            Self::BrowseField => "Browse Field",
+            Self::Depot => "Depot",
+            Self::Search => "Depot Search",
+            Self::Sort => "Container Sort",
+        }
+    }
+}
+#[derive(Clone, Copy)]
+pub(super) struct ContainerToolRequest {
+    pub generation: u64,
+    pub tool: ContainerTool,
+    pub position: Option<(i32, i32, i16)>,
+    pub view: Option<(u8, oteryn_session::ItemHandle)>,
+}
 pub(super) struct Controls {
     pub(super) highscores_generation: Option<u64>,
     mouse: MouseActions,
     spells: SpellHotkeys,
     satellite: bool,
+    container_tool: Option<ContainerToolRequest>,
     house: Option<u64>,
 }
 impl Controls {
@@ -16,8 +41,46 @@ impl Controls {
             mouse: MouseActions::new()?,
             spells: SpellHotkeys::new()?,
             satellite: false,
+            container_tool: None,
             house: None,
         })
+    }
+    fn container(
+        &mut self,
+        link: &crate::play::PlayLink,
+        events: &[NormalizedInputEvent],
+        generation: u64,
+    ) -> bool {
+        let tool = if link.browse_field_input(events) {
+            ContainerTool::BrowseField
+        } else if link.depot_input(events) {
+            ContainerTool::Depot
+        } else if link.depot_search_input(events) {
+            ContainerTool::Search
+        } else if link.container_sort_input(events) {
+            ContainerTool::Sort
+        } else {
+            return false;
+        };
+        // The Depot already has its own retained window (game_ui::depot) over `depot_panel().open`.
+        if tool != ContainerTool::Depot {
+            self.container_tool = Some(ContainerToolRequest {
+                generation,
+                tool,
+                position: None,
+                view: None,
+            });
+        }
+        true
+    }
+    // Team Finder opens through the discovery panel and its retained Bevy window.
+    fn discovery(link: &crate::play::PlayLink, events: &[NormalizedInputEvent]) -> bool {
+        let handled = link.discovery_input(events);
+        if handled && oteryn_client_ui::purchase_history::open_key(events) {
+            link.store_set_open(true);
+            link.purchase_history(false);
+        }
+        handled
     }
 }
 impl HostOwner {
@@ -71,7 +134,11 @@ impl HostOwner {
         play.view.observe_creature_pointer(&routed);
         play.view.observe_bar_pointer(&play.link);
         for action in custom {
-            play.link.custom_hotkey_action(&play.view, &action);
+            if let crate::play::CustomAction::Utility { action } = &action {
+                self.settings.run_utility(&play.link, *action);
+            } else {
+                play.link.custom_hotkey_action(&play.view, &action);
+            }
         }
         // Stop clears queued clicks even while a target-walk receipt is pending. The
         // original key still reaches the ordinary movement/turn handler below.
@@ -122,7 +189,9 @@ impl HostOwner {
             || play.link.stash_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
-            || play.link.discovery_input(&routed)
+            || Controls::discovery(&play.link, &routed)
+            || self.controls.container(&play.link, &routed, generation)
+            || play.link.player_trade_input(&routed)
             || play.link.item_forge_input(&routed)
             || (routed.iter().any(|event| {
                 matches!(
@@ -214,6 +283,77 @@ impl HostOwner {
         }
     }
 
+    pub(super) fn take_container_tool_request(&mut self) -> Option<ContainerToolRequest> {
+        self.controls.container_tool.take()
+    }
+    pub(super) fn request_container_tool(
+        &mut self,
+        tool: ContainerTool,
+        position: Option<(i32, i32, i16)>,
+        view: Option<(u8, oteryn_session::ItemHandle)>,
+    ) -> bool {
+        if self.modal_active() {
+            return false;
+        }
+        let Some(play) = &self.play else {
+            return false;
+        };
+        if play.view.gameplay_input_blocked(&play.link)
+            || position.is_some_and(|position| position.2 != play.view.satellite_player().2)
+            || view.is_some_and(|(id, handle)| {
+                !play
+                    .link
+                    .container_panel()
+                    .views
+                    .as_ref()
+                    .is_some_and(|views| {
+                        views.views.iter().any(|view| {
+                            view.view_id == id
+                                && view.container_handle == handle
+                                && view.browse.is_none()
+                        })
+                    })
+            })
+        {
+            return false;
+        }
+        use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers};
+        let (code, modifiers) = match tool {
+            ContainerTool::BrowseField => {
+                (5, Modifiers::one(Modifier::Control).with(Modifier::Shift))
+            }
+            ContainerTool::Depot => (15, Modifiers::one(Modifier::Control).with(Modifier::Shift)),
+            ContainerTool::Search => (4, Modifiers::one(Modifier::Control).with(Modifier::Shift)),
+            ContainerTool::Sort => (22, Modifiers::one(Modifier::Control).with(Modifier::Alt)),
+        };
+        let Ok(code) = KeyCode::new(code) else {
+            return false;
+        };
+        // Menu actions call the existing canonical opener, independent of the user's keyboard binding.
+        let events = [NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat: false,
+        }];
+        let opened = match tool {
+            ContainerTool::BrowseField => play.link.browse_field_input(&events),
+            ContainerTool::Depot => play.link.depot_input(&events),
+            ContainerTool::Search => play.link.depot_search_input(&events),
+            ContainerTool::Sort => play.link.container_sort_input(&events),
+        };
+        // The Depot already has its own retained window (game_ui::depot) over `depot_panel().open`.
+        if opened && tool != ContainerTool::Depot {
+            self.controls.container_tool = Some(ContainerToolRequest {
+                generation: self.generation(),
+                tool,
+                position,
+                view,
+            });
+        }
+        opened
+    }
+
     pub(super) fn request_toolbar_map(&mut self) {
         self.controls.satellite = true;
     }
@@ -238,6 +378,59 @@ impl HostOwner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn configured_preference_utilities_reach_settings_owner()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::play::{CustomAction, UtilityAction};
+        use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers};
+        let mut owner = HostOwner::new(None)?;
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        let mut view =
+            crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        link.use_shared_frontend();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        owner.phase = crate::bevy_shell::owner::Phase::Playing;
+        let mut preferences = owner.settings.preferences.clone();
+        preferences.add_hotkey_profile("Zeta")?;
+        owner.settings.apply(preferences);
+        for action in [
+            UtilityAction::ToggleCreatureHuds,
+            UtilityAction::ToggleFpsLagIndicator,
+            UtilityAction::NextHotkeyPreset,
+        ] {
+            let before = owner.settings.preferences.clone();
+            let mut preferences = before.clone();
+            preferences.custom_hotkeys.remove("CTRL+SHIFT+F9");
+            preferences.assign_custom_hotkey("CTRL+SHIFT+F9", CustomAction::Utility { action })?;
+            owner.settings.apply(preferences);
+            owner.route_input(
+                &[NormalizedInputEvent::Key {
+                    code: KeyCode::new(66)?,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+                    repeat: false,
+                }],
+                false,
+            );
+            let after = &owner.settings.preferences;
+            match action {
+                UtilityAction::ToggleCreatureHuds => {
+                    assert_eq!(after.creature_bars, !before.creature_bars)
+                }
+                UtilityAction::ToggleFpsLagIndicator => {
+                    assert_ne!(after.performance.show_fps, before.performance.show_fps)
+                }
+                UtilityAction::NextHotkeyPreset => assert_ne!(
+                    after.hotkey_contexts.selected,
+                    before.hotkey_contexts.selected
+                ),
+                _ => return Err("unexpected utility".into()),
+            }
+            owner.route_input(&[NormalizedInputEvent::DeviceLost], false);
+        }
+        Ok(())
+    }
     use crate::play::{PlayView, play_channel};
     use oteryn_input_actions::{
         ButtonState, Modifiers, MouseButton, PointerCoordinate, PointerDelta, PointerMotion,

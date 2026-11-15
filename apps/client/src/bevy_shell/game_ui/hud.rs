@@ -40,6 +40,7 @@ struct VitalFill(bool);
 #[derive(Clone, Copy, Component)]
 enum InfoText {
     Analyser,
+    Status,
 }
 
 pub(super) fn install(app: &mut App) {
@@ -74,7 +75,7 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
         .id();
     commands.entity(regions.vitals).add_child(vitals);
     for (mana, color) in [
-        (false, Color::srgb_u8(0, 160, 0)),
+        (false, crate::bevy_shell::health_circle::health_colour(0, 0)),
         (true, Color::srgb_u8(0, 70, 180)),
     ] {
         let track = commands
@@ -125,6 +126,13 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
         commands.entity(track).add_children(&[fill, label]);
         commands.entity(vitals).add_child(track);
     }
+    let status = commands
+        .spawn((
+            InfoText::Status,
+            source::text("", source::font(skins.font.clone(), false)),
+        ))
+        .id();
+    commands.entity(regions.vitals).add_child(status);
     status_icons::setup(&mut commands, regions.vitals);
     let header = commands
         .spawn(Node {
@@ -228,7 +236,18 @@ fn activate(
         return;
     }
     match action.command {
-        Command::Attack(target) => play.link.battle_request(Action::Attack(target)),
+        Command::Attack(target) => play.link.battle_request(
+            if play
+                .link
+                .battle_panel()
+                .combat
+                .is_some_and(|combat| combat.target == Some(target))
+            {
+                Action::Stop
+            } else {
+                Action::Attack(target)
+            },
+        ),
         Command::Stop => play.link.battle_request(Action::Stop),
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
@@ -250,7 +269,7 @@ fn project(
     owner: NonSend<HostOwner>,
     mut labels: Query<(&VitalLabel, &mut Text), Without<InfoText>>,
     mut info: Query<(&InfoText, &mut Text), Without<VitalLabel>>,
-    mut fills: Query<(&VitalFill, &mut Node)>,
+    mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor)>,
     mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>)>,
     mut entered: Local<Option<u64>>,
 ) {
@@ -277,7 +296,7 @@ fn project(
             text.0 = next;
         }
     }
-    for (fill, mut node) in &mut fills {
+    for (fill, mut node, mut color) in &mut fills {
         let value = vitals.map(|v| {
             if fill.0 {
                 (v.mana, v.max_mana)
@@ -285,6 +304,10 @@ fn project(
                 (v.health, v.max_health)
             }
         });
+        if !fill.0 {
+            let (current, maximum) = value.unwrap_or((0, 0));
+            color.0 = crate::bevy_shell::health_circle::health_colour(current, maximum);
+        }
         let width = value
             .filter(|(_, max)| *max > 0)
             .map_or(0., |(current, max)| {
@@ -297,6 +320,13 @@ fn project(
     }
     for (kind, mut text) in &mut info {
         let next = match kind {
+            InfoText::Status => {
+                if owner.settings.preferences.compact_status {
+                    oteryn_client_ui::spell_action_bar::vitals_text(vitals.as_ref())
+                } else {
+                    play.view.hud_status()
+                }
+            }
             InfoText::Analyser => play.link.analyser_text().replace("\r\n", "\n"),
         };
         if text.0 != next {
@@ -330,3 +360,23 @@ fn project(
 #[cfg(test)]
 #[path = "hud/tests.rs"]
 mod tests;
+
+#[derive(Component)]
+struct VipNameLabel {
+    generation: u64,
+    entry: u64,
+}
+#[derive(Component)]
+struct VipMetadata {
+    generation: u64,
+    entry: u64,
+    description: bool,
+}
+fn vip_icon_text(icon: Option<u8>) -> &'static str {
+    const ICONS: [&str; 20] = [
+        "", "♥", "☠", "ϟ", "⊕", "★", "$", "▲", "×", "✓", "●", "◆", "♠", "♣", "♦", "♫", "☼", "☾",
+        "⚑", "!",
+    ];
+    icon.and_then(|index| ICONS.get(usize::from(index)).copied())
+        .unwrap_or("")
+}

@@ -44,28 +44,37 @@ struct State {
     wildcard: Option<Intent>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>()
-        .add_systems(Update, (keyboard, project, refresh_rerolls).chain());
+    app.init_resource::<State>().add_systems(
+        Update,
+        (
+            escape.after(crate::bevy_shell::input::route),
+            project,
+            refresh_rerolls,
+        )
+            .chain(),
+    );
 }
-fn keyboard(
-    keys: Option<Res<ButtonInput<KeyCode>>>,
-    guard: ModalGuard,
+fn escape(
     owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut state: ResMut<State>,
 ) {
-    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+    if !keys
+        .as_ref()
+        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
         || owner.modal_active()
         || !state.root.is_some_and(|root| guard.allows(root))
         || !state
             .seen
             .as_ref()
-            .is_some_and(|(generation, _, _, _)| *generation == owner.generation())
+            .is_some_and(|seen| seen.0 == owner.generation())
     {
         return;
     }
-    if let Some(play) = &owner.play {
-        state.confirmation = None;
-        state.wildcard = None;
+    // A pending slot or wildcard confirmation is cancelled first; otherwise the window closes.
+    let pending = state.confirmation.take().is_some() | state.wildcard.take().is_some();
+    if !pending && let Some(play) = &owner.play {
         play.link.prey_set_open(false);
     }
 }
@@ -326,6 +335,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("prey", 0),
         ))
         .id();
     label(&mut commands, &skin, root, "Prey Creatures");

@@ -276,6 +276,8 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
                 party: Some(Box::new(target)),
                 inspection: None,
                 report: None,
+                trade: None,
+                browse: None,
             },
         );
     }
@@ -377,5 +379,50 @@ fn rule_violation_shortcut_respects_text_focus() -> Result {
             .player_report_panel()
             .open
     );
+    Ok(())
+}
+
+#[test]
+fn player_context_starts_fresh_trade_picker() -> Result {
+    let (mut app, mut commands, events) = app()?;
+    events.bevy_trade_initialize(None);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Trade with")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.player_trade_panel();
+    assert!(panel.open);
+    assert_eq!(panel.partner, Some(player().entity));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn world_browse_field_choice_retains_native_tile_and_session() -> Result {
+    let (mut app, _commands, events) = app()?;
+    events.bevy_browse_field_supported();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(TileCoord::new(100, 100), 0, &[])?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Browse Field")?;
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    let request = owner
+        .take_container_tool_request()
+        .ok_or("browse request")?;
+    assert_eq!(
+        request.tool,
+        crate::bevy_shell::controls::ContainerTool::BrowseField
+    );
+    assert_eq!(request.position, Some((101, 100, 0)));
+    assert_eq!(request.generation, owner.generation());
     Ok(())
 }

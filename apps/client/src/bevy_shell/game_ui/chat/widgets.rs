@@ -52,9 +52,9 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
             },
         ))
         .id();
-    let text = commands
+    let transcript = commands
         .spawn((
-            Transcript,
+            TranscriptRoot,
             Node {
                 width: percent(100.),
                 flex_direction: FlexDirection::Column,
@@ -62,7 +62,17 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
             },
         ))
         .id();
-    commands.entity(history).add_child(text);
+    let text = message_row(
+        &mut commands,
+        &skins,
+        0,
+        &RenderedRow {
+            text: String::new(),
+            line: None,
+        },
+    );
+    commands.entity(transcript).add_child(text);
+    commands.entity(history).add_child(transcript);
     let compose = commands
         .spawn(Node {
             width: percent(100.),
@@ -141,6 +151,7 @@ pub(super) fn text_input(
     commands
         .spawn((
             field,
+            crate::bevy_shell::input::ChatComposer,
             TextInput,
             EditableText {
                 max_characters: Some(limit),
@@ -305,6 +316,7 @@ pub(super) fn message_row(
 ) -> Entity {
     commands
         .spawn((
+            Transcript,
             MessageRow {
                 generation,
                 row: row.clone(),
@@ -313,13 +325,17 @@ pub(super) fn message_row(
             EditableText::new(&row.text),
             bevy::text::TextReadWriteMode::ReadOnly,
             TextCursorStyle::default(),
-            source::font(skins.font.clone(), false),
-            TextColor(speech_color(row.line.as_ref())),
+            source::text(&row.text, source::font(skins.font.clone(), false)),
             Node {
                 width: percent(100.),
+                flex_shrink: 0.,
                 min_height: px(16.),
                 ..default()
             },
+        ))
+        .insert((
+            Pickable::default(),
+            TextColor(speech_color(row.line.as_ref())),
         ))
         .observe(message_menu)
         .id()
@@ -327,7 +343,10 @@ pub(super) fn message_row(
 fn speech_color(line: Option<&oteryn_session::ChatLine>) -> Color {
     use oteryn_session::{ChatLine, ChatRoom, ChatSpeechMode};
     match line {
-        Some(ChatLine::Private { .. }) => Color::srgb_u8(95, 247, 247),
+        Some(ChatLine::Private { .. } | ChatLine::PrivateChannel(_)) => {
+            Color::srgb_u8(95, 195, 195)
+        }
+        Some(ChatLine::Guild(_)) => Color::srgb_u8(255, 165, 0),
         Some(ChatLine::Local {
             mode: ChatSpeechMode::MonsterSay,
             ..
@@ -336,13 +355,9 @@ fn speech_color(line: Option<&oteryn_session::ChatLine>) -> Color {
             room: ChatRoom::Gamemaster,
             ..
         }) => Color::srgb_u8(250, 96, 96),
-        Some(
-            ChatLine::Local { .. }
-            | ChatLine::Room { .. }
-            | ChatLine::Guild(_)
-            | ChatLine::Party { .. }
-            | ChatLine::PrivateChannel(_),
-        ) => Color::srgb_u8(255, 255, 0),
+        Some(ChatLine::Local { .. } | ChatLine::Room { .. } | ChatLine::Party { .. }) => {
+            Color::srgb_u8(255, 255, 0)
+        }
         _ => source::TEXT_COLOR,
     }
 }

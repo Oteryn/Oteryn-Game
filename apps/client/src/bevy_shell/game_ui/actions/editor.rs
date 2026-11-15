@@ -29,79 +29,12 @@ impl EditorState {
         self.selected.is_some()
     }
     pub(super) fn open(&mut self, slot: usize, generation: u64) {
-        self.selected = Some((slot, generation));
         self.pending = None;
+        self.selected = Some((slot, generation));
         self.message.clear();
         self.page = 0;
         self.catalog_key = None;
     }
-}
-struct Pending {
-    selected: (usize, u64),
-    entity: Entity,
-    action: Edit,
-}
-fn editing(fields: &Query<(&Field, &EditableText)>) -> bool {
-    fields.iter().any(|(_, text)| {
-        text.pending_paste.is_some()
-            || text
-                .pending_edits
-                .iter()
-                .any(bevy::text::TextEdit::is_destructive)
-    })
-}
-fn finish_assignment(
-    fields: Query<(&Field, &EditableText)>,
-    owner: NonSend<HostOwner>,
-    mut state: ResMut<EditorState>,
-    guard: ModalGuard,
-) {
-    let Some(pending) = &state.pending else {
-        return;
-    };
-    if state.selected != Some(pending.selected)
-        || pending.selected.1 != owner.generation()
-        || owner.modal_active()
-        || !guard.allows(pending.entity)
-        || owner.play.is_none()
-    {
-        state.pending = None;
-        return;
-    }
-    if editing(&fields) {
-        return;
-    }
-    let Some(pending) = state.pending.take() else {
-        return;
-    };
-    if let Some(play) = &owner.play {
-        save(
-            &play.link,
-            &mut state,
-            pending.selected.0,
-            pending.action,
-            &fields,
-        );
-    }
-}
-fn save(
-    link: &crate::play::PlayLink,
-    state: &mut EditorState,
-    slot: usize,
-    action: Edit,
-    fields: &Query<(&Field, &EditableText)>,
-) {
-    let mut values: [String; 5] = Default::default();
-    for (field, text) in fields {
-        if let Some(value) = values.get_mut(field.0) {
-            *value = text.value().to_string();
-        }
-    }
-    state.message = if apply(link, slot, action, &values) {
-        "Saved action assignment".into()
-    } else {
-        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
-    };
 }
 #[derive(Component)]
 pub(super) struct EditorRoot;
@@ -111,7 +44,7 @@ pub(super) struct Field(usize);
 pub(super) struct Description;
 #[derive(Component)]
 pub(super) struct Feedback;
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 enum Edit {
     PreviousSpells,
     NextSpells,
@@ -132,6 +65,21 @@ enum Edit {
     Key,
     Clear,
     Close,
+}
+
+struct Pending {
+    selected: (usize, u64),
+    anchor: Entity,
+    action: Edit,
+    fields: Vec<(Entity, usize)>,
+    assignment: String,
+}
+fn editing(text: &EditableText) -> bool {
+    text.pending_paste.is_some()
+        || text
+            .pending_edits
+            .iter()
+            .any(bevy::text::TextEdit::is_destructive)
 }
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
@@ -315,7 +263,7 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     edits: Query<&Edit>,
-    fields: Query<(&Field, &EditableText)>,
+    fields: Query<(Entity, &Field, &EditableText)>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<EditorState>,
     mut focus: ResMut<InputFocus>,
@@ -334,6 +282,7 @@ fn activate(
     }
     if matches!(action, Edit::Close) {
         state.selected = None;
+        state.pending = None;
         focus.clear();
         return;
     }
@@ -351,18 +300,34 @@ fn activate(
         }
         _ => {}
     }
-    if state.pending.is_some() {
-        return;
-    }
-    if editing(&fields) {
+    state.pending = None;
+    if fields.iter().any(|(_, _, text)| editing(text)) {
+        let Some(assignment) = play.link.spell_slot_labels().get(slot).cloned() else {
+            return;
+        };
         state.pending = Some(Pending {
             selected: (slot, generation),
-            entity: event.entity,
+            anchor: event.entity,
             action: *action,
+            fields: fields
+                .iter()
+                .map(|(entity, field, _)| (entity, field.0))
+                .collect(),
+            assignment,
         });
-    } else {
-        save(&play.link, &mut state, slot, *action, &fields);
+        return;
     }
+    let mut values: [String; 5] = Default::default();
+    for (_, field, text) in &fields {
+        if let Some(value) = values.get_mut(field.0) {
+            *value = text.value().to_string();
+        }
+    }
+    state.message = if apply(&play.link, slot, *action, &values) {
+        "Saved action assignment".into()
+    } else {
+        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
+    };
 }
 
 fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[String]) -> bool {
@@ -464,6 +429,7 @@ pub(super) fn project(
                 .is_some_and(|(_, generation)| generation != owner.generation()))
     {
         state.selected = None;
+        state.pending = None;
         focus.clear();
     }
     for mut node in &mut root {
@@ -477,6 +443,7 @@ pub(super) fn project(
         }
     }
     if state.rendered != state.selected {
+        state.pending = None;
         if let Some((slot, _)) = state.selected {
             let mut values: [String; 5] = Default::default();
             values[3] = owner
@@ -552,14 +519,64 @@ fn keyboard(
         && roots.iter().any(|entity| guard.allows(entity))
     {
         state.selected = None;
+        state.pending = None;
         focus.clear();
     }
 }
+fn finish(
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut state: ResMut<EditorState>,
+    fields: Query<(&Field, &EditableText)>,
+    actions: Query<&Edit>,
+) {
+    let Some(pending) = state.pending.take() else {
+        return;
+    };
+    if owner.modal_active()
+        || owner.generation() != pending.selected.1
+        || state.selected != Some(pending.selected)
+        || !guard.allows(pending.anchor)
+        || !actions
+            .get(pending.anchor)
+            .is_ok_and(|action| *action == pending.action)
+    {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.link.server_modal_active()
+        || play.link.spell_slot_labels().get(pending.selected.0) != Some(&pending.assignment)
+    {
+        return;
+    }
+    let mut values: [String; 5] = Default::default();
+    let mut waiting = false;
+    for &(entity, index) in &pending.fields {
+        let Ok((field, text)) = fields.get(entity) else {
+            return;
+        };
+        if field.0 != index {
+            return;
+        }
+        waiting |= editing(text);
+        if let Some(value) = values.get_mut(index) {
+            *value = text.value().to_string();
+        }
+    }
+    if waiting {
+        state.pending = Some(pending);
+        return;
+    }
+    state.message = if apply(&play.link, pending.selected.0, pending.action, &values) {
+        "Saved action assignment".into()
+    } else {
+        "Choose a valid live spell, carried item, text or unused keyboard chord.".into()
+    };
+}
 pub(super) fn install(app: &mut App) {
-    app.add_systems(
-        PostUpdate,
-        finish_assignment.after(bevy::text::EditableTextSystems),
-    );
     app.add_systems(Update, keyboard.before(project));
+    app.add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
     app.add_systems(Update, catalog::project.after(project));
 }

@@ -236,3 +236,203 @@ fn inventory_modal_blocks_prior_battle_focus_enter_and_direct_activation() -> Te
     }
     Ok(())
 }
+
+#[test]
+fn activating_current_battle_target_stops_attacking() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_hud_target(row(7).entity);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .battle_panel()
+            .combat
+            .and_then(|combat| combat.target),
+        Some(row(7).entity)
+    );
+    let button = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle target")?;
+    app.world_mut().trigger(Activate { entity: button });
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Battle(CombatCommand::Stop)
+    );
+    Ok(())
+}
+
+#[test]
+fn secondary_battle_click_opens_retained_creature_context() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, false, false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
+        .with_entities(vec![row(7)])?;
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(app.world().non_send::<HostOwner>().dialogs.active());
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn shift_battle_click_looks_without_attacking() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, false, false);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
+        .with_entities(vec![row(7)])?;
+    app.init_resource::<ButtonInput<KeyCode>>();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ShiftLeft);
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &HudAction)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| matches!(action.command, Command::Attack(_)).then_some(entity))
+        .ok_or("battle row")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::WorldContext(command)
+        if command.action == oteryn_client_ui::world_interaction::menu::Action::Look)
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn battle_and_player_health_use_percentage_colours() -> TestResult {
+    let (mut app, _commands, outbox) = app()?;
+    for (percent, rgb) in [
+        (100, [0, 188, 0]),
+        (92, [80, 161, 80]),
+        (60, [161, 161, 0]),
+        (30, [191, 10, 10]),
+        (8, [145, 15, 15]),
+        (3, [133, 12, 12]),
+    ] {
+        let mut enemy = row(7);
+        if let EntityDetail::Actor { health_percent, .. } = &mut enemy.detail {
+            *health_percent = percent;
+        }
+        outbox.bevy_hud_fixture(
+            &[enemy],
+            Some(ActorVitals {
+                health: u32::from(percent),
+                max_health: 100,
+                mana: 10,
+                max_mana: 20,
+                ..default()
+            }),
+        );
+        app.update();
+        let expected = Color::srgb_u8(rgb[0], rgb[1], rgb[2]);
+        assert_eq!(
+            app.world_mut()
+                .query::<(&battle::HealthFill, &BackgroundColor)>()
+                .iter(app.world())
+                .map(|(_, color)| color.0)
+                .collect::<Vec<_>>(),
+            vec![expected]
+        );
+        assert_eq!(
+            app.world_mut()
+                .query::<(&VitalFill, &BackgroundColor)>()
+                .iter(app.world())
+                .filter(|(fill, _)| !fill.0)
+                .map(|(_, color)| color.0)
+                .collect::<Vec<_>>(),
+            vec![expected]
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn compact_status_projects_the_settings_owner() -> TestResult {
+    let (mut app, _, _) = app()?;
+    for compact in [false, true] {
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .settings
+            .preferences
+            .compact_status = compact;
+        app.update();
+        let owner = app.world().non_send::<HostOwner>();
+        let play = owner.play.as_ref().ok_or("play")?;
+        let expected = if compact {
+            oteryn_client_ui::spell_action_bar::vitals_text(play.link.actor_vitals().as_ref())
+        } else {
+            play.view.hud_status()
+        };
+        assert!(
+            app.world_mut()
+                .query::<(&InfoText, &Text)>()
+                .iter(app.world())
+                .any(|(_, text)| text.0 == expected)
+        );
+    }
+    Ok(())
+}

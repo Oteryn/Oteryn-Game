@@ -190,7 +190,24 @@ fn unlocking_and_selecting_slot_opens_shared_editor_without_casting() -> TestRes
             .locked
     );
     let first = slot(&mut app, 0)?;
-    app.world_mut().trigger(Activate { entity: first });
+    // Editing is an explicit secondary click; ordinary activation still executes.
+    app.world_mut().trigger(PointerClick {
+        entity: first,
+        pointer: bevy::picking::events::Pointer::new(
+            bevy::picking::pointer::PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: bevy::picking::pointer::PointerButton::Secondary,
+        hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
     app.update();
     assert!(app.world().resource::<editor::EditorState>().active());
     assert!(commands.try_recv().is_err());
@@ -376,6 +393,30 @@ fn inventory_modal_blocks_prior_action_slot_focus_enter_and_direct_activation() 
             "background cast escaped the local modal fence"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn unlocked_action_slot_still_executes_ordinary_activation() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let entity = slot(&mut app, 0)?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_gesture(BarGesture::Configure {
+            bar: 0,
+            dock: crate::play::BarDock::Bottom,
+            enabled: true,
+            locked: false,
+        });
+    app.world_mut().trigger(Activate { entity });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    assert!(!app.world().resource::<editor::EditorState>().active());
     Ok(())
 }
 

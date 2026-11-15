@@ -315,7 +315,11 @@ pub(super) fn project(
                     },
                     label,
                     45.,
-                    "vip.menu.action",
+                    if matches!(command, Action::Message(_)) {
+                        "vip.message"
+                    } else {
+                        "vip.menu.action"
+                    },
                 );
                 commands.entity(root).add_child(entity);
             }

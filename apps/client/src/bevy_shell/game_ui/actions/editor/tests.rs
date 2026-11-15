@@ -140,6 +140,163 @@ fn escape_belongs_to_top_server_dialog_before_action_editor() -> TestResult {
 }
 
 #[test]
+fn action_assignment_waits_for_queued_editor_changes() -> TestResult {
+    let (link, _commands, _outbox) = crate::play::play_channel();
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    owner.phase = crate::bevy_shell::owner::Phase::Playing;
+    let generation = owner.generation();
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        bevy::input::InputPlugin,
+        bevy::input_focus::InputDispatchPlugin,
+        bevy::window::WindowPlugin::default(),
+        bevy::text::TextPlugin,
+        bevy::ui_widgets::TextInputPlugin,
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_resource::<EditorState>()
+    .init_resource::<InputFocus>()
+    .init_resource::<UiScale>()
+    .init_resource::<bevy::text::RemSize>()
+    .init_resource::<bevy::picking::events::PointerState>()
+    .add_message::<bevy::picking::events::PointerRelease>()
+    .insert_non_send(owner)
+    .add_systems(
+        Startup,
+        (
+            crate::bevy_shell::ui::setup,
+            |mut skins: ResMut<Skins>, mut fonts: ResMut<Assets<Font>>| {
+                skins.font = fonts.add(Font::from_bytes(
+                    include_bytes!(concat!(
+                        env!("CARGO_MANIFEST_DIR"),
+                        "/tests/assets/FiraMono-subset.ttf"
+                    ))
+                    .to_vec(),
+                ));
+            },
+            setup,
+        )
+            .chain(),
+    )
+    .add_systems(Update, project)
+    .add_systems(PostUpdate, bevy::ui::widget::update_editable_text_styles);
+    install(&mut app);
+    super::super::super::modal::install(&mut app);
+    app.update();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    set(&mut app, 2, "hello");
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 2 {
+            text.queue_edit(bevy::text::TextEdit::TextEnd(false));
+            text.queue_edit(bevy::text::TextEdit::Insert(" world".into()));
+        }
+    }
+    let save = control(&mut app, |edit| matches!(edit, Edit::Text))?;
+    app.world_mut().trigger(Activate { entity: save });
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("hello"),
+        "queued input must finish before assignment"
+    );
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("hello world")
+    );
+    let editor = app
+        .world_mut()
+        .query::<(Entity, &Field)>()
+        .iter(app.world())
+        .find_map(|(entity, field)| (field.0 == 2).then_some(entity))
+        .ok_or("text field")?;
+    let clipboard = std::sync::Arc::new(std::sync::Mutex::new(None));
+    {
+        let mut text = app
+            .world_mut()
+            .get_mut::<EditableText>(editor)
+            .ok_or("editor")?;
+        text.queue_edit(bevy::text::TextEdit::SelectAll);
+        text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(
+            std::sync::Arc::clone(&clipboard),
+        ));
+    }
+    app.world_mut().trigger(Activate { entity: save });
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("hello world")
+    );
+    *clipboard.lock().map_err(|_| "clipboard")? = Some(Ok("pasted text".into()));
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("pasted text")
+    );
+    let clipboard = std::sync::Arc::new(std::sync::Mutex::new(None));
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .ok_or("editor")?
+        .pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(
+        std::sync::Arc::clone(&clipboard),
+    ));
+    app.world_mut().trigger(Activate { entity: save });
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(1, generation);
+    *clipboard.lock().map_err(|_| "clipboard")? = Some(Ok("stale paste".into()));
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spell_slot_labels()[0]
+            .contains("pasted text")
+    );
+    Ok(())
+}
+
+#[test]
 fn use_button_saves_subtype_and_activates_direct_item_use() -> TestResult {
     use crate::play::{BarAction, ItemUseMode, PlayLink, SettingsState, play_channel};
     let (mut app, _) = super::super::tests::fixture()?;

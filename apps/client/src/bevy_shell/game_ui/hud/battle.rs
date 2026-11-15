@@ -15,6 +15,100 @@ pub(super) struct HealthFill(EntityRef);
 pub(super) struct TargetFrame(EntityRef);
 #[derive(Component)]
 pub(super) struct Feedback;
+fn keyboard(
+    mut event: On<bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>>,
+    disabled: Query<Has<InteractionDisabled>>,
+    mut commands: Commands,
+) {
+    if disabled
+        .get(event.focused_entity)
+        .is_ok_and(|disabled| !disabled)
+        && !event.input.repeat
+        && event.input.state == bevy::input::ButtonState::Pressed
+        && matches!(event.input.key_code, KeyCode::Enter | KeyCode::Space)
+    {
+        event.propagate(false);
+        commands.trigger(Activate {
+            entity: event.focused_entity,
+        });
+    }
+}
+fn click(
+    event: On<PointerClick>,
+    guard: ModalGuard,
+    actions: Query<(&HudAction, Has<InteractionDisabled>)>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    mut owner: NonSendMut<HostOwner>,
+    mut commands: Commands,
+) {
+    use bevy::picking::pointer::PointerButton;
+    let Ok((action, disabled)) = actions.get(event.entity) else {
+        return;
+    };
+    if disabled
+        || !guard.allows(event.entity)
+        || owner.modal_active()
+        || action.generation != owner.generation()
+    {
+        return;
+    }
+    let Command::Attack(target) = action.command else {
+        return;
+    };
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
+    let preferences = &owner.settings.preferences;
+    let swapped = (preferences.controls.mouse == crate::play::MousePreset::LeftHanded)
+        ^ preferences.swap_mouse_buttons;
+    let primary = if swapped {
+        PointerButton::Secondary
+    } else {
+        PointerButton::Primary
+    };
+    let shift = keys
+        .as_ref()
+        .is_some_and(|keys| keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]));
+    if event.button == primary && !shift {
+        commands.trigger(Activate {
+            entity: event.entity,
+        });
+        return;
+    }
+    if !matches!(
+        event.button,
+        PointerButton::Primary | PointerButton::Secondary
+    ) {
+        return;
+    }
+    let Some(position) = play
+        .link
+        .filtered_battle_rows(play.link.active_battle_list())
+        .iter()
+        .find(|row| row.entity == target)
+        .map(|row| row.position)
+    else {
+        return;
+    };
+    let tile = oteryn_renderer::TileCoord::new(position.x, position.y);
+    let Some(menu) = play.view.world_context(tile, &play.link).filter(|menu| {
+        menu.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target)
+    }) else {
+        return;
+    };
+    if event.button == primary {
+        play.view.world_context_choose(
+            &play.link,
+            &menu,
+            oteryn_client_ui::world_interaction::menu::Action::Look,
+        );
+    } else {
+        owner.request_world_context(tile);
+    }
+}
 fn name(row: &WorldSpatialEntity) -> String {
     row.display_name
         .as_ref()
@@ -94,7 +188,8 @@ pub(super) fn project(
             if node.width != width {
                 node.width = width;
             }
-            let next = Color::srgb_u8(0, 128, 0);
+            let next =
+                crate::bevy_shell::health_circle::health_colour(u32::from(percent_health), 100);
             if color.0 != next {
                 color.0 = next;
             }
@@ -204,7 +299,7 @@ pub(super) fn project(
     for row in &rows {
         let entry = commands
             .spawn((
-                bevy::ui_widgets::Button,
+                Pickable::default(),
                 bevy::input_focus::tab_navigation::TabIndex(0),
                 HudAction {
                     generation,
@@ -218,6 +313,8 @@ pub(super) fn project(
                     ..default()
                 },
             ))
+            .observe(click)
+            .observe(keyboard)
             .id();
         if disabled {
             commands.entity(entry).insert(InteractionDisabled);
@@ -281,7 +378,10 @@ pub(super) fn project(
                     height: percent(100.),
                     ..default()
                 },
-                BackgroundColor(Color::srgb_u8(0, 128, 0)),
+                BackgroundColor(crate::bevy_shell::health_circle::health_colour(
+                    u32::from(health),
+                    100,
+                )),
                 Pickable::IGNORE,
             ))
             .id();

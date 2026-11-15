@@ -467,6 +467,11 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
 // Bevy caller tests feed the existing mailbox owner through test-only publication.
 #[cfg(feature = "bevy-shell")]
 impl crate::play::Outbox {
+    pub(crate) fn bevy_hud_target(&self, target: oteryn_session::EntityRef) {
+        if let Some(combat) = &mut crate::play::mailbox::lock(&self.0).battle.combat {
+            combat.target = Some(target);
+        }
+    }
     pub(crate) fn bevy_hud_fixture(
         &self,
         rows: &[oteryn_session::WorldSpatialEntity],

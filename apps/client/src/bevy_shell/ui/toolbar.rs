@@ -75,23 +75,26 @@ pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Contro
         Control::Panel(id) => {
             if let Some(play) = &owner.play {
                 let mut preferences = owner.settings.preferences.clone();
-                if id == "bosstiary" && preferences.panel_visible(id) {
+                let visible =
+                    preferences.panel_visible(id) || id == "vip" && play.link.vip_is_open();
+                if visible {
                     preferences.visible_panels.retain(|panel| panel != id);
-                    owner.settings.apply(preferences);
-                    return true;
-                }
-                if !preferences.panel_visible(id) {
+                } else {
                     preferences.visible_panels.push(id.into());
-                    owner.settings.apply(preferences);
                 }
-                if id == "bosstiary" {
+                owner.settings.apply(preferences);
+                if id == "bosstiary" && !visible {
                     play.link.boss_encounter_request(
                         oteryn_client_ui::boss_encounter::Intent::Catalogue,
                     );
                 }
                 if id == "vip" {
-                    play.link
-                        .vip_request(oteryn_client_ui::vip::Intent::Query(0));
+                    if visible {
+                        play.link.vip_close();
+                    } else {
+                        play.link
+                            .vip_request(oteryn_client_ui::vip::Intent::Query(0));
+                    }
                 }
             }
         }
@@ -273,6 +276,39 @@ mod bestiary_tests {
                 .charm_progression_panel()
                 .open
         );
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn sidebar_toolbar_buttons_toggle_the_settings_owner() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut owner = HostOwner::new(None)?;
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        });
+        for id in ["battle", "chat", "inventory", "minimap", "vip"] {
+            let mut preferences = owner.settings.preferences.clone();
+            if !preferences.panel_visible(id) {
+                preferences.visible_panels.push(id.into());
+            }
+            owner.settings.apply(preferences);
+            assert!(open_toolbar(&mut owner, Control::Panel(id)));
+            assert!(
+                !owner.settings.preferences.panel_visible(id),
+                "{id} must close"
+            );
+            assert!(open_toolbar(&mut owner, Control::Panel(id)));
+            assert!(
+                owner.settings.preferences.panel_visible(id),
+                "{id} must reopen"
+            );
+        }
         Ok(())
     }
 }

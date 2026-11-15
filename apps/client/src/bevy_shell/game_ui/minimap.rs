@@ -11,6 +11,14 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 pub(in crate::bevy_shell) const SIZE: UVec2 = UVec2::new(124, 100);
+// The sidebar atlas uses the builtin six-level RGB palette (r * 36 + g * 6 + b).
+pub(super) fn palette_color(index: u8) -> Color {
+    Color::srgb_u8(
+        (index / 36 % 6) * 51,
+        (index / 6 % 6) * 51,
+        (index % 6) * 51,
+    )
+}
 #[derive(Resource)]
 struct State {
     image: Handle<Image>,
@@ -275,67 +283,5 @@ fn camera_label(owner: NonSend<HostOwner>, mut labels: Query<&mut Text, With<Cam
         if text.0 != label {
             text.0.clone_from(&label);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::{
-        input_focus::{FocusCause, InputFocus},
-        picking::{
-            backend::HitData,
-            events::Pointer,
-            pointer::{Location, PointerButton, PointerId},
-        },
-    };
-    #[test]
-    fn minimap_click_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
-        let mut host = HostOwner::new(None)?;
-        let (link, _, _) = crate::play::play_channel();
-        host.play = Some(crate::bevy_shell::owner::ActivePlay {
-            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
-        let generation = host.generation();
-        let mut app = App::new();
-        app.insert_non_send(host).init_resource::<InputFocus>();
-        let image = app
-            .world_mut()
-            .spawn((
-                MiniImage(generation),
-                RelativeCursorPosition {
-                    normalized: Some(Vec2::splat(0.5)),
-                    ..default()
-                },
-                Node::default(),
-            ))
-            .observe(click)
-            .id();
-        let focused = app.world_mut().spawn_empty().id();
-        app.world_mut()
-            .resource_mut::<InputFocus>()
-            .set(focused, FocusCause::Navigated);
-        app.world_mut()
-            .spawn((super::super::GameModal, Node::default(), GlobalZIndex(999)));
-        app.world_mut().trigger(PointerClick {
-            entity: image,
-            pointer: Pointer::new(
-                PointerId::Mouse,
-                Location {
-                    target: bevy::camera::NormalizedRenderTarget::None {
-                        width: 100,
-                        height: 100,
-                    },
-                    position: Vec2::ZERO,
-                },
-            ),
-            button: PointerButton::Primary,
-            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
-            duration: std::time::Duration::ZERO,
-            count: 1,
-        });
-        assert_eq!(app.world().resource::<InputFocus>().get(), Some(focused));
-        Ok(())
     }
 }

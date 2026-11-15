@@ -166,6 +166,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
                     ..default()
                 })
                 .observe(activate)
+                .observe(edit_click)
                 .observe(dragdrop::drop_slot)
                 .id();
             let caption = commands
@@ -253,7 +254,7 @@ fn activate(
     guard: ModalGuard,
     controls: Query<(&ActionControl, &Generation)>,
     owner: NonSend<HostOwner>,
-    mut editor: ResMut<editor::EditorState>,
+    editor: Res<editor::EditorState>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -276,13 +277,13 @@ fn activate(
             if !row.enabled || slot % ROW_SLOTS >= usize::from(row.count) {
                 return;
             }
-            if row.locked {
-                if play.view.gameplay_input_blocked(&play.link) {
-                    return;
-                }
-                play.link.bar_gesture(BarGesture::Cast { slot });
-            } else {
-                editor.open(slot, owner.generation());
+            if play.view.gameplay_input_blocked(&play.link) {
+                return;
+            }
+            if let Ok(slot) = u32::try_from(slot + 1)
+                && let Some(slot) = std::num::NonZeroU32::new(slot)
+            {
+                play.link.cast_spell_slot(slot);
             }
         }
         ActionControl::Toggle(bar) | ActionControl::Lock(bar) => {
@@ -307,5 +308,37 @@ fn activate(
         ActionControl::Scroll(bar, by) => {
             play.link.bar_gesture(BarGesture::Scroll { bar, by });
         }
+    }
+}
+
+fn edit_click(
+    event: On<PointerClick>,
+    guard: ModalGuard,
+    controls: Query<(&ActionControl, &Generation)>,
+    owner: NonSend<HostOwner>,
+    mut editor: ResMut<editor::EditorState>,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Secondary
+        || !guard.allows(event.entity)
+        || owner.modal_active()
+    {
+        return;
+    }
+    let Ok((ActionControl::Slot(slot), generation)) = controls.get(event.entity) else {
+        return;
+    };
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if generation.0 == owner.generation()
+        && !play.view.gameplay_input_blocked(&play.link)
+        && play
+            .link
+            .bar_layout()
+            .rows
+            .get(*slot / ROW_SLOTS)
+            .is_some_and(|row| row.enabled && !row.locked)
+    {
+        editor.open(*slot, owner.generation());
     }
 }

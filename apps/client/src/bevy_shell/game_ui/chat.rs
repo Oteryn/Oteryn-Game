@@ -162,6 +162,8 @@ struct Tabs;
 #[derive(Component)]
 struct Transcript;
 #[derive(Component)]
+struct TranscriptRoot;
+#[derive(Component)]
 struct HistoryScroll;
 #[derive(Component)]
 struct ModeButton;
@@ -212,7 +214,7 @@ fn set_text(text: &mut EditableText, value: &str) {
 fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
     mut focus: ResMut<InputFocus>,
-    mut fields: Query<(Entity, &Field, &mut EditableText)>,
+    mut fields: Query<(Entity, &Field, &mut EditableText), Without<Transcript>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<ChatState>,
     guard: ModalGuard,
@@ -305,9 +307,9 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<ChatState>,
     mut previous: Local<Option<oteryn_client_ui::chat::ChatPanel>>,
-    mut fields: Query<(Entity, &Field, &mut EditableText)>,
+    mut fields: Query<(Entity, &Field, &mut EditableText), Without<Transcript>>,
     mut focus: ResMut<InputFocus>,
-    transcripts: Query<Entity, With<Transcript>>,
+    transcripts: Query<Entity, With<TranscriptRoot>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
     chat_mode_buttons: Query<&Children, With<ChatModeButton>>,

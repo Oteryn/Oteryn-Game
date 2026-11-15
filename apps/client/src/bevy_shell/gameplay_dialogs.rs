@@ -29,6 +29,8 @@ enum Content {
         party: Option<Box<party::Target>>,
         inspection: Option<(TileCoord, oteryn_session::EntityRef)>,
         report: Option<Box<rule_violation::Target>>,
+        trade: Option<(TileCoord, oteryn_session::EntityRef)>,
+        browse: Option<(TileCoord, i16)>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -40,6 +42,8 @@ enum Choice {
     Invite,
     Party,
     Report,
+    Trade,
+    Browse,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -77,8 +81,34 @@ impl HostOwner {
         let party = party::context(self, tile).map(Box::new);
         let report = rule_violation::context(self, tile).map(Box::new);
         let inspection = item_details::player_context(self, tile).map(|entity| (tile, entity));
+        let trade = self
+            .play
+            .as_ref()
+            .filter(|play| {
+                let panel = play.link.player_trade_panel();
+                panel.selected
+                    && !panel.pending
+                    && !panel.items.pending
+                    && crate::play::feature_0060_player_trade::view::trade_phase(&panel)
+                        == crate::play::feature_0060_player_trade::view::TradePhase::Inactive
+            })
+            .and_then(|play| play.view.player_trade_context_target(tile))
+            .map(|entity| (tile, entity));
+        let browse = self
+            .play
+            .as_ref()
+            .filter(|play| {
+                let panel = play.link.browse_field_panel();
+                panel.selected && !panel.pending
+            })
+            .map(|play| (tile, play.view.satellite_player().2));
         if self.phase == Phase::Playing
-            && (menu.is_some() || party.is_some() || report.is_some() || inspection.is_some())
+            && (menu.is_some()
+                || party.is_some()
+                || report.is_some()
+                || inspection.is_some()
+                || trade.is_some()
+                || browse.is_some())
         {
             self.dialogs.open(
                 self.generation(),
@@ -87,6 +117,8 @@ impl HostOwner {
                     party,
                     inspection,
                     report,
+                    trade,
+                    browse,
                 },
             );
         }
@@ -118,6 +150,33 @@ impl HostOwner {
                 },
                 Choice::Inspect,
             ) => item_details::inspect_player(self, tile, entity),
+            (
+                Content::Context {
+                    trade: Some((tile, target)),
+                    ..
+                },
+                Choice::Trade,
+            ) => {
+                if self.modal_active() {
+                    return false;
+                }
+                self.play.as_ref().is_some_and(|play| {
+                    !play.view.gameplay_input_blocked(&play.link)
+                        && play.view.player_trade_context_target(tile) == Some(target)
+                        && play.link.player_trade_choose_partner(target)
+                })
+            }
+            (
+                Content::Context {
+                    browse: Some((tile, floor)),
+                    ..
+                },
+                Choice::Browse,
+            ) => self.request_container_tool(
+                super::controls::ContainerTool::BrowseField,
+                Some((tile.x, tile.y, floor)),
+                None,
+            ),
             (_, Choice::Cancel) => true,
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
@@ -325,7 +384,29 @@ fn project(
             party,
             inspection,
             report,
+            trade,
+            browse,
         } => {
+            if browse.is_some() {
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Browse Field",
+                    Choice::Browse,
+                );
+            }
+            if trade.is_some() {
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Trade with",
+                    Choice::Trade,
+                );
+            }
             if report.is_some() {
                 button(
                     &mut commands,
@@ -429,96 +510,7 @@ fn button(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::play::{PlayView, play_channel};
-    type Result = std::result::Result<(), Box<dyn std::error::Error>>;
-
-    #[test]
-    fn shared_logout_cancel_duplicate_and_stale_confirm_reach_existing_queue() -> Result {
-        // Test-only play fixture; shipping admission still comes exclusively from Reentry.
-        let mut host = HostOwner::new(None)?;
-        let (link, mut commands, _events) = play_channel();
-        host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
-        host.phase = Phase::Playing;
-        host.request_logout_confirmation();
-        let first = host.dialogs.pending.as_ref().ok_or("confirmation")?.id;
-        assert!(host.choose_dialog(first, Choice::Cancel));
-        assert!(!host.dialogs.active());
-        assert!(commands.try_recv().is_err());
-        host.request_logout_confirmation();
-        let second = host
-            .dialogs
-            .pending
-            .as_ref()
-            .ok_or("second confirmation")?
-            .id;
-        assert!(!host.choose_dialog(first, Choice::Logout));
-        assert!(
-            host.dialogs.active(),
-            "late click must not dismiss a newer dialog"
-        );
-        assert!(host.choose_dialog(second, Choice::Logout));
-        assert!(!host.choose_dialog(second, Choice::Logout));
-        let play = host.play.as_mut().ok_or("play")?;
-        play.view
-            .tick(&play.link)
-            .map_err(|end| format!("unexpected end {end:?}"))?;
-        assert!(matches!(
-            commands.try_recv()?,
-            crate::combat_input::PlayCommand::Logout
-        ));
-        assert!(commands.try_recv().is_err());
-        Ok(())
-    }
-
-    #[test]
-    fn previous_generation_and_wrong_context_target_cannot_dispatch() -> Result {
-        let mut host = HostOwner::new(None)?;
-        let (link, mut commands, _events) = play_channel();
-        host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-            link,
-        });
-        host.phase = Phase::Playing;
-        host.request_logout_confirmation();
-        let request = host.dialogs.pending.as_mut().ok_or("confirmation")?;
-        request.generation = request.generation.saturating_add(1);
-        let id = request.id;
-        assert!(!host.choose_dialog(id, Choice::Logout));
-        let menu = Menu {
-            tile: Some(TileCoord::new(i32::MAX, i32::MAX)),
-            binding: None,
-            target: oteryn_client_runtime::world_interaction::Target::Position(
-                oteryn_session::ActorPosition {
-                    x: 100,
-                    y: 100,
-                    floor: 7,
-                },
-            ),
-            entries: vec![(
-                "Look",
-                oteryn_client_runtime::world_interaction::Action::Look,
-            )],
-        };
-        host.dialogs.open(
-            host.generation(),
-            Content::Context {
-                menu: Some(Box::new(menu)),
-                party: None,
-                inspection: None,
-                report: None,
-            },
-        );
-        let id = host.dialogs.pending.as_ref().ok_or("context")?.id;
-        assert!(!host.choose_dialog(id, Choice::Context(0)));
-        assert!(commands.try_recv().is_err());
-        Ok(())
-    }
-}
+mod tests;
 
 #[cfg(test)]
 mod party_tests;

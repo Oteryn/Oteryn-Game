@@ -76,24 +76,30 @@ struct State {
     dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>()
-        .add_systems(Update, (keyboard, project).chain());
+    app.init_resource::<State>().add_systems(
+        Update,
+        (escape.after(crate::bevy_shell::input::route), project).chain(),
+    );
 }
-fn keyboard(
-    keys: Option<Res<ButtonInput<KeyCode>>>,
-    guard: ModalGuard,
+fn escape(
     owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut state: ResMut<State>,
 ) {
-    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+    if !keys
+        .as_ref()
+        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
         || owner.modal_active()
         || state.generation != owner.generation()
         || !state.root.is_some_and(|root| guard.allows(root))
     {
         return;
     }
-    if let Some(play) = &owner.play {
-        state.selection.confirmation = None;
+    // A pending confirmation is cancelled first; otherwise close against the live panel.
+    if state.selection.confirmation.take().is_some() {
+        state.dirty = true;
+    } else if let Some(play) = &owner.play {
         state.dirty = true;
         play.link
             .imbue_dispatch_bound(&play.link.imbue_panel(), ImbueViewAction::Close);

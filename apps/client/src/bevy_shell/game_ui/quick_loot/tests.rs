@@ -397,3 +397,52 @@ fn source_return_does_nothing_and_escape_closes_only_the_top_manage_dialog() -> 
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture(true)?;
+    outbox.push(vec![oteryn_session::SessionEvent::Inventory(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::CharacterInventory {
+                main_backpack: None,
+                equipment: vec![],
+                entries: vec![oteryn_session::ItemEntry {
+                    handle: 7.try_into()?,
+                    item_definition_ref: 42.try_into()?,
+                    count: 1.try_into()?,
+                    sub_type: 0,
+                }],
+            },
+        },
+    )]);
+    open(&mut app)?;
+    fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(e, n)| (n.as_str() == name).then_some(e))
+            .ok_or_else(|| format!("missing {name}").into())
+    }
+    let add = named(&mut app, "quick_loot.add.accept")?;
+    app.world_mut().trigger(Activate { entity: add });
+    app.update();
+    let pick = named(&mut app, "quick_loot.pick.7")?;
+    app.world_mut().trigger(Activate { entity: pick });
+    let wire = request(&mut commands)?;
+    assert_eq!(wire.action, QuickLootAction::FilterAdd);
+    assert_eq!(wire.filter_definition_ref, Some(42));
+    assert_eq!(wire.filter_mode, Some(Mode::Accept));
+    response(&outbox, CommandStatus::Accepted, true)?;
+    app.update();
+    assert!(panel(&app)?.accepted.contains(&42));
+    let remove = named(&mut app, "quick_loot.remove.accept.42")?;
+    app.world_mut().trigger(Activate { entity: remove });
+    assert_eq!(
+        request(&mut commands)?.action,
+        QuickLootAction::FilterRemove
+    );
+    Ok(())
+}

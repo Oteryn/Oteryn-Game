@@ -89,23 +89,34 @@ struct Control {
 struct State {
     root: Option<Entity>,
     generation: u64,
-    send: bool,
+    send: Option<PendingSend>,
+}
+
+struct PendingSend {
+    control: Entity,
+    root: Entity,
+    fields: Vec<(Entity, usize)>,
 }
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(
+            Update,
+            (escape.after(crate::bevy_shell::input::route), project).chain(),
+        )
         .add_systems(PostUpdate, sync.after(bevy::text::EditableTextSystems));
 }
-fn keyboard(
-    keys: Option<Res<ButtonInput<KeyCode>>>,
-    guard: ModalGuard,
+fn escape(
     owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
     mut state: ResMut<State>,
-    mut focus: ResMut<InputFocus>,
+    focus: Option<ResMut<InputFocus>>,
     fields: Query<Entity, With<Field>>,
 ) {
-    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+    if !keys
+        .as_ref()
+        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
         || owner.modal_active()
         || state.generation != owner.generation()
         || !state.root.is_some_and(|root| guard.allows(root))
@@ -113,8 +124,10 @@ fn keyboard(
         return;
     }
     if let Some(play) = &owner.play {
-        state.send = false;
-        if focus.get().is_some_and(|entity| fields.contains(entity)) {
+        state.send = None;
+        if let Some(mut focus) = focus
+            && focus.get().is_some_and(|entity| fields.contains(entity))
+        {
             focus.clear();
         }
         play.link.rule_violation_close();
@@ -140,7 +153,7 @@ fn project(
             focus.clear();
         }
         commands.entity(root).despawn();
-        state.send = false;
+        state.send = None;
     }
     if !visible || state.root.is_some() {
         return;
@@ -339,10 +352,11 @@ fn activate(
     event: On<Activate>,
     guard: ModalGuard,
     controls: Query<&Control>,
+    fields: Query<(Entity, &Field)>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
 ) {
-    if !guard.allows(event.entity) {
+    if !guard.allows(event.entity) || owner.modal_active() || owner.phase != Phase::Playing {
         return;
     }
     let Ok(control) = controls.get(event.entity) else {
@@ -354,17 +368,30 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
+    state.send = None;
     match control.kind {
         Kind::Reason(id) => play.link.player_report_edit(0, id.to_string()),
         Kind::Action(id) => play.link.player_report_edit(1, id.to_string()),
         Kind::Close => play.link.rule_violation_close(),
-        Kind::Send => state.send = true,
+        Kind::Send => {
+            if let Some(root) = state.root {
+                state.send = Some(PendingSend {
+                    control: event.entity,
+                    root,
+                    fields: fields
+                        .iter()
+                        .map(|(entity, field)| (entity, field.0))
+                        .collect(),
+                });
+            }
+        }
     }
 }
 fn sync(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
+    guard: ModalGuard,
     fields: Query<(Entity, &Field, &EditableText)>,
     controls: Query<(Entity, &Control)>,
     mut status: Query<&mut Text, With<Status>>,
@@ -377,8 +404,27 @@ fn sync(
     };
     let panel = play.link.player_report_panel();
     if !panel.open {
-        state.send = false;
+        state.send = None;
         return;
+    }
+    if state.send.as_ref().is_some_and(|pending| {
+        owner.modal_active()
+            || owner.phase != Phase::Playing
+            || !guard.allows(pending.control)
+            || state.root != Some(pending.root)
+            || controls.get(pending.control).is_err()
+            || controls.get(pending.control).is_ok_and(|(_, control)| {
+                control.generation != owner.generation() || !matches!(control.kind, Kind::Send)
+            })
+            || fields.iter().count() != pending.fields.len()
+            || pending.fields.iter().any(|(entity, index)| {
+                fields.get(*entity).is_err()
+                    || fields
+                        .get(*entity)
+                        .is_ok_and(|(_, field, _)| field.0 != *index)
+            })
+    }) {
+        state.send = None;
     }
     let mut editing = false;
     for (entity, field, text) in &fields {
@@ -395,8 +441,8 @@ fn sync(
             commands.entity(entity).remove::<InteractionDisabled>();
         }
     }
-    if state.send && !editing {
-        state.send = false;
+    if state.send.is_some() && !editing {
+        state.send = None;
         play.link.rule_violation_send();
     }
     let panel = play.link.player_report_panel();
@@ -428,157 +474,4 @@ fn sync(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use oteryn_client_runtime::player_report as wire;
-    #[test]
-    fn rule_violation_reasons_from_protocol() {
-        let reasons = reasons();
-        assert_eq!(reasons.len(), usize::from(wire::MAX_REPORT_REASON) + 1);
-        for (id, text) in reasons {
-            assert!(text.contains(&format!("Reason {id}:")));
-            assert!(text.contains("Evidence:"));
-            assert!(!text.contains("Choose a report reason"));
-        }
-        assert_eq!(actions().len(), usize::from(wire::MAX_REPORT_ACTION) + 1);
-    }
-    #[test]
-    fn rule_violation_window_widgets_send_existing_intent() -> Result<(), Box<dyn std::error::Error>>
-    {
-        use crate::{
-            combat_input::PlayCommand,
-            play::{PlayView, play_channel},
-        };
-        let (link, mut receiver, outbox) = play_channel();
-        link.use_shared_frontend();
-        outbox.bevy_report_selected(true);
-        link.rule_violation_open("Other Player");
-        let mut owner = HostOwner::new(None)?;
-        owner.phase = Phase::Playing;
-        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
-            link,
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-        });
-        let mut app = App::new();
-        app.insert_non_send(owner)
-            .init_resource::<InputFocus>()
-            .insert_resource(Skins {
-                buttons: source::ButtonImages {
-                    up: Handle::default(),
-                    down: Handle::default(),
-                },
-                checked: Handle::default(),
-                unchecked: Handle::default(),
-                frame: Handle::default(),
-                inset: Handle::default(),
-                font: Handle::default(),
-            });
-        install(&mut app);
-        app.update();
-        let control = |app: &mut App, predicate: fn(Kind) -> bool| {
-            app.world_mut()
-                .query::<(Entity, &Control)>()
-                .iter(app.world())
-                .find(|(_, control)| predicate(control.kind))
-                .map(|(entity, _)| entity)
-        };
-        let send = control(&mut app, |kind| matches!(kind, Kind::Send)).ok_or("send")?;
-        assert!(app.world().get::<InteractionDisabled>(send).is_some());
-        for predicate in [
-            (|kind| matches!(kind, Kind::Reason(6))) as fn(Kind) -> bool,
-            |kind| matches!(kind, Kind::Action(1)),
-        ] {
-            let entity = control(&mut app, predicate).ok_or("choice")?;
-            app.world_mut().trigger(Activate { entity });
-        }
-        for (field, mut text) in app
-            .world_mut()
-            .query::<(&Field, &mut EditableText)>()
-            .iter_mut(app.world_mut())
-        {
-            if field.0 == 4 {
-                *text = EditableText::new("Observed repeated messages");
-            }
-        }
-        app.update();
-        assert!(app.world().get::<InteractionDisabled>(send).is_none());
-        app.world_mut().trigger(Activate { entity: send });
-        app.update();
-        let PlayCommand::Feature(command) = receiver.try_recv()? else {
-            return Err("report".into());
-        };
-        let report =
-            wire::decode_player_report_request(&command.payload).map_err(|e| format!("{e:?}"))?;
-        assert_eq!((report.reason, report.action), (6, 1));
-        assert_eq!(report.target, "Other Player");
-        assert_eq!(report.comment, "Observed repeated messages");
-        assert!(app.world().get::<InteractionDisabled>(send).is_some());
-        Ok(())
-    }
-    #[test]
-    fn cancellation_escape_only_closes_foreground_windows() -> Result<(), Box<dyn std::error::Error>>
-    {
-        for kind in 0..3 {
-            let (link, _, outbox) = crate::play::play_channel();
-            link.use_shared_frontend();
-            outbox.bevy_report_selected(true);
-            outbox.bevy_prey_initialize(true);
-            outbox.bevy_imbue_initialize();
-            match kind {
-                0 => link.prey_set_open(true),
-                1 => link.open_imbue(),
-                _ => link.rule_violation_open("Other Player"),
-            }
-            let mut owner = HostOwner::new(None)?;
-            owner.phase = Phase::Playing;
-            owner.play = Some(crate::bevy_shell::owner::ActivePlay {
-                link,
-                view: crate::play::PlayView::new(TileCoord::new(100, 100), 7, &[])?,
-            });
-            let mut app = App::new();
-            app.insert_non_send(owner)
-                .init_resource::<InputFocus>()
-                .init_resource::<ButtonInput<KeyCode>>()
-                .insert_resource(Skins {
-                    buttons: source::ButtonImages {
-                        up: default(),
-                        down: default(),
-                    },
-                    checked: default(),
-                    unchecked: default(),
-                    frame: default(),
-                    inset: default(),
-                    font: default(),
-                });
-            match kind {
-                0 => super::super::prey::install(&mut app),
-                1 => super::super::imbuing::install(&mut app),
-                _ => install(&mut app),
-            }
-            app.update();
-            let is_open = |app: &App| -> Result<bool, Box<dyn std::error::Error>> {
-                let play = app.world().non_send::<HostOwner>();
-                let link = &play.play.as_ref().ok_or("play")?.link;
-                Ok(match kind {
-                    0 => link.prey_panel().open,
-                    1 => link.imbue_panel().open,
-                    _ => link.player_report_panel().open,
-                })
-            };
-            assert!(is_open(&app)?);
-            let front = app
-                .world_mut()
-                .spawn((GameModal, Node::default(), GlobalZIndex(999)))
-                .id();
-            app.world_mut()
-                .resource_mut::<ButtonInput<KeyCode>>()
-                .press(KeyCode::Escape);
-            app.update();
-            assert!(is_open(&app)?, "background cancellation: {kind}");
-            app.world_mut().entity_mut(front).despawn();
-            app.update();
-            assert!(!is_open(&app)?, "foreground Escape did not cancel: {kind}");
-        }
-        Ok(())
-    }
-}
+mod tests;

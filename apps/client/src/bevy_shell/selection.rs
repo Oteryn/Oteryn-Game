@@ -50,6 +50,7 @@ pub(super) struct PickerState {
     page_rows: usize,
     revision: u64,
     rendered: Option<(u64, u64)>,
+    last_click: Option<(u64, usize, std::time::Instant)>,
 }
 #[derive(Resource)]
 pub(super) struct Skin {
@@ -348,6 +349,7 @@ fn add_button(
             },
         ))
         .observe(activate)
+        .observe(row_click)
         .id();
     if disabled {
         commands.entity(button).insert(InteractionDisabled);
@@ -384,8 +386,10 @@ fn activate(
     let action = match target.choice {
         Choice::Row(index) => {
             if request.rows.get(index).is_some_and(|row| row.available) {
+                if state.selected != Some(index) {
+                    state.channel = None;
+                }
                 state.selected = Some(index);
-                state.channel = None;
             }
             None
         }
@@ -446,18 +450,111 @@ pub(super) fn keyboard(
     roots: Query<Entity, With<Picker>>,
     guard: ModalGuard,
     mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<PickerState>,
 ) {
     if !roots.iter().any(|entity| guard.allows(entity)) {
         keys.clear();
         return;
     }
-    if keys.read().any(|key| {
-        key.key_code == KeyCode::Escape
-            && key.state == bevy::input::ButtonState::Pressed
-            && !key.repeat
-    }) && let Some(id) = owner.selection.pending().map(|request| request.id)
+    for key in keys
+        .read()
+        .filter(|key| key.state == bevy::input::ButtonState::Pressed && !key.repeat)
     {
-        owner.selection.respond(id, SelectionAction::Cancel);
+        let Some(request) = owner
+            .selection
+            .pending()
+            .filter(|request| state.request == Some(request.id))
+        else {
+            continue;
+        };
+        if key.key_code == KeyCode::Escape {
+            let id = request.id;
+            owner.selection.respond(id, SelectionAction::Cancel);
+            continue;
+        }
+        let forward = match key.key_code {
+            KeyCode::ArrowDown => true,
+            KeyCode::ArrowUp => false,
+            _ => continue,
+        };
+        let selected = state
+            .selected
+            .unwrap_or(if forward { 0 } else { request.rows.len() });
+        let next = if forward {
+            request
+                .rows
+                .iter()
+                .enumerate()
+                .skip(state.selected.map_or(0, |index| index.saturating_add(1)))
+                .find_map(|(index, row)| row.available.then_some(index))
+        } else {
+            request
+                .rows
+                .iter()
+                .enumerate()
+                .take(selected)
+                .rev()
+                .find_map(|(index, row)| row.available.then_some(index))
+        };
+        if let Some(next) = next {
+            state.selected = Some(next);
+            state.channel = None;
+            state.page = next / state.page_rows.max(1);
+            state.last_click = None;
+            state.revision = state.revision.wrapping_add(1);
+        }
+    }
+}
+fn row_click(
+    event: On<PointerClick>,
+    targets: Query<(&Target, Has<InteractionDisabled>)>,
+    guard: ModalGuard,
+    settings: Option<Res<bevy::picking::PickingSettings>>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<PickerState>,
+) {
+    if event.button != bevy::picking::pointer::PointerButton::Primary || !guard.allows(event.entity)
+    {
+        return;
+    }
+    let Ok((target, disabled)) = targets.get(event.entity) else {
+        return;
+    };
+    let Choice::Row(index) = target.choice else {
+        return;
+    };
+    if disabled || state.request != Some(target.request) {
+        return;
+    }
+    let Some(request) = owner
+        .selection
+        .pending()
+        .filter(|request| request.id == target.request)
+    else {
+        return;
+    };
+    let Some(row) = request.rows.get(index).filter(|row| row.available) else {
+        return;
+    };
+    let interval = settings.as_ref().map_or_else(
+        || bevy::picking::PickingSettings::default().multi_click_interval,
+        |settings| settings.multi_click_interval,
+    );
+    let now = std::time::Instant::now();
+    let double = state.last_click.is_some_and(|(request, previous, at)| {
+        request == target.request && previous == index && now.duration_since(at) <= interval
+    });
+    state.last_click = Some((target.request, index, now));
+    if double || event.count >= 2 {
+        let action = SelectionAction::Play {
+            character_id: row.character.character_id.clone(),
+            channel_id: state
+                .channel
+                .and_then(|channel| row.channels.get(channel))
+                .map(|channel| channel.0.clone()),
+        };
+        owner.selection.respond(target.request, action);
+        state.last_click = None;
     }
 }
 

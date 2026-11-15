@@ -389,6 +389,123 @@ fn scaled_picker_keeps_footer_inside_frame_and_selected_row_on_resize()
 }
 
 #[test]
+fn picker_arrow_navigation_and_double_click_use_current_request()
+-> Result<(), Box<dyn std::error::Error>> {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (bridge, callback) = SelectionBridge::new();
+    let mut owner = HostOwner::new(None)?;
+    owner.selection = bridge;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Startup, setup)
+        .add_systems(Update, (poll, project, keyboard).chain());
+    app.update();
+    let worker = thread::spawn(move || {
+        let rows = (0..3)
+            .map(|index| crate::character_selection::CharacterRow {
+                character: OwnerCharacter {
+                    character_id: format!("character{index}"),
+                    world_id: "world".into(),
+                    name: format!("Player {index}"),
+                    availability: CharacterAvailability::Available,
+                },
+                world_name: "World".into(),
+                channels: vec![],
+                available: true,
+            })
+            .collect::<Vec<_>>();
+        callback(&rows, "character0", CancellationToken::new())
+    });
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while app
+        .world()
+        .non_send::<HostOwner>()
+        .selection
+        .pending()
+        .is_none()
+        && Instant::now() < deadline
+    {
+        app.update();
+        thread::yield_now();
+    }
+    app.update();
+    for (code, selected) in [
+        (KeyCode::ArrowDown, 1),
+        (KeyCode::ArrowUp, 0),
+        (KeyCode::ArrowDown, 1),
+    ] {
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: code,
+                logical_key: bevy::input::keyboard::Key::Unidentified(
+                    bevy::input::keyboard::NativeKey::Unidentified,
+                ),
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+        assert_eq!(
+            app.world().resource::<PickerState>().selected,
+            Some(selected)
+        );
+    }
+    app.update();
+    for _ in 0..2 {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Target)>()
+            .iter(app.world())
+            .find_map(|(entity, target)| matches!(target.choice, Choice::Row(1)).then_some(entity))
+            .ok_or("second row")?;
+        app.world_mut().trigger(Activate { entity });
+        app.world_mut().trigger(PointerClick {
+            entity,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: PointerButton::Primary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+    }
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .selection
+            .pending()
+            .is_none()
+    );
+    assert_eq!(
+        worker.join().map_err(|_| "selector worker")?,
+        SelectionAction::Play {
+            character_id: "character1".into(),
+            channel_id: None
+        }
+    );
+    Ok(())
+}
+
+#[test]
 fn picker_training_returns_server_channel_through_existing_callback()
 -> Result<(), Box<dyn std::error::Error>> {
     let (bridge, callback) = SelectionBridge::new();
