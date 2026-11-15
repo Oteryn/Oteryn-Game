@@ -7,6 +7,7 @@ use bevy::prelude::*;
 pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Analysers", Control::Analysers),
     ("Battle", Control::Panel("battle")),
+    ("Bestiary", Control::Panel("bestiary")),
     ("Chat", Control::Panel("chat")),
     ("Depot", Control::Depot),
     ("Compendium", Control::Notices),
@@ -40,6 +41,11 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Quests => crate::bevy_shell::game_ui::open_quests(owner),
         Control::UnjustifiedPoints => crate::bevy_shell::game_ui::unjustified_points::open(owner),
         Control::Spells => crate::bevy_shell::game_ui::open_spells(owner),
+        Control::Panel("bestiary") => {
+            if let Some(play) = &owner.play {
+                play.link.charm_progression_open();
+            }
+        }
         Control::Panel(id) => {
             if let Some(play) = &owner.play {
                 let mut preferences = owner.settings.preferences.clone();
@@ -152,5 +158,33 @@ pub(in crate::bevy_shell) fn project_toolbar(
                 Display::Flex
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod bestiary_tests {
+    #[test]
+    fn bestiary_is_reachable_from_gameplay_toolbar() -> Result<(), Box<dyn std::error::Error>> {
+        let control = super::TOOLBAR
+            .iter()
+            .find(|(label, _)| *label == "Bestiary")
+            .map(|(_, control)| *control)
+            .ok_or("Bestiary toolbar entry missing")?;
+        let mut owner = super::HostOwner::new(None)?;
+        let (link, _, _) = crate::play::play_channel();
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        owner.phase = crate::bevy_shell::owner::Phase::Playing;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        assert!(super::open_toolbar(&mut owner, control));
+        assert!(
+            owner
+                .play
+                .as_ref()
+                .ok_or("play")?
+                .link
+                .charm_progression_panel()
+                .open
+        );
+        Ok(())
     }
 }
