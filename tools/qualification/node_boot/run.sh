@@ -26,6 +26,8 @@ readonly INTENT_OPERATIONS=(01934f10-7c04-7001-805b-3b1122334401 01934f10-7c04-7
 readonly INTENT_NAMES=("Qualification One" "Qualification Two" "Packet One" "Packet Two")
 # Runtime build writers bind to the shipped training formula's content revision,
 # just as the S3-B seam does; progression is initialized from this interpretation.
+# The served readiness.content_revision is this same revision: the quest and Task Board
+# owners refuse a Character whose stored progression content differs from the served one.
 readonly INTERPRETATION=(nb-profile-1 nb-ruleset-1 s3b-content-1 nb-starter-1)
 readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
@@ -552,7 +554,7 @@ source_authority = "oteryn:runtime:node-boot"
 route_revision = "route-s3b-1"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-s3b-1"
-content_revision = "content-s3b-1"
+content_revision = "${INTERPRETATION[2]}"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-s3b-1"
 required_gameplay_capabilities = $NODE_REQUIRED_CAPABILITIES
