@@ -77,7 +77,7 @@ fn m40_keypad_diagonals_reach_wire_and_apply_only_authoritative_positions()
             modifiers: Modifiers::default(),
             repeat: false,
         };
-        let input = crate::input::arrow_step(&[event]);
+        let input = crate::input::arrow_step(&[event], true);
         assert_eq!(input, Some(direction));
         let mut view = view()?;
         view.arrow(input.ok_or("missing keypad intent")?);

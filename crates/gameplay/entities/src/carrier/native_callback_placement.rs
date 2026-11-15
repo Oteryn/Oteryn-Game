@@ -66,7 +66,8 @@ impl ChannelRuntimeV1 {
         let child_movement = movement(child, &child_policy.definition_revision)
             .ok_or(CarrierError::InvalidCreatureTarget)?;
         let mut occupants = Vec::new();
-        for (actor, position, session) in self.positioned_actor_census()? {
+        // Control loss does not vacate a committed physical cell.
+        for (actor, position, session) in self.positioned_melee_census()? {
             if position.position() != at || Some(actor) == removed {
                 continue;
             }

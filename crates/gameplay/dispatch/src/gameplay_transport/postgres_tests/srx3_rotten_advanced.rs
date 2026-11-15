@@ -64,12 +64,30 @@ fn srx3_vemiath_actual_source_teleport_exit_return_postgres() -> TestResult {
         true,
     )
 }
+#[test]
+fn qmrevfix_rotten_control_lost_players_block_placement_and_allow_children_postgres() -> TestResult
+{
+    scenario_with_step(
+        PinnedActivitySourceRoom::Vemiath,
+        MovementLocalPosition {
+            x: 33078,
+            y: 32333,
+            floor: 15,
+        },
+        "oteryn:creature.vemiath",
+        false,
+        false,
+        Extra::ControlLost,
+    )
+}
 #[derive(Clone, Copy)]
 enum Extra {
     None,
     PortalStep,
     Footprints,
+    FootprintsRestart,
     DueBeforeDeath,
+    ControlLost,
     CopiedDeath {
         credited: bool,
         prepared_bak: bool,
@@ -112,6 +130,20 @@ pub(super) fn copied_death_with_full_queue() -> TestResult {
             prepared_bak: true,
             full_queue: true,
         },
+    )
+}
+pub(super) fn footprints_restart() -> TestResult {
+    scenario_with_step(
+        PinnedActivitySourceRoom::Vemiath,
+        MovementLocalPosition {
+            x: 33078,
+            y: 32333,
+            floor: 15,
+        },
+        "oteryn:creature.vemiath",
+        false,
+        false,
+        Extra::FootprintsRestart,
     )
 }
 pub(super) fn footprints(
@@ -424,8 +456,121 @@ fn scenario_with_step(
                 drop(seal);
                 return h.cleanup().await;
             }
-            if matches!(extra, Extra::Footprints) {
-                super::srx3_rotten_footprints::exercise(&h, &mut owner, &admitted, kind).await?;
+            if matches!(extra, Extra::Footprints | Extra::FootprintsRestart) {
+                super::srx3_rotten_footprints::exercise(
+                    &h,
+                    &mut owner,
+                    &admitted,
+                    kind,
+                    matches!(extra, Extra::FootprintsRestart),
+                )
+                .await?;
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return h.cleanup().await;
+            }
+            if matches!(extra, Extra::ControlLost) {
+                let view = owner.runtime_view(&registered);
+                let native = view
+                    .active_generation
+                    .and_then(|generation| generation.native_gameplay())
+                    .ok_or("retained Rotten Content")?;
+                let mut runtime = view.runtime.lock().await;
+                let player = admitted.runtime_actor.ok_or("actual Rotten Player")?;
+                let at = runtime
+                    .read_actor_position(player)
+                    .map_err(debug)?
+                    .position();
+                let parent = runtime
+                    .visible_entities()
+                    .creatures
+                    .into_iter()
+                    .find(|entry| {
+                        runtime.matches_live_creature_identity(entry.actor, boss.as_bytes())
+                    })
+                    .ok_or("actual Rotten boss")?
+                    .actor;
+                let source = runtime
+                    .qualify_rotten_blood_spawn_source(parent, native)
+                    .map_err(debug)?;
+                let players: Vec<_> = runtime
+                    .positioned_melee_census()
+                    .map_err(debug)?
+                    .into_iter()
+                    .filter_map(|(actor, _, session)| session.map(|session| (actor, session)))
+                    .collect();
+                assert!(!players.is_empty());
+                for (actor, session) in players {
+                    runtime
+                        .record_control_loss(
+                            actor,
+                            session,
+                            crate::foundation::ControlLossMark {
+                                epoch: 1,
+                                grace_deadline: 100,
+                            },
+                        )
+                        .map_err(debug)?;
+                }
+                assert!(
+                    runtime
+                        .positioned_actor_census()
+                        .map_err(debug)?
+                        .iter()
+                        .all(|(_, _, session)| session.is_none())
+                );
+                let child = "oteryn:creature.elder_bloodjaw";
+                let plan = oteryn_gameplay_world::movement::source_placement::SourcePlacementPlan::prepare(
+                    at, false, false, |_| 0,
+                ).map_err(debug)?;
+                let cell = |runtime: &crate::foundation::ChannelRuntimeV1,
+                            at: MovementLocalPosition| {
+                    let walkable = view.movement_cells.index().lookup(
+                        view.movement_cells.scope(),
+                        crate::content::LogicalCell {
+                            x: at.x,
+                            y: at.y,
+                            z: i32::from(at.floor),
+                        },
+                    ) == Ok(crate::content::CollisionClass::Walkable);
+                    let occupancy = runtime
+                        .current_native_source_occupancy(native, child, at, None)
+                        .ok()?;
+                    Some(
+                        oteryn_gameplay_world::movement::source_placement::SourcePlacementCell {
+                            exists: walkable,
+                            query_add: walkable && occupancy.admits_occupants,
+                            protection_zone: false,
+                            teleport: false,
+                        },
+                    )
+                };
+                let selected = plan
+                    .select(|at| cell(&runtime, at), |_, _| Some(true))
+                    .map_err(debug)?
+                    .ok_or("free native neighboring cell")?;
+                let spawned = runtime.spawn_rotten_blood_child_from_source(
+                    &source,
+                    child,
+                    selected,
+                    |runtime, at| cell(runtime, at).map(|cell| cell.query_add),
+                );
+                assert_eq!(
+                    (selected != at, spawned.is_ok()),
+                    (true, true),
+                    "control-lost Players occupy their cell and retain the encounter: {spawned:?}",
+                );
+                let spawned = spawned.map_err(debug)?;
+                assert_eq!(
+                    runtime
+                        .read_actor_position(spawned)
+                        .map_err(debug)?
+                        .position(),
+                    selected
+                );
+                drop(runtime);
+                drop(view);
                 drop(owner);
                 drop(authority);
                 drop(seal);

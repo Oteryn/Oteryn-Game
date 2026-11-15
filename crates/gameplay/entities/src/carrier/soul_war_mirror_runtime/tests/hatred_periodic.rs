@@ -10,7 +10,14 @@ fn srx3_hatred_native_player_periodic_health_event_adds_current_defense_once() -
 fn srx3_hatred_native_null_periodic_health_event_keeps_defense() -> Result<(), String> {
     exercise_hatred_periodic(false)
 }
+#[test]
+fn review8_dot_survives_departed_source() -> Result<(), String> {
+    exercise_hatred_periodic_source(true, true)
+}
 fn exercise_hatred_periodic(player_owned: bool) -> Result<(), String> {
+    exercise_hatred_periodic_source(player_owned, false)
+}
+fn exercise_hatred_periodic_source(player_owned: bool, retired: bool) -> Result<(), String> {
     use crate::carrier::soul_war_hatred::HatredEmpowerment;
     use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
     use oteryn_gameplay_foundation::foundation::condition::{ConditionDefinition, TickFacts};
@@ -90,6 +97,7 @@ fn exercise_hatred_periodic(player_owned: bool) -> Result<(), String> {
     runtime
         .commit_creature_field_entry(target, 201_000, Some(&field))
         .map_err(|error| format!("{error:?}"))?;
+    if retired { runtime.remove_test_actor(player).map_err(|error| format!("{error:?}"))?; }
     let receipt = runtime
         .apply_creature_periodic_turn_with_sources(
             target,
@@ -110,7 +118,7 @@ fn exercise_hatred_periodic(player_owned: bool) -> Result<(), String> {
     let current = runtime
         .companion_snapshot(target)
         .map_err(|error| format!("{error:?}"))?;
-    let expected = base + if player_owned { 10 } else { 0 };
+    let expected = base + if player_owned && !retired { 10 } else { 0 };
     assert_eq!(
         runtime
             .effective_creature_defense(&current)

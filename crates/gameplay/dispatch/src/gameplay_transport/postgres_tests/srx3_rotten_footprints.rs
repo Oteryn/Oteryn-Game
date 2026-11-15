@@ -47,6 +47,7 @@ pub(super) async fn exercise(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     kind: Room,
+    restart: bool,
 ) -> TestResult {
     let fence = admitted.item_fence.ok_or("actual footprint Item fence")?;
     let RuntimeScopeRefV1::Instance { instance_id, .. } = fence.runtime_scope else {
@@ -153,6 +154,10 @@ pub(super) async fn exercise(
                 schedules, 1,
                 "same-UID native transform starts its intrinsic248s clock at the retained source execution"
             );
+            if restart {
+                return assert_restart_provenance(h, fence.runtime_scope, &item, &ordinal).await;
+            }
+
         }
         let mut tx = h.pool.begin().await?;
         crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
@@ -190,5 +195,40 @@ pub(super) async fn exercise(
         (2, 1),
         "two in-place transformations and one final removal; no replacement MINT"
     );
+    Ok(())
+}
+
+#[test]
+fn review3_footprint_timer_requalifies_after_instance_restart() -> TestResult {
+    super::srx3_rotten_advanced::footprints_restart()
+}
+
+async fn assert_restart_provenance(h: &Harness, scope: RuntimeScopeRefV1, item: &str, ordinal: &str) -> TestResult {
+    use crate::durability::runtime_scope_assignment::{AssignmentCommand, AssignmentRequest,
+        AssignmentOutcome, ControlActor, OperationKey, RuntimeScopeAssignmentWriter};
+    // Source-created Items have spell receipts, not creature-death mint receipts.
+    let corpse_mints: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_mint_receipts WHERE item_instance_id=$1::uuid")
+        .bind(item).fetch_one(&h.pool).await?;
+    assert_eq!(corpse_mints, 0);
+    let RuntimeScopeRefV1::Instance { world_id, instance_id } = scope else { return Err("Instance".into()); };
+    sqlx::query("INSERT INTO game_control_activity_scope_grants(control_role,world_id,instance_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2) ON CONFLICT DO NOTHING")
+        .bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).execute(&h.pool).await?;
+    let predecessor = h.root.read_runtime_scope_predecessor(scope).await.map_err(super::fixture::debug)?.ok_or("predecessor")?;
+    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer").await.map_err(super::fixture::debug)?;
+    let outcome = writer.submit(&AssignmentRequest {
+        operation_key: OperationKey::from_bytes([219; 32]), actor: ControlActor::new("oteryn_test_admin").map_err(super::fixture::debug)?,
+        command: AssignmentCommand::Replace { scope, predecessor, target: h.node.fact() },
+    }).await.map_err(super::fixture::debug)?;
+    let AssignmentOutcome::Committed(receipt) = outcome else { return Err(super::fixture::debug(outcome)); };
+    let generation = receipt.assignment.ownership_generation;
+    assert!(generation > 1);
+    let eligible: bool = sqlx::query_scalar("SELECT game_instance_corpse_stage_current($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::text::bigint)")
+        .bind(item).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind(generation.to_string()).bind(ordinal)
+        .fetch_one(&h.pool).await?;
+    assert!(eligible, "persisted spell-item schedule must qualify under the successor assignment");
+    let stale: bool = sqlx::query_scalar("SELECT game_instance_corpse_stage_current($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::text::bigint)")
+        .bind(item).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice()).bind((generation-1).to_string()).bind(ordinal)
+        .fetch_one(&h.pool).await?;
+    assert!(!stale, "historical provenance never grants current authority");
     Ok(())
 }

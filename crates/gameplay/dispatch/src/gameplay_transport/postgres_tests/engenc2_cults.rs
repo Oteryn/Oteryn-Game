@@ -68,11 +68,20 @@ fn callback() -> TestResult<Callback> {
 
 #[test]
 fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult {
+    cults_scenario(false)
+}
+
+#[test]
+fn qmrevfix_cults_second_lever_after_victory_postgres() -> TestResult {
+    cults_scenario(true)
+}
+
+fn cults_scenario(reenter: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     let began = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("engenc2-cults", || {
+    super::kill_reward_e2e::scenario_thread::run("engenc2-cults", move || {
         run(async |admin| {
             reset();
             let h =
@@ -216,13 +225,21 @@ fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult 
                 .await
                 .map_err(debug)?;
             // Replacing the fixture runtime does not transfer the admitted Character lease.
-            owner.runtime.lock().await.bind_attacker_lease(
-                deps.actor, admitted.game_session_id,
-                crate::foundation::CharacterLease::new(
-                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes()).map_err(debug)?,
-                    fence.character_lease_generation,
-                ).map_err(debug)?,
-            ).map_err(debug)?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .bind_attacker_lease(
+                    deps.actor,
+                    admitted.game_session_id,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
             owner.admit_quest_session(&admitted).await;
@@ -233,19 +250,40 @@ fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult 
             );
             {
                 let runtime = owner.runtime.lock().await;
-                runtime.bound_attacker_lease(deps.actor, admitted.game_session_id).map_err(debug)?;
-                for monster in &callback.effects.encounter.as_ref().ok_or("encounter")?.monsters {
-                    runtime.companion_policy(&monster.creature)
+                runtime
+                    .bound_attacker_lease(deps.actor, admitted.game_session_id)
+                    .map_err(debug)?;
+                for monster in &callback
+                    .effects
+                    .encounter
+                    .as_ref()
+                    .ok_or("encounter")?
+                    .monsters
+                {
+                    runtime
+                        .companion_policy(&monster.creature)
                         .map_err(|e| format!("production creature {}: {e:?}", monster.creature))?;
                 }
-                for role in oteryn_gameplay_encounters::bosses::phase_controller::cults::plan().roles {
-                    runtime.companion_policy(role.creature)
-                        .map_err(|e| format!("production phase creature {}: {e:?}", role.creature))?;
+                for role in
+                    oteryn_gameplay_encounters::bosses::phase_controller::cults::plan().roles
+                {
+                    runtime.companion_policy(role.creature).map_err(|e| {
+                        format!("production phase creature {}: {e:?}", role.creature)
+                    })?;
                 }
             }
-            assert!(owner.states.quest_sessions.lock().map_err(|_| "quest sessions")?
-                .get(&admitted.game_session_id).and_then(|s| s.copy.as_ref())
-                .and_then(|copy| copy.character_revision()).is_some(), "admitted quest snapshot");
+            assert!(
+                owner
+                    .states
+                    .quest_sessions
+                    .lock()
+                    .map_err(|_| "quest sessions")?
+                    .get(&admitted.game_session_id)
+                    .and_then(|s| s.copy.as_ref())
+                    .and_then(|copy| copy.character_revision())
+                    .is_some(),
+                "admitted quest snapshot"
+            );
             let key =
                 oteryn_world_bundle::bundle::placement_key(-7, 100, 100, 1).ok_or("lever key")?;
             let mut placement = world.base().digest().to_vec();
@@ -259,7 +297,7 @@ fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult 
                         item_fence: admitted.item_fence,
                     },
                     WorldObjectTarget {
-                        placement,
+                        placement: placement.clone(),
                         expected_revision: 0,
                     },
                 )
@@ -344,6 +382,101 @@ fn engenc2_cults_callback_native_phases_and_settlement_postgres() -> TestResult 
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_quest_receipts WHERE transition_key='oteryn:quest-transition/native-kills/cults-essence'")
             .fetch_one(&h.pool).await?;
             assert_eq!(receipts, 1);
+            if reenter {
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    // Start the next admission with an empty room, including the
+                    // inert decorations left at the original pillar cells.
+                    let decorations: Vec<_> = runtime
+                        .positioned_melee_census()
+                        .map_err(debug)?
+                        .into_iter()
+                        .filter(|(actor, _, _)| {
+                            runtime.matches_live_creature_identity(
+                                *actor,
+                                b"oteryn:creature.destroyed_pillar",
+                            )
+                        })
+                        .map(|(actor, _, _)| actor)
+                        .collect();
+                    for decoration in decorations {
+                        runtime.remove_encounter_actor(decoration).map_err(debug)?;
+                    }
+                    let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
+                    let closed = crate::map::floor::BundleDoors(world.facts());
+                    let proof = crate::map::floor::prepare_quest_callback_teleport(
+                        &runtime,
+                        &cells,
+                        deps.actor,
+                        admitted.game_session_id,
+                        expected,
+                        MovementLocalPosition {
+                            x: 100,
+                            y: 100,
+                            floor: 7,
+                        },
+                        false,
+                        &closed,
+                    )
+                    .map_err(debug)?;
+                    runtime
+                        .commit_source_steps_and_project(vec![proof], || true)
+                        .map_err(debug)?;
+                }
+                assert!(
+                    owner
+                        .refresh_source_party_presence(deps.actor, admitted.game_session_id)
+                        .await
+                );
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("lever retry clock")?;
+                let revision = crate::map::view::MapFacts::object_revision(world.facts(), key);
+                let reset = owner
+                    .use_object(
+                        deps.actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 2,
+                            item_fence: admitted.item_fence,
+                        },
+                        WorldObjectTarget {
+                            placement: placement.clone(),
+                            expected_revision: revision,
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    reset.disposition,
+                    UseDisposition::Committed,
+                    "reset reversible source lever"
+                );
+                owner.clock_origin = owner
+                    .clock_origin
+                    .checked_sub(std::time::Duration::from_secs(1))
+                    .ok_or("lever retry clock")?;
+                let revision = crate::map::view::MapFacts::object_revision(world.facts(), key);
+                let second = owner
+                    .use_object(
+                        deps.actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: 3,
+                            item_fence: admitted.item_fence,
+                        },
+                        WorldObjectTarget {
+                            placement,
+                            expected_revision: revision,
+                        },
+                    )
+                    .await;
+                assert_eq!(
+                    second.disposition,
+                    UseDisposition::Committed,
+                    "terminal victory releases the same Cults lever key"
+                );
+            }
             drop(owner);
             drop(authority);
             drop(seal);

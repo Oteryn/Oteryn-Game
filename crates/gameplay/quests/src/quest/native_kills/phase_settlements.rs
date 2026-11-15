@@ -51,3 +51,13 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[test]
+fn review18_phase_settlements_registered_for_loader_and_progress() -> Result<(), String> {
+    for counter in COUNTERS {
+        assert!(super::counters().any(|entry| entry.transition == counter.transition));
+        assert!(super::registered_counters()?.any(|entry| entry.transition == counter.transition));
+    }
+    Ok(())
+}

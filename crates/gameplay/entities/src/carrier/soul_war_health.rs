@@ -42,8 +42,9 @@ impl ChannelActorCarrier {
                 game_session_id: Some(session),
                 spell_combat,
                 position: Some(position),
+                generation,
                 ..
-            } => {
+            } if *generation == source.0.actor_local_generation.0 => {
                 let lease = self
                     .bound_attacker_lease(continuity, source.0, *session)
                     .ok();
@@ -84,8 +85,21 @@ impl ChannelActorCarrier {
                     invoke_health_change: true,
                 });
             }
-            Slot::CreatureOccupied { .. } => HealthSourceKind::NonPlayer,
-            _ => return Err(CarrierError::CreatureTargetMismatch),
+            Slot::CreatureOccupied { generation, .. }
+                if *generation == source.0.actor_local_generation.0 =>
+            {
+                HealthSourceKind::NonPlayer
+            }
+            // A condition can outlive its caster. A vacated or reused slot is
+            // no longer that exact physical source, even if the index is valid.
+            _ => {
+                return Ok(HealthSourceContext {
+                    kind: HealthSourceKind::Null,
+                    actor: None,
+                    content: content.server_artifact_digest(),
+                    invoke_health_change: true,
+                });
+            }
         };
         Ok(HealthSourceContext {
             kind,

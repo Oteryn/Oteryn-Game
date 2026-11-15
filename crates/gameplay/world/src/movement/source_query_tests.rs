@@ -103,14 +103,11 @@ fn srx3_source_query_add_uses_child_push_policy_and_current_occupant_kind() {
 }
 
 #[test]
-fn srx3_source_placement_reads_current_map_and_child_policy_through_real_adapter() {
-    fn query(
-        map: &super::monster_map::CurrentMonsterMap<'_, '_>,
-        runtime: &super::ChannelRuntimeV1,
-        child: &str,
-        at: super::MovementLocalPosition,
-    ) -> Option<super::source_placement::SourcePlacementCell> {
-        map.source_placement_cell(runtime, child, at)
-    }
-    let _ = query;
+fn srx3_source_placement_reads_current_map_and_child_policy_through_real_adapter()
+-> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(super::monster_map::source_query_adapter_cases)?
+        .join()
+        .map_err(|_| "source query adapter worker panicked")?
 }

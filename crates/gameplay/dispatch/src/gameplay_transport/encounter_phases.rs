@@ -61,6 +61,13 @@ impl Registry {
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
             }
         }
+        // Terminal victory releases the lever key independently of corpse lifetime.
+        active.retain(|phase| {
+            phase
+                .fight
+                .victors(runtime)
+                .is_ok_and(|victors| victors.is_none())
+        });
     }
 
     pub(super) fn capture_terminal(

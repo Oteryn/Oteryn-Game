@@ -193,16 +193,12 @@ pub const COUNTERS: &[Counter] = &[
 
 #[must_use]
 pub fn counter(transition: &str) -> Option<&'static Counter> {
-    counters()
-        .chain(phase_settlements::COUNTERS)
-        .find(|counter| counter.transition == transition)
+    counters().find(|counter| counter.transition == transition)
 }
 
 #[must_use]
 pub fn tracks_creature(creature: &str) -> bool {
-    counters()
-        .chain(phase_settlements::COUNTERS)
-        .any(|counter| counter.creature == creature)
+    counters().any(|counter| counter.creature == creature)
 }
 
 #[must_use]
@@ -238,6 +234,7 @@ pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
+        .chain(phase_settlements::COUNTERS)
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -250,6 +247,7 @@ pub(super) fn registered_counters() -> Result<impl Iterator<Item = &'static Coun
     Ok(COUNTERS
         .iter()
         .chain(fugue::COUNTERS)
+        .chain(phase_settlements::COUNTERS)
         .chain(qworld::counters()?)
         .chain(super::world_change_journals::counters()?))
 }

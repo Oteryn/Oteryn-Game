@@ -213,3 +213,34 @@ fn srx3_drome_familiar_death_blast_centres_actual_hitter_and_hits_its_hp() -> Re
     );
     Ok(())
 }
+
+#[test]
+fn review13_beam_me_up_reserves_each_destination() -> Result<(), Error> {
+    let mut state = state(BeamMeUp)?;
+    let effects = state.tick(0, 15_000_000, &[], |_| true);
+    let mark = match effects.as_slice() {
+        [DromeModifierEffect::Mark { positions, .. }] => positions[0],
+        _ => return Err("missing mark".into()),
+    };
+    let players = [
+        DromeParticipant {
+            actor: actor(1)?,
+            position: mark,
+        },
+        DromeParticipant {
+            actor: actor(2)?,
+            position: mark,
+        },
+    ];
+    let destination = at(19, 19);
+    let effects = state.tick(0, 18_000_000, &players, |at| at == destination);
+    assert_eq!(
+        effects
+            .iter()
+            .filter(|effect| matches!(effect,
+        DromeModifierEffect::Teleport { destination: at, .. } if *at == destination))
+            .count(),
+        1
+    );
+    Ok(())
+}

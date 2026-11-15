@@ -104,8 +104,9 @@ impl ChannelRuntimeV1 {
     ) -> Result<ExactActorRef, EncounterSpawnError> {
         self.require_rotten_blood_scope()
             .map_err(EncounterSpawnError::Native)?;
+        // Control-lost participants remain positioned in this Instance.
         if !self
-            .positioned_actor_census()
+            .positioned_melee_census()
             .map_err(EncounterSpawnError::Native)?
             .iter()
             .any(|(_, _, session)| session.is_some())

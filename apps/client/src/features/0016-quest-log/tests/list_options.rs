@@ -138,3 +138,23 @@ fn journal_search_and_sort_use_confirmed_mission_text_and_keep_server_cursor() -
     assert_eq!(link.quest_panel().state.log, log);
     Ok(())
 }
+
+#[test]
+fn review14_list_only_accepts_personal_map_marks() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.quest_initialize(QuestState { selected: true, revision: Some(0), ..Default::default() });
+    link.quest_request(&QuestLogQuery::ListOnly);
+    assert!(matches!(commands.try_recv(), Ok(PlayCommand::QuestLog(_))));
+    let list = vec![QuestListEntry { quest_index: 2, completed: false }];
+    outbox.quest_result(&oteryn_session::GatedCommandResult {
+        command_id: 1, status: oteryn_client_runtime::CommandStatus::Accepted, server_sequence: 1,
+        payload: encode_quest_log(&QuestLog {
+            map_marks: vec![oteryn_client_runtime::quest_log::QuestMapMark { x: 100, y: 100, floor: -7, text: "Treasure".into() }],
+            view: Some(QuestLogView::List(list.clone())), tracked: vec![],
+        }).map_err(|error| format!("{error:?}"))?,
+    });
+    let panel = link.quest_panel();
+    assert_eq!(panel.state.refusal, None);
+    assert_eq!(panel.state.list, list);
+    Ok(())
+}

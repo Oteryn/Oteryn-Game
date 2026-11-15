@@ -1185,3 +1185,79 @@ fn merge_current_tile(
         field,
     })
 }
+
+#[cfg(test)]
+pub(super) fn source_query_adapter_cases() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let (old_runtime, mut map, _, _) = source_teleport_tests::fixture()?;
+    let world = old_runtime.binding().world_id();
+    let content =
+        crate::content::native_gameplay::retained_callback_native_fixture_at(world, &manifest);
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        old_runtime.binding().channel_id().ok_or("channel")?,
+        crate::foundation::NodeId::decode(&[
+            1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 16,
+        ])
+        .map_err(|e| format!("{e:?}"))?,
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        crate::foundation::ChannelContentPin::from_activation(
+            world,
+            1,
+            content.source_digest(),
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 13),
+        ),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    runtime
+        .install_companion_policies(content.policies().clone())
+        .map_err(|e| format!("{e:?}"))?;
+    map.server = content.source_digest();
+    map.client = [2; 32];
+    map.frame = [3; 32];
+    map.map = [4; 32];
+    map.context = runtime.pinned_movement_context();
+    let at = MovementLocalPosition {
+        x: 101,
+        y: 100,
+        floor: 13,
+    };
+    let mut tile = map.tile(at).ok_or("tile")?;
+    tile.source_placement.ground = true;
+    tile.source_placement.immovable_solid = false;
+    map.tiles.insert((at.x, at.y, at.floor), Some(tile));
+    let query = |runtime: &ChannelRuntimeV1, child, at| {
+        map.source_placement_cell(runtime, &content, child, at, None)
+    };
+    assert!(
+        query(&runtime, "oteryn:creature.rat", at)
+            .is_some_and(|cell| cell.exists && cell.query_add)
+    );
+    assert!(query(&runtime, "unknown:child", at).is_none());
+    assert!(
+        query(
+            &runtime,
+            "oteryn:creature.rat",
+            MovementLocalPosition { x: 999, ..at }
+        )
+        .is_none()
+    );
+    let occupant = runtime
+        .admit_pinned_monster_lab_creature(at, "oteryn:creature.rat", 20)
+        .map_err(|e| format!("{e:?}"))?;
+    runtime
+        .install_creature_policy(occupant, "oteryn:creature.rat")
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(query(&runtime, "oteryn:creature.rat", at).is_some_and(|cell| !cell.query_add));
+    runtime.retire_owner_cycle();
+    assert!(query(&runtime, "oteryn:creature.rat", at).is_none());
+    Ok(())
+}

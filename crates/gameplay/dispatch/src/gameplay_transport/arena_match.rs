@@ -362,7 +362,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return None;
         }
-        let _gate = self.states.arena_matches.command.lock().await;
+        let _gate = arena_command_gate(&self.states.arena_matches.command, matches!(cause, durable::MatchCause::Step { .. })).await?;
         let mut fence = self
             .current_quest_fence(session)
             .await
@@ -930,4 +930,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             key_number: None,
         })
     }
+}
+
+async fn arena_command_gate(gate: &tokio::sync::Mutex<()>, native_step: bool) -> Option<tokio::sync::MutexGuard<'_, ()>> {
+    // A command gate holder may be waiting for the spell lane held by STEP.
+    // Refuse this attempt without waiting; a later movement can retry it.
+    if native_step { gate.try_lock().ok() } else { Some(gate.lock().await) }
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn review7_native_step_does_not_wait_for_arena_command_gate() {
+    use std::future::Future;
+    use std::task::{Context, Poll, Waker};
+    let gate = tokio::sync::Mutex::new(());
+    let held = gate.lock().await;
+    {
+        let mut step = std::pin::pin!(arena_command_gate(&gate, true));
+        assert!(matches!(step.as_mut().poll(&mut Context::from_waker(Waker::noop())), Poll::Ready(None)));
+    }
+    drop(held);
+    assert!(arena_command_gate(&gate, true).await.is_some());
+    assert!(arena_command_gate(&gate, false).await.is_some());
 }

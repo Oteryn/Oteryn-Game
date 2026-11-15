@@ -235,8 +235,12 @@ impl DromeModifierState {
                         percent: 60,
                     },
                     DromeModifier::BeamMeUp => {
-                        let choices: Vec<_> =
-                            self.room.iter().copied().filter(|at| free(*at)).collect();
+                        let choices: Vec<_> = self
+                            .room
+                            .iter()
+                            .copied()
+                            .filter(|at| free(*at) && !reserved_destinations.contains(at))
+                            .collect();
                         let Some(index) =
                             self.draw(pulse.ordinal, choices.len(), 100 + effects.len() as u64)
                         else {

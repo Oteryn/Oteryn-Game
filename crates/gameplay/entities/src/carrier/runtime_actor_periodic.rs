@@ -516,11 +516,15 @@ impl ChannelRuntimeV1 {
             };
             let Slot::Occupied {
                 game_session_id: Some(session),
+                generation,
                 ..
             } = &self.carrier.slots[source_index]
             else {
                 continue;
             };
+            if *generation != source.0.actor_local_generation.0 {
+                continue;
+            }
             let lease = self.bound_attacker_lease(source, *session)?;
             let previous = damage_contributors.high_water(lease.character_id());
             if previous.is_some_and(|mark| {
@@ -933,6 +937,108 @@ mod tests {
             .unwrap();
         runtime.compare_companion_state(&before, after).unwrap();
     }
+    fn retired_dot_source(reused: bool) {
+        let (mut runtime, source, session) = owner();
+        let character = CharacterId::decode(&id(9)).unwrap();
+        runtime
+            .bind_attacker_lease(source, session, CharacterLease::new(character, 1).unwrap())
+            .unwrap();
+        let creature = runtime
+            .admit_pinned_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                "creature:rat",
+                812,
+            )
+            .unwrap();
+        runtime
+            .install_creature_policy(creature, "creature:rat")
+            .unwrap();
+        let before = runtime.companion_snapshot(creature).unwrap();
+        let mut after = before.state.clone();
+        let definition = ConditionDefinition::new(
+            "test.retired-source.dot",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Fire,
+                total_min: 10,
+                total_max: 10,
+                per_tick: 10,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .unwrap();
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        after
+            .conditions
+            .apply(
+                &definition,
+                Some(source),
+                ConditionSourceKind::Field,
+                &[],
+                &ApplicationFacts {
+                    now: 0,
+                    base_speed: 220,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([5; 16]),
+                },
+            )
+            .unwrap();
+        runtime.compare_companion_state(&before, after).unwrap();
+        runtime.remove_test_actor(source).unwrap();
+        if reused {
+            let session = GameSessionId::decode(&id(10)).unwrap();
+            let reservation = runtime.reserve_fresh_session(session).unwrap();
+            let replacement = runtime.commit_fresh_session(reservation).unwrap();
+            runtime
+                .initialize_first_entry_position(replacement)
+                .unwrap();
+            runtime
+                .bind_attacker_lease(
+                    replacement,
+                    session,
+                    CharacterLease::new(CharacterId::decode(&id(11)).unwrap(), 1).unwrap(),
+                )
+                .unwrap();
+            assert_eq!(replacement.0.actor_local_id, source.0.actor_local_id);
+            assert_ne!(replacement, source);
+            let context = runtime
+                .carrier
+                .soul_war_health_context(
+                    &runtime.continuity,
+                    Some(source),
+                    None,
+                    Some(1_000),
+                    super::super::soul_war_player_source::SoulWarPlayerSourceOrigin::Condition,
+                    runtime.content_pin(),
+                )
+                .unwrap();
+            assert!(matches!(
+                context.kind,
+                super::super::soul_war_health::HealthSourceKind::Null
+            ));
+            assert!(context.actor.is_none());
+        }
+        let prepared = runtime
+            .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+            .unwrap();
+        let receipt = runtime.commit_creature_periodic_turn(prepared).unwrap();
+        assert_eq!(receipt.health_before - receipt.health_after, 10);
+        assert_eq!(receipt.impacts.len(), 1);
+    }
+    #[test]
+    fn review9_dot_survives_reused_source_slot() {
+        retired_dot_source(true);
+    }
+
     #[test]
     fn agony_on_a_creature_ticks_raw_damage_past_mitigation_and_resistance() {
         let mut tough = policy("rat");
