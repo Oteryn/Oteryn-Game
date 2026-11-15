@@ -17,6 +17,14 @@ impl crate::play::PlayView {
 }
 
 impl PlayLink {
+    pub fn cyclopedia_atlas_panel(&self) -> Option<oteryn_client_ui::cyclopedia_map::Panel> {
+        let mailbox = lock(&self.mailbox);
+        let panel = &mailbox.properties.cyclopedia_map;
+        panel.geometry.open.then(|| panel.clone())
+    }
+    pub fn cyclopedia_atlas_close(&self) {
+        lock(&self.mailbox).properties.cyclopedia_map.geometry.open = false;
+    }
     pub fn cyclopedia_map_panel(&self) -> oteryn_client_ui::cyclopedia_map::Panel {
         lock(&self.mailbox).properties.cyclopedia_map.clone()
     }
@@ -347,3 +355,17 @@ mod atlas_tests;
 #[cfg(test)]
 #[path = "view/discovery_tests.rs"]
 mod discovery_tests;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_cyclopedia_map_selected(&self) {
+        lock(&self.0).properties.cyclopedia_map.selected = true;
+    }
+    pub(crate) fn bevy_cyclopedia_map_reply(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+}

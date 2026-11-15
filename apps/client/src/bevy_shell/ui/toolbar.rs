@@ -10,6 +10,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Bosstiary", Control::Panel("bosstiary")),
     ("Bestiary", Control::Panel("bestiary")),
     ("Chat", Control::Panel("chat")),
+    ("Cyclopedia Map", Control::CyclopediaMap),
     ("Depot", Control::Depot),
     ("Compendium", Control::Notices),
     ("Inspection", Control::Inspection),
@@ -68,6 +69,11 @@ pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Contro
                     play.link
                         .vip_request(oteryn_client_ui::vip::Intent::Query(0));
                 }
+            }
+        }
+        Control::CyclopediaMap => {
+            if let Some(play) = &owner.play {
+                play.link.cyclopedia_atlas_open();
             }
         }
         Control::Analysers => {

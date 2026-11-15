@@ -6,6 +6,7 @@ mod bestiary;
 mod bug_report;
 mod chat;
 mod cyclopedia;
+mod cyclopedia_map;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;
