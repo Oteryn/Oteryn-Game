@@ -73,9 +73,27 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
+- **Ctrl+W:** Wheel of Destiny allocation and saved point presets. Left click a
+  reachable node to add one point; right click removes one when permitted.
+- **Ctrl+Shift+T:** Task Board: Bounty Tasks, Weekly progress/results and Shop.
+  Rerolls require confirmation and cost one token. Daily tokens are claimed at
+  the Daily Reward Wall; the board shows the balance and cap.
+- **Ctrl+Z:** Bug report with category, multiline description, review and Send.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+P:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
+- **Ctrl+Shift+F:** Exaltation Forge: Fusion, Transfer, Conversion and History.
+  Opens locally and requests current forge candidates; this protocol has no server-open event.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+S:** Supply Stash, with search/category/trader filters, name/stock sort,
+  and a bounded withdrawal dialog. Stash rows show definition names because the
+  protocol supplies no verified artwork binding.
+- **Ctrl+Alt+I:** Inspection. Use **Inspect selected** to request the selected
+  inventory item's data. Multi-item replies show a selectable list and one details
+  pane, including equipment slots returned by player inspection. Cells use item
+  names when appearance IDs are unavailable. Player outfit and profile details
+  require additional server data. Right-click a visible player and choose
+  **Inspect** to request equipment inspection, subject to server permission.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.

@@ -1,0 +1,266 @@
+use super::*;
+#[test]
+fn prey_slot_state_labels() {
+    assert_eq!(
+        [slot_title(2), slot_title(1), slot_title(0)],
+        ["Active", "Inactive", "Locked"]
+    );
+}
+#[test]
+fn prey_locked_slot_actions() {
+    assert!(slot_actions(0).is_empty());
+}
+#[test]
+fn prey_active_slot_action_list() {
+    let actions = slot_actions(2);
+    assert!(actions.contains(&Kind::Send(Intent::BonusReroll { slot: 1 })));
+    assert!(actions.contains(&Kind::Reroll(1)));
+    assert!(actions.contains(&Kind::Send(Intent::SetOption { slot: 1, option: 1 })));
+    assert!(actions.contains(&Kind::Send(Intent::SetOption { slot: 1, option: 2 })));
+}
+#[test]
+fn prey_confirmation_is_one_shot() {
+    let mut confirmation = None;
+    assert_eq!(resolve(Kind::Reroll(1), &mut confirmation), None);
+    assert_eq!(confirmation, Some(1));
+    assert_eq!(
+        resolve(Kind::Confirm, &mut confirmation),
+        Some(Intent::ListReroll { slot: 1 })
+    );
+    assert_eq!(resolve(Kind::Confirm, &mut confirmation), None);
+}
+#[test]
+fn prey_shortcut_requests_data() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::play_channel;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, _) = play_channel();
+    assert!(link.prey_input(&[NormalizedInputEvent::Key {
+        code: KeyCode::new(19)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false
+    }]));
+    assert!(link.prey_panel().open);
+    assert!(commands.try_recv().is_err()); // no capability selected: no wire command
+    Ok(())
+}
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+fn fixture() -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_client_ui::prey::{CommandStatus, PreyResponse, prey};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_prey_initialize(true);
+    link.prey_set_open(true);
+    link.prey_request(Intent::Refresh);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Prey(prey::Request::Query)
+    ));
+    let reply = prey::Reply {
+        status: 0,
+        wildcard_balance: 5,
+        list_size: 9,
+        expansion_owned: false,
+        offered_today: vec![],
+        offered_next: String::new(),
+        slots: (1..=3)
+            .map(|slot| prey::Slot {
+                slot,
+                state: if slot == 1 {
+                    2
+                } else if slot == 2 {
+                    1
+                } else {
+                    0
+                },
+                creatures: if slot == 2 {
+                    vec!["oteryn:creature.rat".into()]
+                } else {
+                    vec![]
+                },
+                selected: if slot == 1 {
+                    "oteryn:creature.dragon".into()
+                } else {
+                    String::new()
+                },
+                bonus: 1,
+                grade: 7,
+                percent: 19,
+                hunting_seconds: 3660,
+                option: 0,
+                free_reroll_at: 0,
+                chosen_tier: 1,
+                allowed_tier: 1,
+                selection_epoch: 1,
+            })
+            .collect(),
+    };
+    let bytes = prey::encode_reply(&reply).map_err(|e| format!("{e:?}"))?;
+    outbox.bevy_prey_result(&PreyResponse {
+        request: prey::Request::Query,
+        status: CommandStatus::Accepted,
+        payload: bytes,
+        current: None,
+    });
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.insert_non_send(host).insert_resource(Skins {
+        buttons: source::ButtonImages {
+            up: Handle::default(),
+            down: Handle::default(),
+        },
+        checked: Handle::default(),
+        unchecked: Handle::default(),
+        frame: Handle::default(),
+        inset: Handle::default(),
+        font: Handle::default(),
+    });
+    install(&mut app);
+    app.update();
+    Ok((app, commands))
+}
+fn click(app: &mut App, kind: Kind) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| (action.kind == kind).then_some(entity))
+        .ok_or("missing button")?;
+    app.world_mut().trigger(Activate { entity });
+    Ok(())
+}
+#[test]
+fn prey_three_slots_states() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_ui::prey::prey;
+    let (mut app, mut commands) = fixture()?;
+    let texts: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.clone())
+        .collect();
+    for title in ["Slot 1 · Active", "Slot 2 · Inactive", "Slot 3 · Locked"] {
+        assert!(texts.iter().any(|s| s == title));
+    }
+    assert!(
+        texts
+            .iter()
+            .any(|s| s.contains("dragon · Damage +19% · 7/10 · 01:01"))
+    );
+    click(&mut app, Kind::Reroll(2))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, Kind::Confirm)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::Prey(prey::Request::ListReroll { slot: 2 })
+    ));
+    Ok(())
+}
+#[test]
+fn prey_active_slot_controls_send_intents() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_ui::prey::prey;
+    for intent in [
+        Intent::BonusReroll { slot: 1 },
+        Intent::SetOption { slot: 1, option: 1 },
+        Intent::SetOption { slot: 1, option: 2 },
+    ] {
+        let (mut app, mut commands) = fixture()?;
+        click(&mut app, Kind::Send(intent.clone()))?;
+        let PlayCommand::Prey(request) = commands.try_recv()? else {
+            return Err("wrong command".into());
+        };
+        assert!(matches!(
+            (intent, request),
+            (
+                Intent::BonusReroll { slot: 1 },
+                prey::Request::BonusReroll { slot: 1 }
+            ) | (
+                Intent::SetOption { slot: 1, option: 1 },
+                prey::Request::SetOption { slot: 1, option: 1 }
+            ) | (
+                Intent::SetOption { slot: 1, option: 2 },
+                prey::Request::SetOption { slot: 1, option: 2 }
+            )
+        ));
+    }
+    let (mut app, mut commands) = fixture()?;
+    click(&mut app, Kind::Select(2, 1))?;
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::Prey(prey::Request::Select { slot: 2, index: 1 })
+    ));
+    Ok(())
+}
+#[test]
+fn prey_shortcut_dispatch_respects_input_fence() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, mut commands) = fixture()?;
+    let mut host = app.world_mut().non_send_mut::<HostOwner>();
+    host.play.as_ref().ok_or("play")?.link.prey_set_open(false);
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(19)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    };
+    host.route_input(std::slice::from_ref(&event), true);
+    assert!(!host.play.as_ref().ok_or("play")?.link.prey_panel().open);
+    assert!(commands.try_recv().is_err());
+    host.route_input(&[event], false);
+    assert!(host.play.as_ref().ok_or("play")?.link.prey_panel().open);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Prey(oteryn_client_ui::prey::prey::Request::Query)
+    ));
+    Ok(())
+}
+
+#[test]
+fn prey_locked_slot() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let mut actions = app.world_mut().query::<&Action>();
+    for action in actions.iter(app.world()) {
+        assert!(!matches!(
+            action.kind,
+            Kind::Select(3, _)
+                | Kind::Reroll(3)
+                | Kind::Send(Intent::BonusReroll { slot: 3 })
+                | Kind::Send(Intent::SetOption { slot: 3, .. })
+        ));
+    }
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+#[test]
+fn prey_reroll_needs_confirmation() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    click(&mut app, Kind::Reroll(2))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, Kind::Cancel)?;
+    app.update();
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    click(&mut app, Kind::Confirm)?;
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Prey(oteryn_client_ui::prey::prey::Request::ListReroll {
+            slot: 2
+        })
+    ));
+    Ok(())
+}

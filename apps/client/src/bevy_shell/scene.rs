@@ -77,6 +77,7 @@ pub(super) fn project(
     let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
     let minimap_range = scene.minimap_quad_range();
     let lighting = &scene.sprites().lighting;
+    let circle_quads = &scene.health_circle_quads;
     let ordered = scene
         .tiles()
         .instances()
@@ -89,6 +90,7 @@ pub(super) fn project(
                 .instances()
                 .iter()
                 .enumerate()
+                .filter(|(i, _)| !circle_quads.contains(i))
                 .map(|(i, q)| {
                     (
                         q,

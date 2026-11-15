@@ -1,13 +1,16 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+mod bug_report;
 mod chat;
 mod feature_dialogs;
+mod forge;
+pub(super) mod highscores;
 mod hud;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;
-mod item_details;
+pub(super) mod item_details;
 mod journal;
 mod market;
 pub(super) mod minimap;
@@ -15,11 +18,16 @@ pub(super) mod modal;
 mod npc_shop;
 pub(super) mod options;
 pub(super) mod party;
+mod prey;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod stash;
+mod task_board;
 mod trade;
+mod tutorial;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -232,7 +240,10 @@ pub(super) fn install(app: &mut App) {
     journal::install(app);
     chat::install(app);
     actions::install(app);
+    bug_report::install(app);
     feature_dialogs::install(app);
+    highscores::install(app);
+    forge::install(app);
     hud::install(app);
     inventory::install(app);
     item_details::install(app);
@@ -240,8 +251,13 @@ pub(super) fn install(app: &mut App) {
     minimap::install(app);
     npc_shop::install(app);
     party::install(app);
+    prey::install(app);
     quick_loot::install(app);
+    task_board::install(app);
+    stash::install(app);
     trade::install(app);
+    wheel::install(app);
+    tutorial::install(app);
     app.add_systems(
         Update,
         (
