@@ -67,16 +67,23 @@ fn reference_key<'a>(value: &'a Value, family: &str) -> Result<&'a str, Authorin
 
 fn item_id(reference: &Value) -> Result<u32, AuthoringError> {
     let key = reference_key(reference, "Item")?;
-    key.rsplit('/')
-        .next()
+    // profile_from_bundle has already checked canonical spelling and a positive u32 ID.
+    key.strip_prefix("candidate:item/")
+        .or_else(|| key.strip_prefix("oteryn:item.tibia.i"))
         .and_then(|id| id.parse().ok())
-        .ok_or_else(|| AuthoringError(format!("item key {key} does not end in a numeric item id")))
+        .ok_or_else(|| AuthoringError(format!("invalid numeric item key {key}")))
 }
 
-fn find<'a>(list: &'a Value, key: &str) -> Result<&'a Value, AuthoringError> {
+fn find<'a>(list: &'a Value, reference: &Value, family: &str) -> Result<&'a Value, AuthoringError> {
+    let key = reference_key(reference, family)?;
+    let revision = text(reference, "revision")?;
     list.as_array()
-        .and_then(|items| items.iter().find(|item| item["identity"]["key"] == key))
-        .ok_or_else(|| AuthoringError(format!("no local payload for {key}")))
+        .and_then(|items| {
+            items.iter().find(|item| {
+                item["identity"]["key"] == key && item["identity"]["revision"] == revision
+            })
+        })
+        .ok_or_else(|| AuthoringError(format!("no local {family} payload for {key}@{revision}")))
 }
 
 /// One `spell.json` plus its `dependencies.json`.
@@ -188,16 +195,14 @@ pub fn spell_from_bundle(
             count: number(conjure, "count")?,
         }
     } else if let Some(ability) = execution.get("ability") {
-        let key = reference_key(ability, "Ability")?;
-        let profile = find(field(dependencies, "abilities")?, key)?;
+        let profile = find(field(dependencies, "abilities")?, ability, "Ability")?;
         if let Some(variants) = profile.get("variants") {
             let variants = variants
                 .as_array()
                 .ok_or_else(|| AuthoringError("variants is not an array".into()))?
                 .iter()
                 .map(|reference| {
-                    let (effects, variant_chain) =
-                        ability_effects(reference_key(reference, "Ability")?, dependencies)?;
+                    let (effects, variant_chain) = ability_effects(reference, dependencies)?;
                     if variant_chain.is_some() {
                         return fail("a variant cannot add a chain without the chain owner");
                     }
@@ -210,7 +215,7 @@ pub fn spell_from_bundle(
                 .collect::<Result<Vec<_>, AuthoringError>>()?;
             Execution::AbilityVariants(variants)
         } else {
-            let (effects, ability_chain) = ability_effects(key, dependencies)?;
+            let (effects, ability_chain) = ability_effects(ability, dependencies)?;
             chain = ability_chain;
             Execution::Effects(effects)
         }
@@ -322,8 +327,12 @@ fn formulas(execution: &Execution) -> impl Iterator<Item = &Formula> {
 /// The effects of an Ability and its chain, if any.
 type AbilityEffects = (Vec<SpellEffect>, Option<ChainSpec>);
 
-fn ability_effects(key: &str, dependencies: &Value) -> Result<AbilityEffects, AuthoringError> {
-    let ability = find(field(dependencies, "abilities")?, key)?;
+fn ability_effects(
+    reference: &Value,
+    dependencies: &Value,
+) -> Result<AbilityEffects, AuthoringError> {
+    let key = reference_key(reference, "Ability")?;
+    let ability = find(field(dependencies, "abilities")?, reference, "Ability")?;
     if ability.get("variants").is_some() {
         return fail(format!(
             "{key} picks random variants, which this core does not resolve"
@@ -341,8 +350,7 @@ fn ability_effects(key: &str, dependencies: &Value) -> Result<AbilityEffects, Au
 
 /// The Effect an `EffectRef` names in the bundle's dependencies.
 fn spell_effect(reference: &Value, dependencies: &Value) -> Result<SpellEffect, AuthoringError> {
-    let key = reference_key(reference, "Effect")?;
-    let effect = find(field(dependencies, "effects")?, key)?;
+    let effect = find(field(dependencies, "effects")?, reference, "Effect")?;
     Ok(match text(effect, "operation")? {
         "damage" => SpellEffect::Damage {
             damage_type: text(effect, "damage_type")?.to_owned(),
@@ -558,7 +566,8 @@ fn chain_spec(chain: &Value) -> Result<ChainSpec, AuthoringError> {
 fn effect_formula(effect: &Value, dependencies: &Value) -> Result<Formula, AuthoringError> {
     let formula = find(
         field(dependencies, "formulas")?,
-        reference_key(field(effect, "formula")?, "Formula")?,
+        field(effect, "formula")?,
+        "Formula",
     )?;
     if text(formula, "kind")? != "player_expression" {
         return fail("a player cast needs a player_expression formula");
@@ -630,5 +639,110 @@ pub fn expression(value: &Value, depth: usize) -> Result<Expression, AuthoringEr
             args,
         )),
         other => fail(format!("unknown formula operation {other}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn sample_bundle(name: &str) -> Result<(Value, Value), Box<dyn Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../tools/content-schema/spell-authoring/samples/starter-bundles")
+            .join(name);
+        Ok((
+            serde_json::from_slice(&std::fs::read(root.join("spell.json"))?)?,
+            serde_json::from_slice(&std::fs::read(root.join("dependencies.json"))?)?,
+        ))
+    }
+
+    #[test]
+    fn lowering_resolves_exact_dependency_revisions() -> Result<(), Box<dyn Error>> {
+        let (bundle, dependencies) = sample_bundle("instant-light_healing")?;
+        let expected = spell_from_bundle(&bundle, &dependencies)?.execution;
+        for family in ["formulas", "effects", "abilities"] {
+            let mut changed = dependencies.clone();
+            let mut decoy = changed[family][0].clone();
+            decoy["identity"]["revision"] = json!("other-revision");
+            match family {
+                "formulas" => {
+                    decoy["minimum"] = json!({"const": "999"});
+                    decoy["maximum"] = json!({"const": "999"});
+                }
+                "effects" => {
+                    decoy = json!({"identity": decoy["identity"],
+                        "operation": "remove_condition", "removed_condition": "paralyze"});
+                }
+                _ => decoy["effects"] = json!([decoy["effects"][1]]),
+            }
+            changed[family]
+                .as_array_mut()
+                .ok_or("missing family")?
+                .insert(0, decoy);
+            assert_eq!(
+                spell_from_bundle(&bundle, &changed)?.execution,
+                expected,
+                "{family}"
+            );
+        }
+        // Variant references must retain their own revision as well.
+        let mut variants_bundle = bundle.clone();
+        let mut variants_deps = dependencies.clone();
+        let mut root = dependencies["abilities"][0].clone();
+        root["identity"]["key"] = json!("candidate:ability/variant-owner");
+        let reference = bundle["spell"]["execution"]["ability"].clone();
+        root["effects"] = json!([]);
+        root["variants"] = json!([reference, reference]);
+        variants_bundle["spell"]["execution"]["ability"]["key"] = root["identity"]["key"].clone();
+        variants_deps["abilities"]
+            .as_array_mut()
+            .ok_or("missing abilities")?
+            .push(root);
+        let expected = spell_from_bundle(&variants_bundle, &variants_deps)?.execution;
+        let mut decoy = dependencies["abilities"][0].clone();
+        decoy["identity"]["revision"] = json!("other-revision");
+        decoy["effects"] = json!([decoy["effects"][1]]);
+        variants_deps["abilities"]
+            .as_array_mut()
+            .ok_or("missing abilities")?
+            .insert(0, decoy);
+        assert_eq!(
+            spell_from_bundle(&variants_bundle, &variants_deps)?.execution,
+            expected
+        );
+        Ok(())
+    }
+    #[test]
+    fn lowering_accepts_canonical_rune_item_keys() -> Result<(), Box<dyn Error>> {
+        let (mut bundle, dependencies) = sample_bundle("rune-sudden_death_rune")?;
+        let expected = spell_from_bundle(&bundle, &dependencies)?.carrier;
+        bundle["spell"]["rune"]["item"]["key"] = json!("oteryn:item.tibia.i3155");
+        assert!(
+            super::super::executable_catalog::profile_from_bundle(&bundle, &dependencies).is_ok()
+        );
+        assert_eq!(spell_from_bundle(&bundle, &dependencies)?.carrier, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn lowering_accepts_canonical_conjure_item_keys() -> Result<(), Box<dyn Error>> {
+        let (bundle, dependencies) = sample_bundle("instant-sudden_death_rune")?;
+        let expected = spell_from_bundle(&bundle, &dependencies)?.execution;
+        for (field, id) in [("reagent", 3147), ("result", 3155)] {
+            let mut changed = bundle.clone();
+            changed["spell"]["execution"]["conjure"][field]["key"] =
+                json!(format!("oteryn:item.tibia.i{id}"));
+            assert!(
+                super::super::executable_catalog::profile_from_bundle(&changed, &dependencies)
+                    .is_ok()
+            );
+            assert_eq!(
+                spell_from_bundle(&changed, &dependencies)?.execution,
+                expected,
+                "{field}"
+            );
+        }
+        Ok(())
     }
 }
