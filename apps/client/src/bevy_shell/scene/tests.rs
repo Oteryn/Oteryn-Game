@@ -498,6 +498,93 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
 }
 
 #[test]
+fn resource_gauges_do_not_duplicate_sidebar_hud_in_bevy_scene() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::ActorVitals;
+
+    let (link, _, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    let mut preferences = view.preferences().clone();
+    preferences.resource_hud.combo = false;
+    preferences.health_circle = false;
+    view.set_preferences(preferences.clone())?;
+    let (width, height) = view.scene().view().viewport_px();
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(width, height),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    let baseline = app.world().resource::<SceneCache>().entities.len();
+    for (health, harmony, serene) in [(50, 3, true), (100, 0, false)] {
+        outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+            oteryn_session::AppliedDelta {
+                server_sequence: u64::from(health),
+                base_revision: 0,
+                new_revision: 1,
+                value: ActorVitals {
+                    health,
+                    max_health: 100,
+                    mana: 20,
+                    max_mana: 40,
+                    harmony,
+                    serene,
+                    ..default()
+                },
+            },
+        )]);
+        {
+            let mut host = app.world_mut().non_send_mut::<HostOwner>();
+            let play = host.play.as_mut().ok_or("play")?;
+            play.view.tick(&play.link).map_err(|_| "session ended")?;
+            assert_eq!(play.view.actor_vitals().map(|v| v.health), Some(health));
+        }
+        app.update();
+        assert_eq!(
+            app.world().resource::<SceneCache>().entities.len(),
+            baseline
+        );
+    }
+    // Removing corner gauges must preserve the actor-following combo gauge.
+    preferences.resource_hud.combo = true;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_preferences(preferences.clone())?;
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().entities.len(),
+        baseline + 5
+    );
+    // Native circle quads are still replaced by Bevy's configurable circle renderer.
+    preferences.health_circle = true;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_preferences(preferences)?;
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().entities.len(),
+        baseline + 5
+    );
+    Ok(())
+}
+
+#[test]
 fn constant_uv_preserves_texel_tint_clipping_and_dpi() -> TestResult {
     let atlas = AtlasImage::new(
         2,

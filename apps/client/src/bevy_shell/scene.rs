@@ -99,7 +99,7 @@ pub(super) fn project(
         *alpha = crate::scene::floor_lighting::fade_alpha(*alpha, visible, time.delta_secs());
     }
     let lighting = &scene.sprites().lighting;
-    let circle_quads = &scene.health_circle_quads;
+    let hud_quads = &scene.native_hud_quads;
     let SceneCache {
         floor_alpha,
         entities,
@@ -117,7 +117,7 @@ pub(super) fn project(
                 .instances()
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| !circle_quads.contains(i))
+                .filter(|(i, _)| !hud_quads.contains(i))
                 .map(|(i, q)| {
                     let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
                     if let Some((_, floor)) = scene
