@@ -14,6 +14,7 @@ pub const ITEM_MOVABLE_PACKET_SHA256: &str =
 pub fn apply_item_movable_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<PhysicalPromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_MOVABLE_PACKET) != ITEM_MOVABLE_PACKET_SHA256 {
         return Err("movable packet digest drift".into());
     }

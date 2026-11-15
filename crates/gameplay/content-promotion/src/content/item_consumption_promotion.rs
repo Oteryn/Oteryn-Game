@@ -39,6 +39,7 @@ struct Row {
 pub fn apply_item_consumption_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<(usize, usize), String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_CONSUMPTION_PACKET) != ITEM_CONSUMPTION_PACKET_SHA256 {
         return Err("item consumption packet digest drift".into());
     }
