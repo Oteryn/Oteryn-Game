@@ -105,7 +105,7 @@ With no text field focused, the existing gameplay shortcuts open:
   book/sign author/date descriptors are not available on the current wire.
   Server modal messages without an input remain read-only; text inputs retain
   their existing edit and answer path.
-- **Ctrl+O:** Cyclopedia character: general and combat stats, recent deaths and PvP
+- **Ctrl+U:** Cyclopedia character: general and combat stats, recent deaths and PvP
   kills, achievements, item summary, outfits/mounts, store summary, inspection and
   badges. Selecting a tab requests its data; Escape or Close dismisses the window.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
@@ -119,12 +119,16 @@ only. Choose a reason and action, enter a comment,
 then Send. The window uses the protocol-supported Name, Statement and Bot report
 types; legacy OTClient moderation penalties are not report actions in this protocol.
 
+**Ctrl+Alt+Z:** explored-world overview (satellite map), exact modifiers; arrows pan,
+Escape or Close dismisses it. F10 stays audio mute and Ctrl+Alt+Shift+F10 notice banners.
+Like every shortcut it is ignored while a modal window or text field has focus.
+
 Market and Party also have buttons on the gameplay toolbar.
 The gameplay toolbar lists windows alphabetically: Analysers, Battle, Chat,
 Inspection, Inventory, Loot Containers, Market, Minimap, Notices, Options, Party,
 Quest Log, Skills, Spellbook and VIP. Buttons open the existing retained window
 owners or reveal their HUD panel; Skills refreshes its always-visible panel.
-The label/action registry is `TOOLBAR` in `src/bevy_shell/ui.rs`.
+The label/action registry is `TOOLBAR` in `src/bevy_shell/ui/toolbar.rs`.
 
 Achievement notices appear in arrival order, one banner at a time. Each fades in
 for 400 ms, holds for 3 seconds, then fades out for 300 ms, matching OTClient's
@@ -170,7 +174,7 @@ covered-tile visibility rule locally.
 
 ## Outfit editor
 
-Press Ctrl+Alt+A while playing to open Outfit. Select a granted outfit, owned
+Press Ctrl+Alt+A (rebindable as `0025-appearance-open`) while playing to open Outfit. Select a granted outfit, owned
 addons, four palette colours and a mount, then OK to send the existing appearance
 change. Cancel closes the editor. The standing preview uses local verified sprite
 sheets; mounts display their catalogue keys because the model has no mount sprite

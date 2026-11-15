@@ -1,4 +1,4 @@
-//! Explored-world overview. F10 opens at the player; arrows pan.
+//! Explored-world overview. Ctrl+Alt+Z opens at the player; arrows pan.
 use super::super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -80,11 +80,12 @@ fn buttons(
 }
 fn project(
     mut commands: Commands,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     keys: Res<ButtonInput<KeyCode>>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
 ) {
+    let requested = owner.take_satellite_request();
     let Some(play) = owner.play.as_ref() else {
         state.open = false;
         if let Some(panel) = state.panel.take() {
@@ -97,25 +98,24 @@ fn project(
         state.open = false;
         state.generation = owner.generation();
     }
-    if super::super::input::satellite_shortcut(&keys) && !owner.modal_active() {
-        if state.open {
-            state.open = false;
-        } else {
-            *state = State {
-                generation: owner.generation(),
-                ..State::at(play.view.satellite_player())
-            };
+    if requested && !state.open {
+        // Replacing State would lose the old panel entity, which keeps blocking input.
+        if let Some(panel) = state.panel.take() {
+            commands.entity(panel).despawn();
         }
+        *state = State {
+            generation: owner.generation(),
+            ..State::at(play.view.satellite_player())
+        };
+    }
+    if state.open && keys.just_pressed(KeyCode::Escape) {
+        state.open = false;
     }
     if !state.open {
         if let Some(panel) = state.panel.take() {
             commands.entity(panel).despawn();
         }
         state.rendered = None;
-        return;
-    }
-    if keys.just_pressed(KeyCode::Escape) {
-        state.open = false;
         return;
     }
     let step = 16 / state.scale.max(1);
@@ -312,5 +312,117 @@ mod tests {
         let state = State::at((100, 200, -7));
         assert_eq!(state.point(100, 200, -7), Some((240., 180.)));
         assert_eq!(state.point(100, 200, -8), None);
+    }
+    use crate::{
+        bevy_shell::owner::{ActivePlay, Phase},
+        play::{PlayView, play_channel},
+    };
+    use oteryn_input_actions::{
+        ButtonState, KeyCode as Key, Modifier, Modifiers, NormalizedInputEvent,
+    };
+    fn key(
+        code: u16,
+        modifiers: Modifiers,
+    ) -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        Ok(NormalizedInputEvent::Key {
+            code: Key::new(code)?,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat: false,
+        })
+    }
+    fn chord() -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        key(29, Modifiers::one(Modifier::Control).with(Modifier::Alt))
+    }
+    fn host() -> Result<HostOwner, Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let (link, _commands, _outbox) = play_channel();
+        link.use_shared_frontend();
+        let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        view.use_shared_frontend();
+        owner.play = Some(ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        Ok(owner)
+    }
+    #[test]
+    fn satellite_chord_reaches_only_unblocked_play_and_f10_stays_audio()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = host()?;
+        let chord = chord()?;
+        owner.route_input(std::slice::from_ref(&chord), true);
+        assert!(
+            !owner.take_satellite_request(),
+            "blocked input must not open it"
+        );
+        owner.open_graphics();
+        owner.route_input(std::slice::from_ref(&chord), false);
+        assert!(
+            !owner.take_satellite_request(),
+            "a modal fences the shortcut"
+        );
+        owner.cancel();
+        owner.route_input(&[key(67, Modifiers::NONE)?], false);
+        assert!(
+            !owner.take_satellite_request(),
+            "plain F10 belongs to audio mute"
+        );
+        owner.route_input(
+            &[key(
+                67,
+                Modifiers::one(Modifier::Control)
+                    .with(Modifier::Alt)
+                    .with(Modifier::Shift),
+            )?],
+            false,
+        );
+        assert!(!owner.take_satellite_request());
+        owner.route_input(&[chord], false);
+        assert!(owner.take_satellite_request());
+        assert!(!owner.take_satellite_request(), "one request per press");
+        Ok(())
+    }
+    #[test]
+    fn satellite_escape_despawns_the_panel_so_reopening_leaves_no_orphan()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(host()?)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        let modals = |app: &mut App| {
+            app.world_mut()
+                .query::<&super::super::GameModal>()
+                .iter(app.world())
+                .count()
+        };
+        let open = |app: &mut App| -> Result<(), Box<dyn std::error::Error>> {
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .route_input(&[chord()?], false);
+            app.update();
+            Ok(())
+        };
+        app.update();
+        let base = modals(&mut app);
+        open(&mut app)?;
+        assert_eq!(modals(&mut app), base + 1);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.update();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .clear();
+        assert_eq!(
+            modals(&mut app),
+            base,
+            "Escape must remove the blocking panel"
+        );
+        open(&mut app)?;
+        assert_eq!(modals(&mut app), base + 1);
+        Ok(())
     }
 }

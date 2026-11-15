@@ -27,7 +27,6 @@ enum Kind {
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
-    closed: bool,
     artwork: Option<preview::Assets>,
     image: Option<Handle<Image>>,
 }
@@ -97,7 +96,6 @@ fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
     owner: NonSend<HostOwner>,
-    mut state: ResMut<State>,
     guard: ModalGuard,
 ) {
     if !guard.allows(event.entity) {
@@ -113,7 +111,7 @@ fn activate(
         return;
     };
     if matches!(action.kind, Kind::Close) {
-        state.closed = true;
+        play.link.appearance_close();
         return;
     }
     send(&play.link, &action.kind);
@@ -172,22 +170,13 @@ fn project(
             commands.entity(entity).despawn();
         }
         state.rendered = None;
-        state.closed = false;
         return;
     };
-    if keys.just_pressed(KeyCode::KeyA)
-        && (keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight))
-        && (keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight))
-        && !owner.modal_active()
-    {
-        play.link.appearance_open();
-        state.closed = false;
-    }
     if keys.just_pressed(KeyCode::Escape) {
-        state.closed = true;
+        play.link.appearance_close();
     }
     let panel = play.link.appearance_panel();
-    if !panel.open || state.closed {
+    if !panel.open {
         for entity in &windows {
             commands.entity(entity).despawn();
         }

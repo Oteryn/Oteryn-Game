@@ -365,3 +365,38 @@ fn cyclopedia_shortcut_route_does_not_open_the_unported_blessings_window() -> Te
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+#[test]
+fn cyclopedia_reopened_while_pending_sends_its_tab_once_the_builder_accepts() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
+    // Close and reopen before the reply: the retained builder refuses the first request.
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .window_toggle("0199-cyclopedia-character-open", &[]);
+    }
+    app.update();
+    let reopen = oteryn_input_actions::NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(24)?,
+        state: oteryn_input_actions::ButtonState::Pressed,
+        modifiers: oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[reopen], false);
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "builder must refuse while pending"
+    );
+    response(&outbox, vec![]);
+    app.update();
+    assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

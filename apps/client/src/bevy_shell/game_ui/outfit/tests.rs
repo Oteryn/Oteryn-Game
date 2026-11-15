@@ -92,3 +92,55 @@ fn outfit_ok_sends_intent() -> Result<(), Box<dyn std::error::Error>> {
     assert!(receiver.try_recv().is_err());
     Ok(())
 }
+#[test]
+fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        bevy_shell::owner::{ActivePlay, HostOwner},
+        play::{PlayView, play_channel},
+    };
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let key = |code: u16,
+               modifiers: Modifiers|
+     -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(code)?,
+            state: ButtonState::Pressed,
+            modifiers,
+            repeat: false,
+        })
+    };
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, _outbox) = play_channel();
+    link.use_shared_frontend();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(ActivePlay { view, link });
+    owner
+        .settings
+        .preferences
+        .rebind("0025-appearance-open", "CTRL+ALT+SHIFT+L")?;
+    let open = |owner: &HostOwner| {
+        owner
+            .play
+            .as_ref()
+            .is_some_and(|p| p.link.appearance_panel().open)
+    };
+    let default_chord = key(4, Modifiers::one(Modifier::Control).with(Modifier::Alt))?;
+    let rebound = key(
+        15,
+        Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+    )?;
+    owner.route_input(std::slice::from_ref(&default_chord), false);
+    assert!(!open(&owner), "the old default chord was rebound away");
+    owner.route_input(std::slice::from_ref(&rebound), true);
+    assert!(
+        !open(&owner),
+        "blocked input (focused editor or modal window) must not open it"
+    );
+    owner.route_input(&[rebound], false);
+    assert!(open(&owner), "the rebound chord opens the outfit window");
+    Ok(())
+}

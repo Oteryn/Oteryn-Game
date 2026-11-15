@@ -5,12 +5,14 @@ use oteryn_input_actions::{InputError, NormalizedInputEvent};
 pub(super) struct Controls {
     mouse: MouseActions,
     spells: SpellHotkeys,
+    satellite: bool,
 }
 impl Controls {
     pub fn new() -> Result<Self, InputError> {
         Ok(Self {
             mouse: MouseActions::new()?,
             spells: SpellHotkeys::new()?,
+            satellite: false,
         })
     }
 }
@@ -70,7 +72,12 @@ impl HostOwner {
             }
             return;
         }
+        if super::input::satellite_key(&routed) {
+            self.controls.satellite = true;
+            return;
+        }
         if play.link.analyser_input(&routed)
+            || play.link.appearance_input(&routed)
             || play.link.cyclopedia_character_input(&routed)
             || play.link.daily_reward_input(&routed)
             || play.link.quest_input(&routed)
@@ -151,6 +158,11 @@ impl HostOwner {
         if let Some(tile) = context {
             self.request_world_context(tile);
         }
+    }
+
+    /// True once per Ctrl+Alt+Z that reached the world unblocked and unfocused.
+    pub(super) fn take_satellite_request(&mut self) -> bool {
+        std::mem::take(&mut self.controls.satellite)
     }
 
     /// A shared popup may consume the OS release; clear its retained pointer state.

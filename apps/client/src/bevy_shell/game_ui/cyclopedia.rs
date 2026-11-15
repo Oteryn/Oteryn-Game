@@ -109,6 +109,8 @@ struct State {
     serial: u64,
     tab: Tab,
     snapshot: Option<CyclopediaCharacterPanel>,
+    /// Shown tab's request that the retained builder refused; resent once it accepts.
+    unsent: Option<Intent>,
     widgets: Option<widgets::Widgets>,
 }
 pub(super) fn install(app: &mut App) {
@@ -148,6 +150,7 @@ fn project(
             commands.entity(widgets.overlay).despawn();
         }
         state.snapshot = None;
+        state.unsent = None;
         state.generation = owner.generation();
         state.tab = Tab::default();
     }
@@ -158,7 +161,16 @@ fn project(
         return;
     };
     if state.widgets.is_none() {
-        play.link.cyclopedia_character_request(state.tab.intent());
+        state.unsent = Some(state.tab.intent());
+    }
+    if let Some(intent) = state.unsent
+        && panel.selected
+        && !panel.pending
+        && !panel.blessings.pending
+    {
+        if play.link.cyclopedia_character_request(intent) {
+            state.unsent = None;
+        }
         panel = play.link.cyclopedia_character_panel();
     }
     if !panel.pending && state.tab == Tab::Character(CharacterTab::Misc) && panel.misc_resources_due
@@ -249,7 +261,7 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
         }
         Kind::Close => return,
     };
-    play.link.cyclopedia_character_request(intent);
+    state.unsent = (!play.link.cyclopedia_character_request(intent)).then_some(intent);
     state.snapshot = None;
 }
 fn activate(

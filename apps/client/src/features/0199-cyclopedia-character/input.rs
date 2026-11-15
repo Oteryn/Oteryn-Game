@@ -3,7 +3,8 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::cyclopedia_character::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 impl PlayLink {
-    pub fn cyclopedia_character_request(&self, intent: Intent) {
+    /// True when a command was sent; false when the builder refused (for example, while pending).
+    pub fn cyclopedia_character_request(&self, intent: Intent) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.cyclopedia_character;
         let command = if intent == Intent::Next
@@ -13,12 +14,15 @@ impl PlayLink {
         } else {
             request(panel, intent)
         };
-        if let Some(command) = command
-            && self.commands.send(PlayCommand::Feature(command)).is_err()
-        {
+        let Some(command) = command else {
+            return false;
+        };
+        if self.commands.send(PlayCommand::Feature(command)).is_err() {
             mailbox.cyclopedia_character.pending = false;
             mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
+            return false;
         }
+        true
     }
     pub fn cyclopedia_character_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::cyclopedia_character::blessings_key(events) {

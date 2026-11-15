@@ -167,9 +167,15 @@ impl Default for NativeInput {
     }
 }
 
-/// F10 toggles the explored-world overview.
-pub(super) fn satellite_shortcut(keys: &ButtonInput<KeyCode>) -> bool {
-    keys.just_pressed(KeyCode::F10)
+/// Ctrl+Alt+Z opens the explored-world overview. Exact modifiers: F10 belongs to
+/// audio mute and Ctrl+Alt+Shift+F10 to notification banners.
+pub(super) fn satellite_key(events: &[NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers};
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Alt);
+    events.iter().any(|event| {
+        matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false }
+            if code.get() == 29 && *modifiers == chord)
+    })
 }
 
 #[cfg(test)]
