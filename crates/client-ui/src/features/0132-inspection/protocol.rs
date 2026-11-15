@@ -163,8 +163,6 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             return;
         }
         if reply.status == 1 && matches!(panel.last_request, Some(Request::Catalogue(_))) {
-            panel.catalogue_page = None;
-            panel.catalogue_query = None;
             panel.clear_sources();
         }
         if reply.status == 1
