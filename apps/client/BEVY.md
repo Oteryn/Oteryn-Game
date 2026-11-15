@@ -236,6 +236,15 @@ no mount IDs or ownership are inferred. The catalogue arrives in appearance
 snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
 
+The offline **Updates** button opens a dedicated maintenance window. **Check / Retry**
+checks the signed stable release policy; **Download verified package** shows byte
+progress and stages a verified package without activating it. Hiding the window
+keeps background work running. Failed operations can be retried and leave the active
+release unchanged. **Close client and maintain** hands off to the installed launcher;
+on Windows it waits for client shutdown, then offers update, verification and repair.
+A missing build-pinned signing root refuses updates; use a trusted installer build.
+External UI skins still require `--ui-assets`; this window does not bootstrap them.
+
 Preview reference: Global manual `docs/reference/tibia-manual/controls.md:20-21`
 (Movement and rotation arrows). OTClient reference only:
 `edubart/otclient@dab86e610991092fe8b2471f7de55a7c986b3cd2`,

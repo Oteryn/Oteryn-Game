@@ -34,7 +34,7 @@ pub fn release_directory(value: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"-_.+".contains(&b))
         && slot.is_none_or(|s| !s.is_empty() && !s.starts_with('0') && s.parse::<u32>().is_ok())
 }
-fn compiled_platform() -> &'static str {
+pub(crate) fn compiled_platform() -> &'static str {
     if cfg!(windows) {
         "windows"
     } else if cfg!(target_os = "macos") {
@@ -43,7 +43,7 @@ fn compiled_platform() -> &'static str {
         "linux"
     }
 }
-fn compiled_arch() -> &'static str {
+pub(crate) fn compiled_arch() -> &'static str {
     if cfg!(target_arch = "aarch64") {
         "arm64"
     } else if cfg!(target_arch = "x86") {
