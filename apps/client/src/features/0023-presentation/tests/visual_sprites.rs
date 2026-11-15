@@ -153,3 +153,34 @@ fn t012_spell_words_use_server_catalog_only_after_server_success()
     assert_eq!(view.scene().sprites().len(), baseline);
     Ok(())
 }
+
+#[test]
+fn missiles_apply_source_opacity_to_sprite_and_fallback() -> Result<(), Box<dyn std::error::Error>> {
+    for sprites in [false, true] {
+        let mut view = PlayView::new(TileCoord::new(0, 0), 0, &[])?;
+        if sprites {
+            view.scene.prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+        }
+        let baseline = view.scene().sprites().len();
+        let at = ActorPosition { x: 0, y: 0, floor: 0 };
+        let now = std::time::Instant::now();
+        for source in [PresentationSource::Own, PresentationSource::Others, PresentationSource::Creatures] {
+            view.visuals.clear();
+            view.receive_presentation(&[PresentationEventKind::Missile {
+                from: at, to: ActorPosition { x: 1, ..at }, missile_id: 1, source,
+            }], now);
+            let mut preferences = view.preferences().clone();
+            preferences.effect_opacity = [25; 3];
+            view.set_preferences(preferences.clone())?;
+            view.project_presentation(now)?;
+            let batch = view.scene().sprites();
+            assert!(batch.len() > baseline);
+            assert!(batch.lighting.opacity.iter().any(|(range, alpha)| range.contains(&baseline) && *alpha == 25));
+            preferences.effect_opacity = [0; 3];
+            view.set_preferences(preferences)?;
+            view.project_presentation(now)?;
+            assert_eq!(view.scene().sprites().len(), baseline);
+        }
+    }
+    Ok(())
+}

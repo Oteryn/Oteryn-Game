@@ -23,12 +23,20 @@ impl PlayView {
         self.scene.set_floor_separator(graphics.separator)?;
         let view = self.scene.view();
         let tile_px = view.tile_px() as f32;
+        let own = self.scene.own_identity();
+        let minimum_personal_light = self.world_clock.is_some_and(|clock| clock.light_level < 64)
+            || self.floor < -7;
         let sources = self
             .appearances
             .iter()
             .filter(|entry| entry.entity.position.floor == self.floor)
             .filter_map(|entry| {
-                let (level, color) = entry.light?;
+                let (level, color) = if minimum_personal_light && Some(entry.entity.entity.identity) == own {
+                    let (level, color) = entry.light.unwrap_or((0, 0));
+                    (level.max(3), if color == 0 || color > 215 { 215 } else { color })
+                } else {
+                    entry.light?
+                };
                 let at = entry.entity.position;
                 let [x, y] = view.tile_to_screen(oteryn_renderer::TileCoord::new(at.x, at.y));
                 Some(oteryn_renderer::lighting::PointLight {

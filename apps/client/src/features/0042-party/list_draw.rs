@@ -84,8 +84,10 @@ pub(super) unsafe fn draw(actions: &Actions, item: &DRAWITEMSTRUCT) {
             label.as_ptr(),
             label.len().saturating_sub(1) as i32,
         );
+        let [r, g, b] = crate::play::feature_0023_presentation::view::health_rgb(row.health_percent.unwrap_or(100));
+        let health_colour = u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16);
         for (percent, top, colour) in [
-            (row.health_percent, y + 24, 0x00aa00),
+            (row.health_percent, y + 24, health_colour),
             (row.mana_percent, y + 34, 0xdd6600),
         ] {
             if let Some(percent) = percent {

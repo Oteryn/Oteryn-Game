@@ -1,7 +1,10 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
     pub(in crate::play) fn guild_initialize(&self, selected: bool) {
-        lock(&self.0).guild.selected = selected;
+        let mut mailbox = lock(&self.0);
+        mailbox.guild = oteryn_client_ui::guild::GuildPanel { selected, ..Default::default() };
+        mailbox.chat.guild_selected = false;
+        mailbox.chat.guild = oteryn_session::GuildRoomState::Unavailable;
     }
 
     /// Refresh membership views after opening or an accepted membership change.
@@ -51,6 +54,9 @@ impl Outbox {
         let mut refusal = None;
         for reply in &replies {
             oteryn_client_ui::guild::apply_result(&mut mailbox.guild, reply);
+            if matches!(reply, GuildReply::Query { result: Some(guild::GuildQueryResult::Own(None)), .. }) {
+                mailbox.chat.guild = oteryn_session::GuildRoomState::Absent;
+            }
             if matches!(reply, GuildReply::Query { result: None, .. }) {
                 refusal.clone_from(&mailbox.guild.feedback);
             }
@@ -62,5 +68,54 @@ impl Outbox {
             mailbox.guild.feedback = Some(tr!("Guild action accepted").into());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod session_tests {
+    use super::*;
+    #[test]
+    fn social_initializers_clear_inflight_session_state() {
+        let (link, mut incoming, outbox) = crate::play::play_channel();
+        outbox.guild_initialize(true);
+        outbox.party_initialize(true, true);
+        {
+            let mut mailbox = lock(&link.mailbox);
+            mailbox.guild.pending = true;
+            mailbox.guild.open = true;
+            mailbox.guild.own = Some(oteryn_client_ui::guild::guild::GuildSummary {
+                guild: [1;16], name: "Old guild".into(), state: 1, revision: 3,
+                own_rank: 1, title: String::new(), message: String::new(), ranks: vec!["Leader".into()],
+            });
+            mailbox.guild.next = Some(oteryn_client_ui::guild::guild::GuildRosterCursor { guild: [1;16], level: 1, character: [1;16] });
+            mailbox.guild.roster.push(oteryn_client_ui::guild::guild::GuildMember {
+                character: [1;16], name: "Old member".into(), level: 1, title: String::new(),
+            });
+            mailbox.guild.invitations.push(oteryn_client_ui::guild::guild::GuildInvitation {
+                guild: [1;16], name: "Old guild".into(), expires_at_unix_ms: 10,
+            });
+            mailbox.party.pending = Some(oteryn_client_runtime::party::PartyCommand::query());
+            mailbox.party.open = true;
+            mailbox.party.state = Some(oteryn_client_ui::party::party::PartyResult::refused(oteryn_client_ui::party::party::PartyDisposition::Ok));
+            mailbox.party.selected_member = Some(1);
+            mailbox.party.selected_invitation = Some(2);
+            mailbox.party.awaiting_shared_feedback = true;
+        }
+        outbox.guild_initialize(true);
+        outbox.party_initialize(true, false);
+        {
+            let mailbox = lock(&link.mailbox);
+            assert!(!mailbox.guild.pending && !mailbox.guild.open);
+            assert!(mailbox.guild.roster.is_empty() && mailbox.guild.invitations.is_empty());
+            assert!(mailbox.guild.own.is_none() && mailbox.guild.next.is_none());
+            assert!(mailbox.party.pending.is_none() && !mailbox.party.open);
+            assert!(mailbox.party.state.is_none() && mailbox.party.received_at.is_none());
+            assert!(mailbox.party.selected_member.is_none() && mailbox.party.selected_invitation.is_none());
+            assert!(!mailbox.party.awaiting_shared_feedback && !mailbox.party.chat_selected);
+        }
+        link.guild_request(oteryn_client_ui::guild::Intent::RefreshOwn);
+        link.party_request(oteryn_client_ui::party::Intent::Refresh);
+        assert!(incoming.try_recv().is_ok());
+        assert!(incoming.try_recv().is_ok());
     }
 }

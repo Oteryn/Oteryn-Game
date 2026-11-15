@@ -164,6 +164,7 @@ fn guild_controls_use_real_codecs_and_apply_server_state() -> Result<(), Error> 
                         outbox,
                     ));
                     ready(&link, "No guild").await?;
+                    assert_eq!(oteryn_client_ui::chat_guild_room::available(&link.chat_panel()), login_member);
                     let key = oteryn_input_actions::KeyCode::new(10)?;
                     assert!(
                         link.guild_input(&[oteryn_input_actions::NormalizedInputEvent::Key {
@@ -176,6 +177,7 @@ fn guild_controls_use_real_codecs_and_apply_server_state() -> Result<(), Error> 
                         }])
                     );
                     ready(&link, "Guild Name invitation").await?;
+                    assert!(!oteryn_client_ui::chat_guild_room::available(&link.chat_panel()));
                     link.guild_request(Intent::Join(id()));
                     assert!(link.guild_panel().open);
                     ready(&link, "Alice").await?;
