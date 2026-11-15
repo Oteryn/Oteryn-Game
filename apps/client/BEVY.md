@@ -82,6 +82,11 @@ With no text field focused, the existing gameplay shortcuts open:
 
 Market and Party also have buttons on the gameplay toolbar.
 
+Achievement notices appear in arrival order, one banner at a time. Each fades in
+for 400 ms, holds for 3 seconds, then fades out for 300 ms, matching OTClient's
+notification timing constants. Click a banner to dismiss it and start the next.
+The queue belongs to the current play session and clears when that session ends.
+
 Ctrl+V in a focused text field remains the native paste action. Click an exposed
 world area to leave a text field before using a gameplay shortcut. Map/item drag
 currently supports the desktop primary mouse pointer; touch qualification is later.

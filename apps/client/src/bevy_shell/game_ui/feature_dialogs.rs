@@ -1,4 +1,5 @@
 //! Real session-owned server dialogs; Bevy owns only focus and transient selection.
+mod banner_queue;
 mod build;
 mod notices;
 mod submission;
@@ -55,6 +56,7 @@ struct State {
 }
 
 pub(super) fn install(app: &mut App) {
+    banner_queue::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, (setup, notices::setup).after(super::setup))
         .add_systems(
