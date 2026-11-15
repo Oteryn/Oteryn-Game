@@ -157,8 +157,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(Some(on)) => {
+                // A player has one clock for every carried converter. A failed read keeps
+                // the clock so the owner tick can retry without stranding another tool.
+                let keep_clock = if on {
+                    true
+                } else {
+                    self.root
+                        .read_item_use_inventory(self.character, self.holder, fence)
+                        .await
+                        .map(|inventory| {
+                            inventory
+                                .backpack
+                                .iter()
+                                .flat_map(|bag| &bag.entries)
+                                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                                .any(|entry| {
+                                    entry.item.definition.production_key == MAGIC_CONVERTER_ACTIVE
+                                })
+                        })
+                        .unwrap_or(true)
+                };
                 let mut active = self.states.timed_items.magic_converters.lock().await;
-                if on {
+                if keep_clock {
                     active.entry(command.game_session_id).or_insert_with(|| {
                         super::timed_item::MagicConverterClock {
                             nonce: transaction,

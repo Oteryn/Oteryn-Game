@@ -97,10 +97,13 @@ pub(super) fn unix_now_ms() -> i64 {
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// PAR-P12a/b automatic title unlock and account badge grant for `session`'s Character from
     /// its native facts. Best effort:
-    /// a failed refresh keeps every stored title and is repeated at the next trigger.
-    pub(super) async fn refresh_session_titles(&self, session: crate::foundation::GameSessionId) {
+    /// a failed refresh keeps every stored title and the marked cadence retries it.
+    pub(super) async fn refresh_session_titles(
+        &self,
+        session: crate::foundation::GameSessionId,
+    ) -> bool {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return;
+            return false;
         };
         let item_fence = crate::durability::item_transfer::CurrentCharacterItemFence {
             character_id: fence.character_id,
@@ -111,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope_ownership_generation: fence.scope_ownership_generation,
         };
         let now = unix_now_ms();
-        let _ = self
+        let titles = self
             .root
             .refresh_character_titles(
                 self.character,
@@ -123,10 +126,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await;
         // PAR-P12b: badges share the trigger points (Crystal checks both at login).
-        let _ = self
+        let badges = self
             .root
             .refresh_account_badges(self.character, self.holder, item_fence, now)
             .await;
+        titles.is_ok() && badges.is_ok()
     }
 
     /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a
@@ -151,8 +155,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.states.title_refresh.is_marked(character) {
             return;
         }
+        // Consume before awaiting so a new trigger during the refresh remains marked.
         self.states.title_refresh.unmark(character);
-        self.refresh_session_titles(session).await;
+        if !self.refresh_session_titles(session).await {
+            self.states.title_refresh.mark([character]);
+        }
     }
 
     pub(super) async fn character_info_command(

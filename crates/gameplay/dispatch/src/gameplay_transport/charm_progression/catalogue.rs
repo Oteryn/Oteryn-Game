@@ -50,15 +50,84 @@ pub(super) async fn dispatch(
     else {
         return GuildReply::Rejected;
     };
-    if let Some(ids) = named_races {
-        let Some(races) = super::canonical_races() else { return GuildReply::Rejected; };
-        let cards:Option<Vec<_>>=ids.into_iter().map(|id|card(native,races.get(usize::from(id-1))?,id)).collect();
-        return cards.and_then(|cards| { let categories=cards.iter().map(|c|c.category.clone()).collect::<BTreeSet<_>>().into_iter().collect(); wire::encode_page(&Page {next:None,cards,categories}).ok() }).map_or(GuildReply::Rejected,GuildReply::Payload);
-    }
     if let Some(after) = charm_after {
-        return super::charm_details::page(owner.imported_charms, after).and_then(|page| wire::encode_page(&page).ok()).map_or(GuildReply::Rejected, GuildReply::Payload);
+        return super::charm_details::page(owner.imported_charms, after)
+            .and_then(|page| wire::encode_page(&page).ok())
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
     }
-    let Some(page) = project(native, request) else { return GuildReply::Rejected; };
+    // The same fenced snapshot as the progression command owns discovery, never the request.
+    let Ok(Some(state)) = owner
+        .root
+        .read_character_progression(owner.character, current.character_id)
+        .await
+    else {
+        return GuildReply::Unavailable;
+    };
+    let Some(bestiary) = super::bestiary() else {
+        return GuildReply::Rejected;
+    };
+    let keys: Result<Vec<_>, _> = bestiary
+        .races
+        .iter()
+        .map(|race| crate::domain::charm::BestiaryRaceKey::new(race.key()))
+        .collect();
+    let Ok(keys) = keys else {
+        return GuildReply::Rejected;
+    };
+    let Ok(snapshot) = owner
+        .root
+        .read_character_charm_progression(
+            owner.character,
+            owner.holder,
+            current,
+            crate::durability::charm_state::CharmProgressionReadRequest {
+                catalogue_revision: state.context.content,
+                catalogue: owner.imported_charms.catalogue().clone(),
+                races: keys,
+            },
+            bestiary.facts.clone(),
+        )
+        .await
+    else {
+        return GuildReply::Unavailable;
+    };
+    let kills = |race: &BestiaryRace| {
+        crate::domain::charm::BestiaryRaceKey::new(race.key())
+            .ok()
+            .and_then(|key| snapshot.bestiary_counts.get(&key).copied())
+            .unwrap_or(0)
+    };
+    if let Some(ids) = named_races {
+        let Some(races) = super::canonical_races() else {
+            return GuildReply::Rejected;
+        };
+        let cards: Option<Vec<_>> = ids
+            .into_iter()
+            .map(|id| {
+                let race = races.get(usize::from(id - 1))?;
+                card(native, race, id, kills(race) > 0)
+            })
+            .collect();
+        return cards
+            .and_then(|cards| {
+                let categories = cards
+                    .iter()
+                    .map(|c| c.category.clone())
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect();
+                wire::encode_page(&Page {
+                    next: None,
+                    cards,
+                    categories,
+                })
+                .ok()
+            })
+            .map_or(GuildReply::Rejected, GuildReply::Payload);
+    }
+    let Some(page) = project(native, request, &kills) else {
+        return GuildReply::Rejected;
+    };
     if payload.len() == 8 {
         owner.echo_warden_bestiary_page(admitted, page).await
     } else {
@@ -80,22 +149,44 @@ fn category<'a>(native: &'a NativeGameplayState, key: &str) -> &'a str {
         .map_or("Unclassified", |bestiary| bestiary.class.as_str())
 }
 
-fn card(native: &NativeGameplayState, race: &BestiaryRace, ordinal: u16) -> Option<Card> {
+fn card(
+    native: &NativeGameplayState,
+    race: &BestiaryRace,
+    ordinal: u16,
+    discovered: bool,
+) -> Option<Card> {
     let policy = native
         .policies()
         .policies()
         .iter()
         .find(|p| p.definition_key == race.key())?;
-    Some(Card { echo_warden_completed: None,
-        outfit_look_type: policy.outfit_look_type,
-        object_look_type: policy.object_look_type,
+    Some(Card {
+        echo_warden_completed: None,
+        outfit_look_type: if discovered {
+            policy.outfit_look_type
+        } else {
+            0
+        },
+        object_look_type: if discovered {
+            policy.object_look_type
+        } else {
+            None
+        },
         race: ordinal,
-        name: policy.display_name.clone(),
+        name: if discovered {
+            policy.display_name.clone()
+        } else {
+            "Unknown creature".into()
+        },
         category: category(native, race.key()).into(),
         detail: String::new(),
     })
 }
-fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
+fn project(
+    native: &NativeGameplayState,
+    request: Request,
+    kills: &impl Fn(&BestiaryRace) -> u32,
+) -> Option<Page> {
     let races = super::canonical_races()?;
     let categories: Vec<_> = races
         .iter()
@@ -109,8 +200,8 @@ fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
     }
     if request.race != 0 {
         let race = races.get(usize::from(request.race - 1))?;
-        let mut card = card(native, race, request.race)?;
-        let (detail, next) = details(native, race, request.after)?;
+        let mut card = card(native, race, request.race, kills(race) > 0)?;
+        let (detail, next) = details(native, race, request.after, kills(race))?;
         card.detail = detail;
         return Some(Page {
             next,
@@ -127,7 +218,7 @@ fn project(native: &NativeGameplayState, request: Request) -> Option<Page> {
         .enumerate()
         .skip(usize::from(request.after))
         .filter_map(|(i, race)| {
-            let card = card(native, race, (i + 1).try_into().ok()?)?;
+            let card = card(native, race, (i + 1).try_into().ok()?, kills(race) > 0)?;
             selected
                 .is_none_or(|category| *category == card.category)
                 .then_some(card)
@@ -147,7 +238,22 @@ fn details(
     native: &NativeGameplayState,
     race: &BestiaryRace,
     after: u16,
+    kills: u32,
 ) -> Option<(String, Option<u16>)> {
+    if kills == 0 {
+        return Some((String::new(), None));
+    }
+    let stage = if race.is_complete(kills) {
+        usize::MAX
+    } else {
+        race.stages_unlocked(kills)
+    };
+    if stage == 0 {
+        return Some((
+            format!("Discovery thresholds: {:?}\r\n", race.kill_thresholds()),
+            None,
+        ));
+    }
     let policy = native
         .policies()
         .policies()
@@ -176,25 +282,29 @@ fn details(
     if let Some(defense) = policy.defense {
         let _ = writeln!(text, "Defense: {defense}\r");
     }
-    for resistance in &policy.resistances {
-        let _ = writeln!(
-            text,
-            "Resistance {}: {}/{}%\r",
-            resistance.damage_type, resistance.percent.numerator, resistance.percent.denominator
-        );
-    }
-    for response in &policy.healing_from_damage {
-        let _ = writeln!(
-            text,
-            "Healed by {}: {}/{}%\r",
-            response.damage_type, response.percent.numerator, response.percent.denominator
-        );
-    }
-    for immunity in &policy.condition_immunities {
-        let _ = writeln!(text, "Condition immunity: {immunity:?}\r");
-    }
-    for immunity in &policy.damage_immunities {
-        let _ = writeln!(text, "Immune to {immunity}\r");
+    if stage >= 2 {
+        for resistance in &policy.resistances {
+            let _ = writeln!(
+                text,
+                "Resistance {}: {}/{}%\r",
+                resistance.damage_type,
+                resistance.percent.numerator,
+                resistance.percent.denominator
+            );
+        }
+        for response in &policy.healing_from_damage {
+            let _ = writeln!(
+                text,
+                "Healed by {}: {}/{}%\r",
+                response.damage_type, response.percent.numerator, response.percent.denominator
+            );
+        }
+        for immunity in &policy.condition_immunities {
+            let _ = writeln!(text, "Condition immunity: {immunity:?}\r");
+        }
+        for immunity in &policy.damage_immunities {
+            let _ = writeln!(text, "Immune to {immunity}\r");
+        }
     }
     text.push_str("Loot (base content chances, before session modifiers):\r\n");
     let Some(reward) = reward else {
@@ -212,6 +322,15 @@ fn details(
     let start = usize::from(after);
     let end = start + wire::PAGE_SIZE;
     while let Some((entry, depth)) = stack.pop() {
+        // Canary reveals common loot at the first threshold, uncommon at the second,
+        // and every rarity on completion. Hidden parents also hide their children.
+        if !race.is_complete(kills)
+            && !entry
+                .probability_ppm
+                .is_some_and(|chance| chance >= if stage == 1 { 50_000 } else { 10_000 })
+        {
+            continue;
+        }
         if index >= end {
             return Some((text, Some(index.try_into().ok()?)));
         }
@@ -292,6 +411,7 @@ mod tests {
                         race: 0,
                         category: 0,
                     },
+                    &|_| u32::MAX,
                 )
                 .ok_or("catalogue")?;
                 let first = page.cards.first().ok_or("creature cards")?;
@@ -302,6 +422,7 @@ mod tests {
                         race: first.race,
                         category: 0,
                     },
+                    &|_| u32::MAX,
                 )
                 .ok_or("detail")?;
                 assert!(detail.cards[0].detail.contains("Health:"));
@@ -318,6 +439,7 @@ mod tests {
                         race: 0,
                         category: 1,
                     },
+                    &|_| u32::MAX,
                 )
                 .ok_or("category filter")?;
                 assert!(
@@ -341,6 +463,7 @@ mod tests {
                             race: 0,
                             category: 0,
                         },
+                        &|_| u32::MAX,
                     )
                     .ok_or("full catalogue page")?;
                     wire::encode_page(&page).map_err(|e| format!("{e:?}"))?;

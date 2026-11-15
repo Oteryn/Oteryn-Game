@@ -967,6 +967,55 @@ fn converter_scenario() -> TestResult {
         assert_eq!(journal, 2);
         // A switch cannot alter charges outside its own arm.
         assert!(sqlx::query("UPDATE game_item_timed_states SET charges=500 WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).execute(&h.pool).await.is_err());
+        // Disabling one converter must leave the other converter's owner cadence alive.
+        seed_converter_bag(
+            &h,
+            &[
+                (190, "oteryn:item.tibia.i28525", 1, None),
+                (192, "oteryn:item.tibia.i28525", 1, None),
+                (194, gold, 100, None),
+            ],
+        )
+        .await?;
+        for (serial, converter) in [(7, 190), (8, 192), (9, 190)] {
+            let outcome = owner
+                .use_item_completion(
+                    deps.actor,
+                    command(serial),
+                    ItemKey::Instance(id(converter)),
+                )
+                .await
+                .ok_or("multiple converter toggle")?;
+            assert_eq!(outcome.disposition, UseDisposition::Committed);
+        }
+        assert!(
+            owner
+                .states
+                .timed_items
+                .magic_converters
+                .lock()
+                .await
+                .contains_key(&session),
+            "the second active converter retains the session clock"
+        );
+        assert!(owner.tick_magic_converter(session).await);
+        assert_eq!(quantity(&h, "3031").await?, 0);
+        assert_eq!(converter_row(&h, 190).await?.2, Some(500));
+        assert_eq!(converter_row(&h, 192).await?.2, Some(499));
+        let off = owner
+            .use_item_completion(deps.actor, command(10), ItemKey::Instance(id(192)))
+            .await
+            .ok_or("last converter off")?;
+        assert_eq!(off.disposition, UseDisposition::Committed);
+        assert!(
+            !owner
+                .states
+                .timed_items
+                .magic_converters
+                .lock()
+                .await
+                .contains_key(&session)
+        );
         eprintln!("POSTGRES_COMPLETED goldconv2");
         drop(owner); drop(authority); drop(seal);
         h.cleanup().await

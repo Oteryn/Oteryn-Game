@@ -333,6 +333,43 @@ fn dispatch_scenario() -> TestResult {
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert!(!globetrotter);
         assert_eq!(selected, None);
+        let fence = admitted.item_fence.ok_or("title refresh fence")?;
+        deps.runtime
+            .lock()
+            .await
+            .bind_attacker_lease(
+                deps.actor,
+                admitted.game_session_id,
+                crate::foundation::CharacterLease::new(
+                    crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                        .map_err(debug)?,
+                    fence.character_lease_generation,
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        owner.states.title_refresh.mark([fence.character_id]);
+        // A temporary unavailable session fence must preserve the cadence's obligation.
+        let session_state: i16 = sqlx::query_scalar("SELECT session_state FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        owner
+            .refresh_marked_titles(deps.actor, admitted.game_session_id)
+            .await;
+        assert!(
+            owner.states.title_refresh.is_marked(fence.character_id),
+            "failed refresh must remain retryable without another kill or Task Board update"
+        );
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=$2 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).bind(session_state).execute(&h.pool).await?;
+        owner
+            .refresh_marked_titles(deps.actor, admitted.game_session_id)
+            .await;
+        assert!(
+            !owner.states.title_refresh.is_marked(fence.character_id),
+            "a successful title and badge refresh consumes the obligation"
+        );
         drop(owner);
         drop(authority);
         drop(seal);

@@ -6,6 +6,36 @@ pub(super) async fn verify(
     admitted: &mut AdmittedSession,
     races: &[BestiaryRace],
 ) -> TestResult {
+    let undiscovered = u16::try_from(races.len())?;
+    for payload in [
+        catalogue::encode_request(Request {
+            after: 0,
+            race: undiscovered,
+            category: 0,
+        })
+        .map_err(debug)?,
+        vec![
+            255,
+            3,
+            (undiscovered - 1) as u8,
+            ((undiscovered - 1) >> 8) as u8,
+            undiscovered as u8,
+            (undiscovered >> 8) as u8,
+        ],
+    ] {
+        let (status, bytes) = exchange_payload(owner, admitted, payload).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        let page = catalogue::decode_page(&bytes).map_err(debug)?;
+        let card = page
+            .cards
+            .iter()
+            .find(|card| card.race == undiscovered)
+            .ok_or("undiscovered card")?;
+        assert_eq!(card.name, "Unknown creature");
+        assert_eq!(card.outfit_look_type, 0);
+        assert_eq!(card.object_look_type, None);
+        assert!(card.detail.is_empty());
+    }
     let mut after = 0;
     let mut seen = std::collections::BTreeSet::new();
     let mut first = None;
@@ -23,7 +53,14 @@ pub(super) async fn verify(
             assert!(seen.insert(card.race), "duplicate catalogue entry");
             assert!(!card.name.is_empty());
             assert_eq!(card.echo_warden_completed, Some(false));
-            first.get_or_insert(card.race);
+            if races[usize::from(card.race - 1)].final_kill_threshold() == 5000 {
+                first.get_or_insert(card.race);
+            }
+            if card.race == undiscovered {
+                assert_eq!(card.name, "Unknown creature");
+                assert_eq!(card.outfit_look_type, 0);
+                assert_eq!(card.object_look_type, None);
+            }
         }
         let Some(next) = page.next else { break };
         assert!(next > after);
