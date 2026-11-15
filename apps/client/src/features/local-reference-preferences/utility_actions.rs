@@ -70,9 +70,14 @@ impl ReferencePreferences {
 
     /// One switch for both readouts: any visible readout hides them, otherwise both show.
     pub fn toggle_fps_lag_indicator(&mut self) {
-        let show = !(self.performance.show_fps || self.performance.show_latency);
-        self.performance.show_fps = show;
-        self.performance.show_latency = show;
+        let mut performance = self.render_performance();
+        let show = !(performance.show_fps || performance.show_latency);
+        performance.show_fps = show;
+        performance.show_latency = show;
+        self.foreground_fps = performance.foreground_fps;
+        self.background_fps = performance.background_fps;
+        self.frames = performance.into();
+        self.performance = performance;
     }
 
     /// Select the next preset by name, wrapping after the last.
@@ -106,5 +111,39 @@ impl SettingsState {
         }
         self.apply(preferences);
         true
+    }
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+    #[test]
+    fn indicator_toggle_and_basic_editor_update_rendered_performance()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, _, _) = crate::play::play_channel();
+        let mut state = SettingsState::new(None);
+        state.preferences.frames.foreground = 144;
+        assert!(state.run_utility(&link, UtilityAction::ToggleFpsLagIndicator));
+        let rendered = state.preferences.render_performance();
+        assert!(rendered.show_fps && rendered.show_latency);
+        assert_eq!(rendered.foreground_fps, 144);
+        assert!(state.run_utility(&link, UtilityAction::ToggleFpsLagIndicator));
+        assert!(!state.preferences.render_performance().show_fps);
+        state.preferences = ReferencePreferences::default();
+        state.preferences.frames.show_fps = true;
+        state.preferences.foreground_fps = 144;
+        assert!(state.run_utility(&link, UtilityAction::ToggleFpsLagIndicator));
+        assert_eq!(state.preferences.render_performance().foreground_fps, 60);
+        state.preferences = ReferencePreferences::default();
+        state.preferences.performance.foreground_fps = 240;
+        state.preferences.performance.show_latency = true;
+        let basic = super::super::BasicOptions::from(&state.preferences);
+        state.apply_basic(&basic)?;
+        assert_eq!(
+            state.preferences.render_performance().foreground_fps,
+            basic.foreground_fps
+        );
+        assert!(!state.preferences.render_performance().show_latency);
+        Ok(())
     }
 }

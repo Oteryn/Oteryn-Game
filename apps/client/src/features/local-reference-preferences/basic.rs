@@ -32,6 +32,7 @@ impl SettingsState {
         prefs.controls.movement = options.movement;
         prefs.controls.mouse = options.mouse;
         prefs.ui_scale = options.world_zoom;
+        prefs.performance = Default::default();
         prefs.frames.foreground = options.foreground_fps;
         prefs.frames.background = options.background_fps;
         prefs.foreground_fps = options.foreground_fps;

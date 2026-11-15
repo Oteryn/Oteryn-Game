@@ -272,6 +272,12 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                                 SendMessageW(stability, BM_GETCHECK, 0, 0) == 1;
                             preferences.rotation_modifier =
                                 text(rotation).trim().to_ascii_uppercase();
+                            preferences.controls.rotation =
+                                match preferences.rotation_modifier.as_str() {
+                                    "ALT" => oteryn_client::play::RotationModifier::Alt,
+                                    "SHIFT" => oteryn_client::play::RotationModifier::Shift,
+                                    _ => oteryn_client::play::RotationModifier::Control,
+                                };
                             preferences.keyboard_delay_ms = value;
                             let preset = SendMessageW(mouse_preset, CB_GETCURSEL, 0, 0);
                             if usize::try_from(preset)
@@ -371,7 +377,10 @@ pub(super) fn run(shared: Arc<Mutex<Shared>>) {
                 set_checked(mute, state.preferences.audio.muted);
                 refresh_hud_checks(&hud_checks, &state.preferences);
                 resources.sync(&state.preferences.resource_hud);
-                refresh_input_controls(mouse_preset, delay, rotation, &state.preferences);
+                let mut input_preferences = state.preferences.clone();
+                input_preferences.swap_mouse_buttons = input_preferences.controls.mouse
+                    == oteryn_client::play::MousePreset::LeftHanded;
+                refresh_input_controls(mouse_preset, delay, rotation, &input_preferences);
                 selected = -1;
                 held = Some(state.preferences.clone());
             }

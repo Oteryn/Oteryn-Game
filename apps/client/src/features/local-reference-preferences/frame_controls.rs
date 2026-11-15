@@ -141,6 +141,7 @@ impl FrameControls {
             preferences.boss_area_opacity = text(self.edits[3])
                 .parse()
                 .map_err(|_| "Enter boss-area opacity from 0 to 100")?;
+            preferences.performance = Default::default();
             preferences.frames.foreground = preferences.foreground_fps;
             preferences.frames.background = preferences.background_fps;
             Ok(())

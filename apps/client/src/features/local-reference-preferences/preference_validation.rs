@@ -34,7 +34,12 @@ impl ReferencePreferences {
         if index >= Self::MOUSE_PRESETS.len() {
             return Err(PreferenceError);
         }
-        self.swap_mouse_buttons = index == 1;
+        self.swap_mouse_buttons = false;
+        self.controls.mouse = if index == 1 {
+            MousePreset::LeftHanded
+        } else {
+            MousePreset::Standard
+        };
         Ok(())
     }
 
@@ -69,7 +74,7 @@ impl ReferencePreferences {
         if self.ambient_brightness > 100 {
             return Err(PreferenceError);
         }
-        if !(1..=500).contains(&self.foreground_fps) || !(1..=500).contains(&self.background_fps) {
+        if self.foreground_fps > 500 || !(1..=500).contains(&self.background_fps) {
             return Err(PreferenceError);
         }
         self.validate_profiles()?;
@@ -116,6 +121,33 @@ impl ReferencePreferences {
         {
             return Err(PreferenceError);
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+    #[test]
+    fn unlimited_foreground_frames_survive_store_apply_and_reload()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let path =
+            std::env::temp_dir().join(format!("unlimited-frame-limit-{}.json", std::process::id()));
+        let mut store = super::super::PreferenceStore::defaults(path.clone());
+        let mut preferences = ReferencePreferences::default();
+        preferences.frames.foreground = 0;
+        preferences.foreground_fps = 0;
+        assert!(preferences.frames.valid());
+        store.apply(preferences.clone())?;
+        let loaded = super::super::PreferenceStore::load(path.clone())?;
+        assert_eq!(loaded.preferences(), &preferences);
+        assert_eq!(
+            loaded.preferences().render_performance().interval(true),
+            std::time::Duration::ZERO
+        );
+        preferences.foreground_fps = 501;
+        assert!(store.apply(preferences).is_err());
+        std::fs::remove_file(path)?;
         Ok(())
     }
 }
