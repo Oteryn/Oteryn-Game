@@ -32,7 +32,12 @@ pub struct Scene {
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
+    /// Retained circle quads replaced by the Bevy circle renderer.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) health_circle_quads: std::ops::Range<usize>,
     floor_separator: u8,
+    #[cfg(feature = "bevy-shell")]
+    floor_quads: Vec<(std::ops::Range<usize>, i16)>,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
     pub(crate) minimap_floor: i16,
@@ -55,6 +60,8 @@ pub struct Scene {
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
+    #[cfg(feature = "bevy-shell")]
+    name_entities: Vec<oteryn_session::EntityRef>,
     name_visibility: [bool; 3],
     name_marks: bool,
     npc_names: bool,
@@ -111,7 +118,11 @@ impl Scene {
             minimap: false,
             #[cfg(feature = "bevy-shell")]
             minimap_quads: 0..0,
+            #[cfg(feature = "bevy-shell")]
+            health_circle_quads: 0..0,
             floor_separator: 0,
+            #[cfg(feature = "bevy-shell")]
+            floor_quads: Vec::new(),
             minimap_state: None,
             minimap_floor: -7,
             minimap_memory: Default::default(),
@@ -133,6 +144,8 @@ impl Scene {
             own_draws: None,
             actor_draws: Vec::new(),
             names: Vec::new(),
+            #[cfg(feature = "bevy-shell")]
+            name_entities: Vec::new(),
             name_visibility: [true; 3],
             name_marks: true,
             npc_names: true,
@@ -238,8 +251,14 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
+        let (mut sprites, dimmed, floor_quads) = self.world_sprites()?;
+        #[cfg(feature = "bevy-shell")]
+        {
+            self.floor_quads = floor_quads;
+        }
+        #[cfg(not(feature = "bevy-shell"))]
+        let _ = floor_quads;
         let atlas = self.atlas();
-        let (mut sprites, dimmed) = self.world_sprites()?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let scale = f32::from(self.label_scale) / 100.0;
@@ -270,6 +289,7 @@ impl Scene {
         #[cfg(feature = "bevy-shell")]
         {
             self.minimap_quads = start..self.sprites.instances().len();
+            self.health_circle_quads = 0..0;
         }
         Ok(())
     }
@@ -308,6 +328,13 @@ impl Scene {
         self.minimap_quads.clone()
     }
 
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn health_circle_center(&self) -> [f32; 2] {
+        let [x, y] = self.view.tile_to_screen(self.own);
+        let half = self.view.tile_px() as f32 / 2.;
+        [x + half, y + half]
+    }
+
     #[must_use]
     pub const fn sprites(&self) -> &SpriteBatch {
         &self.sprites
@@ -331,4 +358,4 @@ mod appearance_cache;
 mod visual_scene;
 
 #[path = "features/0019-world-light/scene.rs"]
-mod floor_lighting;
+pub(crate) mod floor_lighting;

@@ -5,6 +5,7 @@ mod controls;
 mod exit;
 mod game_ui;
 mod gameplay_dialogs;
+mod health_circle;
 mod hints;
 mod input;
 mod live_assets;
@@ -146,6 +147,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             project_window,
             game_ui::project,
             scene::project,
+            scene::typing::project,
         )
             .chain(),
     )
@@ -163,12 +165,13 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .before(ui::keyboard)
             .before(ui::project),
     );
-    gameplay_dialogs::install(&mut app);
-    login::install(&mut app);
-    game_ui::install(&mut app);
     audio::install(&mut app);
-    hints::install(&mut app);
     exit::install(&mut app);
+    game_ui::install(&mut app);
+    gameplay_dialogs::install(&mut app);
+    health_circle::install(&mut app);
+    hints::install(&mut app);
+    login::install(&mut app);
     window_drag::install(&mut app);
     app
 }

@@ -34,6 +34,37 @@ fn market_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> Test
     Ok(())
 }
 
+#[test]
+fn taskboard_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    let shortcut = NormalizedInputEvent::Key {
+        code: KeyCode::new(23)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    let is_open = |host: &HostOwner| {
+        host.play
+            .as_ref()
+            .is_some_and(|play| play.link.task_board_panel().open)
+    };
+    host.route_input(std::slice::from_ref(&shortcut), true);
+    assert!(!is_open(&host));
+    host.open_graphics();
+    host.route_input(std::slice::from_ref(&shortcut), false);
+    assert!(!is_open(&host));
+    host.cancel();
+    host.route_input(std::slice::from_ref(&shortcut), false);
+    assert!(
+        is_open(&host),
+        "Ctrl+Shift+T must reach the portable Task Board owner"
+    );
+    Ok(())
+}
+
 struct Temp(PathBuf);
 impl Temp {
     fn new() -> std::io::Result<Self> {
@@ -385,6 +416,48 @@ fn full_preferences_draft_cancels_applies_and_preserves_invalid_edits() -> TestR
             .ok_or("invalid draft discarded")?
             .interface_scale,
         0
+    );
+    Ok(())
+}
+
+#[test]
+fn proficiency_shortcut_requests_catalogue_only_outside_blocked_input() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_proficiency_initialize();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    view.set_preference_character([7; 16]);
+    owner.install_play(view, link);
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(19)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    owner.route_input(std::slice::from_ref(&key), true);
+    assert!(commands.try_recv().is_err());
+    owner.open_graphics();
+    owner.route_input(std::slice::from_ref(&key), false);
+    assert!(commands.try_recv().is_err());
+    owner.cancel();
+    owner.route_input(&[key], false);
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("proficiency catalogue request missing".into());
+    };
+    assert_eq!((command.capability, command.kind), (195, 660));
+    assert_eq!(command.payload, 0u32.to_be_bytes());
+    assert!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .weapon_proficiency_panel()
+            .open
     );
     Ok(())
 }

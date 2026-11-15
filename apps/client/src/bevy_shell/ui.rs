@@ -43,6 +43,12 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    Panel(&'static str),
+    Analysers,
+    Inspection,
+    Loot,
+    Notices,
+    Skills,
     Market,
     Party,
     Quests,
@@ -56,9 +62,18 @@ pub(super) enum Control {
     Ok,
     Cancel,
 }
+mod toolbar;
+pub(super) use toolbar::project_toolbar;
+use toolbar::{TOOLBAR, open_toolbar};
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Panel(id) => id,
+            Self::Analysers => "shell.analysers",
+            Self::Inspection => "shell.inspection",
+            Self::Loot => "shell.loot",
+            Self::Notices => "shell.notices",
+            Self::Skills => "shell.skills",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -164,13 +179,12 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
-        (Control::Options, "Options", 80.),
-        (Control::Market, "Market", 80.),
-        (Control::Party, "Party", 80.),
-        (Control::Quests, "Quest Log", 80.),
-        (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
+        commands.entity(toolbar).add_child(button);
+    }
+    for &(caption, control) in TOOLBAR {
+        let button = action_button(&mut commands, &skins, control, caption, 100.);
         commands.entity(toolbar).add_child(button);
     }
     // Full-window modal scrim blocks world pointer input while settings are open.
@@ -383,11 +397,9 @@ fn activate(
             return;
         }
         match control {
-            Control::Options => owner.open_graphics(),
-            Control::Market => super::game_ui::open_market(&mut owner),
-            Control::Party => super::game_ui::open_party(&mut owner),
-            Control::Quests => super::game_ui::open_quests(&mut owner),
-            Control::Spells => super::game_ui::open_spells(&mut owner),
+            control if TOOLBAR.iter().any(|entry| entry.1.id() == control.id()) => {
+                let _ = open_toolbar(&mut owner, *control);
+            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -522,69 +534,5 @@ pub(super) fn keyboard(
     }
 }
 
-/// Keep admission controls outside the in-game HUD once play is installed.
-// One disjoint query changes the toolbar, status and admission button nodes together.
-#[allow(clippy::type_complexity)]
-pub(super) fn project_toolbar(
-    mut commands: Commands,
-    owner: NonSend<HostOwner>,
-    regions: Query<Entity, With<super::game_ui::ToolbarRegion>>,
-    mut nodes: Query<
-        (
-            Entity,
-            &mut Node,
-            Has<ShellToolbar>,
-            Has<Status>,
-            Option<&Control>,
-            Option<&ChildOf>,
-        ),
-        Or<(With<ShellToolbar>, With<Status>, With<Control>)>,
-    >,
-) {
-    let playing = owner.play.is_some();
-    for (entity, mut node, toolbar, status, control, parent) in &mut nodes {
-        if toolbar {
-            if playing {
-                if let Ok(region) = regions.single() {
-                    if parent.is_none_or(|parent| parent.parent() != region) {
-                        commands.entity(entity).insert(ChildOf(region));
-                    }
-                    node.position_type = PositionType::Relative;
-                    node.width = percent(100.);
-                    node.max_width = percent(100.);
-                    node.overflow = Overflow::clip();
-                    node.top = Val::Auto;
-                    node.bottom = Val::Auto;
-                    node.left = Val::Auto;
-                    node.right = Val::Auto;
-                }
-            } else {
-                if parent.is_some() {
-                    commands.entity(entity).remove::<ChildOf>();
-                }
-                node.position_type = PositionType::Absolute;
-                node.width = Val::Auto;
-                node.max_width = Val::Auto;
-                node.top = px(8.);
-                node.bottom = Val::Auto;
-                node.left = px(8.);
-                node.right = px(8.);
-            }
-        } else if matches!(
-            control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
-        ) {
-            node.display = if playing {
-                Display::Flex
-            } else {
-                Display::None
-            };
-        } else if status || matches!(control, Some(Control::Login | Control::CancelLogin)) {
-            node.display = if playing {
-                Display::None
-            } else {
-                Display::Flex
-            };
-        }
-    }
-}
+#[cfg(test)]
+mod toolbar_tests;

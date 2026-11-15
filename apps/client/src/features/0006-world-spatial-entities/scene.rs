@@ -21,6 +21,27 @@ impl Scene {
         self.names.len()
     }
 
+    /// Position relative to the actual visible name, fenced by entity generation.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn typing_position(
+        &self,
+        indicator: &oteryn_client_ui::player_typing::TypingIndicator,
+    ) -> Option<[f32; 2]> {
+        let (_, (tile, cells)) =
+            self.name_entities
+                .iter()
+                .zip(&self.names)
+                .find(|(entity, _)| {
+                    entity.identity == indicator.identity
+                        && entity.generation == indicator.generation.get()
+                })?;
+        let [x, y] = self.view.tile_to_screen(*tile);
+        let scale = f32::from(self.label_scale) / 100.;
+        let half_width = cells.len() as f32 * 4. * scale;
+        let left = (x + self.view.tile_px() as f32 / 2. - half_width).max(0.);
+        Some([left + half_width + 2., (y - 14. * scale).max(0.) - 4.])
+    }
+
     pub(crate) fn set_own_identity(&mut self, identity: [u8; 16]) {
         self.own_identity = Some(identity);
     }
@@ -67,6 +88,8 @@ impl Scene {
         self.actor_draws.clear();
         self.own_draws = None;
         self.names.clear();
+        #[cfg(feature = "bevy-shell")]
+        self.name_entities.clear();
         if !entries.is_empty() {
             self.cache.begin(self.world.atlas(), root);
         }
@@ -134,6 +157,8 @@ impl Scene {
                 if let Some(name) = name.or_else(|| marker.map(|_| tr!("Creature"))) {
                     let label = oteryn_client_ui::forge_creature::label(name, marker);
                     self.names.push((tile, self.cache.name(&label)));
+                    #[cfg(feature = "bevy-shell")]
+                    self.name_entities.push(entity.entity);
                 }
             }
         }

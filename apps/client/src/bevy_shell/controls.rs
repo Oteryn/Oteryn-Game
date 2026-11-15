@@ -3,14 +3,18 @@ use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
 use oteryn_input_actions::{InputError, NormalizedInputEvent};
 pub(super) struct Controls {
+    pub(super) highscores_generation: Option<u64>,
     mouse: MouseActions,
     spells: SpellHotkeys,
+    satellite: bool,
 }
 impl Controls {
     pub fn new() -> Result<Self, InputError> {
         Ok(Self {
+            highscores_generation: None,
             mouse: MouseActions::new()?,
             spells: SpellHotkeys::new()?,
+            satellite: false,
         })
     }
 }
@@ -43,6 +47,7 @@ impl HostOwner {
             }
             return;
         }
+        let generation = self.generation();
         let Some(play) = &mut self.play else {
             return;
         };
@@ -70,26 +75,75 @@ impl HostOwner {
             }
             return;
         }
-        if play.link.quest_input(&routed)
+        if super::input::satellite_key(&routed) {
+            self.controls.satellite = true;
+            return;
+        }
+        // Ctrl+Z stays native undo while an editor owns focus (the blocked path above).
+        if routed.iter().any(|event| matches!(event,
+            NormalizedInputEvent::Key { code, state: oteryn_input_actions::ButtonState::Pressed,
+                modifiers, repeat: false }
+            if code.get() == 29 && *modifiers == oteryn_input_actions::Modifiers::one(oteryn_input_actions::Modifier::Control)))
+        {
+            play.link.bug_report_open();
+            return;
+        }
+        if play.link.analyser_input(&routed)
+            || play.link.appearance_input(&routed)
+            || play.link.cyclopedia_character_input(&routed)
+            || play.link.daily_reward_input(&routed)
+            || play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
+            || play.link.stash_input(&routed)
             || play.link.notices_input(&routed)
             || play.link.npc_dialogue_input(&routed, &play.view)
             || play.link.discovery_input(&routed)
+            || play.link.item_forge_input(&routed)
             || (routed.iter().any(|event| {
                 matches!(
                     event,
                     NormalizedInputEvent::Key { code, .. } if code.get() == 25
                 )
             }) && play.link.vip_input(&routed))
+            || play.link.wheel_input(&routed)
         {
+            return;
+        }
+        if play.link.prey_input(&routed) {
+            return;
+        }
+        if oteryn_client_ui::highscores::open_key(&routed) {
+            self.controls.highscores_generation = Some(generation);
+            play.link
+                .highscores_request(oteryn_client_ui::highscores::Action::Refresh);
+            return;
+        }
+        if oteryn_client_ui::imbue::open_key(&routed) {
+            play.link.open_imbue();
             return;
         }
         if oteryn_client_ui::market::open_key(&routed) {
             play.link.market_set_open(true);
             return;
         }
+        if oteryn_client_ui::player_report::open_key(&routed) {
+            play.link.rule_violation_open("");
+            return;
+        }
         if oteryn_client_ui::party::open_key(&routed) {
             play.link.open_party();
+            return;
+        }
+        if oteryn_client_ui::task_board::open_key(&routed) {
+            play.link
+                .task_board_set_open(!play.link.task_board_panel().open);
+            return;
+        }
+        if play.link.weapon_proficiency_input(&routed) {
+            return;
+        }
+        if crate::input::store_key(&routed) {
+            play.link.store_set_open(!play.link.store_panel().open);
             return;
         }
         play.view.cursor_spell_input(&routed);
@@ -133,6 +187,11 @@ impl HostOwner {
         if let Some(tile) = context {
             self.request_world_context(tile);
         }
+    }
+
+    /// True once per Ctrl+Alt+Z that reached the world unblocked and unfocused.
+    pub(super) fn take_satellite_request(&mut self) -> bool {
+        std::mem::take(&mut self.controls.satellite)
     }
 
     /// A shared popup may consume the OS release; clear its retained pointer state.

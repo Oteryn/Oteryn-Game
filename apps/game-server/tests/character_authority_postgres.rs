@@ -5,6 +5,7 @@
 extern crate oteryn_game_server as production_server;
 extern crate self as oteryn_game_server;
 pub use oteryn_gameplay_dispatch::gameplay_transport;
+pub use oteryn_gameplay_social::platform_streams;
 pub use production_server::admission_evidence;
 pub use production_server::{
     character_bootstrap_intent, character_recovery_fence, domain, durability, foundation,

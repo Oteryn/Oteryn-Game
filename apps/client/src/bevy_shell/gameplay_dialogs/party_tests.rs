@@ -84,6 +84,83 @@ fn choose(app: &mut App, caption: &str) -> Result {
     Ok(())
 }
 #[test]
+fn inspect_player_context_requests_equipment_and_opens_window() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Inspect")?;
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("inspection command".into());
+    };
+    assert_eq!(command.capability, 132);
+    assert_eq!(
+        command.payload,
+        oteryn_client_ui::inspection::encode_request(
+            oteryn_client_ui::inspection::Request::Player(player().entity)
+        )
+        .map_err(|error| format!("request: {error:?}"))?
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .inspection_panel()
+            .open
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn inspect_player_context_rejects_changed_generation() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    let mut changed = player();
+    changed.entity.generation += 1;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(vec![changed])?;
+    choose(&mut app, "Inspect")?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .inspection_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
 fn party_context_without_look_opens_query_from_actual_choice() -> Result {
     let (mut app, mut commands, _) = app()?;
     app.world_mut()
@@ -195,8 +272,10 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
         owner.dialogs.open(
             generation,
             Content::Context {
-                menu: Some(menu),
+                menu: Some(Box::new(menu)),
                 party: Some(Box::new(target)),
+                inspection: None,
+                report: None,
             },
         );
     }
@@ -238,5 +317,65 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
     app.update();
     choose(&mut app, "Cancel")?;
     assert!(!app.world().non_send::<HostOwner>().dialogs.active());
+    Ok(())
+}
+
+#[test]
+fn rule_violation_context_report_opens_for_captured_player() -> Result {
+    let (mut app, mut commands, events) = app()?;
+    events.bevy_report_selected(true);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Report")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .player_report_panel();
+    assert!(panel.open);
+    assert_eq!(panel.fields[2], "Visible player");
+    assert!(panel.fields[0].is_empty());
+    assert!(panel.fields[1].is_empty());
+    assert!(commands.try_recv().is_err());
+    assert!(!owner.dialogs.active());
+    Ok(())
+}
+
+#[test]
+fn rule_violation_shortcut_respects_text_focus() -> Result {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, _, events) = app()?;
+    events.bevy_report_selected(true);
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(21)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+        repeat: false,
+    };
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    owner.route_input(std::slice::from_ref(&key), true);
+    assert!(
+        !owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .player_report_panel()
+            .open
+    );
+    owner.route_input(&[key], false);
+    assert!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .player_report_panel()
+            .open
+    );
     Ok(())
 }

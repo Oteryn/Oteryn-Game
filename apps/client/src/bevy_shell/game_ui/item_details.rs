@@ -1,9 +1,46 @@
 //! Source-shaped inspection over the retained capability-132 owner.
 mod widgets;
-use super::super::{owner::HostOwner, ui::Skins};
+use super::super::{
+    owner::{HostOwner, Phase},
+    ui::Skins,
+};
 use super::{GameModal, modal::ModalGuard};
 use bevy::{clipboard::Clipboard, input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::inspection::{Panel, Request};
+pub(in crate::bevy_shell) fn player_context(
+    owner: &HostOwner,
+    tile: oteryn_renderer::TileCoord,
+) -> Option<oteryn_session::EntityRef> {
+    if owner.phase != Phase::Playing || owner.modal_active() {
+        return None;
+    }
+    let play = owner.play.as_ref()?;
+    let panel = play.link.inspection_panel();
+    if !panel.selected
+        || panel.pending
+        || !play.view.preferences().gameplay.inspect_context_menu
+        || play.view.gameplay_input_blocked(&play.link)
+    {
+        return None;
+    }
+    play.view.party_target(tile)
+}
+pub(in crate::bevy_shell) fn inspect_player(
+    owner: &HostOwner,
+    tile: oteryn_renderer::TileCoord,
+    entity: oteryn_session::EntityRef,
+) -> bool {
+    if player_context(owner, tile) != Some(entity) {
+        return false;
+    }
+    owner.play.as_ref().is_some_and(|play| {
+        if !play.link.inspect(Request::Player(entity)) {
+            return false;
+        }
+        play.link.inspection_set_open(true);
+        true
+    })
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Key {
     generation: u64,
@@ -15,6 +52,7 @@ enum Kind {
     Refresh,
     Copy,
     Close,
+    Select(usize),
 }
 #[derive(Component, Clone, Copy)]
 struct Control {
@@ -31,6 +69,8 @@ struct State {
     snapshot: Option<(Key, Panel, Option<oteryn_session::ItemHandle>)>,
     revision: u64,
     clipboard_feedback: String,
+    selected_index: usize,
+    selection_dirty: bool,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -63,14 +103,22 @@ fn project(
             .selected_item()
             .map(|item| item.handle)
     });
+    if !state.selection_dirty
+        && state
+            .snapshot
+            .as_ref()
+            .is_some_and(|(key, previous, item)| {
+                key.generation == owner.generation() && previous == &model && *item == selection
+            })
+    {
+        return;
+    }
     if state
         .snapshot
         .as_ref()
-        .is_some_and(|(key, previous, item)| {
-            key.generation == owner.generation() && previous == &model && *item == selection
-        })
+        .is_none_or(|(key, previous, _)| key.generation != owner.generation() || previous != &model)
     {
-        return;
+        state.selected_index = 0;
     }
     let Some(revision) = state.revision.checked_add(1) else {
         return;
@@ -91,6 +139,7 @@ fn project(
         }
         commands.entity(widgets.overlay).despawn();
     }
+    let selected_index = state.selected_index;
     let widgets = state
         .widgets
         .get_or_insert_with(|| widgets::build(&mut commands, &skin));
@@ -107,8 +156,10 @@ fn project(
         key,
         &model,
         selection.is_some(),
+        selected_index,
     );
     state.snapshot = Some((key, model, selection));
+    state.selection_dirty = false;
     state.clipboard_feedback.clear();
 }
 fn inside(mut entity: Option<Entity>, ancestor: Entity, parents: &Query<&ChildOf>) -> bool {
@@ -155,11 +206,16 @@ fn perform(owner: &HostOwner, state: &mut State, clipboard: &mut Clipboard, cont
             play.link.inspection_set_open(false);
             state.snapshot = None;
         }
-        Kind::Inspect if panel.selected && !panel.pending => {
-            play.link.discovery_action(132, 1, &[], 0);
+        Kind::Inspect => {
+            if panel.selected && !panel.pending {
+                play.link.discovery_action(132, 1, &[], 0);
+            }
         }
-        Kind::Refresh if panel.selected && !panel.pending => {
-            if let Some(request) = panel.last_request.filter(|request| read_request(*request)) {
+        Kind::Refresh => {
+            if panel.selected
+                && !panel.pending
+                && let Some(request) = panel.last_request.filter(|request| read_request(*request))
+            {
                 play.link.inspect(request);
             }
         }
@@ -173,7 +229,19 @@ fn perform(owner: &HostOwner, state: &mut State, clipboard: &mut Clipboard, cont
                 .into();
             }
         }
-        _ => {}
+        Kind::Select(index) => {
+            if panel.selected
+                && !panel.pending
+                && panel
+                    .reply
+                    .as_ref()
+                    .is_some_and(|reply| reply.status == 1 && index < reply.items.len())
+                && state.selected_index != index
+            {
+                state.selected_index = index;
+                state.selection_dirty = true;
+            }
+        }
     }
 }
 fn activate(

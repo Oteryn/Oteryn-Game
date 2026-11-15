@@ -72,6 +72,7 @@ pub(super) fn render(
     key: Key,
     model: &Panel,
     selection: bool,
+    selected_index: usize,
 ) {
     if let Some(content) = widgets.content.take() {
         commands.entity(content).despawn();
@@ -103,7 +104,39 @@ pub(super) fn render(
         .id();
     commands.entity(content).add_child(scroll);
     if let Some(reply) = model.reply.as_ref().filter(|reply| reply.status == 1) {
-        for item in &reply.items {
+        if reply.items.len() > 1 || matches!(model.last_request, Some(Request::Player(_))) {
+            for (index, item) in reply.items.iter().enumerate() {
+                let row = commands
+                    .spawn((
+                        Control {
+                            key,
+                            kind: Kind::Select(index),
+                        },
+                        source::button(skin.buttons.clone(), 430.),
+                    ))
+                    .insert(Node {
+                        width: percent(100.),
+                        min_height: px(20.),
+                        flex_shrink: 0.,
+                        padding: UiRect::all(px(3.)),
+                        ..default()
+                    })
+                    .observe(activate)
+                    .id();
+                if !model.selected || model.pending {
+                    commands.entity(row).insert(bevy::ui::InteractionDisabled);
+                }
+                let marker = if index == selected_index { "> " } else { "" };
+                text(
+                    commands,
+                    skin,
+                    row,
+                    format!("{marker}Slot {}: {} ×{}", item.slot, item.name, item.count),
+                );
+                commands.entity(scroll).add_child(row);
+            }
+        }
+        if let Some(item) = reply.items.get(selected_index) {
             let header = commands
                 .spawn(Node {
                     column_gap: px(8.),
@@ -126,7 +159,7 @@ pub(super) fn render(
                 ))
                 .id();
             commands.entity(header).add_child(icon);
-            text(commands, skin, icon, "?");
+            text(commands, skin, icon, &item.name);
             text(commands, skin, header, format!("Inspecting {}", item.name));
             let chrome = commands
                 .spawn((

@@ -330,8 +330,9 @@ fn project(
             if text.value() != state.value.as_str() || state.focus != focused {
                 state.value = text.value().to_string();
                 state.focus = focused;
-                play.link.chat_composer(focused, state.value.clone());
             }
+            // Poll unchanged input too so a rate-limited typing start can retry.
+            play.link.chat_composer(focused, state.value.clone());
         }
     }
     *previous = Some(panel);

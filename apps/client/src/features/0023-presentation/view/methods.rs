@@ -55,7 +55,7 @@ impl PlayView {
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
         batch.lighting.opacity.clear();
-        resources::draw(
+        let circle_quads = resources::draw(
             batch,
             view,
             atlas,
@@ -88,6 +88,8 @@ impl PlayView {
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         crate::play::feature_0233_touch_controls::view::draw(batch, view, atlas, &self.touch)?;
         if !effects {
+            #[cfg(feature = "bevy-shell")]
+            { self.scene.health_circle_quads = circle_quads; }
             return Ok(());
         }
         let mut lines = std::collections::BTreeMap::new();
@@ -214,6 +216,10 @@ impl PlayView {
                 _ => {}
             }
         }
+        #[cfg(feature = "bevy-shell")]
+        { self.scene.health_circle_quads = circle_quads; }
+        #[cfg(not(feature = "bevy-shell"))]
+        let _ = circle_quads;
         Ok(())
     }
 }

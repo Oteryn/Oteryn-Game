@@ -70,6 +70,26 @@ pub(super) fn perform(owner: &HostOwner, state: &mut State, action: Action, sear
         return false;
     }
     let query = match action.kind {
+        Kind::Intent(intent) => {
+            play.link.market_request(intent);
+            return true;
+        }
+        Kind::Browse => {
+            if let Some(ware) = &state.selected {
+                MarketQuery::Book {
+                    definition: ware.definition,
+                    page: 0,
+                }
+            } else if panel.view != MarketView::Browse {
+                play.link.market_request(Intent::Wares);
+                return true;
+            } else {
+                MarketQuery::Catalogue {
+                    filter: panel.details.filter.clone(),
+                    page: 0,
+                }
+            }
+        }
         Kind::Search => {
             let mut filter = panel.details.filter.clone();
             filter.search = search.into();

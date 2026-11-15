@@ -1885,6 +1885,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             entry_deadline: Duration::from_secs(20),
         },
         GameplaySeamOwners {
+            platform_enforcement_enabled: false,
             soulpit_template: None,
         cast: None,
             gameplay_idle_policy: Default::default(),
