@@ -42,6 +42,7 @@ struct State {
     generation: Option<u64>,
     revision: u64,
     seen: Option<HighscoresPanel>,
+    worlds: Vec<(oteryn_client_runtime::highscores::wire::WorldId, String)>,
     frame: Option<Entity>,
     body: Option<Entity>,
     seek: Option<Kind>,
@@ -120,6 +121,18 @@ fn project(
             state.seek = None;
         }
     }
+    if state.frame.is_none() {
+        state.worlds = owner
+            .selection
+            .known_worlds()
+            .iter()
+            .filter_map(|(id, name)| {
+                oteryn_client_ui::highscores::parse_world(id)
+                    .flatten()
+                    .map(|id| (id, name.clone()))
+            })
+            .collect();
+    }
     let now = now_millis();
     if state.seen.as_ref() == Some(&panel) {
         let value = updated_text(&panel, now);
@@ -152,6 +165,7 @@ fn project(
         frame,
         action,
         &panel,
+        &state.worlds,
         state.feedback.as_deref(),
         now,
     ));

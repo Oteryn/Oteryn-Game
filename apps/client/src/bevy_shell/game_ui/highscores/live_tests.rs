@@ -142,6 +142,43 @@ fn scenario() -> Result {
         std::thread::yield_now();
     }
     let mut owner = HostOwner::new(None).map_err(|e| e.to_string())?;
+    let (bridge, selector) = crate::bevy_shell::selection::SelectionBridge::new();
+    owner.selection = bridge;
+    let picker = std::thread::spawn(move || {
+        selector(
+            &[crate::character_selection::CharacterRow {
+                character: oteryn_platform_client::native_login::OwnerCharacter {
+                    character_id: "hero".into(),
+                    world_id: "01020304-0506-7008-800a-0b0c0d0e0f02".into(),
+                    name: "Own Hero".into(),
+                    availability:
+                        oteryn_platform_client::native_login::CharacterAvailability::Available,
+                },
+                world_name: "Named World".into(),
+                channels: vec![],
+                available: true,
+            }],
+            "",
+            oteryn_foundation::CancellationToken::new(),
+        )
+    });
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while owner.selection.pending().is_none() {
+        owner.selection.poll();
+        if Instant::now() >= deadline {
+            return Err("selection deadline".into());
+        }
+        std::thread::yield_now();
+    }
+    let id = owner.selection.pending().ok_or("selection")?.id;
+    assert!(owner.selection.respond(
+        id,
+        crate::character_selection::SelectionAction::Play {
+            character_id: "hero".into(),
+            channel_id: None,
+        }
+    ));
+    picker.join().map_err(|_| "picker panicked")?;
     owner.play = Some(crate::bevy_shell::owner::ActivePlay {
         view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])
             .map_err(|e| e.to_string())?,
@@ -180,12 +217,45 @@ fn scenario() -> Result {
         .add_systems(Update, project)
         .add_systems(PostUpdate, finish);
     settle(&mut app)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "World: Current world")
+    );
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("World type unavailable"))
+    );
     for kind in [Kind::Category, Kind::Vocation] {
         click(&mut app, kind)?;
     }
     let world =
         wire::WorldId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 2])
             .map_err(|e| format!("{e:?}"))?;
+    let named = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(entity, action)| (action.kind == Kind::World(Some(world))).then_some(entity))
+        .ok_or("named world button")?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "World: Named World")
+    );
+    app.world_mut().trigger(Activate { entity: named });
+    app.update();
+    settle(&mut app)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Named World")
+    );
     let field = app
         .world_mut()
         .query_filtered::<Entity, With<WorldField>>()
@@ -207,15 +277,21 @@ fn scenario() -> Result {
     let queries = queries.lock().map_err(|e| e.to_string())?;
     assert_eq!(
         queries.iter().map(|q| q.page).collect::<Vec<_>>(),
-        [1, 1, 1, 1, 2, 1, 2, 3, 2, 1, 2]
+        [1, 1, 1, 1, 1, 2, 1, 2, 3, 2, 1, 2]
     );
     assert_eq!(queries[1].category, 2);
     assert_eq!(queries[2].vocation, 1);
     assert_eq!(queries[3].world, Some(world));
+    assert_eq!(queries[4].world, Some(world));
+    assert!(
+        queries[3..5]
+            .iter()
+            .all(|q| q.page == 1 && q.snapshot_id == 0)
+    );
     assert!(
         queries
             .iter()
-            .skip(4)
+            .skip(5)
             .all(|q| q.snapshot_id == 7 && q.world == Some(world))
     );
     drop(queries);
@@ -230,5 +306,9 @@ fn scenario() -> Result {
     app.update();
     app.update();
     assert!(app.world().resource::<State>().frame.is_none());
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    assert_eq!(owner.selection.known_worlds().len(), 1);
+    owner.close();
+    assert!(owner.selection.known_worlds().is_empty());
     Ok(())
 }

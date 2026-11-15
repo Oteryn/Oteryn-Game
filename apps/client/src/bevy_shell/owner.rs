@@ -166,6 +166,9 @@ impl HostOwner {
             generation: self.scope.generation.saturating_add(1),
         };
         self.settings.select_character(character);
+        if character.is_none() {
+            self.selection.clear_known_worlds();
+        }
     }
     fn install_play(&mut self, mut view: PlayView, link: PlayLink) -> bool {
         let Some(character) = view.preference_character() else {
@@ -368,6 +371,7 @@ impl HostOwner {
         }
         self.cancel();
         self.selection.cancel();
+        self.selection.clear_known_worlds();
         self.dialogs.clear();
         self.login.visible = false;
         drop(self.play.take());

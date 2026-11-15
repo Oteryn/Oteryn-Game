@@ -25,6 +25,7 @@ pub struct SelectionRequest {
 pub struct SelectionBridge {
     requests: Receiver<SelectionRequest>,
     pending: Option<SelectionRequest>,
+    worlds: Vec<(String, String)>,
     closed: Arc<AtomicBool>,
     epoch: Arc<AtomicU64>,
 }
@@ -97,11 +98,16 @@ impl SelectionBridge {
             Self {
                 requests,
                 pending: None,
+                worlds: Vec::new(),
                 closed,
                 epoch,
             },
             callback,
         )
+    }
+    /// Names from the accepted character picker, retained until the character scope ends.
+    pub fn known_worlds(&self) -> &[(String, String)] {
+        &self.worlds
     }
     pub fn pending(&self) -> Option<&SelectionRequest> {
         self.pending.as_ref().filter(|request| {
@@ -144,7 +150,26 @@ impl SelectionBridge {
         let Some(request) = self.pending.take() else {
             return false;
         };
-        request.reply.try_send(action).is_ok()
+        let mut worlds = Vec::new();
+        if matches!(action, SelectionAction::Play { .. }) {
+            for row in &request.rows {
+                if row.available
+                    && !row.world_name.trim().is_empty()
+                    && !worlds.iter().any(|(id, _)| id == &row.character.world_id)
+                {
+                    worlds.push((row.character.world_id.clone(), row.world_name.clone()));
+                }
+            }
+            worlds.sort_by(|a, b| a.1.cmp(&b.1).then_with(|| a.0.cmp(&b.0)));
+        }
+        if request.reply.try_send(action).is_err() {
+            return false;
+        }
+        self.worlds = worlds;
+        true
+    }
+    pub fn clear_known_worlds(&mut self) {
+        self.worlds.clear();
     }
     pub fn cancel(&mut self) {
         if self.epoch.fetch_add(1, Ordering::AcqRel) == u64::MAX {
@@ -208,6 +233,49 @@ mod tests {
             thread::yield_now();
         }
         Err("selector request did not reach UI")
+    }
+    #[test]
+    fn accepted_picker_worlds_are_sorted_deduplicated_and_scoped() -> TestResult {
+        let (mut bridge, callback) = SelectionBridge::new();
+        let worker = thread::spawn(move || {
+            let mut offered = rows();
+            let mut alpha = offered[0].clone();
+            alpha.character.world_id = "alpha".into();
+            alpha.world_name = "Alpha".into();
+            offered.push(alpha.clone());
+            offered.push(alpha);
+            let mut unavailable = offered[0].clone();
+            unavailable.available = false;
+            unavailable.character.world_id = "hidden".into();
+            offered.push(unavailable);
+            callback(&offered, "", CancellationToken::new())
+        });
+        let id = wait(&mut bridge)?;
+        assert!(bridge.known_worlds().is_empty());
+        assert!(bridge.respond(
+            id,
+            SelectionAction::Play {
+                character_id: "character".into(),
+                channel_id: None,
+            }
+        ));
+        assert!(matches!(
+            worker.join().map_err(|_| "picker panicked")?,
+            SelectionAction::Play { .. }
+        ));
+        assert_eq!(
+            bridge.known_worlds(),
+            &[
+                ("alpha".into(), "Alpha".into()),
+                ("world".into(), "Server world".into()),
+            ]
+        );
+        // Admission cancels the picker while keeping the accepted names.
+        bridge.cancel();
+        assert_eq!(bridge.known_worlds().len(), 2);
+        bridge.clear_known_worlds();
+        assert!(bridge.known_worlds().is_empty());
+        Ok(())
     }
     #[test]
     fn expired_callback_returns_cancel_without_an_orphan_picker() -> TestResult {

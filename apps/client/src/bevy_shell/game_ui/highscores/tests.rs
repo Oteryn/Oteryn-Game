@@ -65,11 +65,11 @@ fn highscores_filter_change_requests_page() -> TestResult {
 #[test]
 fn highscores_rows_and_own_row_highlight() -> TestResult {
     let p = panel();
-    let rows: Vec<_> = table_rows(&p).collect();
+    let rows: Vec<_> = table_rows(&p, &[]).collect();
     assert_eq!(rows.len(), 2);
     assert_eq!(
         rows[0].cells,
-        ["51", "Own Hero", "knight", "current", "100", "900"]
+        ["51", "Own Hero", "knight", "Current world", "100", "900"]
     );
     assert_eq!(rows[0].color, Color::srgb_u8(0x60, 0xf8, 0x60));
     assert_ne!(rows[0].background, rows[1].background);
@@ -116,7 +116,7 @@ fn highscores_table_projects_bevy_cells() -> TestResult {
     let p = panel();
     world
         .run_system_once(move |mut commands: Commands| {
-            widgets::table(&mut commands, Handle::default(), parent, &p);
+            widgets::table(&mut commands, Handle::default(), parent, &p, &[]);
         })
         .map_err(|e| format!("{e:?}"))?;
     let cells: Vec<_> = world.query::<(&Text, &TextColor)>().iter(&world).collect();
@@ -230,5 +230,21 @@ fn shortcut_dispatch(rebound: bool) -> TestResult {
         owner.controls.highscores_generation,
         Some(owner.generation())
     );
+    Ok(())
+}
+
+#[test]
+fn highscores_unknown_world_keeps_its_identity() -> TestResult {
+    let world =
+        wire::WorldId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 2])
+            .map_err(|e| format!("{e:?}"))?;
+    let mut p = panel();
+    p.reply.as_mut().ok_or("reply")?.world = Some(world);
+    assert!(
+        table_rows(&p, &[])
+            .all(|row| row.cells[3] == oteryn_client_ui::highscores::world_text(world))
+    );
+    let worlds = [(world, "Named World".into())];
+    assert!(table_rows(&p, &worlds).all(|row| row.cells[3] == "Named World"));
     Ok(())
 }
