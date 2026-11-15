@@ -132,3 +132,118 @@ fn map_replacement_snapshot_spans_bounded_chunks_and_preserves_small_transfers()
     );
     Ok(())
 }
+
+#[test]
+fn snapshot_domain_fields_reject_wrong_wire_and_duplicates() {
+    assert_eq!(
+        decode_snapshot_body(&[0x0a, 4, 0x0a, 1, 0x18, 1]),
+        Err(FoundationProtocolError::MalformedEnvelope)
+    );
+    for field in 1..=4 {
+        for duplicate in [false, true] {
+            let mut entry = Vec::new();
+            for current in 1..=4 {
+                if current != field || duplicate {
+                    if current == 4 {
+                        push_test_bytes_field(&mut entry, current, &[1]);
+                    } else {
+                        push_test_varint_field(&mut entry, current, 1);
+                    }
+                }
+            }
+            if (field == 4) == duplicate {
+                push_test_bytes_field(&mut entry, field, &[2]);
+            } else {
+                push_test_varint_field(&mut entry, field, 2);
+            }
+            let mut body = Vec::new();
+            push_test_bytes_field(&mut body, 1, &entry);
+            assert_eq!(
+                decode_snapshot_body(&body),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "field {field}, duplicate {duplicate}"
+            );
+        }
+    }
+}
+
+#[test]
+fn snapshot_id_rejects_wrong_wire_and_duplicates() {
+    for extra in [&[0x08, 2][..], &[0x0a, 0]] {
+        let mut payload = vec![0x08, 1];
+        payload.extend(extra);
+        assert_eq!(
+            decode_snapshot_id(&payload),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+    }
+}
+
+#[test]
+fn snapshot_begin_fields_reject_wrong_wire_and_duplicates() {
+    for field in 1..=4 {
+        for duplicate in [false, true] {
+            let mut payload = vec![0x08, 1, 0x10, 1, 0x18, 1, 0x20, 1];
+            if duplicate {
+                push_test_varint_field(&mut payload, field, 2);
+            } else {
+                push_test_bytes_field(&mut payload, field, &[]);
+            }
+            assert_eq!(
+                decode_snapshot_begin(&payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "field {field}, duplicate {duplicate}"
+            );
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(11, &payload)),
+                Err(FoundationProtocolError::MalformedEnvelope)
+            );
+        }
+    }
+}
+
+#[test]
+fn snapshot_chunk_fields_reject_wrong_wire_and_duplicates() {
+    for field in 1..=3 {
+        for duplicate in [false, true] {
+            let mut payload = vec![0x08, 1, 0x10, 1, 0x1a, 1, 0];
+            if (field == 3) == duplicate {
+                push_test_bytes_field(&mut payload, field, &[2]);
+            } else {
+                push_test_varint_field(&mut payload, field, 2);
+            }
+            assert_eq!(
+                decode_snapshot_chunk_framing(&payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "field {field}, duplicate {duplicate}"
+            );
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(12, &payload)),
+                Err(FoundationProtocolError::MalformedEnvelope)
+            );
+        }
+    }
+}
+
+#[test]
+fn state_revision_fields_reject_wrong_wire_and_duplicates() {
+    for field in 1..=2 {
+        for duplicate in [false, true] {
+            let mut revision = test_state_revision(1);
+            if duplicate {
+                push_test_varint_field(&mut revision, field, 2);
+            } else {
+                push_test_bytes_field(&mut revision, field, &[]);
+            }
+            for (message, revisions_field) in [(7, 3), (8, 4), (10, 2)] {
+                let mut payload = Vec::new();
+                push_test_bytes_field(&mut payload, revisions_field, &revision);
+                assert_eq!(
+                    decode_wire_envelope(&test_envelope(message, &payload)),
+                    Err(FoundationProtocolError::MalformedEnvelope),
+                    "message {message}, field {field}, duplicate {duplicate}"
+                );
+            }
+        }
+    }
+}
