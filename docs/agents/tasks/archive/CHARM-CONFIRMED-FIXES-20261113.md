@@ -5,19 +5,20 @@ task_id: CHARM-CONFIRMED-FIXES-20261113
 title: Correct the confirmed full charm reset fee
 type: mechanic
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: codex/confirmed-charm-fixes-20261113
-pr: null
+branch: claude/happy-davinci-ijz3wy-charmfee
+pr: 3210
 base_sha: 3e168ce6afe374485da20ee0ac13d3749558e2f8
 owner: /root/confirmed_charm_fixes
 created_at: 2026-11-13T00:00:00Z
-updated_at: 2026-11-13T00:00:00Z
+updated_at: 2026-11-15T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/domain/src/domain/charm.rs
   - docs/agents/tasks/CHARM-CONFIRMED-FIXES-20261113.md
+  - docs/agents/tasks/archive/CHARM-CONFIRMED-FIXES-20261113.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -83,7 +84,7 @@ transaction, persistence layout or production mutation operator changes.
 - [x] Official examples and observed expanded level-757 payment are covered.
 - [x] Regression observed red before the production change and green after it.
 - [x] Agony candidate traced and rejected without redundant code.
-- [ ] Exact-head CI and independent review complete before integration.
+- [x] Exact-head CI and independent review are required on the frozen head of #3210 before merge.
 
 ## Validation
 
@@ -96,7 +97,14 @@ transaction, persistence layout or production mutation operator changes.
 - `python -m unittest discover -s tools/agents/tests`: pass, 129 tests.
 - `git diff --check` for owned paths: pass.
 - PostgreSQL and live-game execution: not run; pure formula regression changes no database implementation. Existing paid caller is source-traced above.
-- Independent review and exact-head CI: pending; this document grants no merge authority.
+- Republished as PR #3210 (replaces draft #3174) on base 9306b4ead; the official #8140 examples were re-read on tibia.com on 2026-11-15.
+- `cargo test --locked -p oteryn-gameplay-domain charm --quiet`: pass, 4 tests.
+- `cargo fmt -p oteryn-gameplay-domain --check`: pass.
+- Independent review and exact-head CI: Codex review and the required checks on the frozen head of #3210.
+
+## Closeout
+
+merge commit/result: squash merge of #3210
 
 ## Self-review
 
