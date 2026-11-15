@@ -1,0 +1,213 @@
+//! Server-confirmed Bosstiary catalogue and progress, independent of slots and trackers.
+use super::super::{
+    owner::{HostOwner, Phase},
+    ui::Skins,
+};
+use bevy::{prelude::*, ui_widgets::Activate};
+use oteryn_client_ui::boss_encounter::{BossCategory, Intent, catalogue_cards};
+
+#[derive(Component)]
+struct Window;
+#[derive(Component, Clone, Copy)]
+struct Action {
+    generation: u64,
+    intent: Intent,
+}
+
+#[derive(Resource, Default)]
+struct Snapshot(Option<(u64, oteryn_client_ui::boss_encounter::BossEncounterPanel)>);
+pub(super) fn install(app: &mut App) {
+    app.init_resource::<Snapshot>().add_systems(Update, project);
+}
+fn project(
+    mut commands: Commands,
+    owner: NonSend<HostOwner>,
+    skins: Res<Skins>,
+    roots: Query<Entity, With<Window>>,
+    mut snapshot: ResMut<Snapshot>,
+) {
+    let panel = owner
+        .play
+        .as_ref()
+        .filter(|_| {
+            owner.phase == Phase::Playing && owner.settings.preferences.panel_visible("bosstiary")
+        })
+        .map(|play| (owner.generation(), play.link.boss_encounter_panel()));
+    if snapshot.0 == panel {
+        return;
+    }
+    snapshot.0 = panel.clone();
+    for root in &roots {
+        commands.entity(root).despawn();
+    }
+    let Some((_, panel)) = panel else {
+        return;
+    };
+    let root = commands
+        .spawn((
+            Window,
+            bevy::ui_widgets::ScrollArea,
+            GlobalZIndex(150),
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(220.),
+                top: px(90.),
+                width: px(650.),
+                max_height: percent(75.),
+                overflow: Overflow::scroll_y(),
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(px(12.)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.08, 0.09, 0.12)),
+        ))
+        .id();
+    let mut text = String::from("Bosstiary\n");
+    if let Some(page) = &panel.catalogue {
+        text.push_str(&format!("Boss points: {}\n", page.points));
+    }
+    for entry in catalogue_cards(&panel) {
+        text.push_str(&format!(
+            "{} — {} — {} kills\n",
+            entry.name,
+            entry.category_name(),
+            entry.kills
+        ));
+        for (i, stage) in ["Prowess", "Expertise", "Mastery"].iter().enumerate() {
+            text.push_str(&format!(
+                "  {stage}: {}/{} ({} points)\n",
+                entry.kills.min(entry.thresholds[i]),
+                entry.thresholds[i],
+                entry.points[i]
+            ));
+        }
+    }
+    if let Some(feedback) = &panel.feedback {
+        text.push_str(feedback);
+    }
+    let label = commands
+        .spawn((
+            Text::new(text),
+            TextFont {
+                font: skins.font.clone().into(),
+                font_size: 15.0.into(),
+                ..default()
+            },
+        ))
+        .id();
+
+    for (label, intent) in [
+        ("Refresh", Intent::Catalogue),
+        ("Next page", Intent::CatalogueNext),
+    ] {
+        let button = commands
+            .spawn((
+                oteryn_client_ui_bevy::button(skins.buttons.clone(), 100.),
+                Action {
+                    generation: owner.generation(),
+                    intent,
+                },
+            ))
+            .observe(activate)
+            .id();
+        let caption = commands
+            .spawn((
+                Text::new(label),
+                TextFont {
+                    font: skins.font.clone().into(),
+                    font_size: 15.0.into(),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(root).add_child(button);
+    }
+    commands.entity(root).add_child(label);
+}
+fn activate(event: On<Activate>, controls: Query<&Action>, owner: NonSend<HostOwner>) {
+    let Ok(action) = controls.get(event.entity) else {
+        return;
+    };
+    if owner.phase == Phase::Playing
+        && owner.generation() == action.generation
+        && !owner.modal_active()
+        && let Some(play) = &owner.play
+    {
+        play.link
+            .boss_encounter_browse("", BossCategory::All, false);
+        play.link.boss_encounter_request(action.intent);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn bosstiary_toolbar_requests_catalogue_and_projects_window()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        outbox.bevy_bosstiary_initialize();
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        crate::bevy_shell::ui::toolbar::open_toolbar(
+            &mut owner,
+            crate::bevy_shell::ui::Control::Panel("bosstiary"),
+        );
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(c) if c.kind == 133 && c.payload.starts_with(b"BCT1"))
+        );
+        let page = oteryn_client_runtime::boss_encounter::catalogue::Page {
+            next: None,
+            points: 10,
+            entries: vec![oteryn_client_runtime::boss_encounter::catalogue::Entry {
+                key: "test:boss".into(),
+                name: "Confirmed boss".into(),
+                category: 1,
+                kills: 5,
+                thresholds: [5, 10, 20],
+                points: [10, 30, 60],
+                look: 1,
+                object: false,
+            }],
+        };
+        outbox.bevy_bosstiary_result(&oteryn_client_runtime::raw_feature::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: page.encode().ok_or("catalogue")?,
+        });
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<Entity, With<Window>>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        let texts: Vec<String> = app
+            .world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect();
+        assert!(texts.iter().any(|text| text.contains("Confirmed boss")
+            && text.contains("Prowess: 5/5")
+            && text.contains("Mastery: 5/20")));
+        Ok(())
+    }
+}

@@ -1,6 +1,7 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod analyser;
+mod bosstiary;
 mod bestiary;
 mod bug_report;
 mod chat;

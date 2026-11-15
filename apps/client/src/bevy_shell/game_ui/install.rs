@@ -1,10 +1,11 @@
 //! Installation of the shared in-game presentations.
 use super::{
-    actions, analyser, bestiary, bug_report, chat, cyclopedia, depot, feature_dialogs, forge, highscores, hotkeys, hud, imbuing, inventory, item_details, journal, layout, market, minimap, modal, npc_shop, options, outfit, party, prey, proficiency, project, projection, quick_loot, reward_wall, rule_violation, satellite_map, stash, store, store_inbox, task_board, trade, tutorial, unjustified_points, wheel,
+    actions, analyser, bestiary, bosstiary, bug_report, chat, cyclopedia, depot, feature_dialogs, forge, highscores, hotkeys, hud, imbuing, inventory, item_details, journal, layout, market, minimap, modal, npc_shop, options, outfit, party, prey, proficiency, project, projection, quick_loot, reward_wall, rule_violation, satellite_map, stash, store, store_inbox, task_board, trade, tutorial, unjustified_points, wheel,
 };
 use bevy::prelude::*;
 
 pub(in crate::bevy_shell) fn install(app: &mut App) {
+    bosstiary::install(app);
     actions::install(app);
     bestiary::install(app);
     bug_report::install(app);
