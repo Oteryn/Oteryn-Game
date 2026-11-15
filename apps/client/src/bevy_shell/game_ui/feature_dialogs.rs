@@ -1,6 +1,7 @@
 //! Real session-owned server dialogs; Bevy owns only focus and transient selection.
 mod banner_queue;
 mod build;
+mod guide;
 mod notices;
 mod submission;
 mod text_window;
@@ -59,6 +60,7 @@ struct State {
 pub(super) fn install(app: &mut App) {
     text_window::install(app);
     banner_queue::install(app);
+    app.init_resource::<guide::State>();
     app.init_resource::<State>()
         .add_systems(Startup, (setup, notices::setup).after(super::setup))
         .add_systems(
@@ -342,6 +344,7 @@ mod tests;
 pub(super) struct NoticeInputForTest;
 #[cfg(test)]
 pub(super) fn install_notice_input_for_test(app: &mut App) {
+    app.init_resource::<guide::State>();
     app.add_systems(Startup, notices::setup.after(crate::bevy_shell::ui::setup))
         .add_systems(
             Update,

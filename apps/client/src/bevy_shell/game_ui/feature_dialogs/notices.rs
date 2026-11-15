@@ -43,7 +43,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         ))
         .insert(TextLayout::default());
     let notices = overlay(&mut commands, 170, NoticeOverlay);
-    let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Notices");
+    let panel = notice_panel(&mut commands, &skins, notices, "Compendium — Player Guide");
     let scroll = commands
         .spawn((
             ScrollArea,
@@ -66,6 +66,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .id();
     commands.entity(scroll).add_child(text);
     commands.entity(panel).add_child(scroll);
+    super::guide::setup(&mut commands, &skins, panel);
     close_button(&mut commands, &skins, panel, 0);
 }
 fn overlay<C: Component>(commands: &mut Commands, z: i32, marker: C) -> Entity {
@@ -188,7 +189,9 @@ pub(super) fn project(
     close: Query<(Entity, &CloseNotice, &ChildOf)>,
     mut focus: ResMut<InputFocus>,
     mut previous: Local<(bool, bool)>,
+    mut guide: ResMut<super::guide::State>,
 ) {
+    guide.session(owner.generation());
     let dead = owner
         .play
         .as_ref()
@@ -259,7 +262,7 @@ pub(super) fn project(
             Some(
                 notices
                     .as_ref()
-                    .map(oteryn_client_ui::tutorial_notices::panel_text)
+                    .map(|panel| guide.text(panel))
                     .unwrap_or_default(),
             )
         } else {
