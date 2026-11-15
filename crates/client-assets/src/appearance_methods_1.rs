@@ -123,7 +123,8 @@ impl AppearanceIndex {
             .collect()
     }
 
-    fn resolve_phase(
+    /// Resolve one map animation phase with the same placement patterns as `resolve`.
+    pub fn resolve_phase(
         &self,
         sheets: &SpriteSheets,
         appearance_id: u32,
@@ -142,6 +143,9 @@ impl AppearanceIndex {
             .objects
             .get(&appearance_id)
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
+        if phase >= appearance.phases {
+            return Err(AssetError::UnknownSprite { sprite_id: 0 });
+        }
         let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
         entry(
             appearance,

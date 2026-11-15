@@ -177,10 +177,11 @@ pub(super) async fn authorize(
             }
             SelectionAction::TrainMany { .. } => return Err(rejected(PublicClass::RetryLogin)),
             SelectionAction::Create => {
-                let url = format!(
-                    "{}/account/characters/create",
-                    config.platform_url.trim_end_matches('/')
-                );
+                let url = crate::web_links::destination_url(
+                    &config.platform_url,
+                    "account/characters/create",
+                )
+                .ok_or(GameplayEntryError::InvalidConfiguration)?;
                 if !(config.open_browser)(&url) {
                     return Err(rejected(PublicClass::RetryLogin));
                 }

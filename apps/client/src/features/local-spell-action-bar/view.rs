@@ -8,6 +8,8 @@ pub(in crate::play) use hotkeys::bind as bind_custom_key;
 #[cfg(any(windows, test))]
 pub(in crate::play) use hotkeys::native_key;
 pub use item_actions::ItemUseMode;
+#[cfg(any(windows, test))]
+pub(in crate::play) use item_actions::editor_items;
 pub(in crate::play) use item_actions::{item_source, item_target, visible_items};
 #[path = "amount.rs"]
 mod amount;
@@ -113,6 +115,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                 "Spell aim: facing / cursor / target",
                 "Equip upgrade tier (0–10)",
                 "Send text automatically: yes / no (no inserts it into the chat input)",
+                "Item subtype (blank: any)",
             ],
             buttons: &[
                 "Spell",
@@ -128,6 +131,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                 "Use target",
                 "Use cursor",
                 "Use at cursor position",
+                "Use item",
             ],
             snapshot: |mailbox| {
                 let panel = &mailbox.spell_bar;
@@ -143,6 +147,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
                         "facing".into(),
                         "0".into(),
                         "yes".into(),
+                        String::new(),
                     ],
                     format!(
                         "{}\r\n{}\r\n{}",
@@ -219,10 +224,11 @@ impl crate::play::PlayLink {
                 if let Some(slot) = fields.iter().enumerate().position(|(slot, field)| {
                     field.is_empty() && !mailbox.bar_actions.saved.0.contains_key(&slot)
                 }) {
-                    mailbox
-                        .spell_bar
-                        .bar
-                        .bind(slot, std::num::NonZeroU32::new(id));
+                    crate::play::feature_0287_actor_spell_catalog::view::assign_cast_index(
+                        &mut mailbox,
+                        slot,
+                        Some(id),
+                    );
                 }
             }
         }
@@ -350,4 +356,22 @@ impl PlayView {
         self.creature_drag.pointer = None;
         crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = None;
     }
+}
+
+// Kept outside Win32 so the editor transactions can be exercised on every test host.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn choose_editor_assignment(
+    target: &mut Option<BarAction>,
+    selected: Option<BarAction>,
+) {
+    if let Some(action) = selected {
+        *target = Some(action);
+    }
+}
+
+#[cfg(any(windows, test))]
+pub(in crate::play) fn editor_active(mailbox: &crate::play::mailbox::Mailbox, scope: u64) -> bool {
+    mailbox.bar_actions.scope == scope
+        && !mailbox.world_input_blocked()
+        && !mailbox.custom_hotkeys_ended
 }

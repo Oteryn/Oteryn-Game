@@ -16,7 +16,7 @@ fn inventory_drop_assigns_current_item_without_move_and_rejects_stale_source()
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 3.try_into()?,
-        sub_type: 0,
+        sub_type: 7,
     };
     let seed = |items| {
         PlayLink::bevy_items_fixture(
@@ -135,6 +135,7 @@ fn inventory_drop_assigns_current_item_without_move_and_rejects_stale_source()
         settings.preferences.bar_actions.0.get(&0),
         Some(&BarAction::Use {
             definition: item.item_definition_ref,
+            sub_type: Some(item.sub_type),
             mode: ItemUseMode::Cursor,
         })
     );

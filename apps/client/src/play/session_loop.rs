@@ -89,6 +89,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 }
             },
             Ok(PlayCommand::Feature(command)) => {
+                let item_scope = outbox.bar_action_scope();
                 let started = std::time::Instant::now();
                 match session.feature(&command).await {
                 Ok(result) => {
@@ -133,7 +134,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
                         449 => outbox.spellbook_details_result(&result),
-                        463 => outbox.bar_item_cooldowns_result(&result),
+                        463 => outbox.bar_item_cooldowns_result(item_scope, &result),
                         _ => {}
                     }
                     publish(&mut session, &outbox, &mut held);

@@ -320,6 +320,13 @@ fn login_form_drives_existing_browser_gateway_and_admission() -> TestResult {
 
 #[test]
 fn empty_account_create_and_refresh_never_issue_a_ticket() -> TestResult {
+    for suffix in ["", "?source=game#login"] {
+        empty_account_create_and_refresh_case(suffix)?;
+    }
+    Ok(())
+}
+
+fn empty_account_create_and_refresh_case(suffix: &str) -> TestResult {
     use crate::character_selection::SelectionAction;
     use std::sync::{Arc, atomic::AtomicUsize};
     let stack = Stack::start_with_account(vec![], vec![], true)?;
@@ -336,6 +343,7 @@ fn empty_account_create_and_refresh_never_issue_a_ticket() -> TestResult {
     });
     let opener = config.open_browser.clone();
     let create_url = format!("{}account/characters/create", config.platform_url);
+    config.platform_url.push_str(suffix);
     let opened = Arc::new(AtomicUsize::new(0));
     let created = opened.clone();
     config.open_browser = Arc::new(move |url| {

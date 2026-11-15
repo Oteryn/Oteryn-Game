@@ -146,7 +146,7 @@ impl PlayView {
             self.minimap.clone(),
             self.floor,
         )?;
-        self.project_presentation(std::time::Instant::now())
+        self.project_presentation_at(std::time::Instant::now())
     }
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.

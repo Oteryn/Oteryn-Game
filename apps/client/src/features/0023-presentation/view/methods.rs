@@ -25,10 +25,20 @@ impl PlayView {
         });
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.project_presentation(now)
+        self.project_presentation_at(now)
     }
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.advance_world_animation(now)?;
+        self.project_presentation_at(now)
+    }
+
+    /// Project overlays without advancing map animation; `rebuild` ends here, so a phase change
+    /// cannot re-enter the animation sampler with a different clock.
+    pub(in crate::play) fn project_presentation_at(
+        &mut self,
+        now: Instant,
+    ) -> Result<(), BatchError> {
         // Palette pixels remain emissive: overlays must be legible in dark areas.
         let (frames, changed) = if self.preferences().show_effects {
             self.scene.visual_frames(&self.visuals, now, self.floor)?

@@ -1,5 +1,8 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
 use super::item_actions::item_source;
+#[path = "readiness.rs"]
+mod readiness;
+use readiness::action_ready;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
@@ -123,6 +126,8 @@ pub enum BarAction {
     },
     Use {
         definition: NonZeroU32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        sub_type: Option<u32>,
         mode: super::item_actions::ItemUseMode,
     },
     Passive {
@@ -182,6 +187,7 @@ pub(crate) struct ItemCooldownRead {
 }
 #[derive(Debug, Default)]
 pub(crate) struct BarActionsState {
+    pub scope: u64,
     pub saved: BarActions,
     pub item_cooldowns_selected: bool,
     pub item_cooldowns: BTreeMap<u32, (std::time::Instant, u64)>,
@@ -365,9 +371,11 @@ fn activate_inner(
             }
         }
         BarAction::Multi { .. } => {}
-        BarAction::Use { definition, mode } => {
-            super::item_actions::use_item(mailbox, commands, definition, mode)
-        }
+        BarAction::Use {
+            definition,
+            sub_type,
+            mode,
+        } => super::item_actions::use_item(mailbox, commands, definition, sub_type, mode),
         BarAction::Equip {
             definition,
             upgrade_tier,
@@ -416,10 +424,18 @@ pub(in crate::play) fn label(mailbox: &Mailbox, action: &BarAction) -> String {
     match action {
         BarAction::Spell { name, .. } => name.clone(),
         BarAction::Multi { actions } => format!("Multiaction ({} actions)", actions.len()),
-        BarAction::Use { definition, mode } => format!(
-            "Use {definition} on {}\nVisible: {}",
-            mode.label(),
-            super::amount::visible_count(mailbox, definition.get())
+        BarAction::Use {
+            definition,
+            sub_type,
+            mode,
+        } => format!(
+            "Use {definition}{}\nVisible: {}",
+            if *mode == super::item_actions::ItemUseMode::Use {
+                String::new()
+            } else {
+                format!(" on {}", mode.label())
+            },
+            super::amount::visible_subtype_count(mailbox, definition.get(), *sub_type)
                 .map_or_else(|| "?".into(), |count| count.to_string())
         ),
         BarAction::Equip {
@@ -480,8 +496,12 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
             .iter()
             .enumerate()
             .find_map(|(index, action)| {
-                if let BarAction::Use { definition, .. } = action
-                    && item_source(mailbox, *definition, None).is_some()
+                if let BarAction::Use {
+                    definition,
+                    sub_type,
+                    ..
+                } = action
+                    && item_source(mailbox, *definition, *sub_type).is_some()
                     && !mailbox
                         .spell_catalog
                         .catalog
@@ -519,58 +539,4 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
             .unwrap_or_else(|| "Multiaction: cooling down".into());
     }
     label(mailbox, action)
-}
-fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
-    let entry = match action {
-        BarAction::Spell { name, words, .. } => mailbox
-            .spell_catalog
-            .catalog
-            .entries()
-            .iter()
-            .find(|entry| entry.name == *name && entry.words == *words),
-        BarAction::Use { definition, .. } => {
-            if item_source(mailbox, *definition, None).is_none() || mailbox.world_context.pending {
-                return false;
-            }
-            mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.rune_item == Some(definition.get()))
-        }
-        BarAction::Equip { definition, .. } => {
-            return mailbox.hotkey_equip.items.contains(&definition.get())
-                && !mailbox.hotkey_equip.pending;
-        }
-        _ => return false,
-    };
-    let Some(entry) = entry else {
-        return match action {
-            BarAction::Use { definition, .. } => mailbox
-                .bar_actions
-                .item_cooldowns
-                .get(&definition.get())
-                .is_some_and(|(received, remaining)| {
-                    u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX) >= *remaining
-                }),
-            _ => false,
-        };
-    };
-    if !entry.available {
-        return false;
-    }
-    let elapsed = mailbox
-        .spell_bar
-        .cooldown_received_at
-        .map_or(0, |received| {
-            u64::try_from(received.elapsed().as_millis()).unwrap_or(u64::MAX)
-        });
-    NonZeroU32::new(entry.cast_index).is_some_and(|index| {
-        mailbox
-            .spell_bar
-            .bar
-            .remaining_ms(index, &entry.cooldown_groups)
-            <= elapsed
-    })
 }

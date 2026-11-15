@@ -38,6 +38,10 @@ impl Mailbox {
         self.highscores.pending = Default::default();
         self.depot_search.pending = Default::default();
         self.hotkey_equip.pending = Default::default();
+        self.bar_actions.item_cooldown_read = None;
+        self.bar_actions.deferred_item_read = None;
+        self.bar_actions.item_cooldowns.clear();
+        self.bar_actions.item_cooldown_rejected.clear();
         self.potion_durations.pending = Default::default();
         self.item_forge.scope_changed();
         self.store.pending = Default::default();
@@ -126,6 +130,7 @@ impl Outbox {
         // Crystal 201189f data-global/scripts/quests/soulpit/soulpit_fight.lua:79-106
         // moves the whole staged group.
         // Discard origin targets and feedback before applying fresh destination snapshots.
+        mailbox.bar_actions.scope = crate::play::feature_0017_attack::view::next_edit();
         mailbox.before = Pushed::default();
         mailbox.pushed = Pushed {
             scope_changed: true,

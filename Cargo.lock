@@ -4922,6 +4922,7 @@ dependencies = [
  "sha2 0.11.1",
  "tokio",
  "tokio-rustls",
+ "url",
  "windows-sys 0.61.2",
  "winit",
  "zip",

@@ -256,6 +256,11 @@ impl TileAnimation {
 }
 
 impl World {
+    /// The shared animation epoch; the first caller fixes it.
+    pub(crate) fn animation_epoch() -> std::time::Instant {
+        *ANIMATION_EPOCH.get_or_init(std::time::Instant::now)
+    }
+
     /// Sample every item's own duration sequence, skipping elapsed frames after a stall.
     pub(crate) fn animated_at(&self, now: std::time::Instant) -> Option<Self> {
         if self.animations.is_empty() {
