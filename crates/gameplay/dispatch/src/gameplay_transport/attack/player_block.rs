@@ -145,119 +145,20 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         stream: &[u8],
         now: OwnerTime,
     ) -> bool {
-        if magnitude > 0
-            && let Some(charm) = &self.charm
+        if self.states.is_dead(target)
+            || self.states.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+            || runtime.player_control_facts(target, session).is_err()
+            || !self
+                .states
+                .get(runtime, target, session)
+                .is_some_and(|state| state.owned_conditions().accepts_time(now.get()))
         {
-            let outcomes = charm_combat::evaluate(
-                self.states,
-                runtime,
-                charm.catalogue,
-                target,
-                session,
-                charm.race,
-                &charm.root,
-                charm.occurrence,
-                CharmHookEvent::IncomingCreatureHit {
-                    base_damage: u64::from(charm.base_damage),
-                },
-            );
-            for outcome in &outcomes {
-                match charm_combat::effect(outcome) {
-                    Some(CharmEffectOutcome::ParalyseCreature { duration_ms }) => {
-                        charm_combat::paralyse_creature(
-                            runtime,
-                            target,
-                            session,
-                            source,
-                            duration_ms,
-                            &charm.root,
-                            charm.occurrence,
-                            now.get(),
-                        );
-                    }
-                    Some(
-                        effect @ (CharmEffectOutcome::Haste { .. }
-                        | CharmEffectOutcome::CleanseOneNegativeCondition),
-                    ) => {
-                        self.states.apply_player_charm_condition(
-                            runtime,
-                            target,
-                            session,
-                            effect,
-                            &charm.root,
-                            charm.occurrence,
-                            now.get(),
-                        );
-                    }
-                    _ => {}
-                }
-                let Some(CharmEffectOutcome::ReflectDamage { damage, amount }) =
-                    charm_combat::effect(outcome)
-                else {
-                    continue;
-                };
-                let Ok(draw) = oteryn_simulation_determinism::deterministic_decision_u64(
-                    &charm.root,
-                    charm.occurrence,
-                    "charm.parry-armor",
-                    0,
-                ) else {
-                    continue;
-                };
-                let Some(amount) =
-                    charm_combat::damage_amount(runtime, source, damage, amount, draw)
-                        .filter(|n| *n > 0)
-                else {
-                    continue;
-                };
-                let amount = if self
-                    .states
-                    .elite_bounty(runtime, target, session, charm.race)
-                {
-                    amount / 2
-                } else {
-                    amount
-                };
-                if amount == 0 {
-                    continue;
-                }
-                let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
-                    continue;
-                };
-                if let Ok(result) = runtime.commit_source_damage(
-                    source,
-                    target,
-                    session,
-                    b"charm-parry-bite",
-                    charm.sequence,
-                    amount,
-                    now.get() / 1_000,
-                ) && result.applied
-                {
-                    self.states.analyser.impact_amount(
-                        target,
-                        session,
-                        u64::try_from(result.health_before.saturating_sub(result.health_after))
-                            .unwrap_or(0),
-                        Some(super::super::analyser::charm_element(damage.element)),
-                    );
-                    if result.health_after == 0 {
-                        self.states.equipment_reflection_kills.push((
-                            source,
-                            crate::combat::CapturedRewardPrincipal {
-                                character: lease.character_id(),
-                                lease_generation: lease.generation(),
-                                actor: target,
-                                session,
-                            },
-                            now.get(),
-                        ));
-                        // Parry can kill the source. The admitted incoming hit still lands;
-                        // equipment reflection has no living source to damage after that kill.
-                        return true;
-                    }
-                }
-            }
+            return false;
+        }
+
+        if magnitude > 0 && self.charm.is_some() {
+            return true;
         }
         self.states.reflect_equipment(
             runtime, source, target, session, element, magnitude, stream, now,
@@ -272,6 +173,106 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         magnitude: u32,
         now: OwnerTime,
     ) -> Option<CreatureHit> {
+        if magnitude > 0
+            && let Some(charm) = &self.charm
+        {
+            use crate::player_lethal::{
+                PlayerHitKind, PlayerLethalVitals, SourceHitConditions, SourceHitEquipment,
+            };
+            let text = self
+                .conditions
+                .as_ref()
+                .map(|conditions| conditions.occurrence_text.clone())
+                .unwrap_or_else(|| {
+                    format!(
+                        "bite:{}:{}",
+                        super::hex(&charm.source.placement_identity()),
+                        charm.sequence
+                    )
+                });
+            let base_speed = u16::try_from(
+                self.states
+                    .get(runtime, target, target_session)?
+                    .owned_base_speed(),
+            )
+            .ok()?;
+            let facts = crate::foundation::ApplicationFacts {
+                now: now.get(),
+                base_speed,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &charm.root,
+                occurrence: charm.occurrence,
+            };
+            let conditions = self
+                .conditions
+                .as_ref()
+                .map(|conditions| SourceHitConditions {
+                    definitions: &conditions.definitions,
+                    facts: &facts,
+                    immunities: &[],
+                    fence: None,
+                    stamp: conditions.stamp,
+                });
+            let equipment_magnitude = magnitude;
+            let magnitude = if conditions.is_some() {
+                magnitude
+            } else {
+                let amount =
+                    if self
+                        .states
+                        .elite_bounty(runtime, target, target_session, charm.race)
+                    {
+                        magnitude.saturating_mul(2)
+                    } else {
+                        magnitude
+                    };
+                let percent = self.states.prey_percent(
+                    runtime,
+                    target,
+                    target_session,
+                    charm.race,
+                    2,
+                    now.get(),
+                );
+                amount - (u64::from(amount) * u64::from(percent) / 100) as u32
+            };
+            let receipt = charm_combat::source_vitals::CharmSourceVitals {
+                states: self.states,
+                attack: self.attack,
+                catalogue: charm.catalogue,
+                root: charm.root.clone(),
+            }
+            .apply_source_incoming_hit(
+                runtime,
+                charm.source,
+                target,
+                target_session,
+                magnitude,
+                charm.base_damage,
+                Some(charm.occurrence),
+                PlayerHitKind::Physical,
+                &text,
+                now,
+                conditions,
+                Some(SourceHitEquipment {
+                    native_bite: true,
+                    magnitude: equipment_magnitude,
+                    element: Some("physical"),
+                    stream: b"bite",
+                }),
+            )?;
+            return Some(CreatureHit {
+                damage: crate::ability::creature_bite::CreatureDamage {
+                    applied: receipt.applied,
+                    health_after: receipt.health_after,
+                },
+                vitals_revision: receipt.vitals_revision,
+                death: receipt.death.map(|death| death.occurrence_bytes()),
+            });
+        }
         let was_dead = self.states.is_dead(target);
         // Zero/fully blocked/dodged primary hits do not attach melee conditions.
         // The admitted source's nonzero primary and secondary state commit together.

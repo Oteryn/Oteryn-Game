@@ -69,6 +69,11 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/attack/drain.rs", 1),
             ("gameplay_transport/attack/ranged.rs", 1),
+            // CHARMS: real primary/secondary target regression uses the existing attack gate.
+            (
+                "gameplay_transport/postgres_tests/all_charms_secondary.rs",
+                2,
+            ),
             (
                 "gameplay_transport/postgres_tests/daily_reward/effects.rs",
                 1,
