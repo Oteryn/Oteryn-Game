@@ -301,3 +301,94 @@ fn web_identity_pkce_isolation() -> TestResult {
     }
     result
 }
+
+// Unit tests of the shared support helpers. They live in this one target so
+// that `support` stays test-free in every target that includes it.
+mod support_tests {
+    use super::*;
+    use oteryn_identity::IdentityError;
+
+    #[test]
+    fn postgres_observer_connection_fields() -> TestResult {
+        let fields = postgres_env(
+            "postgresql://obs&erver:p%40ss%3A%2F%25+wo&rd@127.0.0.1:15435/game%20d&b?sslmode=require",
+        )?;
+        for (key, expected) in [
+            ("PGHOST", "127.0.0.1"),
+            ("PGPORT", "15435"),
+            ("PGUSER", "obs&erver"),
+            ("PGPASSWORD", "p@ss:/%+wo&rd"),
+            ("PGDATABASE", "game d&b"),
+            ("PGSSLMODE", "require"),
+        ] {
+            check(
+                fields
+                    .iter()
+                    .any(|(name, value)| *name == key && value == expected),
+                "postgres_field_mismatch",
+            )?;
+        }
+        check(
+            postgres_env("postgresql://observer@localhost/game")?
+                .iter()
+                .any(|(name, value)| *name == "PGSSLMODE" && value == "prefer"),
+            "postgres_default_sslmode_invalid",
+        )?;
+        check(
+            postgres_failure("probe", b"ERROR:  42P01\n")
+                == "postgres_assertion_query_failed:probe:42P01",
+            "postgres_sqlstate_missing",
+        )?;
+        check(
+            postgres_failure("probe", b"connection failed: private connection details")
+                == "postgres_assertion_query_failed:probe",
+            "postgres_error_text_leaked",
+        )
+    }
+    #[test]
+    fn postgres_observer_round_trip() -> TestResult {
+        let Ok(database) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        check(
+            sql(&database, "round_trip", "SELECT 1;")? == "1",
+            "postgres_round_trip_failed",
+        )?;
+        let error = sql(
+            &database,
+            "invalid_query",
+            "SELECT missing_observer_column;",
+        )
+        .err()
+        .ok_or("postgres_invalid_query_accepted")?;
+        check(
+            error.to_string() == "postgres_assertion_query_failed:invalid_query:42703",
+            "postgres_sqlstate_invalid",
+        )
+    }
+    #[test]
+    fn shipping_callback_rejects_mismatched_state() -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let callback = "http://127.0.0.1:18099/callback";
+                let bad = Url::parse(&format!("{callback}?code=qualification-code&state=wrong"))?;
+                let error = callback_code(&bad, "expected", callback)
+                    .await
+                    .err()
+                    .ok_or("state_mismatch_accepted")?;
+                check(
+                    error.downcast_ref::<IdentityError>() == Some(&IdentityError::StateMismatch),
+                    "wrong_state_refusal",
+                )?;
+                let good = Url::parse(&format!(
+                    "{callback}?code=qualification-code&state=expected"
+                ))?;
+                check(
+                    callback_code(&good, "expected", callback).await? == "qualification-code",
+                    "valid_callback_refused",
+                )
+            })
+    }
+}
