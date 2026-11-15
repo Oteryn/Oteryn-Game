@@ -111,6 +111,11 @@ then Send. The window uses the protocol-supported Name, Statement and Bot report
 types; legacy OTClient moderation penalties are not report actions in this protocol.
 
 Market and Party also have buttons on the gameplay toolbar.
+The gameplay toolbar lists windows alphabetically: Analysers, Battle, Chat,
+Inspection, Inventory, Loot Containers, Market, Minimap, Notices, Options, Party,
+Quest Log, Skills, Spellbook and VIP. Buttons open the existing retained window
+owners or reveal their HUD panel; Skills refreshes its always-visible panel.
+The label/action registry is `TOOLBAR` in `src/bevy_shell/ui.rs`.
 
 Achievement notices appear in arrival order, one banner at a time. Each fades in
 for 400 ms, holds for 3 seconds, then fades out for 300 ms, matching OTClient's
