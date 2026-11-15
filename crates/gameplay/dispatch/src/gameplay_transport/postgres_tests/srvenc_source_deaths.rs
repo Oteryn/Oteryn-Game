@@ -147,7 +147,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         "oteryn:quest-transition/srvenc-fixture/seed-{}",
         rule.creature.rsplit('.').next().ok_or("creature")?
     );
-    let catalogue = if seeds.is_empty() {
+    let catalogue = if seeds.is_empty() || rule.top_damage_only {
         Arc::new(catalogue)
     } else {
         let mut transitions = vec![native_transition];
@@ -217,7 +217,28 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
-    if !seeds.is_empty() {
+    if rule.top_damage_only && !seeds.is_empty() {
+        // Herald starts after Emiliana's historical mission admission. The
+        // generic writer must not impersonate her protected quest operation.
+        // Import only that predecessor, as the other native Quest fixtures do;
+        // the death and all its rewards still use the real fenced owners.
+        let mut prior = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *prior)
+            .await?;
+        for (track, value) in &seeds {
+            let imported = sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) SELECT character_id,$2,$3,$4,character_revision FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).bind(track).bind(&rule.quest).bind(value)
+                .execute(&mut *prior).await?;
+            assert_eq!(imported.rows_affected(), 1);
+        }
+        prior.commit().await?;
+        let stored = owner.root.read_character_quest_state(owner.character, fresh.character_id)
+            .await.map_err(debug)?;
+        for (track, value) in &seeds {
+            assert_eq!(stored.tracks().get(track), Some(value));
+        }
+    } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
             .await
