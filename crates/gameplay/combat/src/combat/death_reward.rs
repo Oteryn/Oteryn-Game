@@ -945,7 +945,9 @@ pub fn animus_mastery_experience(base: u64, completed: usize, species_mastered: 
             .unwrap_or(u64::MAX)
             .saturating_mul(10)
             .min(200);
-    base.saturating_add(base.saturating_mul(bonus_basis_points) / 10_000)
+    let base = u128::from(base);
+    let experience = base + base * u128::from(bonus_basis_points) / 10_000;
+    u64::try_from(experience).unwrap_or(u64::MAX)
 }
 
 /// A kill the Bestiary descendant settled without an error.
@@ -1314,6 +1316,28 @@ mod tests {
             .expect("source corpse facts");
         assert_eq!(seacrest.container_capacity, Some(36));
         assert!(check_corpse_container_capacity(31).is_err());
+    }
+
+    #[test]
+    fn animus_large_valid_experience_keeps_full_bonus_before_division() {
+        let base = 1_000_000_000_000_000_000;
+        assert_eq!(
+            animus_mastery_experience(base, 0, true),
+            1_020_000_000_000_000_000
+        );
+        assert_eq!(
+            animus_mastery_experience(base, 10, true),
+            1_021_000_000_000_000_000
+        );
+        assert_eq!(
+            animus_mastery_experience(base, 200, true),
+            1_040_000_000_000_000_000
+        );
+        assert_eq!(animus_mastery_experience(base, 200, false), base);
+        assert_eq!(
+            animus_mastery_experience(u64::MAX, usize::MAX, true),
+            u64::MAX
+        );
     }
 
     #[test]
