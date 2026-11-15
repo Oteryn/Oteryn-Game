@@ -315,7 +315,8 @@ pub fn catch_threshold(skill: u16) -> u32 {
 }
 
 pub fn catches(skill: u16, roll: u32) -> bool {
-    (1..=100_000).contains(&roll) && roll <= catch_threshold(skill)
+    // Each group of 1,000 equiprobable draws maps to one integer percent (CRAFT-1 C4).
+    (1..=100_000).contains(&roll) && roll.div_ceil(1_000) * 1_000 <= catch_threshold(skill)
 }
 
 /// Rod admission used before dispatch trains fishing or consumes bait.
@@ -336,6 +337,22 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn catches_uses_the_craft1_integer_percent_draw() {
+        // CRAFT-1 C4: uniform U in 1..=100; 1,000 * U <= the scaled curve.
+        for (skill, expected) in [(0, 10_000), (20, 15_000), (77, 49_000), (78, 50_000)] {
+            assert_eq!(
+                (1..=100_000).filter(|&roll| catches(skill, roll)).count(),
+                expected
+            );
+        }
+        assert!(catches(20, 15_000));
+        assert!(!catches(20, 15_001));
+        assert!(!catches(20, 15_970));
+        assert!(!catches(20, 0));
+        assert!(!catches(20, 100_001));
+    }
 
     #[test]
     fn m09_mechanical_rod_is_admitted_on_ice_holes() {
