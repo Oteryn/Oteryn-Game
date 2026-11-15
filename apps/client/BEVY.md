@@ -198,3 +198,22 @@ change. Cancel closes the editor. The standing preview uses local verified sprit
 sheets; mounts display their catalogue keys because the model has no mount sprite
 IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
+
+Bestiary is available from the **Bestiary** toolbar button (and the retained
+Bestiary shortcut). The dedicated window loads capability-67 progress followed
+by its catalogue, with category navigation, first/next pages, creature selection,
+three discovery thresholds, confirmed creature details and paged loot. Refresh
+progress reloads the server's kill counts; Close/Escape dismisses the window.
+Unreported progress stays unknown rather than becoming a fabricated zero.
+Charms and tracker controls are separate work.
+
+Full Global discovery disclosure is **NEEDS-CONTRACT**: the capability-67,
+command-84 catalogue reply `Card` has a single `detail: String` and no discovery
+visibility or stage-tagged loot entries. A stage-aware catalogue card/detail
+message must identify which name/appearance, combat facts and loot entries are
+revealed at each discovery stage. This window displays the server's confirmed
+text; it does not infer loot rarity or discovery visibility by parsing it.
+Upstream `edubart/otclient` has no Bestiary module; its
+`modules/game_questlog/questlog.lua` provides the toolbar/request/list/detail and
+session-cleanup reference pattern. Discovery stages follow the local Tibia manual
+(`docs/reference/tibia-manual/interface.md`, Cyclopedia).
