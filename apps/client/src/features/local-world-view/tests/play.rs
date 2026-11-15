@@ -404,3 +404,83 @@ fn first_visible_floor_open_sky() -> Result<(), BatchError> {
     assert_eq!(world.first_visible_floor, 0);
     Ok(())
 }
+
+#[test]
+fn animated_terrain_and_items_advance_in_the_play_scene_without_server_updates()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog};
+    use std::time::{Duration, Instant};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    for ground in [true, false] {
+        let appearance = index
+            .iter()
+            .filter(|a| a.ground == ground && a.phases > 1)
+            .filter(|a| a.sprite_ids.first() != a.sprite_ids.last())
+            .min_by_key(|a| a.id)
+            .ok_or("animated appearance missing from pinned assets")?;
+        let mut map = live_snapshot(100);
+        map.tiles[0].items[0].appearance_id = u16::try_from(appearance.id)?;
+        let mut upper = map.tiles[0].clone();
+        upper.position.x += 1;
+        upper.position.y += 1;
+        upper.position.floor = -1;
+        map.tiles.push(upper);
+        let mut fixed = map.tiles[0].clone();
+        fixed.position.x += 2;
+        fixed.items[0].appearance_id = 4526;
+        map.tiles.push(fixed);
+        let world = Arc::new(World::resolve_live_map(&root, &map)?);
+        let fixed = world.tile(102, 200).ok_or("static tile missing")?.clone();
+        let mut view = view()?;
+        view.set_world(Arc::clone(&world))?;
+        let now = Instant::now();
+        view.advance_presentation(now)?;
+        let before = view.scene().sprites().instances().to_vec();
+        let upper_before = view.local.world().floor_tile(-1, 102, 202).cloned();
+        let mut changed = false;
+        let mut upper_changed = false;
+        let mut elapsed = 0;
+        for duration in &appearance.phase_ms {
+            elapsed += u64::from(*duration);
+            view.advance_presentation(now + Duration::from_millis(elapsed))?;
+            changed |= before.as_slice() != view.scene().sprites().instances();
+            upper_changed |= view.local.world().floor_tile(-1, 102, 202) != upper_before.as_ref();
+        }
+        assert!(
+            changed,
+            "appearance {} (ground={ground}) stayed on phase zero",
+            appearance.id
+        );
+        assert_eq!(
+            view.scene().sprites().instances(),
+            &before,
+            "full cycle must wrap"
+        );
+        let current = view.local.world();
+        assert_eq!(current.tile_count(), 3);
+        assert_eq!(current.tile(102, 200), Some(&fixed));
+        assert!(upper_changed, "upper-floor animation stayed on phase zero");
+        assert_eq!(current.floor_tile(-1, 102, 202), upper_before.as_ref());
+        assert!(
+            std::ptr::eq(world.atlas(), current.atlas()),
+            "phase changes must reuse the atlas"
+        );
+        let replacement = World::resolve_live_map(&root, &map)?;
+        let at = now + Duration::from_millis(elapsed + 100);
+        let replacement = replacement.animated_at(at).unwrap_or(replacement);
+        view.advance_presentation(at)?;
+        assert_eq!(
+            view.local.world().tile(100, 200),
+            replacement.tile(100, 200)
+        );
+    }
+    Ok(())
+}
