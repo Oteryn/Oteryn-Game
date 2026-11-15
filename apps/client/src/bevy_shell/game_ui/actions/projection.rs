@@ -47,17 +47,6 @@ pub(super) struct Projection<'w, 's> {
             Without<ActionHint>,
         ),
     >,
-    cooldown: Query<
-        'w,
-        's,
-        &'static mut Text,
-        (
-            With<CooldownLine>,
-            Without<ActionHint>,
-            Without<SlotCaption>,
-            Without<ToolCaption>,
-        ),
-    >,
     hints: Query<
         'w,
         's,
@@ -178,19 +167,6 @@ pub(super) fn project(
         };
         if text.0 != caption {
             text.0 = caption;
-        }
-    }
-    let cooldown = play
-        .link
-        .cooldown_bar_icons()
-        .into_iter()
-        .filter(|icon| icon.remaining_ms > 0)
-        .map(|icon| format!("{} {:.1}s", icon.label, icon.remaining_ms as f64 / 1000.))
-        .collect::<Vec<_>>()
-        .join("  ");
-    for mut text in &mut ui.cooldown {
-        if text.0 != cooldown {
-            text.0.clone_from(&cooldown);
         }
     }
     let hint = ui

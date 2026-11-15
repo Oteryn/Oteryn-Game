@@ -5,6 +5,9 @@ use crate::play::BarGesture;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui_bevy as source;
 
+mod cooldown;
+#[cfg(test)]
+mod cooldown_tests;
 mod dragdrop;
 mod editor;
 #[cfg(test)]
@@ -44,7 +47,10 @@ pub(super) fn install(app: &mut App) {
     editor::install(app);
     app.init_resource::<editor::EditorState>()
         .add_systems(Startup, (setup, editor::setup).after(super::setup))
-        .add_systems(Update, (projection::project, editor::project).chain());
+        .add_systems(
+            Update,
+            (projection::project, editor::project, cooldown::project).chain(),
+        );
 }
 
 fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegions>) {
@@ -189,22 +195,32 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
         commands.entity(row).add_child(next);
         commands.entity(regions.bars).add_child(row);
     }
-    for marker in [false, true] {
-        let entity = commands
-            .spawn(source::text("", source::font(skins.font.clone(), true)))
-            .insert(Node {
+    let cooldown = commands
+        .spawn((
+            CooldownLine,
+            Node {
+                width: percent(100.),
+                min_height: px(24.),
+                column_gap: px(3.),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+        ))
+        .id();
+    let hint = commands
+        .spawn((
+            ActionHint,
+            source::text("", source::font(skins.font.clone(), true)),
+            Node {
                 max_height: px(13.),
                 overflow: Overflow::clip(),
                 ..default()
-            })
-            .id();
-        if marker {
-            commands.entity(entity).insert(ActionHint);
-        } else {
-            commands.entity(entity).insert(CooldownLine);
-        }
-        commands.entity(regions.bars).add_child(entity);
-    }
+            },
+        ))
+        .id();
+    commands
+        .entity(regions.bars)
+        .add_children(&[cooldown, hint]);
 }
 
 fn button(
