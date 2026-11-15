@@ -20,6 +20,7 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
         "Quest Log",
         "Skills",
         "Spellbook",
+        "Unjustified Points",
         "VIP",
     ] {
         let mut owner = HostOwner::new(None)?;
@@ -76,6 +77,12 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
                     .play
                     .as_ref()
                     .is_some_and(|play| play.link.market_panel().open)
+            ),
+            Control::UnjustifiedPoints => assert!(
+                owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.party_skull_panel().open)
             ),
             Control::Party => assert!(
                 owner

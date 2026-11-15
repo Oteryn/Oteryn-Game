@@ -144,8 +144,8 @@ Like every shortcut it is ignored while a modal window or text field has focus.
 Market and Party also have buttons on the gameplay toolbar.
 The gameplay toolbar lists windows alphabetically: Analysers, Battle, Chat,
 Inspection, Inventory, Loot Containers, Market, Minimap, Notices, Options, Party,
-Quest Log, Skills, Spellbook and VIP. Buttons open the existing retained window
-owners or reveal their HUD panel; Skills refreshes its always-visible panel.
+Quest Log, Skills, Spellbook, Unjustified Points and VIP. Buttons open the existing
+retained window owners or reveal their HUD panel; Skills refreshes its always-visible panel.
 The label/action registry is `TOOLBAR` in `src/bevy_shell/ui/toolbar.rs`.
 
 Achievement notices appear in arrival order, one banner at a time. Each fades in
@@ -198,3 +198,10 @@ change. Cancel closes the editor. The standing preview uses local verified sprit
 sheets; mounts display their catalogue keys because the model has no mount sprite
 IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
+
+The **Unjustified Points** toolbar button opens the dedicated PvP status window
+and requests an observation. Refresh requests current daily/weekly/monthly fractional
+points, red/black threshold bars and remaining headroom, skull duration, and incoming/
+outgoing open situations. The skull countdown uses elapsed time since receipt; open
+situations show durations at observation. Close dismisses the nonmodal window.
+Unavailable or invalid observations never substitute zero counters.
