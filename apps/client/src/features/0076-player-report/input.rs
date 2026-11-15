@@ -83,3 +83,43 @@ pub(in crate::play) fn edit(
         *slot = value;
     }
 }
+
+impl PlayLink {
+    /// Begin a fresh report for the captured, server-named player.
+    pub fn rule_violation_open(&self, target: &str) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.player_report;
+        if !panel.selected || panel.pending {
+            return;
+        }
+        panel.fields = Default::default();
+        panel.fields[2] = target.to_owned();
+        panel.feedback.clear();
+        panel.summary.clear();
+        panel.violation_reviewed = None;
+        panel.open = true;
+    }
+    pub fn rule_violation_close(&self) {
+        lock(&self.mailbox).properties.player_report.open = false;
+    }
+    pub fn rule_violation_can_send(&self) -> bool {
+        violation_ready(&lock(&self.mailbox).properties.player_report)
+    }
+    pub fn rule_violation_send(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        if violation_ready(&mailbox.properties.player_report) {
+            submit(&mut mailbox, &self.commands, Intent::Violation);
+        }
+    }
+}
+fn violation_ready(panel: &oteryn_client_ui::player_report::Panel) -> bool {
+    panel.open && panel.selected && !panel.pending
+        && super::protocol::command(panel, Intent::Violation).is_ok()
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_report_selected(&self, selected: bool) {
+        lock(&self.0).properties.player_report.selected = selected;
+    }
+}

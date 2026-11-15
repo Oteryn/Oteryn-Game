@@ -1,16 +1,16 @@
 //! Standing outfit composition uses the same verified sheets as the world view.
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 use oteryn_client_ui::appearance::Preview;
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 use std::path::Path;
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
 }
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 impl Assets {
     pub fn load(root: &Path) -> Result<Self, String> {
         use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};

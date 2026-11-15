@@ -32,3 +32,14 @@ impl Outbox {
         oteryn_client_ui::sanction_record::apply_result(&mut lock(&self.0).sanctions, result);
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_cyclopedia_initialize(&self, selected: bool, vocation: bool, deaths: bool) {
+        self.cyclopedia_character_initialize(selected);
+        self.cyclopedia_character_extensions(vocation, deaths);
+    }
+    pub(crate) fn bevy_cyclopedia_result(&self, result: &GatedCommandResult) {
+        self.cyclopedia_character_result(result);
+    }
+}
