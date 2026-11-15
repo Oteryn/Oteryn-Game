@@ -90,6 +90,38 @@ pub(in crate::gameplay_transport) fn trap(id: u16) -> Option<Trap> {
     })
 }
 
+// Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:
+// 294 decays to 293 after 300 seconds; 1067 to 1066 after 60 seconds.
+// 476 has no decay attributes: decay_to.lua's decay() is a no-op for that item.
+fn source_movement_decay_us(id: u16) -> Option<u64> {
+    match id {
+        294 => Some(300_000_000),
+        1067 => Some(60_000_000),
+        _ => None,
+    }
+}
+
+pub(in crate::gameplay_transport) fn configured_decay_us(
+    native: &crate::content::native_gameplay::NativeGameplayState,
+    id: u16,
+) -> Option<u64> {
+    use crate::content::ReferenceItemField::Known;
+    let admitted = || {
+        let policy = native.item_policy_for_source_id(u32::from(id))?;
+        let Known(temporal) = &policy.record().semantics.temporal else {
+            return None;
+        };
+        let Known(duration) = &temporal.duration else {
+            return None;
+        };
+        duration
+            .0
+            .checked_mul(1000)
+            .filter(|duration| *duration > 0)
+    };
+    admitted().or_else(|| source_movement_decay_us(id))
+}
+
 fn tile_position(position: MovementLocalPosition) -> Option<TilePos> {
     Some(TilePos {
         x: position.x.try_into().ok()?,
@@ -209,6 +241,12 @@ pub(super) fn transform(map: &BundleMap, key: u64, appearance: u16) -> bool {
 }
 
 impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) fn special_movement_decay_us(&self, id: u16) -> Option<u64> {
+        self.active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| configured_decay_us(native, id))
+    }
+
     /// Sample the fenced World policy before taking the movement runtime/state guards.
     pub(in crate::gameplay_transport) async fn special_movement_policy(
         &self,
@@ -265,22 +303,15 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn add_snowbunny_progress(
         &self,
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
-        session: GameSessionId,
+        fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
         event_id: [u8; 16],
+        command: crate::foundation::CommandRef,
     ) -> bool {
         use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
-        use crate::foundation::{CommandId, CommandRef};
         let pin = {
             let runtime = self.runtime.lock().await;
             runtime.content_pin().server_artifact_digest()
         };
-        let Some(fence) = self.current_quest_fence(session).await.ok().flatten() else {
-            return false;
-        };
-        let Ok(command_id) = CommandId::new(self.owner_now().get().max(1)) else {
-            return false;
-        };
-        let command = CommandRef::new(session, command_id);
         let character_id = fence.character_id;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
             return false;
@@ -387,6 +418,7 @@ impl ChannelSpellStates {
         origin: Option<MovementLocalPosition>,
         destination: MovementLocalPosition,
         optional_pvp: Option<bool>,
+        decay_duration: &dyn Fn(u16) -> Option<u64>,
     ) -> bool {
         if map.overlay.runtime_scope() != runtime.binding().runtime_scope() {
             return false;
@@ -439,7 +471,21 @@ impl ChannelSpellStates {
                 _ => None,
             };
             if let Some(transformed) = transformed {
-                changed |= transform(map, *key, transformed);
+                if matches!(entry.appearance_id, 293 | 475 | 1066) {
+                    if let Some(delay) = decay_duration(transformed) {
+                        let started =
+                            map.facts
+                                .start_movement_decay(*key, *entry, transformed, now, delay);
+                        changed |= started;
+                        if started {
+                            self.owner_wake.notify_one();
+                        }
+                    } else {
+                        changed |= transform(map, *key, transformed);
+                    }
+                } else {
+                    changed |= transform(map, *key, transformed);
+                }
             }
         }
         let to_swimming = ids
@@ -550,8 +596,7 @@ impl ChannelSpellStates {
                 {
                     changed = true;
                     self.owner_wake.notify_one();
-                    // TODO(M10-MOVE): fenced, idempotent Snowbunny +1/10000 progress.
-                    // durability/account_achievement.rs:add_progress is transaction-private.
+                    // The paced owner retains the fenced Snowbunny operation before SQL awaits.
                 }
                 if entry.appearance_id == 26100 {
                     changed |= map.facts.transform_movement_item(*key, 26077);
@@ -654,12 +699,18 @@ impl ChannelSpellStates {
                 let Ok(damage) = u32::try_from(damage) else {
                     continue;
                 };
-                let _ = self.apply_creature_damage_native(
+                let kind = match rule.element {
+                    ReferenceResistanceKind::Earth => crate::player_lethal::PlayerHitKind::Earth,
+                    _ => crate::player_lethal::PlayerHitKind::Physical,
+                };
+                let _ = self.apply_creature_damage_kind(
                     runtime,
                     actor,
                     session,
                     damage,
+                    kind,
                     crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
+                    oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
                 );
             }
         }
@@ -901,6 +952,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
+    fn fixture_decay_duration(id: u16) -> Option<u64> {
+        source_movement_decay_us(id)
+    }
+
     use super::*;
     use oteryn_gameplay_domain::domain::condition::ConditionValues;
 
@@ -1023,6 +1078,12 @@ mod tests {
             .ok_or("player")?
             .vitals()
             .health;
+        if before == 3944 {
+            assert_eq!(
+                states.analyser.snapshot(actor, session, 1, None),
+                Some(false)
+            );
+        }
         let revision = map.facts.object_revision(key);
         assert_eq!(current(), Some(before));
         assert_eq!(
@@ -1034,12 +1095,32 @@ mod tests {
                 1,
                 Some(away),
                 at,
-                Some(false)
+                Some(false),
+                &fixture_decay_duration,
             ),
             // Crystal yellow_pillow.lua:9-10 changes presentation with an unchanged item.
             before != after || before == 2397
         );
         assert_eq!(current(), Some(after));
+        if before == 3944 {
+            use oteryn_protocol_oteryn::{
+                analyser::{AnalyserFact, decode_analyser_facts},
+                damage_element::DamageElement,
+            };
+            let bytes = states
+                .analyser
+                .next(actor, session, 1)
+                .ok_or("earth trap damage fact")?;
+            let facts = decode_analyser_facts(&bytes).map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(
+                facts.as_slice(),
+                [AnalyserFact::DamageInput {
+                    element: DamageElement::Earth,
+                    ..
+                }]
+            ));
+        }
+
         if trap(before).is_some_and(|rule| !rule.player_immune) && !protection_zone {
             assert_eq!(
                 map.facts
@@ -1085,14 +1166,26 @@ mod tests {
                 vec![3]
             );
         }
-        assert_eq!(
-            states
-                .get(&runtime, actor, session)
-                .ok_or("player")?
-                .vitals()
-                .health,
-            health
-        );
+        if before == 3944 {
+            assert!(
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("player")?
+                    .vitals()
+                    .health
+                    < health
+            );
+        } else {
+            assert_eq!(
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("player")?
+                    .vitals()
+                    .health,
+                health
+            );
+        }
+
         if before == after {
             assert_eq!(map.facts.object_revision(key), revision);
         }
@@ -1105,6 +1198,7 @@ mod tests {
             Some(at),
             away,
             Some(false),
+            &fixture_decay_duration,
         );
         if before == 799 || (6580..=6593).contains(&before) {
             assert_eq!(
@@ -1138,6 +1232,7 @@ mod tests {
                 Some(at),
                 away,
                 Some(false),
+                &fixture_decay_duration,
             );
             assert!(map.facts.transform_movement_item(key, before));
             let revision = map.facts.object_revision(key);
@@ -1163,6 +1258,33 @@ mod tests {
             );
         }
         assert_eq!(current(), Some(if reverses { before } else { after }));
+        if before == 475 {
+            assert_eq!(
+                map.facts.next_movement_decay_time(),
+                None,
+                "476 has no configured decay"
+            );
+            assert_eq!(map.facts.expire_movement_items(u64::MAX), 0);
+            assert_eq!(current(), Some(476));
+        }
+        if matches!(before, 293 | 1066) {
+            let due = map
+                .facts
+                .next_movement_decay_time()
+                .ok_or("transformed movement item must decay")?;
+            assert_eq!(
+                due,
+                1 + if before == 293 {
+                    300_000_000
+                } else {
+                    60_000_000
+                },
+                "the configured decay duration is applied"
+            );
+            assert_eq!(map.facts.expire_movement_items(due - 1), 0);
+            assert_eq!(map.facts.expire_movement_items(due), 1);
+            assert_eq!(current(), Some(before));
+        }
         Ok(())
     }
 
@@ -1203,6 +1325,16 @@ mod tests {
             })?
             .join()
             .map_err(|_| "movement test thread")?
+    }
+
+    #[test]
+    fn earth_traps_publish_typed_earth_damage()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| movement_case(3944, 3945, false, true))?
+            .join()
+            .map_err(|_| "earth trap thread")?
     }
 
     #[test]

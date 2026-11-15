@@ -215,7 +215,16 @@ async fn melee_fault(
     Ok(())
 }
 
+#[test]
+fn held_attack_target_allows_ordinary_player_damage_postgres() -> TestResult {
+    super::item_look::large_stack(|| scenario_target(2, true))
+}
+
 pub(super) fn scenario(mode: i16) -> TestResult {
+    scenario_target(mode, false)
+}
+
+fn scenario_target(mode: i16, held_target: bool) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _case = CASES
@@ -593,7 +602,8 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 &mut client,
                 5,
                 attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
-                &attack::encode_attack_target_intent(None).map_err(debug)?,
+                &attack::encode_attack_target_intent(held_target.then_some(&entity))
+                    .map_err(debug)?,
             )
             .await?;
             assert_eq!(
@@ -610,13 +620,17 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 })
                 .ok_or("flame strike")?;
             let before = health(&owner, target).await?;
-            let cast = actor_spell::SpellCastIntent {
+            let mut cast = actor_spell::SpellCastIntent {
                 spell,
-                target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
-                    x: 1,
-                    y: 11,
-                    floor,
-                }),
+                target: if held_target {
+                    actor_spell::SpellTarget::AttackTarget
+                } else {
+                    actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                        x: 1,
+                        y: 11,
+                        floor,
+                    })
+                },
                 aim_at_target: true,
             };
             let result = command(
@@ -634,6 +648,30 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 health(&owner, target).await? < before,
                 "real spell dispatch damages the player"
             );
+            // This case proved the held-target cast. Stop auto-attacking before the
+            // later one-HP receipt check, which otherwise dies to a weapon swing.
+            let continuation_id = if held_target {
+                let result = command(
+                    &mut client,
+                    7,
+                    attack::COMMAND_TYPE_ATTACK_TARGET_INTENT,
+                    &attack::encode_attack_target_intent(None).map_err(debug)?,
+                )
+                .await?;
+                assert_eq!(
+                    attack::decode_attack_intent_result(&result).map_err(debug)?,
+                    attack::AttackIntentDisposition::Ok
+                );
+                cast.target =
+                    actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                        x: 1,
+                        y: 11,
+                        floor,
+                    });
+                8
+            } else {
+                7
+            };
             // The real root has one holder. Wait for the cadence's current pass to return it.
             let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
             while !owner.refresh_pvp_locks(actor, session).await {
@@ -644,7 +682,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             }
             let result = command(
                 &mut client,
-                7,
+                continuation_id,
                 oteryn_protocol_oteryn::logout::COMMAND_TYPE_LOGOUT_INTENT,
                 &[],
             )
@@ -669,7 +707,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
             wait_live(&mut client, Duration::from_secs(2)).await?;
             let result = command(
                 &mut client,
-                8,
+                continuation_id + 1,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
                 &actor_spell::encode_spell_cast_intent(&cast),
             )
@@ -706,7 +744,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                     .fetch_one(&h.pool)
                     .await?;
             let frame = test_command(
-                8,
+                continuation_id + 1,
                 actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
                 &actor_spell::encode_spell_cast_intent(&cast),
             );
@@ -720,7 +758,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 }
                 if env.message_type() == MessageType::CommandResult {
                     let replay = decode_command_result(env.payload()).map_err(debug)?;
-                    assert_eq!(replay.command_id, 8);
+                    assert_eq!(replay.command_id, continuation_id + 1);
                     assert_eq!(replay.status, CommandStatus::DuplicateReplay);
                     assert_eq!(
                         actor_spell::decode_spell_cast_result(replay.payload).map_err(debug)?,

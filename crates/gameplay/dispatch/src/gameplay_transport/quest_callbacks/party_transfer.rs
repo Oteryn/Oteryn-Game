@@ -153,6 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(member.expected.position()),
                 snapshot.position(),
                 optional_pvp,
+                &|id| self.special_movement_decay_us(id),
             );
             states.stage_underwater_step(
                 runtime,

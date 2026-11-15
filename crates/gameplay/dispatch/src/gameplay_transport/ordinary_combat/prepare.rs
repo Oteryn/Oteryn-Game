@@ -35,6 +35,18 @@ pub(in crate::gameplay_transport) fn aim(
     spell: &SpellDefinition,
     intent: &SpellCastIntent,
 ) -> Result<Option<Aim>, SpellCastDisposition> {
+    if let Some(profile) = spell.authored.as_ref() {
+        let targeting = &profile.header.targeting;
+        let spatial_target = targeting.needs_target
+            || spell.target_or_direction
+            || matches!(spell.carrier, crate::spell::Carrier::Rune { .. })
+            || targeting.cast_at_position == Some(true);
+        let directional_aim = targeting.needs_direction
+            && (intent.aim_at_target || intent.target == SpellTarget::AttackTarget);
+        if intent.target != SpellTarget::None && !spatial_target && !directional_aim {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+    }
     let aim = match (intent.target, intent.aim_at_target) {
         (SpellTarget::None, true) => Aim::Target,
         (SpellTarget::Position(p), true) => Aim::Cursor(TilePosition {
@@ -278,7 +290,12 @@ pub(super) async fn prepare_inner(
                 tx, root, authority, runtime, states, actor, session,
             )
             .await
-            .map_err(|_| SpellCastDisposition::Rejected)?,
+            .map_err(|error| {
+                #[cfg(test)]
+                eprintln!("SEAM_EVIDENCE party_source_refused reason={error:?}");
+                let _ = error;
+                SpellCastDisposition::Rejected
+            })?,
         )
     } else {
         None
@@ -427,22 +444,15 @@ async fn prepare_spatial(
                 })
                 .map(|c| c.actor)
                 .or_else(|| {
-                    matches!(
-                        spell.carrier,
-                        crate::spell::Carrier::Rune { item: 3165, .. }
-                    )
-                    .then(|| {
-                        runtime
-                            .visible_entities()
-                            .players
-                            .into_iter()
-                            .find(|p| {
-                                p.actor.placement_identity() == held.identity
-                                    && p.generation == held.generation
-                            })
-                            .map(|p| p.actor)
-                    })
-                    .flatten()
+                    runtime
+                        .visible_entities()
+                        .players
+                        .into_iter()
+                        .find(|p| {
+                            p.actor.placement_identity() == held.identity
+                                && p.generation == held.generation
+                        })
+                        .map(|p| p.actor)
                 })
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
             if states.player_hidden_from(runtime, actor, creature, now) {

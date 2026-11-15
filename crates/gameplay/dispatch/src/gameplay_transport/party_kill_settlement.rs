@@ -256,7 +256,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut slots = Vec::with_capacity(plan.members.len());
         let mut members = Vec::with_capacity(plan.members.len());
         for member in &plan.members {
-            let mut slot = self.revision_sequencer.acquire(member.character).await;
+            let mut slot = tokio::time::timeout(
+                std::time::Duration::ZERO,
+                self.revision_sequencer.acquire(member.character),
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
             let mut fence = self
                 .current_quest_fence(member.session)
                 .await

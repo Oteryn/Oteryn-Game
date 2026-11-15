@@ -15,7 +15,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let mut fence =
             super::super::character_gameplay_fence::current(self, session, false).await?;
-        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        let mut slot = tokio::time::timeout(std::time::Duration::ZERO, self.revision_sequencer.acquire(fence.character_id)).await.ok()?;
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
         let (position, subareas, area) = {
             let mut runtime = self.runtime.lock().await;

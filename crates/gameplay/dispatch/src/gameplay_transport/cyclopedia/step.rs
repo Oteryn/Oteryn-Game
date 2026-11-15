@@ -17,7 +17,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        let mut slot = self.revision_sequencer.acquire(current.character_id).await;
+        // This best-effort discovery callback runs under the movement lane.
+        // Background persistence must not make the whole channel wait for its slot.
+        let Ok(mut slot) = tokio::time::timeout(
+            std::time::Duration::ZERO,
+            self.revision_sequencer.acquire(current.character_id),
+        )
+        .await
+        else {
+            return;
+        };
         let area_at = {
             let mut runtime = self.runtime.lock().await;
             let binding = runtime.binding();

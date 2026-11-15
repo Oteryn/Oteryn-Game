@@ -34,6 +34,8 @@ pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, S
 
 #[path = "actor_movement.rs"]
 mod actor_movement;
+#[path = "created_field_contact.rs"]
+pub(in crate::gameplay_transport) mod created_field_contact;
 #[path = "familiar_cast.rs"]
 mod familiar_cast;
 #[path = "actor_spell/house_admission.rs"]
@@ -108,6 +110,14 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(in crate::gameplay_transport) paced_step_callbacks:
+        Option<super::paced_movement::PacedStepCallbacks>,
+    pub(in crate::gameplay_transport) paced_step_async_callbacks:
+        Option<super::paced_movement::PacedStepCallbacks>,
+    pub(in crate::gameplay_transport) pending_snow_progress:
+        std::collections::VecDeque<super::paced_movement::PendingSnowProgress>,
+    pub(in crate::gameplay_transport) created_field_contacts:
+        std::collections::VecDeque<created_field_contact::CreatedFieldContact>,
     pub(super) analyser: std::sync::Arc<super::analyser::AnalyserStreams>,
     pub(in crate::gameplay_transport) enchanting_pending: Vec<(ExactActorRef, GameSessionId)>,
     /// Last persisted native gourmet conditions; a write-suppression projection only.
@@ -301,6 +311,10 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            pending_snow_progress: Default::default(),
+            created_field_contacts: Default::default(),
+            paced_step_callbacks: None,
+            paced_step_async_callbacks: None,
             enchanting_pending: Vec::new(),
             gourmet_checkpoints: Vec::new(),
             pending_item_effects: Vec::new(),

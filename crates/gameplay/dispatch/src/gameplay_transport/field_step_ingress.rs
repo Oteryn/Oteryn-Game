@@ -358,6 +358,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         direction: CardinalStep,
         blocking: &dyn crate::map::floor::CellBlocker,
         equipment_delta: Option<i32>,
+        callbacks: Option<super::super::paced_movement::PacedStepCallbacks>,
     ) -> super::actor_movement::StepInChannel {
         use super::actor_movement::step_in_channel;
         let fail = || Err(MovementError::NotQualified);
@@ -498,6 +499,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
                     *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells(),actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    if let Some(Ok((snapshot, _))) = outcome.as_ref()
+                        && let Some(mut callbacks) = callbacks
+                    {
+                        callbacks.snapshot = *snapshot;
+                        states.retain_paced_step_callbacks(callbacks);
+                    }
                     if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
                         pending.retain_step_cooldowns(runtime,states);
                         let mut window=permit.open_commit_window(pending,super::player_field::park);

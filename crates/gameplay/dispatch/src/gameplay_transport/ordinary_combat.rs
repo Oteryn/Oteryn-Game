@@ -1106,6 +1106,44 @@ mod tests {
     }
 
     #[test]
+    fn untargeted_and_directional_spells_reject_unsupported_remote_origins() {
+        for key in ["candidate:spell/berserk", "candidate:spell/scorch"] {
+            let spell = source(key);
+            let target =
+                SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+                    x: 20,
+                    y: 20,
+                    floor: 7,
+                });
+            let intent = SpellCastIntent {
+                spell: std::num::NonZeroU32::new(1).unwrap(),
+                target,
+                aim_at_target: false,
+            };
+            assert_eq!(
+                preparation::aim(&spell, &intent),
+                Err(SpellCastDisposition::TargetIllegal),
+                "{key}"
+            );
+            if key.ends_with("berserk") {
+                let held = SpellCastIntent {
+                    target: SpellTarget::AttackTarget,
+                    ..intent
+                };
+                assert_eq!(
+                    preparation::aim(&spell, &held),
+                    Err(SpellCastDisposition::TargetIllegal)
+                );
+            }
+            let normal = SpellCastIntent {
+                target: SpellTarget::None,
+                ..intent
+            };
+            assert_eq!(preparation::aim(&spell, &normal), Ok(None));
+        }
+    }
+
+    #[test]
     fn ordinary_builder_pure_policy_prepare_preserves_wheel_gate_and_gain_cap() {
         use crate::spell::cast::CharacterCastFacts;
         use crate::spell::{CasterState, Vocation};

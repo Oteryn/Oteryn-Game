@@ -39,6 +39,19 @@ fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
         let (controller, _) = production_generation_with_pin(world, "content-1")?;
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
+        for (id, expected) in [
+            (294, Some(300_000_000)),
+            (476, None),
+            (1067, Some(60_000_000)),
+        ] {
+            assert_eq!(
+                crate::gameplay_transport::paced_movement::special_movement::configured_decay_us(
+                    native, id
+                ),
+                expected,
+                "movement decay policy {id}"
+            );
+        }
         for id in [
             3148, 3149, 3156, 3164, 3166, 3172, 3173, 3176, 3180, 3188, 3190, 3192,
         ] {
@@ -333,6 +346,10 @@ enum Scenario {
     EquippedWrongSlot,
     EquippedRollback,
     EquippedCommit,
+    UnderwaterUnknown,
+    SnowRetry,
+    StationaryPlayer,
+    StationaryCreature,
 }
 
 fn equipped(scenario: Scenario) -> bool {
@@ -401,6 +418,64 @@ fn field_runes_postgres_equipped_step_tick_charges_and_mantra() -> TestResult {
                     Scenario::Equipped,
                 )
                 .await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn newly_created_fields_contact_stationary_players_and_monsters_postgres() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            for scenario in [Scenario::StationaryPlayer, Scenario::StationaryCreature] {
+                field_scenario(admin.clone(), 3188, 1, 2118, true, false, false, scenario).await?;
+            }
+            Ok(())
+        })
+    })
+}
+
+#[test]
+fn snow_steps_retry_failed_original_progress_without_losing_the_next_step() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(
+                admin,
+                3188,
+                1,
+                2118,
+                true,
+                false,
+                false,
+                Scenario::SnowRetry,
+            )
+            .await
+        })
+    })
+}
+
+#[test]
+fn field_step_unknown_commit_reconciles_before_underwater_callback() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            for after in [false, true] {
+                let mut reached = crate::gameplay_transport::field_removal::faults::arm(
+                    crate::gameplay_transport::field_removal::faults::PLAYER,
+                    after,
+                );
+                field_scenario(
+                    admin.clone(),
+                    3188,
+                    1,
+                    2118,
+                    true,
+                    false,
+                    false,
+                    Scenario::UnderwaterUnknown,
+                )
+                .await?;
+                assert_eq!(reached.try_recv(), Ok(()));
             }
             Ok(())
         })
@@ -776,7 +851,10 @@ async fn field_scenario_inner(
     let player_field = (matches!(output, 2118 | 2122 | 105)
         && !matches!(
             scenario,
-            Scenario::SelfHardcore | Scenario::SelfOpen | Scenario::ElementCreature
+            Scenario::SelfHardcore
+                | Scenario::SelfOpen
+                | Scenario::ElementCreature
+                | Scenario::StationaryCreature
         ))
         || scenario == Scenario::NoPvp;
     let harmful = player_field
@@ -810,7 +888,11 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let map = if scenario == Scenario::DestroyBlocked {
+    let map = if scenario == Scenario::UnderwaterUnknown {
+        build_field_world(world, 0, false, Some("oteryn:item.tibia.i5404"))?
+    } else if scenario == Scenario::SnowRetry {
+        build_field_world(world, 0, false, Some("oteryn:item.tibia.i799"))?
+    } else if scenario == Scenario::DestroyBlocked {
         field_world_inner(world, 0, true)?
     } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
@@ -958,6 +1040,44 @@ async fn field_scenario_inner(
     }
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
+    if scenario == Scenario::StationaryCreature {
+        let mut runtime = owner.runtime.lock().await;
+        let mut policy = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|p| p.definition_key == "oteryn:creature.cyclops")
+            .ok_or("creature policy")?
+            .as_ref()
+            .clone();
+        policy.forge_difficulty = None;
+        runtime
+            .install_companion_policies(
+                crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                    native.source_digest(),
+                    vec![policy],
+                )
+                .map_err(debug)?,
+            )
+            .map_err(debug)?;
+        let pin = runtime.content_pin().clone();
+        let monster = runtime
+            .realize_native_qualification_spawn(
+                pin,
+                "oteryn:creature.cyclops",
+                MovementLocalPosition {
+                    x: start.x + 1,
+                    ..start
+                },
+            )
+            .map_err(debug)?
+            .actor;
+        runtime
+            .commit_creature_field_entry(monster, owner.owner_now().get(), None)
+            .map_err(debug)?;
+        creature = Some(monster);
+    }
+
     let target = if player_field || owner_loss {
         let target = super::appearance_change_postgres::observer_visibility_tests::initialize(
             &dependencies,
@@ -966,6 +1086,9 @@ async fn field_scenario_inner(
         .await?;
         let mut runtime = dependencies.runtime.lock().await;
         for x in [start.x + 1, start.x + 2] {
+            if scenario == Scenario::StationaryPlayer && x == start.x + 2 {
+                break;
+            }
             let before = runtime.read_actor_position(target).map_err(debug)?;
             runtime
                 .borrow_movement_position()
@@ -1065,7 +1188,7 @@ async fn field_scenario_inner(
     sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
         .bind(id(42).as_slice()).execute(&harness.pool).await?;
     sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,$3,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'field-runes-fixture')")
-        .bind(id(42).as_slice()).bind(if matches!(scenario,Scenario::Hardcore|Scenario::SelfHardcore) {3_i16} else if pvp_barrier||scenario==Scenario::SelfOpen||scenario==Scenario::ElementCreature||player_field&&scenario!=Scenario::NoPvp { 2_i16 } else { 1_i16 }).bind(if scenario==Scenario::ProtectedCaster {51_i32} else if scenario==Scenario::ProtectedTarget {20_i32} else if player_field {8_i32}else{20_i32}).execute(&harness.pool).await?;
+        .bind(id(42).as_slice()).bind(if matches!(scenario,Scenario::Hardcore|Scenario::SelfHardcore) {3_i16} else if pvp_barrier||scenario==Scenario::SelfOpen||matches!(scenario,Scenario::ElementCreature|Scenario::StationaryCreature)||player_field&&scenario!=Scenario::NoPvp { 2_i16 } else { 1_i16 }).bind(if scenario==Scenario::ProtectedCaster {51_i32} else if scenario==Scenario::ProtectedTarget {20_i32} else if player_field {8_i32}else{20_i32}).execute(&harness.pool).await?;
     let mut admitted = dependencies.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
@@ -1704,6 +1827,31 @@ async fn field_scenario_inner(
         format!("FIELD-RUNES transport rune={rune} scenario={scenario:?}: {error}")
     })??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
+    if scenario == Scenario::StationaryCreature {
+        let snapshot = owner
+            .runtime
+            .lock()
+            .await
+            .companion_snapshot(creature.ok_or("stationary creature")?)
+            .map_err(debug)?;
+        assert!(
+            !snapshot.state.conditions.instances().is_empty(),
+            "field creation must install contact despite the consumed movement revision"
+        );
+        assert_eq!(
+            snapshot.health,
+            snapshot.maximum_health - field_creature_hit(output, 0)
+        );
+    }
+    if matches!(
+        scenario,
+        Scenario::StationaryPlayer | Scenario::StationaryCreature
+    ) {
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     if destroy_scenario(scenario) {
         drop(owner);
         drop(authority);
@@ -1992,6 +2140,11 @@ async fn field_scenario_inner(
                     } else {
                         0
                     }
+                    - if scenario == Scenario::UnderwaterUnknown {
+                        40
+                    } else {
+                        0
+                    }
             );
             let harm:(i64,i64)=sqlx::query_as("SELECT count(*),COALESCE(sum(damage),0)::bigint FROM game_character_pvp_harm WHERE octet_length(field_occurrence)=32").fetch_one(&harness.pool).await?;
             assert_eq!(
@@ -2207,6 +2360,15 @@ fn field_world_inner(
     zone: u32,
     wall: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    build_field_world(world, zone, wall, None)
+}
+
+fn build_field_world(
+    world: crate::foundation::WorldId,
+    zone: u32,
+    wall: bool,
+    ground: Option<&str>,
+) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         sector::{Attrs, Item, Tile},
         writer::{
@@ -2237,7 +2399,7 @@ fn field_world_inner(
         palette: vec![
             PaletteEntry {
                 family: Family::Terrain,
-                key: "oteryn:item.tibia.i100".into(),
+                key: ground.unwrap_or("oteryn:item.tibia.i100").into(),
                 id: 0,
                 terrain: Some(Terrain {
                     kind: TerrainKind::Ground,
@@ -2707,6 +2869,27 @@ async fn drive_player_field(
     output: u32,
 ) -> TestResult {
     eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=setup");
+    if scenario == Scenario::StationaryPlayer {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let target_session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
+        let state = states
+            .get(&runtime, target, target_session)
+            .ok_or("stationary player")?;
+        assert_eq!(
+            state.vitals().health,
+            state.character_facts().max_health - field_player_hit(output, 0),
+            "field creation applies initial contact without waiting for movement"
+        );
+        assert!(!state.owned_conditions().instances().is_empty());
+        drop(states);
+        drop(runtime);
+        let harm: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
+            .fetch_one(&harness.pool)
+            .await?;
+        assert_eq!(harm, 1, "creation and replay publish contact once");
+        return Ok(());
+    }
     let creator_session = admitted.game_session_id;
     let session = crate::foundation::GameSessionId::decode(&id(110)).map_err(debug)?;
     let mut admitted = admitted;
@@ -2802,6 +2985,7 @@ async fn drive_player_field(
                     crate::movement::CardinalStep::West,
                     &blocking,
                     None,
+                    None,
                 )
                 .await;
             assert!(matches!(
@@ -2841,6 +3025,7 @@ async fn drive_player_field(
                 now,
                 crate::movement::CardinalStep::West,
                 &blocking,
+                None,
                 None,
             )
             .await;
@@ -2983,6 +3168,10 @@ async fn drive_player_field(
             client.shutdown().await?;
             return Ok(());
         }
+        if scenario == Scenario::SnowRetry {
+            sqlx::query("CREATE FUNCTION fail_snow_step() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'forced snow progress failure'; END $$").execute(&harness.pool).await?;
+            sqlx::query("CREATE TRIGGER fail_snow_step BEFORE INSERT ON game_character_achievement_progress FOR EACH ROW EXECUTE FUNCTION fail_snow_step()").execute(&harness.pool).await?;
+        }
         for (id, direction, replay) in [
             (1, StepDirection::West, false),
             (1, StepDirection::West, true),
@@ -2991,6 +3180,11 @@ async fn drive_player_field(
             eprintln!(
                 "FIELD-RUNES victim scenario={scenario:?} stage=step command={id} replay={replay}"
             );
+            if id == 2 && scenario == Scenario::SnowRetry {
+                sqlx::query("DROP TRIGGER fail_snow_step ON game_character_achievement_progress")
+                    .execute(&harness.pool)
+                    .await?;
+            }
             if id == 2 {
                 // Drive the actor-owned pacing clock instead of guessing its deadline. If the
                 // fixed sleep wakes just before the deadline, the connection buffers this step
@@ -3031,10 +3225,26 @@ async fn drive_player_field(
                     .await
                     .ok_or("player field reconciliation")?,
             );
+            if scenario == Scenario::UnderwaterUnknown {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, target, session)
+                    .ok_or("underwater player")?;
+                assert_eq!(state.owned_conditions().instances().iter().filter(|instance| instance.definition().condition_type() == oteryn_gameplay_domain::domain::condition::ConditionType::DamageOverTime(oteryn_gameplay_domain::domain::condition::DotElement::Drown)).count(), 1, "reconciliation runs the retained underwater callback exactly once");
+            }
             assert_eq!(
                 player_health(owner, target, session).await?,
                 original - initial_damage,
                 "scenario={scenario:?} output={output} step={id} replay={replay}: the actual player entry owner enforces protection and World policy; replay does no extra damage"
+            );
+        }
+        if scenario == Scenario::SnowRetry {
+            let progress: i64 = sqlx::query_scalar("SELECT progress FROM game_character_achievement_progress WHERE character_id=encode($1,'hex')::uuid AND achievement_key=$2")
+                .bind(id(101).as_slice()).bind(crate::durability::account_achievement::SNOWBUNNY_KEY).fetch_one(&harness.pool).await?;
+            assert_eq!(
+                progress, 2,
+                "both accepted snow steps retain their original operation identities across a failed write"
             );
         }
         eprintln!("FIELD-RUNES victim scenario={scenario:?} stage=harm");
@@ -3082,14 +3292,16 @@ async fn drive_player_field(
             // This driver shares the nonblocking holder with the live server.
             // Reuse the existing bounded read retry; ambiguous/storage outcomes
             // still propagate, and every attempt resolves current source facts.
-            let current = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(owner.root)?
-                .retry_durability("field_runes_current_source", async || {
-                    FreshAdmissionStore::from_root(harness.root.clone())
-                        .current_session_at(creator_session)
-                        .await
-                })
-                .await?
-                .0;
+            let current = crate::gameplay_transport::AdmissionRetryBudget::for_foreground_command(
+                owner.root,
+            )?
+            .retry_durability("field_runes_current_source", async || {
+                FreshAdmissionStore::from_root(harness.root.clone())
+                    .current_session_at(creator_session)
+                    .await
+            })
+            .await?
+            .0;
             let controller = crate::gameplay_transport::connection::ControllerBinding {
                 account_id: id(40),
                 transport: current.current_transport().ok_or("creator transport")?,

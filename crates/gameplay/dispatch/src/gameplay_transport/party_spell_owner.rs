@@ -247,8 +247,10 @@ async fn read_source_party_world(
             }
         }
     }
+    // Include retained actors so a known control-lost member is accounted for as
+    // absent, rather than mistaken for a missing colocated authoritative actor.
     let census = runtime
-        .positioned_actor_census()
+        .positioned_melee_census()
         .map_err(|_| SpellItemError::Rejected("party current bounded census"))?;
     let mut adjacent = 0_u32;
     for (actor, position, actor_session) in census {
@@ -259,10 +261,47 @@ async fn read_source_party_world(
             if source.party_id.is_none() {
                 continue;
             }
+            let control_lost = runtime
+                .player_control_facts(actor, member_session)
+                .is_ok_and(|facts| facts.control_loss.is_some());
+            let lease = match runtime.bound_attacker_lease(actor, member_session) {
+                Ok(lease) => lease,
+                Err(_) if control_lost => {
+                    // A retained fenced member cannot receive this cast. The current
+                    // session identity is used only to account for that absence.
+                    let current =
+                        crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                            root.clone(),
+                        )
+                        .current_session_in_transaction(tx, member_session)
+                        .await?;
+                    seen.insert(*current.commit().character_id().as_bytes());
+                    continue;
+                }
+                Err(_) => return Err(SpellItemError::Rejected("party member lease unavailable")),
+            };
+            let expected_character = *lease.character_id().as_bytes();
+            if !source
+                .members
+                .iter()
+                .any(|member| member.character == expected_character)
+            {
+                continue;
+            }
+            if runtime
+                .player_control_facts(actor, member_session)
+                .is_ok_and(|facts| facts.control_loss.is_some())
+            {
+                seen.insert(expected_character);
+                continue;
+            }
             let character = match authority {
                 SourcePartyAuthority::Cast(a) => party_target_binding::current_colocated_party_character_in_transaction(tx, root, a, runtime, actor, member_session).await?,
                 SourcePartyAuthority::Scope(a) => party_target_binding::current_colocated_party_character_for_scope_in_transaction(tx, root, a, runtime, actor, member_session).await?,
             }.ok_or(SpellItemError::Rejected("party member current journal unavailable"))?;
+            if character != expected_character {
+                return Err(SpellItemError::Rejected("party member character changed"));
+            }
             let Some(member) = source.members.iter().find(|m| m.character == character) else {
                 continue;
             };

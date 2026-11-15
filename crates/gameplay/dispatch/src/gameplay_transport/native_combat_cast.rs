@@ -320,11 +320,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Option<SpellLanePermit>> + Send + '_>>
     {
         Box::pin(async move {
-            let permit = match self.spell_lane.acquire().await {
+            let mut permit = match self.spell_lane.acquire().await {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            if permit.has_unresolved() || !self.resolve_player_trades(&permit).await {
+            if permit.has_unresolved() {
+                return None;
+            }
+            self.drain_paced_step_callbacks(&permit).await;
+            if !self.drain_created_field_contacts(&mut permit).await || permit.has_unresolved() {
+                return None;
+            }
+            if !self.resolve_player_trades(&permit).await {
                 return None;
             }
             Some(permit)
@@ -2472,54 +2479,56 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 None
             }
         };
-        // A cancelled pass parks what it holds, so the marker is always settled (§1.6).
-        let writer = SpellWriterPass::new(
-            permit,
-            retained,
-            UnresolvedSpellCommit::park_native,
-            UnresolvedSpellCommit::park_vacant(ParkedMarkerKind::Native, actor, session),
-        );
-        let objects = self.door.lock().await;
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            drop(objects);
-            let (leftover, parked) = writer.finish();
-            super::PendingSpellMarker::settle(
-                &mut states.pending_native,
-                actor,
-                session,
-                command,
-                marker_intent,
-                leftover,
-                parked,
+        // End the writer's permit borrow before installing newly published field contacts.
+        let result = {
+            // A cancelled pass parks what it holds, so the marker is always settled (§1.6).
+            let writer = SpellWriterPass::new(
+                permit,
+                retained,
+                UnresolvedSpellCommit::park_native,
+                UnresolvedSpellCommit::park_vacant(ParkedMarkerKind::Native, actor, session),
             );
-            return NativeCastDispatch::Pending;
-        };
-        let intent = *intent;
-        // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let (attack_target, pvp_modes) = {
-            let mut attack = self.states.attack.lock().await;
-            // Best-effort allocation before SQL/installation; failure grants no activity.
-            attack.prepare_shared_experience_record(&runtime, actor, session);
-            // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
-            attack.settle_pacified_target(&runtime, &states, actor, session);
-            attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
-            let state = attack.combat_state(actor, session, self.owner_now());
-            (
-                legacy.as_ref().and_then(|r| r.creature).or(state.target),
-                attack.expert_modes(actor, session),
-            )
-        };
-        // The attempt lives in the external context before any committing await. Deadline
-        // cancellation cannot discard the original normalized occurrence: before the commit
-        // window it stays in the context, after it the window parks it in the lane.
-        let mut context = (
-            self,
-            access,
-            writer,
-            Some((runtime, states, objects)),
-            parameter_output,
-        );
-        let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
+            let objects = self.door.lock().await;
+            let Ok(pass) = self.root.try_issue_semantic_pass() else {
+                drop(objects);
+                let (leftover, parked) = writer.finish();
+                super::PendingSpellMarker::settle(
+                    &mut states.pending_native,
+                    actor,
+                    session,
+                    command,
+                    marker_intent,
+                    leftover,
+                    parked,
+                );
+                return NativeCastDispatch::Pending;
+            };
+            let intent = *intent;
+            // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
+            let (attack_target, pvp_modes) = {
+                let mut attack = self.states.attack.lock().await;
+                // Best-effort allocation before SQL/installation; failure grants no activity.
+                attack.prepare_shared_experience_record(&runtime, actor, session);
+                // ATTACK-0 §4 (as amended by #2106): a `pacified` caster holds no target.
+                attack.settle_pacified_target(&runtime, &states, actor, session);
+                attack.settle_invisible_target(&runtime, &states, actor, session, self.owner_now());
+                let state = attack.combat_state(actor, session, self.owner_now());
+                (
+                    legacy.as_ref().and_then(|r| r.creature).or(state.target),
+                    attack.expert_modes(actor, session),
+                )
+            };
+            // The attempt lives in the external context before any committing await. Deadline
+            // cancellation cannot discard the original normalized occurrence: before the commit
+            // window it stays in the context, after it the window parks it in the lane.
+            let mut context = (
+                self,
+                access,
+                writer,
+                Some((runtime, states, objects)),
+                parameter_output,
+            );
+            let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let (owner,access,writer,guards,parameter_output)=ctx;
             let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
@@ -2883,13 +2892,34 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 window.attempt().prepared.check_commit(&runtime,&states,&current_owned,receipt,committed.companion(),
                     committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?
             };
+            let field_contacts = {
+                let attempt = window.attempt();
+                let fields = if attempt.prepared.item_creations.is_empty() { Vec::new() } else {
+                    let mut mints = attempt.request.operations.iter().filter_map(|operation| {
+                        if let crate::durability::spell_items_abi::SpellItemOperation::MintGround { item_instance_id, .. } = operation { Some(*item_instance_id) } else { None }
+                    });
+                    let mut fields = Vec::new();
+                    fields.try_reserve(attempt.prepared.item_creations.len()).map_err(|_| DurabilityError::Unavailable)?;
+                    for creation in &attempt.prepared.item_creations {
+                        fields.push((cell(creation.position), mints.next().ok_or(DurabilityError::Unavailable)?));
+                    }
+                    if mints.next().is_some() { return Err(DurabilityError::Unavailable); }
+                    fields
+                };
+                super::created_field_contact::capture(&runtime, &fields)?
+            };
+            states.created_field_contacts.try_reserve(field_contacts.len()).map_err(|_| DurabilityError::Unavailable)?;
             // Kill recording's only await comes before the window gives up the attempt, so a
             // cancellation here still parks it and the resolver installs and records again.
             let mut attack=owner.states.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
-            if batch.applied { states.analyser.supplies(actor,session,&attempt.request.operations); }
+            if batch.applied {
+                states.analyser.supplies(actor,session,&attempt.request.operations);
+                states.created_field_contacts.extend(field_contacts);
+                states.owner_wake.notify_one();
+            }
             // Only this actual applied receipt can credit a positive attack/heal. The
             // retained original batch supplies event time; a retry never renews it.
             attack.record_committed_shared_experience_batch(&runtime,content,
@@ -2915,20 +2945,32 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
-        let (_, _, writer, guards, _) = context;
-        drop(guards);
-        let mut states = self.states.spell_states.lock().await;
-        let (leftover, parked) = writer.finish();
-        super::PendingSpellMarker::settle(
-            &mut states.pending_native,
-            actor,
-            session,
-            command,
-            marker_intent,
-            leftover,
-            parked,
-        );
+            let (_owner, _access, writer, guards, _output) = context;
+            drop(guards);
+            let mut states = self.states.spell_states.lock().await;
+            let (leftover, parked) = writer.finish();
+            super::PendingSpellMarker::settle(
+                &mut states.pending_native,
+                actor,
+                session,
+                command,
+                marker_intent,
+                leftover,
+                parked,
+            );
+            drop(states);
+            result
+        };
+        if !permit.has_unresolved() && !self.drain_created_field_contacts(permit).await {
+            return NativeCastDispatch::Pending;
+        }
         match result {
+            Ok(NativeCastDispatch::Outcome(mut outcome)) => {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                outcome.vitals = super::observe_vitals(&runtime, &states, actor, session);
+                NativeCastDispatch::Outcome(outcome)
+            }
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,
         }

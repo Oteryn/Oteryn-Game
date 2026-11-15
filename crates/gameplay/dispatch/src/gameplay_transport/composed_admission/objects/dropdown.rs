@@ -189,6 +189,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Some(from),
                     snapshot.position(),
                     optional_pvp,
+                    &|id| self.special_movement_decay_us(id),
                 );
                 use crate::gameplay_transport::paced_movement::underwater_drown::underwater;
                 states.stage_underwater_step(

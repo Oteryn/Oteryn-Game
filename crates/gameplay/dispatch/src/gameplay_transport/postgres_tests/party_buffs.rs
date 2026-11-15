@@ -40,7 +40,20 @@ pub(super) fn run_party_buffs(extra: Option<(&'static str, &'static str)>) -> Te
     run_case(extra, false)
 }
 
+#[test]
+fn retained_control_lost_member_does_not_block_party_spells_or_effects_postgres() -> TestResult {
+    run_case_presence(None, false, true)
+}
+
 fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> TestResult {
+    run_case_presence(extra, party_list, false)
+}
+
+fn run_case_presence(
+    extra: Option<(&'static str, &'static str)>,
+    party_list: bool,
+    control_lost: bool,
+) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -52,7 +65,7 @@ fn run_case(extra: Option<(&'static str, &'static str)>, party_list: bool) -> Te
                 let h = Harness::create(admin, extra.map_or("party_buffs", |(key, _)| key), false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, extra, party_list)
+                let result = scenario(&h, extra, party_list, control_lost)
                     .await
                     .map_err(|error| error.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -126,7 +139,12 @@ fn open_party_world(
     .map_err(debug)?)
 }
 
-async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) -> TestResult {
+async fn scenario(
+    h: &Harness,
+    extra: Option<(&str, &str)>,
+    party_list: bool,
+    control_lost: bool,
+) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -461,6 +479,21 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
     if extra.is_some_and(|(key, _)| key == "c11_monk") {
         return super::monk_virtues::scenario(&mut owner, h, &players).await;
     }
+    if control_lost {
+        owner
+            .runtime
+            .lock()
+            .await
+            .record_control_loss(
+                players[2].0,
+                players[2].1,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: i64::MAX,
+                },
+            )
+            .map_err(debug)?;
+    }
     // Each eligible vocation casts on its own session; both nearby actors receive both buffs.
     let casts = extra.map_or_else(
         || vec![(20, "protect_party", 0), (21, "enlighten_party", 1)],
@@ -570,10 +603,15 @@ async fn scenario(h: &Harness, extra: Option<(&str, &str)>, party_list: bool) ->
         drop(states);
         drop(runtime);
         for (index, (actor, session)) in players.iter().copied().enumerate() {
-            super::party_effects::check_buffs(h, &owner, actor, session, key, index != 2).await?;
+            if !control_lost || index != 2 {
+                super::party_effects::check_buffs(h, &owner, actor, session, key, index != 2)
+                    .await?;
+            }
         }
     }
-    super::party_member_effects::check(&owner, &players).await?;
+    if !control_lost {
+        super::party_member_effects::check(&owner, &players).await?;
+    }
     if party_list {
         super::party_list::check(&owner, &players).await?;
     }

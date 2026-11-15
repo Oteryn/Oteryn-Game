@@ -34,6 +34,7 @@ struct Member {
     level: u32,
     x: i32,
     y: i32,
+    floor: i16,
     active: bool,
     pz: bool,
     skull: u8,
@@ -68,6 +69,7 @@ fn eligible(
         && u64::from(member.level) * 3 >= u64::from(highest) * 2
         && member.x.abs_diff(leader.x) <= 30
         && member.y.abs_diff(leader.y) <= 30
+        && member.floor.abs_diff(leader.floor) <= 1
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -132,7 +134,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let observer = crate::durability::admission_journal::party_target_binding::current_colocated_party_character_for_scope_in_transaction(&mut tx,owner.root,&authority,runtime,actor,admitted.game_session_id).await.map_err(|_|unavailable())?.ok_or_else(unavailable)?;
                 let connection = crate::durability::admission_journal::party_target_binding::read_connection_generation_for_share_in_transaction(&mut tx, admitted.game_session_id).await?;
                 if connection != admitted.continuity.connection_generation.to_string() { return Err(unavailable()); }
-                let sources = world_party::read_world_party_views_for_scope_in_transaction(&mut tx,owner.root,&authority,runtime).await.map_err(|_|unavailable())?;
+                let mut sources = Vec::new();
+                for (current, _, session) in runtime.positioned_actor_census().map_err(|_|unavailable())? {
+                    let Some(session) = session else { continue };
+                    if runtime.player_control_facts(current, session).is_ok_and(|facts| facts.control_loss.is_some()) { continue; }
+                    sources.push(world_party::read_world_party_for_scope_actor_in_transaction(&mut tx, owner.root, &authority, runtime, current, session).await.map_err(|_|unavailable())?);
+                }
                 let source = sources.iter().find(|s|s.character == observer).ok_or_else(unavailable)?;
                 let policy = crate::durability::spell_field_policy::read_world_field_policy_in_transaction(&mut tx,owner.root,scope,binding.scope_generation().get()).await.map_err(|_|unavailable())?.ok_or_else(unavailable)?;
                 let open = policy.bind(&tx).mode() == crate::durability::spell_field_policy::FieldWorldType::Pvp;
@@ -141,13 +148,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut members = BTreeMap::new();
                 for (current, position, session) in runtime.positioned_actor_census().map_err(|_|unavailable())? {
                     let Some(session) = session else { continue };
+                    if runtime.player_control_facts(current, session).is_ok_and(|facts| facts.control_loss.is_some()) { continue; }
                     let lease = runtime.bound_attacker_lease(current,session).map_err(|_|unavailable())?;
                     let id = *lease.character_id().as_bytes();
                     let row = sqlx::query("SELECT COALESCE((SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid),$5) AS level, COALESCE((SELECT CASE WHEN skull=2 AND skull_until>clock_timestamp() THEN 5 WHEN skull=1 AND skull_until>clock_timestamp() THEN 4 WHEN white_skull_until>clock_timestamp() THEN 3 ELSE 0 END FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid),0) AS skull, COALESCE((SELECT pz_block_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid),false) AS pz, EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid AND until_at>clock_timestamp() AND scope_generation=$3::text::numeric AND attacker_placement=$4 AND target_placement=$6) AS aggression, EXISTS(SELECT 1 FROM game_character_revenge_marks WHERE (victim_character_id=encode($2,'hex')::uuid OR encode($1,'hex')::uuid=encode($2,'hex')::uuid) AND killer_character_id=encode($1,'hex')::uuid AND avenged_at IS NULL AND expires_at>clock_timestamp()) AS revenge, EXISTS(SELECT 1 FROM game_party_invitations i JOIN game_parties p USING(party_id) WHERE p.leader_character_id=encode($2,'hex')::uuid AND i.invitee=encode($1,'hex')::uuid AND i.expires_at>clock_timestamp()) AS invited, EXISTS(SELECT 1 FROM game_party_invitations i JOIN game_parties p USING(party_id) WHERE p.leader_character_id=encode($1,'hex')::uuid AND i.invitee=encode($2,'hex')::uuid AND i.expires_at>clock_timestamp()) AS inviting")
                         .bind(id.as_slice()).bind(observer.as_slice()).bind(binding.scope_generation().get().to_string()).bind(current.placement_identity().as_slice()).bind(i64::from(states.get(runtime,current,session).map_or(1,|s|s.character_facts().level))).bind(actor.placement_identity().as_slice()).fetch_one(&mut *tx).await?;
                     let Some(entity) = visible.players.iter().find(|p|p.actor==current) else { continue };
                     let pos = position.position();
-                    members.insert(id,Member { entity:EntityRef { identity:current.placement_identity(),generation:entity.generation },level:u32::try_from(row.try_get::<i64,_>("level")?).map_err(|_|unavailable())?,x:pos.x,y:pos.y,active:attack.shared_experience_active(runtime,current,session,now),pz:row.try_get("pz")?,skull:u8::try_from(row.try_get::<i32,_>("skull")?).map_err(|_|unavailable())?,aggression:row.try_get("aggression")?,revenge:row.try_get("revenge")?,invited_by_observer:row.try_get("invited")?,invites_observer:row.try_get("inviting")? });
+                    members.insert(id,Member { entity:EntityRef { identity:current.placement_identity(),generation:entity.generation },level:u32::try_from(row.try_get::<i64,_>("level")?).map_err(|_|unavailable())?,x:pos.x,y:pos.y,floor:pos.floor,active:attack.shared_experience_active(runtime,current,session,now),pz:row.try_get("pz")?,skull:u8::try_from(row.try_get::<i32,_>("skull")?).map_err(|_|unavailable())?,aggression:row.try_get("aggression")?,revenge:row.try_get("revenge")?,invited_by_observer:row.try_get("invited")?,invites_observer:row.try_get("inviting")? });
                 }
                 let mut icons = Vec::new();
                 for target in &sources {
@@ -180,6 +188,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn party_shield_eligibility_obeys_shared_experience_floor_range() {
+        let ids = [[1; 16], [2; 16]];
+        let source = PartySnapshot {
+            world: [3; 16],
+            character: ids[0],
+            party_id: Some([4; 16]),
+            revision: Some(1),
+            leader: Some(ids[0]),
+            shared_xp_enabled: true,
+            members: ids
+                .iter()
+                .enumerate()
+                .map(|(i, character)| crate::foundation::PartyMemberSnapshot {
+                    character: *character,
+                    invitation_order: i as u64,
+                    presence_revision: 1,
+                    presence: crate::foundation::PartyPresence::Channel,
+                    channel: Some([5; 16]),
+                })
+                .collect(),
+            observed_database_micros: 0,
+        };
+        let member = |id, floor| Member {
+            entity: EntityRef {
+                identity: id,
+                generation: 1,
+            },
+            level: 100,
+            x: 100,
+            y: 100,
+            floor,
+            active: true,
+            pz: false,
+            skull: 0,
+            aggression: false,
+            revenge: false,
+            invited_by_observer: false,
+            invites_observer: false,
+        };
+        for floor in [5, 6, 7, 8, 9] {
+            let members =
+                BTreeMap::from([(ids[0], member(ids[0], 7)), (ids[1], member(ids[1], floor))]);
+            assert_eq!(
+                eligible(&source, &ids[1], &members),
+                (6..=8).contains(&floor),
+                "floor {floor}"
+            );
+        }
+    }
+
     #[test]
     fn party_skull_all_shield_states() {
         for (leader, plain, shared, blink, inactive) in [(false, 3, 5, 7, 9), (true, 4, 6, 8, 10)] {

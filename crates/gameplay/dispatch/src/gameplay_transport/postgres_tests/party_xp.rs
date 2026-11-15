@@ -28,6 +28,7 @@ pub(super) enum Case {
     Shared,
     Modifiers,
     Inactive,
+    LinkDead,
     Replay,
     Pz,
     Rollback,
@@ -181,6 +182,11 @@ fn task_board_real_dispatch_shared_member_selects_after_prior_leader_death_settl
 fn task_board_real_dispatch_interleaved_principals_keep_death_order_and_final_bonus() -> TestResult
 {
     run(Case::TaskBoardOrdered)
+}
+
+#[test]
+fn link_dead_party_member_does_not_reject_the_killers_xp_plan_postgres() -> TestResult {
+    run(Case::LinkDead)
 }
 
 pub(super) fn run(case: Case) -> TestResult {
@@ -949,6 +955,21 @@ async fn scenario(
                 .expect("clock");
         }
     }
+    if matches!(case, Case::LinkDead) {
+        owner
+            .runtime
+            .lock()
+            .await
+            .record_control_loss(
+                players[1].0,
+                players[1].1,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: i64::MAX,
+                },
+            )
+            .map_err(debug)?;
+    }
     let foreign_staged = if matches!(case, Case::Foreign) {
         // The foreign and leader shares came from real swings. Leave one HP so the
         // member's first landed swing kills while the leader's activity is recent.
@@ -1089,13 +1110,17 @@ async fn scenario(
                 && (case.staged_ally()
                     || matches!(
                         case,
-                        Case::Inactive | Case::OneHit | Case::ForgeIdle | Case::EliteNoShared
+                        Case::Inactive
+                            | Case::LinkDead
+                            | Case::OneHit
+                            | Case::ForgeIdle
+                            | Case::EliteNoShared
                     )))
         {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
+        if case.forge() || matches!(case, Case::Inactive | Case::LinkDead | Case::Foreign) {
             // Foreign's final attacker must land before the leader's activity expires;
             // Balanced content draws can take 66 three-second passes even at one HP.
             // These level-one fist attackers qualify reward settlement, not fight-mode
@@ -1536,7 +1561,7 @@ async fn scenario(
         .map(|r| r.1)
         .sum::<i64>();
     // Every Character here is level 1: the Global low-level bonus (+100%) doubles each award.
-    if matches!(case, Case::Inactive) {
+    if matches!(case, Case::Inactive | Case::LinkDead) {
         assert_eq!((first_award, second_award), (10, 0));
     } else if matches!(case, Case::Concurrent) {
         assert_eq!((first_award, second_award), (22, 22));
@@ -1612,7 +1637,7 @@ async fn scenario(
             4
         } else if matches!(case, Case::Foreign) {
             3
-        } else if matches!(case, Case::Inactive | Case::Exhausted) {
+        } else if matches!(case, Case::Inactive | Case::LinkDead | Case::Exhausted) {
             1
         } else {
             2

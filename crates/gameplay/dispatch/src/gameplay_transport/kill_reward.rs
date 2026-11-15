@@ -3025,10 +3025,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             };
-            let mut slot = admission
-                .revision_sequencer
-                .acquire(self.fence.character_id)
-                .await;
+            let Ok(mut slot) = tokio::time::timeout(
+                std::time::Duration::ZERO,
+                admission
+                    .revision_sequencer
+                    .acquire(self.fence.character_id),
+            )
+            .await
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
             let session = DurabilitySession {
                 root: admission.root,
                 authority: admission.character,
@@ -3199,10 +3208,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             // One drain reuses its admitted identity for several queued deaths. Earlier
             // descendants can advance the revision, so capture at the sequencer's current
             // cursor. Release this slot before acquiring the sorted party XP slots below.
-            let mut slot = admission
-                .revision_sequencer
-                .acquire(self.fence.character_id)
-                .await;
+            let Ok(mut slot) = tokio::time::timeout(
+                std::time::Duration::ZERO,
+                admission
+                    .revision_sequencer
+                    .acquire(self.fence.character_id),
+            )
+            .await
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
             let Ok(expected_character_revision) =
                 slot.cursor(admission.root, admission.character).await
             else {
@@ -3236,10 +3254,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let mut entry = entry.clone();
         let Some(mut row) = entry.row.take() else {
             if entry.prey_checkpoint.is_some() {
-                let mut slot = admission
-                    .revision_sequencer
-                    .acquire(self.fence.character_id)
-                    .await;
+                let Ok(mut slot) = tokio::time::timeout(
+                    std::time::Duration::ZERO,
+                    admission
+                        .revision_sequencer
+                        .acquire(self.fence.character_id),
+                )
+                .await
+                else {
+                    return SettleReport {
+                        verdict: SettleVerdict::Retry,
+                        no_progression: false,
+                    };
+                };
                 if !admission
                     .credit_prey_kill(&entry, None, &mut slot, self.fence)
                     .await
@@ -3292,10 +3319,20 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         {
             other_slots.remove(index)
         } else {
-            admission
-                .revision_sequencer
-                .acquire(self.fence.character_id)
-                .await
+            let Ok(slot) = tokio::time::timeout(
+                std::time::Duration::ZERO,
+                admission
+                    .revision_sequencer
+                    .acquire(self.fence.character_id),
+            )
+            .await
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            slot
         };
         let Ok(expected_character_revision) =
             slot.cursor(admission.root, admission.character).await

@@ -187,6 +187,37 @@ fn scenario(canonical: bool) -> TestResult {
         );
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(&offers, &[4, 6, 57]).ok_or("capability selection")?;
+        // A background writer may retain the Character slot while SQL is slow.
+        // The real admitted STEP callback must defer without monopolizing the lane.
+        {
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|_| "Cyclopedia step fence")?
+                .ok_or("current Cyclopedia session")?;
+            let slot = owner.revision_sequencer.acquire(fence.character_id).await;
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("Cyclopedia step lane")?;
+            let entered = owner
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(deps.actor)
+                .map_err(debug)?;
+            let refresh = tokio::time::timeout(
+                std::time::Duration::from_secs(1),
+                owner.cyclopedia_step(deps.actor, admitted.game_session_id, entered),
+            )
+            .await;
+            assert!(
+                refresh.is_ok(),
+                "Cyclopedia STEP must defer behind a busy revision slot"
+            );
+            drop(permit);
+            drop(slot);
+        }
         // Unnegotiated clients cannot enter the handler or observe private map facts.
         let mut old = admitted;
         old.continuity.selected_capabilities = SelectedCapabilities::NONE;
@@ -467,8 +498,14 @@ fn scenario(canonical: bool) -> TestResult {
         .bind(id(41).as_slice())
         .fetch_one(&h.pool)
         .await?;
-        assert!(advanced > 0, "native discovery committed a Character revision");
-        assert!(unchanged > 0, "repeated Start retained a non-advancing receipt");
+        assert!(
+            advanced > 0,
+            "native discovery committed a Character revision"
+        );
+        assert!(
+            unchanged > 0,
+            "repeated Start retained a non-advancing receipt"
+        );
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.

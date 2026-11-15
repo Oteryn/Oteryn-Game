@@ -220,6 +220,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Some(entered.position()),
             snapshot.position(),
             policy,
+            &|id| self.special_movement_decay_us(id),
         );
         states.stage_underwater_step(
             &runtime,

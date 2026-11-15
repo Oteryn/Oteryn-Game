@@ -46,6 +46,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        let pending_step = {
+            let states = self.states.spell_states.lock().await;
+            states.paced_step_callbacks.is_some()
+                || states.paced_step_async_callbacks.is_some()
+                || !states.pending_snow_progress.is_empty()
+                || !states.created_field_contacts.is_empty()
+        };
+        if pending_step {
+            let permit = self.spell_lane_permit().await?;
+            self.drain_paced_step_async_callbacks(&permit).await;
+            self.retry_snow_progress(&permit).await;
+        }
         if !self.drome_sync(game_session_id, false).await {
             return None;
         }

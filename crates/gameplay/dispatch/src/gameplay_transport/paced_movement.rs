@@ -1,4 +1,5 @@
 //! Tutorial step interception around the existing owner movement path.
+use super::actor_spell::ChannelSpellStates;
 use super::*;
 
 mod autowalk;
@@ -6,6 +7,58 @@ pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
 pub(super) mod monster_trap;
 pub(super) mod special_movement;
 pub(super) mod underwater_drown;
+
+/// Physical movement is already committed while its field transaction may be unknown.
+/// Keep callbacks outside the retained player predecessor until the lane reconciles it.
+#[derive(Debug, Clone, Copy)]
+pub(in crate::gameplay_transport) struct PacedStepCallbacks {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    direction: StepDirection,
+    origin: Option<crate::foundation::MovementPositionSnapshot>,
+    pub(in crate::gameplay_transport) snapshot: crate::foundation::MovementPositionSnapshot,
+    now: u64,
+    optional_pvp: Option<bool>,
+    snow_origin: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(in crate::gameplay_transport) struct PendingSnowProgress {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    snapshot: crate::foundation::MovementPositionSnapshot,
+    event: [u8; 16],
+    command: crate::foundation::CommandRef,
+    fence: Option<crate::durability::character_progression::CurrentCharacterGameplayFence>,
+}
+
+impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn retain_paced_step_callbacks(
+        &mut self,
+        step: PacedStepCallbacks,
+    ) {
+        if self.paced_step_callbacks.is_some() {
+            return;
+        }
+        if let Some(event) = snowbunny_progress_operation(
+            step.snow_origin,
+            step.actor.placement_identity(),
+            step.session,
+            step.now,
+        ) && let Ok(id) = crate::foundation::CommandId::new(step.now.max(1))
+        {
+            self.pending_snow_progress.push_back(PendingSnowProgress {
+                actor: step.actor,
+                session: step.session,
+                snapshot: step.snapshot,
+                event,
+                command: crate::foundation::CommandRef::new(step.session, id),
+                fence: None,
+            });
+        }
+        self.paced_step_callbacks = Some(step);
+    }
+}
 
 fn snowbunny_progress_operation(
     snow_origin: bool,
@@ -66,6 +119,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operator_event("event=step_rejected_lane");
             return (StepOutcome::rejected(), None);
         };
+        self.drain_paced_step_async_callbacks(&permit).await;
+        self.retry_snow_progress(&permit).await;
         if !self.refresh_pvp_locks(actor, session).await {
             operator_event("event=step_rejected_pvp_locks");
             return (StepOutcome::rejected(), None);
@@ -205,91 +260,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 cardinal,
                 blocking,
                 equipped_speed_delta,
+                origin.map(|snapshot| PacedStepCallbacks {
+                    actor,
+                    session,
+                    direction,
+                    origin,
+                    snapshot,
+                    now,
+                    optional_pvp,
+                    snow_origin,
+                }),
             )
             .await
         };
         match outcome {
             Ok((snapshot, duration)) => {
-                // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
-                // the exact physical pod, with HP owned by this same player turn.
-                super::primal_pods::step(
-                    self,
-                    &mut runtime,
-                    &mut states,
+                states.retain_paced_step_callbacks(PacedStepCallbacks {
                     actor,
                     session,
-                    now / 1000,
-                );
-                // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
-                // owner turn as the committed step.
-                if let Some(map) = self.bundle_map() {
-                    states.stage_special_movement_step(
-                        &runtime,
-                        map,
-                        actor,
-                        session,
-                        now,
-                        origin.map(|origin| origin.position()),
-                        snapshot.position(),
-                        optional_pvp,
-                    );
-                    states.stage_underwater_step(
-                        &runtime,
-                        actor,
-                        session,
-                        now,
-                        origin.is_some_and(|origin| {
-                            underwater_drown::underwater(map, origin.position())
-                        }),
-                        underwater_drown::underwater(map, snapshot.position()),
-                    );
-                }
+                    direction,
+                    origin,
+                    snapshot,
+                    now,
+                    optional_pvp,
+                    snow_origin,
+                });
                 drop(states);
                 drop(runtime);
-                super::echo_warden::step_in(self, actor, session, now / 1000).await;
-                if let Some(event) = snowbunny_progress_operation(
-                    snow_origin,
-                    actor.placement_identity(),
-                    session,
-                    now,
-                ) && !self.add_snowbunny_progress(&permit, session, event).await
-                {
-                    super::operator_event("snowbunny_step_transaction_rolled_back");
-                }
-                if let Some(origin) = origin {
-                    self.close_departed_door(
-                        &permit,
-                        actor,
-                        session,
-                        origin.position(),
-                        snapshot.revision(),
-                    )
-                    .await;
-                }
-                let snapshot = match origin {
-                    Some(origin) => {
-                        let snapshot = self
-                            .citizen_step(actor, session, direction, origin, snapshot)
-                            .await;
-                        let snapshot = self
-                            .soulpit_lobby_step(&permit, actor, session, snapshot)
-                            .await;
-                        let snapshot = self
-                            .step_quest_callback(&permit, actor, session, origin, snapshot)
-                            .await;
-                        let snapshot = self
-                            .step_grizzly_boss(&permit, actor, session, origin, snapshot)
-                            .await;
-                        self.dawnport_trial_step(actor, session, snapshot).await;
-                        snapshot
-                    }
-                    None => snapshot,
+                let snapshot = if permit.has_unresolved() {
+                    snapshot
+                } else {
+                    self.drain_paced_step_callbacks(&permit).await;
+                    self.drain_paced_step_async_callbacks(&permit)
+                        .await
+                        .unwrap_or(snapshot)
                 };
-                self.cyclopedia_step(actor, session, snapshot).await;
-                self.refresh_cyclopedia_speed(actor, session).await;
                 let runtime = self.runtime.lock().await;
-                // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
-                self.states.chat.close_out_of_range(&runtime, session);
                 (
                     StepOutcome {
                         disposition: StepDisposition::Moved,
@@ -337,6 +343,221 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (StepOutcome::rejected(), None)
             }
         }
+    }
+    pub(in crate::gameplay_transport) async fn drain_paced_step_callbacks(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) -> Option<crate::foundation::MovementPositionSnapshot> {
+        if permit.has_unresolved() {
+            return None;
+        }
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let step = states.paced_step_callbacks.take()?;
+        let PacedStepCallbacks {
+            actor,
+            session,
+            origin,
+            snapshot,
+            now,
+            optional_pvp,
+            ..
+        } = step;
+        if runtime.read_actor_position(actor).ok() != Some(snapshot)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return None;
+        }
+        // Crystal hazard_primal.lua:23-55: actual accepted STEP consumes
+        // the exact physical pod, with HP owned by this same player turn.
+        super::primal_pods::step(self, &mut runtime, &mut states, actor, session, now / 1000);
+        // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
+        // owner turn as the committed step.
+        if let Some(map) = self.bundle_map() {
+            states.stage_special_movement_step(
+                &runtime,
+                map,
+                actor,
+                session,
+                now,
+                origin.map(|origin| origin.position()),
+                snapshot.position(),
+                optional_pvp,
+                &|id| {
+                    self.active_generation
+                        .and_then(|active| active.native_gameplay())
+                        .and_then(|native| special_movement::configured_decay_us(native, id))
+                },
+            );
+            states.stage_underwater_step(
+                &runtime,
+                actor,
+                session,
+                now,
+                origin.is_some_and(|origin| underwater_drown::underwater(map, origin.position())),
+                underwater_drown::underwater(map, snapshot.position()),
+            );
+        }
+        states.paced_step_async_callbacks = Some(step);
+        Some(snapshot)
+    }
+
+    async fn defer_snow_progress(&self) {
+        let mut states = self.states.spell_states.lock().await;
+        if let Some(pending) = states.pending_snow_progress.pop_front() {
+            states.pending_snow_progress.push_back(pending);
+        }
+    }
+
+    pub(in crate::gameplay_transport) async fn retry_snow_progress(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) {
+        loop {
+            let Some(mut pending) = self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .pending_snow_progress
+                .front()
+                .copied()
+            else {
+                return;
+            };
+            {
+                let runtime = self.runtime.lock().await;
+                if !runtime
+                    .player_control_facts(pending.actor, pending.session)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    || !runtime
+                        .read_actor_position(pending.actor)
+                        .is_ok_and(|snapshot| snapshot.context() == pending.snapshot.context())
+                {
+                    self.defer_snow_progress().await;
+                    return;
+                }
+            }
+            if pending.fence.is_none() {
+                let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
+                    self.defer_snow_progress().await;
+                    return;
+                };
+                pending.fence = Some(fence);
+                if let Some(held) = self
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .pending_snow_progress
+                    .front_mut()
+                {
+                    held.fence = Some(fence);
+                }
+            }
+            let Some(fence) = pending.fence else {
+                self.defer_snow_progress().await;
+                return;
+            };
+            {
+                let runtime = self.runtime.lock().await;
+                if runtime.binding().runtime_scope() != fence.runtime_scope
+                    || runtime.binding().scope_generation() != fence.scope_ownership_generation
+                    || !runtime
+                        .bound_attacker_lease(pending.actor, pending.session)
+                        .is_ok_and(|lease| {
+                            lease.character_id().as_bytes() == fence.character_id.as_bytes()
+                                && lease.generation() == fence.character_lease_generation
+                        })
+                {
+                    self.defer_snow_progress().await;
+                    return;
+                }
+            }
+            if !self
+                .add_snowbunny_progress(permit, fence, pending.event, pending.command)
+                .await
+            {
+                self.defer_snow_progress().await;
+                return;
+            }
+            self.states
+                .spell_states
+                .lock()
+                .await
+                .pending_snow_progress
+                .pop_front();
+        }
+    }
+
+    // SQL callbacks run on the movement/vitals owner rather than recursively inside
+    // the erased lane resolver. Their physical predecessor remains fenced as well.
+    pub(in crate::gameplay_transport) async fn drain_paced_step_async_callbacks(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+    ) -> Option<crate::foundation::MovementPositionSnapshot> {
+        if permit.has_unresolved() {
+            return None;
+        }
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let PacedStepCallbacks {
+            actor,
+            session,
+            origin,
+            snapshot,
+            now,
+            direction,
+            ..
+        } = states.paced_step_async_callbacks.take()?;
+        if runtime.read_actor_position(actor).ok() != Some(snapshot)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return None;
+        }
+        drop(states);
+        drop(runtime);
+        super::echo_warden::step_in(self, actor, session, now / 1000).await;
+        self.retry_snow_progress(permit).await;
+        if let Some(origin) = origin {
+            self.close_departed_door(
+                permit,
+                actor,
+                session,
+                origin.position(),
+                snapshot.revision(),
+            )
+            .await;
+        }
+        let snapshot = match origin {
+            Some(origin) => {
+                let snapshot = self
+                    .citizen_step(actor, session, direction, origin, snapshot)
+                    .await;
+                let snapshot = self
+                    .soulpit_lobby_step(permit, actor, session, snapshot)
+                    .await;
+                let snapshot = self
+                    .step_quest_callback(permit, actor, session, origin, snapshot)
+                    .await;
+                let snapshot = self
+                    .step_grizzly_boss(permit, actor, session, origin, snapshot)
+                    .await;
+                self.dawnport_trial_step(actor, session, snapshot).await;
+                snapshot
+            }
+            None => snapshot,
+        };
+        self.cyclopedia_step(actor, session, snapshot).await;
+        self.refresh_cyclopedia_speed(actor, session).await;
+        let runtime = self.runtime.lock().await;
+        // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
+        self.states.chat.close_out_of_range(&runtime, session);
+        Some(snapshot)
     }
 }
 

@@ -3,12 +3,9 @@
 use super::special_movement::{TileEntries, Trap, tile_entries, transform, trap};
 use crate::content::ReferenceResistanceKind;
 use crate::foundation::ChannelRuntimeV1;
-use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::map::boot::BundleMap;
-use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement};
-use oteryn_gameplay_entities::carrier::runtime_actor_periodic::CreatureFieldEntry;
-use oteryn_gameplay_foundation::foundation::condition::ConditionDefinition;
+use crate::map::view::MapFacts;
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -16,7 +13,7 @@ use sha2::{Digest, Sha256};
 
 pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
+    _states: &ChannelSpellStates,
     map: &BundleMap,
     now: u64,
 ) {
@@ -59,7 +56,14 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
                 continue;
             };
             if transform(map, *key, rule.closed) {
-                spike_trap_hit(runtime, states, step.actor, *key, rule, now);
+                spike_trap_hit(
+                    runtime,
+                    step.actor,
+                    *key,
+                    map.facts.object_revision(*key),
+                    rule,
+                    now,
+                );
             }
         }
     }
@@ -67,23 +71,21 @@ pub(in crate::gameplay_transport) fn apply_monster_trap_steps(
 
 fn spike_trap_hit(
     runtime: &mut ChannelRuntimeV1,
-    states: &ChannelSpellStates,
     actor: crate::foundation::ExactActorRef,
     key: u64,
+    activation_revision: u64,
     rule: Trap,
     now: u64,
 ) {
     let Ok(snapshot) = runtime.companion_snapshot(actor) else {
         return;
     };
-    if !snapshot.state.conditions.accepts_time(now) {
-        return;
-    }
     let digest = Sha256::new()
         .chain_update(b"oteryn:creature-spike-trap:v1")
         .chain_update(actor.placement_identity())
         .chain_update(snapshot.position_revision.to_be_bytes())
         .chain_update(key.to_be_bytes())
+        .chain_update(activation_revision.to_be_bytes())
         .finalize();
     let mut bytes = [0; 16];
     bytes.copy_from_slice(&digest[..16]);
@@ -97,48 +99,42 @@ fn spike_trap_hit(
         i64::from(rule.minimum_damage),
         i64::from(rule.maximum_damage),
     );
-    let Ok(damage) = u32::try_from(damage) else {
-        return;
-    };
     let element = match rule.element {
-        ReferenceResistanceKind::Earth => DotElement::Poison,
-        _ => DotElement::Bleeding,
+        ReferenceResistanceKind::Earth => "earth",
+        _ => "physical",
     };
-    let Some(definition) = ConditionDefinition::new(
-        "environment.spike_trap",
-        1,
-        ConditionValues::DamageOverTime {
-            element,
-            total_min: damage,
-            total_max: damage,
-            per_tick: damage,
-            interval_ms: 2_000,
-            delayed: false,
-        },
+    if !snapshot.state.policy.flags.attackable {
+        return;
+    }
+    let Some(damage) = oteryn_gameplay_combat_rules::resolution::creature_damage_response(
+        &snapshot.state.policy,
+        damage,
+        element,
     ) else {
         return;
     };
-    let entry = CreatureFieldEntry {
-        definition,
-        source: None,
-        lineage: None,
-        occurrence,
-    };
-    if runtime
-        .commit_creature_field_entry(actor, now, Some(&entry))
-        .is_err()
-    {
+    let Ok(target) = runtime.creature_spell_target_atom(actor) else {
         return;
-    }
-    let _ = states.tick_source_creature_conditions(
-        runtime,
-        actor,
-        crate::foundation::TickFacts {
-            in_protection_zone: false,
-            standing_on_field: None,
-        },
-        SemanticTimeMicros::from_micros(now),
-    );
+    };
+    // The raw damage owner separates a printable occurrence from its binding with NUL.
+    let occurrence_key = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let mut binding = occurrence_key.as_bytes().to_vec();
+    binding.push(0);
+    binding.extend_from_slice(digest.as_ref());
+    let _ = runtime
+        .borrow_exact_actor_commit_at(now / 1000)
+        .commit_damage(
+            actor,
+            crate::foundation::OwnerDamageCommand {
+                target: target.as_bytes(),
+                occurrence: occurrence_key.as_bytes(),
+                binding: &binding,
+                damage,
+            },
+        );
 }
 
 #[cfg(test)]
@@ -152,11 +148,21 @@ mod tests {
     use oteryn_gameplay_content::content::creature_policy::{
         CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags,
     };
+    use oteryn_gameplay_domain::domain::condition::DotElement;
     use std::num::NonZeroU32;
 
     type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
     fn trap_case(trap: u16, protection_zone: bool) -> Result<(u16, u16, i64, i64), BoxError> {
+        trap_case_with_contact(trap, protection_zone, false, false)
+    }
+
+    fn trap_case_with_contact(
+        trap: u16,
+        protection_zone: bool,
+        field_first: bool,
+        condition_immune: bool,
+    ) -> Result<(u16, u16, i64, i64), BoxError> {
         let (mut runtime, actor, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x72);
         let key = format!("oteryn:item.tibia.i{trap}");
@@ -247,7 +253,18 @@ mod tests {
                 convinceable: false,
                 mana_cost: None,
                 is_familiar: false,
-                condition_immunities: vec![],
+                condition_immunities: if condition_immune {
+                    vec![
+                        oteryn_gameplay_domain::domain::condition::ConditionType::DamageOverTime(
+                            DotElement::Poison,
+                        ),
+                        oteryn_gameplay_domain::domain::condition::ConditionType::DamageOverTime(
+                            DotElement::Bleeding,
+                        ),
+                    ]
+                } else {
+                    vec![]
+                },
                 defense: Some(0),
                 armor: Some(0),
                 mitigation: Some(CreatureExactRatio {
@@ -279,7 +296,29 @@ mod tests {
             from: away,
             to: at,
         }));
+        if field_first {
+            runtime
+                .commit_creature_field_entry(rat, 1_000_000, None)
+                .map_err(|e| format!("{e:?}"))?;
+        }
+        let conditions_before = runtime
+            .companion_snapshot(rat)
+            .map_err(|e| format!("{e:?}"))?
+            .state
+            .conditions;
         apply_monster_trap_steps(&mut runtime, &states, map, 1_000_000);
+        if condition_immune {
+            assert_eq!(
+                runtime
+                    .companion_snapshot(rat)
+                    .map_err(|e| format!("{e:?}"))?
+                    .state
+                    .conditions,
+                conditions_before,
+                "an instantaneous hit does not add or replace a persistent condition"
+            );
+        }
+
         let after_step_in = map
             .facts
             .base_entry(pos, 1, 0)
@@ -299,6 +338,43 @@ mod tests {
             .ok_or("trap after step-out")?
             .appearance_id;
         Ok((after_step_in, after_step_out, health_before, health_after))
+    }
+
+    #[test]
+    fn monster_traps_hit_after_the_field_entry_revision_is_consumed() -> Result<(), BoxError> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                for id in [2145, 2147, 3482, 3944, 44529] {
+                    let (_, _, before, after) = trap_case_with_contact(id, false, true, false)?;
+                    assert!(
+                        after < before,
+                        "trap {id} must have an independent damage occurrence"
+                    );
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "trap thread")?
+    }
+
+    #[test]
+    fn monster_traps_damage_condition_immune_monsters_without_changing_conditions()
+    -> Result<(), BoxError> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| -> Result<(), BoxError> {
+                for id in [2145, 2147, 3482, 3944, 44529] {
+                    let (_, _, before, after) = trap_case_with_contact(id, false, false, true)?;
+                    assert!(
+                        after < before,
+                        "trap {id} is damage, independent of condition immunity"
+                    );
+                }
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "trap thread")?
     }
 
     #[test]
