@@ -86,6 +86,29 @@ impl AppearanceIndex {
         appearance_id: u32,
         placement: Placement,
     ) -> Result<ResolvedEntry, AssetError> {
+        self.resolve_phase(sheets, appearance_id, placement, 0)
+    }
+
+    /// All phases of the same placement, preserving its count, fluid, hook and floor patterns.
+    pub fn resolve_frames(
+        &self,
+        sheets: &SpriteSheets,
+        appearance_id: u32,
+        placement: Placement,
+    ) -> Result<Vec<ResolvedEntry>, AssetError> {
+        let phases = self.objects.get(&appearance_id).map_or(1, |a| a.phases);
+        (0..phases)
+            .map(|phase| self.resolve_phase(sheets, appearance_id, placement, phase))
+            .collect()
+    }
+
+    fn resolve_phase(
+        &self,
+        sheets: &SpriteSheets,
+        appearance_id: u32,
+        placement: Placement,
+        phase: u32,
+    ) -> Result<ResolvedEntry, AssetError> {
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
@@ -104,7 +127,7 @@ impl AppearanceIndex {
             sheets,
             (pattern_x, pattern_y, pattern_z),
             0..appearance.layers,
-            0,
+            phase,
         )
     }
 }

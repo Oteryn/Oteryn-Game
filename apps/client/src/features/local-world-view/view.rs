@@ -7,6 +7,17 @@ use oteryn_session::{EntityKind, JoinSnapshot};
 use std::sync::Arc;
 
 impl PlayView {
+    pub(in crate::play) fn advance_world_animation(
+        &mut self,
+        now: std::time::Instant,
+    ) -> Result<(), BatchError> {
+        if let Some(world) = self.local.world().animated_at(now) {
+            self.local.set_world(Arc::new(world));
+            self.rebuild()?;
+        }
+        Ok(())
+    }
+
     pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
         let position = snapshot.world_spatial.actor_position;
         Self::new(

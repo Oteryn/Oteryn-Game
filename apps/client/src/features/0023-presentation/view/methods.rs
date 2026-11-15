@@ -15,6 +15,7 @@ impl PlayView {
     }
 
     pub(in crate::play) fn advance_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.advance_world_animation(now)?;
         if self.visuals.is_empty() && !self.tutorial_overlay.enabled && self.hit_flash.is_none() {
             return Ok(());
         }
