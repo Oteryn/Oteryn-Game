@@ -133,6 +133,10 @@ pub(super) async fn exercise(
         coupled,
         "marker, progress, native source and receipt commit together"
     );
+    // A new connection restores the marker without a query; replaying the exact
+    // confirmation and then repeating it with a fresh command creates no second fact.
+    let (restored, _) = conversation(owner, admitted, npc, 6, &["yes"], false).await?;
+    assert_eq!(restored.map_marks, expected);
     // The canonical capability 451 query uses the same committed personal fact.
     let payload = super::quest_world_callbacks::wire(
         owner,
@@ -160,10 +164,6 @@ pub(super) async fn exercise(
             "Treasure"
         )
     );
-    // A new connection restores the marker without a query; replaying the exact
-    // confirmation and then repeating it with a fresh command creates no second fact.
-    let (restored, _) = conversation(owner, admitted, npc, 6, &["yes"], false).await?;
-    assert_eq!(restored.map_marks, expected);
     let (repeated, _) =
         conversation(owner, admitted, npc, 8, &["hi", "mission", "yes"], false).await?;
     assert_eq!(repeated.map_marks, expected);
@@ -251,6 +251,9 @@ async fn conversation(
                         result.status,
                         if command_id < before.continuity.next_command_id {
                             CommandStatus::DuplicateReplay
+                        } else if matches!(command_id, 3 | 10) {
+                            // Missing or already advanced storage cannot confirm this transition.
+                            CommandStatus::Rejected
                         } else {
                             CommandStatus::Accepted
                         },

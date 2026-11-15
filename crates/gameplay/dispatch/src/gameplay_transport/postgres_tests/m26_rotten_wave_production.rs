@@ -80,6 +80,7 @@ pub(super) async fn check(
     )
     .await?;
     let mut first_wave = Vec::new();
+    let mut saw_bloodjaw_targeting = false;
     for tick in 0..=10 {
         let tick_now = now + tick * 1_000_000;
         // The actual visible-player wake path schedules each ambient think;
@@ -156,6 +157,23 @@ pub(super) async fn check(
                 if runtime.companion_snapshot(bloodjaw).is_ok_and(|row| {
                     row.state.policy.definition_key == "oteryn:creature.elder_bloodjaw"
                 }) {
+                    let has_thought = states
+                        .monster_melee
+                        .creature_ai
+                        .last_report_for_test(bloodjaw)
+                        .is_some();
+                    let expected_target = if has_thought {
+                        saw_bloodjaw_targeting = true;
+                        Some(player)
+                    } else {
+                        // A source top-up created in this turn was not in its reserved
+                        // think batch. Its onThink target is established next turn.
+                        assert_eq!(
+                            states.monster_melee.creature_ai.due(bloodjaw),
+                            Some(tick_now)
+                        );
+                        None
+                    };
                     assert_eq!(
                         states
                             .monster_melee
@@ -163,7 +181,7 @@ pub(super) async fn check(
                             .state(bloodjaw)
                             .ok_or("native Bloodjaw AI")?
                             .target(),
-                        Some(player),
+                        expected_target,
                         "source onThink selects the real participant independently of generic target search"
                     );
                     assert!(
@@ -223,12 +241,16 @@ pub(super) async fn check(
                             .state(bloodjaw)
                             .ok_or("native Bloodjaw AI after refusals")?
                             .target(),
-                        Some(player)
+                        expected_target
                     );
                 }
             }
         }
     }
+    assert!(
+        saw_bloodjaw_targeting,
+        "a committed source onThink must actually select the participant"
+    );
     assert!(
         first_wave
             .iter()
