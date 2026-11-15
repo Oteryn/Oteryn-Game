@@ -433,7 +433,36 @@ pub(super) async fn exercise_rock(
         )
         .await?;
         if index != 2 {
-            super::classic_quests::talk(owner, admitted, npc, command + 2, "collect").await?;
+            // A refused hand-in retains topic 2/3. The authored collect offers
+            // require topic 0, so only the pending yes can accept this item.
+            owner.clock_origin = owner
+                .clock_origin
+                .checked_sub(std::time::Duration::from_secs(2))
+                .ok_or("clock")?;
+            let fence = owner
+                .current_quest_fence(admitted.game_session_id)
+                .await
+                .map_err(|()| "fence")?
+                .ok_or("fence")?;
+            let repeated_offer = owner
+                .npc_talk(
+                    admitted.runtime_actor.ok_or("actor")?,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command + 2,
+                        item_fence: Some(fence.item_fence()),
+                    },
+                    oteryn_protocol_oteryn::npc_service::NpcTalkIntent {
+                        npc_actor: npc,
+                        text: "collect".into(),
+                    },
+                )
+                .await;
+            assert_eq!(
+                repeated_offer.disposition,
+                oteryn_protocol_oteryn::npc_service::NpcIntentDisposition::Rejected
+            );
+            assert!(!repeated_offer.unknown);
         }
         super::classic_quests::talk(owner, admitted, npc, command + 3, text).await?;
         assert_eq!(

@@ -84,6 +84,101 @@ pub(super) async fn snapshot_observations<A: FreshAdmissionAuthority>(
     Ok(())
 }
 
+/// House commands retain their own live loop, but consume the same scoped
+/// movement-effect owner and negotiated presentation frame as Channel commands.
+pub(super) async fn refresh_house_effects<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
+    stream: &mut S,
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    cursor: &mut u64,
+) -> Result<(), ServeEnd> {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let selected = admitted.continuity.selected_capabilities;
+    if !selected.contains(wire::CAPABILITY_PRESENTATION_V1) {
+        return Ok(());
+    }
+    let effects = authority
+        .observe_current_actor_movement_effects(actor, admitted.game_session_id, *cursor)
+        .await;
+    let Some(next) = effects.last().map(|entry| entry.0) else {
+        return Ok(());
+    };
+    let Some(native) = authority
+        .native_current_actor_map_cue_frame(actor, admitted.game_session_id)
+        .await
+    else {
+        return Ok(());
+    };
+    let Some(channel) = authority.observe_visible_entities(actor).await else {
+        return Ok(());
+    };
+    let Some(observer) = observer(&channel, actor) else {
+        return Ok(());
+    };
+    let native = native
+        && selected
+            .contains(oteryn_protocol_oteryn::native_map_cues::CAPABILITY_NATIVE_MAP_CUES_V1);
+    let events: Vec<_> = effects
+        .into_iter()
+        .filter(|(_, position, _)| super::outbound::movement_effect_visible(observer, *position))
+        .enumerate()
+        .filter_map(|(index, (_, position, effect))| {
+            let mut event = super::outbound::movement_magic_effect_event(
+                u32::try_from(index + 1).ok()?,
+                position,
+                effect,
+            )?;
+            if let wire::PresentationEventKind::MagicEffect { position: at, .. } = &mut event.kind {
+                at.floor = cue_floor(position.floor, native)?;
+            }
+            Some(event)
+        })
+        .collect();
+    if !events.is_empty() {
+        if selected.contains(290) {
+            authority.cast_effects(*admitted, &events).await;
+        }
+        let payload = if native {
+            oteryn_protocol_oteryn::native_map_cues::encode_native_map_presentation_batch(&events)
+        } else {
+            wire::encode_presentation_batch(&events)
+        }
+        .map_err(|_| ServeEnd::Disconnected)?;
+        let revision = admitted
+            .continuity
+            .presentation_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let sequence = admitted
+            .continuity
+            .server_sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        let frame = encode_state_delta(
+            admitted.continuity.connection_generation,
+            sequence,
+            wire::STATE_DOMAIN_WORLD_PRESENTATION,
+            admitted.continuity.presentation_revision,
+            revision,
+            if native {
+                oteryn_protocol_oteryn::native_map_cues::DELTA_TYPE_NATIVE_MAP_PRESENTATION_V1
+            } else {
+                wire::DELTA_TYPE_WORLD_PRESENTATION_BATCH_V1
+            },
+            &payload,
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
+        write_frame(stream, &frame)
+            .await
+            .map_err(|_| ServeEnd::Disconnected)?;
+        admitted.continuity.server_sequence = sequence;
+        admitted.continuity.presentation_revision = revision;
+    }
+    *cursor = next;
+    Ok(())
+}
+
 fn observer(
     channel: &crate::gameplay_transport::world_spatial::ChannelEntities,
     actor: ExactActorRef,
