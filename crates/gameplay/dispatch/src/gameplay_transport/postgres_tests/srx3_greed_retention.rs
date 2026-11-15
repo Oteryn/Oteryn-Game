@@ -330,6 +330,17 @@ async fn late_soulsnatcher_health(
     heal(owner, admitted).await?;
     settle(owner, start).await?;
     let soul = only_actor(owner, model::SOULSNATCHER).await?;
+    // Lua counts source onThink callbacks, not the AI occurrence sequence:
+    // movement-only passes also consume that sequence without calling onThink.
+    let mut last = owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .soul_war_callbacks
+        .greed_observed_for_test(soul)
+        .and_then(|(_, _, last)| last);
+    let mut thinks = usize::from(last.is_some());
     let mut seventh = None;
     for tick in 0..12 {
         let now = start + tick * 1_000_000;
@@ -343,7 +354,11 @@ async fn late_soulsnatcher_health(
             .soul_war_callbacks
             .greed_observed_for_test(soul)
             .and_then(|(_, _, last)| last);
-        if actual.is_some_and(|occurrence| occurrence.sequence == 7) {
+        if actual.is_some() && actual != last {
+            thinks += 1;
+            last = actual;
+        }
+        if thinks == 7 {
             seventh = Some(now);
             break;
         }
@@ -374,13 +389,23 @@ async fn late_soulsnatcher_health(
         .effective_rooms()
         .gate_monster_ai()
         .ok_or("actual current Greed map")?;
-    let (health_before, pass) = {
+    let (health_before, pass, expected_occurrence) = {
         let mut runtime = owner.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
         let pass = states
             .native_profile_pass
             .pending()
             .ok_or("original reserved eighth Think batch")?;
+        let mut expected_occurrence = states
+            .monster_melee
+            .creature_ai
+            .native_melee_selection(soul, 0)
+            .ok_or("current native Soulsnatcher sequence")?
+            .occurrence;
+        expected_occurrence.sequence = expected_occurrence
+            .sequence
+            .checked_add(1)
+            .ok_or("reserved source occurrence sequence")?;
         assert_eq!(
             states
                 .native_profile_pass
@@ -406,7 +431,7 @@ async fn late_soulsnatcher_health(
             .ok_or("actual current Player condition clock")?;
         assert!(!state.owned_conditions().accepts_time(original));
         assert!(state.owned_conditions().accepts_time(actual));
-        (state.vitals().health, pass)
+        (state.vitals().health, pass, expected_occurrence)
     };
     reach_boundary(owner, &hit, actual).await?;
     {
@@ -416,9 +441,7 @@ async fn late_soulsnatcher_health(
             states
                 .native_profile_pass
                 .pending()
-                .is_some_and(|current| Arc::ptr_eq(&pass, &current)),
-            "retained={:?}",
-            states.soul_war_callbacks.greed_pending_for_test()
+                .is_some_and(|current| Arc::ptr_eq(&pass, &current))
         );
         let pending = states
             .soul_war_callbacks
@@ -427,7 +450,7 @@ async fn late_soulsnatcher_health(
         assert_eq!(pending.original_due, original);
         assert_eq!(pending.sampled_at, actual);
         let occurrence = pending.occurrence.ok_or("real eighth source occurrence")?;
-        assert_eq!((occurrence.actor, occurrence.sequence), (soul, 8));
+        assert_eq!(occurrence, expected_occurrence);
         let health_after = states
             .get(&runtime, player, admitted.game_session_id)
             .ok_or("actual committed Player health")?
