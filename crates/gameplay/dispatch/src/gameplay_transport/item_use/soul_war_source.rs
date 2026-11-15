@@ -349,7 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             hash.update(b"oteryn:soul-war-source-use-wire:v1");
             hash.update(
                 oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
-                    .map_err(|_| {eprintln!("QMDIAG sws 352");})?,
+                    .map_err(|_| ())?,
             );
             hash.finalize().into()
         };
@@ -371,10 +371,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             held.source_pending.as_deref().cloned()
         };
-        let permit = self.spell_lane_permit().await.ok_or_else(|| {eprintln!("QMDIAG sws 374");})?;
+        let permit = self.spell_lane_permit().await.ok_or(())?;
         let pending = if let Some(pending) = pending {
             if pending.actor != actor || pending.command != command || pending.wire != wire {
-                {eprintln!("QMDIAG sws 377"); return Err(());}
+                return Err(());
             }
             pending
         } else {
@@ -412,9 +412,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         content_revision,
                         ruleset_revision,
                         sim_revision: entry_chest::SIM_REVISION.into(),
-                        transaction_id: crate::operator_files::uuid_v7().map_err(|_| {eprintln!("QMDIAG sws 415");})?,
-                        event_id: crate::operator_files::uuid_v7().map_err(|_| {eprintln!("QMDIAG sws 416");})?,
-                        occurred_at_unix_ms: unix_ms().map_err(|_| {eprintln!("QMDIAG sws 417");})?,
+                        transaction_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
+                        event_id: crate::operator_files::uuid_v7().map_err(|_| ())?,
+                        occurred_at_unix_ms: unix_ms().map_err(|_| ())?,
                         server_build_id: SERVER_BUILD_ID.into(),
                         source_item_instance_id: entry.item.item_instance_id,
                         source_definition: entry.item.definition,
@@ -429,7 +429,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || states.is_dead(actor)
                 || states.has_pending_spell_commit(actor, command.game_session_id)
             {
-                {eprintln!("QMDIAG sws 432"); return Err(());}
+                return Err(());
             }
             let mut sorrow_reservation = None;
             if pending.input.target.source_use()
@@ -438,8 +438,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let native = self
                     .active_generation
                     .and_then(|generation| generation.native_gameplay())
-                    .ok_or_else(|| {eprintln!("QMDIAG sws 441");})?;
-                let (target, _, at) = pending.input.target.creature_target().ok_or_else(|| {eprintln!("QMDIAG sws 442");})?;
+                    .ok_or(())?;
+                let (target, _, at) = pending.input.target.creature_target().ok_or(())?;
                 let Ok((before, after)) = states.soul_war_callbacks.prepare_sorrow_use(
                     &runtime,
                     native,
@@ -459,21 +459,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 sorrow_reservation = Some(
                     runtime
                         .prepare_source_actor_reservation(&pending)
-                        .map_err(|_| {eprintln!("QMDIAG sws 462");})?,
+                        .map_err(|_| ())?,
                 );
             }
             let held = rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id);
             held.admit(command.command_id, self.owner_ms())
-                .map_err(|_| {eprintln!("QMDIAG sws 467");})?;
+                .map_err(|_| ())?;
             if held
                 .unspendable
                 .contains(&pending.input.item.source_item_instance_id)
             {
-                {eprintln!("QMDIAG sws 472"); return Err(());}
+                return Err(());
             }
             // The shared one-write-in-flight gate starts without inventing a
             // gameplay cooldown; the source thirty-second clock is durable.
-            held.start_drink(self.owner_ms()).map_err(|_| {eprintln!("QMDIAG sws 476");})?;
+            held.start_drink(self.owner_ms()).map_err(|_| ())?;
             held.unspendable
                 .push(pending.input.item.source_item_instance_id);
             if let Some(mut reservation) = sorrow_reservation {
@@ -670,9 +670,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     Err(())
                 };
             }
-            let retained = gate.source_pending.as_deref().ok_or_else(|| {eprintln!("QMDIAG sws 673");})?;
+            let retained = gate.source_pending.as_deref().ok_or(())?;
             if retained.actor != actor || retained.command != command || retained.wire != wire {
-                {eprintln!("QMDIAG sws 675"); return Err(());}
+                return Err(());
             }
             let retained = retained.clone();
             if let SourceUsePhase::Completed(disposition) = retained.phase {
@@ -685,7 +685,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             if retained.phase == SourceUsePhase::Preparing && !retained.current_for(&runtime) {
                 if retained.reservation.is_some() {
-                    {eprintln!("QMDIAG sws 688"); return Err(());}
+                    return Err(());
                 }
                 return self.finish_soul_war_source_use(
                     &runtime,
@@ -706,12 +706,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             if pending.maw.is_none() {
                 if pending.phase != SourceUsePhase::Preparing {
-                    {eprintln!("QMDIAG sws 709"); return Err(());}
+                    return Err(());
                 }
                 let plan = {
                     let runtime = self.runtime.lock().await;
                     if !pending.current_for(&runtime) {
-                        {eprintln!("QMDIAG sws 714"); return Err(());}
+                        return Err(());
                     }
                     self.prepare_source_names(&runtime, &["Goshnar's Cruelty"])?
                 };
@@ -721,7 +721,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
                 if !pending.current_for(&runtime) {
-                    {eprintln!("QMDIAG sws 724"); return Err(());}
+                    return Err(());
                 }
                 let names = self.seal_source_names(&runtime, read)?;
                 let Ok(named) = crate::gameplay_transport::source_names::creature_named(
@@ -738,7 +738,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let native = self
                     .active_generation
                     .and_then(|active| active.native_gameplay())
-                    .ok_or_else(|| {eprintln!("QMDIAG sws 741");})?;
+                    .ok_or(())?;
                 let Ok(prepared) = states.soul_war_callbacks.maw.prepare(
                     &runtime,
                     native,
@@ -755,27 +755,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.maw = Some(prepared);
                 let mut reservation = runtime
                     .prepare_source_actor_reservation(&pending)
-                    .map_err(|_| {eprintln!("QMDIAG sws 758");})?;
+                    .map_err(|_| ())?;
                 runtime
                     .reserve_source_actors(&mut reservation, &pending)
-                    .map_err(|_| {eprintln!("QMDIAG sws 761");})?;
+                    .map_err(|_| ())?;
                 pending.reservation = Some(reservation);
                 // No await after slot reservation until the complete original
                 // effect and clock fence are retained beside the Item gate.
                 states
                     .soul_war_callbacks
                     .maw
-                    .retain(pending.maw.as_ref().ok_or_else(|| {eprintln!("QMDIAG sws 768");})?);
+                    .retain(pending.maw.as_ref().ok_or(())?);
                 rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id)
                     .source_pending = Some(Box::new(pending.clone()));
             } else {
                 let runtime = self.runtime.lock().await;
                 runtime
                     .validate_source_actor_reservation(
-                        pending.reservation.as_ref().ok_or_else(|| {eprintln!("QMDIAG sws 775");})?,
+                        pending.reservation.as_ref().ok_or(())?,
                         &pending,
                     )
-                    .map_err(|_| {eprintln!("QMDIAG sws 778");})?;
+                    .map_err(|_| ())?;
             }
         }
         if pending.input.target.source_use()
@@ -784,12 +784,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             if pending.sanity.is_none() {
                 if pending.phase != SourceUsePhase::Preparing {
-                    {eprintln!("QMDIAG sws 787"); return Err(());}
+                    return Err(());
                 }
                 let plan = {
                     let runtime = self.runtime.lock().await;
                     if !pending.current_for(&runtime) {
-                        {eprintln!("QMDIAG sws 792"); return Err(());}
+                        return Err(());
                     }
                     self.prepare_source_names(&runtime, &["Goshnar's Megalomania"])?
                 };
@@ -799,7 +799,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut runtime = self.runtime.lock().await;
                 let mut states = self.states.spell_states.lock().await;
                 if !pending.current_for(&runtime) {
-                    {eprintln!("QMDIAG sws 802"); return Err(());}
+                    return Err(());
                 }
                 let names = self.seal_source_names(&runtime, read)?;
                 let Ok(named) = crate::gameplay_transport::source_names::creature_named(
@@ -816,7 +816,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let native = self
                     .active_generation
                     .and_then(|active| active.native_gameplay())
-                    .ok_or_else(|| {eprintln!("QMDIAG sws 819");})?;
+                    .ok_or(())?;
                 let Ok(prepared) = states.soul_war_callbacks.sanity.prepare(
                     &runtime,
                     native,
@@ -833,33 +833,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 pending.sanity = Some(prepared);
                 let mut reservation = runtime
                     .prepare_source_actor_reservation(&pending)
-                    .map_err(|_| {eprintln!("QMDIAG sws 836");})?;
+                    .map_err(|_| ())?;
                 runtime
                     .reserve_source_actors(&mut reservation, &pending)
-                    .map_err(|_| {eprintln!("QMDIAG sws 839");})?;
+                    .map_err(|_| ())?;
                 pending.reservation = Some(reservation);
                 // No await after slot reservation until the complete original
                 // effect and clock fence are retained beside the Item gate.
                 states
                     .soul_war_callbacks
                     .sanity
-                    .retain(pending.sanity.as_ref().ok_or_else(|| {eprintln!("QMDIAG sws 846");})?);
+                    .retain(pending.sanity.as_ref().ok_or(())?);
                 rotten_essence::gate(&mut states, &runtime, actor, command.game_session_id)
                     .source_pending = Some(Box::new(pending.clone()));
             } else {
                 let runtime = self.runtime.lock().await;
                 runtime
                     .validate_source_actor_reservation(
-                        pending.reservation.as_ref().ok_or_else(|| {eprintln!("QMDIAG sws 853");})?,
+                        pending.reservation.as_ref().ok_or(())?,
                         &pending,
                     )
-                    .map_err(|_| {eprintln!("QMDIAG sws 856");})?;
+                    .map_err(|_| ())?;
             }
         }
         // Every issued source USE, including wrong-target Sanity with no
         // volatile preparation, reconciles its immutable receipt before fresh
         // gameplay authority. The sole writer still fences any missing receipt.
-        let original = pending.command.item_fence.ok_or_else(|| {eprintln!("QMDIAG sws 862");})?;
+        let original = pending.command.item_fence.ok_or(())?;
         let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
             character_id: original.character_id,
             game_session_id: original.game_session_id,
@@ -869,9 +869,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             scope_ownership_generation: original.scope_ownership_generation,
             // The existing revision sequencer supplies its canonical cursor.
             expected_character_revision: crate::domain::CharacterRevision::new(1)
-                .map_err(|_| {eprintln!("QMDIAG sws 872");})?,
+                .map_err(|_| ())?,
         };
-        let catalogue = self.quest_catalogue.as_ref().ok_or_else(|| {eprintln!("QMDIAG sws 874");})?;
+        let catalogue = self.quest_catalogue.as_ref().ok_or(())?;
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         #[cfg(test)]
         test_pause::at(test_pause::Point::BeforeWrite, command).await;
@@ -927,9 +927,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(prepared) = &pending.maw {
                 let second = if let Some(receipt) = committed {
                     use oteryn_gameplay_quests::quest::soul_war::source_items as rule;
-                    let request = pending.input.request(&fence).map_err(|_| {eprintln!("QMDIAG sws 930");})?;
+                    let request = pending.input.request(&fence).map_err(|_| ())?;
                     let [change] = receipt.changes.as_slice() else {
-                        {eprintln!("QMDIAG sws 932"); return Err(());}
+                        return Err(());
                     };
                     if receipt.character_id != fence.character_id
                         || receipt.cause != request.cause
@@ -938,11 +938,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || receipt.completes
                         || receipt.experience.is_some()
                         || change.track != rule::MAW
-                        || change.after < change.before.checked_add(30).ok_or_else(|| {eprintln!("QMDIAG sws 941");})?
+                        || change.after < change.before.checked_add(30).ok_or(())?
                     {
-                        {eprintln!("QMDIAG sws 943"); return Err(());}
+                        return Err(());
                     }
-                    Some(u64::try_from(change.after).map_err(|_| {eprintln!("QMDIAG sws 945");})?)
+                    Some(u64::try_from(change.after).map_err(|_| ())?)
                 } else {
                     None
                 };
@@ -957,11 +957,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 runtime
                     .complete_soul_war_cruelty_maw(
-                        pending.reservation.clone().ok_or_else(|| {eprintln!("QMDIAG sws 960");})?,
+                        pending.reservation.clone().ok_or(())?,
                         &pending,
                         target,
                     )
-                    .map_err(|_| {eprintln!("QMDIAG sws 964");})?;
+                    .map_err(|_| ())?;
                 states.soul_war_callbacks.maw.publish(next);
                 if known_transition {
                     // Crystal utils_definitions.hpp: DRAWBLOOD=1. The real
@@ -991,9 +991,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(prepared) = &pending.sanity {
                 let second = if let Some(receipt) = committed {
                     use oteryn_gameplay_quests::quest::soul_war::source_items as rule;
-                    let request = pending.input.request(&fence).map_err(|_| {eprintln!("QMDIAG sws 994");})?;
+                    let request = pending.input.request(&fence).map_err(|_| ())?;
                     let [change] = receipt.changes.as_slice() else {
-                        {eprintln!("QMDIAG sws 996"); return Err(());}
+                        return Err(());
                     };
                     if receipt.character_id != fence.character_id
                         || receipt.cause != request.cause
@@ -1002,11 +1002,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || receipt.completes
                         || receipt.experience.is_some()
                         || change.track != rule::SANITY
-                        || change.after < change.before.checked_add(30).ok_or_else(|| {eprintln!("QMDIAG sws 1005");})?
+                        || change.after < change.before.checked_add(30).ok_or(())?
                     {
-                        {eprintln!("QMDIAG sws 1007"); return Err(());}
+                        return Err(());
                     }
-                    Some(u64::try_from(change.after).map_err(|_| {eprintln!("QMDIAG sws 1009");})?)
+                    Some(u64::try_from(change.after).map_err(|_| ())?)
                 } else {
                     None
                 };
@@ -1021,11 +1021,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 runtime
                     .complete_soul_war_megalomania_sanity(
-                        pending.reservation.clone().ok_or_else(|| {eprintln!("QMDIAG sws 1024");})?,
+                        pending.reservation.clone().ok_or(())?,
                         &pending,
                         target,
                     )
-                    .map_err(|_| {eprintln!("QMDIAG sws 1028");})?;
+                    .map_err(|_| ())?;
                 states.soul_war_callbacks.sanity.publish(next);
                 if known_transition {
                     // Crystal utils_definitions.hpp: DRAWBLOOD=1. The real

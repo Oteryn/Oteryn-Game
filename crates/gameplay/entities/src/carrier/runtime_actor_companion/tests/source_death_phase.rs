@@ -647,7 +647,6 @@ fn classic_runtime_keeps_main_death_path_while_source_room_death_stays_pending()
         ChannelContentPin::test(world),
     )
     .unwrap();
-    classic.use_classic_creature_deaths().unwrap();
     classic
         .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
         .unwrap();
@@ -667,14 +666,17 @@ fn classic_runtime_keeps_main_death_path_while_source_room_death_stays_pending()
             .unwrap(),
     );
     classic.install_creature_policy(actor, key).unwrap();
+    // Registration marks the realized runtime before any death is queued.
+    classic.use_classic_creature_deaths().unwrap();
     canonical_lethal(&mut classic, actor, key);
     assert!(!classic.has_pending_source_creature_deaths());
     assert!(!classic.source_creature_death_pending(actor).unwrap());
-    // The choice is fixed before the first creature is admitted.
+    // A queued source death task is never discarded by a later mark.
     assert_eq!(
-        classic.use_classic_creature_deaths(),
+        source.use_classic_creature_deaths(),
         Err(CarrierError::PlanConflict)
     );
+    assert!(source.source_creature_death_pending(boss).unwrap());
 }
 
 #[test]

@@ -112,10 +112,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(head)) = self.runtime.lock().await.next_source_creature_death() else {
             return false;
         };
-        eprintln!("QMDIAG drive_head start room={}", self.rooms().gate_monster_ai().is_some()); // QMDIAG
         for _ in 0..TURNS {
             let Some(permit) = self.spell_lane_permit().await else {
-                eprintln!("QMDIAG no permit"); // QMDIAG
                 return false;
             };
             Box::pin(self.drain_monster_melee_with_permit(permit, self.owner_now())).await;
@@ -185,8 +183,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match self
             .drain_detached_malice_before_source_death(&permit, now.get())
             .await
-            .inspect(|v| eprintln!("QMDIAG malice_due ok={v}")) // QMDIAG
-            .inspect_err(|_| eprintln!("QMDIAG malice_due err")) // QMDIAG
         {
             Ok(true) | Err(()) => return,
             Ok(false) => {}

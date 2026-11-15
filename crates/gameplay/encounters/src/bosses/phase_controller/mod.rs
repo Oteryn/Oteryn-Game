@@ -86,6 +86,7 @@ impl Progress {
 pub struct NativePhaseOwner {
     progress: Progress,
     actors: Vec<Option<ExactActorRef>>,
+    decorations: Vec<Option<ExactActorRef>>,
     participants: Vec<(ExactActorRef, GameSessionId)>,
     scope: (RuntimeScopeRefV1, ScopeOwnershipGeneration),
     activation: u64,
@@ -114,6 +115,7 @@ impl NativePhaseOwner {
         Ok(Self {
             progress: Progress::new(plan)?,
             actors: vec![None; plan.roles.len()],
+            decorations: vec![None; plan.roles.len()],
             participants: participants.to_vec(),
             scope: runtime.encounter_owner_scope(),
             activation: pin.activation_sequence(),
@@ -257,6 +259,7 @@ impl NativePhaseOwner {
             let actors = runtime.commit_quest_creature_spawn(&spawns)?;
             let actor = actors[0];
             self.attach(runtime, role, actor)?;
+            self.decorations[role] = actors.get(1).copied();
             Ok(actor)
         })();
         if result.is_err() {

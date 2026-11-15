@@ -91,7 +91,7 @@ pub(super) fn native_owner_turn(
     class: &'static str,
 ) {
     use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
-    if std::env::var_os("QMDIAG").is_some() || matches!( // QMDIAG
+    if matches!(
         room.pinned_activity_source_room(),
         Some(PinnedActivitySourceRoom::Primal | PinnedActivitySourceRoom::Bakragore)
     ) {

@@ -161,7 +161,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     allocation.generation,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
-                self.register_activity_runtime(
+                // The Soulpit private encounter keeps its native source deaths.
+                self.register_activity_runtime_with_callbacks(
                     ActivityTemplateKey {
                         key: SOULPIT_TEMPLATE_KEY.into(),
                         revision: SOULPIT_TEMPLATE_REVISION.into(),
@@ -175,6 +176,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         )),
                         rooms: SeamRooms::owned(private_room, false),
                     },
+                    None,
                 )
                 .await
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;

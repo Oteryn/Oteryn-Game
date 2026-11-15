@@ -954,6 +954,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         door: crate::world_runtime::LocalObjectRuntime,
         assets: ActivityRuntimeAssets<'a>,
     ) -> Result<(), ActivityRuntimeRegistrationError> {
+        // A generic template runtime is no qualified source room: its
+        // creatures keep main's classic death path.
+        let mut runtime = runtime;
+        runtime
+            .use_classic_creature_deaths()
+            .map_err(|_| ActivityRuntimeRegistrationError)?;
         self.register_activity_runtime_with_callbacks(
             template, assignment, runtime, door, assets, None,
         )

@@ -694,7 +694,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return false;
                     }
                     Err(error) => {
-                        eprintln!("QMDIAG quest_death_refused {transition}"); // QMDIAG
                         super::operator_event(&format!("quest_death_refused reason={error:?}"))
                     }
                 }
