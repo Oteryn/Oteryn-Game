@@ -54,6 +54,9 @@ impl PlayLink {
             lock(&self.mailbox).properties.appearance.open = true;
         }
     }
+    pub fn appearance_close(&self) {
+        lock(&self.mailbox).properties.appearance.open = false;
+    }
     pub fn appearance_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::appearance::open_key(events) {
             return false;

@@ -1,25 +1,48 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
+mod analyser;
+mod bug_report;
 mod chat;
+mod cyclopedia;
+#[cfg(test)]
+#[path = "cyclopedia/tests.rs"]
+mod cyclopedia_tests;
 mod feature_dialogs;
+mod forge;
+pub(super) mod highscores;
+mod hotkeys;
 mod hud;
+mod imbuing;
+mod install;
+pub(super) use install::install;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;
-mod item_details;
+pub(super) mod item_details;
 mod journal;
 mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
 mod npc_shop;
 pub(super) mod options;
+mod outfit;
 pub(super) mod party;
+mod prey;
+mod proficiency;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+mod reward_wall;
+pub(super) mod rule_violation;
+pub(super) mod satellite_map;
+mod stash;
+mod store;
+mod task_board;
 mod trade;
+mod tutorial;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -224,31 +247,6 @@ fn region(commands: &mut Commands) -> Entity {
             ..default()
         })
         .id()
-}
-
-pub(super) fn install(app: &mut App) {
-    modal::install(app);
-    options::install(app);
-    journal::install(app);
-    chat::install(app);
-    actions::install(app);
-    feature_dialogs::install(app);
-    hud::install(app);
-    inventory::install(app);
-    item_details::install(app);
-    market::install(app);
-    minimap::install(app);
-    npc_shop::install(app);
-    party::install(app);
-    quick_loot::install(app);
-    trade::install(app);
-    app.add_systems(
-        Update,
-        (
-            projection::missing_item_appearances,
-            projection::project_regions.after(project),
-        ),
-    );
 }
 
 #[cfg(test)]

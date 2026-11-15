@@ -91,6 +91,14 @@ pub(super) fn resolve(sources: Sources, mut state: ResMut<HintState>) {
             }
         }
     }
+    if sources
+        .owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.use_with_armed())
+    {
+        state.cursor = SystemCursorIcon::Crosshair;
+    }
     let now = sources.time.last_update().unwrap_or_else(Instant::now);
     let delay = Duration::from_millis(u64::from(
         sources.owner.settings.preferences.tooltip_delay_ms,

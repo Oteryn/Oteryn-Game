@@ -147,6 +147,8 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
+        #[cfg(feature = "bevy-shell")]
+        mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();
@@ -205,6 +207,8 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
+        #[cfg(feature = "bevy-shell")]
+        mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
         mailbox.highscores = Default::default();

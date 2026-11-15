@@ -180,6 +180,8 @@ pub(super) struct Mailbox {
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
+    #[cfg(feature = "bevy-shell")]
+    pub(super) achievement_banners: std::collections::VecDeque<String>,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
     pub(super) notices: oteryn_client_ui::tutorial_notices::NoticePanel,

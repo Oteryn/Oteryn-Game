@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_TOOLS_LOCAL_PROVENANCE/v1",
+  "base_sha": "ce45063507c22a11e0db7e9c0ff86dacbe6ff834",
+  "allocation": "https://github.com/Oteryn/Oteryn-Game/issues/1622#issuecomment-6860837086",
+  "client_version": "15.33.dd0955",
+  "guest": "ubuntu-lab",
+  "host_chain": "Molehill-PC > Dockerubuntu-kasm172.17.0.2 > QEMUguest;16906relay8445 separateLabdesktop",
+  "live_executable": "/home/lab/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/bin/client",
+  "elf_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "elf_bytes": 55211744,
+  "appearance_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "appearance_bytes": 5104343,
+  "live_hashes_equal_prior_transfer": true,
+  "routed_ubuntu_rdc_device_status": "OFFLINE; not used",
+  "prior_pr3173_head": "657e3bf49ad1eadaf5390a7d97e1dd125c317d97",
+  "third_party_original_assets_published": false,
+  "canonical_item_binding_qualified": false,
+  "legacy_ui_artifact_counts": {
+    "png": 89,
+    "clipboard_text": 1
+  },
+  "legacy_ui_artifact_boundary": "Mostlypotions/ratclaws/compass; manifest association incomplete. Not82Tools weight evidence.",
+  "private_source_receipts": [
+    {
+      "path": "work/client-15-33/appearance-source-transfer.json",
+      "bytes": 1149,
+      "sha256": "9c6445bc93edd2c211c360f03ec0a28b7e23ea0cd4a938744cbe353a346040e5"
+    },
+    {
+      "path": "outputs/items-client-assets-audit/appearance-object-census.json",
+      "bytes": 35769998,
+      "sha256": "4cf91c17e3df054a41eb7da28bd11f04e07fb6e2afc1dc72fc853c7dfca39f51"
+    },
+    {
+      "path": "outputs/tools-local-first-20261113/live-descriptor-readback.txt",
+      "bytes": 6764,
+      "sha256": "ca0a2289189f0d5709aa77937ab6e433425e825cd76102d1aa02380d44e692c3"
+    },
+    {
+      "path": "outputs/tools-local-first-20261113/live-cache-readback.txt",
+      "bytes": 4888,
+      "sha256": "68446ea9259adcdac255cc2a40cd74fea2195da64eebec6196634a100b3d9fab"
+    }
+  ]
+}

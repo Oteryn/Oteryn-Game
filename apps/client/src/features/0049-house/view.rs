@@ -91,3 +91,23 @@ fn text(panel: &oteryn_client_ui::house::Panel) -> String {
 #[cfg(windows)]
 #[path = "view/ownership_window.rs"]
 pub(super) mod ownership_window;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl PlayLink {
+    pub(crate) fn bevy_house_list_fixture(&self) {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.house;
+        panel.initialize(true);
+        panel.model.world = [1, 1, 1, 1, 1, 1, 0x71, 1, 0x81, 1, 1, 1, 1, 1, 1, 1];
+        panel.model.town = "oteryn:content.area.city.thais".into();
+        panel.model.page.rows.push(oteryn_client_runtime::house::Row {
+            house: "oteryn:house.test".into(),
+            acl_revision: 7,
+            owned: true,
+            ..Default::default()
+        });
+        panel.fields[0] = "01010101-0101-7101-8101-010101010101".into();
+        panel.fields[1] = panel.model.town.clone();
+        panel.fields[2] = "1".into();
+    }
+}

@@ -109,6 +109,32 @@ pub(in crate::play) fn activate(
     }
 }
 impl PlayLink {
+    /// Update only the guided bug draft; the existing flow still validates and sends it.
+    pub fn bug_report_edit(&self, field: usize, value: String) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.player_report;
+        if panel.pending || !panel.bug.open {
+            return false;
+        }
+        if value.len() > 7996 || value.contains('\0') {
+            panel.bug.reviewed = None;
+            panel.feedback = tr!("Invalid report fields").into();
+            return false;
+        }
+        let Some(slot) = panel.bug.fields.get_mut(field) else {
+            return false;
+        };
+        if *slot != value {
+            *slot = value;
+            panel.bug.reviewed = None;
+            panel.feedback.clear();
+            panel.summary.clear();
+        }
+        true
+    }
+    pub fn bug_report_close(&self) {
+        lock(&self.mailbox).properties.player_report.bug.open = false;
+    }
     pub fn bug_report_open(&self) {
         #[cfg(windows)]
         if !self.uses_shared_frontend() {
@@ -175,3 +201,17 @@ fn open_window(link: &PlayLink) {
 #[cfg(test)]
 #[path = "tests/e2e_n04.rs"]
 mod e2e_n04;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_bug_report_result(
+        &self,
+        command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.properties_result(command, result);
+    }
+    pub(crate) fn bevy_bug_report_selected(&self) {
+        lock(&self.0).properties.player_report.selected = true;
+    }
+}

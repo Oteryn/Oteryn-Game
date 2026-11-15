@@ -34,6 +34,7 @@ pub struct World {
     #[cfg(test)]
     native_resolved_items: Vec<(oteryn_session::ActorPosition, u32)>,
     center: (i32, i32, i16),
+    pub(crate) first_visible_floor: i16,
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
     /// Other floors keep independent stacks at coordinates projected onto the own-floor plane.
@@ -61,6 +62,7 @@ impl World {
             #[cfg(test)]
             native_resolved_items: Vec::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
+            first_visible_floor: i16::from(START_FLOOR),
             atlas,
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
@@ -133,6 +135,7 @@ impl World {
             #[cfg(test)]
             native_resolved_items: Vec::new(),
             center,
+            first_visible_floor: center.2,
             atlas,
             tiles,
             layers: BTreeMap::new(),
@@ -163,7 +166,13 @@ impl World {
 
     #[must_use]
     pub fn tile_count(&self) -> usize {
-        self.tiles.len() + self.layers.values().map(HashMap::len).sum::<usize>()
+        self.tiles.len()
+            + self
+                .layers
+                .iter()
+                .filter(|(floor, _)| **floor <= self.first_visible_floor)
+                .map(|(_, tiles)| tiles.len())
+                .sum::<usize>()
     }
 
     /// The own player's cells facing `facing`, standing on a tile.

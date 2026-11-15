@@ -13,6 +13,17 @@ pub use oteryn_client_ui::world_interaction::{
 use oteryn_renderer::TileCoord;
 use oteryn_session::EntityRef;
 
+/// Ctrl+Shift+S opens the store only with those exact modifiers.
+pub(crate) fn store_key(events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let chord = Modifiers::one(Modifier::Control).with(Modifier::Shift);
+    events.iter().any(|event| {
+        matches!(event, NormalizedInputEvent::Key {
+            code, state: ButtonState::Pressed, modifiers, repeat: false
+        } if code.get() == 22 && *modifiers == chord)
+    })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetKind {
     Object,

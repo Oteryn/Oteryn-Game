@@ -1,0 +1,186 @@
+name: codex-review-gate
+
+# Owner rule (AGENTS.md "Request review once per head", oteryn-review §5): every PR
+# gets a Codex review before it merges. This workflow publishes the commit status
+# `codex-review-gate` on the PR head:
+#   pending - no Codex review receipt on any commit of this PR yet;
+#   failure - an unresolved Codex P0/P1 review thread;
+#   success - a receipt exists and no Codex P0/P1 thread is open.
+# A receipt is a Codex connector review or comment carrying
+# `codex-review-receipt:v1` or "Didn't find any major issues", a Codex connector
+# thumbs-up on the PR, or a comment by a repository member that starts with
+# `Codex review <sha>` (a local `codex exec` review) where <sha> is a commit of the PR.
+# Reviews arrive after CI, so review and comment events re-evaluate it; resolving a
+# thread fires no workflow event, so a schedule re-evaluates every open PR.
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  issue_comment:
+    types: [created, edited, deleted]
+  schedule:
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to evaluate (empty means every open PR)
+        required: false
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: codex-review-gate-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr || 'all' }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    name: codex-review-gate / evaluate
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      statuses: write
+    steps:
+      - name: Evaluate Codex review receipts and publish the status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          repo = os.environ['REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          owner, name = repo.split('/')
+          bot = 'chatgpt-codex-connector[bot]'
+          receipt_markers = ('codex-review-receipt:v1', "Didn't find any major issues")
+          members = {'OWNER', 'MEMBER', 'COLLABORATOR'}
+
+          def call(url, data=None, method='GET'):
+              body = json.dumps(data).encode() if data is not None else None
+              request = urllib.request.Request(url, data=body, method=method, headers={
+                  'Authorization': f'Bearer {token}',
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+              })
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.loads(response.read() or b'null')
+
+          def pages(path):
+              items, page = [], 1
+              while True:
+                  chunk = call(f'https://api.github.com/repos/{repo}/{path}{"&" if "?" in path else "?"}per_page=100&page={page}')
+                  items.extend(chunk)
+                  if len(chunk) < 100:
+                      return items
+                  page += 1
+
+          def evaluate(number):
+              pr = call(f'https://api.github.com/repos/{repo}/pulls/{number}')
+              head = pr['head']['sha']
+              if pr['state'] != 'open':
+                  print(f'PR #{number} is {pr["state"]}; nothing to publish.')
+                  return
+
+              commits = {c['sha'] for c in pages(f'pulls/{number}/commits')}
+              reviews = pages(f'pulls/{number}/reviews')
+              comments = pages(f'issues/{number}/comments')
+              reactions = pages(f'issues/{number}/reactions')
+
+              receipts = []
+              for review in reviews:
+                  if review['user']['login'] == bot and any(m in (review.get('body') or '') for m in receipt_markers):
+                      receipts.append(f'review on {review["commit_id"][:12]}')
+              if any(r['user']['login'] == bot and r['content'] == '+1' for r in reactions):
+                  receipts.append('connector thumbs-up')
+              for comment in comments:
+                  body = comment.get('body') or ''
+                  if comment['user']['login'] == bot and any(m in body for m in receipt_markers):
+                      receipts.append('connector receipt comment')
+                      continue
+                  match = re.match(r'\s*Codex review `?([0-9a-f]{7,40})`?', body)
+                  if match and comment.get('author_association') in members:
+                      prefix = match.group(1)
+                      if any(sha.startswith(prefix) for sha in commits):
+                          receipts.append(f'local review of {prefix[:12]}')
+
+              query = '''
+              query($owner: String!, $name: String!, $number: Int!, $after: String) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    reviewThreads(first: 100, after: $after) {
+                      pageInfo { hasNextPage endCursor }
+                      nodes {
+                        isResolved
+                        comments(first: 1) { nodes { author { login } body url } }
+                      }
+                    }
+                  }
+                }
+              }'''
+              open_blocking, after = [], None
+              while True:
+                  result = call('https://api.github.com/graphql', {
+                      'query': query,
+                      'variables': {'owner': owner, 'name': name, 'number': number, 'after': after},
+                  }, method='POST')
+                  if result.get('errors'):
+                      raise RuntimeError(f'GraphQL error: {result["errors"]}')
+                  threads = result['data']['repository']['pullRequest']['reviewThreads']
+                  for thread in threads['nodes']:
+                      first = (thread['comments']['nodes'] or [None])[0]
+                      if thread['isResolved'] or not first or not first.get('author'):
+                          continue
+                      login = first['author']['login']
+                      body = first.get('body') or ''
+                      if login in (bot, 'chatgpt-codex-connector') and re.search(r'\bP[01] Badge\b', body):
+                          open_blocking.append(first['url'])
+                  if not threads['pageInfo']['hasNextPage']:
+                      break
+                  after = threads['pageInfo']['endCursor']
+
+              if open_blocking:
+                  state = 'failure'
+                  description = f'{len(open_blocking)} unresolved Codex P0/P1 thread(s)'
+              elif receipts:
+                  state = 'success'
+                  description = f'Codex review receipt found ({len(receipts)})'
+              else:
+                  state = 'pending'
+                  description = 'Waiting for a Codex review receipt on this PR'
+
+              print(f'PR #{number} head={head} state={state} receipts={receipts} open_blocking={open_blocking}')
+              call(f'https://api.github.com/repos/{repo}/statuses/{head}', {
+                  'state': state,
+                  'context': 'codex-review-gate',
+                  'description': description[:140],
+                  'target_url': os.environ['RUN_URL'],
+              }, method='POST')
+
+          requested = os.environ.get('PR_NUMBER', '').strip()
+          if requested:
+              numbers = [int(requested)]
+          else:
+              numbers = [p['number'] for p in pages('pulls?state=open&base=main')]
+          failed = []
+          for number in numbers:
+              try:
+                  evaluate(number)
+              except Exception as error:  # one PR must not stop the sweep
+                  print(f'PR #{number}: {error}')
+                  failed.append(number)
+          if failed:
+              raise SystemExit(f'evaluation failed for {failed}')
+          PY

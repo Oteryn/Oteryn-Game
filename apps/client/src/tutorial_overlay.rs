@@ -92,3 +92,10 @@ impl PlayView {
         Ok(toggled)
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn tutorial_test_selected(&self) {
+        self.notices_initialize(true, false);
+    }
+}

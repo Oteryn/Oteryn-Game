@@ -77,3 +77,18 @@ impl PlayView {
 #[cfg(windows)]
 #[path = "native.rs"]
 mod native;
+
+impl PlayView {
+    /// Current player position for a separately navigable overview.
+    pub fn satellite_player(&self) -> (i32, i32, i16) {
+        (self.own.x, self.own.y, self.floor)
+    }
+    /// Read local exploration and markers without changing sidebar navigation.
+    pub fn satellite_map<R>(&self, read: impl FnOnce(
+        &std::collections::BTreeMap<(i16, i32, i32), u8>,
+        &[super::state::Marker],
+    ) -> R) -> R {
+        let map = super::state::lock(&self.minimap);
+        read(&map.cells, &map.markers)
+    }
+}

@@ -1,5 +1,6 @@
 //! Floor separation follows the actual culled painter ranges sent to the renderer.
 use super::*;
+type FloorQuads = Vec<(std::ops::Range<usize>, i16)>;
 type Dimming = Vec<(std::ops::Range<usize>, u8)>;
 impl Scene {
     pub(crate) fn has_roof(&self) -> bool {
@@ -21,12 +22,17 @@ impl Scene {
         }
         Ok(())
     }
-    pub(super) fn world_sprites(&self) -> Result<(SpriteBatch, Dimming), BatchError> {
+    pub(super) fn world_sprites(&self) -> Result<(SpriteBatch, Dimming, FloorQuads), BatchError> {
         let (atlas, origin) = (self.atlas(), self.view.origin());
         let mut sprites = SpriteBatch::new();
         let mut dimmed = Vec::new();
+        let mut floor_quads = Vec::new();
         let limit = MAX_BATCH_QUADS - usize::from(self.target.is_some() && self.target_frame);
-        for floor in self.world.draw_floors() {
+        #[cfg(feature = "bevy-shell")]
+        let floors = self.world.all_draw_floors();
+        #[cfg(not(feature = "bevy-shell"))]
+        let floors = self.world.draw_floors();
+        for floor in floors {
             let own_floor = floor == self.world.center().2;
             let start = sprites.len();
             {
@@ -104,6 +110,7 @@ impl Scene {
                     &mut *emit,
                 )?;
             }
+            floor_quads.push((start..sprites.len(), floor));
             if floor < self.world.center().2 && self.floor_separator > 0 && sprites.len() > start {
                 dimmed.push((start..sprites.len(), self.floor_separator));
             }
@@ -111,6 +118,40 @@ impl Scene {
         if let Some(target) = self.target.filter(|_| self.target_frame) {
             sprites.push(&self.view, atlas, target.tile, crate::map::TARGET_CELL)?;
         }
-        Ok((sprites, dimmed))
+        Ok((sprites, dimmed, floor_quads))
+    }
+}
+
+#[cfg(feature = "bevy-shell")]
+impl Scene {
+    pub(crate) fn floor_quad_ranges(&self) -> &[(std::ops::Range<usize>, i16)] {
+        &self.floor_quads
+    }
+
+    pub(crate) fn first_visible_floor(&self) -> i16 {
+        self.world.first_visible_floor
+    }
+}
+
+/// OTClient's default floor fading interval is 500 ms; reversals retain current opacity.
+#[cfg(any(feature = "bevy-shell", test))]
+pub(crate) fn fade_alpha(alpha: f32, visible: bool, elapsed_seconds: f32) -> f32 {
+    let step = elapsed_seconds / 0.5;
+    if visible {
+        (alpha + step).min(1.0)
+    } else {
+        (alpha - step).max(0.0)
+    }
+}
+
+#[cfg(test)]
+mod floorfade_tests {
+    #[test]
+    fn floor_fade_alpha_over_time() {
+        assert_eq!(super::fade_alpha(1.0, false, 0.0), 1.0);
+        assert_eq!(super::fade_alpha(1.0, false, 0.25), 0.5);
+        assert_eq!(super::fade_alpha(1.0, false, 0.5), 0.0);
+        assert_eq!(super::fade_alpha(0.0, true, 0.25), 0.5);
+        assert_eq!(super::fade_alpha(0.5, true, 0.125), 0.75);
     }
 }

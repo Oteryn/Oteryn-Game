@@ -23,7 +23,7 @@ pub(super) const MAIN: [Row; 4] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 16] = [
+pub(super) const HUD: [Row; 17] = [
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),
     check!("hud.own_name", "Show Own Name", hud_names[0]),
@@ -47,6 +47,11 @@ pub(super) const HUD: [Row; 16] = [
     ),
     check!("hud.status_compact", "Compact Status Panel", compact_status),
     check!("hud.health_arc", "Show Health Arc", arcs.health),
+    check!(
+        "hud.health_circle",
+        "Show Health/Mana Circles",
+        health_circle
+    ),
     check!("hud.mana_arc", "Show Mana Arc", arcs.mana),
     number!(
         "hud.arc_distance",

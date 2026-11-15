@@ -13,6 +13,116 @@ use oteryn_client_runtime::server_mechanic::{
 };
 use oteryn_client_ui::inspection::{InspectedItem, Reply, Request, encode_reply, encode_request};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+#[test]
+fn inspect_multi_item_list() -> TestResult {
+    let (mut app, link, mut commands, _outbox) = app(true)?;
+    inspect(&link, &mut commands, Request::Item(7.try_into()?))?;
+    let mut inspected = reply("Server sword");
+    let mut shield = reply("Server shield").items.remove(0);
+    shield.attributes = vec![("Defense".into(), "20".into())];
+    inspected.items.push(shield);
+    response(&link, &inspected)?;
+    app.update();
+    let text = visible(&mut app);
+    assert!(text.contains("Server sword"));
+    assert!(text.contains("Server shield"));
+    assert!(text.contains("Attack: 30"));
+    assert!(!text.contains("Defense: 20"));
+    let row = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            (text.0.contains("Server shield")
+                && app.world().get::<Control>(parent.parent()).is_some())
+            .then_some(parent.parent())
+        })
+        .ok_or("shield selection row")?;
+    let higher = app
+        .world_mut()
+        .spawn((super::super::GameModal, GlobalZIndex(180), Node::default()))
+        .id();
+    app.world_mut().trigger(Activate { entity: row });
+    app.update();
+    assert!(!visible(&mut app).contains("Defense: 20"));
+    app.world_mut().entity_mut(higher).despawn();
+    let old = app
+        .world()
+        .get::<Control>(row)
+        .copied()
+        .ok_or("row control")?;
+    app.world_mut().trigger(Activate { entity: row });
+    app.update();
+    let text = visible(&mut app);
+    assert!(text.contains("Defense: 20"));
+    assert!(!text.contains("Attack: 30"));
+    assert_eq!(
+        app.world_mut()
+            .query::<&EditableText>()
+            .iter(app.world())
+            .count(),
+        1
+    );
+    assert!(commands.try_recv().is_err());
+    // A newly confirmed result resets the local selection safely.
+    inspect(&link, &mut commands, Request::Item(8.try_into()?))?;
+    response(&link, &reply("Replacement"))?;
+    app.update();
+    assert!(visible(&mut app).contains("Attack: 30"));
+    assert!(!visible(&mut app).contains("Server shield"));
+    // The old row must not select an index in a different confirmed reply.
+    let panel = app
+        .world()
+        .resource::<State>()
+        .widgets
+        .as_ref()
+        .ok_or("widgets")?
+        .panel;
+    let stale = app
+        .world_mut()
+        .spawn((old, Node::default()))
+        .observe(activate)
+        .id();
+    app.world_mut().entity_mut(panel).add_child(stale);
+    app.world_mut().trigger(Activate { entity: stale });
+    app.update();
+    assert!(visible(&mut app).contains("Attack: 30"));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn inspect_player_window() -> TestResult {
+    let (mut app, link, mut commands, _outbox) = app(true)?;
+    inspect(
+        &link,
+        &mut commands,
+        Request::Player(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+            identity: [7; 16],
+            generation: 1,
+        }),
+    )?;
+    let mut equipment = reply("Player helmet");
+    equipment.items[0].slot = 1;
+    let mut backpack = reply("Player backpack").items.remove(0);
+    backpack.slot = 10;
+    equipment.items.push(backpack);
+    response(&link, &equipment)?;
+    app.update();
+    let text = visible(&mut app);
+    assert!(text.contains("Slot 1: Player helmet"));
+    assert!(text.contains("Slot 10: Player backpack"));
+    assert!(text.contains("Attack: 30"));
+    assert_eq!(
+        app.world_mut()
+            .query::<&EditableText>()
+            .iter(app.world())
+            .count(),
+        1
+    );
+    Ok(())
+}
 type Fixture = (
     App,
     PlayLink,

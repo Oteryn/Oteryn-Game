@@ -17,6 +17,7 @@ pub(super) struct Projection {
     pub rows: Vec<Row>,
     pub missions: Vec<Row>,
     pub detail: String,
+    pub tracker: String,
     pub status: String,
     pub selected_spell: Option<u32>,
 }
@@ -29,7 +30,7 @@ pub(super) fn project(
     quest_page: usize,
 ) -> Projection {
     if tab == Tab::Quests {
-        return quests(quest, quest_page);
+        return quests(quest, quest_page, false);
     }
     if !book.selected {
         return catalogue_rows(catalogue);
@@ -83,12 +84,22 @@ pub(super) fn project(
         rows,
         missions: Vec::new(),
         detail: book.text(current.unwrap_or(0)),
+        tracker: String::new(),
         status,
         selected_spell,
     }
 }
-fn quests(panel: &QuestPanel, page: usize) -> Projection {
-    let visible = quest_log::quest_rows(panel);
+pub(super) fn quest_rows(
+    panel: &QuestPanel,
+    hide_completed: bool,
+) -> Vec<&quest_log::QuestListEntry> {
+    quest_log::quest_rows(panel)
+        .into_iter()
+        .filter(|entry| !hide_completed || !entry.completed)
+        .collect()
+}
+pub(super) fn quests(panel: &QuestPanel, page: usize, hide_completed: bool) -> Projection {
+    let visible = quest_rows(panel, hide_completed);
     let pages = visible.len().div_ceil(32).max(1);
     let page = page.min(pages - 1);
     let line = match &panel.state.log.view {
@@ -142,7 +153,7 @@ fn quests(panel: &QuestPanel, page: usize) -> Projection {
                 |mission| format!("{}\n\n{}", mission.name, mission.text),
             )
     } else {
-        quest_log::tracker_text(panel)
+        "Select a quest to read its missions.".into()
     };
     let status = if panel.pending_query.is_some() {
         "Waiting for server confirmation…".into()
@@ -166,6 +177,7 @@ fn quests(panel: &QuestPanel, page: usize) -> Projection {
         rows,
         missions,
         detail,
+        tracker: quest_log::tracker_text(panel),
         status,
         selected_spell: None,
     }
@@ -216,6 +228,7 @@ fn catalogue_rows(panel: &oteryn_client_ui::spell_catalog::Panel) -> Projection 
         rows,
         missions: Vec::new(),
         detail,
+        tracker: String::new(),
         status,
         selected_spell,
     }

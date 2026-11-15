@@ -89,9 +89,11 @@ with CI and never blocks or delays it.
   "not reviewed" and the coordinator runs it. A Codex lane never reviews its
   own code.
 - How: the review owner starts it with `codex exec`
-  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high (an
-  `@codex review` PR comment has gone unanswered since 2026-10-20, so it is not
-  used), as one round of parallel lens runs over the same head, each with the
+  in a read-only sandbox, model gpt-6.1-sol, reasoning effort high, or, from a
+  session without the PC, with one native `@codex review` PR comment naming the
+  exact head (it answers again since 2026-11-15; check that no review is already
+  requested for that head first). Either way it is one round of parallel lens
+  runs over the same head, each with the
   diff, `CODEX-CHECKLIST.md`, its lens and, for a CI fix, the failing log
   lines. Each run is told to report every finding, with no cap on lines or
   count, and every other instance of the same class in the diff. Lenses,
