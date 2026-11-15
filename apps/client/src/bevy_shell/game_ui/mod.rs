@@ -2,6 +2,10 @@
 mod actions;
 mod analyser;
 mod chat;
+mod cyclopedia;
+#[cfg(test)]
+#[path = "cyclopedia/tests.rs"]
+mod cyclopedia_tests;
 mod feature_dialogs;
 mod hotkeys;
 mod hud;
@@ -236,11 +240,9 @@ fn region(commands: &mut Commands) -> Entity {
 }
 
 pub(super) fn install(app: &mut App) {
-    modal::install(app);
-    options::install(app);
-    journal::install(app);
-    chat::install(app);
     actions::install(app);
+    chat::install(app);
+    cyclopedia::install(app);
     analyser::install(app);
     feature_dialogs::install(app);
     hotkeys::install(app);
@@ -248,9 +250,12 @@ pub(super) fn install(app: &mut App) {
     imbuing::install(app);
     inventory::install(app);
     item_details::install(app);
+    journal::install(app);
     market::install(app);
     minimap::install(app);
+    modal::install(app);
     npc_shop::install(app);
+    options::install(app);
     outfit::install(app);
     party::install(app);
     proficiency::install(app);

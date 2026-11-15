@@ -105,6 +105,9 @@ With no text field focused, the existing gameplay shortcuts open:
   book/sign author/date descriptors are not available on the current wire.
   Server modal messages without an input remain read-only; text inputs retain
   their existing edit and answer path.
+- **Ctrl+O:** Cyclopedia character: general and combat stats, recent deaths and PvP
+  kills, achievements, item summary, outfits/mounts, store summary, inspection and
+  badges. Selecting a tab requests its data; Escape or Close dismisses the window.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
