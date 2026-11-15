@@ -13,7 +13,6 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
-    let started = std::time::Instant::now();
     super::kill_reward_e2e::scenario_thread::run("srx3-source-death-quest", || {
         run(async |admin| {
             reset();
@@ -263,9 +262,5 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
             h.cleanup().await
         })
     })?;
-    eprintln!(
-        "[DBG-W11-DEATH] source-goal scenario seconds={:.3}",
-        started.elapsed().as_secs_f64()
-    );
     Ok(())
 }

@@ -528,12 +528,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let begin = runtime
             .begin_source_creature_death(&notice)
             .map_err(|_| ())?;
-        #[cfg(test)]
-        eprintln!(
-            "[DBG-W11-DEATH] begin source={} events={}",
-            begin.definition_key(),
-            begin.events().len()
-        );
         attack
             .kills()
             .freeze_source_drop_profile(runtime, &begin, native)?;
@@ -583,12 +577,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 let callbacks = states.native_callbacks.clone();
                 let action = states.source_death_action.as_ref().ok_or(())?;
-                #[cfg(test)]
-                eprintln!(
-                    "[DBG-W11-DEATH] event={} source={}",
-                    event.name(),
-                    begin.definition_key()
-                );
                 let prepared = if action.heart.is_some()
                     || action.soul_war.is_some()
                     || action.megalomania.is_some()
@@ -707,8 +695,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) -> Result<bool, ()> {
         let notice = runtime.next_source_creature_death().map_err(|_| ())?;
         let cutoff = source_work_cutoff(runtime, states)?.unwrap_or(now);
-        #[cfg(test)]
-        eprintln!("[DBG-W11-DEATH] source-head cutoff={cutoff} now={now}");
         let selected = next_source_work(runtime, states, native)?
             .filter(|(_, due)| *due <= cutoff && *due <= now);
         let active = self.active_generation.ok_or(())?;
