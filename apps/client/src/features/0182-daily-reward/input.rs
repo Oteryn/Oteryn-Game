@@ -7,6 +7,25 @@ use oteryn_client_ui::daily_reward::{Intent, request};
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
+    pub fn daily_reward_close(&self) {
+        lock(&self.mailbox).daily_reward.open = false;
+    }
+
+    pub fn daily_reward_request_bound(
+        &self,
+        expected: &oteryn_client_ui::daily_reward::DailyRewardPanel,
+        intent: Intent,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.world_input_blocked() || mailbox.daily_reward != *expected
+            || !expected.open || !expected.selected || expected.pending
+            || (intent == Intent::Claim && expected.wall.is_none_or(|wall| wall.claimed || !wall.claim_enabled)) {
+            return false;
+        }
+        enqueue(&mut mailbox, &self.commands, intent);
+        mailbox.daily_reward.pending
+    }
+
     pub fn daily_reward_details_request(&self) {
         enqueue_details(&mut lock(&self.mailbox), &self.commands);
     }
@@ -37,11 +56,14 @@ pub(in crate::play) fn enqueue(
     if mailbox.world_input_blocked() {
         return;
     }
-    if let Some(command) = request(&mut mailbox.daily_reward, intent)
-        && commands.send(PlayCommand::DailyReward(command)).is_err()
-    {
-        mailbox.daily_reward.pending = false;
-        mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
+    if let Some(command) = request(&mut mailbox.daily_reward, intent) {
+        if intent == Intent::Refresh {
+            mailbox.daily_reward.details_attempted = false;
+        }
+        if commands.send(PlayCommand::DailyReward(command)).is_err() {
+            mailbox.daily_reward.pending = false;
+            mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
+        }
     }
 }
 

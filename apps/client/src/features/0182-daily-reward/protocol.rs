@@ -48,3 +48,10 @@ impl Outbox {
         m.daily_reward.returner_pending = None;
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_reward_wall(&self, panel: oteryn_client_ui::daily_reward::DailyRewardPanel) {
+        lock(&self.0).daily_reward = panel;
+    }
+}
