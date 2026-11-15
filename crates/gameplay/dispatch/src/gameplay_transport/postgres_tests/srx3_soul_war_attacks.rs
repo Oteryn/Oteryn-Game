@@ -100,7 +100,7 @@ pub(super) async fn actual_source_suffix(
                 let source = &pending.proposals[index].0;
                 assert_eq!(
                     source.ability.key,
-                    "oteryn:ability.srx3.soul-war.goshnar_s_cruelty"
+                    "oteryn:ability.srx3.soul-war.goshnar_s_megalomania_purple"
                 );
                 let occurrence = source.occurrence.id().as_str().to_owned();
                 assert!(

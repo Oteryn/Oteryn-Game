@@ -153,6 +153,13 @@ impl NativeSoulpitHandoff {
                 }
             }
             if bindings.len() < 15 {
+                // A completed traversal must revisit its rooms at their next
+                // deadline, rather than spend that turn on an empty tail page.
+                *admission
+                    .activity_runtimes
+                    .soulpit_after
+                    .lock()
+                    .map_err(|_| ())? = None;
                 break;
             }
             after = bindings.last().map(|binding| binding.handoff_id);
