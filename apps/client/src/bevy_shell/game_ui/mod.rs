@@ -4,6 +4,7 @@ mod analyser;
 mod bug_report;
 mod chat;
 mod cyclopedia;
+mod cyclopedia_items;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;

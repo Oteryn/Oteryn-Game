@@ -97,6 +97,7 @@ pub(super) struct Control {
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Kind {
+    Encyclopedia,
     Tab(Tab),
     Refresh,
     Previous,
@@ -234,6 +235,11 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     if !panel.open || state.snapshot.as_ref() != Some(&panel) {
         return;
     }
+    if control.kind == Kind::Encyclopedia {
+        play.link.window_toggle(WINDOW, &[]);
+        play.link.item_catalogue_open();
+        return;
+    }
     if control.kind == Kind::Close {
         play.link.window_toggle(WINDOW, &[]);
         return;
@@ -259,7 +265,7 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             };
             intent
         }
-        Kind::Close => return,
+        Kind::Close | Kind::Encyclopedia => return,
     };
     state.unsent = (!play.link.cyclopedia_character_request(intent)).then_some(intent);
     state.snapshot = None;

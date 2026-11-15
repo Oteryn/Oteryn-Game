@@ -170,12 +170,13 @@ pub(super) fn render(
         .id();
     commands.entity(content).add_child(footer);
     for (kind, label) in [
+        (Kind::Encyclopedia, "Item encyclopedia"),
         (Kind::Refresh, "Refresh"),
         (Kind::Previous, "Previous"),
         (Kind::Next, "Next"),
         (Kind::Close, "Close"),
     ] {
-        let disabled = kind != Kind::Close
+        let disabled = !matches!(kind, Kind::Close | Kind::Encyclopedia)
             && (panel.pending
                 || !panel.selected
                 || (matches!(kind, Kind::Previous | Kind::Next)

@@ -198,3 +198,12 @@ change. Cancel closes the editor. The standing preview uses local verified sprit
 sheets; mounts display their catalogue keys because the model has no mount sprite
 IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
+
+Cyclopedia Items: open **Item encyclopedia** from Character Cyclopedia or press
+**Ctrl+Alt+Shift+I**. Browse/search public item templates, cycle the server's
+categories, select an item, request details, and view live market offers plus
+30-day completed-trade prices. Next page restarts the search if its text changed.
+NPC/city price directories need a contract for an item-scoped, paged response
+containing NPC name, city, buy/sell side, price and currency; neither the public
+item catalogue nor local NPC trade windows provide that directory. Loot-value
+editing and Drop Tracker integration belong to a separate batch.

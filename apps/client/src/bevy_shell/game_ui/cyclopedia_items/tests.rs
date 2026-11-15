@@ -1,0 +1,212 @@
+use super::*;
+use crate::{
+    bevy_shell::owner::{HostOwner, Phase},
+    combat_input::PlayCommand,
+    play::{PlayView, play_channel},
+};
+use bevy::asset::AssetPlugin;
+use oteryn_client_ui::inspection::{self as wire, catalogue};
+
+#[test]
+fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = play_channel();
+    outbox.bevy_market_initialize(true);
+    link.use_shared_frontend();
+    link.bevy_item_details_selected(true);
+    link.item_catalogue_open();
+    let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("catalogue request".into());
+    };
+    assert!(matches!(
+        wire::decode_request(&command.payload),
+        Ok(wire::Request::CatalogueQuery(_))
+    ));
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view,
+        link: link.bevy_item_details_link(),
+    });
+    owner.phase = Phase::Playing;
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<bevy::input_focus::InputFocus>()
+    .insert_non_send(owner)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    assert!(visible(&mut app).contains("Cyclopedia Items"));
+    let reply = wire::Reply {
+        status: 1,
+        requests: vec![],
+        catalogue: None,
+        items: vec![],
+    };
+    link.bevy_item_details_response(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+            payload: wire::encode_reply(&wire::Reply {
+                items: vec![wire::InspectedItem {
+                    slot: 0,
+                    definition_ref: 42,
+                    count: 1,
+                    tier: 0,
+                    name: "Confirmed sword".into(),
+                    attributes: vec![
+                        ("Attack".into(), "30".into()),
+                        ("Catalogue next".into(), "42".into()),
+                        ("Catalogue categories".into(), "Weapons".into()),
+                        ("Category".into(), "Weapons".into()),
+                    ],
+                }],
+                catalogue: None,
+                ..reply
+            })
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
+    assert!(visible(&mut app).contains("Confirmed sword"));
+    assert!(visible(&mut app).contains("Attack: 30"));
+    click(&mut app, Action::Select(42))?;
+    let confirmed = link.inspection_panel().reply.ok_or("confirmed catalogue")?;
+    click(&mut app, Action::Details)?;
+    let PlayCommand::ServerMechanic(details) = receiver.try_recv()? else {
+        return Err("item details".into());
+    };
+    assert_eq!(
+        wire::decode_request(&details.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::Catalogue(42)
+    );
+    link.bevy_item_details_response(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 2,
+            status: oteryn_client_runtime::server_mechanic::CommandStatus::Accepted,
+            payload: wire::encode_reply(&confirmed).map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
+    click(&mut app, Action::Prices)?;
+    let PlayCommand::Market(command) = receiver.try_recv()? else {
+        return Err("market offers".into());
+    };
+    assert_eq!((command.0.action, command.0.definition), (2, 42));
+    let PlayCommand::Feature(statistics) = receiver.try_recv()? else {
+        return Err("price statistics".into());
+    };
+    use oteryn_client_runtime::market::market_details::PriceSummary;
+    use oteryn_client_ui::market::details::{Query, Reply, Statistics};
+    assert_eq!(
+        Query::Statistics { definition: 42 },
+        oteryn_client_runtime::market::market_details::decode_query(&statistics.payload)
+            .map_err(|e| format!("{e:?}"))?
+    );
+    let summary = PriceSummary {
+        trades: 1,
+        units: 1,
+        minimum: Some(19),
+        maximum: Some(19),
+        average: Some(19),
+    };
+    outbox.bevy_market_reply(
+        &statistics,
+        &oteryn_session::GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: oteryn_client_runtime::market::market_details::encode_reply(
+                &Reply::Statistics(Statistics {
+                    definition: 42,
+                    as_of_us: 2592000000000,
+                    trades: 1,
+                    units: 1,
+                    minimum: Some(19),
+                    maximum: Some(19),
+                    average: Some(19),
+                    sell: summary,
+                    ..default()
+                }),
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
+    assert!(visible(&mut app).contains("average 19"));
+    // Topmost modal owns activation, even for a directly triggered Bevy event.
+    let blocker = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(200), Node::default()))
+        .id();
+    click(&mut app, Action::Details)?;
+    assert!(receiver.try_recv().is_err());
+    app.world_mut().entity_mut(blocker).despawn();
+    click(&mut app, Action::Next)?;
+    let PlayCommand::ServerMechanic(next) = receiver.try_recv()? else {
+        return Err("next catalogue page".into());
+    };
+    assert!(matches!(
+        wire::decode_request(&next.payload),
+        Ok(wire::Request::CatalogueQuery(catalogue::Query::Items {
+            after: 42,
+            ..
+        }))
+    ));
+    click(&mut app, Action::Details)?;
+    assert!(
+        receiver.try_recv().is_err(),
+        "pending catalogue must not submit again"
+    );
+    click(&mut app, Action::Close)?;
+    assert!(!link.inspection_panel().catalogue_open);
+    assert!(!visible(&mut app).contains("Cyclopedia Items"));
+    // The native shortcut reopens retained pending work without a duplicate request.
+    use oteryn_input_actions::{
+        ButtonState, KeyCode as InputKey, Modifier, Modifiers, NormalizedInputEvent,
+    };
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[NormalizedInputEvent::Key {
+            code: InputKey::new(12).map_err(|e| format!("{e:?}"))?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control)
+                .with(Modifier::Alt)
+                .with(Modifier::Shift),
+            repeat: false,
+        }],
+        false,
+    );
+    app.update();
+    assert!(visible(&mut app).contains("Cyclopedia Items"));
+    assert!(receiver.try_recv().is_err());
+    Ok(())
+}
+fn visible(app: &mut App) -> String {
+    app.world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.as_str())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn click(app: &mut App, action: Action) -> Result<(), Box<dyn std::error::Error>> {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.action == action).then_some(entity))
+        .ok_or("catalogue button")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
