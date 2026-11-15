@@ -37,7 +37,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
 ) {
     modal = modal.with_outbox(&outbox);
     outbox.performance_reset();
-    if !session_initialize::initialize(&session, &outbox) {
+    if outbox.session_cancelled() || !session_initialize::initialize(&session, &outbox) {
         return;
     }
     if let Some(command) = outbox.returner_initial_request() {
@@ -48,6 +48,9 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
     }
     let mut held = Vec::new();
     loop {
+        if outbox.session_cancelled() {
+            return;
+        }
         match modal.poll(&mut session).await {
             Ok(Some(ModalCompletion::Answered(answer))) => outbox.store_modal_answered(answer),
             Ok(Some(ModalCompletion::LoggedOut)) => {
@@ -56,6 +59,9 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             Ok(None) => {}
             Err(error) => {
+                if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    continue;
+                }
                 outbox.end(public_class(&error));
                 return;
             }
@@ -71,13 +77,16 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Err(error) => error,
             },
             Ok(PlayCommand::SupportDelivery(command, path)) => {
-                if session.feature_selected(command.capability) {
-                    match session.feature(&command).await {
-                        Ok(result) => crate::support_delivery::acknowledge(&path, &command, &result),
-                        Err(error) => { outbox.end(public_class(&error)); return; }
-                    }
+                if !session.feature_selected(command.capability) {
+                    continue;
                 }
-                continue;
+                match session.feature(&command).await {
+                    Ok(result) => {
+                        crate::support_delivery::acknowledge(&path, &command, &result);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
             },
             Ok(PlayCommand::Feature(command)) => {
                 let started = std::time::Instant::now();
@@ -421,15 +430,40 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 Err(error) => error,
             },
         };
-        if matches!(ended, oteryn_session::SessionError::ActivityScopeChanged) {
-            // A shared activity moves every participant, including one awaiting a source
-            // command. Never replay queued source actions against the fresh destination.
-            publish(&mut session, &outbox, &mut held);
+        if recover_handoff(&ended, &mut session, &outbox, &mut held, &mut modal) {
             continue;
         }
         outbox.end(public_class(&ended));
         return;
     }
+}
+
+fn recover_handoff<T: Stepper>(
+    error: &oteryn_session::SessionError,
+    session: &mut T,
+    outbox: &Outbox,
+    held: &mut Vec<oteryn_session::WorldSpatialEntity>,
+    modal: &mut super::feature_0450_server_modal::protocol::Driver,
+) -> bool {
+    if !matches!(error, oteryn_session::SessionError::ActivityScopeChanged) {
+        return false;
+    }
+    // Dropping the source driver closes its answer channel, including native dialogs.
+    *modal = super::feature_0450_server_modal::protocol::Driver::new(
+        session.feature_selected(450),
+    )
+    .with_input(session.feature_selected(
+        oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
+    ))
+    .with_outbox(outbox);
+    {
+        let mut mailbox = super::mailbox::lock(&outbox.0);
+        mailbox.cancel_activity_requests();
+        mailbox.activity_reset_commands = true;
+    }
+    outbox.hud_stamina_initialize(session.feature_selected(199));
+    publish(session, outbox, held);
+    true
 }
 
 #[path = "session_initialize.rs"]

@@ -351,3 +351,9 @@ fn process_session_uses_bound_enrollment_keeps_no_vault_secret_and_quick_login_r
         Ok(())
     })
 }
+
+impl DeviceLogin {
+    pub(crate) async fn hold_session_for_reentry_test(&self) -> impl Sized {
+        self.state.clone().lock_owned().await
+    }
+}

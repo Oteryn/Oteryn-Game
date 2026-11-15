@@ -1,6 +1,12 @@
 //! Session outbox delivery and command lifecycle; state remains owned by the mailbox.
 use super::*;
 impl Outbox {
+    pub(in crate::play) fn session_cancelled(&self) -> bool {
+        // Only owner disposal sets this permanent dialog-lifetime flag. A transport end
+        // can reconnect on the same mailbox, so ordinary end state is not cancellation.
+        lock(&self.0).player_typing_shutdown
+    }
+
     pub(in crate::play) fn stepped(&self, outcome: StepOutcome) {
         let mut mailbox = lock(&self.0);
         mailbox.movement_turn = None;

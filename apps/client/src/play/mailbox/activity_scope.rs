@@ -5,6 +5,14 @@ impl Mailbox {
     pub(in crate::play) fn cancel_activity_requests(&mut self) {
         // Every queued command belonged to the source namespace, including panel queries.
         // Release their controls without inventing success or retrying a mutation.
+        self.bar_actions.item_cooldown_read = None;
+        self.bar_actions.deferred_item_read = None;
+        self.bar_actions.item_cooldowns.clear();
+        self.bar_actions.item_cooldown_rejected.clear();
+        self.battle.pending = false;
+        self.battle.pending_command = None;
+        self.spellbook_details.pending = None;
+        self.chat.pending = false;
         self.quest_pending = false;
         self.animus.pending = Default::default();
         self.arena.pending = Default::default();
@@ -155,5 +163,102 @@ impl Outbox {
             }
             ActivityScope::Channel { .. } => tr!("Returned to the channel."),
         }));
+        let stamina_selected = mailbox.cyclopedia_character.selected;
+        drop(mailbox);
+        self.hud_stamina_initialize(stamina_selected);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::play::feature_local_spell_action_bar::view::{
+        BarAction, ItemCooldownRead, PassiveAbility,
+    };
+
+    #[test]
+    fn handoff_releases_abandoned_requests_and_activations() {
+        let (link, _commands, outbox) = super::super::play_channel();
+        let mut mailbox = lock(&outbox.0);
+        mailbox.battle.pending = true;
+        mailbox.battle.pending_command = Some(crate::combat_input::CombatCommand::Stop);
+        mailbox.spellbook_details.pending = Some(Default::default());
+        mailbox.chat.pending = true;
+        let read = || ItemCooldownRead {
+            slot: std::num::NonZeroU32::MIN,
+            action: BarAction::Passive {
+                ability: PassiveAbility::BattleInstinct,
+            },
+            edit: 0,
+            definitions: vec![],
+            activate: true,
+            ready: false,
+            cursor: None,
+        };
+        mailbox.bar_actions.item_cooldown_read = Some(read());
+        mailbox.bar_actions.deferred_item_read = Some(read());
+        mailbox.cancel_activity_requests();
+        assert!(!mailbox.battle.pending);
+        assert!(mailbox.battle.pending_command.is_none());
+        assert!(mailbox.spellbook_details.pending.is_none());
+        assert!(!mailbox.chat.pending);
+        drop(mailbox);
+        assert!(!link.bar_activation_pending());
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn handoff_releases_hud_stamina_query_without_deselecting_it()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_session::activity_scope::{
+        ActivityScope, ActivityScopeSnapshot, encode_activity_scope,
+    };
+    let (link, mut commands, outbox) = super::play_channel();
+    outbox.hud_stamina_initialize(true);
+    outbox.cyclopedia_character_initialize(true);
+    let mut view = crate::play::tests::view()?;
+    view.enable_resource_hud(true);
+    view.sync_resource_hud(&link);
+    assert_eq!(commands.try_recv()?, PlayCommand::HudStamina);
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let mut successor = id;
+    successor[15] = 2;
+    let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id,
+        source_session: id,
+        session: successor,
+        scope: ActivityScope::Instance {
+            world: id,
+            instance: id,
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 2,
+        selection: vec![117, 199],
+        requires_ack: false,
+    })
+    .map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![SessionEvent::GatedSnapshotReplaced(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::GatedSnapshot {
+                domain_id: 99,
+                snapshot_type: 1,
+                revision: 1,
+                payload,
+            },
+        },
+    )]);
+    assert!(outbox.death_command(&mut commands).is_err());
+    let mut destination = crate::play::tests::view()?;
+    destination.enable_resource_hud(true);
+    destination.sync_resource_hud(&link);
+    assert_eq!(commands.try_recv()?, PlayCommand::HudStamina);
+    Ok(())
 }

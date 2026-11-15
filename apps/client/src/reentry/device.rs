@@ -9,7 +9,6 @@ impl Reentry {
             return false;
         }
         token.cancel();
-        self.forget_native_session();
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
         }
@@ -32,9 +31,8 @@ impl Reentry {
         if let Some(config) = &self.client.native_login {
             config.training_queue.clear();
         }
-        if !self.cancel_entry() {
-            self.forget_native_session();
-        }
+        self.cancel_entry();
+        self.forget_native_session();
     }
     /// Explicit native sign-out; normal game logout keeps a remembered login available.
     pub fn forget_native_session(&self) {
@@ -43,5 +41,52 @@ impl Reentry {
                 config.forget_devices().await;
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    #[test]
+    fn cancellation_preserves_device_and_explicit_sign_out_schedules_revocation()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let config = crate::NativeLoginConfig::from_env(|name| {
+            Some(match name {
+                "OTERYN_PLATFORM_URL" | "OTERYN_GATEWAY_URL" => "https://localhost:1".into(),
+                "OTERYN_OAUTH_CLIENT_ID" => "019a5f4a-1000-7000-8000-000000000001".into(),
+                "OTERYN_DEV_ROOT" => "/tmp/reentry-unused-root".into(),
+                _ => String::new(),
+            })
+        })?
+        .ok_or("native login config")?;
+        let device = Arc::clone(&config.device_sessions);
+        // Keep a revocation task alive if cancellation wrongly schedules one.
+        let held_session = runtime.block_on(device.hold_session_for_reentry_test());
+        let mut entry = Reentry::new(ClientBootstrap::new()?);
+        assert!(entry.configure(config));
+        entry.state = EntryState::Entering;
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        let owners = Arc::strong_count(&device);
+        assert!(entry.cancel_entry());
+        assert_eq!(
+            Arc::strong_count(&device),
+            owners,
+            "attempt cancellation must not launch device revocation"
+        );
+        entry.attempt_cancellation = Some(CancellationToken::new());
+        entry.native_sign_out();
+        assert_eq!(
+            Arc::strong_count(&device),
+            owners + 1,
+            "explicit sign-out must still launch revocation during admission"
+        );
+        drop(held_session);
+        entry.shutdown();
+        Ok(())
     }
 }

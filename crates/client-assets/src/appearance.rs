@@ -288,7 +288,7 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
             .map(|phase| {
                 let low = phase.duration_min.unwrap_or(100);
                 let high = phase.duration_max.unwrap_or(low).max(low);
-                (low / 2 + high / 2).clamp(1, 10_000)
+                (low + (high - low) / 2).clamp(1, 10_000)
             })
             .collect()
     });
