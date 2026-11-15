@@ -91,6 +91,9 @@ impl PlayLink {
         counted: bool,
         equipment: bool,
     ) {
+        if views.as_ref().is_some_and(|views| views.views.iter().any(|view| view.browse.is_some())) {
+            outbox.browse_field_initialize(true);
+        }
         outbox.inventory_initialize(inventory, counted);
         outbox.equipment_initialize(equipment);
         outbox.container_initialize(views);

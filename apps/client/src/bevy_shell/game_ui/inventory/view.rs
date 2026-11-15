@@ -1,7 +1,7 @@
 use super::super::{GameRegions, ItemIcon};
 use super::dialogs::{button, context};
 use super::*;
-use bevy::ui_widgets::{Button, ScrollArea};
+use bevy::ui_widgets::Button;
 use oteryn_client_ui_bevy as source;
 
 #[derive(PartialEq)]
@@ -14,6 +14,8 @@ struct Snapshot {
     selection: Option<Slot>,
     menu: Option<(Slot, Vec2)>,
     world_feedback: Option<String>,
+    windows: std::collections::BTreeMap<u8, presentation::Window>,
+    browse: bool,
 }
 #[derive(Component)]
 pub(super) struct Projection;
@@ -73,10 +75,18 @@ pub(super) fn project(
         ui.split_feedback.clear();
         ui.pending_amount_confirm = None;
     }
+    let generation = owner.generation();
+    if previous.0.as_ref().map(|snapshot| snapshot.generation) != Some(generation) {
+        ui.windows.clear();
+    }
+    let containers = play.link.container_panel();
+    presentation::retain(&mut ui, &owner, containers.views.as_ref());
     let snapshot = Snapshot {
         generation: owner.generation(),
         inventory: play.link.inventory_panel(),
-        containers: play.link.container_panel(),
+        containers,
+        windows: ui.windows.clone(),
+        browse: play.link.browse_field_panel().selected,
         slots: play.link.equipment_slots(),
         movement,
         selection: ui.selection,
@@ -91,6 +101,9 @@ pub(super) fn project(
     }
     let equipment = panel(&mut commands, &skins, regions.equipment, "Inventory");
     equipment_grid(&mut commands, &skins, equipment, &snapshot);
+    if snapshot.browse {
+        presentation::browse_entry(&mut commands, &skins, equipment, snapshot.generation);
+    }
     if snapshot.inventory.inventory.is_none() {
         label(&mut commands, &skins, equipment, "Inventory unavailable");
     }
@@ -253,17 +266,15 @@ fn grid(
     selection: Option<Slot>,
 ) {
     let grid = commands
-        .spawn((
-            Node {
-                display: Display::Grid,
-                grid_template_columns: RepeatedGridTrack::px(4, 34.),
-                column_gap: px(3.),
-                row_gap: px(3.),
-                align_self: AlignSelf::Center,
-                ..default()
-            },
-            ScrollArea,
-        ))
+        .spawn(Node {
+            display: Display::Grid,
+            grid_template_columns: RepeatedGridTrack::px(4, 34.),
+            column_gap: px(3.),
+            row_gap: px(3.),
+            align_self: AlignSelf::Center,
+            flex_shrink: 0.,
+            ..default()
+        })
         .id();
     commands.entity(parent).add_child(grid);
     for index in 0..capacity {
@@ -349,7 +360,21 @@ fn container(
     view: &oteryn_session::container_tree::ContainerView,
     snapshot: &Snapshot,
 ) {
-    let title = format!("Backpack ({}/{})", view.entries.len(), view.capacity);
+    let title = if let Some(page) = view.browse {
+        format!("Browse Field ({}/{})", view.entries.len(), page.total)
+    } else {
+        let name = snapshot
+            .windows
+            .get(&view.view_id)
+            .and_then(|window| window.name.as_deref());
+        let fallback = format!("Container #{}", view.view_id + 1);
+        format!(
+            "{} ({}/{})",
+            name.unwrap_or(&fallback),
+            view.entries.len(),
+            view.capacity
+        )
+    };
     let panel = panel(commands, skins, parent, &title);
     let row = commands
         .spawn(Node {
@@ -385,10 +410,18 @@ fn container(
         42.,
     );
     super::bulk::header(commands, skins, row, snapshot.generation, view);
-    grid(
+    let body = presentation::body(
         commands,
         skins,
         panel,
+        snapshot.generation,
+        view,
+        snapshot.windows.get(&view.view_id),
+    );
+    grid(
+        commands,
+        skins,
+        body,
         snapshot.generation,
         Location::Container {
             view: view.view_id,
