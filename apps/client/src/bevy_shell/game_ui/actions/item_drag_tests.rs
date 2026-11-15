@@ -58,7 +58,8 @@ fn inventory_drop_assigns_current_item_without_move_and_rejects_stale_source()
             item,
         })
         .id();
-    let window = app.world_mut().spawn_empty().id();
+    // Pointer traversal must terminate at a real window, rather than revisit an empty entity.
+    let window = app.world_mut().spawn(Window::default()).id();
     let target = bevy::camera::NormalizedRenderTarget::Window(
         bevy::window::WindowRef::Entity(window)
             .normalize(None)

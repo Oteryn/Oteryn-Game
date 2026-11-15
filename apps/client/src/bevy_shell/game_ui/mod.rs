@@ -22,6 +22,7 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 pub(super) mod item_details;
 mod journal;
+mod layout;
 mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
@@ -154,7 +155,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 width: percent(100.),
                 height: px(150.),
                 min_height: px(90.),
-                max_height: percent(30.),
+                max_height: percent(50.),
                 flex_shrink: 0.,
                 padding: UiRect::all(px(2.)),
                 flex_direction: FlexDirection::Column,
@@ -168,6 +169,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             Node {
                 width: px(176.),
                 min_width: px(176.),
+                max_width: percent(30.),
                 height: percent(100.),
                 flex_shrink: 0.,
                 flex_direction: FlexDirection::Column,
@@ -183,6 +185,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
             Node {
                 width: px(176.),
                 min_width: px(176.),
+                max_width: percent(30.),
                 height: percent(100.),
                 flex_shrink: 0.,
                 flex_direction: FlexDirection::Column,
@@ -216,11 +219,20 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let skills = region(&mut commands);
     let vip = region(&mut commands);
     let analyzers = region(&mut commands);
+    let console_splitter = layout::spawn(&mut commands, chat, true);
+    let panels_splitter = layout::spawn(&mut commands, panels, false);
+    let inventory_splitter = layout::spawn(&mut commands, inventory, false);
     commands.entity(root).add_children(&[vitals, middle]);
+    commands.entity(middle).add_children(&[
+        main,
+        panels_splitter,
+        panels,
+        inventory_splitter,
+        inventory,
+    ]);
     commands
-        .entity(middle)
-        .add_children(&[main, panels, inventory]);
-    commands.entity(main).add_children(&[world, bars, chat]);
+        .entity(main)
+        .add_children(&[world, bars, console_splitter, chat]);
     commands
         .entity(panels)
         .add_children(&[battle, party_dock, skills, vip, analyzers]);
