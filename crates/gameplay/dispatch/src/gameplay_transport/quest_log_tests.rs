@@ -69,6 +69,7 @@ fn track(key: &str, quest: &str) -> QuestTrack {
 
 fn quest(key: &str, start: &str, missions: Vec<QuestLogMission>) -> QuestLogQuest {
     QuestLogQuest {
+        title: "Rat Investigation".into(),
         key: key.into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,
@@ -954,4 +955,62 @@ fn tracker_list_only_does_not_change_the_visible_line_or_continuity() {
             .is_none()
     );
     assert!(QuestLogState::list_only(QuestLogObservation::Unavailable).is_none());
+}
+
+#[test]
+fn server_info_quest_handler_wire_client_state_and_journal_titles()
+-> Result<(), Box<dyn std::error::Error>> {
+    let observed = source(Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]), 1);
+    let payload =
+        crate::gameplay_transport::server_info::quests(&observed).ok_or("quest titles")?;
+    let mut info = oteryn_client_ui::server_info::Panel {
+        selected: true,
+        ..Default::default()
+    };
+    let _ = oteryn_client_ui::server_info::request(
+        &mut info,
+        oteryn_client_ui::server_info::Query::Quests,
+    )
+    .ok_or("request")?;
+    let reply = oteryn_client_ui::server_info::apply_result(
+        &mut info,
+        &oteryn_client_ui::server_info::Query::Quests,
+        &oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload,
+        },
+    )
+    .ok_or("client decode")?;
+    let mut panel = oteryn_client_ui::quest_log::QuestPanel::default();
+    panel.state.selected = true;
+    let bytes = QuestLogState::list_only(QuestLogObservation::Changed(observed)).ok_or("list")?;
+    panel.state.log = decode_quest_log(&bytes).map_err(|e| format!("{e:?}"))?;
+    let QuestLogView::List(rows) = panel.state.log.view.as_ref().ok_or("view")? else {
+        return Err("list".into());
+    };
+    panel.state.list = rows.clone();
+    oteryn_client_ui::server_info::protocol::observe(reply, &mut panel, &mut Default::default());
+    assert_eq!(panel.title(RATS_INDEX), "Rat Investigation");
+    assert!(oteryn_client_ui::quest_log::panel_text(&panel).contains("Rat Investigation"));
+    panel.set_list_options(
+        "Investigation",
+        oteryn_client_ui::quest_log::QuestSort::NumberAscending,
+    );
+    assert_eq!(oteryn_client_ui::quest_log::quest_rows(&panel).len(), 1);
+    // Mission names and descriptions already use the original real projection/codec.
+    let line = line(
+        source(Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]), 2)
+            .content
+            .0
+            .line(
+                &Facts::with(&[(RATS_START, 1), (RATS_STAGE, 1)]),
+                RATS_INDEX,
+            )
+            .ok_or("line")?,
+    );
+    assert_eq!(line.missions[0].name, "Rats");
+    assert_eq!(line.missions[0].text, "Hunt the rats.");
+    Ok(())
 }

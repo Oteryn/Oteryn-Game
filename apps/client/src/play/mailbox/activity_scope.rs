@@ -13,6 +13,10 @@ impl Mailbox {
         self.battle.pending = false;
         self.battle.pending_command = None;
         self.spellbook_details.pending = None;
+        self.server_info.pending.clear();
+        self.quest.titles.clear();
+        self.spell_catalog.info.clear();
+        self.spellbook_details.info.clear();
         self.chat.pending = false;
         self.quest_pending = false;
         self.animus.pending = Default::default();

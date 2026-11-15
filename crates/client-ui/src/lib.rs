@@ -390,3 +390,6 @@ pub mod support_intake;
 
 #[path = "features/0499-item-appearance/protocol.rs"]
 pub mod item_appearance;
+
+#[path = "features/0500-server-info/mod.rs"]
+pub mod server_info;

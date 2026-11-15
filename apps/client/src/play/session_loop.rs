@@ -47,6 +47,21 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
         }
     }
     let mut held = Vec::new();
+    for command in outbox.server_info_initial_commands() {
+        let Some(query) = oteryn_session::server_info::Query::decode(&command.payload) else {
+            continue;
+        };
+        match session.feature(&command).await {
+            Ok(result) => outbox.server_info_result(&query, &result),
+            Err(error) => {
+                if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                    break;
+                }
+                outbox.end(public_class(&error));
+                return;
+            }
+        }
+    }
     loop {
         if outbox.session_cancelled() {
             return;
@@ -133,7 +148,17 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         280 => outbox.party_effects_result(&result),
                         381 => outbox.potion_durations_result(&result),
                         382 => outbox.death_protection_result(&result),
-                        449 => outbox.spellbook_details_result(&result),
+                        449 => {
+                            outbox.spellbook_details_result(&result);
+                            for info_command in outbox.server_info_spell_commands() {
+                                let query=oteryn_session::server_info::Query::decode(&info_command.payload);
+                                match session.feature(&info_command).await {
+                                    Ok(info_result)=>if let Some(query)=query {outbox.server_info_result(&query,&info_result);},
+                                    Err(error)=>{if recover_handoff(&error,&mut session,&outbox,&mut held,&mut modal) {break;}outbox.end(public_class(&error));return;}
+                                }
+                            }
+                        },
+                        500 => if let Some(query)=oteryn_session::server_info::Query::decode(&command.payload) {outbox.server_info_result(&query,&result);},
                         463 => outbox.bar_item_cooldowns_result(item_scope, &result),
                         _ => {}
                     }
@@ -209,6 +234,13 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
                 Ok(result) => {
                     outbox.quest_result(&result);
+                    let query=oteryn_session::server_info::Query::Quests;
+                    if let Some(info_command)=outbox.server_info_command(query.clone()) {
+                        match session.feature(&info_command).await {
+                            Ok(info_result)=>outbox.server_info_result(&query,&info_result),
+                            Err(error)=>{if recover_handoff(&error,&mut session,&outbox,&mut held,&mut modal) {continue;}outbox.end(public_class(&error));return;}
+                        }
+                    }
                     publish(&mut session, &outbox, &mut held);
                     continue;
                 }

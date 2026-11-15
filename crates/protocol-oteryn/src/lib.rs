@@ -124,6 +124,7 @@ pub mod refusal_detail;
 mod registered_capabilities;
 pub mod rest_status;
 pub mod sanction_record;
+pub mod server_info;
 pub mod server_modal;
 pub mod server_save_countdown;
 pub mod skill_display;

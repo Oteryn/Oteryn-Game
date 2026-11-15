@@ -44,6 +44,7 @@ pub(super) fn journal() -> super::log::QuestLogQuest {
         }
     }
     QuestLogQuest {
+        title: "Elvenbane Quest".into(),
         key: QUEST.into(),
         kind: QuestLogKind::Storyline,
         shown_in_quest_log: true,

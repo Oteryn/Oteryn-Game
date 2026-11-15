@@ -63,6 +63,7 @@ pub use gated_command::world_context;
 pub use oteryn_protocol_oteryn::highscores;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
+pub use oteryn_protocol_oteryn::server_info;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]

@@ -500,3 +500,7 @@ fn fallback_controls(commands: &mut Commands, skin: &Skins, parent: Entity, key:
         commands.entity(row).add_child(button);
     }
 }
+
+#[cfg(test)]
+#[path = "journal/server_info_tests.rs"]
+mod server_info_tests;

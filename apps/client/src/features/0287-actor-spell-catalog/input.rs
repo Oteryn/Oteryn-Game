@@ -39,6 +39,7 @@ impl PlayLink {
         self.spell_catalog_open();
     }
     pub fn spell_catalog_open(&self) {
+        self.server_info_catalog();
         if self.spellbook_open() {
             return;
         }

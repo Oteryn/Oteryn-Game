@@ -51,6 +51,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.potion_durations_initialize(session.feature_selected(381));
     outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
+    outbox.server_info_initialize(session.feature_selected(500));
     outbox.task_board_initialize(session.task_board_selected());
     outbox.task_board_weekly_results_initialize(session.feature_selected(474));
     outbox.stash_initialize(session.stash_selected());
