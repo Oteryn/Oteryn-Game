@@ -341,10 +341,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let _ = entry.boss_slot_bonuses.set(Vec::new());
             }
         }
-        if !self.settle_personal_boss_rewards(entry).await {
-            return false;
-        }
-        true
+        self.settle_personal_boss_rewards(entry).await
     }
 
     /// The room's primary native death starts its authored after-kill return
