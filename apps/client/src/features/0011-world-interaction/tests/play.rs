@@ -327,3 +327,117 @@ fn modifier_mouse_release_reaches_authoritative_look_use_and_attack_callers()
     }
     Ok(())
 }
+
+#[test]
+fn control_click_uses_top_item_under_actor() -> Result<(), Box<dyn std::error::Error>> {
+    control_click_cases(&[(false, false, true), (false, true, true)])
+}
+#[test]
+fn control_click_uses_entity_ground_appearance() -> Result<(), Box<dyn std::error::Error>> {
+    control_click_cases(&[(true, true, true), (true, false, false)])
+}
+fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog};
+    use oteryn_input_actions::Modifier;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    if std::env::var_os(crate::map::ASSET_DIR_ENV).as_deref() != Some(root.as_os_str()) {
+        let status = std::process::Command::new(std::env::current_exe()?)
+            .env(crate::map::ASSET_DIR_ENV, &root)
+            .arg(std::thread::current().name().ok_or("test thread")?)
+            .args(["--exact", "--nocapture"])
+            .status()?;
+        assert!(status.success(), "ground interaction subprocess");
+        return Ok(());
+    }
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    let multi = index
+        .iter()
+        .find(|a| a.multi_use)
+        .ok_or("multi-use appearance")?
+        .id;
+    for &(entity_item, multi_use, map_present) in cases {
+        let mut view = view()?;
+        let mut map = super::feature_local_world_view::live_snapshot(101);
+        map.tiles[0].items.truncate(1);
+        map.tiles[0].items[0].origin =
+            oteryn_session::world_map::MapOrigin::Handle(std::num::NonZeroU64::MIN);
+        if multi_use {
+            map.tiles[0].items[0].appearance_id = multi.try_into()?;
+        }
+        let position = map.tiles[0].position;
+        let mut entities = vec![WorldSpatialEntity {
+            entity: EntityRef {
+                identity: [4; 16],
+                generation: 1,
+            },
+            kind: EntityKind::Creature,
+            position,
+            display_name: None,
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        }];
+        if entity_item {
+            entities.clear();
+            entities.push(WorldSpatialEntity {
+                entity: EntityRef {
+                    identity: [5; 16],
+                    generation: 1,
+                },
+                kind: EntityKind::GroundItem,
+                position,
+                display_name: None,
+                detail: oteryn_session::EntityDetail::Object {
+                    item_definition_ref: 1,
+                    quantity: 1,
+                    item_handle: Some(std::num::NonZeroU64::MIN),
+                },
+            });
+        }
+        if map_present {
+            view.set_live_map(&map)?;
+        }
+        view = view.with_entities(entities)?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.world_context_initialize(true, false);
+        outbox.targeting_initialize(true);
+        if !map_present {
+            outbox.inventory_initialize(
+                Some(oteryn_session::CharacterInventory {
+                    entries: vec![oteryn_session::ItemEntry {
+                        appearance_id: multi.try_into()?,
+                        handle: std::num::NonZeroU64::MIN,
+                        item_definition_ref: NonZeroU32::MIN,
+                        count: NonZeroU32::MIN,
+                        sub_type: 0,
+                    }],
+                    ..Default::default()
+                }),
+                false,
+            );
+        }
+        assert!(view.modifier_click(
+            TileCoord::new(position.x, position.y),
+            &link,
+            Modifier::Control
+        ));
+        if multi_use {
+            assert!(link.use_with_armed());
+            assert!(commands.try_recv().is_err());
+        } else {
+            assert!(
+                matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command) if command.action == Action::Use && command.target == Target::Item(std::num::NonZeroU64::MIN))
+            );
+        }
+    }
+    Ok(())
+}

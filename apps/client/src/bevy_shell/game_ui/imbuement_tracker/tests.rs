@@ -270,6 +270,9 @@ fn parity_a_tracker_retains_empty_slots_and_independent_duration_groups() -> Tes
 
     assert!(texts(app.world_mut()).contains("unused imbuement slot"));
     assert!(texts(app.world_mut()).contains("240 minutes"));
+    let text = texts(app.world_mut());
+    assert!(text.contains("10 minutes"));
+    assert!(text.contains("unused imbuement slot"));
     for label in ["Under 1 hour", "Unused slots"] {
         let button = app
             .world_mut()
@@ -281,8 +284,8 @@ fn parity_a_tracker_retains_empty_slots_and_independent_duration_groups() -> Tes
         app.update();
     }
     let text = texts(app.world_mut());
-    assert!(text.contains("10 minutes"));
-    assert!(text.contains("unused imbuement slot"));
+    assert!(!text.contains("10 minutes"));
+    assert!(!text.contains("unused imbuement slot"));
     assert!(text.contains("240 minutes"));
     let button = app
         .world_mut()

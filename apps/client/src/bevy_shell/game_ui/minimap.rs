@@ -125,11 +125,8 @@ fn click(
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     guard: super::modal::ModalGuard,
 ) {
-    if !matches!(
-        event.button,
-        bevy::picking::pointer::PointerButton::Primary
-            | bevy::picking::pointer::PointerButton::Secondary
-    ) || owner.modal_active()
+    if event.button != bevy::picking::pointer::PointerButton::Primary
+        || owner.modal_active()
         || !guard.allows(event.entity)
     {
         return;
@@ -150,13 +147,6 @@ fn click(
         return;
     }
     focus.clear();
-    if event.button == bevy::picking::pointer::PointerButton::Secondary {
-        play.view.minimap_mark_at(
-            f64::from(point.x) * f64::from(SIZE.x),
-            f64::from(point.y) * f64::from(SIZE.y),
-        );
-        return;
-    }
     play.view.minimap_click(
         f64::from(point.x) * f64::from(SIZE.x),
         f64::from(point.y) * f64::from(SIZE.y),

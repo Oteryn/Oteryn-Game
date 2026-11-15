@@ -4,12 +4,23 @@ pub fn panel_text(panel: &Panel) -> String {
     if !panel.selected {
         return tr!("Analysers unavailable in this session").into();
     }
+    let mut projected;
+    let panel = if let Some(report) = panel.reports.get(panel.tool.key()) {
+        projected = panel.clone();
+        report.clone().swap(&mut projected);
+        &projected
+    } else {
+        panel
+    };
     let mut text = match panel.tool {
         super::Tool::Overview => lfmt!("Overview\r\n{}", overview(panel)),
         super::Tool::Hunting => format!(
             "Hunting analyser\r\nKills: {}\r\nKills/h: {}\r\n{}",
             panel.kills,
-            super::state::per_hour(panel.kills, panel.clock.seconds()),
+            super::state::per_hour(
+                panel.kills,
+                report_elapsed(panel, panel.clock.seconds(), super::Tool::Hunting)
+            ),
             panel.kill_chart.chart(panel.clock.seconds())
         ),
         tool @ (super::Tool::Damage | super::Tool::Healing) => {
@@ -101,7 +112,13 @@ pub(super) fn xp_text(panel: &Panel, seconds: u64) -> String {
 }
 
 pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
-    let elapsed = report_elapsed(panel, seconds, super::Tool::Loot);
+    loot_text_at(
+        panel,
+        seconds,
+        report_elapsed(panel, seconds, super::Tool::Loot),
+    )
+}
+fn loot_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
     use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
@@ -164,7 +181,13 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
 }
 
 pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
-    let elapsed = report_elapsed(panel, seconds, super::Tool::Supply);
+    supply_text_at(
+        panel,
+        seconds,
+        report_elapsed(panel, seconds, super::Tool::Supply),
+    )
+}
+fn supply_text_at(panel: &Panel, seconds: u64, elapsed: u64) -> String {
     use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
@@ -377,6 +400,8 @@ pub fn session_text(panel: &Panel) -> String {
 }
 pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     use std::fmt::Write;
+    let chart_seconds = seconds;
+    let seconds = report_elapsed(panel, seconds, super::Tool::Session);
     let balance = i128::from(panel.loot_value()) - i128::from(panel.supply_cost());
     let balance_rate = if seconds == 0 {
         0
@@ -408,10 +433,10 @@ pub(super) fn session_text_at(panel: &Panel, seconds: u64) -> String {
     let _ = write!(
         text,
         "\r\n\r\n{}\r\n\r\n{}\r\nSession gained XP per minute\r\n{}\r\nSession raw XP per minute\r\n{}",
-        loot_text(panel, seconds),
-        supply_text(panel, seconds),
-        panel.xp_chart.chart(seconds),
-        panel.raw_xp_chart.chart(seconds)
+        loot_text_at(panel, chart_seconds, seconds),
+        supply_text_at(panel, chart_seconds, seconds),
+        panel.xp_chart.chart(chart_seconds),
+        panel.raw_xp_chart.chart(chart_seconds)
     );
     text
 }

@@ -781,7 +781,15 @@ fn parity_a_analyser_windows_and_resets_are_independent() -> TestResult {
     app.update();
     let owner = app.world().non_send::<HostOwner>();
     let panel = owner.play.as_ref().ok_or("play")?.link.analyser_panel();
-    assert_eq!(panel.gold, 0);
+    assert_eq!(
+        panel
+            .reports
+            .get(Tool::Loot.key())
+            .ok_or("loot interval")?
+            .gold,
+        0
+    );
+    assert_eq!(panel.gold, 77);
     assert_eq!(panel.gained_xp, 150);
     assert_eq!(panel.supplies, 2);
     Ok(())
@@ -796,7 +804,15 @@ fn parity_a_loot_reset_retains_xp_and_supplies() -> TestResult {
     app.update();
     let owner = app.world().non_send::<HostOwner>();
     let panel = owner.play.as_ref().ok_or("play")?.link.analyser_panel();
-    assert_eq!(panel.gold, 0);
+    assert_eq!(
+        panel
+            .reports
+            .get(Tool::Loot.key())
+            .ok_or("loot interval")?
+            .gold,
+        0
+    );
+    assert_eq!(panel.gold, 77);
     assert_eq!(panel.gained_xp, 150);
     assert_eq!(panel.supplies, 2);
     Ok(())

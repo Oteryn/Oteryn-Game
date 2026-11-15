@@ -74,6 +74,9 @@ pub(super) fn perform(
             } else {
                 d.choices.insert(level, perk);
             }
+            if d.choices.is_empty() {
+                d.base = None;
+            }
             d.feedback = "Preview only; Apply sends the reviewed build.".into();
         }
         Kind::Apply | Kind::SaveClose => {
@@ -102,9 +105,11 @@ pub(super) fn perform(
             d.feedback = "Apply or Reset the draft before changing weapons or refreshing.".into()
         }
         Kind::Refresh => {
+            *d = Draft::default();
             link.weapon_proficiency_action_bound(panel, ModelAction::Refresh);
         }
         Kind::Weapon(row) => {
+            *d = Draft::default();
             link.weapon_proficiency_action_bound(panel, ModelAction::Weapon(row));
         }
     }

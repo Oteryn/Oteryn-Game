@@ -221,6 +221,14 @@ impl Scene {
         self.target
     }
 
+    pub(crate) fn item_target_at(&self, tile: TileCoord) -> Option<crate::play::GroundItem> {
+        self.visible
+            .iter()
+            .rev()
+            .filter(|target| target.tile == tile)
+            .find_map(|target| target.item)
+    }
+
     pub(crate) fn target_at(&self, tile: TileCoord) -> Option<Targetable> {
         // The own-actor highlight has no command identity; it must not hide an item below it.
         let on_tile = || {

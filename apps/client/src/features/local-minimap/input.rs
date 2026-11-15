@@ -36,22 +36,6 @@ impl PlayView {
 }
 
 impl PlayView {
-    #[cfg(feature = "bevy-shell")]
-    pub(crate) fn minimap_mark_at(&mut self, x: f64, y: f64) {
-        if !x.is_finite()
-            || !y.is_finite()
-            || !(0.0..124.0).contains(&x)
-            || !(0.0..100.0).contains(&y)
-        {
-            return;
-        }
-        let mut map = super::state::lock(&self.minimap);
-        if let Some(position) = map.position((x / 4.0) as i32, (y / 4.0) as i32)
-            && let Err(error) = map.create_mark_at(position)
-        {
-            map.feedback = error.to_string();
-        }
-    }
     /// Route a native screen click through the overlay before selecting the world beneath it.
     pub fn click_screen(&mut self, x: f64, y: f64) -> Result<(), oteryn_renderer::BatchError> {
         if self.minimap_click(x, y) {

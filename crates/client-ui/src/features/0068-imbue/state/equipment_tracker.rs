@@ -166,17 +166,15 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32, hidden: &[bool; 4]) -> 
         let Some(record) = tracker.records.get(&scope.handle) else {
             continue;
         };
-        let longest = record.timers.iter().map(|timer| timer.minutes).max();
-        let group = match longest {
-            None => 3,
-            Some(0..60) => 0,
-            Some(60..=180) => 1,
-            _ => 2,
-        };
-        if hidden[group] {
-            continue;
-        }
         for timer in &record.timers {
+            let group = match timer.minutes {
+                0..60 => 0,
+                60..=180 => 1,
+                _ => 2,
+            };
+            if hidden[group] {
+                continue;
+            }
             if maximum_ms != 0 && u64::from(timer.minutes) * 60_000 > u64::from(maximum_ms) {
                 continue;
             }
@@ -199,14 +197,14 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32, hidden: &[bool; 4]) -> 
                 }
             ));
         }
-        for slot in &record.empty {
+        for slot in record.empty.iter().filter(|_| !hidden[3]) {
             shown = true;
             out.push_str(&format!(
                 "{} — {} — {slot}: unused imbuement slot\r\n",
                 scope.label, record.name
             ));
         }
-        for slot in &record.ended {
+        for slot in record.ended.iter().filter(|_| !hidden[3]) {
             shown = true;
             out.push_str(&format!(
                 "{} — {} — {slot}: ALERT — no longer active\r\n",

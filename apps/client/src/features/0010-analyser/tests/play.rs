@@ -365,3 +365,92 @@ impl crate::play::Outbox {
         self.analyser_catalogue_result(result);
     }
 }
+
+#[test]
+fn analyser_reset_isolates_every_report_through_playlink_and_fact_feed()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::analyser::AnalyserImpact;
+    use oteryn_client_ui::analyser::Tool;
+    use std::num::{NonZeroU16, NonZeroU32};
+    let mut facts = vec![
+        AnalyserFact::Kill {
+            race: Some(NonZeroU32::MIN),
+        },
+        AnalyserFact::Experience { raw: 7, gained: 9 },
+        AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![oteryn_session::analyser_transport::AnalyserItemCount {
+                item_type: NonZeroU32::MIN,
+                count: NonZeroU16::MIN,
+            }],
+            gold: 11,
+        },
+        AnalyserFact::SupplyUsed(oteryn_session::analyser_transport::AnalyserItemCount {
+            item_type: NonZeroU32::MIN,
+            count: NonZeroU16::MIN,
+        }),
+        AnalyserFact::Impact(AnalyserImpact::Healing(NonZeroU32::MIN)),
+    ];
+    facts.extend(
+        oteryn_client_runtime::analyser::decode_analyser_facts(&[
+            10, 8, 34, 6, 8, 1, 16, 120, 24, 2, 10, 6, 34, 4, 8, 2, 16, 60, 10, 10, 42, 8, 8, 60,
+            16, 2, 24, 1, 32, 7,
+        ])
+        .map_err(|_| "impact wire")?,
+    );
+    for reset in Tool::ALL
+        .into_iter()
+        .filter(|t| !matches!(t, Tool::Party | Tool::Bosses))
+    {
+        let (link, _, outbox) = play_channel();
+        outbox.analyser_initialize(true);
+        crate::play::mailbox::lock(&link.mailbox).analyser.open = true;
+        let push = |seq| {
+            outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+                server_sequence: seq,
+                base_revision: seq,
+                new_revision: seq + 1,
+                value: facts.clone(),
+            })])
+        };
+        push(1);
+        let mut before = Vec::new();
+        for tool in Tool::ALL {
+            assert!(link.analyser_select(tool.key()));
+            before.push(link.analyser_text());
+        }
+        assert!(link.analyser_select(reset.key()));
+        link.analyser_reset();
+        for (tool, expected) in Tool::ALL.into_iter().zip(&before) {
+            assert!(link.analyser_select(tool.key()));
+            let session = |t| matches!(t, Tool::Overview | Tool::Hunting | Tool::Session);
+            if tool != reset && !(session(reset) && session(tool)) {
+                assert_eq!(
+                    &link.analyser_text(),
+                    expected,
+                    "reset {reset:?} changed {tool:?}"
+                );
+            }
+        }
+        if matches!(reset, Tool::Overview | Tool::Hunting | Tool::Session) {
+            assert!(link.analyser_select("loot-tracker"));
+            link.analyser_track_item("1", true);
+            assert!(link.analyser_panel().loot_tracked.contains(&1));
+            crate::play::feature_0010_analyser::input::submit(
+                &mut crate::play::mailbox::lock(&link.mailbox),
+                &link.commands,
+                Tool::ALL.len() + 10,
+                vec![String::new(), "1".into(), "10".into()],
+            );
+            assert_eq!(link.analyser_panel().kill_goals.get(&1), Some(&10));
+        }
+        push(2);
+        assert!(link.analyser_select(reset.key()));
+        // A reset starts a new interval which keeps consuming the real feed.
+        assert_eq!(
+            link.analyser_text(),
+            before[Tool::ALL.iter().position(|t| *t == reset).ok_or("tool")?]
+        );
+    }
+    Ok(())
+}

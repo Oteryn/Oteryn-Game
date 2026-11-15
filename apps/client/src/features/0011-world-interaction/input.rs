@@ -64,7 +64,15 @@ impl PlayView {
         (!menu.entries.is_empty()).then_some(menu)
     }
     pub fn world_context(&self, tile: TileCoord, link: &PlayLink) -> Option<Menu> {
-        let target = self.world_context_target(tile)?;
+        self.world_context_for(tile, link, false)
+    }
+    fn world_context_for(
+        &self,
+        tile: TileCoord,
+        link: &PlayLink,
+        prefer_item: bool,
+    ) -> Option<Menu> {
+        let target = self.world_context_target_for(tile, prefer_item)?;
         let mailbox = lock(&link.mailbox);
         if mailbox.world_context.pending {
             return None;
@@ -76,9 +84,11 @@ impl PlayView {
         )
         .with_targeting(mailbox.world_context.use_with);
         menu.tile = Some(tile);
-        if let Some(crate::play::GroundItem::Map { header, .. }) =
+        if let Some(crate::play::GroundItem::Map { header, .. }) = if prefer_item {
+            self.scene.item_target_at(tile)
+        } else {
             self.scene.target_at(tile).and_then(|target| target.item)
-        {
+        } {
             menu.binding = Some((
                 header.content_generation,
                 header.bundle_digest,
@@ -88,10 +98,11 @@ impl PlayView {
         (!menu.entries.is_empty()).then_some(menu)
     }
     pub fn world_context_choose(&self, link: &PlayLink, menu: &Menu, action: Action) -> bool {
+        let prefer_item = matches!(action, Action::Use | Action::UseWith | Action::UseRune);
         if !menu.entries.iter().any(|(_, entry)| *entry == action)
-            || menu
-                .tile
-                .is_some_and(|tile| self.world_context_target(tile).as_ref() != Some(&menu.target))
+            || menu.tile.is_some_and(|tile| {
+                self.world_context_target_for(tile, prefer_item).as_ref() != Some(&menu.target)
+            })
         {
             lock(&link.mailbox)
                 .world_context
@@ -99,7 +110,7 @@ impl PlayView {
             return false;
         }
         if let Some(tile) = menu.tile {
-            let Some(current) = self.world_context(tile, link) else {
+            let Some(current) = self.world_context_for(tile, link, prefer_item) else {
                 return false;
             };
             if current.binding != menu.binding {
@@ -204,26 +215,39 @@ impl PlayLink {
 
 impl PlayView {
     /// Ordinary modifier clicks use the same observed target and negotiated command as menus.
-    pub fn modifier_click(&mut self, tile: TileCoord, link: &PlayLink, modifier: oteryn_input_actions::Modifier) -> bool {
+    pub fn modifier_click(
+        &mut self,
+        tile: TileCoord,
+        link: &PlayLink,
+        modifier: oteryn_input_actions::Modifier,
+    ) -> bool {
         use oteryn_input_actions::Modifier;
-        if self.gameplay_input_blocked(link) { return false; }
-        if modifier == Modifier::Alt { return self.attack_toggle_click(tile,link); }
-        let Some(menu) = self.world_context(tile,link) else { return false; };
+        if self.gameplay_input_blocked(link) {
+            return false;
+        }
+        if modifier == Modifier::Alt {
+            return self.attack_toggle_click(tile, link);
+        }
+        let Some(menu) = self.world_context_for(tile, link, modifier == Modifier::Control) else {
+            return false;
+        };
         let action = match modifier {
             Modifier::Shift => Action::Look,
             Modifier::Control => {
-                let multi_use = match self.scene.target_at(tile).and_then(|target|target.item) {
-                    Some(crate::play::GroundItem::Map { item, .. }) => self.scene.item_multi_use(item.appearance_id),
-                    Some(crate::play::GroundItem::Entity { handle: Some(handle), .. }) => {
-                        let appearance = lock(&link.mailbox).inventory.inventory.as_ref().and_then(|inventory| inventory.entries.iter().chain(&inventory.main_backpack).chain(inventory.equipment.iter().map(|e| &e.item)).find(|item|item.handle==handle)).map(|item|item.appearance_id);
-                        appearance.is_some_and(|id| self.scene.item_multi_use(id))
+                let multi_use = match self.scene.item_target_at(tile) {
+                    Some(crate::play::GroundItem::Map { item, .. }) => {
+                        self.scene.item_multi_use(item.appearance_id)
                     }
                     _ => false,
                 };
-                if multi_use { Action::UseWith } else { Action::Use }
+                if multi_use {
+                    Action::UseWith
+                } else {
+                    Action::Use
+                }
             }
             _ => return false,
         };
-        self.world_context_choose(link,&menu,action)
+        self.world_context_choose(link, &menu, action)
     }
 }

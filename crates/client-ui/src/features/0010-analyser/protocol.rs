@@ -9,6 +9,16 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     if !panel.selected {
         return;
     }
+    let mut reports = std::mem::take(&mut panel.reports);
+    for report in reports.values_mut() {
+        report.swap(panel);
+        apply_facts(panel, facts, seconds);
+        report.swap(panel);
+    }
+    panel.reports = reports;
+    apply_facts(panel, facts, seconds);
+}
+fn apply_facts(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
     for fact in facts {
         match fact {
             AnalyserFact::Kill { race } => {
@@ -173,6 +183,12 @@ pub fn catalogue_request(
         .keys()
         .chain(panel.supply.keys())
         .chain(panel.loot_tracked.iter())
+        .chain(
+            panel
+                .reports
+                .values()
+                .flat_map(|report| report.loot.keys().chain(report.supply.keys())),
+        )
     {
         if !panel.item_info.contains_key(id) && !ids.contains(id) {
             ids.push(*id);
@@ -239,53 +255,28 @@ pub fn reset_tool(panel: &mut Panel) {
         .unwrap_or(0);
     panel.reset_at[index] = now;
     match panel.tool {
-        Tool::Loot | Tool::LootTracker => {
-            panel.loot.clear();
-            panel.gold = 0;
-            panel.loot_items = 0;
-            panel.omitted_items = 0;
-            panel.gold_chart = Default::default();
-            panel.loot_drops.clear();
-            panel.omitted_drops = 0;
-        }
-        Tool::Experience => {
-            panel.goal_xp = panel
-                .goal_xp
-                .map(|goal| goal.saturating_sub(panel.gained_xp));
-            panel.gained_xp = 0;
-            panel.raw_xp = 0;
-            panel.xp_chart = Default::default();
-            panel.raw_xp_chart = Default::default();
-        }
-        Tool::Supplies => {
-            panel.supply.clear();
-            panel.supplies = 0;
-            panel.omitted_supplies = 0;
-        }
-        Tool::Damage | Tool::Healing | Tool::Impact => {
-            if panel.tool != Tool::Healing {
-                panel.damage = 0;
-                panel.damage_chart = Default::default();
-                panel.impact_types.clear();
-                panel.recent[0] = Default::default();
+        Tool::Overview | Tool::Hunting | Tool::Session => {
+            // These three views share the session, while every analyser owns its interval.
+            for tool in Tool::ALL {
+                if matches!(
+                    tool,
+                    Tool::Overview | Tool::Hunting | Tool::Session | Tool::Party | Tool::Bosses
+                ) || panel.reports.contains_key(tool.key())
+                {
+                    continue;
+                }
+                let mut report = super::state::Report::default();
+                report.swap(panel);
+                let snapshot = report.clone();
+                report.swap(panel);
+                panel.reports.insert(tool.key(), snapshot);
             }
-            if panel.tool != Tool::Damage {
-                panel.healing = 0;
-                panel.healing_chart = Default::default();
-                panel.recent[1] = Default::default();
+            super::state::Report::default().swap(panel);
+            for tool in [Tool::Overview, Tool::Hunting, Tool::Session] {
+                if let Some(index) = Tool::ALL.iter().position(|t| *t == tool) {
+                    panel.reset_at[index] = now;
+                }
             }
-        }
-        Tool::Input => {
-            panel.received = 0;
-            panel.received_chart = Default::default();
-            panel.input_types.clear();
-            panel.input_sources.clear();
-            panel.recent[2] = Default::default();
-        }
-        Tool::Kills => {
-            panel.kills = 0;
-            panel.kills_by_race.clear();
-            panel.kill_chart = Default::default();
         }
         Tool::Bosses => {
             panel.boss_drops.clear();
@@ -296,6 +287,17 @@ pub fn reset_tool(panel: &mut Panel) {
             panel.party_feedback =
                 Some("Party measurements are server-owned; refresh to read the current interval");
         }
-        Tool::Overview | Tool::Hunting | Tool::Session => reset(panel),
+        tool => {
+            if tool == Tool::Experience {
+                let gained = panel
+                    .reports
+                    .get(tool.key())
+                    .map_or(panel.gained_xp, |r| r.gained_xp);
+                panel.goal_xp = panel.goal_xp.map(|goal| goal.saturating_sub(gained));
+            }
+            panel
+                .reports
+                .insert(tool.key(), super::state::Report::default());
+        }
     }
 }

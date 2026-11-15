@@ -4,9 +4,12 @@ pub(super) mod items;
 mod measurements;
 pub use items::ItemStats;
 pub use measurements::{Clock, Series, chart_values, eta_seconds, per_hour};
+mod report;
+pub use report::Report;
 // Measurements continue while the window is closed; charts retain at most 60 minute buckets.
 #[derive(Debug, Clone, Default)]
 pub struct Panel {
+    pub reports: std::collections::BTreeMap<&'static str, Report>,
     pub open_tools: Vec<Tool>,
     pub recent: [measurements::Recent; 3],
     pub reset_at: [u64; 14],

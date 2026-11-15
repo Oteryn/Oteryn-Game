@@ -14,7 +14,11 @@ pub fn select(panel: &mut Panel, value: &str, tracked: bool) -> bool {
         panel.feedback = Some(tr!("Enter an item number to track"));
         return false;
     };
-    if tracked && !panel.loot.contains_key(&item) && !panel.item_info.contains_key(&item) {
+    let loot = panel
+        .reports
+        .get(super::Tool::LootTracker.key())
+        .map_or(&panel.loot, |report| &report.loot);
+    if tracked && !loot.contains_key(&item) && !panel.item_info.contains_key(&item) {
         panel.feedback = Some(tr!(
             "Choose an item from confirmed loot or resolved item information"
         ));

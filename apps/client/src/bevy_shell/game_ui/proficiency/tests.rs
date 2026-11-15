@@ -431,3 +431,39 @@ fn proficiency_applies_a_reviewed_build_only_after_each_server_confirmation() ->
     );
     Ok(())
 }
+
+#[test]
+fn restored_proficiency_preview_allows_switch_and_refresh_then_apply() -> Result {
+    for refresh in [false, true] {
+        let (mut app, mut commands, outbox) = app()?;
+        click(&mut app, |k| matches!(k, Kind::Weapon(0)))?;
+        app.update();
+        click(&mut app, |k| matches!(k, Kind::Perk(0, 1)))?;
+        app.update();
+        click(&mut app, |k| matches!(k, Kind::Perk(0, 0)))?;
+        app.update();
+        if refresh {
+            click(&mut app, |k| matches!(k, Kind::Refresh))?;
+            assert_eq!(command(&mut commands)?.kind, 660);
+        } else {
+            click(&mut app, |k| matches!(k, Kind::Weapon(1)))?;
+        }
+        let mut page = catalogue(250);
+        page.entries[1].experience = 250;
+        publish(&outbox, &page)?;
+        app.update();
+        click(&mut app, |k| {
+            if refresh {
+                matches!(k, Kind::Perk(0, 1))
+            } else {
+                matches!(k, Kind::Perk(0, 0))
+            }
+        })?;
+        app.update();
+        click(&mut app, |k| matches!(k, Kind::Apply))?;
+        let sent = command(&mut commands)?;
+        let selection = SelectPerkRequest::decode(&sent.payload).ok_or("perk request")?;
+        assert_eq!(selection.definition.get(), if refresh { 258 } else { 259 });
+    }
+    Ok(())
+}

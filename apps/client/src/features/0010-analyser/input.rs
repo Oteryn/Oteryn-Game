@@ -7,7 +7,10 @@ pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel
     if let Some(tool) = oteryn_client_ui::analyser::Tool::CYCLOPEDIA.get(index) {
         panel.tool = *tool;
     } else if index == oteryn_client_ui::analyser::Tool::CYCLOPEDIA.len() {
-        oteryn_client_ui::analyser::protocol::reset(panel);
+        let tool = panel.tool;
+        panel.tool = oteryn_client_ui::analyser::Tool::Session;
+        oteryn_client_ui::analyser::protocol::reset_tool(panel);
+        panel.tool = tool;
     }
 }
 
