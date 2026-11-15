@@ -70,7 +70,8 @@ impl HostOwner {
             }
             return;
         }
-        if play.link.daily_reward_input(&routed)
+        if play.link.analyser_input(&routed)
+            || play.link.daily_reward_input(&routed)
             || play.link.quest_input(&routed)
             || play.link.spell_catalog_input(&routed)
             || play.link.notices_input(&routed)

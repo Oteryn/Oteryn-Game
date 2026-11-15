@@ -73,6 +73,9 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
+- **Ctrl+Shift+Y:** the selected analyser window. The Analysers HUD selector opens
+  any of the fourteen retained tools. Reports update live; Reset session uses the
+  existing local reset, and Close or Escape dismisses the window.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+I:** Imbuing shrine: choose a carried item, then a slot and imbuement.
   Clear asks for confirmation. Refresh queries the existing shrine command;
