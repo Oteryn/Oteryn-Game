@@ -5,6 +5,13 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn repair_pending_spells(&self, admitted: AdmittedSession) -> bool {
+        let Some(_permit) = self.states.input_gate.enter().await else {
+            return false;
+        };
+        self.repair_pending_spell_entry(admitted).await
+    }
+
     async fn background_operation<F: Future>(&self, future: F) -> F::Output {
         self.root.with_background_operation(future).await
     }
@@ -1239,33 +1246,56 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        let started = tokio::time::Instant::now();
         if let Some(actor) = admitted.runtime_actor
             && !self
                 .resume_dawnport_departure(actor, admitted.game_session_id)
                 .await
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), "callback_dawnport");
             return false;
         }
+        record_entry_decision("playable", 1, started.elapsed(), "callback_dawnport");
+        let mut phase = "grizzly_resume";
+        let mut started = tokio::time::Instant::now();
         if !tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            self.prepare_grizzly_npc_resume(admitted).await
-                && self
-                    .reconcile_quest_callbacks(admitted.game_session_id)
-                    .await
+            if !self.prepare_grizzly_npc_resume(admitted).await {
+                return false;
+            }
+            record_entry_decision("playable", 1, started.elapsed(), phase);
+            phase = "quest_callbacks";
+            started = tokio::time::Instant::now();
+            self.reconcile_quest_callbacks(admitted.game_session_id)
+                .await
         })
         .await
         .unwrap_or(false)
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), phase);
             return false;
         }
+        record_entry_decision("playable", 1, started.elapsed(), phase);
+        let started = tokio::time::Instant::now();
         if !crate::gameplay_transport::hireling::recover_pending_lamp_ingress(self, admitted).await
         {
+            record_entry_decision("unplayable", 1, started.elapsed(), "hireling_ingress");
             return false;
         }
-        self.states
+        record_entry_decision("playable", 1, started.elapsed(), "hireling_ingress");
+        let started = tokio::time::Instant::now();
+        let recovered = self
+            .states
             .command_ingress
             .recover_trade_continuity(admitted)
             .is_some()
-            || admitted.continuity.next_command_id == 1
+            || admitted.continuity.next_command_id == 1;
+        record_entry_decision(
+            if recovered { "playable" } else { "unplayable" },
+            1,
+            started.elapsed(),
+            "trade_continuity",
+        );
+        recovered
     }
 
     async fn use_event_world_object(

@@ -313,9 +313,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             drop(demand.take());
         }
         tokio::time::sleep(step).await;
-        if self.ensure_source_map_initialized().await {
-            self.drain_monster_melee().await;
-        }
+        // The source-owner cycle keeps creatures running after control loss;
+        // disconnect processing must not take over a world-sized census.
         true
     }
 

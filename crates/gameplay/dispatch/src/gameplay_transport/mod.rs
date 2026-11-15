@@ -1306,6 +1306,43 @@ fn earned_notice(
     )
 }
 
+/// A bounded admission decision, with no player identity or raw failure details.
+fn record_entry_decision(outcome: &str, attempts: u64, elapsed: Duration, phase: &str) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
+    let mut line = Line::new(
+        Level::Info,
+        "gameplay_transport",
+        "admission_entry_decision",
+    )
+    .field("outcome", FieldValue::Token(outcome))
+    .field("attempts", FieldValue::U64(attempts))
+    .field(
+        "elapsed_ms",
+        FieldValue::U64(u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)),
+    )
+    .field("phase", FieldValue::Token(phase));
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
+/// Join boundaries are emitted before awaiting their work, so a cancelled join still names
+/// its last phase. The entry outcome is the current one, after all admission participants.
+fn record_join_progress(phase: &str, first_entry: connection::FirstEntryOutcome) {
+    use oteryn_error_codes::{FieldValue, Level, Line};
+    let trace = connection::diagnostic_connection_trace().map(format_connection_trace);
+    let first_entry = format!("{first_entry:?}");
+    let mut line = Line::new(Level::Info, "gameplay_transport", "join_progress")
+        .field("phase", FieldValue::Token(phase))
+        .field("first_entry", FieldValue::Token(&first_entry));
+    if let Some(trace) = trace.as_deref() {
+        line = line.trace(trace);
+    }
+    oteryn_error_codes::emit("oteryn-game-server", &line);
+}
+
 /// One structured stderr event line for the operator, as the node's own events are written
 /// (OPS-NODE-BOOT-01 D6).
 fn operator_event(line: &str) {

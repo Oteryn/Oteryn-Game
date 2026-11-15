@@ -416,8 +416,10 @@ evidence "platform_seed=account=1 admission_trust=published_public_key_only oaut
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 if [[ "$LL_RUST" == host ]]; then
-  cargo +1.100.0 build --locked -p oteryn-game-server -p oteryn-client --bins
-  TARGET="$GAME_SOURCE/target/debug"
+  # Release: a debug node spends ~800 ms per connection poll on the full World Bundle, so
+  # durability passes miss their 2 s deadline and the live session is closed.
+  cargo +1.100.0 build --locked --release -p oteryn-game-server -p oteryn-client --bins
+  TARGET="$GAME_SOURCE/target/release"
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
   SERVICE_UID="$(id -u "$SERVICE_USER")"
 else
@@ -425,8 +427,8 @@ else
   mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
   docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
     --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
-    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
-  TARGET="$GAME_SOURCE/target/login-local-container/debug"
+    --env RUSTUP_TOOLCHAIN=1.100.0 "$RUST_IMAGE" cargo build --locked --release -p oteryn-game-server --bins
+  TARGET="$GAME_SOURCE/target/login-local-container/release"
 fi
 evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/node"
@@ -442,7 +444,7 @@ LL_GAMEPLAY_ENV=()
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   # Match node_boot: the bundle needs the full item index, not the fixture room.
   # Stage only declared, hash-bound inputs; never publish unrelated siblings.
-  python3 - "$GAME_SOURCE/content/spells.manifest.json" "$GAME_SOURCE" "$WORK/gameplay" <<'PY_STAGE'
+  python3 - "$GAME_SOURCE/content/spells.manifest.json" "$GAME_SOURCE" "$WORK/gameplay" "${INTERPRETATION[2]}" <<'PY_STAGE'
 import hashlib
 import json
 import pathlib
@@ -484,6 +486,10 @@ for field in fields:
 sys.path.insert(0, str(repo_root / "tools/qualification/spells"))
 from provisioning_inputs import select_cosmetics_inputs
 select_cosmetics_inputs(document, manifest, repo_root, selected)
+document["build_training"]["content_revision"] = sys.argv[4]
+selected[manifest.relative_to(repo_root).as_posix()] = (
+    json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+).encode()
 staged.mkdir(mode=0o700)
 for name, data in selected.items():
     destination = staged / name
@@ -633,7 +639,9 @@ source_authority = "oteryn:runtime:login-local"
 route_revision = "$ROUTE_REVISION"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-ll-1"
-content_revision = "content-ll-1"
+# Quest and Task Board writers require the Character root content revision (from the
+# Platform intent) to equal this one; a mismatch is ProgressionContextMismatch.
+content_revision = "${INTERPRETATION[2]}"
 map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
 required_gameplay_capabilities = $required_gameplay_capabilities
@@ -720,6 +728,15 @@ await_log "event=content_activated .*activation_sequence=1 " "$NODE_ACTIVATION_W
 if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
   await_log "event=world_bundle .*state=booted map_revision=sha256:$WB_DIGEST" "$NODE_ACTIVATION_WAIT_SECONDS"
   evidence "world_bundle=booted digest=$WB_DIGEST"
+  # Epoch zero is created only by the Control initializer (as node_boot). Without it the
+  # reset calendar is absent and the first Task Board query fails InvalidStoredState.
+  epoch_result="$({
+    echo 'PREPARE login_local_world_epoch(UUID, UUID, TEXT) AS'
+    cat "$GAME_SOURCE/tools/qualification/node_boot/world_epoch.sql"
+    printf "EXECUTE login_local_world_epoch('%s', '%s', '%s');\n" "$WORLD_ID" "$CHANNEL_ID" "$WB_DIGEST"
+  } | psql_admin oteryn_login_local)"
+  [[ "$epoch_result" == t ]] || { echo "World epoch initialization failed"; exit 1; }
+  evidence "world_epoch=0 source=control_initializer calendar=TIBIA_SERVER_SAVE_BERLIN_06"
 fi
 await_log "event=readiness .*ready=true" 60
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"

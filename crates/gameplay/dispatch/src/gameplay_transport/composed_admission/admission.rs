@@ -500,7 +500,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 barrier.0.notify_one();
                 barrier.1.notified().await;
             }
-            let Ok(loaded) = budget
+            // LIVEJOIN-1: the entry steps above share one window from the commit, and on a busy
+            // root they can spend all of it before this final step starts, leaving a committed,
+            // positioned actor unplayable. Like the other foreground lifecycle owners, the final
+            // spell repair takes its own window with foreground preference over background passes.
+            let spell_budget =
+                AdmissionRetryBudget::for_foreground_root(&admitted.game_session_id, self.root)
+                    .unwrap_or_else(|_| {
+                        AdmissionRetryBudget::for_root(&admitted.game_session_id, self.root)
+                    });
+            let Ok(loaded) = spell_budget
                 .retry_unavailable(async || {
                     match load_character_cast_facts(self.root, self.character, character_id).await {
                         CastFactsLoad::Ready {
@@ -528,7 +537,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((facts, character_revision)) = loaded else {
                 return Ok(admitted);
             };
-            if budget
+            if spell_budget
                 .retry_unavailable(async || {
                     if self
                         .reconcile_automatic_spells(
