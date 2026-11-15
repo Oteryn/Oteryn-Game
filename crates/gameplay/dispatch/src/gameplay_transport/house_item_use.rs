@@ -75,19 +75,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(intent)
                 .map_err(|_| ())?,
         };
+        // Immutable retries precede both live target resolution and action exhaustion.
+        if let Some(replay) = self
+            .root
+            .replay_house_item_action(self.holder, &context, &request)
+            .await
+            .map_err(|_| ())?
+        {
+            return Ok(refuse(replay.disposition));
+        }
         if let Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(target)) =
             intent.use_with_map_item.as_ref()
         {
-            // A successful bed use consumed its source kit and changed both bed
-            // revisions. Probe history before resolving either current handle.
-            if let Some(replay) = self
-                .root
-                .replay_house_item_action(self.holder, &context, &request)
-                .await
-                .map_err(|_| ())?
-            {
-                return Ok(refuse(replay.disposition));
-            }
             if !self
                 .root
                 .house_source_is_bed_kit(self.holder, &context, request.source)
@@ -159,6 +158,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
             }
             context = context.with_decoration_base_items(base_items);
+        }
+        if !self
+            .states
+            .world_gate
+            .lock()
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+        {
+            return Ok(refuse(UseDisposition::Exhausted));
         }
         let publication_house = context.house().clone();
         let result = self

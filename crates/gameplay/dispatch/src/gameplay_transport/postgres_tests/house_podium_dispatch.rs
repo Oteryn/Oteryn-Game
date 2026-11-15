@@ -252,6 +252,40 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         return Ok(());
     }
 
+    if matches!(case, Case::Refusals) {
+        let at = {
+            let runtime = owner.runtime.lock().await;
+            runtime.house_actor_state(admitted.runtime_actor.ok_or("House actor")?, admitted.game_session_id).map_err(debug)?.position
+        };
+        for position in [
+            [at.x + 3, at.y, i32::from(at.floor)],
+            [at.x, at.y, i32::from(at.floor) + 1],
+        ] {
+            let bytes: Vec<u8> = position.iter().flat_map(|value| value.to_be_bytes()).collect();
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_house_tiles VALUES(encode($1,'hex')::uuid,$2,$3) ON CONFLICT DO NOTHING")
+                .bind(id(42).as_slice()).bind(HOUSE).bind(&bytes).execute(&mut *tx).await?;
+            sqlx::query("UPDATE game_item_house_interior_locations SET spatial_position=$1 WHERE item_instance_id=encode($2,'hex')::uuid")
+                .bind(&bytes).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+            let payload = crate::gameplay_transport::house_podium::execute(
+                &owner, admitted,
+                crate::gameplay_transport::house_podium::Request::Set(wire::SetRequest::decode(&set).ok_or("set request")?),
+            ).await.ok_or("distant podium reply")?;
+            assert_eq!(wire::SetResult::decode(&payload),
+                Some(wire::SetResult::Refused(wire::SetRefusal::NoAccess)));
+            assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_podium_displays")
+                .fetch_one(&h.pool).await?, 0);
+        }
+        let position: Vec<u8> = POSITION.iter().flat_map(|value| value.to_be_bytes()).collect();
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_item_house_interior_locations SET spatial_position=$1 WHERE item_instance_id=encode($2,'hex')::uuid")
+            .bind(position).bind(id(71).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+
     let command = admitted.continuity.next_command_id;
     let (status, payload) = exchange(&owner, &mut admitted, command, wire::COMMAND_QUERY, &id(71))
         .await?

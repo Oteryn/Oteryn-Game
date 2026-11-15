@@ -263,6 +263,24 @@ async fn scenario(h: &Harness) -> TestResult {
         owner.chat_admit(a.runtime_actor.ok_or("actor")?,a.game_session_id).await;
         owner.public_chat_admit(*a,ChatRoomSet::default()).await;
     }
+    // Fresh vocationless actors also own spell state for vitals and conditions.
+    {
+        let a = admitted[0];
+        let actor = a.runtime_actor.ok_or("actor")?;
+        let facts = crate::spell::cast::CharacterCastFacts {
+            vocation: crate::spell::Vocation::None,
+            level: 1,
+            magic_level: 0,
+            max_health: 150,
+            max_mana: 0,
+            max_soul: 100,
+        };
+        let runtime = runtime.lock().await;
+        owner.states.spell_states.lock().await
+            .initialize(&runtime, actor, a.game_session_id, facts, (0, 0), owner.owner_now())
+            .ok_or("vocationless spell state")?;
+    }
+    owner.public_chat_admit(admitted[0], ChatRoomSet::default()).await;
     assert!(owner.states.chat.public_room_list(admitted[0].game_session_id).contains(ChatRoom::Tutor));
     assert!(!owner.states.chat.public_room_list(admitted[0].game_session_id).contains(ChatRoom::Gamemaster));
     assert!(owner.states.chat.public_room_list(admitted[0].game_session_id).contains(ChatRoom::AdvertisingRookgaard));

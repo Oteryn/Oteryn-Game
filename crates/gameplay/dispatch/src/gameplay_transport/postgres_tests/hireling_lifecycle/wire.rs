@@ -72,6 +72,18 @@ pub(super) async fn scenario(h: &Harness, authority: &ReconciledCharacterAuthori
     assert!(owner.runtime.lock().await.house_hireling_entities(actor,
         admitted.game_session_id).map_err(debug)?.is_empty());
     enter_interior(owner, &mut admitted, actor).await?;
+    assert!(owner.states.world_gate.lock().map_err(debug)?.admit(
+        actor, owner.clock_origin.elapsed() + std::time::Duration::from_secs(3600)));
+    let command = UseCommand { game_session_id: admitted.game_session_id,
+        command_id: admitted.continuity.next_command_id, item_fence: admitted.item_fence };
+    assert_eq!(crate::gameplay_transport::hireling::use_lamp(owner, actor, command, lamp,
+        HirelingLampInput::ItemDefinition(definition_index.get())).await,
+        Some(UseDisposition::Exhausted));
+    assert_eq!(super::inbox_count(h).await?, 1);
+    assert_eq!(super::uses(h).await?, 0);
+    assert!(!super::active(h, hireling).await?);
+    // Restore the isolated fixture's clock before its existing placement/replay scenario.
+    *owner.states.world_gate.lock().map_err(debug)? = Default::default();
     // Replaying the durable operations starts after the independent native STEP.
     let initial = admitted;
     let mut management = Vec::new();

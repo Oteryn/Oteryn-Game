@@ -356,7 +356,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let states = self.states.spell_states.lock().await;
             match states.get(&runtime, actor, admitted.game_session_id) {
-                Some(state) => (state.character_facts().level, true),
+                Some(state) => {
+                    let facts = state.character_facts();
+                    (facts.level, facts.vocation != crate::spell::Vocation::None)
+                }
                 None => (self.states.chat.level(admitted.game_session_id), false),
             }
         };

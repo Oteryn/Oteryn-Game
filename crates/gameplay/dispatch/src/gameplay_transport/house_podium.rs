@@ -3,6 +3,7 @@ use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection:
 use crate::content::creature_reward::CreatureRewardTable;
 use crate::content::native_gameplay::NativeCosmeticsView;
 use crate::domain::appearance::{AppearanceContent, EarnedCosmetic, Sex, UnlockFact};
+use crate::durability::consume_transform::HouseActionContext;
 use crate::durability::house_podium::{HousePodiumRefusal, HousePodiumSet};
 use crate::durability::house_scope_handoff::HouseId;
 use oteryn_gameplay_housing::house_podium::PodiumContent;
@@ -250,6 +251,21 @@ pub(super) async fn execute(
             return project(owner, fence, house, item, flagged).await;
         }
     };
+    // Keep the actor position and House item custody stable through the fenced setter.
+    let _lane = owner.spell_lane_permit().await?;
+    let context = {
+        let runtime = owner.runtime.lock().await;
+        HouseActionContext::from_native_owner(&runtime, actor, admitted.game_session_id, fence).ok()?
+    };
+    let at = context.position();
+    let items = owner.root.read_house_action_items(owner.holder, context).await.ok()??;
+    if let Some(item) = items.items.iter().find(|item| item.item_instance_id == set.item) {
+        let target = HouseActionContext::decode_spatial_position(&item.spatial_position)?;
+        if at[2] != target[2] || at[0].abs_diff(target[0]) > 1 || at[1].abs_diff(target[1]) > 1 {
+            return Some(wire::SetResult::Refused(wire::SetRefusal::NoAccess).encode());
+        }
+    }
+    // A missing item retains the durable setter's precise refusal.
     let gameplay = owner.active_generation?.native_gameplay()?;
     let content = PodiumContentView {
         cosmetics: gameplay.cosmetics()?.clone(),

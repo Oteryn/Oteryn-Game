@@ -138,6 +138,9 @@ pub(super) async fn use_lamp(owner:&ComposedFreshAdmission<'_,'_,'_>,actor:Exact
         let placement=owner.movement_cells().house_tiles().house_at(owner.movement_cells().scope(),cell).ok()??;
         if placement.house().key!=state.house||placement.door_at(cell).is_some(){record_refusal(owner,command,input.binding(),Refusal::Conflict).await?;return Some(UseDisposition::Rejected)}
     }
+    if !owner.states.world_gate.lock().is_ok_and(|mut gate|gate.admit(actor,owner.clock_origin.elapsed())){
+        return Some(UseDisposition::Exhausted)
+    }
     let definition=lamp_definition(owner).await?;
     let inventory=owner.root.read_hireling_use_inventory(owner.character,owner.holder,fence,*owner.channel_id.as_bytes()).await.ok()?;
     let reference=reference(command)?;

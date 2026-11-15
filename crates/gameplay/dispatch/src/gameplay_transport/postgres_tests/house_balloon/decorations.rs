@@ -68,6 +68,24 @@ pub(super) async fn scenario(
         target: None,
         intent,
     };
+    if matches!(case, Case::Decoration(22736, _)) {
+        let actor = admitted.runtime_actor.ok_or("House actor")?;
+        assert!(owner.states.world_gate.lock().map_err(debug)?.admit(
+            actor, owner.clock_origin.elapsed() + std::time::Duration::from_secs(3600)));
+        let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(), body).map_err(debug)?;
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 1,
+            item_fence: admitted.item_fence,
+        };
+        let result = owner.use_house_event_item(actor, command, &intent,
+            Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))))
+            .await.map_err(|()| "House use unavailable")?.ok_or("House use result")?;
+        assert_eq!(result.disposition, UseDisposition::Exhausted);
+        assert_eq!(item(h).await?, *before);
+        assert_eq!(receipts(h).await?, 0);
+    }
     let old_custody = custody(h).await?;
     let result = owner
         .root
@@ -222,6 +240,21 @@ pub(super) async fn scenario(
     assert_eq!(replay.effects, result.effects);
     assert_eq!(receipts(h).await?, expected_receipts);
     assert_eq!(item(h).await?["state_revision"], expected_revision);
+    if matches!(case, Case::Decoration(22736, _)) {
+        let intent = oteryn_protocol_oteryn::world_object::decode_use_intent_target(
+            admitted.continuity.selected_capabilities.as_slice(), body).map_err(debug)?;
+        let command = crate::gameplay_transport::connection::UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 1,
+            item_fence: admitted.item_fence,
+        };
+        let replay = owner.use_house_event_item(admitted.runtime_actor.ok_or("House actor")?,
+            command, &intent, Some(crate::gameplay_transport::item_view::ItemKey::Instance(id(71))))
+            .await.map_err(|()| "House replay unavailable")?.ok_or("House replay result")?;
+        assert_eq!(replay.disposition, UseDisposition::Committed);
+        assert_eq!(item(h).await?["state_revision"], expected_revision);
+        assert_eq!(receipts(h).await?, expected_receipts);
+    }
     eprintln!(
         "W18 POSTGRES_CASE_COMPLETED source={source_id} native_owner_custody_cooldown_replay"
     );
