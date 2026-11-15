@@ -45,7 +45,29 @@ def qualify_native_core(definition, profile):
     return result
 
 
-def refresh(relative, root=ROOT, base='HEAD', custody=False, native_core=False):
+def accept_canonical_weight(before, after, profile):
+    """Accept exactly one changed canonical leaf, with an unchanged old physical profile."""
+    expected = copy.deepcopy(before)
+    try:
+        old = before['semantics']['physical']
+        new = after['semantics']['physical']
+        weight = new['value']['weight']
+        if (old['state'] != 'KNOWN' or new['state'] != 'KNOWN'
+                or weight.get('state') != 'KNOWN'
+                or type(weight.get('value')) is not int
+                or not 0 <= weight['value'] <= 0xffffffff
+                or profile['semantics']['physical'] != old):
+            raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
+        expected['semantics']['physical']['value']['weight'] = copy.deepcopy(weight)
+        if expected != after:
+            raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
+        profile['semantics']['physical'] = copy.deepcopy(new)
+    except (KeyError, TypeError):
+        raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT') from None
+    return expected
+
+
+def refresh(relative, root=ROOT, base='HEAD', custody=False, native_core=False, accept_weight=False):
     if (Path(relative).parts[:3] != ('tools', 'content-schema', 'native-gameplay')
             or len(Path(relative).parts) != 4 or not relative.endswith('.json')
             or not (root / relative).resolve().is_relative_to(root.resolve())):
@@ -66,6 +88,7 @@ def refresh(relative, root=ROOT, base='HEAD', custody=False, native_core=False):
     profiles = {r['production_definition']['production_key']: r for r in baseline['records']}
     if len(keys) != len(baseline['records']):
         raise ValueError('ITEM_OVERLAY_DUPLICATE_IDENTITY')
+    current_profiles = {r['production_definition']['production_key']: r for r in current['records']}
     inputs = current['canonical_inputs']
     originals = baseline['canonical_inputs']
     if len(inputs) != len(originals):
@@ -107,6 +130,12 @@ def refresh(relative, root=ROOT, base='HEAD', custody=False, native_core=False):
             selected_before = {key: (qualify(value, profiles[key])
                                     if value != selected_after.get(key) else value)
                                for key, value in selected_before.items()}
+        if accept_weight:
+            for key, before_definition in selected_before.items():
+                after_definition = selected_after.get(key)
+                if before_definition != after_definition:
+                    selected_before[key] = accept_canonical_weight(
+                        before_definition, after_definition, current_profiles[key])
         if selected_before != selected_after:
             raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
         if 'key' in original:
@@ -127,8 +156,9 @@ if __name__ == '__main__':
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--qualify-custody-inputs', action='store_true')
     mode.add_argument('--qualify-native-core-inputs', action='store_true')
+    mode.add_argument('--accept-weight-from-canonical', action='store_true')
     args = parser.parse_args()
-    outputs = {path: refresh(path, base=args.base, custody=args.qualify_custody_inputs, native_core=args.qualify_native_core_inputs)
+    outputs = {path: refresh(path, base=args.base, custody=args.qualify_custody_inputs, native_core=args.qualify_native_core_inputs, accept_weight=args.accept_weight_from_canonical)
                for path in args.overlays}
     for path, raw in outputs.items():
         (ROOT / path).write_bytes(raw)
