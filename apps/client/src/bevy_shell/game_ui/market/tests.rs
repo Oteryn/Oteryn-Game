@@ -347,3 +347,5 @@ mod lifecycle;
 
 mod offers;
 mod purchase;
+
+mod statistics;

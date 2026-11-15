@@ -2,6 +2,7 @@
 mod actions;
 mod offers;
 mod purchase;
+mod statistics;
 #[cfg(test)]
 mod tests;
 mod widgets;
