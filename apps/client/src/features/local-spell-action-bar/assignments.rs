@@ -1,5 +1,6 @@
 //! Persisted heterogeneous slot assignments; every active action uses an existing command path.
 use super::item_actions::item_source;
+use crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings;
 use crate::play::{
     PlayLink, SettingsState,
     mailbox::{Mailbox, lock},
@@ -323,12 +324,11 @@ fn activate_inner(
     };
     match action {
         BarAction::Spell { name, words, aim } => {
-            if let Some(entry) = mailbox
-                .spell_catalog
-                .catalog
-                .entries()
-                .iter()
-                .find(|entry| entry.name == name && entry.words == words && entry.available)
+            if let Some(entry) = ArchiveBindings::matching_spell(
+                &name,
+                &words,
+                mailbox.spell_catalog.catalog.entries(),
+            ) && entry.available
                 && let Some(index) = NonZeroU32::new(entry.cast_index)
             {
                 let cursor_aim = if aim == SpellAim::Cursor {
@@ -522,12 +522,9 @@ pub(in crate::play) fn slot_label(mailbox: &Mailbox, _slot: usize, action: &BarA
 }
 fn action_ready(mailbox: &Mailbox, action: &BarAction) -> bool {
     let entry = match action {
-        BarAction::Spell { name, words, .. } => mailbox
-            .spell_catalog
-            .catalog
-            .entries()
-            .iter()
-            .find(|entry| entry.name == *name && entry.words == *words),
+        BarAction::Spell { name, words, .. } => {
+            ArchiveBindings::matching_spell(name, words, mailbox.spell_catalog.catalog.entries())
+        }
         BarAction::Use { definition, .. } => {
             if item_source(mailbox, *definition, None).is_none() || mailbox.world_context.pending {
                 return false;
