@@ -10,6 +10,7 @@ mod tests {
                     sprite_id: vec![1],
                     ..SpriteInfoMsg::default()
                 }),
+                ..FrameGroupMsg::default()
             }],
             flags: Some(FlagsMsg {
                 shift: Some(ShiftMsg {
@@ -19,6 +20,28 @@ mod tests {
                 ..FlagsMsg::default()
             }),
         }
+    }
+
+    #[test]
+    fn outfit_movement_uses_the_typed_walking_group() -> Result<(), Box<dyn std::error::Error>> {
+        let mut message = shifted(0, 0);
+        let mut walking = message.frame_group[0].clone();
+        walking.sprite_info.as_mut().ok_or("sprite info")?.sprite_id = vec![2];
+        // Native fixed_frame_group = 1 (outfit-moving), protobuf tag 1.
+        let mut encoded = vec![8, 1];
+        encoded.extend(walking.encode_to_vec());
+        message
+            .frame_group
+            .push(FrameGroupMsg::decode(encoded.as_slice())?);
+        assert_eq!(
+            convert(1, message.clone()).map(|a| a.sprite_ids),
+            Some(vec![1])
+        );
+        assert_eq!(
+            convert_movement(1, &message).map(|a| a.sprite_ids),
+            Some(vec![2])
+        );
+        Ok(())
     }
 
     #[test]
@@ -41,6 +64,7 @@ mod tests {
                     sprite_id: vec![1; width as usize],
                     ..SpriteInfoMsg::default()
                 }),
+                ..FrameGroupMsg::default()
             }],
             flags: Some(flags),
         };

@@ -7,6 +7,7 @@ use super::{
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
+mod animation;
 const PARTS: [&str; 4] = ["Head", "Primary", "Secondary", "Detail"];
 #[derive(Component)]
 struct Window;
@@ -17,6 +18,7 @@ struct Action {
 }
 #[derive(Clone)]
 enum Kind {
+    Preview(animation::Control),
     Outfit(String),
     Addon(u8),
     Colour(usize, usize),
@@ -27,11 +29,13 @@ enum Kind {
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    playback: animation::Playback,
     artwork: Option<preview::Assets>,
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, (project, animation::animate).chain());
 }
 fn outfits(panel: &Panel) -> Vec<&str> {
     panel.catalogue.as_ref().map_or_else(Vec::new, |c| {
@@ -89,7 +93,7 @@ fn edit(panel: &mut Panel, kind: &Kind) -> bool {
             panel.fields[3] = colours.join(",");
             true
         }
-        Kind::Ok | Kind::Close => false,
+        Kind::Preview(_) | Kind::Ok | Kind::Close => false,
     }
 }
 fn activate(
@@ -97,6 +101,7 @@ fn activate(
     actions: Query<&Action>,
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
+    mut state: ResMut<State>,
 ) {
     if !guard.allows(event.entity) {
         return;
@@ -112,6 +117,10 @@ fn activate(
     };
     if matches!(action.kind, Kind::Close) {
         play.link.appearance_close();
+        return;
+    }
+    if let Kind::Preview(control) = &action.kind {
+        state.playback.edit(control);
         return;
     }
     send(&play.link, &action.kind);
@@ -296,25 +305,14 @@ fn project(
         state.artwork = std::env::var_os(crate::map::ASSET_DIR_ENV)
             .and_then(|root| preview::Assets::load(std::path::Path::new(&root)).ok());
     }
-    if let Some(selection) = panel.preview() {
-        let pixels = state.artwork.as_mut().map(|assets| assets.draw(&selection));
+    if panel.preview().is_some() {
+        let pixels = state
+            .artwork
+            .as_mut()
+            .map(|assets| assets.draw_panel(&panel, 2, 0, false));
         match pixels {
-            Some(Ok(mut pixels)) => {
-                for pixel in pixels.as_chunks_mut::<4>().0 {
-                    pixel.swap(0, 2);
-                    pixel[3] = 255;
-                }
-                let image = Image::new(
-                    bevy::render::render_resource::Extent3d {
-                        width: 96,
-                        height: 96,
-                        depth_or_array_layers: 1,
-                    },
-                    bevy::render::render_resource::TextureDimension::D2,
-                    pixels,
-                    bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-                    bevy::asset::RenderAssetUsages::default(),
-                );
+            Some(Ok(pixels)) => {
+                let image = animation::image(pixels);
                 let handle = if let Some(handle) = &state.image {
                     if let Some(mut target) = images.get_mut(handle) {
                         *target = image;
@@ -354,6 +352,21 @@ fn project(
             }
         }
     }
+    for (control, label) in [
+        (animation::Control::Left, "Turn left"),
+        (animation::Control::Right, "Turn right"),
+        (animation::Control::Movement(true), "Movement on"),
+        (animation::Control::Movement(false), "Movement off"),
+    ] {
+        button(
+            &mut commands,
+            &skin,
+            root,
+            generation,
+            Kind::Preview(control),
+            label,
+        );
+    }
     let preview = commands
         .spawn(source::button_caption(
             format!(
@@ -373,6 +386,7 @@ fn project(
         Kind::Close,
         "Cancel",
     );
+    state.playback.invalidate();
     state.rendered = Some((generation, panel));
 }
 #[path = "../../features/0025-appearance/preview.rs"]

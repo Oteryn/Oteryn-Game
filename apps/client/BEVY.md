@@ -194,7 +194,22 @@ covered-tile visibility rule locally.
 
 Press Ctrl+Alt+A (rebindable as `0025-appearance-open`) while playing to open Outfit. Select a granted outfit, owned
 addons, four palette colours and a mount, then OK to send the existing appearance
-change. Cancel closes the editor. The standing preview uses local verified sprite
-sheets; mounts display their catalogue keys because the model has no mount sprite
-IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
+change. Cancel closes the editor. Turn left/right rotates the local preview; Movement
+on/off switches between the verified walking and standing frame groups. Animation
+loops using the asset phase durations, updating the existing preview image without
+rebuilding the editor. Both paths retain the selected colours and addons.
+The selected mount is drawn beneath the mounted rider, sharing the direction and
+animation clock. Its key-to-look binding comes from the existing local cosmetics
+metadata and is accepted only when the normalized document digest matches the
+server catalogue's cosmetics digest. Missing/stale bindings display an error;
+no mount IDs or ownership are inferred. The catalogue arrives in appearance
+snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
+
+Preview reference: Global manual `docs/reference/tibia-manual/controls.md:20-21`
+(Movement and rotation arrows). OTClient reference only:
+`edubart/otclient@dab86e610991092fe8b2471f7de55a7c986b3cd2`,
+`src/client/creature.cpp:105-160` (direction, addon and mask composition),
+`modules/game_outfit/outfit.lua:42-50` (mount artwork uses an explicit type binding).
+The preview implements Global's movement and rotation controls independently of
+OTClient's south-facing `drawOutfit` preview.
