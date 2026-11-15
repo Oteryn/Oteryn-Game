@@ -99,6 +99,12 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+P:** Weapon proficiency. Requests the existing server catalogue,
   shows weapon levels and XP progress, and offers perks only at reached levels.
   This protocol has no server event that opens this window.
+- **Ctrl+Shift+H:** house access lists. Query the town catalogue, select a row,
+  load guests/subowners/a door, then edit the multiline list and enter CONFIRM
+  before saving. The current server requires member UUIDs; name resolution and
+  book/sign author/date descriptors are not available on the current wire.
+  Server modal messages without an input remain read-only; text inputs retain
+  their existing edit and answer path.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
