@@ -461,3 +461,35 @@ fn proficiency_shortcut_requests_catalogue_only_outside_blocked_input() -> TestR
     );
     Ok(())
 }
+
+#[test]
+fn accepted_logout_restarts_admission_and_clears_character_scope() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    host.finish_play(PlayEnd::LoggedOut);
+    assert_eq!(host.phase, Phase::Entering);
+    assert!(host.entry.as_ref().is_some_and(Reentry::is_entering));
+    assert!(host.play.is_none());
+    assert_eq!(host.settings.character_scope(), None);
+    host.cancel_login();
+    Ok(())
+}
+
+#[test]
+fn admitted_bulletin_is_presented_without_losing_play() -> TestResult {
+    let mut host = HostOwner::new(None)?;
+    host.finish_admission(
+        Ok(admitted_view([9; 16])?),
+        Some(
+            r#"{"news":[{"title":"Operator notice","body":"Published announcement"}],"events":[]}"#
+                .into(),
+        ),
+    );
+    assert_eq!(host.phase, Phase::Playing);
+    assert!(host.play.is_some());
+    assert!(host.status.contains("Operator notice"));
+    assert!(host.status.contains("Published announcement"));
+    assert!(host.bulletin.news().contains("Published announcement"));
+    Ok(())
+}

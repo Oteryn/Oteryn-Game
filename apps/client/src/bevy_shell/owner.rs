@@ -59,6 +59,7 @@ pub(super) struct HostOwner {
     scope: Scope,
     pub phase: Phase,
     pub status: String,
+    bulletin: crate::bulletin::Browser,
     pub(super) login: super::login::LoginState,
     pub(super) selection: super::selection::SelectionBridge,
     selector: crate::character_selection::CharacterSelector,
@@ -81,6 +82,7 @@ impl HostOwner {
             },
             phase: Phase::Offline,
             status: offline_message().into(),
+            bulletin: Default::default(),
             login: Default::default(),
             selection,
             selector,
@@ -283,20 +285,8 @@ impl HostOwner {
             self.login.form.feedback(message);
         }
         if let Some(result) = self.entry.as_mut().and_then(Reentry::poll) {
-            self.login
-                .form
-                .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
-            if result.is_ok() {
-                self.login.visible = false;
-            }
-            // Bulletin remains owned by Reentry; rich bulletin presentation is a later module.
-            let _ = self.entry.as_mut().and_then(Reentry::take_bulletin);
-            match result {
-                Ok((view, link)) => {
-                    self.install_play(view, link);
-                }
-                Err(error) => self.leave(error_text(error)),
-            }
+            let bulletin = self.entry.as_mut().and_then(Reentry::take_bulletin);
+            self.finish_admission(result, bulletin);
         }
         let mut end = None;
         if let Some(play) = &mut self.play {
@@ -318,11 +308,52 @@ impl HostOwner {
             end = play.view.tick(&play.link).err();
         }
         if let Some(end) = end {
-            let message = match end {
-                PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
-                PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
-            };
-            self.leave(message);
+            self.finish_play(end);
+        }
+    }
+    fn finish_admission(
+        &mut self,
+        result: Result<(PlayView, PlayLink), crate::GameplayEntryError>,
+        bulletin: Option<String>,
+    ) {
+        self.login
+            .form
+            .finish(result.as_ref().map(|_| ()).map_err(|error| *error));
+        if result.is_ok() {
+            self.login.visible = false;
+        }
+        match result {
+            Ok((view, link)) => {
+                if self.install_play(view, link)
+                    && let Some(document) = bulletin
+                {
+                    match self.bulletin.replace(&document) {
+                        Ok(()) => {
+                            self.status.push_str("\n\n");
+                            self.status.push_str(&self.bulletin.news());
+                        }
+                        Err(error) => self
+                            .status
+                            .push_str(&format!("\nBulletin unavailable: {error}")),
+                    }
+                }
+            }
+            Err(error) => self.leave(error_text(error)),
+        }
+    }
+    fn finish_play(&mut self, end: PlayEnd) {
+        let message = match end {
+            PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
+            PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
+        };
+        self.leave(message);
+        if matches!(end, PlayEnd::LoggedOut)
+            && self
+                .entry
+                .as_mut()
+                .is_some_and(|entry| entry.is_entering() || entry.request())
+        {
+            self.phase = Phase::Entering;
         }
     }
     fn reset_input(&mut self) {
