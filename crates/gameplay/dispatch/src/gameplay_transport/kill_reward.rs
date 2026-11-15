@@ -2152,6 +2152,9 @@ pub fn record_creature_kill(
                     || !super::grizzly_kills::tracks_creature(&creature)
                         && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
                         && !tracks_native_progression(&creature)
+                        && !sink.prey.is_some_and(|states| {
+                            states.encounter_phases.has_terminal(runtime, target)
+                        })
                         && !oteryn_gameplay_quests::quest::source_deaths::tracks_creature(
                             &creature,
                         ))
@@ -2727,11 +2730,11 @@ fn accept_encounter_kill(
     super::quest_death_loot::capture(&mut entry);
     if entry.creature == "oteryn:creature.the_corruptor" {
         entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
-        if let Some(states) = states {
-            states
-                .encounter_phases
-                .capture_terminal(runtime, states, &mut entry);
-        }
+    }
+    if let Some(states) = states {
+        states
+            .encounter_phases
+            .capture_terminal(runtime, states, &mut entry);
     }
 
     let target = entry.target;
@@ -3343,6 +3346,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 }
+/// Copied Soul War onDeath settles XP before the ordinary drain can take the
+/// death. Run the same victory/chest prerequisites first, including the exact
+/// late-death classification; the XP transaction keeps its victory gate.
+pub(super) async fn prepare_source_boss_victory(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    entry: &PendingKillSettlement,
+) -> Result<(), ()> {
+    if !admission.settle_activity_boss_defeat(entry).await
+        || !admission.prepare_boss_rewards(entry).await
+    {
+        return Err(());
+    }
+    Ok(())
+}
+
 struct DurableKillSettle<'s, 'a, 'f, 'g> {
     initial_loot_mints: usize,
     event_rates: oteryn_gameplay_foundation::scheduled_events::EventRates,
@@ -3617,7 +3635,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         }
         // W02 is a descendant of the committed native death independently of
         // personal rewards, ordinary corpse admission or the recipient's presence.
-        if !self.settle_activity_boss_defeat(entry).await {
+        if !self.admission.settle_activity_boss_defeat(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,
@@ -3746,45 +3764,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 no_progression: false,
             };
         }
-        // W03 entitlement creation is independent of the top-damage principal's
-        // current presence and must precede the proficiency-only early return.
-        if entry.boss_slot_bonuses.get().is_none() {
-            if let Some(boss) = entry.row.as_ref().and_then(|row| row.boss.as_ref()) {
-                let participants = entry.boss_reward.as_ref().map_or_else(
-                    || vec![*entry.facts.principal.character.as_bytes()],
-                    |death| {
-                        death
-                            .participants
-                            .iter()
-                            .map(|p| *p.character.as_bytes())
-                            .collect()
-                    },
-                );
-                let bonuses = admission
-                    .root
-                    .boss_slot_loot_bonuses(
-                        admission.character,
-                        admission.holder,
-                        entry.facts.death.runtime_scope(),
-                        entry.facts.death.scope_ownership_generation(),
-                        boss.clone(),
-                        participants,
-                        entry.facts.died_at_unix_ms,
-                        entry.facts.boosted_boss,
-                    )
-                    .await;
-                let Ok(bonuses) = bonuses else {
-                    return SettleReport {
-                        verdict: SettleVerdict::Retry,
-                        no_progression: false,
-                    };
-                };
-                let _ = entry.boss_slot_bonuses.set(bonuses);
-            } else {
-                let _ = entry.boss_slot_bonuses.set(Vec::new());
-            }
-        }
-        if !self.settle_personal_boss_rewards(entry).await {
+        if !admission.prepare_boss_rewards(entry).await {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,

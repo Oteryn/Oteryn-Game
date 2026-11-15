@@ -19,6 +19,9 @@ pub(super) async fn settle(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     entry: &PendingKillSettlement,
 ) -> bool {
+    // Encounter-only counters are absent from ordinary creature discovery.
+    // Their admitted phase owner already froze exact recipients on this death;
+    // the durable writer still revalidates each counter and its full source fence.
     if !owner.quest_catalogue.as_deref().map_or_else(
         || oteryn_gameplay_quests::quest::native_kills::tracks_creature(&entry.creature),
         |catalogue| {
@@ -28,6 +31,10 @@ pub(super) async fn settle(
             )
         },
     ) && !oteryn_gameplay_quests::quest::source_deaths::tracks_creature(&entry.creature)
+        && entry
+            .grizzly
+            .as_ref()
+            .is_none_or(|frozen| frozen.native.is_empty())
     {
         return true;
     }

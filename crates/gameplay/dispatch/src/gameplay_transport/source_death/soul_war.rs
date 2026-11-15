@@ -184,6 +184,7 @@ impl SoulWarAction {
         let Some((entry, rates)) = &self.0.reward else {
             return Ok(());
         };
+        super::super::kill_reward::prepare_source_boss_victory(owner, entry).await?;
         let mut prepared = entry.clone();
         super::super::kill_reward::prepare_experience(owner, &mut prepared, *rates)
             .await

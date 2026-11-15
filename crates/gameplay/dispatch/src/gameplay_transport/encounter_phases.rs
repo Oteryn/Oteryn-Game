@@ -27,16 +27,29 @@ pub(super) struct Registry {
 impl Registry {
     pub(super) fn reserve<'a>(
         &'a self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         key: u64,
     ) -> Result<std::sync::MutexGuard<'a, Vec<ActivePhase>>, CarrierError> {
         let mut active = self.active.lock().map_err(|_| CarrierError::PlanConflict)?;
-        active.retain(|phase| {
-            phase.fight.is_current(runtime)
-                && phase
+        active.retain_mut(|phase| {
+            if !phase.fight.is_current(runtime) {
+                return false;
+            }
+            match phase.fight.victors(runtime) {
+                Ok(Some(_)) => {
+                    // Credit was captured in the lethal turn. Release the lever
+                    // only after exact terminal decorations retire; tick retries failures.
+                    let ActivePhase { fight, cells, .. } = phase;
+                    fight
+                        .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                        .is_err()
+                }
+                Ok(None) => phase
                     .frozen
                     .as_ref()
-                    .is_none_or(|(actor, _)| runtime.retains_corpse_projection(*actor))
+                    .is_none_or(|(actor, _)| runtime.retains_corpse_projection(*actor)),
+                Err(_) => false,
+            }
         });
         if active.len() >= MAX_ENCOUNTERS || active.iter().any(|p| p.key == key) {
             return Err(CarrierError::PlanConflict);
@@ -61,17 +74,21 @@ impl Registry {
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
             }
         }
-        // Release the lever key only after terminal decorations retire; failures retry on tick.
-        active.retain_mut(|phase| match phase.fight.victors(runtime) {
-            Ok(Some(_)) => {
-                let ActivePhase { fight, cells, .. } = phase;
-                fight
-                    .advance(runtime, |runtime, at| placement(cells, runtime, at))
-                    .is_err()
-            }
-            Ok(None) => true,
-            Err(_) => false,
-        });
+        // Keep terminal admission credit until the same lethal turn captures it.
+        // The next reservation releases a completed lever key independently of
+        // corpse lifetime, after this synchronous death publication finishes.
+    }
+
+    pub(super) fn has_terminal(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
+        self.active.lock().is_ok_and(|active| {
+            active.iter().any(|phase| {
+                phase.fight.contains_terminal(actor)
+                    && phase
+                        .fight
+                        .victors(runtime)
+                        .is_ok_and(|victors| victors.is_some())
+            })
+        })
     }
 
     pub(super) fn capture_terminal(
@@ -84,7 +101,10 @@ impl Registry {
             return;
         };
         let target = entry.target;
-        if let Some(phase) = active.iter_mut().find(|p| p.fight.contains(target)) {
+        if let Some(phase) = active
+            .iter_mut()
+            .find(|p| p.fight.contains_terminal(target))
+        {
             if phase.fight.victors(runtime).ok().flatten().is_none() {
                 return;
             }

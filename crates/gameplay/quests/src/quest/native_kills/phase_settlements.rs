@@ -46,6 +46,10 @@ mod tests {
             assert_eq!(counter.gate_bounds(), (0, 1));
             let mut tracks = std::collections::BTreeMap::new();
             assert!(super::super::active_encounter(&tracks).contains(&counter.transition));
+            assert!(!super::super::active(&tracks).contains(&counter.transition));
+            tracks.insert(counter.track.into(), 1);
+            assert!(super::super::active_encounter(&tracks).contains(&counter.transition));
+            assert!(!super::super::active(&tracks).contains(&counter.transition));
             tracks.insert(counter.track.into(), 2);
             assert!(!super::super::active_encounter(&tracks).contains(&counter.transition));
         }
@@ -56,7 +60,14 @@ mod tests {
 #[test]
 fn review18_phase_settlements_registered_for_loader_and_progress() -> Result<(), String> {
     for counter in COUNTERS {
-        assert!(super::counters().any(|entry| entry.transition == counter.transition));
+        assert!(!super::counters().any(|entry| entry.transition == counter.transition));
+        assert!(super::counter(counter.transition).is_some());
+        assert!(!super::active(&std::collections::BTreeMap::new()).contains(&counter.transition));
+        let original = counter.transition();
+        crate::quest::admission_binding::validate(&original, false)?;
+        let mut changed = original;
+        changed.effects[0].effect = crate::quest::QuestEffectKind::Add(2);
+        assert!(crate::quest::admission_binding::validate(&changed, false).is_err());
         assert!(super::registered_counters()?.any(|entry| entry.transition == counter.transition));
     }
     Ok(())

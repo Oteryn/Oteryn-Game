@@ -150,7 +150,7 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
         "oteryn:quest-transition/srvenc-fixture/seed-{}",
         rule.creature.rsplit('.').next().ok_or("creature")?
     );
-    let catalogue = if seeds.is_empty() {
+    let catalogue = if seeds.is_empty() || rule.top_damage_only {
         Arc::new(catalogue)
     } else {
         let mut transitions = vec![native_transition];
@@ -220,7 +220,16 @@ async fn exercise(h: &Harness, rule: &source_deaths::Rule) -> TestResult {
     owner.admit_progression_session(&mut admitted).await;
     deps.initialize(&owner).await;
     let session = admitted.game_session_id;
-    if !seeds.is_empty() {
+    if rule.top_damage_only && !seeds.is_empty() {
+        // Herald starts after Emiliana's historical mission admission. The
+        // generic writer must not impersonate her protected quest operation.
+        // Import only that predecessor, as the other native Quest fixtures do;
+        // the death and all its rewards still use the real fenced owners.
+        super::qengine_outfit_stories::seed_quest_prerequisites(
+            h, &owner, &admitted, &seeds, 0xa6,
+        )
+        .await?;
+    } else if !seeds.is_empty() {
         let fence = owner
             .current_quest_fence(session)
             .await
