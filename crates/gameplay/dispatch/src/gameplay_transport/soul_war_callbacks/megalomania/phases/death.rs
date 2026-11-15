@@ -114,7 +114,8 @@ impl CopiedDeath {
         action: &PreparedSourceDeathAction,
     ) -> bool {
         action.current_for(runtime)
-            && (!self.unmastered
+            && (!self.source_room
+                || !self.unmastered
                 || self.kind == Kind::Focus
                 || states
                     .soul_war_callbacks

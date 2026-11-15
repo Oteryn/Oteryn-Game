@@ -18,6 +18,8 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("real Vemiath runtime")?;
+    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered))
+        .await?;
     let (boss, target, route) = {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;

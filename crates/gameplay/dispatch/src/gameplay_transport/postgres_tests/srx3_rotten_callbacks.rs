@@ -341,13 +341,13 @@ fn run_murcion_source_entry_checks(
             super::srx3_activity_source_fixture::drive_native_cycle(
                 &owner.runtime_view(&registered),
             )
-            .await;
+            .await?;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
-            super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             let runtime = view.runtime.lock().await;
             let creatures = runtime.visible_entities().creatures;
             let count = |key: &[u8]| {
@@ -716,7 +716,7 @@ fn run_murcion_source_entry_checks(
                 super::srx3_activity_source_fixture::drive_native_cycle(
                     &owner.runtime_view(&registered),
                 )
-                .await;
+                .await?;
                 owner.clock_origin = owner
                     .clock_origin
                     .checked_sub(std::time::Duration::from_secs(20))
@@ -724,7 +724,7 @@ fn run_murcion_source_entry_checks(
                 super::srx3_activity_source_fixture::drive_native_cycle(
                     &owner.runtime_view(&registered),
                 )
-                .await;
+                .await?;
                 let runtime = registered.runtime.lock().await;
                 for child in original_mushrooms {
                     assert!(

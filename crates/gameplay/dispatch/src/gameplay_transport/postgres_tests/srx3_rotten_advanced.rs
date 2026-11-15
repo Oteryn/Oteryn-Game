@@ -586,7 +586,7 @@ fn scenario_with_step(
             super::srx3_activity_source_fixture::drive_native_cycle(
                 &owner.runtime_view(&registered),
             )
-            .await;
+            .await?;
             if final_boss {
                 super::srx3_rotten_bak_claim::assert_mask(&h, instance, 0).await?;
                 let player = admitted.runtime_actor.ok_or("actual Bakragore Player")?;
@@ -655,7 +655,7 @@ fn scenario_with_step(
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
-            super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             if final_boss {
                 view.drain_bak_first_think_claims().await;
                 #[cfg(test)]
@@ -742,7 +742,7 @@ fn scenario_with_step(
                 } else {
                     super::srx3_rotten_bak_claim::assert_mask(&h, instance, 1).await?;
                 }
-                super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
+                super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             }
             if let Extra::CopiedDeath {
                 credited,
