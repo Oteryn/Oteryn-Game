@@ -105,6 +105,18 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Shift+T:** Task Board: Bounty Tasks, Weekly progress/results and Shop.
   Rerolls require confirmation and cost one token. Daily tokens are claimed at
   the Daily Reward Wall; the board shows the balance and cap.
+- **Task tracker (below the minimap):** stays visible while playing and after closing
+  the Task Board. Shows confirmed Bounty/Weekly kills, deliveries, rewards and Prey
+  bonuses/hunting time; click anywhere in the tracker to open the Task Board.
+  Closed editors refresh through existing read-only queries every five seconds;
+  pending requests are never duplicated. Hunting time uses the server's combat
+  clock; free-reroll timestamps count down locally. Session changes reload durable tasks.
+  Prey remains unavailable until the server offers existing capability 140.
+  NEEDS-CONTRACT: `task_board::full::Reply` lacks the authoritative weekly reset Unix
+  timestamp; `prey::Slot` lacks kill totals. Neither is inferred from local kills
+  or the board's reset-period identity.
+  References: Global manual `docs/reference/tibia-manual/interface.md` §3.6.10;
+  OTClient `modules/game_questlog/questlog.lua` (server progress and game-end cleanup).
 - **Ctrl+Z:** Bug report with category, multiline description, review and Send.
 - **Ctrl+Shift+Y:** the selected analyser window. The Analysers HUD selector opens
   any of the fourteen retained tools. Reports update live; Reset session uses the

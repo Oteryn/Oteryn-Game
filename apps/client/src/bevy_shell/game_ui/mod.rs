@@ -47,6 +47,7 @@ mod stash;
 mod store;
 mod store_inbox;
 mod task_board;
+mod task_tracker;
 mod trade;
 mod tutorial;
 pub(super) mod unjustified_points;
