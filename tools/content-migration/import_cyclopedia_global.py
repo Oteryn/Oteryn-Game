@@ -9,6 +9,7 @@ from collections import Counter
 from decimal import Decimal
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -72,6 +73,68 @@ def only_weight_changed(before, after):
         return expected == after
     except (KeyError, TypeError, AttributeError):
         return False
+
+
+OVERLAY_DIR = 'tools/content-schema/native-gameplay'
+WEIGHT_PATTERN = re.compile(rb'("weight":\s*\{"state":\s*"KNOWN",\s*"value":\s*)(\d+)(\})')
+
+
+def _overlay_profiles(node):
+    """Yield (item id, weight leaf) for every overlay record carrying a KNOWN physical weight."""
+    if isinstance(node, dict):
+        key = (node.get('production_definition') or {}).get('production_key')
+        physical = (node.get('semantics') or {}).get('physical')
+        if (isinstance(key, str) and key.startswith('oteryn:item.tibia.i')
+                and isinstance(physical, dict) and physical.get('state') == 'KNOWN'
+                and (physical.get('value') or {}).get('weight', {}).get('state') == 'KNOWN'):
+            yield int(key.rsplit('.i', 1)[1]), physical['value']['weight']
+        for value in node.values():
+            yield from _overlay_profiles(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _overlay_profiles(value)
+
+
+def apply_profile_weights(records, root):
+    """Give profile records read from a faithful source capture the client weight."""
+    weights = load_weights(root)
+    for identifier, weight in _overlay_profiles(records):
+        weight['value'] = weights.get(identifier, weight['value'])
+
+
+def apply_overlay_weights(root, weights):
+    """Give native-gameplay overlay profiles the client weight, changing only weight values.
+
+    Each overlay keeps its own byte layout: a record's weight is replaced on the
+    line that names its key, and the parsed result must equal the expected edit."""
+    changed = {}
+    for path in sorted((root / OVERLAY_DIR).glob('*.json')):
+        raw = path.read_bytes()
+        document = json.loads(raw)
+        edits = {}
+        for identifier, weight in _overlay_profiles(document):
+            if identifier in weights and weights[identifier] != weight['value']:
+                edits.setdefault(identifier, set()).add(weight['value'])
+                weight['value'] = weights[identifier]
+        if not edits:
+            continue
+        if raw == (json.dumps(json.loads(raw), indent=2, ensure_ascii=False) + '\n').encode():
+            updated = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
+        else:
+            lines = raw.split(b'\n')
+            for identifier in edits:
+                needle = f'"oteryn:item.tibia.i{identifier}"'.encode()
+                hits = [n for n, line in enumerate(lines) if needle in line]
+                for n in hits:
+                    lines[n] = WEIGHT_PATTERN.sub(
+                        lambda m: m.group(1) + str(weights[identifier]).encode() + m.group(3)
+                        if int(m.group(2)) in edits[identifier] else m.group(0), lines[n])
+            updated = b'\n'.join(lines)
+        if json.loads(updated) != document:
+            raise ValueError('CLIENT_WEIGHT_OVERLAY_LAYOUT:' + path.name)
+        path.write_bytes(updated)
+        changed[path.name] = len(edits)
+    return changed
 
 
 def apply_admissions(item_records, root):

@@ -51,6 +51,23 @@ class ClientWeightAdmission(unittest.TestCase):
                     stale.append(row['definition']['identity']['key'])
         self.assertEqual(stale, [])
 
+    def test_generated_native_profiles_carry_client_weights(self):
+        weights = cyclopedia.load_weights(ROOT)
+        document = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        stale = [identifier for identifier, weight in cyclopedia._overlay_profiles(document['records'])
+                 if identifier in weights and weights[identifier] != weight['value']]
+        self.assertEqual(stale, [])
+
+    def test_profile_weights_replace_known_weight_only(self):
+        record = {'production_definition': {'production_key': 'oteryn:item.tibia.i7439'},
+                  'semantics': {'physical': {'state': 'KNOWN', 'value': {
+                      'weight': {'state': 'KNOWN', 'value': 200},
+                      'movable': {'state': 'KNOWN', 'value': True}}}}}
+        cyclopedia.apply_profile_weights([record], ROOT)
+        self.assertEqual(record['semantics']['physical']['value'],
+                         {'weight': {'state': 'KNOWN', 'value': 290},
+                          'movable': {'state': 'KNOWN', 'value': True}})
+
 
 if __name__ == '__main__':
     unittest.main()

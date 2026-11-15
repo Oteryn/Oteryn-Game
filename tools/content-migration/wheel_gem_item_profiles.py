@@ -41,12 +41,12 @@ SOURCE_SHA256 = {
 # (legacy reference shards use 50); greater fragment uses 500 (legacy 10).
 # Keep every entry explicit: profession-specific source values are not inferred.
 WEIGHTS = {
-    44602: 20, 44603: 20, 44604: 120,
-    44605: 20, 44606: 20, 44607: 120,
+    44602: 20, 44603: 50, 44604: 120,
+    44605: 20, 44606: 50, 44607: 120,
     44608: 20, 44609: 50, 44610: 120,
     44611: 20, 44612: 50, 44613: 120,
-    46625: 5, 46626: 500,
-    49371: 20, 49372: 20, 49373: 120,
+    46625: 5, 46626: 10,
+    49371: 20, 49372: 50, 49373: 120,
 }
 IDS = tuple(sorted(WEIGHTS))
 KEYS = frozenset(f'oteryn:item.tibia.i{item}' for item in IDS)

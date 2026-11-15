@@ -21020,7 +21020,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 69
+              "value": 68
             },
             "movable": {
               "state": "KNOWN",
@@ -46680,7 +46680,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 1600
+              "value": 320
             },
             "movable": {
               "state": "KNOWN",
@@ -50892,7 +50892,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 120
             },
             "movable": {
               "state": "KNOWN",
@@ -51335,7 +51335,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 150
             },
             "movable": {
               "state": "KNOWN",
@@ -67415,7 +67415,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 10
+              "value": 470
             },
             "movable": {
               "state": "KNOWN",
@@ -73749,7 +73749,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 130
             },
             "movable": {
               "state": "KNOWN",
@@ -73920,7 +73920,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 80
             },
             "movable": {
               "state": "KNOWN",
@@ -74253,7 +74253,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 25
+              "value": 110
             },
             "movable": {
               "state": "KNOWN",
