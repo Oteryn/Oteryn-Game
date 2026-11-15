@@ -705,10 +705,15 @@ def main() -> int:
     run(["python3", "tools/content-migration/refresh_season_creature_inventory.py"])
     run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
          "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
-    run(["python3", "tools/content-schema/quest-authoring/quest_rollout_authoring.py"])
-    run(["python3", "tools/content-schema/quest-authoring/quest_binding_authoring.py"])
-    run(["python3", "tools/content-schema/quest-authoring/collect_claim_candidates.py"])
-    run(["python3", "tools/content-schema/quest-authoring/use_trigger_candidates.py"])
+    for script in (
+        "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
+        "quest_v2_export", "quest_state_lowering", "source_lowered_binding_plan",
+        "quest_completion_import", "collect_claim_candidates", "use_trigger_candidates",
+        "quest_native_binding_preflight", "quest_reward_only_binding_candidates",
+    ):
+        run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
+    # Donor captures bind both the final Quest index and its binding crosswalk.
+    run(["python3", "tools/content-schema/quest-authoring/quest_donor_source_authoring.py"])
     if not args.skip_checks:
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():

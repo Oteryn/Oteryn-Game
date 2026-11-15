@@ -991,3 +991,158 @@ PR #3213 also changed `item_ref_admission_tests.rs` from the shared coin weight
 10 to a gold-specific expectation of 1. The corpse-take assertion is restored to
 10 for every coin, as explicitly requested after CI exposed that stale literal.
 The quick-loot and PostgreSQL tests remain unchanged.
+
+Before the final push, `origin/main` was fetched and merged with `--no-ff` at
+`9553df2d01d88ea3fdb7a0458e0a7b35ab81802c` (including #3221's DueCharmCommit
+seal allowlist fix). Merge commit: `57f1709b978b653e96f04e9890363946d092cd2a`.
+There were no conflicts. The initial baseline runs above used the original base
+`beaaf9bc1bfff4f3d8a8b6afc3c39f4217cb80a6`; they are not relabeled as tests of
+the newer base. Post-merge validation is recorded separately.
+
+Post-merge execution: the corrected `item_ref_admission` Cargo suite passed all
+7 tests (including `corpse_take_facts_are_the_generation_item_profiles`). The
+seal allowlist suite passed 2 tests. All seven exact PostgreSQL cases listed
+above passed again, one executed test per case, using the merged dispatch
+binary and a required nonempty PostgreSQL admin URL. No PG case was skipped.
+The merged source-guard suite passed 32, reward-authoring passed 28, and Node
+boot diagnostics passed 26. The final real-Platform boot limitation is unchanged.
+
+The post-merge Quest unit suite completed all 120 modules successfully: 1,192
+tests run, 8 existing skips (1,184 passed). The content integration suite passed
+123 tests again. Additional provenance repair regenerated quest-state through
+its owner; only `authoring_sources[0].sha256` changed, with graphs unchanged.
+The dependent completion reports are generated in the documented dependency
+order by the full pipeline.
+
+The requester subsequently confirmed that Node boot custody and seam failures
+also occur on main back to at least `e8234cc5c`; those main-red failures are
+outside this weight repair and are not pursued here.
+
+The complete post-merge CI `checks` part passed after regenerating quest-state
+and the downstream completion reports. The donor Source owner additionally
+regenerated its captures against the final Quest index and binding crosswalk.
+Decompressed comparisons verified that every changed donor record differs only
+in hash leaves; raw NPC source records, source interpretations and counts are
+unchanged. The pipeline refreshes donor captures after those two inputs.
+
+Final post-merge regeneration completed successfully through automatic
+pin-refresh; its repository suite passed 5 tests. Standalone pin-check reproduced
+the same world digest recorded above. All 34 commands in the CI Quest checks
+part passed, and the separate donor freshness part passed after its owner
+regeneration. The unit suite results above cover the complete CI module set.
+
+## Complete changed-file list relative to merged main
+
+Base: `9553df2d01d88ea3fdb7a0458e0a7b35ab81802c`. Upstream healing/seal
+changes brought in by the merge are excluded from this list.
+
+```text
+content/content.lock.json
+content/interactions/reward_claims/index.json
+content/items/definitions/items-08500-08999.json
+content/items/definitions/items-14500-14999.json
+content/items/definitions/items-17500-17999.json
+content/items/definitions/items-33000-33499.json
+content/items/definitions/spell-native-profiles.json
+content/items/definitions/srx1-item-updates.json
+content/items/index.json
+content/items/taxonomy/items.json
+content/manifest.json
+content/quests/definitions/index.json
+content/quests/grizzly-boss-rooms.json
+content/quests/missions/quest-state.json
+content/spells.manifest.json
+crates/gameplay/dispatch/src/gameplay_transport/item_ref_admission_tests.rs
+docs/reference/content-prep/item-cyclopedia-capture-1/README.md
+docs/reference/content-prep/item-cyclopedia-capture-1/weight-change-audit.md
+docs/reference/content-prep/item-cyclopedia-capture-1/weight-corrections.json
+tools/content-migration/hireling_item_profiles.py
+tools/content-migration/import_cyclopedia_global.py
+tools/content-migration/refresh_reward_stack_weight_proof.py
+tools/content-migration/regenerate_content.py
+tools/content-migration/test_import_cyclopedia_global.py
+tools/content-migration/test_refresh_reward_stack_weight_proof.py
+tools/content-migration/world_project_v2_to_tree.py
+tools/content-schema/native-gameplay/coin-item-profiles.json
+tools/content-schema/native-gameplay/door-item-profiles.json
+tools/content-schema/native-gameplay/event-item-profiles.json
+tools/content-schema/native-gameplay/gathering-item-profiles.json
+tools/content-schema/native-gameplay/qnpcfx-item-profiles.json
+tools/content-schema/native-gameplay/quest-batch3-item-profiles.json
+tools/content-schema/native-gameplay/questpc8-equipment-custody-census.json
+tools/content-schema/quest-authoring/samples/binding_packets/index.json
+tools/content-schema/quest-authoring/samples/binding_packets/npc/quest-npc-dialogue-links.json
+tools/content-schema/quest-authoring/samples/binding_packets/rewards/chosen-reward-item-candidates.json
+tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json
+tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-holds.json
+tools/content-schema/quest-authoring/samples/binding_packets/rewards/reward-only-105.json
+tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json
+tools/content-schema/quest-authoring/samples/donor-source/components248/crosswalk.json
+tools/content-schema/quest-authoring/samples/donor-source/components248/dialogue.json.gz
+tools/content-schema/quest-authoring/samples/donor-source/components248/summary.json
+tools/content-schema/quest-authoring/samples/donor-source/coverage.json
+tools/content-schema/quest-authoring/samples/donor-source/npc-dependencies.json
+tools/content-schema/quest-authoring/samples/donor-source/npc-index.json
+tools/content-schema/quest-authoring/samples/donor-source/npc.json.gz
+tools/content-schema/quest-authoring/samples/rollout/quest-rollout.json
+tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json
+tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json
+tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json
+tools/content-schema/reward-claim-authoring/reward_claim_variant_authoring.py
+tools/content-schema/reward-claim-authoring/reward_stack_normalization.json
+tools/content-schema/reward-claim-authoring/samples/migration/reward-claim-variants.json
+```
+
+## Primal comparison and remaining oracle blocker
+
+The exact case is
+`gameplay_transport::monk_save::postgres_tests::srvgap2_primal_chain::srvgap2_primal_production_entry_cadence_death_settlement_and_return`.
+Main's exact content snapshot at `9553df2d01d88ea3fdb7a0458e0a7b35ab81802c`
+passed twice (94.61 s and 117.81 s). The corrected snapshot failed twice
+(37.87 s and 43.54 s) at `srvgap2_primal_chain.rs:278`: actual 3, oracle 4.
+Both runs used the same merged dispatch binary: this case and all production
+Rust code match main; the sole other Rust difference restores the unrelated
+coin assertion. The complete content delta was saved before each main run and
+restored byte-for-byte, verified by comparing its binary Git diff afterward.
+
+A standalone diagnostic linked the existing compiled production libraries and
+replayed the existing Primal rules against the actual qualified room. It made
+no repository changes. Fixture boss occurrence 1 uses world `id(42)`, instance
+`id(88)`, generation 1. The corrected native gameplay digest is
+`3343b470ad5cd5e2984d0e56bfd4f9ed4382698b5e6d222add47fb8488a1458d`.
+The four scheduled cells are, in order:
+
+1. `(27708, 27459, -15)`
+2. `(27708, 27464, -15)`
+3. `(27708, 27459, -15)`
+4. `(27708, 27458, -15)`
+
+The first and third cells coincide. All selected cells are walkable. The
+existing runtime refuses the second admission to the occupied cell, correctly
+leaving three beasts. The test computes the requested wave count from draws
+0 and 1 but never models the position draws or source-permitted spawn failure.
+
+The diagnostic changed only selected weight leaves in temporary in-memory
+inputs; no authored or derived repository weight was reverted:
+
+| Gold centi-oz | Dark moon mirror centi-oz | Requested | Unique free cells | Native digest |
+|---:|---:|---:|---:|---|
+| 1 | 2000 | 4 | 4 | `96ceddb377a0af27c584581fb7a55785e3729ff069354ccd99fc6b70a2a1a46b` |
+| 10 | 2000 | 3 | 3 | `710b0d388f41094725dd6a78907ce8ebc697940407f4c46851c36184148d738c` |
+| 1 | 200 | 4 | 4 | `bcb0d36e718405d714436cec741b0a25ea8ea16c29c7b7783d6a039621b89ba9` |
+| 10 | 200 | 4 | 3 | `3343b470ad5cd5e2984d0e56bfd4f9ed4382698b5e6d222add47fb8488a1458d` |
+
+The exact donor revision `201189f871d23597b82caf88fd611454a2ddefb8` confirms
+this behavior: `data-crystal/monster/quests/primal_ordeal_quest/the_primal_menace.lua`
+lines 271-274 call `Game.createMonster(name, position)` and return on failure
+(blob `85655723600108e4fb1f6cbe62b0863d4a7d2f2b`).
+`src/lua/functions/core/game/game_functions.cpp:632-651` documents and loads
+`extended=false, force=false` by default
+(blob `4b2fc25acc22c4bf301361c0b9f0ccc7d57db82f`).
+
+There is no justified weight or map correction for this collision. Reverting a
+verified weight or changing unrelated data merely to select another random
+stream would conceal the oracle defect. A source-correct test would predict
+the admitted unique cells/count, rather than require every requested spawn to
+succeed. The Primal test and runtime remain unchanged pending that scope
+decision; the quick-loot test remains unchanged.
