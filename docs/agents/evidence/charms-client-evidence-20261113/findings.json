@@ -1,0 +1,150 @@
+{
+  "scope": "DESCRIPTION_AND_SOURCE_COMPARISON_ONLY",
+  "findings": [
+    {
+      "id": "CHARMS-PRESENTATION-CLEANSE",
+      "classification": "PROVEN_PRESENTATION_GAP",
+      "ui": "random single negative effect plus11 seconds immunity",
+      "catalogue": "effect.type=cleanse_after_hit only",
+      "existing_mechanics": {
+        "path": "rulesets/progression/charms/mechanics.json",
+        "key": "oteryn:charm.cleanse",
+        "parameter": "immunity_duration_ms",
+        "value": 11000,
+        "status": "OTS_HYPOTHESIS_ONLY",
+        "activation": false
+      },
+      "description_projection": "Cleanse a harmful condition after this creature hits you.",
+      "interpretation": "UI description corroborates the11-second text and random-one-effect description. Existing mechanics already retain immunity/selection candidates; no missing runtime implementation or full condition eligibility proof.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    },
+    {
+      "id": "CHARMS-PRESENTATION-ADRENALINE",
+      "classification": "PROVEN_PRESENTATION_GAP",
+      "ui": "6% trigger preview, speed boost150%,10seconds",
+      "catalogue": "duration10000 already present",
+      "existing_mechanics": {
+        "path": "rulesets/progression/charms/mechanics.json",
+        "key": "oteryn:charm.adrenaline_burst",
+        "parameters": {
+          "formula_a": 2.5,
+          "formula_b": 40,
+          "formula_input_offset": 40,
+          "duration_ms": 10000
+        },
+        "status": "OTS_HYPOTHESIS_ONLY",
+        "activation": false
+      },
+      "description_projection": "Gain haste after being hit for10000 ms.",
+      "interpretation": "150% boost text is missing from simplified projection. The UI does not establish the offset40/rounding/base-speed runtime formula; do not promote it.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    },
+    {
+      "id": "CHARMS-PRESENTATION-BLESS",
+      "classification": "PROVEN_PRESENTATION_GAP",
+      "ui": "reducing skill and experience loss by6%",
+      "existing_mechanics": {
+        "path": "rulesets/progression/charms/mechanics.json",
+        "key": "oteryn:charm.bless",
+        "parameter": "affected_loss_domains",
+        "value": [
+          "experience",
+          "skill_tries",
+          "magic_mana_spent"
+        ],
+        "status": "STRUCTURED_REFERENCE"
+      },
+      "description_projection": "Reduce experience loss when this creature kills you.",
+      "interpretation": "Projection omits skill loss already represented in mechanics. UI wording alone does not settle relative versus absolute loss arithmetic.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    },
+    {
+      "id": "CHARMS-PRESENTATION-SCAVENGE",
+      "classification": "PROVEN_PRESENTATION_GAP",
+      "ui": "successfully skinning/dusting skinnable/dustable creature",
+      "existing_mechanics": {
+        "path": "rulesets/progression/charms/mechanics.json",
+        "key": "oteryn:charm.scavenge",
+        "parameter": "ots_eligibility",
+        "status": "UNKNOWN"
+      },
+      "description_projection": "Increase your chance of obtaining a product when skinning this creature.",
+      "interpretation": "Projection omits dusting. UI corroborates skinning/dusting scope, not source rounding or numeric probability math.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    },
+    {
+      "id": "CHARMS-PRESENTATION-GUT-AMBIGUITY",
+      "classification": "UNKNOWN_NOT_RUNTIME_BUG",
+      "ui": "yields6% more creature products",
+      "existing_mechanics": {
+        "path": "rulesets/progression/charms/mechanics.json",
+        "key": "oteryn:charm.gut",
+        "parameter": "modifier",
+        "value": {
+          "operation": "relative_creature_product_bonus",
+          "probability_or_quantity": "UNKNOWN"
+        }
+      },
+      "description_projection": "Increase the drop chance of creature products from this creature.",
+      "interpretation": "Current projection selects drop chance, whereas UI text is less specific and existing mechanics retain probability-or-quantity UNKNOWN. No quantity-versus-chance behavior was tested.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    },
+    {
+      "id": "CHARMS-NAME-PROJECTION",
+      "classification": "DERIVED_PRESENTATION_GAP",
+      "ui": "Void's Call",
+      "description_projection": "name is derived from key suffix voids_call using replace('_', ' ')",
+      "source_path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+      "interpretation": "The produced Card.name is voids call rather than catalogue name Void's Call. This is a traced projection string difference, not a live rendered Oteryn UI test.",
+      "projection_source": {
+        "path": "crates/gameplay/dispatch/src/gameplay_transport/charm_progression/charm_details.rs",
+        "head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+        "sha256": "c5a87095b171ad656c9239835b70cadbd9e85cf9ac88edbb71ab4f05b811533a"
+      },
+      "runtime_defect_asserted": false
+    }
+  ],
+  "numeric_comparison": {
+    "observed_charms": 25,
+    "observed_current_or_preview_values_matching_catalogue": 25,
+    "observed_unlock_or_next_costs_matching_catalogue": 25,
+    "observed_next_value_labels": 10,
+    "numeric_differences": 0
+  },
+  "unqualified": [
+    "Other stages not currently displayed",
+    "Exact proc application and combat results",
+    "Area geometry behind small radius",
+    "Radius/timing/visual effects not on inspected screens",
+    "Leech additive-versus-relative arithmetic",
+    "Gut probability-versus-quantity behavior",
+    "Reset/clear gold fee rules",
+    "Unobserved hidden prerequisites",
+    "Icon pixel parity and animation"
+  ]
+}

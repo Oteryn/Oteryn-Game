@@ -1,0 +1,377 @@
+[
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-enflame.png",
+    "sha256": "179e1db251e44d0a446ab2e8a4f1fc8c2822f209efb12f03121e8c128247302d",
+    "bytes": 239563
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-fatal-hold.png",
+    "sha256": "f66fe5bbc83ec4cd8f7da9c274249688b7fbbf7f854333667042d51278456526",
+    "bytes": 234023
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-freeze.png",
+    "sha256": "a38fad485f6965ec42254d5f20c7676a95868b73953ecacec24f78f234cbbd81",
+    "bytes": 238277
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-low-blow.png",
+    "sha256": "ac59827b5fd1be1929dd01dd88a5c76438fea45b85b8a6c0540039808f58ae57",
+    "bytes": 235744
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-parry.png",
+    "sha256": "3feb3214638935b26a5f0e275bb8bd19a7d658448d2d8afc8864294512f69788",
+    "bytes": 236560
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-poison.png",
+    "sha256": "e09a9003d8a1ea6fb8eb39fa077a51fabb963746fc71fcbd9973da6a14c7c15c",
+    "bytes": 239688
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-savage-blow.png",
+    "sha256": "69b74877c6f4461cd4d9f5e7a41e69c6dbbc6a0375f220acac2c7fe214731ad1",
+    "bytes": 236987
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-vampiric-embrace.png",
+    "sha256": "cd51b586874130cc8d8877cff0714931c3b0a5ac464fe327fc5b90be26dc75db",
+    "bytes": 231161
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-void-inversion.png",
+    "sha256": "57fb9c59212e65f026ddb5ab82091184a889f401fd6b863f64be8a8c8eb610ea",
+    "bytes": 233072
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignment-voids-call.png",
+    "sha256": "bc9a00b79e532e3a860f09b6559dc957d09a7fb62f316281156b2414cf0ae383",
+    "bytes": 229740
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-assignments-contact.png",
+    "sha256": "7d18eef984d771277c22ed8045601c6982081bbc756d1d045590570da73d8247",
+    "bytes": 259570
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-major-catalogue.png",
+    "sha256": "74b5a5455f8c8c2247c691af940bdd367333ded9c0012d0d3aa6309c36038b57",
+    "bytes": 229557
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-baseline-minor-assignments-contact.png",
+    "sha256": "d3fb3c50f1ba74d75f574c5398a30abcff03489c7db0c14bf44b5022aa4943af",
+    "bytes": 176628
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-final-restored-context.png",
+    "sha256": "b6e569157aa93fb802def16507fb36ce56c946994737c9af7b647d4402ecd772",
+    "bytes": 230137
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-freeze-stage0-before.png",
+    "sha256": "738f130791635f28c2197089a2e7bf81f64a09ea37b52a5bc9f707421f0e4969",
+    "bytes": 216630
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-freeze-stage1-result.png",
+    "sha256": "92d72916f1eca1bb27441ee354385de1895dd5da5f45e82571576c6162be0a32",
+    "bytes": 223502
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-freeze-unlock-action-result.png",
+    "sha256": "5fde512c3cec69808382bf1d828eff548a9d637a5307a05fa789889f7998f985",
+    "bytes": 353645
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-reset-major-grid.png",
+    "sha256": "15e7374317d682d579b654ce45cdd091786b0b9fc1f3d6b6304b8e8967db64fd",
+    "bytes": 219015
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-test-reset-1-confirmation.png",
+    "sha256": "f639d7685d70ea23ed0df60257e1cc65217c6e977eb2548abafc4504914d548d",
+    "bytes": 353866
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\active-test-reset-1-result.png",
+    "sha256": "763b00a9a0b3214e1a715a7ee273dfa4af4879135967028af52197d94618f42c",
+    "bytes": 221140
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\reset-dialog-context.png",
+    "sha256": "261ecd62425f8be5634bca59b4cdcd9facb8fc6a2beea554877cc197578f7e16",
+    "bytes": 1545441
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\reset-inspection-cancelled.png",
+    "sha256": "5faa00f633a0e19774cce02f5d8687fcf3509ee2e6750a564f811b76ef3fd4b3",
+    "bytes": 1520978
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-enflame-candidate.png",
+    "sha256": "f3eae11cd22c7fb93a8933e69c730443648454c632d59045b683028805e4d4fd",
+    "bytes": 235550
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-enflame-verified.png",
+    "sha256": "688b6bf24e02e0ad4a3a4e8d05a44eec1c44d478d37d35a65f634c5da2889989",
+    "bytes": 239663
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-freeze-candidate.png",
+    "sha256": "40c3c0ab7f23bf378c71d828a94b79d2facaeb2971c757e4a0a9594576dd58ce",
+    "bytes": 222019
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-freeze-result.png",
+    "sha256": "a43c0dc4a8ab09d53261dd169a31d0bb5c582ebffdd58864a45e0b8722692cc8",
+    "bytes": 354307
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-freeze-verified.png",
+    "sha256": "2124683924e02aead3722b744ee18e506704bbc8b89043e37bf1f1f4fd117777",
+    "bytes": 225409
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-low-blow-candidate.png",
+    "sha256": "869c2c3431b0c0a670abd8b80286ed07f72ba996e76df462c4fd8ecba32bb18b",
+    "bytes": 221458
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-low-blow-verified.png",
+    "sha256": "ed73cec7ded4dac7ab290e3efc40100601fbb875540a35e63e0b77f98babd894",
+    "bytes": 224648
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-parry-candidate.png",
+    "sha256": "0d4a4753bb2aa4df0dfeb219f155d4ea9e8004a5cce1151e53e9ec7b0e30e460",
+    "bytes": 224395
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-parry-verified.png",
+    "sha256": "d6045233016cb4f25a07d74ebee055020bd5a9b8e4aa8d24fd7993a9eadd7dd1",
+    "bytes": 227485
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-poison-candidate.png",
+    "sha256": "b281ec4da6db5650ef8323cf5c437d21c1271c8799e57717edee67cb9cb8c907",
+    "bytes": 229164
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-poison-verified.png",
+    "sha256": "77a0aeca45334866d5a73414dd2a3bd2ada9439ab2c85e70400a4d0c388ef4b2",
+    "bytes": 232941
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-savage-blow-candidate.png",
+    "sha256": "3e1bd03f9142d2eaab66d1f2f783444083f6ff4423535a764bfe034e1e228bc3",
+    "bytes": 229640
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-savage-blow-verified.png",
+    "sha256": "c49311ba7263f005d8be971264786f68c4f619f6681c9ce9d90b84c7d6ca79a7",
+    "bytes": 233235
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-vampiric-embrace-candidate.png",
+    "sha256": "6ad18aaf5a22f8cb302f05a09bd8203e6c75c63b8ccf95e01f653b9f675775f1",
+    "bytes": 222954
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-vampiric-embrace-verified.png",
+    "sha256": "8029dce62ed90e5f4b127b96c73f2efc279b50bf2335f53220a4b5932350bfb4",
+    "bytes": 227387
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-void-inversion-candidate.png",
+    "sha256": "69b936aadc4ceefc825666efc0c4e276023c867528b93efcec44370af724645e",
+    "bytes": 227670
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-void-inversion-verified.png",
+    "sha256": "3c9857b8c9d118545ac52c4ec9b02d5fa3f006f929f99ca6cf6449f009fb065c",
+    "bytes": 231293
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-voids-call-candidate.png",
+    "sha256": "181bdede778632e8505fb0913c7bdf33c8b66886bed8929f150dddc5bb4917e5",
+    "bytes": 227261
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-assignment-voids-call-verified.png",
+    "sha256": "cf480e57b7d985a42ed4b70e03b60a3c273aace8410f792249f19b46787a47a7",
+    "bytes": 229610
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-enflame-stage1-confirmation.png",
+    "sha256": "a31a3c4928e7178fe127e6f4811f6efcfecf48fc3505c75c3e3ff6de81cccbba",
+    "bytes": 354109
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-enflame-stage1-result.png",
+    "sha256": "9a771c3b6034ababaa93218872d7cb46a8598577f9a77806dddecac2e913ba66",
+    "bytes": 218167
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-fatal-hold-stage1-confirmation.png",
+    "sha256": "568b834f4b1fd0742c1c5878659cd3bbe1da78695ea834a6c70bd2d841bd4ae3",
+    "bytes": 342200
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-fatal-hold-stage1-result.png",
+    "sha256": "5ff97483da8293781322135ff65015a91a70506f347bd39094db08153fd6c7b2",
+    "bytes": 226955
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-freeze-stage2-confirmation.png",
+    "sha256": "6b09272c19543f9dc373ac65858b01dda334ac04622a83bee7bd45d16b1ef834",
+    "bytes": 349188
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-freeze-stage2-result.png",
+    "sha256": "6fe4d6231f5c3eb7351fcde58108f941a8e3f19fec207c18854633efec28ddb7",
+    "bytes": 222760
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-low-blow-stage1-confirmation.png",
+    "sha256": "df14508fe5f2bb73837152313683028465d3d8d485f23fec766280a140b7235a",
+    "bytes": 348010
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-low-blow-stage1-result.png",
+    "sha256": "9d9fb3dbe4b59614e4c2892edadbc078ba5d2e5c3d8f7a021939ba1c06253eb5",
+    "bytes": 221010
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-low-blow-stage2-confirmation.png",
+    "sha256": "04e1bd87d462373f0f18cdba383c1de91499d133a8a6c041d21e9a5973c2365c",
+    "bytes": 349366
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-low-blow-stage2-result.png",
+    "sha256": "bd86aaf548a4b53b0c5acf7e4e1ac9f9ff2ac082163c5165ce7b89066c6a50cf",
+    "bytes": 219789
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-parry-stage1-confirmation.png",
+    "sha256": "6567e3dd36be843a81473fdc89a1b360f12a5739d91a4204dd44b93ba650f327",
+    "bytes": 354460
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-parry-stage1-result.png",
+    "sha256": "9487ead870c5d6c95fde8cb75feba950fd52328e07594bf85cb8626e54cebf93",
+    "bytes": 220926
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-parry-stage2-confirmation.png",
+    "sha256": "6392bd686edc7fdbed5805a1e33b43ef4c979795c3091877741511d2c0749234",
+    "bytes": 349697
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-parry-stage2-result.png",
+    "sha256": "fb8d5ca95eaac58e518d267a783162c9ad65965a155aad5a3eb52c760f2d4c9d",
+    "bytes": 222068
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-poison-stage1-confirmation.png",
+    "sha256": "762dcdc587b2698e8785e2c455a94d745b61b7872b3bdb31783cb2173c5dff2e",
+    "bytes": 354974
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-poison-stage1-result.png",
+    "sha256": "941e8f75162f59894282c998f4c9cc5f2b6c24590e2443c7af634f0d8d098c54",
+    "bytes": 220155
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-poison-stage2-confirmation.png",
+    "sha256": "89dedc4e8c17105689964decca1a814f61d32b16bef27e161982b71e12f043c8",
+    "bytes": 353555
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-poison-stage2-result.png",
+    "sha256": "197f55ace678087715e94baa4a3c207f91e9f074b87779ebc29f555d665555f4",
+    "bytes": 220100
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-savage-blow-stage1-confirmation.png",
+    "sha256": "50dd230f83c599ef0123237a56941157724c8a54b4910316f2279b49b748fcb5",
+    "bytes": 349510
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-savage-blow-stage1-result.png",
+    "sha256": "d6a2c70ff72d7f092692e3fdc0042be2682a95b0f8bf7de71e5a958a171a5373",
+    "bytes": 215830
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-savage-blow-stage2-confirmation.png",
+    "sha256": "6268d316e690dacb3eb809e9ea668814b31b29441bd6ee6354ccbe58085adea0",
+    "bytes": 343342
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-savage-blow-stage2-result.png",
+    "sha256": "1d300934dd4b41d248bea43cbe8e9af8420204080fc85b48f6fc13522bb8022a",
+    "bytes": 215960
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-vampiric-embrace-stage1-confirmation.png",
+    "sha256": "142908fb9b6954cb5f44541aa02a15a85051a223dfb02510beb72ad3b8bd66e4",
+    "bytes": 336899
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-vampiric-embrace-stage1-result.png",
+    "sha256": "6eb7c3ba0e2921a8119fdfa7d35cdff8f07257c0ed4f27e3a40eb35e1b8b318e",
+    "bytes": 226088
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-vampiric-embrace-stage2-confirmation.png",
+    "sha256": "3bbee3a124fb5e76278e2e3913b15a628f9ce0fac6916197ec99cada880a2899",
+    "bytes": 335681
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-vampiric-embrace-stage2-result.png",
+    "sha256": "0515afb602a15697a9ce78d02773205ca9af35421e43a8f8141dd6180c017999",
+    "bytes": 225327
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-void-inversion-stage1-confirmation.png",
+    "sha256": "d7f85d187eca145242c314517a45aea297a0584387c4d3f50ec021a61b4159a4",
+    "bytes": 339545
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-void-inversion-stage1-result.png",
+    "sha256": "6fd69d4c3f999ed34ed62917c9dff819d7068fb069666bde54167e03133bec86",
+    "bytes": 228235
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-void-inversion-stage2-confirmation.png",
+    "sha256": "56b6c3909b60f6afab909eee7a42c33c5e4075b6e07882698f981168039a15a2",
+    "bytes": 339646
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-void-inversion-stage2-result.png",
+    "sha256": "d6fbcee361cc72011e3df9e9c67d3d3cd905e44ba825ccd5b3168456eb6076d0",
+    "bytes": 227038
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-voids-call-stage1-confirmation.png",
+    "sha256": "30195a86f546dc3e82b94742bd3dcbf418cb375458354e38eec5c25f805f23c9",
+    "bytes": 342261
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-voids-call-stage1-result.png",
+    "sha256": "85f684a76750a378a93e91aad3d9911b19ee47751ea43e9b9291109b8c105dc2",
+    "bytes": 225548
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-voids-call-stage2-confirmation.png",
+    "sha256": "d8aa6502d45400ea810c5fb5e5cd447438f633b41a7079f62f028ae56bef4926",
+    "bytes": 341322
+  },
+  {
+    "private_path": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\charms-audit-20261113\\restore-voids-call-stage2-result.png",
+    "sha256": "9ff9e884f5a409e7e8338d588fb29e3cf78e6fca4897eb138335eb2f3fb603fd",
+    "bytes": 224249
+  }
+]

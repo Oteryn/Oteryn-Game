@@ -1,0 +1,146 @@
+[
+  {
+    "charm": "Freeze",
+    "source_key": "oteryn:charm.freeze",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 320,
+    "source_value_percent": 5
+  },
+  {
+    "charm": "Freeze",
+    "source_key": "oteryn:charm.freeze",
+    "stage": 2,
+    "currency": "charm_points",
+    "source_cost": 480,
+    "source_value_percent": 10
+  },
+  {
+    "charm": "Low Blow",
+    "source_key": "oteryn:charm.low_blow",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 800,
+    "source_value_percent": 4
+  },
+  {
+    "charm": "Low Blow",
+    "source_key": "oteryn:charm.low_blow",
+    "stage": 2,
+    "currency": "charm_points",
+    "source_cost": 1200,
+    "source_value_percent": 8
+  },
+  {
+    "charm": "Parry",
+    "source_key": "oteryn:charm.parry",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 400,
+    "source_value_percent": 5
+  },
+  {
+    "charm": "Parry",
+    "source_key": "oteryn:charm.parry",
+    "stage": 2,
+    "currency": "charm_points",
+    "source_cost": 600,
+    "source_value_percent": 10
+  },
+  {
+    "charm": "Poison",
+    "source_key": "oteryn:charm.poison",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 240,
+    "source_value_percent": 5
+  },
+  {
+    "charm": "Poison",
+    "source_key": "oteryn:charm.poison",
+    "stage": 2,
+    "currency": "charm_points",
+    "source_cost": 360,
+    "source_value_percent": 10
+  },
+  {
+    "charm": "Savage Blow",
+    "source_key": "oteryn:charm.savage_blow",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 800,
+    "source_value_percent": 20
+  },
+  {
+    "charm": "Savage Blow",
+    "source_key": "oteryn:charm.savage_blow",
+    "stage": 2,
+    "currency": "charm_points",
+    "source_cost": 1200,
+    "source_value_percent": 40
+  },
+  {
+    "charm": "Enflame",
+    "source_key": "oteryn:charm.enflame",
+    "stage": 1,
+    "currency": "charm_points",
+    "source_cost": 400,
+    "source_value_percent": 5
+  },
+  {
+    "charm": "Vampiric Embrace",
+    "source_key": "oteryn:charm.vampiric_embrace",
+    "stage": 1,
+    "currency": "minor_charm_echoes",
+    "source_cost": 100,
+    "source_value_percent": 1.6
+  },
+  {
+    "charm": "Vampiric Embrace",
+    "source_key": "oteryn:charm.vampiric_embrace",
+    "stage": 2,
+    "currency": "minor_charm_echoes",
+    "source_cost": 150,
+    "source_value_percent": 2.4
+  },
+  {
+    "charm": "Void Inversion",
+    "source_key": "oteryn:charm.void_inversion",
+    "stage": 1,
+    "currency": "minor_charm_echoes",
+    "source_cost": 100,
+    "source_value_percent": 20
+  },
+  {
+    "charm": "Void Inversion",
+    "source_key": "oteryn:charm.void_inversion",
+    "stage": 2,
+    "currency": "minor_charm_echoes",
+    "source_cost": 150,
+    "source_value_percent": 30
+  },
+  {
+    "charm": "Void's Call",
+    "source_key": "oteryn:charm.voids_call",
+    "stage": 1,
+    "currency": "minor_charm_echoes",
+    "source_cost": 100,
+    "source_value_percent": 0.8
+  },
+  {
+    "charm": "Void's Call",
+    "source_key": "oteryn:charm.voids_call",
+    "stage": 2,
+    "currency": "minor_charm_echoes",
+    "source_cost": 150,
+    "source_value_percent": 1.2
+  },
+  {
+    "charm": "Fatal Hold",
+    "source_key": "oteryn:charm.fatal_hold",
+    "stage": 1,
+    "currency": "minor_charm_echoes",
+    "source_cost": 100,
+    "source_value_percent": 30
+  }
+]
