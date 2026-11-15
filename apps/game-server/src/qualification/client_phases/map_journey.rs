@@ -22,7 +22,7 @@ pub(super) async fn run(
             sample.kind,
             at.x,
             at.y,
-            -i16::from(at.floor),
+            i16::from(at.floor),
             ["PASS", "FAIL", "SKIPPED"][index],
             reason,
             sample
@@ -49,7 +49,7 @@ pub(super) async fn run(
         "MAP_CHECK return {},{},{} {} {reason}",
         start.x,
         start.y,
-        -i16::from(start.floor),
+        i16::from(start.floor),
         ["PASS", "FAIL"][index]
     ));
     let mut failures = 0;

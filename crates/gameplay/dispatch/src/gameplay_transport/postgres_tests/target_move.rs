@@ -6,14 +6,33 @@ use crate::foundation::{ExactActorRef, GameSessionId, MovementFacing, MovementLo
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+use oteryn_protocol_oteryn::world_spatial::ActorPosition;
 use oteryn_protocol_oteryn::{
     CommandStatus, MessageType, decode_command_result, decode_state_delta, decode_wire_envelope,
 };
 use std::time::Duration;
 use tokio::io::DuplexStream;
 
+fn native_position(at: MovementLocalPosition) -> ActorPosition {
+    ActorPosition {
+        x: at.x,
+        y: at.y,
+        floor: crate::gameplay_transport::composed_admission::native_floor(at.floor),
+    }
+}
+
+fn adjacent(current: ActorPosition, target: MovementLocalPosition) -> bool {
+    let target = native_position(target);
+    current.floor == target.floor
+        && current
+            .x
+            .abs_diff(target.x)
+            .max(current.y.abs_diff(target.y))
+            == 1
+}
+
 fn cell(x: u8, y: u8) -> Vec<u8> {
-    vec![10, 6, 8, x * 2, 16, y * 2, 24, 14]
+    vec![10, 6, 8, x * 2, 16, y * 2, 24, 13]
 }
 
 async fn position(
@@ -67,7 +86,7 @@ async fn follow_check_barrier(client: &mut DuplexStream, id: u64, payload: &[u8]
     Ok(())
 }
 
-async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPosition> {
+async fn next_step(client: &mut DuplexStream) -> TestResult<ActorPosition> {
     loop {
         let frame = read(client).await?;
         let envelope = decode_wire_envelope(&frame)?;
@@ -75,12 +94,7 @@ async fn next_step(client: &mut DuplexStream) -> TestResult<MovementLocalPositio
             let delta = decode_state_delta(envelope.payload())?;
             if delta.domain_id == 1 {
                 let value = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_delta_with_item_handles(delta.payload).map_err(debug)?;
-                let at = value.actor_position;
-                return Ok(MovementLocalPosition {
-                    x: at.x,
-                    y: at.y,
-                    floor: at.floor,
-                });
+                return Ok(value.actor_position);
             }
         }
     }
@@ -101,7 +115,7 @@ pub(super) async fn client_scenario(
     // Exact destination, not its adjacent tile, and a wall requires a cardinal detour.
     send(client, 1, 81, &cell(6, 4)).await?;
     result(client, 1, 1).await?;
-    let mut previous = at(1, 1);
+    let mut previous = native_position(at(1, 1));
     let started = tokio::time::Instant::now();
     let mut steps = 0;
     loop {
@@ -115,7 +129,7 @@ pub(super) async fn client_scenario(
         assert!(!(current.x == 3 && current.y <= 2), "wall collision");
         previous = current;
         steps += 1;
-        if current == at(6, 4) {
+        if current == native_position(at(6, 4)) {
             break;
         }
     }
@@ -168,7 +182,7 @@ pub(super) async fn client_scenario(
     send(client, 4, 81, &[16, 1]).await?;
     result(client, 4, 1).await?;
     tokio::time::sleep(Duration::from_millis(350)).await;
-    assert_eq!(position(owner, actor).await?, stopped);
+    assert_eq!(native_position(position(owner, actor).await?), stopped);
     // A real visible player is resolved by identity AND generation, on this Channel.
     let target_session = GameSessionId::decode(&id(77)).map_err(debug)?;
     let target = {
@@ -203,7 +217,7 @@ pub(super) async fn client_scenario(
     result(client, 5, 1).await?;
     loop {
         let current = next_step(client).await?;
-        if crate::movement::path_search::chebyshev(current, at(7, 5)) == 1 {
+        if adjacent(current, at(7, 5)) {
             break;
         }
     }
@@ -216,7 +230,7 @@ pub(super) async fn client_scenario(
     place(owner, target_admitted, at(7, 1)).await?;
     loop {
         let current = next_step(client).await?;
-        if current.floor == 7 && crate::movement::path_search::chebyshev(current, at(7, 1)) == 1 {
+        if current.floor == -7 && adjacent(current, at(7, 1)) {
             break;
         }
     }
@@ -292,7 +306,7 @@ pub(super) async fn client_scenario(
     result(client, 11, 1).await?;
     loop {
         let current = next_step(client).await?;
-        if crate::movement::path_search::chebyshev(current, at(7, 5)) == 1 {
+        if adjacent(current, at(7, 5)) {
             break;
         }
     }
@@ -335,7 +349,7 @@ pub(super) async fn client_scenario(
     result(client, 12, 1).await?;
     loop {
         let current = next_step(client).await?;
-        if current != floor_stopped {
+        if current != native_position(floor_stopped) {
             break;
         }
     }

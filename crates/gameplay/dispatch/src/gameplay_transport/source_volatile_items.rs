@@ -165,7 +165,7 @@ impl SourceVolatileProjection {
                     position: ActorPosition {
                         x: i32::from(pos.x),
                         y: i32::from(pos.y),
-                        floor: -i16::from(pos.floor),
+                        floor: super::composed_admission::native_floor(i16::from(pos.floor)),
                     },
                     revision: 1,
                 })
@@ -351,6 +351,30 @@ mod tests {
                 _ => None,
             })
             .ok_or("physical pod identity".into())
+    }
+
+    #[test]
+    fn native_volatile_entity_floor_survives_runtime_tile_conversion() -> Result<(), String> {
+        let projection = projection(1)?;
+        let pos = tile(MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        })
+        .ok_or("runtime tile")?;
+        assert_eq!(pos.floor, -7);
+        assert!(projection.facts.create_movement_item(pos, POD, 0, || true));
+        let entities = projection.entities();
+        assert_eq!(entities.len(), 1);
+        assert_eq!(
+            entities[0].position,
+            ActorPosition {
+                x: 100,
+                y: 100,
+                floor: -7
+            }
+        );
+        Ok(())
     }
 
     #[test]

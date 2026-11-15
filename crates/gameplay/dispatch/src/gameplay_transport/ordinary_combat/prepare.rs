@@ -40,7 +40,8 @@ pub(in crate::gameplay_transport) fn aim(
         (SpellTarget::Position(p), true) => Aim::Cursor(TilePosition {
             x: p.x,
             y: p.y,
-            floor: p.floor,
+            floor: crate::gameplay_transport::composed_admission::legacy_floor(p.floor)
+                .ok_or(SpellCastDisposition::TargetIllegal)?,
         }),
         _ => return Ok(None),
     };
@@ -105,9 +106,13 @@ fn cursor_point(
     caster: MovementLocalPosition,
     p: TilePosition,
 ) -> Result<Option<TilePosition>, SpellCastDisposition> {
-    if p.floor != caster.floor {
+    if Some(p.floor) != crate::gameplay_transport::composed_admission::legacy_floor(caster.floor) {
         return Err(SpellCastDisposition::TargetIllegal);
     }
+    let p = TilePosition {
+        floor: caster.floor,
+        ..p
+    };
     Ok(in_view(caster, p).then_some(p))
 }
 

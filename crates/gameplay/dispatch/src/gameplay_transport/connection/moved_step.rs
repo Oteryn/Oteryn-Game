@@ -86,7 +86,12 @@ where
     admitted.continuity.spatial_revision = *revision;
     if let Some(view) = item_view.as_deref_mut() {
         let closed = view.close(&CloseTrigger::Moved {
-            to: observation.actor_position,
+            to: crate::gameplay_transport::world_spatial::ActorPosition {
+                floor: crate::gameplay_transport::composed_admission::legacy_floor(
+                    observation.actor_position.floor,
+                )?,
+                ..observation.actor_position
+            },
         });
         admitted.continuity.item_view = view.continuity();
         if let Some(delta) = closed.ok()? {

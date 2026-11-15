@@ -413,6 +413,18 @@ fn scenario(target_move: bool) -> TestResult {
             )
             .ok_or("target selection")?;
         }
+        let cell = owner.item_walk_route(
+            deps.actor, admitted.game_session_id,
+            AutoWalkTarget::Cell(oteryn_protocol_oteryn::world_spatial::ActorPosition { x: 1, y: 5, floor: -7 }),
+        ).await.map_err(|()| "native cell route failed")?.ok_or("native cell route absent")?;
+        assert_eq!(cell.steps.into_iter().collect::<Vec<_>>(),
+            vec![oteryn_protocol_oteryn::world_spatial::StepDirection::South; 4]);
+        let adjacent = owner.item_walk_route(
+            deps.actor, admitted.game_session_id,
+            AutoWalkTarget::AdjacentCell(oteryn_protocol_oteryn::item_view::WorldTilePosition { x: 1, y: 5, floor: -7 }),
+        ).await.map_err(|()| "native adjacent route failed")?.ok_or("native adjacent route absent")?;
+        assert_eq!(adjacent.steps.into_iter().collect::<Vec<_>>(),
+            vec![oteryn_protocol_oteryn::world_spatial::StepDirection::South; 3]);
         let open = owner
             .item_walk_route(
                 deps.actor,
@@ -1133,7 +1145,7 @@ async fn result_at_rest(
                         value.actor_position.y,
                         value.actor_position.floor
                     ),
-                    (at.x, at.y, at.floor)
+                    (at.x, at.y, crate::gameplay_transport::composed_admission::native_floor(at.floor))
                 );
             }
         }

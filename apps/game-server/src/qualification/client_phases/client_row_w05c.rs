@@ -52,7 +52,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
     let target = TilePos {
         x: destination.x,
         y: destination.y,
-        floor: -destination.floor,
+        floor: destination.floor,
     };
     let mut client = connect_world(clients, 0x08).await?;
     let path = route(world, tile(client.world_spatial().actor_position)?, |at| {

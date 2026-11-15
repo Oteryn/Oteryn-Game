@@ -10,8 +10,8 @@ use oteryn_protocol_oteryn::bed::COMMAND_TYPE_BED_SLEEP_INTENT;
 use oteryn_protocol_oteryn::item_view::{ItemHandle, encode_item_target};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
 
-const BED: ActorPosition = ActorPosition { x: 32311, y: 32804, floor: 7 };
-const APPROACH: ActorPosition = ActorPosition { x: 32312, y: 32804, floor: 7 };
+const BED: ActorPosition = ActorPosition { x: 32311, y: 32804, floor: -7 };
+const APPROACH: ActorPosition = ActorPosition { x: 32312, y: 32804, floor: -7 };
 
 fn capture(name: &str, bytes: &[u8]) {
     let Some(root) = std::env::var_os("E2E_ALL_CAPTURE_DIR") else {

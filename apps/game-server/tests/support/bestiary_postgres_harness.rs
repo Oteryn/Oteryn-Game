@@ -140,17 +140,39 @@ impl Database {
 
 fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     use std::os::unix::fs::PermissionsExt;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
     let parent = std::env::temp_dir().join(format!(
         "oteryn-bestiary-progress-parent-{}",
         std::process::id()
     ));
     std::fs::create_dir_all(&parent)?;
     std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))?;
-    let retained = parent.join(tag);
-    let _ = std::fs::remove_dir_all(&retained);
-    std::fs::create_dir(&retained)?;
+    // Wrappers reuse scenario tags while their independent holders remain live.
+    let retained = loop {
+        let suffix = NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed);
+        let retained = parent.join(format!("{tag}-{suffix}"));
+        match std::fs::create_dir(&retained) {
+            Ok(()) => break retained,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error.into()),
+        }
+    };
     std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
     Ok(retained)
+}
+
+#[test]
+fn recovery_directories_for_repeated_scenario_tags_are_independent() -> TestResult {
+    let first = fence_parent("repeated-scenario")?;
+    let marker = first.join("live-recovery");
+    std::fs::write(&marker, b"first holder")?;
+    let second = fence_parent("repeated-scenario")?;
+    assert_ne!(first, second, "each harness owns its recovery directory");
+    assert_eq!(std::fs::read(&marker)?, b"first holder");
+    std::fs::remove_dir_all(first)?;
+    std::fs::remove_dir_all(second)?;
+    Ok(())
 }
 
 pub(crate) async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {

@@ -153,3 +153,51 @@ fn t012_spell_words_use_server_catalog_only_after_server_success()
     assert_eq!(view.scene().sprites().len(), baseline);
     Ok(())
 }
+
+#[test]
+fn legacy_presentations_render_on_the_native_live_floor() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
+    view.scene
+        .prime_visual_assets(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    let baseline = view.scene().sprites().len();
+    let (link, _commands, outbox) = play_channel();
+    let position = ActorPosition {
+        x: 0,
+        y: 0,
+        floor: 7,
+    };
+    for (index, kind) in [
+        PresentationEventKind::MagicEffect {
+            position,
+            effect_id: 1,
+            source: PresentationSource::Own,
+        },
+        PresentationEventKind::Missile {
+            from: position,
+            to: ActorPosition { x: 8, ..position },
+            missile_id: 1,
+            source: PresentationSource::Creatures,
+        },
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let sequence = u64::try_from(index)? + 1;
+        outbox.push(vec![SessionEvent::Presentation(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence - 1,
+            new_revision: sequence,
+            value: vec![PresentationEvent {
+                decision_ordinal: 1,
+                emission_ordinal: 1,
+                kind,
+            }],
+        })]);
+    }
+    assert!(view.tick(&link).is_ok());
+    let now = view.visuals.first().ok_or("presentation cue")?.received;
+    view.project_presentation(now)?;
+    assert_eq!(view.scene().sprites().len(), baseline + 5);
+    Ok(())
+}

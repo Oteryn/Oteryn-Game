@@ -21,7 +21,7 @@ const fn uuid_v7(tag: u8) -> [u8; 16] {
 }
 
 const fn at(x: i32, y: i32) -> ActorPosition {
-    ActorPosition { x, y, floor: 7 }
+    ActorPosition { x, y, floor: -7 }
 }
 
 const CONTENT: [u8; 32] = [0x5c; 32];

@@ -177,7 +177,7 @@ async fn approach(
     client.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == EntityKind::Npc && npc.placements.iter().any(|p| {
             entry.position.x == i32::from(p.x) && entry.position.y == i32::from(p.y)
-                && entry.position.floor == -i16::from(p.floor)
+                && entry.position.floor == i16::from(p.floor)
         })
     })).map(|entry| entry.entity).ok_or_else(|| "step approach: Oressa actor not visible after walking".into())
 }

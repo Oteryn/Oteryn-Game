@@ -159,7 +159,7 @@ fn actor_position(at: TilePos) -> ActorPosition {
     ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: -i16::from(at.floor),
+        floor: i16::from(at.floor),
     }
 }
 

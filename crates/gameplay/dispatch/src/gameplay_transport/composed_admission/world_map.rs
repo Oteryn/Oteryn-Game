@@ -8,6 +8,12 @@ pub(in crate::gameplay_transport) const fn native_floor(floor: i16) -> i16 {
     floor.saturating_abs().saturating_neg()
 }
 
+/// Inverse for native floors, retaining the sign-insensitive runtime compatibility of
+/// `native_floor`. The int16 minimum has no representable legacy counterpart.
+pub(in crate::gameplay_transport) const fn legacy_floor(floor: i16) -> Option<i16> {
+    floor.checked_abs()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.

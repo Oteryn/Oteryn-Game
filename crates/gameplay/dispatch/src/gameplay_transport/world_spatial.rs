@@ -624,7 +624,7 @@ mod tests {
             position: ActorPosition {
                 x: i32::from(n),
                 y: 0,
-                floor: 7,
+                floor: -7,
             },
             detail: EntityDetail::Actor {
                 direction: StepDirection::South,
@@ -647,8 +647,8 @@ mod tests {
     #[test]
     fn look_shows_only_the_exact_shown_actor_generation() {
         let channel = channel([
-            at(1, VisibleKind::Creature, 101, 100, 7),
-            at(2, VisibleKind::Npc, 102, 100, 7),
+            at(1, VisibleKind::Creature, 101, 100, -7),
+            at(2, VisibleKind::Npc, 102, 100, -7),
             at(
                 3,
                 VisibleKind::Corpse {
@@ -656,7 +656,7 @@ mod tests {
                 },
                 103,
                 100,
-                7,
+                -7,
             ),
         ]);
         let mut view = SessionVisibility::with_objects(true);
@@ -725,7 +725,7 @@ mod tests {
             actor_position: ActorPosition {
                 x: 2,
                 y: 0,
-                floor: 7,
+                floor: -7,
             },
             enter: vec![entity(2, EntityKind::Creature)],
             update: vec![entity(0, EntityKind::Player)],
@@ -865,9 +865,9 @@ mod tests {
         }
     }
 
-    /// The observer, `id(0)`, stands at (100, 100, 7).
+    /// The observer, `id(0)`, stands at (100, 100, -7).
     fn channel(others: impl IntoIterator<Item = ChannelEntity>) -> ChannelEntities {
-        let mut entities = vec![at(0, VisibleKind::Player, 100, 100, 7)];
+        let mut entities = vec![at(0, VisibleKind::Player, 100, 100, -7)];
         entities.extend(others);
         ChannelEntities {
             content_generation: [7; 32],
@@ -904,7 +904,7 @@ mod tests {
 
     #[test]
     fn light_reaches_only_a_session_with_capability_19_and_changes_at_most_once_a_second() {
-        let others = || [at(1, VisibleKind::Player, 101, 100, 7)];
+        let others = || [at(1, VisibleKind::Player, 101, 100, -7)];
         let mut unlit = SessionVisibility::default();
         unlit
             .snapshot(&lit(channel(others()), 0, &[(1, 100)]), &mut no_handles)
@@ -968,14 +968,14 @@ mod tests {
         let mut view = SessionVisibility::default().lit(true);
         view.snapshot(
             &lit(
-                channel([at(1, VisibleKind::Creature, 101, 100, 7)]),
+                channel([at(1, VisibleKind::Creature, 101, 100, -7)]),
                 0,
                 &[(1, 30)],
             ),
             &mut no_handles,
         )
         .expect("snapshot");
-        let mut moved = at(1, VisibleKind::Creature, 102, 100, 7);
+        let mut moved = at(1, VisibleKind::Creature, 102, 100, -7);
         moved.revision += 1;
         let changed = view
             .refresh(&lit(channel([moved]), 500, &[(1, 90)]), &mut no_handles)
@@ -989,7 +989,7 @@ mod tests {
 
     #[test]
     fn an_entity_shown_unlit_gains_a_light_only_once_due() {
-        let others = || [at(1, VisibleKind::Player, 101, 100, 7)];
+        let others = || [at(1, VisibleKind::Player, 101, 100, -7)];
         let mut view = SessionVisibility::default().lit(true);
         view.snapshot(&lit(channel(others()), 0, &[]), &mut no_handles)
             .expect("snapshot");
@@ -1028,7 +1028,7 @@ mod tests {
     #[test]
     fn forge_creature_stationary_health_is_sent_once_without_a_position_revision() {
         let mut view = SessionVisibility::default();
-        let mut creature = at(1, VisibleKind::Creature, 101, 100, 7);
+        let mut creature = at(1, VisibleKind::Creature, 101, 100, -7);
         view.snapshot(&channel([creature]), &mut no_handles)
             .expect("snapshot");
         creature.health_percent = 37;
@@ -1064,7 +1064,7 @@ mod tests {
             },
             101,
             100,
-            7,
+            -7,
         );
         view.snapshot(&channel([corpse]), &mut no_handles)
             .expect("snapshot");
@@ -1097,7 +1097,7 @@ mod tests {
     fn forge_creature_health_updates_resync_at_the_existing_delta_ceiling() {
         let mut view = SessionVisibility::default();
         let mut creatures: Vec<_> = (1..MAX_DELTA_ENTRIES as u32)
-            .map(|id| at(id, VisibleKind::Creature, 101, 100, 7))
+            .map(|id| at(id, VisibleKind::Creature, 101, 100, -7))
             .collect();
         view.snapshot(&channel(creatures.clone()), &mut no_handles)
             .expect("snapshot");
@@ -1133,14 +1133,14 @@ mod tests {
     #[test]
     fn the_snapshot_is_the_interest_set_own_actor_first_in_canonical_order() {
         let channel = channel([
-            at(5, VisibleKind::Creature, 102, 100, 7),
-            at(4, VisibleKind::Player, 99, 101, 7),
-            at(3, VisibleKind::Player, 101, 100, 7),
+            at(5, VisibleKind::Creature, 102, 100, -7),
+            at(4, VisibleKind::Player, 99, 101, -7),
+            at(3, VisibleKind::Player, 101, 100, -7),
             // Outside the 18 x 14 area, and on a floor a ground observer does not see.
-            at(6, VisibleKind::Creature, 120, 100, 7),
-            at(7, VisibleKind::Creature, 100, 100, 8),
-            // Above ground: floor 6 is offset by one tile, so (101, 101, 6) is at ring 0.
-            at(8, VisibleKind::Player, 101, 101, 6),
+            at(6, VisibleKind::Creature, 120, 100, -7),
+            at(7, VisibleKind::Creature, 100, 100, -8),
+            // Above ground: floor -6 is offset by one tile, so (101, 101, -6) is at ring 0.
+            at(8, VisibleKind::Player, 101, 101, -6),
         ]);
         let mut view = SessionVisibility::default();
         let snapshot = view.snapshot(&channel, &mut no_handles).expect("snapshot");
@@ -1177,7 +1177,7 @@ mod tests {
 
     #[test]
     fn an_npc_is_an_npc_actor_entity_with_full_health() {
-        let channel = channel([at(1, VisibleKind::Npc, 101, 100, 7)]);
+        let channel = channel([at(1, VisibleKind::Npc, 101, 100, -7)]);
         let snapshot = SessionVisibility::default()
             .snapshot(&channel, &mut no_handles)
             .expect("snapshot");
@@ -1201,7 +1201,7 @@ mod tests {
 
     #[test]
     fn an_observer_outside_its_channel_fails_closed() {
-        let mut lost = channel([at(1, VisibleKind::Creature, 101, 100, 7)]);
+        let mut lost = channel([at(1, VisibleKind::Creature, 101, 100, -7)]);
         lost.observer = id(9);
         assert!(
             SessionVisibility::default()
@@ -1222,8 +1222,8 @@ mod tests {
     fn crowd(count: u32) -> ChannelEntities {
         channel(
             (1..=count)
-                .map(|n| at(n, VisibleKind::Creature, 101, 100, 7))
-                .chain([at(9_999, VisibleKind::Creature, 95, 100, 7)]),
+                .map(|n| at(n, VisibleKind::Creature, 101, 100, -7))
+                .chain([at(9_999, VisibleKind::Creature, 95, 100, -7)]),
         )
     }
 
@@ -1262,7 +1262,7 @@ mod tests {
     fn line(first: u32, count: u32) -> ChannelEntities {
         channel((0..count).map(|n| {
             let x = 101 + i32::try_from(n % 9).expect("x");
-            at(first + n, VisibleKind::Creature, x, 100, 7)
+            at(first + n, VisibleKind::Creature, x, 100, -7)
         }))
     }
 
@@ -1307,7 +1307,7 @@ mod tests {
     #[test]
     fn a_moved_or_restamped_entity_is_an_update_and_the_own_step_moves_the_header() {
         let mut view = SessionVisibility::default();
-        let first = channel([at(1, VisibleKind::Creature, 101, 100, 7)]);
+        let first = channel([at(1, VisibleKind::Creature, 101, 100, -7)]);
         view.snapshot(&first, &mut no_handles).expect("snapshot");
         assert_eq!(
             view.refresh(&first, &mut no_handles),
@@ -1334,9 +1334,9 @@ mod tests {
         let corpse = VisibleKind::Corpse {
             item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
         };
-        let mut corpse_at = at(2, corpse, 101, 100, 7);
+        let mut corpse_at = at(2, corpse, 101, 100, -7);
         corpse_at.generation = 0;
-        let channel = channel([at(1, VisibleKind::Creature, 101, 100, 7), corpse_at]);
+        let channel = channel([at(1, VisibleKind::Creature, 101, 100, -7), corpse_at]);
         let mut handles = |entities: &mut [WorldSpatialEntity]| {
             for entity in entities {
                 if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {

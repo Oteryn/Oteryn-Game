@@ -6,9 +6,21 @@ impl PlayView {
     ) {
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.visuals.extend(events.iter().map(|&kind| VisualCue {
-            kind,
-            received: now,
+        let native_position = |position: &mut oteryn_session::ActorPosition| {
+            position.floor = position.floor.saturating_abs().saturating_neg();
+        };
+        self.visuals.extend(events.iter().copied().map(|mut kind| {
+            if let PresentationEventKind::MagicEffect { position, .. }
+                | PresentationEventKind::SpellWords { position, .. }
+                | PresentationEventKind::ValueText { position, .. } = &mut kind
+            {
+                native_position(position);
+            }
+            if let PresentationEventKind::Missile { from, to, .. } = &mut kind {
+                native_position(from);
+                native_position(to);
+            }
+            VisualCue { kind, received: now }
         }));
         let excess = self.visuals.len().saturating_sub(MAX_VISUAL_CUES);
         self.visuals.drain(..excess);

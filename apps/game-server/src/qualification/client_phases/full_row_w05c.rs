@@ -310,7 +310,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let target = TilePos {
         x: destination.x,
         y: destination.y,
-        floor: -destination.floor,
+        floor: destination.floor,
     };
     let mut client = connect_world(clients, 0xe5).await?;
     let first_session = client.join_snapshot().game_session_id;

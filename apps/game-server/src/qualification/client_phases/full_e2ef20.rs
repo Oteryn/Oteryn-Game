@@ -137,7 +137,7 @@ fn visible_npc(client: &DevClientSession, npc: &oteryn_world_bundle::npc::Npc) -
             && npc.placements.iter().any(|placement| {
                 entity.position.x == i32::from(placement.x)
                     && entity.position.y == i32::from(placement.y)
-                    && entity.position.floor == -i16::from(placement.floor)
+                    && entity.position.floor == i16::from(placement.floor)
             })
     }).map(|entity| entity.entity)
 }

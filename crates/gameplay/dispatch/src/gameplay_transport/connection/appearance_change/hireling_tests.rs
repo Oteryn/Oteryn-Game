@@ -17,7 +17,7 @@ fn spatial(id: u8) -> WorldSpatialEntity {
         position: ActorPosition {
             x: i32::from(id),
             y: 0,
-            floor: 7,
+            floor: -7,
         },
         detail: EntityDetail::Actor {
             direction: StepDirection::South,
@@ -79,7 +79,7 @@ fn hireling_dictionary_attaches_existing_npc_look_once_and_does_not_bind_static_
             position: ActorPosition {
                 x: 1,
                 y: 0,
-                floor: 7,
+                floor: -7,
             },
             revision: 1,
         }],

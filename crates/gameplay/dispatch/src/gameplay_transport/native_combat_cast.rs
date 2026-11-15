@@ -2593,7 +2593,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     let training_occurrence=BuildOccurrence::from_bytes(nonce(b"oteryn:native-cast-training:v1",actor,session,command_id,&[]))
                         .map_err(|_|DurabilityError::Unavailable)?;
-                    let prepared_result=if native_companion_item_cast::direct_applicable(spell) {
+                    // Keep the original proposal for replay; only preparation consumes runtime coordinates.
+                    let prepared_result=match super::runtime_spell_intent(runtime,actor,intent) {
+                    Err(disposition)=>Err(disposition),
+                    Ok(intent)=>{if native_companion_item_cast::direct_applicable(spell) {
                         native_companion_item_cast::prepare_direct(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),parameter.as_ref(),attack_target,&mut draw).await
                     } else if let Some(parameter)=parameter.as_ref(){
@@ -2621,7 +2624,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),attack_target,&mut draw).await
-                    };
+                    }}};
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
                         #[cfg(test)]

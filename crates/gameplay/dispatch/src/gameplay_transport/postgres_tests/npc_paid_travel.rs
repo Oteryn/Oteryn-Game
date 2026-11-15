@@ -683,7 +683,7 @@ fn scenario(reward_fixture: bool) -> TestResult {
                 walked.actor_position.y,
                 walked.actor_position.floor
             ),
-            (33270, 32440, 6)
+            (33270, 32440, -6)
         );
         // Exhaustion is checked before attempting a fee, unlike the donor's debit-first order.
         dependencies

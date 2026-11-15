@@ -82,12 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ordinary_paced_step(actor, session, direction, expected, follow)
             .await;
         if let Some(moved) = outcome.0.moved_to {
-            let cell = moved.actor_position;
-            let event = match (cell.x, cell.y, cell.floor) {
-                FORCEFIELD_ARRIVAL => Some(TutorialEvent::Forcefield),
-                (32561 | 32562, 32485, 7) => Some(TutorialEvent::Hunting),
-                _ => None,
-            };
+            let event = arrival_event(moved.actor_position);
             if let Some(event) = event
                 && let Ok(Some(fence)) = self.current_quest_fence(session).await
             {
@@ -100,5 +95,48 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         outcome
+    }
+}
+
+fn arrival_event(
+    cell: oteryn_protocol_oteryn::world_spatial::ActorPosition,
+) -> Option<TutorialEvent> {
+    let floor = super::composed_admission::legacy_floor(cell.floor)?;
+    match (cell.x, cell.y, floor) {
+        FORCEFIELD_ARRIVAL => Some(TutorialEvent::Forcefield),
+        (32561 | 32562, 32485, 7) => Some(TutorialEvent::Hunting),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_spatial::ActorPosition;
+
+    #[test]
+    fn native_committed_arrivals_reach_legacy_tutorial_events() {
+        let (x, y, floor) = FORCEFIELD_ARRIVAL;
+        assert_eq!(
+            arrival_event(ActorPosition {
+                x,
+                y,
+                floor: -floor
+            }),
+            Some(TutorialEvent::Forcefield)
+        );
+        for x in [32561, 32562] {
+            assert_eq!(
+                arrival_event(ActorPosition {
+                    x,
+                    y: 32485,
+                    floor: -7
+                }),
+                Some(TutorialEvent::Hunting)
+            );
+            for floor in [-8, -6] {
+                assert_eq!(arrival_event(ActorPosition { x, y: 32485, floor }), None);
+            }
+        }
     }
 }

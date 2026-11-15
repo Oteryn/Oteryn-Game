@@ -124,7 +124,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult<String> {
                     && rashid.placements.iter().any(|place| {
                         entity.position.x == i32::from(place.x)
                             && entity.position.y == i32::from(place.y)
-                            && entity.position.floor == -i16::from(place.floor)
+                            && entity.position.floor == i16::from(place.floor)
                     })
             })
         })

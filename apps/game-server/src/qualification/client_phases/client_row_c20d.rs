@@ -39,7 +39,7 @@ async fn journey(
         let temple = oteryn_protocol_oteryn::world_spatial::ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
-            floor: -i16::from(home.floor),
+            floor: i16::from(home.floor),
         };
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         client.session_mut().attack_target(None).await?;

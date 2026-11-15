@@ -93,7 +93,7 @@ fn observation() -> WorldSpatialObservation {
         actor_position: ActorPosition {
             x: 0,
             y: 0,
-            floor: 7,
+            floor: -7,
         },
     }
 }

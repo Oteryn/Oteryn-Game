@@ -571,7 +571,7 @@ mod tests {
         let last = ActorPosition {
             x: 32491,
             y: 32168,
-            floor: 7,
+            floor: -7,
         };
         let death = ActorPosition {
             x: last.x + 1,
@@ -582,7 +582,7 @@ mod tests {
         assert!(!hunt_corpse_matches(last, death, true, false));
         assert!(!hunt_corpse_matches(
             last,
-            ActorPosition { floor: 8, ..death },
+            ActorPosition { floor: -8, ..death },
             true,
             true
         ));
@@ -602,7 +602,7 @@ mod tests {
         let at = ActorPosition {
             x: 100,
             y: 100,
-            floor: 7,
+            floor: -7,
         };
         // The leave can precede XP and the bound corpse's enter. Neither
         // a corpse from before the attack nor XP alone proves this hunt.
@@ -4433,7 +4433,7 @@ async fn acquire_inner(
                                 == ActorPosition {
                                     x: i32::from(p.x),
                                     y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
+                                    floor: i16::from(p.floor),
                                 }
                         })
                 })

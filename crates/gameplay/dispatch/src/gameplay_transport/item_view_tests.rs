@@ -744,7 +744,10 @@ mod connection {
     fn observation(position: ActorPosition) -> WorldSpatialObservation {
         WorldSpatialObservation {
             content_generation: [0x5c; 32],
-            actor_position: position,
+            actor_position: ActorPosition {
+                floor: crate::gameplay_transport::composed_admission::native_floor(position.floor),
+                ..position
+            },
         }
     }
 
@@ -918,7 +921,10 @@ mod connection {
                     .placement_identity(),
                 generation: 0,
             },
-            position,
+            position: ActorPosition {
+                floor: crate::gameplay_transport::composed_admission::native_floor(position.floor),
+                ..position
+            },
             detail: EntityDetail::Actor {
                 direction: PLACEHOLDER_ACTOR_DIRECTION,
                 appearance_ref: PLACEHOLDER_APPEARANCE_REF,
@@ -937,7 +943,7 @@ mod connection {
                 item_view_selected().as_slice(),
                 &WorldSpatialEntitiesSnapshot {
                     content_generation: observation(HERE).content_generation,
-                    actor_position: HERE,
+                    actor_position: observation(HERE).actor_position,
                     own_identity: own.entity.identity,
                     entities: vec![own],
                 },
@@ -1084,6 +1090,44 @@ mod connection {
     }
 
     #[test]
+    fn native_step_in_reach_keeps_the_legacy_corpse_open() -> TestResult {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                run(async {
+                    let carried = ItemViewContinuity {
+                        open_corpse: Some(corpse(7)),
+                        ..ItemViewContinuity::default()
+                    };
+                    let near = observe(HERE, at(11, 10, 7), &[5]);
+                    let mut authority =
+                        ViewAuthority::new(Some(inventory(&[]))).targets(vec![Some(near.clone())]);
+                    authority.step_to = Some(at(10, 9, 7));
+                    let (end, _) = serve(
+                        &authority,
+                        session(selected(carried))?,
+                        &[command(
+                            1,
+                            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                            &encode_step_intent(StepDirection::North),
+                        )?],
+                    )
+                    .await?;
+                    let mut mirror = SessionItemView::resume(carried);
+                    mirror
+                        .snapshot(inventory(&[]), Some(near))
+                        .expect("open snapshot");
+                    assert_eq!(ended(end)?.item_view, mirror.continuity());
+                    Ok(())
+                })
+                .map_err(|error| error.to_string())
+            })?
+            .join()
+            .map_err(|_| "native corpse movement thread panicked")??;
+        Ok(())
+    }
+
+    #[test]
     fn a_step_out_of_reach_closes_the_open_corpse() -> TestResult {
         run(async {
             let carried = ItemViewContinuity {
@@ -1126,7 +1170,7 @@ mod connection {
                         item_view_selected().as_slice(),
                         &WorldSpatialEntitiesDelta {
                             content_generation: observation(HERE).content_generation,
-                            actor_position: at(9, 10, 7),
+                            actor_position: at(9, 10, -7),
                             enter: Vec::new(),
                             update: vec![own_actor(at(9, 10, 7))],
                             leave: Vec::new(),

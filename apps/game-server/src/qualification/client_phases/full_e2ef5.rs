@@ -513,7 +513,7 @@ async fn cadence_leg(client: &mut DevClientSession, cells: &[TilePos]) -> TestRe
         .target_walk(ActorPosition {
             x: i32::from(to.x),
             y: i32::from(to.y),
-            floor: -i16::from(to.floor),
+            floor: i16::from(to.floor),
         })
         .await?;
     if result.status != CommandStatus::Accepted || result.payload != [8, 1] {
@@ -1123,7 +1123,7 @@ pub(super) async fn acquire_rune(
                     && npc.placements.iter().any(|p| {
                         entity.position.x == i32::from(p.x)
                             && entity.position.y == i32::from(p.y)
-                            && entity.position.floor == -i16::from(p.floor)
+                            && entity.position.floor == i16::from(p.floor)
                     })
             })
         })
@@ -1399,7 +1399,7 @@ fn actor_position(at: TilePos) -> ActorPosition {
     ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: -i16::from(at.floor),
+        floor: i16::from(at.floor),
     }
 }
 
@@ -1948,7 +1948,7 @@ async fn player_first_vocation(
                     && npc.placements.iter().any(|p| {
                         entry.position.x == i32::from(p.x)
                             && entry.position.y == i32::from(p.y)
-                            && entry.position.floor == -i16::from(p.floor)
+                            && entry.position.floor == i16::from(p.floor)
                     })
             })
         })
@@ -2528,7 +2528,7 @@ async fn challenge(
                     .tile(
                         u16::try_from(at.x).unwrap_or(0),
                         u16::try_from(at.y).unwrap_or(0),
-                        -i8::try_from(at.floor).unwrap_or(0),
+                        i8::try_from(at.floor).unwrap_or(0),
                     )
                     .is_some_and(|tile| !tile.protection_zone())
         })
@@ -2752,7 +2752,7 @@ mod continuation_two_tests {
             position: ActorPosition {
                 x: 1,
                 y: 2,
-                floor: 7,
+                floor: -7,
             },
             detail: oteryn_dev_client::EntityDetail::Actor {
                 direction: StepDirection::North,

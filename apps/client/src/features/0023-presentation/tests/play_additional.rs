@@ -101,7 +101,7 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
         let decoded = decode_item_effect_batch(&bytes).map_err(|e| format!("{e:?}"))?;
         assert_eq!(decoded, vec![event]);
         let (link, _commands, outbox) = crate::play::play_channel();
-        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
         let base = view.scene().sprites().len();
         outbox.push(vec![oteryn_session::SessionEvent::ItemEffects(
             AppliedDelta {
@@ -131,6 +131,79 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
                 "distinct donor effect IDs must produce distinct native visuals"
             );
         }
+    }
+    Ok(())
+}
+
+#[test]
+fn legacy_presentation_ingress_normalizes_all_visual_kinds_once()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationColor, PresentationValue, PresentationValueKind,
+    };
+    use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
+    use oteryn_session::ActorPosition;
+    let entity = EntityRef {
+        identity: [3; 16],
+        generation: 1,
+    };
+    let kinds = |position: ActorPosition| {
+        [
+            PresentationEventKind::MagicEffect {
+                position,
+                effect_id: 1,
+                source: PresentationSource::Own,
+            },
+            PresentationEventKind::Missile {
+                from: position,
+                to: ActorPosition {
+                    x: position.x + 1,
+                    ..position
+                },
+                missile_id: 1,
+                source: PresentationSource::Creatures,
+            },
+            PresentationEventKind::SpellWords {
+                caster: entity,
+                position,
+                spell: 1,
+            },
+            PresentationEventKind::ValueText {
+                kind: PresentationValueKind::DamageDealt,
+                position,
+                target: entity,
+                attacker: None,
+                primary: PresentationValue {
+                    value: 12,
+                    color: PresentationColor::Red,
+                },
+                secondary: Some(PresentationValue {
+                    value: 3,
+                    color: PresentationColor::LightGrey,
+                }),
+            },
+        ]
+    };
+    for floor in [0_i16, 6, 7, 8, 15] {
+        let position = ActorPosition {
+            x: 10,
+            y: 20,
+            floor,
+        };
+        let incoming = kinds(position);
+        let expected = kinds(ActorPosition {
+            floor: -floor,
+            ..position
+        });
+        let mut view =
+            crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -floor, &[])?;
+        let now = std::time::Instant::now();
+        view.receive_presentation(&incoming[..2], now);
+        view.receive_presentation(&incoming[2..], now);
+        assert_eq!(
+            view.visuals.iter().map(|cue| cue.kind).collect::<Vec<_>>(),
+            expected.to_vec()
+        );
     }
     Ok(())
 }

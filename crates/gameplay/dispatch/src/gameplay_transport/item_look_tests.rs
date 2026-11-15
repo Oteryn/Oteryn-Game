@@ -405,9 +405,9 @@ fn an_actor_is_in_view_only_within_the_reference_window() {
     let me = ActorPosition {
         x: 100,
         y: 100,
-        floor: 7,
+        floor: -7,
     };
-    let at = |x: i32, y: i32| ActorPosition { x, y, floor: 7 };
+    let at = |x: i32, y: i32| ActorPosition { x, y, floor: -7 };
     for visible in [
         at(100, 100),
         at(92, 94),
@@ -592,12 +592,12 @@ fn item_look_uses_the_map_send_window_on_every_floor_and_the_canary_near_split()
     let actor = ActorPosition {
         x: i32::MIN,
         y: 0,
-        floor: 7,
+        floor: -7,
     };
     let target = ActorPosition {
         x: i32::MAX,
         y: 0,
-        floor: 6,
+        floor: -6,
     };
     assert_eq!(look_distance(actor, target), i32::MAX);
 }

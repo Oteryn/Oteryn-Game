@@ -154,7 +154,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let area = world.base().subareas.town(selected.town)
         .ok_or("step=town-catalogue observed=selected-town-absent need=town-area")?;
     let temple = area.temple.ok_or("step=town-catalogue observed=temple-absent need=home-temple")?;
-    let expected_position = ActorPosition { x: i32::from(temple.x), y: i32::from(temple.y), floor: -i16::from(temple.floor) };
+    let expected_position = ActorPosition { x: i32::from(temple.x), y: i32::from(temple.y), floor: i16::from(temple.floor) };
     let expected_message = format!("You are now a citizen of {}.", area.name);
     messages_until(&mut client, &expected_message).await?;
     if client.world_spatial().actor_position != expected_position {

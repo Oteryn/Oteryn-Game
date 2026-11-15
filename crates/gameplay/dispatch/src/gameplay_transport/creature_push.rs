@@ -26,10 +26,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Rejected;
         }
+        let Some(floor) = composed_admission::legacy_floor(intent.destination.floor) else {
+            return Rejected;
+        };
         let destination = MovementLocalPosition {
             x: intent.destination.x,
             y: intent.destination.y,
-            floor: intent.destination.floor,
+            floor,
         };
         let Some(_permit) = self.spell_lane_permit().await else {
             return Rejected;

@@ -83,6 +83,7 @@ fn scoped_house_snapshot_and_projection_bind_actual_npc_and_exclude_channel_and_
         .expect("view authority")
         .expect("House view");
     assert_eq!(view.entities.len(), 2);
+    assert!(view.entities.iter().all(|entry| entry.position.floor == -7));
     assert!(
         view.entities
             .iter()
@@ -135,7 +136,7 @@ fn scoped_house_snapshot_and_projection_bind_actual_npc_and_exclude_channel_and_
         ActorPosition {
             x: 100,
             y: 99,
-            floor: 7
+            floor: -7
         }
     );
     assert_eq!(player.revision, before.revision() + 1);

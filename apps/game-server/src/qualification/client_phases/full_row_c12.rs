@@ -426,7 +426,7 @@ async fn acquire(
         .and_then(|entities| {
             entities.iter().find(|e| {
                 e.kind == EntityKind::Npc
-                    && npc_entry.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == -i16::from(p.floor))
+                    && npc_entry.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == i16::from(p.floor))
             })
         })
         .map(|e| e.entity)

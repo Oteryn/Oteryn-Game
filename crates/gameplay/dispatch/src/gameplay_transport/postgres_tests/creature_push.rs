@@ -387,7 +387,7 @@ async fn push(
         destination: ActorPosition {
             x: to.x,
             y: to.y,
-            floor: to.floor,
+            floor: crate::gameplay_transport::composed_admission::native_floor(to.floor),
         },
     })
     .map_err(debug)?;
@@ -576,7 +576,7 @@ async fn relocation_tiles_scenario(
         destination: ActorPosition {
             x: destination.x,
             y: destination.y,
-            floor: destination.floor,
+            floor: crate::gameplay_transport::composed_admission::native_floor(destination.floor),
         },
     };
     assert_eq!(appearance()?, trap);

@@ -183,7 +183,7 @@ async fn journey(row: &mut Row, clients: &SeamClients<'_>) -> TestResult {
     let actor = client.world_entities().and_then(|entities| entities.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|place| {
             entry.position.x == i32::from(place.x) && entry.position.y == i32::from(place.y)
-                && entry.position.floor == -i16::from(place.floor)
+                && entry.position.floor == i16::from(place.floor)
         })
     })).map(|entry| entry.entity).ok_or_else(|| format!("npc-command-not-sent:actor-not-visible:{NPC}"))?;
     talk(&mut client, actor, "hi").await?;

@@ -130,7 +130,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
                 == oteryn_protocol_oteryn::world_spatial::ActorPosition {
                     x: i32::from(at.x),
                     y: i32::from(at.y),
-                    floor: -i16::from(at.floor),
+                    floor: i16::from(at.floor),
                 }
         })
         .ok_or("rotation delta omitted target tile")?;

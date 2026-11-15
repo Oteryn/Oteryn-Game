@@ -114,41 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Err(ResultCode::Rejected.into());
         }
         // Use the same bounded interest selection as domain 1, including its 256-result cut.
-        let visible = runtime.visible_entities();
-        let entities = visible
-            .players
-            .iter()
-            .map(|e| (VisibleKind::Player, e))
-            .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
-            .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
-            .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
-                display_name: None,
-                health_percent: 100,
-                direction: match runtime
-                    .read_actor_position(e.actor)
-                    .ok()
-                    .and_then(|at| at.facing())
-                {
-                    Some(crate::foundation::MovementFacing::North) => StepDirection::North,
-                    Some(crate::foundation::MovementFacing::East) => StepDirection::East,
-                    Some(crate::foundation::MovementFacing::West) => StepDirection::West,
-                    Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
-                },
-                kind,
-                identity: e.actor.placement_identity(),
-                generation: e.generation,
-                position: super::super::world_spatial::ActorPosition {
-                    x: e.position.x,
-                    y: e.position.y,
-                    floor: e.position.floor,
-                },
-                revision: e.revision,
-            })
-            .chain(super::super::item_ref_admission::visible_corpses(
-                runtime,
-                self.active_generation,
-            ))
-            .collect::<Vec<_>>();
+        let entities = trade_entities(runtime, self.active_generation);
         for side in 0..2 {
             let channel = super::super::world_spatial::ChannelEntities {
                 observer: lives[side].actor.placement_identity(),
@@ -174,7 +140,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let digest = runtime.content_pin().server_artifact_digest();
         pinned_index(runtime, self.active_generation).ok_or(ResultCode::Rejected)?;
-        let room = self.rooms()
+        let room = self
+            .rooms()
             .gate_attack_target()
             .ok_or(ResultCode::Rejected)?;
         let objects = self.door.lock().await;
@@ -313,5 +280,71 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             count,
             sub_type: 0,
         })
+    }
+}
+
+fn trade_entities(
+    runtime: &ChannelRuntimeV1,
+    generation: Option<&crate::content::ActiveGeneration>,
+) -> Vec<super::super::world_spatial::ChannelEntity> {
+    let visible = runtime.visible_entities();
+    visible
+        .players
+        .iter()
+        .map(|e| (VisibleKind::Player, e))
+        .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
+        .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
+        .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+            display_name: None,
+            health_percent: 100,
+            direction: match runtime
+                .read_actor_position(e.actor)
+                .ok()
+                .and_then(|at| at.facing())
+            {
+                Some(crate::foundation::MovementFacing::North) => StepDirection::North,
+                Some(crate::foundation::MovementFacing::East) => StepDirection::East,
+                Some(crate::foundation::MovementFacing::West) => StepDirection::West,
+                Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
+            },
+            kind,
+            identity: e.actor.placement_identity(),
+            generation: e.generation,
+            position: super::super::world_spatial::ActorPosition {
+                x: e.position.x,
+                y: e.position.y,
+                floor: super::super::composed_admission::native_floor(e.position.floor),
+            },
+            revision: e.revision,
+        })
+        .chain(super::super::item_ref_admission::visible_corpses(
+            runtime, generation,
+        ))
+        .collect::<Vec<_>>()
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+
+    #[test]
+    fn trade_visibility_projects_runtime_floor_in_native_frame()
+    -> Result<(), crate::foundation::CarrierError> {
+        let (mut runtime, actor, _) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x73);
+        runtime.initialize_pinned_test_position(
+            actor,
+            crate::foundation::MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        )?;
+        let entities = trade_entities(&runtime, None);
+        let player = entities
+            .iter()
+            .find(|entry| entry.identity == actor.placement_identity());
+        assert_eq!(player.map(|entry| entry.position.floor), Some(-7));
+        Ok(())
     }
 }

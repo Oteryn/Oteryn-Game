@@ -512,7 +512,7 @@ mod connection {
             actor_position: ActorPosition {
                 x: 10,
                 y: 10,
-                floor: 7,
+                floor: -7,
             },
         }
     }

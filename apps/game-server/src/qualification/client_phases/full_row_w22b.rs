@@ -154,7 +154,7 @@ async fn stamina(client: &mut DevClientSession) -> TestResult<u16> {
 
 async fn hunt_rat(client: &mut DevClientSession, world: &BundleWorld) -> TestResult<usize> {
     let from = tile(client.world_spatial().actor_position)?;
-    let path = route(world, from, |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone()) && client.world_entities().is_some_and(|entities| entities.iter().any(|e| e.kind == EntityKind::Creature && e.position.floor == -i16::from(at.floor) && e.position.x.abs_diff(i32::from(at.x)).max(e.position.y.abs_diff(i32::from(at.y))) <= 1))).ok_or("no reachable visible rat")?;
+    let path = route(world, from, |at| world.base().tile(at.x, at.y, at.floor).is_some_and(|t| !t.protection_zone()) && client.world_entities().is_some_and(|entities| entities.iter().any(|e| e.kind == EntityKind::Creature && e.position.floor == i16::from(at.floor) && e.position.x.abs_diff(i32::from(at.x)).max(e.position.y.abs_diff(i32::from(at.y))) <= 1))).ok_or("no reachable visible rat")?;
     walk(client, world, &path).await?;
     let at = client.world_spatial().actor_position;
     let target = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == EntityKind::Creature && e.position.floor == at.floor && e.position.x.abs_diff(at.x).max(e.position.y.abs_diff(at.y)) <= 1)).copied().ok_or("no adjacent creature after walk")?;

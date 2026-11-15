@@ -77,12 +77,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             AutoWalkTarget::AdjacentCell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor.checked_neg().ok_or(())?,
+                floor: composed_admission::legacy_floor(at.floor).ok_or(())?,
             },
             AutoWalkTarget::Cell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor,
+                floor: composed_admission::legacy_floor(at.floor).ok_or(())?,
             },
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();

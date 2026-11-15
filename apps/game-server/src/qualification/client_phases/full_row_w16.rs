@@ -72,7 +72,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             let target = ActorPosition {
                 x: i32::from(placement.x),
                 y: i32::from(placement.y),
-                floor: -i16::from(placement.floor),
+                floor: i16::from(placement.floor),
             };
             let reply = client.session_mut().target_walk(target).await?;
             if reply.status != CommandStatus::Accepted {

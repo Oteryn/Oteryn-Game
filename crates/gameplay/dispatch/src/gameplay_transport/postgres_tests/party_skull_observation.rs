@@ -44,7 +44,7 @@ fn position() -> ActorPosition {
     ActorPosition {
         x: 1,
         y: 1,
-        floor: 7,
+        floor: -7,
     }
 }
 

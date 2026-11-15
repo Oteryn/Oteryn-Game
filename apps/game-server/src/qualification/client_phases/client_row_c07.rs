@@ -149,7 +149,7 @@ fn adjacent(world: &BundleWorld, at: TilePos) -> Option<(StepDirection, TilePos)
     [StepDirection::North, StepDirection::East, StepDirection::South, StepDirection::West]
         .into_iter().find_map(|direction| destination(world, at, direction).filter(|next| next.floor == at.floor).map(|next| (direction, next)))
 }
-fn actor_position(at: TilePos) -> ActorPosition { ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: -i16::from(at.floor) } }
+fn actor_position(at: TilePos) -> ActorPosition { ActorPosition { x: i32::from(at.x), y: i32::from(at.y), floor: i16::from(at.floor) } }
 fn check(step: &str, sequence: u64) { evidence(&format!("C07_CHECK {step} PASS server_sequence={sequence}")); }
 fn quantity(client: &DevClientSession, reference: std::num::NonZeroU32) -> TestResult<u64> {
     Ok(client.inventory().ok_or("C07 inventory absent")?.entries.iter().filter(|e| e.item_definition_ref == reference).map(|e| u64::from(e.count.get())).sum())
@@ -172,7 +172,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld, npcs: &oter
     let (npc, path) = npcs.npcs.iter().filter(|n| sellers.contains(&n.key)).filter_map(|n| route(world, here, |at| n.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|p| (n,p))).min_by_key(|(_,p)| p.len())
         .ok_or("step=acquire observed=no-reachable-rune-seller need=compiled-vendor-route")?;
     walk(client, world, &path).await?;
-    let actor = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == -i16::from(p.floor)))).map(|e| e.entity).ok_or("step=acquire observed=vendor-not-visible need=npc-entity-delta")?;
+    let actor = client.world_entities().and_then(|es| es.iter().find(|e| e.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| e.position.x == i32::from(p.x) && e.position.y == i32::from(p.y) && e.position.floor == i16::from(p.floor)))).map(|e| e.entity).ok_or("step=acquire observed=vendor-not-visible need=npc-entity-delta")?;
     for text in ["hi", "trade"] {
         let reply = npc_shop::talk(client.session_mut(), &wire::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
         if reply != wire::NpcIntentDisposition::Ok { return Err(format!("step=acquire-{text} observed={reply:?} need=Ok").into()); }

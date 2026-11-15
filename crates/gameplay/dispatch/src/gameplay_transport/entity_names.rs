@@ -146,7 +146,7 @@ mod tests {
                 position: ActorPosition {
                     x: 0,
                     y: 0,
-                    floor: 7,
+                    floor: -7,
                 },
                 revision: 1,
             }],

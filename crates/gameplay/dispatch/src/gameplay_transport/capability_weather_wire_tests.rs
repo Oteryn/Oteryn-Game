@@ -12,12 +12,12 @@ use std::time::Duration;
 const THAIS: ActorPosition = ActorPosition {
     x: 32369,
     y: 32241,
-    floor: 7,
+    floor: -7,
 };
 const SVARGROND: ActorPosition = ActorPosition {
     x: 32257,
     y: 31159,
-    floor: 7,
+    floor: -7,
 };
 
 /// The shipped source's observation for a position at the start of an absolute slot.

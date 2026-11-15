@@ -433,7 +433,7 @@ fn tile(position: ActorPosition) -> TestResult<TilePos> {
     Ok(TilePos {
         x: u16::try_from(position.x)?,
         y: u16::try_from(position.y)?,
-        floor: -i8::try_from(position.floor)?,
+        floor: i8::try_from(position.floor)?,
     })
 }
 
@@ -2873,7 +2873,7 @@ pub(super) async fn journeys(
     .map(|at| ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: -i16::from(at.floor),
+        floor: i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
@@ -3236,7 +3236,7 @@ async fn shop_journey(
                     && npc.placements.iter().any(|placement| {
                         entity.position.x == i32::from(placement.x)
                             && entity.position.y == i32::from(placement.y)
-                            && entity.position.floor == -i16::from(placement.floor)
+                            && entity.position.floor == i16::from(placement.floor)
                     })
             })
         })
@@ -3324,5 +3324,29 @@ fn qualification_nbroute_retries_only_stationary_rejections_with_a_bound() {
         ] {
             assert_eq!(town_route_retry_delay(disposition, false, attempt), None);
         }
+    }
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+
+    #[test]
+    fn native_world_spatial_tile_preserves_floor() -> TestResult<()> {
+        for floor in [-7_i16, -15, -8, -6, 0] {
+            assert_eq!(
+                tile(ActorPosition {
+                    x: 100,
+                    y: 200,
+                    floor
+                })?,
+                TilePos {
+                    x: 100,
+                    y: 200,
+                    floor: i8::try_from(floor)?
+                },
+            );
+        }
+        Ok(())
     }
 }

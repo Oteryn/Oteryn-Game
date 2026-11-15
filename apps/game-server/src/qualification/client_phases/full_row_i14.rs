@@ -108,7 +108,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld, id: u32, am
         route(world, here, |at| npc.placements.iter().any(|p| p.floor == at.floor && at.x.abs_diff(p.x).max(at.y.abs_diff(p.y)) <= 3)).map(|path| (npc, path))
     }).min_by_key(|(_, path)| path.len()).ok_or_else(|| format!("no walk route to seller for item {id}; sellers={sellers:?}"))?;
     walk(client, world, &path).await?;
-    let actor = client.world_entities().and_then(|entities| entities.iter().find(|entity| entity.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| entity.position.x == i32::from(p.x) && entity.position.y == i32::from(p.y) && entity.position.floor == -i16::from(p.floor)))).map(|entry| entry.entity).ok_or("seller not visible after walk")?;
+    let actor = client.world_entities().and_then(|entities| entities.iter().find(|entity| entity.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|p| entity.position.x == i32::from(p.x) && entity.position.y == i32::from(p.y) && entity.position.floor == i16::from(p.floor)))).map(|entry| entry.entity).ok_or("seller not visible after walk")?;
     for text in ["hi", "trade"] {
         let reply = runtime::talk(client.session_mut(), &wire::NpcTalkIntent { npc_actor: actor, text: text.into() }).await?;
         if reply != wire::NpcIntentDisposition::Ok { return Err(format!("NPC {text} reply={reply:?}").into()); }

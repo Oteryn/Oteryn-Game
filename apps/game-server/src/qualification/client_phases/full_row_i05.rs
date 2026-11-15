@@ -192,7 +192,7 @@ async fn buy_energy_ring(
     let actor = client.world_entities().and_then(|view| view.iter().find(|entry| {
         entry.kind == oteryn_dev_client::EntityKind::Npc && seller.placements.iter().any(|place| {
             entry.position.x == i32::from(place.x) && entry.position.y == i32::from(place.y)
-                && entry.position.floor == -i16::from(place.floor)
+                && entry.position.floor == i16::from(place.floor)
         })
     })).map(|entry| entry.entity).ok_or("energy-ring-seller-actor-missing")?;
     for text in ["hi", "trade"] {

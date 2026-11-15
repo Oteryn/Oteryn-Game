@@ -136,7 +136,7 @@ fn here(client: &DevClientSession) -> WorldTilePosition {
     WorldTilePosition {
         x: at.x,
         y: at.y,
-        floor: -at.floor,
+        floor: at.floor,
     }
 }
 

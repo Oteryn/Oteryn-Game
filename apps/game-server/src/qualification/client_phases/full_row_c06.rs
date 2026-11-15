@@ -308,7 +308,7 @@ async fn acquire(
                     && npc.placements.iter().any(|p| {
                         e.position.x == i32::from(p.x)
                             && e.position.y == i32::from(p.y)
-                            && e.position.floor == -i16::from(p.floor)
+                            && e.position.floor == i16::from(p.floor)
                     })
             })
         })

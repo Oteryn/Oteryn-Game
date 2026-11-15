@@ -104,7 +104,7 @@ async fn acquire(
                                 == ActorPosition {
                                     x: i32::from(p.x),
                                     y: i32::from(p.y),
-                                    floor: -i16::from(p.floor),
+                                    floor: i16::from(p.floor),
                                 }
                         })
                 })
@@ -258,7 +258,7 @@ fn visible_mailbox_handle(
     let position = ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: -i16::from(at.floor),
+        floor: i16::from(at.floor),
     };
     client.session_mut().world_map_snapshot()
         .and_then(|map| map.tiles.into_iter().find(|tile| tile.position == position))

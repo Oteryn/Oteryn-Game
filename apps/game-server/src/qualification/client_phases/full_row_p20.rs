@@ -135,7 +135,7 @@ async fn approach_king(
                             == ActorPosition {
                                 x: i32::from(place.x),
                                 y: i32::from(place.y),
-                                floor: -i16::from(place.floor),
+                                floor: i16::from(place.floor),
                             }
                     })
             })
@@ -298,7 +298,7 @@ pub(super) async fn run_packet(clients: &SeamClients<'_>) {
                 .map(|at| ActorPosition {
                     x: i32::from(at.x),
                     y: i32::from(at.y),
-                    floor: -i16::from(at.floor),
+                    floor: i16::from(at.floor),
                 })
                 .ok_or("step-6 compiled free-town temple absent")?;
             let after = client.world_spatial().actor_position;

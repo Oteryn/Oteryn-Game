@@ -40,7 +40,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let _ = client.step(direction).await?;
     let next = destination(world, tile(client.world_spatial().actor_position)?, direction)
         .ok_or("M01 capture autowalk destination")?;
-    let walk = encode_target_move_intent(TargetMoveIntent::Walk(ActorPosition { x: i32::from(next.x), y: i32::from(next.y), floor: -i16::from(next.floor) }))
+    let walk = encode_target_move_intent(TargetMoveIntent::Walk(ActorPosition { x: i32::from(next.x), y: i32::from(next.y), floor: i16::from(next.floor) }))
         .map_err(|error| format!("M01 walk encode: {error:?}"))?;
     capture("autowalk", &command(&mut client, &walk).await?);
     capture("stop", &command(&mut client, &[16, 1]).await?);

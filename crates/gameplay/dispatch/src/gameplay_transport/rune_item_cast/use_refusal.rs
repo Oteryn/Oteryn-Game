@@ -20,7 +20,7 @@ pub(in crate::gameplay_transport::actor_spell::native_combat_cast) async fn use_
     reason: oteryn_protocol_oteryn::actor_spell::SpellCastDisposition,
     now: oteryn_simulation_determinism::SemanticTimeMicros,
 ) -> oteryn_protocol_oteryn::world_object::UseDisposition {
-    use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition as S, SpellTarget};
+    use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition as S;
     use oteryn_protocol_oteryn::world_object::UseDisposition as U;
     let session = authority.game_session_id();
     let Some(state) = states.get(runtime, actor, session) else {
@@ -53,25 +53,10 @@ pub(in crate::gameplay_transport::actor_spell::native_combat_cast) async fn use_
     if legality::protection_rejected(profile, source.protection) {
         return U::ProtectionZone;
     }
-    let target = match intent.intent.target {
-        SpellTarget::Position(p) => Some(crate::spell::chain::TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        }),
-        SpellTarget::AttackTarget => legacy.creature.and_then(|wanted| {
-            runtime
-                .visible_entities()
-                .creatures
-                .iter()
-                .find(|c| {
-                    c.actor.placement_identity() == wanted.identity
-                        && c.generation == wanted.generation
-                })
-                .and_then(|c| runtime.read_actor_position(c.actor).ok())
-                .map(|p| super::super::tile(p.position()))
-        }),
-        SpellTarget::None => Some(from),
+    let target = match refusal_target_position(runtime, intent.intent.target, legacy.creature, from)
+    {
+        Ok(target) => target,
+        Err(disposition) => return disposition,
     };
     if let Some(target) = target {
         match legality::reach_refusal(
@@ -132,4 +117,98 @@ pub(in crate::gameplay_transport::actor_spell::native_combat_cast) async fn use_
         }
     }
     super::super::super::super::rune_use_bridge::spell_disposition(reason)
+}
+
+fn refusal_target_position(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    target: oteryn_protocol_oteryn::actor_spell::SpellTarget,
+    creature: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    from: crate::spell::chain::TilePosition,
+) -> Result<
+    Option<crate::spell::chain::TilePosition>,
+    oteryn_protocol_oteryn::world_object::UseDisposition,
+> {
+    use oteryn_protocol_oteryn::actor_spell::SpellTarget;
+    Ok(match target {
+        SpellTarget::Position(p) => Some(
+            crate::gameplay_transport::actor_spell::runtime_spell_position(
+                p,
+                crate::foundation::MovementLocalPosition {
+                    x: from.x,
+                    y: from.y,
+                    floor: from.floor,
+                },
+            )
+            .map_err(|_| oteryn_protocol_oteryn::world_object::UseDisposition::TargetIllegal)?,
+        ),
+        SpellTarget::AttackTarget => creature.and_then(|wanted| {
+            runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|c| {
+                    c.actor.placement_identity() == wanted.identity
+                        && c.generation == wanted.generation
+                })
+                .and_then(|c| runtime.read_actor_position(c.actor).ok())
+                .map(|p| super::super::tile(p.position()))
+        }),
+        SpellTarget::None => Some(from),
+    })
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+    use crate::foundation::MovementLocalPosition;
+    use crate::spell::chain::TilePosition;
+    use oteryn_protocol_oteryn::actor_spell::{SpellTarget, SpellTargetPosition};
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+    #[test]
+    fn native_rune_refusal_reach_uses_runtime_positions() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let (mut runtime, actor, _) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x76);
+        runtime.initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        )?;
+        let p = runtime.read_actor_position(actor)?.position();
+        let from = TilePosition {
+            x: p.x,
+            y: p.y,
+            floor: p.floor,
+        };
+        let proposal = SpellTargetPosition {
+            x: 101,
+            y: 100,
+            floor: -7,
+        };
+        assert_eq!(
+            refusal_target_position(&runtime, SpellTarget::Position(proposal), None, from),
+            Ok(Some(TilePosition {
+                x: 101,
+                y: 100,
+                floor: 7
+            }))
+        );
+        assert_eq!(
+            refusal_target_position(
+                &runtime,
+                SpellTarget::Position(SpellTargetPosition {
+                    floor: -8,
+                    ..proposal
+                }),
+                None,
+                from
+            ),
+            Err(UseDisposition::TargetIllegal)
+        );
+        Ok(())
+    }
 }

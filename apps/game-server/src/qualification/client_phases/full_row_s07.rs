@@ -20,12 +20,12 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, decode_use_result};
 const BED: ActorPosition = ActorPosition {
     x: 32311,
     y: 32804,
-    floor: 7,
+    floor: -7,
 };
 const APPROACH: ActorPosition = ActorPosition {
     x: 32312,
     y: 32804,
-    floor: 7,
+    floor: -7,
 };
 
 pub(super) async fn run_packet(clients: &SeamClients<'_>) {

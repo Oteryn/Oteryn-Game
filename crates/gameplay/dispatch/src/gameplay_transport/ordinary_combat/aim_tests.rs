@@ -185,3 +185,54 @@ fn cursor_on_another_floor_is_target_illegal_not_the_facing() {
         Ok((at(100, 99), Direction::North))
     );
 }
+
+fn native_cursor_reaches_runtime(aim_mode: bool) {
+    let wave = source("candidate:spell/ice_wave");
+    let (mut runtime, actor, _) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x74);
+    let caster = MovementLocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    runtime
+        .initialize_pinned_test_position(actor, caster)
+        .unwrap();
+    let target = SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+        x: 97,
+        y: 97,
+        floor: -7,
+    });
+    let intent = if aim_mode {
+        oteryn_protocol_oteryn::actor_spell::AimedSpellCastIntent {
+            intent: cast(target, false),
+            aim_mode: Some(oteryn_protocol_oteryn::actor_spell::SpellAimMode::Cursor),
+        }
+        .resolved()
+    } else {
+        cast(target, true)
+    };
+    let selected = aim(&wave, &intent).unwrap().unwrap();
+    assert_eq!(
+        aim_point(
+            &runtime,
+            &ChannelSpellStates::default(),
+            actor,
+            caster,
+            selected,
+            None,
+            SemanticTimeMicros::from_micros(1)
+        ),
+        Ok(Some(at(97, 97)))
+    );
+}
+
+#[test]
+fn native_cursor_spell_reaches_legacy_runtime_floor() {
+    native_cursor_reaches_runtime(false);
+}
+
+#[test]
+fn native_cursor_aim_action_bar_reaches_legacy_runtime_floor() {
+    native_cursor_reaches_runtime(true);
+}

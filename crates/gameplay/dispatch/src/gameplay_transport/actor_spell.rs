@@ -95,6 +95,44 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 use crate::spell::SpellBook;
 use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast};
 
+/// Resolve a native proposal on the caster's floor into the movement owner's frame.
+/// Signed source qualification frames retain their owner's exact position convention.
+pub(in crate::gameplay_transport) fn runtime_spell_position(
+    proposal: SpellTargetPosition,
+    caster: crate::foundation::MovementLocalPosition,
+) -> Result<crate::spell::chain::TilePosition, SpellCastDisposition> {
+    let legacy = super::composed_admission::legacy_floor;
+    let floor = legacy(proposal.floor).ok_or(SpellCastDisposition::TargetIllegal)?;
+    if Some(floor) != legacy(caster.floor) {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
+    Ok(crate::spell::chain::TilePosition {
+        x: proposal.x,
+        y: proposal.y,
+        floor: caster.floor,
+    })
+}
+
+fn runtime_spell_intent(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    mut intent: SpellCastIntent,
+) -> Result<SpellCastIntent, SpellCastDisposition> {
+    if let SpellTarget::Position(proposal) = intent.target {
+        let caster = runtime
+            .read_actor_position(actor)
+            .map_err(|_| SpellCastDisposition::TargetIllegal)?
+            .position();
+        let position = runtime_spell_position(proposal, caster)?;
+        intent.target = SpellTarget::Position(SpellTargetPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        });
+    }
+    Ok(intent)
+}
+
 /// Spell cast §4 (SPELL-D2): the Channel owner's vitals and cooldowns of its present player
 /// actors, runtime-actor-local and never durable. Like the door runtime it sits beside the
 /// `ChannelRuntimeV1` and is only used while that runtime is locked (runtime first), within the

@@ -176,7 +176,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
                 .target_walk(ActorPosition {
                     x: i32::from(x),
                     y: i32::from(y),
-                    floor: i16::from(-floor),
+                    floor: i16::from(floor),
                 })
                 .await
                 .map_err(|error| {
@@ -192,7 +192,7 @@ async fn journey(clients: &SeamClients<'_>) -> Result<(), Box<Failure>> {
             let target = ActorPosition {
                 x: i32::from(x),
                 y: i32::from(y),
-                floor: i16::from(-floor),
+                floor: i16::from(floor),
             };
             let deadline = tokio::time::Instant::now() + Duration::from_secs(20);
             while client.world_spatial().actor_position != target {

@@ -879,7 +879,7 @@ async fn temple_respawn(
         let temple = ActorPosition {
             x: i32::from(home.x),
             y: i32::from(home.y),
-            floor: -i16::from(home.floor),
+            floor: i16::from(home.floor),
         };
         travel_to_spawn(&mut client, world, spawns, "oteryn:creature.poison_spider").await?;
         let encounter = client.world_spatial().actor_position;
@@ -1078,7 +1078,7 @@ async fn approach_oressa(
         entry.kind == oteryn_dev_client::EntityKind::Npc && npc.placements.iter().any(|placement| {
             entry.position.x == i32::from(placement.x)
                 && entry.position.y == i32::from(placement.y)
-                && entry.position.floor == -i16::from(placement.floor)
+                && entry.position.floor == i16::from(placement.floor)
         })
     })).map(|entry| entry.entity)
         .ok_or_else(|| "Oressa prerequisite blocked: no native NPC actor at the compiled Oressa placement after walking there".into())
@@ -1545,7 +1545,7 @@ async fn approach_service(
                             == ActorPosition {
                                 x: i32::from(place.x),
                                 y: i32::from(place.y),
-                                floor: -i16::from(place.floor),
+                                floor: i16::from(place.floor),
                             }
                     })
             })
@@ -1660,7 +1660,7 @@ async fn observed_death(
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: i16::from(home.floor),
     };
     travel_to_spawn(client, world, spawns, "oteryn:creature.poison_spider").await?;
     let encounter = client.world_spatial().actor_position;
@@ -2380,7 +2380,7 @@ async fn observed_pvp_death(
     let temple = ActorPosition {
         x: i32::from(home.x),
         y: i32::from(home.y),
-        floor: -i16::from(home.floor),
+        floor: i16::from(home.floor),
     };
     if victim.world_spatial().actor_position == temple {
         return Err("PvP encounter is at temple".into());

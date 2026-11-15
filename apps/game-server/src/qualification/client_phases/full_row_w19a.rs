@@ -171,7 +171,7 @@ async fn acquire(client: &mut DevClientSession, world: &BundleWorld) -> TestResu
                             == ActorPosition {
                                 x: i32::from(p.x),
                                 y: i32::from(p.y),
-                                floor: -i16::from(p.floor),
+                                floor: i16::from(p.floor),
                             }
                     })
             })

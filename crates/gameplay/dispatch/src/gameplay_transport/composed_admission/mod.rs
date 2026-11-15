@@ -31,3 +31,4 @@ mod vitals;
 mod wheel;
 mod wheel_gift;
 mod world_map;
+pub(in crate::gameplay_transport) use world_map::{legacy_floor, native_floor};

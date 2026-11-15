@@ -136,12 +136,11 @@ fn target(
     let caster = runtime
         .read_actor_position(actor)
         .map_err(|_| UseDisposition::Rejected)?;
-    if original
+    let requested = original
         .use_with_position
-        .is_some_and(|p| p.floor != caster.position().floor)
-    {
-        return Err(UseDisposition::TargetIllegal);
-    }
+        .map(|proposal| super::actor_spell::runtime_spell_position(proposal, caster.position()))
+        .transpose()
+        .map_err(|_| UseDisposition::TargetIllegal)?;
     let entities = runtime.visible_entities();
     let census = runtime
         .positioned_actor_census()
@@ -177,7 +176,7 @@ fn target(
                 .ok_or(UseDisposition::TargetIllegal)?,
         )
     } else if spell.needs_target
-        && let Some(p) = original.use_with_position
+        && let Some(p) = requested
     {
         // Native ordinary casts select the lowest actor id on a tile. Select it before
         // legality filtering and retain its exact generation; never fall through to a sibling.
@@ -209,12 +208,15 @@ fn target(
         let position = original.use_with_position.unwrap_or(SpellTargetPosition {
             x: at.x,
             y: at.y,
-            floor: at.floor,
+            floor: super::composed_admission::native_floor(at.floor),
         });
         if spell.needs_target && original.use_with_position.is_some() {
             return Err(UseDisposition::NoTarget);
         }
-        SpellTarget::Position(position)
+        SpellTarget::Position(SpellTargetPosition {
+            floor: super::composed_admission::native_floor(position.floor),
+            ..position
+        })
     };
     Ok((
         mapped,
@@ -426,5 +428,78 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(outcome(disposition))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+
+    #[test]
+    fn native_rune_target_and_synthesized_position_use_the_right_frames()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::foundation::{ConnectionGeneration, MovementLocalPosition};
+        let (mut runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x75);
+        runtime.initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        )?;
+        let fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+            character_id: crate::domain::CharacterId::from_bytes(*session.as_bytes())
+                .map_err(|e| format!("{e:?}"))?,
+            game_session_id: session,
+            connection_generation: ConnectionGeneration::new(1)?,
+            character_lease_generation: 1,
+            runtime_scope: runtime.binding().runtime_scope(),
+            scope_ownership_generation: runtime.binding().scope_generation(),
+        };
+        let catalog: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+        ))?;
+        let row = catalog["bundles"]
+            .as_array()
+            .ok_or("bundles")?
+            .iter()
+            .find(|row| {
+                row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/magic_wall_rune"
+            })
+            .ok_or("rune")?;
+        let spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+            &row["bundle"],
+            &row["dependencies"],
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        for position in [
+            None,
+            Some(SpellTargetPosition {
+                x: 101,
+                y: 100,
+                floor: -7,
+            }),
+        ] {
+            let original = UseIntent {
+                target: UseTarget::ItemByDefinition(NonZeroU32::MIN),
+                use_with: None,
+                use_with_map_item: None,
+                use_with_position: position,
+            };
+            let (mapped, retained) = target(&runtime, actor, &spell, original.clone(), fence)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                mapped,
+                SpellTarget::Position(position.unwrap_or(SpellTargetPosition {
+                    x: 100,
+                    y: 100,
+                    floor: -7
+                }))
+            );
+            assert_eq!(retained.original, original);
+        }
+        Ok(())
     }
 }
