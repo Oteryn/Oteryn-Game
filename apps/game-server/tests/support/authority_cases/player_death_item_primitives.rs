@@ -3803,6 +3803,15 @@ async fn run_selected_quiver_death_reset(admin: String, slot: u8) -> TestResult 
     let equipped_id: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND slot=$2")
         .bind(f.character_id.as_bytes().as_slice()).bind(i16::from(slot)).fetch_one(&h.pool).await?;
     assert_eq!(equipped_id, quiver);
+    let opened = h
+        .root
+        .read_item_loop_container(&authority, f.character_id, quiver)
+        .await?
+        .ok_or("owned equipped quiver must open")?;
+    assert_eq!(opened.container.item_instance_id, quiver);
+    assert_eq!(opened.parent, None);
+    assert_eq!(opened.entries.len(), 1);
+    assert_eq!(opened.entries[0].item.item_instance_id, arrow);
     let arrow_before: String = sqlx::query_scalar("SELECT to_jsonb(i)::text FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(arrow.as_slice()).fetch_one(&h.pool).await?;
     let edge_before: String = sqlx::query_scalar("SELECT to_jsonb(e)::text FROM game_item_nested_entries e WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid")
