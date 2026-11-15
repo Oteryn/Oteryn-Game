@@ -662,3 +662,22 @@ fn negotiated_names_survive_join_delta_and_visibility_leave() -> Result<(), BoxE
         Ok(())
     })?
 }
+
+#[test]
+fn retained_entity_handles_are_unique_after_enter_and_update() -> Result<(), BoxError> {
+    let mut first = corpse(1, at(1, 0));
+    first.detail = EntityDetail::Object { item_definition_ref: 9, quantity: 1, item_handle: Some(handle(7)) };
+    let mut second = corpse(2, at(2, 0));
+    second.detail = EntityDetail::Object { item_definition_ref: 9, quantity: 1, item_handle: Some(handle(8)) };
+    let snapshot = WorldSpatialEntitiesSnapshot { content_generation: CONTENT_GENERATION, actor_position: at(0,0), own_identity: OWN, entities: vec![own(at(0,0)), first, second] };
+    let store = WorldEntities::from_snapshot(&snapshot, Default::default());
+    second.detail = first.detail;
+    for update in [false, true] {
+        let mut incoming = second;
+        if !update { incoming.entity.identity = [3; 16]; }
+        let delta = WorldSpatialEntitiesDelta { content_generation: CONTENT_GENERATION, actor_position: at(0,0), enter: if update {vec![]} else {vec![incoming]}, update: if update {vec![incoming]} else {vec![]}, leave:vec![] };
+        assert!(store.after(&delta, &Default::default()).is_err());
+        assert_eq!(store.len(), 3);
+    }
+    Ok(())
+}
