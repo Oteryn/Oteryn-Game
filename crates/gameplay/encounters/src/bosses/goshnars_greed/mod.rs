@@ -135,7 +135,9 @@ pub enum GreedRefusal {
 
 #[derive(Clone, Debug, Default)]
 pub struct GoshnarsGreedRoom {
-    scheduled: Vec<(u64, GreedEffect)>,
+    scheduled: Vec<(u64, u64, GreedEffect)>,
+    fight_generation: u64,
+    opening_pending: bool,
     minion_ms: BTreeMap<u64, u64>,
     sphere: BTreeMap<u64, (u64, bool)>,
     greedbeast_kills: u32,
@@ -147,6 +149,8 @@ pub struct GoshnarsGreedRoom {
 impl GoshnarsGreedRoom {
     /// Lever `onUseExtra`: schedules the room's three opening greed spawns.
     pub fn lever_pulled(&mut self, now_ms: u64) {
+        self.begin_fight();
+        self.opening_pending = true;
         self.schedule_greed_spawn(GreedMinion::Greedbeast, now_ms);
         self.schedule_greed_spawn(GreedMinion::Soulsnatcher, now_ms);
         self.schedule_greed_spawn(GreedMinion::WeakSoul, now_ms);
@@ -154,6 +158,11 @@ impl GoshnarsGreedRoom {
 
     /// Goshnar's Greed spawn callback: resets room counters and makes the boss immune.
     pub fn boss_spawned(&mut self) -> Vec<GreedEffect> {
+        // The lever schedules this fight before its boss spawn callback arrives.
+        if !self.opening_pending {
+            self.begin_fight();
+        }
+        self.opening_pending = false;
         self.minion_ms.clear();
         self.sphere.clear();
         self.greedbeast_kills = 0;
@@ -313,23 +322,35 @@ impl GoshnarsGreedRoom {
 
     /// Releases due greed-spawn effects in due-time and insertion order.
     pub fn advance(&mut self, now_ms: u64) -> Vec<GreedEffect> {
-        self.scheduled.sort_by_key(|(due_ms, _)| *due_ms);
+        self.scheduled
+            .retain(|(generation, _, _)| *generation == self.fight_generation);
+        self.scheduled.sort_by_key(|(_, due_ms, _)| *due_ms);
         let ready = self
             .scheduled
-            .partition_point(|(due_ms, _)| *due_ms <= now_ms);
+            .partition_point(|(_, due_ms, _)| *due_ms <= now_ms);
         self.scheduled
             .drain(..ready)
-            .map(|(_, effect)| effect)
+            .map(|(_, _, effect)| effect)
             .collect()
+    }
+
+    fn begin_fight(&mut self) {
+        self.scheduled.clear();
+        // No queued generation survives the increment, including at wraparound.
+        self.fight_generation = self.fight_generation.wrapping_add(1);
     }
 
     fn schedule_greed_spawn(&mut self, minion: GreedMinion, now_ms: u64) {
         let position = minion.spawn_position();
         for delay in [7_000, 8_000, 9_000] {
-            self.scheduled
-                .push((now_ms + delay, GreedEffect::TeleportMagic { position }));
+            self.scheduled.push((
+                self.fight_generation,
+                now_ms + delay,
+                GreedEffect::TeleportMagic { position },
+            ));
         }
         self.scheduled.push((
+            self.fight_generation,
             now_ms + 10_000,
             GreedEffect::SpawnMonster {
                 creature_key: minion.creature_key(),
