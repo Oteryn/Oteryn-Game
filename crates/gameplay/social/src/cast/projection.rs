@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 /// Complete replacement snapshot, never an opaque player packet. No account,
@@ -19,10 +20,37 @@ impl Queued {
     }
 }
 impl CastOwner {
+    fn reclaim_consent_bookkeeping(&mut self) {
+        if self.consents.len() < self.node_capacity * 128
+            && self.consent_floor.len() < self.node_capacity * 128
+        {
+            return;
+        }
+        let referenced: HashSet<_> = self
+            .viewers
+            .values()
+            .flat_map(|v| {
+                v.shown
+                    .iter()
+                    .chain(v.queue.iter().flat_map(|q| q.consents.iter()))
+            })
+            .map(|(character, _)| *character)
+            .collect();
+        // Five seconds covers consent freshness and the one-second capture
+        // permit. Keep queued/shown bindings until their final-write obligation
+        // ends, even when their original consent observation is older.
+        let now = self.clock_ms;
+        self.consents.retain(|character, (_, observed)| {
+            now.saturating_sub(*observed) <= 5000 || referenced.contains(character)
+        });
+        self.consent_floor
+            .retain(|character, _| self.consents.contains_key(character));
+    }
     /// Trusted Game settings owner only. A wire request cannot supply consent
     /// facts. Equal revision/value refreshes freshness; rollback/substitution
     /// fails closed. Cross-node settings invalidation must feed this barrier.
     pub fn consent(&mut self, character: CharacterId, value: CastConsent) -> Result<(), Error> {
+        self.reclaim_consent_bookkeeping();
         if self
             .consent_floor
             .get(&character)
@@ -33,11 +61,23 @@ impl CastOwner {
         if value.revision < 0 || (value.allowed && value.revision == 0) {
             return Err(Error::Invalid);
         }
-        if let Some((old, _)) = self.consents.get(&character) {
-            if old.revision > value.revision || (old.revision == value.revision && *old != value) {
-                return Err(Error::Conflict);
-            }
-        } else if self.consents.len() >= self.node_capacity * 128 {
+        if let Some((old, _)) = self.consents.get(&character)
+            && (old.revision > value.revision || (old.revision == value.revision && *old != value))
+        {
+            return Err(Error::Conflict);
+        }
+        if self
+            .consents
+            .get(&character)
+            .is_none_or(|(old, _)| old.revision < 0)
+            && self.consents.len() >= self.node_capacity * 128
+            && self
+                .consents
+                .values()
+                .filter(|(c, _)| c.revision >= 0)
+                .count()
+                >= self.node_capacity * 128
+        {
             return Err(Error::Full);
         }
         self.consents.insert(character, (value, self.clock_ms));
@@ -49,6 +89,7 @@ impl CastOwner {
     /// Invalidation barrier used BEFORE a durable consent withdrawal. It never
     /// creates a fake preference revision and purges already queued/shown scenes.
     pub fn invalidate(&mut self, character: CharacterId, through: i64) -> Result<(), Error> {
+        self.reclaim_consent_bookkeeping();
         if self.consent_floor.len() >= self.node_capacity * 128
             && !self.consent_floor.contains_key(&character)
         {
@@ -63,7 +104,19 @@ impl CastOwner {
             .entry(character)
             .and_modify(|v| *v = (*v).max(minimum))
             .or_insert(minimum);
-        self.consents.remove(&character);
+        // An impossible preference revision is a private denial tombstone,
+        // never a consent fact. It timestamps this floor without granting media
+        // authority or consuming the separate live-consent capacity.
+        self.consents.insert(
+            character,
+            (
+                CastConsent {
+                    allowed: false,
+                    revision: -1,
+                },
+                self.clock_ms,
+            ),
+        );
         self.purge_character(character);
         Ok(())
     }

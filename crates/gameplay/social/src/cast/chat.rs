@@ -119,6 +119,17 @@ impl CastOwner {
         if !cast.settings.chat_enabled || cast.chat.muted.contains(&viewer.account) {
             return Err(Error::Muted);
         }
+        let active: HashSet<_> = self
+            .viewers
+            .values()
+            .filter(|v| v.target == target)
+            .map(|v| v.account)
+            .collect();
+        cast.chat.buckets.retain(|account, (at, tokens)| {
+            *account == [0; 16]
+                || active.contains(account)
+                || now_ms.saturating_sub(*at) / 3000 < u64::from(3 - *tokens)
+        });
         if cast.chat.caster.len() >= 64
             || (!cast.chat.buckets.contains_key(&viewer.account)
                 && cast.chat.buckets.len() >= self.node_capacity * 4)
@@ -133,7 +144,7 @@ impl CastOwner {
         let replenished = (now_ms - bucket.0) / 3000;
         if replenished > 0 {
             bucket.1 = bucket.1.saturating_add(replenished.min(3) as u8).min(3);
-            bucket.0 = now_ms;
+            bucket.0 += replenished * 3000;
         }
         if cast.chat.second != now_ms / 1000 {
             cast.chat.second = now_ms / 1000;
@@ -173,7 +184,7 @@ impl CastOwner {
         let replenished = (now_ms - bucket.0) / 3000;
         if replenished > 0 {
             bucket.1 = bucket.1.saturating_add(replenished.min(3) as u8).min(3);
-            bucket.0 = now_ms;
+            bucket.0 += replenished * 3000;
         }
         if bucket.1 == 0 || cast.chat.count >= 20 {
             return Err(Error::Full);

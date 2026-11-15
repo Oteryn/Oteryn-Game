@@ -112,6 +112,21 @@ impl CastOwner {
         // window as cast commands, without retrying storage/receipt failures.
         let retry_deadline = Instant::now() + Duration::from_secs(1);
         loop {
+            self.persist_audit_batch(root, node, retry_deadline).await?;
+            if self.audit.pending.is_empty() {
+                return Ok(());
+            }
+        }
+    }
+    // A service may renew its privacy lease between committed batches. Keep
+    // the same receipt validation, failure handling and overall retry deadline.
+    pub(super) async fn persist_audit_batch(
+        &mut self,
+        root: &DurabilityRoot,
+        node: &NodeIncarnationProof,
+        retry_deadline: Instant,
+    ) -> Result<(), Error> {
+        loop {
             let batch: Vec<_> = self.audit.pending.iter().take(64).cloned().collect();
             let committed = match root
                 .commit_cast_audit(node, self.audit.incarnation, &batch)
@@ -141,8 +156,8 @@ impl CastOwner {
             }
             if self.audit.pending.is_empty() {
                 self.audit.failed = false;
-                return Ok(());
             }
+            return Ok(());
         }
     }
     #[cfg(test)]

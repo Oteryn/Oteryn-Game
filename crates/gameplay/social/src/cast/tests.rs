@@ -611,3 +611,280 @@ fn s17_quiet_viewer_is_named_to_caster_before_speaking() -> Result<(), Error> {
     );
     Ok(())
 }
+
+#[test]
+fn observer_chat_refill_keeps_fractional_elapsed_time() -> Result<(), Error> {
+    fractional_refill_case(false)
+}
+
+#[test]
+fn caster_reply_refill_keeps_fractional_elapsed_time() -> Result<(), Error> {
+    fractional_refill_case(true)
+}
+
+fn fractional_refill_case(caster: bool) -> Result<(), Error> {
+    let mut owner = CastOwner::new(8)?;
+    let target = facts(1, 1, 1);
+    let state = owner.start(target, Settings::default(), 0)?;
+    let viewer = owner.join(&ticket(state, 1, 1), 0)?;
+    owner.model_audit_commit();
+    let send = |owner: &mut CastOwner, now| {
+        let operation = if caster {
+            service::Operation::Reply(target, "reply".into())
+        } else {
+            service::Operation::Chat(viewer, "chat".into())
+        };
+        service::apply(owner, operation, now, 0)
+    };
+    for _ in 0..3 {
+        send(&mut owner, 0)?;
+    }
+    assert!(matches!(send(&mut owner, 0), Err(Error::Full)));
+    send(&mut owner, 4000)?;
+    send(&mut owner, 6000)?;
+    assert!(matches!(send(&mut owner, 6000), Err(Error::Full)));
+    Ok(())
+}
+
+#[test]
+fn departed_chat_bookkeeping_releases_capacity() -> Result<(), Error> {
+    let mut owner = CastOwner::new(1)?;
+    let target = facts(1, 1, 1);
+    let state = owner.start(target, Settings::default(), 0)?;
+    for account in 1..=4 {
+        let mut admission = ticket(state, account, account);
+        admission.expires_ms = 3000;
+        let viewer = owner.join(&admission, 0)?;
+        owner.model_audit_commit();
+        service::apply(
+            &mut owner,
+            service::Operation::Chat(viewer, "hello".into()),
+            0,
+            0,
+        )?;
+        owner.leave(viewer)?;
+        owner.model_audit_commit();
+        owner.take_releases();
+        owner.take_caster_chat(target.authority.current_game_session_id());
+    }
+    let viewer = owner.join(&ticket(state, 5, 5), 3000)?;
+    owner.model_audit_commit();
+    service::apply(
+        &mut owner,
+        service::Operation::Chat(viewer, "new viewer".into()),
+        3000,
+        0,
+    )?;
+    Ok(())
+}
+
+fn bookkeeping_character(marker: u16) -> Result<CharacterId, Error> {
+    let mut bytes = *facts(1, 1, 1).authority.commit().character_id().as_bytes();
+    bytes[14..].copy_from_slice(&(1000 + marker).to_be_bytes());
+    CharacterId::from_bytes(bytes).map_err(|_| Error::Invalid)
+}
+
+#[test]
+fn expired_consent_bookkeeping_releases_capacity() -> Result<(), Error> {
+    let mut owner = CastOwner::new(1)?;
+    let consent = CastConsent {
+        allowed: true,
+        revision: 1,
+    };
+    for marker in 1..=128 {
+        owner.consent(bookkeeping_character(marker)?, consent)?;
+    }
+    owner.poll(5001)?;
+    owner.consent(bookkeeping_character(129)?, consent)?;
+    Ok(())
+}
+
+#[test]
+fn expired_denial_bookkeeping_releases_capacity_and_keeps_capture_fences() -> Result<(), Error> {
+    let mut owner = CastOwner::new(1)?;
+    let target = facts(1, 1, 1);
+    owner.start(target, Settings::default(), 0)?;
+    let service::Reply::Capture(permit) =
+        service::apply(&mut owner, service::Operation::Capture(target), 0, 0)?
+    else {
+        return Err(Error::Invalid);
+    };
+    let consent = CastConsent {
+        allowed: true,
+        revision: 1,
+    };
+    for marker in 1..=128 {
+        let character = bookkeeping_character(marker)?;
+        owner.consent(character, consent)?;
+        owner.invalidate(character, 1)?;
+    }
+    owner.poll(999)?;
+    assert_eq!(
+        owner.consent(bookkeeping_character(1)?, consent),
+        Err(Error::Conflict)
+    );
+    owner.poll(5001)?;
+    let character = bookkeeping_character(129)?;
+    service::apply(
+        &mut owner,
+        service::Operation::Consent(character, consent),
+        5001,
+        0,
+    )?;
+    service::apply(
+        &mut owner,
+        service::Operation::Invalidate(character, 1),
+        5001,
+        0,
+    )?;
+    assert!(
+        owner
+            .state(target.authority.current_game_session_id())
+            .is_some()
+    );
+    assert!(matches!(
+        service::apply(
+            &mut owner,
+            service::Operation::Publish(
+                permit,
+                target,
+                vec![bookkeeping_character(1)?],
+                Scene {
+                    tiles: vec![],
+                    actors: vec![]
+                },
+                vec![(bookkeeping_character(1)?, consent)]
+            ),
+            5001,
+            0,
+        ),
+        Err(Error::Unavailable)
+    ));
+    Ok(())
+}
+
+#[test]
+fn queued_consent_bookkeeping_survives_until_frames_are_cleared() -> Result<(), Error> {
+    referenced_consent_bookkeeping_case(true)
+}
+
+#[test]
+fn shown_consent_bookkeeping_survives_until_frames_are_cleared() -> Result<(), Error> {
+    referenced_consent_bookkeeping_case(false)
+}
+
+fn referenced_consent_bookkeeping_case(queued: bool) -> Result<(), Error> {
+    let mut owner = CastOwner::new(1)?;
+    let target = facts(1, 1, 1);
+    let state = owner.start(
+        target,
+        Settings {
+            delay_seconds: if queued { 300 } else { 0 },
+            ..Settings::default()
+        },
+        0,
+    )?;
+    let viewer = owner.join(&ticket(state, 1, 1), 0)?;
+    owner.model_audit_commit();
+    let consent = CastConsent {
+        allowed: true,
+        revision: 1,
+    };
+    for marker in 1..=128 {
+        owner.consent(bookkeeping_character(marker)?, consent)?;
+    }
+    let character = bookkeeping_character(1)?;
+    owner.publish(
+        target,
+        &[character],
+        Scene {
+            tiles: vec![],
+            actors: vec![],
+        },
+        0,
+    )?;
+    if !queued {
+        assert!(
+            owner
+                .drain(viewer, 0)?
+                .iter()
+                .any(|c| matches!(c, Content::Scene(_)))
+        );
+    }
+    owner.poll(5001)?;
+    owner.consent(bookkeeping_character(129)?, consent)?;
+    assert!(owner.consents.contains_key(&character));
+    assert_eq!(
+        owner.consent(
+            character,
+            CastConsent {
+                allowed: false,
+                revision: 1
+            }
+        ),
+        Err(Error::Conflict)
+    );
+    owner.slate(target, 5001)?;
+    for marker in 130..=255 {
+        owner.consent(bookkeeping_character(marker)?, consent)?;
+    }
+    owner.poll(10002)?;
+    owner.consent(bookkeeping_character(256)?, consent)?;
+    assert!(!owner.consents.contains_key(&character));
+    Ok(())
+}
+
+#[test]
+fn chat_bookkeeping_preserves_rejoin_rate_and_caster_fraction() -> Result<(), Error> {
+    let mut owner = CastOwner::new(8)?;
+    let target = facts(1, 1, 1);
+    let state = owner.start(target, Settings::default(), 0)?;
+    let viewer = owner.join(&ticket(state, 1, 1), 0)?;
+    owner.model_audit_commit();
+    owner.reply(target, "caster", 0)?;
+    for _ in 0..3 {
+        owner.chat(viewer, "viewer", 0)?;
+    }
+    owner.leave(viewer)?;
+    let viewer = owner.join(&ticket(state, 1, 2), 1000)?;
+    owner.model_audit_commit();
+    assert_eq!(owner.chat(viewer, "too soon", 1000), Err(Error::Full));
+    owner.chat(viewer, "later", 10000)?;
+    for _ in 0..3 {
+        owner.reply(target, "caster", 10000)?;
+    }
+    owner.reply(target, "fraction retained", 12000)?;
+    Ok(())
+}
+
+#[test]
+fn denial_bookkeeping_preserves_the_separate_live_consent_capacity() -> Result<(), Error> {
+    let mut owner = CastOwner::new(1)?;
+    let consent = CastConsent {
+        allowed: true,
+        revision: 1,
+    };
+    for marker in 1..=128 {
+        let character = bookkeeping_character(marker)?;
+        owner.consent(character, consent)?;
+        owner.invalidate(character, 1)?;
+    }
+    for marker in 129..=256 {
+        owner.consent(bookkeeping_character(marker)?, consent)?;
+    }
+    assert_eq!(
+        owner.consent(bookkeeping_character(257)?, consent),
+        Err(Error::Full)
+    );
+    assert_eq!(
+        owner.consent(
+            bookkeeping_character(1)?,
+            CastConsent {
+                allowed: true,
+                revision: 2
+            }
+        ),
+        Err(Error::Full)
+    );
+    Ok(())
+}

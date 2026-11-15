@@ -2,7 +2,9 @@
 //! neither world locks nor native actors are retained across storage/network IO.
 use super::*;
 use oteryn_gameplay_durability::durability::{
-    DurabilityError, DurabilityRoot, runtime_scope_assignment::NodeIncarnationProof,
+    DurabilityError, DurabilityRoot,
+    cast_privacy::{CastConsentBatch, CastConsentWorker},
+    runtime_scope_assignment::NodeIncarnationProof,
 };
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot};
@@ -77,6 +79,272 @@ struct Request {
     operation: Operation,
     reply: oneshot::Sender<Result<Reply, Error>>,
 }
+// External work can take longer than the media lease, including a sequence of
+// individually fast calls. Keep polling both futures, so a root holder owned by
+// the external work can still make progress while renewal attempts run.
+struct PrivacyIo<'a> {
+    root: &'a DurabilityRoot,
+    node: &'a NodeIncarnationProof,
+    worker: CastConsentWorker,
+    pulse: std::time::Instant,
+    pending: Option<CastConsentBatch>,
+}
+enum First<A, B> {
+    Left(A),
+    Right(B),
+}
+async fn first<A: Future, B: Future>(
+    mut left: std::pin::Pin<&mut A>,
+    mut right: std::pin::Pin<&mut B>,
+) -> First<A::Output, B::Output> {
+    std::future::poll_fn(|cx| {
+        if let std::task::Poll::Ready(value) = left.as_mut().poll(cx) {
+            return std::task::Poll::Ready(First::Left(value));
+        }
+        right.as_mut().poll(cx).map(First::Right)
+    })
+    .await
+}
+impl PrivacyIo<'_> {
+    fn expire(&self, owner: &mut CastOwner) {
+        if !self.worker.valid() {
+            for target in owner.casts.keys().copied().collect::<Vec<_>>() {
+                owner.target_gone(target);
+            }
+        }
+    }
+    async fn apply_batch(
+        &mut self,
+        owner: &mut CastOwner,
+        batch: CastConsentBatch,
+    ) -> Result<(), Error> {
+        self.expire(owner);
+        for event in batch.events() {
+            // Unknown characters have no queued frames. Captures made before
+            // this ACK cannot publish at the new privacy version.
+            if owner.consents.contains_key(&event.character)
+                || owner.consent_floor.contains_key(&event.character)
+            {
+                owner.invalidate(event.character, event.minimum_revision - 1)?;
+            }
+        }
+        if !batch.is_empty() {
+            self.root
+                .acknowledge_cast_consent(self.node, &mut self.worker, batch)
+                .await
+                .map_err(|_| Error::Unavailable)?;
+        }
+        Ok(())
+    }
+    async fn apply_pending(&mut self, owner: &mut CastOwner) -> Result<(), Error> {
+        if let Some(batch) = self.pending.take() {
+            self.apply_batch(owner, batch).await?;
+        }
+        self.expire(owner);
+        Ok(())
+    }
+    async fn refresh(&mut self, owner: &mut CastOwner) -> Result<(), Error> {
+        self.expire(owner);
+        if !self.worker.valid() {
+            return Ok(());
+        }
+        self.pulse = std::time::Instant::now();
+        if let Ok(batch) = self
+            .root
+            .refresh_cast_consent_worker(self.node, &mut self.worker)
+            .await
+        {
+            self.apply_batch(owner, batch).await?;
+        }
+        self.expire(owner);
+        Ok(())
+    }
+    // HTTP futures retain no cast state, so revocations can be applied and
+    // acknowledged under the exclusive owner while a response is outstanding.
+    async fn external<F: Future>(
+        &mut self,
+        owner: &mut CastOwner,
+        work: F,
+    ) -> Result<F::Output, Error> {
+        self.apply_pending(owner).await?;
+        let mut work = std::pin::pin!(work);
+        loop {
+            if !self.worker.valid() {
+                self.expire(owner);
+                return Ok(work.await);
+            }
+            let next = self.pulse + std::time::Duration::from_millis(250);
+            let mut timer = std::pin::pin!(tokio::time::sleep_until(
+                tokio::time::Instant::from_std(next)
+            ));
+            match first(timer.as_mut(), work.as_mut()).await {
+                First::Right(result) => {
+                    self.expire(owner);
+                    return Ok(result);
+                }
+                First::Left(()) => {
+                    let (refreshed, completed) = {
+                        let mut refresh = std::pin::pin!(self.refresh(owner));
+                        match first(refresh.as_mut(), work.as_mut()).await {
+                            First::Right(result) => (refresh.await, Some(result)),
+                            First::Left(result) => (result, None),
+                        }
+                    };
+                    if let Err(error) = refreshed {
+                        // Finish external side effects before shutting down;
+                        // their outcome must not be lost by cancellation.
+                        if completed.is_none() {
+                            let _ = work.await;
+                        }
+                        return Err(error);
+                    }
+                    if let Some(result) = completed {
+                        return Ok(result);
+                    }
+                }
+            }
+        }
+    }
+    fn apply_current(
+        &self,
+        owner: &mut CastOwner,
+        operation: Operation,
+        now: u64,
+    ) -> Result<Reply, Error> {
+        if !self.worker.valid() {
+            return Err(Error::Unavailable);
+        }
+        apply(owner, operation, now, self.worker.version())
+    }
+    async fn apply_once(
+        &mut self,
+        owner: &mut CastOwner,
+        access: &impl preferences::PreferencesStore,
+        accounts: &HashMap<GameSessionId, [u8; 16]>,
+        operation: Operation,
+        now: u64,
+    ) -> Result<DurableOutcome, Error> {
+        match operation {
+            Operation::Start(facts, settings, account) => {
+                let policy = self
+                    .external(owner, preferences::authorize(access, account, settings))
+                    .await?;
+                Ok(DurableOutcome::Complete(policy.and_then(|policy| {
+                    self.apply_current(
+                        owner,
+                        Operation::Start(facts, policy.settings, account),
+                        now,
+                    )
+                })))
+            }
+            Operation::Update(facts, revision, settings) => {
+                let Some(account) = accounts
+                    .get(&facts.authority.current_game_session_id())
+                    .copied()
+                else {
+                    return Ok(DurableOutcome::Complete(Err(Error::Unavailable)));
+                };
+                let policy = self
+                    .external(owner, preferences::authorize(access, account, settings))
+                    .await?;
+                Ok(DurableOutcome::Complete(policy.and_then(|policy| {
+                    self.apply_current(
+                        owner,
+                        Operation::Update(facts, revision, policy.settings),
+                        now,
+                    )
+                })))
+            }
+            operation => {
+                let root = self.root;
+                let node = self.node;
+                let version = self.worker.version();
+                let result = self
+                    .during(apply_durable_once(
+                        owner, root, node, access, accounts, operation, now, version,
+                    ))
+                    .await;
+                self.apply_pending(owner).await?;
+                Ok(result)
+            }
+        }
+    }
+    async fn persist_pending(&mut self, owner: &mut CastOwner) -> Result<(), Error> {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(1);
+        while !owner.audit.pending.is_empty() {
+            self.during(owner.persist_audit_batch(self.root, self.node, deadline))
+                .await?;
+            self.apply_pending(owner).await?;
+            // The audit transaction has released the holder here. Renewal must
+            // have an opportunity before the next batch acquires it again.
+            if self.pending.is_none()
+                && self.worker.valid()
+                && self
+                    .worker
+                    .valid_until()
+                    .saturating_duration_since(std::time::Instant::now())
+                    <= std::time::Duration::from_millis(750)
+            {
+                self.pulse = std::time::Instant::now();
+                if let Ok(batch) = self
+                    .root
+                    .try_refresh_cast_consent_worker(self.node, &mut self.worker)
+                    .await
+                    && !batch.is_empty()
+                {
+                    self.pending = Some(batch);
+                }
+                self.apply_pending(owner).await?;
+            }
+        }
+        Ok(())
+    }
+    async fn during<F: Future>(&mut self, work: F) -> F::Output {
+        let mut work = std::pin::pin!(work);
+        loop {
+            // Never ACK or renew past a withdrawal before the exclusive cast
+            // owner has applied it. Final media writes retain the old deadline.
+            // An expired lease must reach the outer loop's cast termination
+            // before that loop attempts recovery.
+            if self.pending.is_some() || !self.worker.valid() {
+                return work.await;
+            }
+            let next = self.pulse + std::time::Duration::from_millis(250);
+            let mut timer = std::pin::pin!(tokio::time::sleep_until(
+                tokio::time::Instant::from_std(next)
+            ));
+            match first(timer.as_mut(), work.as_mut()).await {
+                First::Right(result) => return result,
+                First::Left(()) => {
+                    if !self.worker.valid() {
+                        return work.await;
+                    }
+                    self.pulse = std::time::Instant::now();
+                    let (refreshed, completed) = {
+                        let mut refresh = std::pin::pin!(
+                            self.root
+                                .try_refresh_cast_consent_worker(self.node, &mut self.worker)
+                        );
+                        match first(refresh.as_mut(), work.as_mut()).await {
+                            // Finish an issued durable pass even if the external
+                            // work completes first; cancellation could lose its receipt.
+                            First::Right(result) => (refresh.await, Some(result)),
+                            First::Left(result) => (result, None),
+                        }
+                    };
+                    if let Ok(batch) = refreshed
+                        && !batch.is_empty()
+                    {
+                        self.pending = Some(batch);
+                    }
+                    if let Some(result) = completed {
+                        return result;
+                    }
+                }
+            }
+        }
+    }
+}
 #[derive(Clone)]
 pub struct CastService {
     tx: mpsc::Sender<Request>,
@@ -136,7 +404,7 @@ async fn run(
     // requires a consent-worker lease: retry only a busy durable holder, never
     // process a queued Start before registration or after the bounded deadline.
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
-    let mut privacy = loop {
+    let privacy = loop {
         match root
             .register_cast_consent_worker(&node, owner.audit.incarnation)
             .await
@@ -155,7 +423,13 @@ async fn run(
             Err(_) => return,
         }
     };
-    let mut privacy_pulse = std::time::Instant::now();
+    let mut privacy = PrivacyIo {
+        root: &root,
+        node: &node,
+        worker: privacy,
+        pulse: std::time::Instant::now(),
+        pending: None,
+    };
     let mut accounts = std::collections::HashMap::new();
     let mut last_announce = 0u64;
     let mut announced = std::collections::HashSet::new();
@@ -174,13 +448,12 @@ async fn run(
             }
         };
         let now = u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX);
-        if !privacy.valid() {
-            for target in owner.casts.keys().copied().collect::<Vec<_>>() {
-                owner.target_gone(target);
-            }
-        }
-        if privacy_pulse.elapsed() >= std::time::Duration::from_millis(250) || !privacy.valid() {
-            privacy_pulse = std::time::Instant::now();
+        privacy.expire(&mut owner);
+        if privacy.pending.is_some()
+            || privacy.pulse.elapsed() >= std::time::Duration::from_millis(250)
+            || !privacy.worker.valid()
+        {
+            privacy.pulse = std::time::Instant::now();
             // Observer storage retries must reach their existing rejection boundary:
             // their caller can be holding the root until it receives that reply.
             let observer_storage = request.as_ref().is_some_and(|request| {
@@ -189,39 +462,22 @@ async fn run(
                     Operation::Join(_) | Operation::Renew(..) | Operation::Ban(..)
                 )
             });
-            let batch = if observer_storage {
-                root.try_refresh_cast_consent_worker(&node, &mut privacy)
+            let batch = if let Some(batch) = privacy.pending.take() {
+                Ok(batch)
+            } else if observer_storage {
+                root.try_refresh_cast_consent_worker(&node, &mut privacy.worker)
                     .await
             } else {
-                root.refresh_cast_consent_worker(&node, &mut privacy).await
+                root.refresh_cast_consent_worker(&node, &mut privacy.worker)
+                    .await
             };
-            if let Ok(batch) = batch {
-                for event in batch.events() {
-                    // Unknown characters have no queued frames. A capture made
-                    // before this ACK cannot publish at the new privacy version.
-                    if !owner.consents.contains_key(&event.character)
-                        && !owner.consent_floor.contains_key(&event.character)
-                    {
-                        continue;
-                    }
-                    if owner
-                        .invalidate(event.character, event.minimum_revision - 1)
-                        .is_err()
-                    {
-                        break 'worker;
-                    }
-                }
-                if !batch.is_empty()
-                    && root
-                        .acknowledge_cast_consent(&node, &mut privacy, batch)
-                        .await
-                        .is_err()
-                {
-                    break 'worker;
-                }
+            if let Ok(batch) = batch
+                && privacy.apply_batch(&mut owner, batch).await.is_err()
+            {
+                break 'worker;
             }
         }
-        if !privacy.valid() {
+        if !privacy.worker.valid() {
             if request
                 .as_ref()
                 .is_some_and(|r| matches!(r.operation, Operation::Shutdown))
@@ -234,7 +490,7 @@ async fn run(
             if let Some(request) = request.take() {
                 let _ = request.reply.send(Err(Error::Unavailable));
             }
-            let _ = persist_pending(&mut owner, &root, &node).await;
+            let _ = privacy.persist_pending(&mut owner).await;
             continue;
         }
         let result = owner.poll(now);
@@ -253,6 +509,7 @@ async fn run(
             now.saturating_sub(r.submitted_ms) > 1000
                 || (retrying
                     && privacy
+                        .worker
                         .valid_until()
                         .saturating_duration_since(std::time::Instant::now())
                         <= std::time::Duration::from_millis(600))
@@ -260,7 +517,7 @@ async fn run(
             if let Some(expired) = request.take() {
                 let _ = expired.reply.send(Err(Error::Unavailable));
             }
-            let _ = persist_pending(&mut owner, &root, &node).await;
+            let _ = privacy.persist_pending(&mut owner).await;
             continue;
         }
         let mut force_announce = false;
@@ -289,7 +546,7 @@ async fn run(
             ending = matches!(&request.operation, Operation::Shutdown);
             let operation = match request.operation {
                 Operation::Flush(id, mut write) => {
-                    let until = privacy.valid_until();
+                    let until = privacy.worker.valid_until();
                     Operation::Flush(
                         id,
                         Box::new(move |state, content| {
@@ -299,17 +556,19 @@ async fn run(
                 }
                 operation => operation,
             };
-            let result = apply_durable_once(
-                &mut owner,
-                &root,
-                &node,
-                access.as_ref(),
-                &accounts,
-                operation,
-                u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX),
-                privacy.version(),
-            )
-            .await;
+            let result = match privacy
+                .apply_once(
+                    &mut owner,
+                    access.as_ref(),
+                    &accounts,
+                    operation,
+                    u64::try_from(clock.elapsed().as_millis()).unwrap_or(u64::MAX),
+                )
+                .await
+            {
+                Ok(result) => result,
+                Err(_) => break 'worker,
+            };
             match result {
                 DurableOutcome::Busy(operation) => {
                     pending = Some(Request {
@@ -319,17 +578,23 @@ async fn run(
                     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
                 }
                 DurableOutcome::Complete(result) => {
-                    let committed = persist_pending(&mut owner, &root, &node).await;
+                    let committed = privacy.persist_pending(&mut owner).await;
                     completed = Some((request.reply, committed.and(result)));
                 }
             }
         } else {
-            let _ = persist_pending(&mut owner, &root, &node).await;
+            let _ = privacy.persist_pending(&mut owner).await;
         }
         let active: std::collections::HashSet<_> =
             owner.casts.values().map(|c| c.state.cast_id).collect();
         for cast in announced.difference(&active) {
-            let _ = access.stop(*cast).await;
+            if privacy
+                .external(&mut owner, access.stop(*cast))
+                .await
+                .is_err()
+            {
+                break 'worker;
+            }
         }
         announced = active;
         if force_announce || now.saturating_sub(last_announce) >= 2000 {
@@ -350,7 +615,13 @@ async fn run(
                 .collect();
             for (target, account, state, settings) in policies {
                 let ok = match account {
-                    Some(account) => access.announce(account, state, settings).await.is_ok(),
+                    Some(account) => match privacy
+                        .external(&mut owner, access.announce(account, state, settings))
+                        .await
+                    {
+                        Ok(result) => result.is_ok(),
+                        Err(_) => break 'worker,
+                    },
                     None => false,
                 };
                 if !ok {
@@ -374,7 +645,13 @@ async fn run(
             }
         }
         for reservation in owner.take_releases() {
-            let _ = access.release(reservation).await;
+            if privacy
+                .external(&mut owner, access.release(reservation))
+                .await
+                .is_err()
+            {
+                break 'worker;
+            }
         }
         if ending {
             break;
@@ -384,7 +661,7 @@ async fn run(
         owner.target_gone(target);
     }
     let _ = persist_pending(&mut owner, &root, &node).await;
-    let _ = root.close_cast_consent_worker(&node, privacy).await;
+    let _ = root.close_cast_consent_worker(&node, privacy.worker).await;
     for reservation in owner.take_releases() {
         let _ = access.release(reservation).await;
     }
