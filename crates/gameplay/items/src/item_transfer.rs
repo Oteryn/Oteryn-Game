@@ -201,17 +201,19 @@ pub fn plan_transfer(
             }
             let count = u32::try_from(input.entries.len()).unwrap_or(u32::MAX);
             let free = count < capacity;
-            let next = input
-                .entries
-                .iter()
-                .map(|entry| entry.placement_ordinal)
-                .max()
-                .unwrap_or(0)
-                .checked_add(1)
-                .ok_or(Refusal::MainBackpackFull)?;
-            let position = ContainerEntryPosition {
-                parent_item_instance_id: slot.item_instance_id,
-                placement_ordinal: next,
+            let new_position = || {
+                let next = input
+                    .entries
+                    .iter()
+                    .map(|entry| entry.placement_ordinal)
+                    .max()
+                    .unwrap_or(0)
+                    .checked_add(1)
+                    .ok_or(Refusal::MainBackpackFull)?;
+                Ok(ContainerEntryPosition {
+                    parent_item_instance_id: slot.item_instance_id,
+                    placement_ordinal: next,
+                })
             };
             let quantity = input.source.quantity;
             // D83: the compatible stack with room that comes first in display
@@ -256,14 +258,16 @@ pub fn plan_transfer(
                         quantity_after: maximum,
                     },
                     receiver_position,
-                    position,
+                    position: new_position()?,
                     source_after: remaining,
                 });
             }
             if !free {
                 return Err(Refusal::MainBackpackFull);
             }
-            Ok(TransferPlan::NewEntry { position })
+            Ok(TransferPlan::NewEntry {
+                position: new_position()?,
+            })
         }
     }
 }
@@ -352,6 +356,33 @@ mod tests {
             parent_item_instance_id: id(1),
             placement_ordinal: ordinal,
         }
+    }
+
+    #[test]
+    fn full_merge_does_not_allocate_an_ordinal() {
+        let source = item(9, "fixture:b3.coin", 10);
+        let entries = [entry(10, "fixture:b3.coin", 90, u64::MAX)];
+        for capacity in [1, 20] {
+            assert_eq!(
+                plan(&source, COIN, &entries, capacity),
+                Ok(TransferPlan::FullMerge {
+                    receiver: TransferReceiver {
+                        item_instance_id: id(10),
+                        quantity_before: 90,
+                        quantity_after: 100,
+                    },
+                    receiver_position: at(u64::MAX),
+                })
+            );
+        }
+        assert_eq!(
+            plan(&item(9, "fixture:b3.coin", 11), COIN, &entries, 20),
+            Err(ItemTransferRefusal::MainBackpackFull)
+        );
+        assert_eq!(
+            plan(&item(9, "fixture:b3.other", 1), COIN, &entries, 20),
+            Err(ItemTransferRefusal::MainBackpackFull)
+        );
     }
 
     #[test]

@@ -617,13 +617,18 @@ fn factored_success(
 /// `RATE_LOOT`; the capped chance remains available to other consumers, while the uncapped value
 /// feeds the planner's per-entry factor.
 pub fn apply_configured_loot_rate(table: &mut LootTableDefinition, rate_percent: u32) {
-    for entry in &mut table.entries {
+    apply_entry_loot_rate(&mut table.entries, rate_percent);
+}
+
+fn apply_entry_loot_rate(entries: &mut [LootTableEntry], rate_percent: u32) {
+    for entry in entries {
         if let Some(probability) = entry.probability_ppm {
             let rated = u64::from(probability).saturating_mul(u64::from(rate_percent)) / 100;
             entry.probability_ppm = Some(rated.min(u64::from(LOOT_PROBABILITY_PPM_SCALE)) as u32);
             entry.details.rated_probability_ppm = (rated > u64::from(LOOT_PROBABILITY_PPM_SCALE))
                 .then(|| rated.min(2_000_000) as u32);
         }
+        apply_entry_loot_rate(&mut entry.details.children, rate_percent);
     }
 }
 
@@ -947,6 +952,31 @@ mod tests {
         // factor before comparing every entry, including MAX_LOOTCHANCE.
         assert!(!factored_success(999_999, 1_000_000, 95, 0));
         assert!(factored_success(999_999, 1_000_000, 105, 0));
+    }
+
+    #[test]
+    fn configured_loot_rate_reaches_every_descendant() {
+        let mut table = one_entry_table("oteryn:item.root", 1, 1, None);
+        let mut child = one_entry_table("oteryn:item.child", 1, 1, None)
+            .entries
+            .remove(0);
+        child.probability_ppm = Some(400_000);
+        let mut grandchild = one_entry_table("oteryn:item.grandchild", 1, 1, None)
+            .entries
+            .remove(0);
+        grandchild.probability_ppm = Some(600_000);
+        child.details.children.push(grandchild);
+        table.entries[0].details.children.push(child);
+        apply_configured_loot_rate(&mut table, 200);
+        let child = &table.entries[0].details.children[0];
+        assert_eq!(table.entries[0].probability_ppm, None);
+        assert_eq!(child.probability_ppm, Some(800_000));
+        assert_eq!(child.details.rated_probability_ppm, None);
+        assert_eq!(child.details.children[0].probability_ppm, Some(1_000_000));
+        assert_eq!(
+            child.details.children[0].details.rated_probability_ppm,
+            Some(1_200_000)
+        );
     }
 
     #[test]
