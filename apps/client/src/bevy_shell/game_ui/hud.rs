@@ -27,6 +27,8 @@ enum Command {
     Stop,
     Fight(FightMode),
     Chase(ChaseMode),
+    Secure(bool),
+    Expert(u8),
     Skills,
     BattleList(usize),
     Analyser(oteryn_client_ui::analyser::Tool),
@@ -230,6 +232,8 @@ fn activate(
         Command::Stop => play.link.battle_request(Action::Stop),
         Command::Fight(mode) => play.link.battle_request(Action::Fight(mode)),
         Command::Chase(mode) => play.link.battle_request(Action::Chase(mode)),
+        Command::Secure(secure) => battle::request_pvp(&play.link, Some(secure), None),
+        Command::Expert(mode) => battle::request_pvp(&play.link, None, Some(mode)),
         Command::Skills => play.link.skills_widget_request(),
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);

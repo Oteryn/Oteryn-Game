@@ -7,6 +7,7 @@ pub(super) struct Snapshot {
     rows: Vec<WorldSpatialEntity>,
     active: usize,
     names: Vec<String>,
+    pvp: String,
 }
 #[derive(Component)]
 pub(super) struct HealthFill(EntityRef);
@@ -42,6 +43,11 @@ pub(super) fn project(
     };
     let generation = owner.generation();
     let panel = play.link.battle_panel();
+    let pvp = play.link.pvp_expert_panel();
+    let pvp_state = format!(
+        "{:?}:{}:{}:{}",
+        pvp.confirmed, pvp.pending, pvp.feedback, pvp.selected
+    );
     let active = play.link.active_battle_list();
     let rows = play.link.filtered_battle_rows(active);
     let modal = owner.modal_active() || play.view.gameplay_input_blocked(&play.link);
@@ -56,8 +62,16 @@ pub(super) fn project(
     for (entity, action, was_disabled) in &actions {
         if matches!(
             action.command,
-            Command::Attack(_) | Command::Stop | Command::Fight(_) | Command::Chase(_)
+            Command::Attack(_)
+                | Command::Stop
+                | Command::Fight(_)
+                | Command::Chase(_)
+                | Command::Secure(_)
+                | Command::Expert(_)
         ) {
+            let disabled = disabled
+                || (matches!(action.command, Command::Secure(_) | Command::Expert(_))
+                    && pvp.pending);
             if disabled && !was_disabled {
                 commands.entity(entity).insert(InteractionDisabled);
             }
@@ -113,6 +127,7 @@ pub(super) fn project(
         && same_rows
         && shown.active == active
         && shown.names == names
+        && shown.pvp == pvp_state
     {
         return;
     }
@@ -164,6 +179,27 @@ pub(super) fn project(
         commands.entity(modes).add_child(button);
     }
     commands.entity(regions.battle).add_child(modes);
+    if let Some(confirmed) = pvp.confirmed.filter(|_| pvp.selected) {
+        for (command, label, selected) in pvp_controls(confirmed) {
+            let label = if selected {
+                format!("• {label}")
+            } else {
+                label.into()
+            };
+            let control = button(&mut commands, &skins, generation, command, &label, 174.);
+            if disabled || pvp.pending {
+                commands.entity(control).insert(InteractionDisabled);
+            }
+            commands.entity(regions.battle).add_child(control);
+        }
+        let status = commands
+            .spawn(source::text(
+                &pvp.feedback,
+                source::font(skins.font.clone(), false),
+            ))
+            .id();
+        commands.entity(regions.battle).add_child(status);
+    }
     // BattleListEntry.qml: 22px rows, 20px outfit slot, 2px gap, 5px slim bar.
     for row in &rows {
         let entry = commands
@@ -268,4 +304,99 @@ pub(super) fn project(
     shown.rows = rows;
     shown.active = active;
     shown.names = names;
+    shown.pvp = pvp_state;
+}
+
+fn pvp_controls(
+    state: oteryn_client_runtime::pvp_expert::ExpertFightModes,
+) -> [(Command, &'static str, bool); 5] {
+    use oteryn_client_runtime::pvp_expert::ExpertMode;
+    [
+        (
+            Command::Secure(!state.modes.secure),
+            "Secure attack",
+            state.modes.secure,
+        ),
+        (Command::Expert(0), "Dove", state.expert == ExpertMode::Dove),
+        (
+            Command::Expert(1),
+            "White Hand",
+            state.expert == ExpertMode::WhiteHand,
+        ),
+        (
+            Command::Expert(2),
+            "Yellow Hand",
+            state.expert == ExpertMode::YellowHand,
+        ),
+        (
+            Command::Expert(3),
+            "Red Fist",
+            state.expert == ExpertMode::RedFist,
+        ),
+    ]
+}
+
+pub(super) fn request_pvp(link: &crate::play::PlayLink, secure: Option<bool>, expert: Option<u8>) {
+    let panel = link.pvp_expert_panel();
+    let Some(state) = panel.confirmed.filter(|_| panel.selected && !panel.pending) else {
+        return;
+    };
+    for (field, value) in [
+        (0, (state.modes.fight_mode as u32).to_string()),
+        (1, (state.modes.chase as u32).to_string()),
+        (
+            2,
+            u8::from(secure.unwrap_or(state.modes.secure)).to_string(),
+        ),
+        (
+            3,
+            expert
+                .map(u32::from)
+                .unwrap_or(state.expert as u32)
+                .to_string(),
+        ),
+    ] {
+        link.pvp_expert_edit(field, value);
+    }
+    link.pvp_expert_request(oteryn_client_ui::pvp_expert::Intent::Apply);
+}
+
+#[cfg(test)]
+mod combat_tests {
+    use super::*;
+    #[test]
+    fn combat_hud_rejects_pvp_changes_without_negotiated_state() {
+        let (link, mut incoming, _outbox) = crate::play::play_channel();
+        request_pvp(&link, Some(false), None);
+        request_pvp(&link, None, Some(3));
+        assert!(incoming.try_recv().is_err());
+        assert!(!link.pvp_expert_panel().pending);
+    }
+    #[test]
+    fn secure_toggle_and_all_expert_modes_follow_confirmed_state() {
+        use oteryn_client_runtime::pvp_expert::{ExpertFightModes, ExpertMode, attack::FightModes};
+        for expert in [
+            ExpertMode::Dove,
+            ExpertMode::WhiteHand,
+            ExpertMode::YellowHand,
+            ExpertMode::RedFist,
+        ] {
+            for secure in [false, true] {
+                let controls = pvp_controls(ExpertFightModes {
+                    modes: FightModes {
+                        fight_mode: FightMode::Balanced,
+                        chase: ChaseMode::Stand,
+                        secure,
+                    },
+                    expert,
+                });
+                assert!(matches!(controls[0].0, Command::Secure(value) if value != secure));
+                assert_eq!(controls[0].2, secure);
+                assert_eq!(controls[1..].iter().filter(|control| control.2).count(), 1);
+                assert!(
+                    matches!(controls[expert as usize + 1].0, Command::Expert(value) if value == expert as u8)
+                );
+            }
+        }
+    }
 }
