@@ -76,7 +76,9 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
   and Offer History. Create buy/sell offers, cancel selected own offers, and accept
-  buy/sell offers with bounded quantities through the existing server intents.
+  buy/sell offers through the existing server intents. Accept quantities clamp to
+  the remaining offer amount and, for buy offers, the item's known depot stock.
+  Create requires amount 1–64000, price ≥ 1, and total ≤ 999999999999 gold.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
