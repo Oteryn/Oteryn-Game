@@ -197,10 +197,11 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
                     .as_ref()
                     .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
         }),
-        SelectionAction::Cancel | SelectionAction::Refresh | SelectionAction::Create => true,
-        SelectionAction::Train { .. }
-        | SelectionAction::TrainMany { .. }
-        | SelectionAction::AccountServices => false,
+        SelectionAction::Cancel
+        | SelectionAction::Refresh
+        | SelectionAction::Create
+        | SelectionAction::AccountServices => true,
+        SelectionAction::Train { .. } | SelectionAction::TrainMany { .. } => false,
     }
 }
 
@@ -325,7 +326,10 @@ mod tests {
                 character_id: "character".into(),
                 channel_id: Some("foreign".into()),
             },
-            SelectionAction::AccountServices,
+            SelectionAction::Train {
+                character_id: "character".into(),
+                channel_id: None,
+            },
         ] {
             assert!(!bridge.respond(id, action));
         }

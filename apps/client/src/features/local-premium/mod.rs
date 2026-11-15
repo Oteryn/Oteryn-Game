@@ -18,7 +18,7 @@ pub enum Action {
     Refresh,
     Back,
 }
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct View {
     game_status: Option<oteryn_client_runtime::premium_overview::Overview>,
     pub status: Option<PremiumStatus>,

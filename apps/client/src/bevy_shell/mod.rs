@@ -1,4 +1,5 @@
 //! Opt-in Bevy desktop host over the production client owners.
+mod account_services;
 mod audio;
 mod audit;
 mod controls;
@@ -165,6 +166,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .before(ui::keyboard)
             .before(ui::project),
     );
+    account_services::install(&mut app);
     audio::install(&mut app);
     exit::install(&mut app);
     game_ui::install(&mut app);

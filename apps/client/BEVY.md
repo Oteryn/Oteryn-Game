@@ -58,6 +58,13 @@ The frontend uses the normal admission path; an offline window does not prove a
 successful server connection. Missing or mismatched world metadata stops sign-in
 before an admission request is started.
 
+From the character picker, **Account Services → Premium** opens the dedicated
+read-only overview, with expiry, remaining time, benefits and Refresh. Back or
+Escape returns to the account menu. It uses the existing separately scoped
+account-services sign-in. The accepted Platform `GET /api/v1/native-account/premium`
+projection must be deployed for live data; unavailable services show feedback.
+Bazaar mutations and pre-login coin purchases remain separate presentation work.
+
 Optional executable arguments:
 
 | Argument | Purpose |

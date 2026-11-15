@@ -32,6 +32,7 @@ enum Choice {
     Play,
     Refresh,
     Create,
+    Account,
     Cancel,
 }
 #[derive(Component)]
@@ -264,7 +265,7 @@ pub(super) fn project(
         commands.entity(panel).add_child(channel);
         let unavailable = commands
             .spawn(source::text(
-                "Training and account services are unavailable in this frontend.",
+                "Offline training is unavailable in this frontend.",
                 source::font(skin.font.clone(), false),
             ))
             .insert(TextColor(source::DISABLED_TEXT_COLOR))
@@ -278,6 +279,7 @@ pub(super) fn project(
             })
             .id();
         for (choice, label, width, disabled) in [
+            (Choice::Account, "Account Services", 130., false),
             (Choice::Create, "Create", 60., false),
             (Choice::Refresh, "Refresh", 60., false),
             (
@@ -324,6 +326,7 @@ fn add_button(
         Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
         Choice::Refresh => "selection.refresh".into(),
+        Choice::Account => "selection.account".into(),
         Choice::Create => "selection.create".into(),
         Choice::Cancel => "selection.cancel".into(),
     };
@@ -408,6 +411,7 @@ fn activate(
                     .and_then(|index| row.channels.get(index))
                     .map(|channel| channel.0.clone()),
             }),
+        Choice::Account => Some(SelectionAction::AccountServices),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),
         Choice::Cancel => Some(SelectionAction::Cancel),
