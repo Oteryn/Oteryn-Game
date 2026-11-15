@@ -8,6 +8,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Analysers", Control::Analysers),
     ("Battle", Control::Panel("battle")),
     ("Chat", Control::Panel("chat")),
+    ("Cyclopedia Map", Control::CyclopediaMap),
     ("Inspection", Control::Inspection),
     ("Inventory", Control::Panel("inventory")),
     ("Loot Containers", Control::Loot),
@@ -42,6 +43,11 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
                     play.link
                         .vip_request(oteryn_client_ui::vip::Intent::Query(0));
                 }
+            }
+        }
+        Control::CyclopediaMap => {
+            if let Some(play) = &owner.play {
+                play.link.cyclopedia_atlas_open();
             }
         }
         Control::Analysers => {

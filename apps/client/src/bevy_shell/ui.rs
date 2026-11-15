@@ -45,6 +45,7 @@ pub(super) enum Control {
     Options,
     Panel(&'static str),
     Analysers,
+    CyclopediaMap,
     Inspection,
     Loot,
     Notices,
@@ -70,6 +71,7 @@ impl Control {
         match self {
             Self::Panel(id) => id,
             Self::Analysers => "shell.analysers",
+            Self::CyclopediaMap => "shell.cyclopedia_map",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",
             Self::Notices => "shell.notices",
