@@ -88,6 +88,10 @@ impl HostOwner {
             play.link.market_set_open(true);
             return;
         }
+        if oteryn_client_ui::player_report::open_key(&routed) {
+            play.link.rule_violation_open("");
+            return;
+        }
         if oteryn_client_ui::party::open_key(&routed) {
             play.link.open_party();
             return;
