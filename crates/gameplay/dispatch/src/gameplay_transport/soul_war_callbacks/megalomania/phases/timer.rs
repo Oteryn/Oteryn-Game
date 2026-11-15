@@ -26,10 +26,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .ok_or_else(|| {eprintln!("QMDIAG mtimer 29");})?;
+            .ok_or_else(|| {
+                eprintln!("QMDIAG mtimer 29");
+            })?;
         let (notice, profile, step, timer, map_plan, names_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.try_lock().map_err(|_| {eprintln!("QMDIAG mtimer 32");})?;
+            let states = self.states.spell_states.try_lock().map_err(|_| {
+                eprintln!("QMDIAG mtimer 32");
+            })?;
             let Some(owner) = states.soul_war_callbacks.megalomania.as_ref() else {
                 return Ok(false);
             };
@@ -57,14 +61,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some((due_us, timer)) = selected else {
                 return Ok(false);
             };
-            let notice = runtime.next_source_creature_death().map_err(|_| {eprintln!("QMDIAG mtimer 60");})?;
+            let notice = runtime.next_source_creature_death().map_err(|_| {
+                eprintln!("QMDIAG mtimer 60");
+            })?;
             let profile = if notice.is_none() {
                 states.native_profile_pass.pending()
             } else {
                 None
             };
             let step = if notice.is_none() && profile.is_none() {
-                states.spite_steps.creatures.front().map_err(|_| {eprintln!("QMDIAG mtimer 67");})?
+                states.spite_steps.creatures.front().map_err(|_| {
+                    eprintln!("QMDIAG mtimer 67");
+                })?
             } else {
                 None
             };
@@ -108,11 +116,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cells.extend_from_slice(plan.candidates());
                 }
             }
-            let objects = self.door.try_lock().map_err(|_| {eprintln!("QMDIAG mtimer 111");})?;
+            let objects = self.door.try_lock().map_err(|_| {
+                eprintln!("QMDIAG mtimer 111");
+            })?;
             let map_plan = crate::movement::monster_map::PreparedMonsterMapRead::prepare(
                 &runtime, room, &objects, &cells,
             )
-            .ok_or_else(|| {eprintln!("QMDIAG mtimer 115");})?;
+            .ok_or_else(|| {
+                eprintln!("QMDIAG mtimer 115");
+            })?;
             let names_plan = self.prepare_source_names(&runtime, &[NAME])?;
             (
                 notice,

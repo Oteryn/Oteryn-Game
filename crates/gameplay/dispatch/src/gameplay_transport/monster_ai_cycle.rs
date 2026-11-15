@@ -112,7 +112,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(head)) = self.runtime.lock().await.next_source_creature_death() else {
             return false;
         };
-        eprintln!("QMDIAG drive_head start room={}", self.rooms().gate_monster_ai().is_some()); // QMDIAG
+        eprintln!(
+            "QMDIAG drive_head start room={}",
+            self.rooms().gate_monster_ai().is_some()
+        ); // QMDIAG
         for _ in 0..TURNS {
             let Some(permit) = self.spell_lane_permit().await else {
                 eprintln!("QMDIAG no permit"); // QMDIAG
