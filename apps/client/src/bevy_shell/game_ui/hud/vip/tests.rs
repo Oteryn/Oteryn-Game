@@ -501,6 +501,7 @@ fn vip_double_click_and_secondary_message_open_private_conversation() -> TestRes
     };
     app.world_mut()
         .trigger(click(row, PointerButton::Primary, 1));
+    app.update();
     assert!(app.world().resource::<State>().draft.is_none());
     app.world_mut()
         .trigger(click(row, PointerButton::Primary, 2));
@@ -792,7 +793,7 @@ fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> Te
 }
 
 #[test]
-fn vip_rows_primary_and_keyboard_activation_open_edit() -> TestResult {
+fn vip_rows_reserve_primary_for_messaging_and_keyboard_activation_opens_edit() -> TestResult {
     use bevy::picking::{
         backend::HitData,
         events::{Pointer, PointerClick},
@@ -826,8 +827,7 @@ fn vip_rows_primary_and_keyboard_activation_open_edit() -> TestResult {
         count: 1,
     });
     app.update();
-    assert!(app.world().resource::<State>().draft.is_some());
-    click(&mut app, |a| matches!(a, Action::Cancel(_)))?;
+    assert!(app.world().resource::<State>().draft.is_none());
     for key_code in [KeyCode::Enter, KeyCode::Space] {
         app.world_mut().trigger(FocusedInput::new(
             entity,

@@ -233,7 +233,7 @@ fn a_bound_corpse_is_a_domain_1_object_named_by_the_pinned_index() {
     assert_eq!(corpse.generation, 0);
     assert_eq!(
         (corpse.position.x, corpse.position.y, corpse.position.floor),
-        (101, 100, 7)
+        (101, 100, -7)
     );
     assert_eq!(
         runtime

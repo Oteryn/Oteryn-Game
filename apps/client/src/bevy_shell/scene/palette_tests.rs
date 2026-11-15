@@ -58,7 +58,7 @@ fn constant_uv_preserves_texel_tint_clipping_and_dpi() -> TestResult {
 fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestResult {
     use crate::play::{PlayView, play_channel};
     use oteryn_session::*;
-    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
     let mut preferences = view.preferences().clone();
     preferences.creature_bars = true;
     preferences.hud_npc_icons = true;
@@ -79,7 +79,7 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
     let position = ActorPosition {
         x: 100,
         y: 100,
-        floor: 7,
+        floor: -7,
     };
     let entity = EntityRef {
         identity: [7; 16],
@@ -112,7 +112,10 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
             emission_ordinal: 1,
             kind: PresentationEventKind::ValueText {
                 kind: PresentationValueKind::Healed,
-                position,
+                position: ActorPosition {
+                    floor: 7,
+                    ..position
+                },
                 target: entity,
                 attacker: None,
                 primary: PresentationValue {

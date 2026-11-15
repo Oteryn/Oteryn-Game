@@ -2,13 +2,18 @@ use super::*;
 #[path = "house_hireling_view.rs"]
 mod house_hireling_view;
 
-/// Domain-1 positions are native-frame (ground -7, as the map view origin); the movement
-/// runtime keeps legacy `z` (ground 7). Sign-insensitive, like the cast viewer's conversion.
-pub(in crate::gameplay_transport) const fn native_floor(floor: i16) -> i16 {
-    floor.saturating_abs().saturating_neg()
-}
+pub(in crate::gameplay_transport) use oteryn_protocol_oteryn::world_spatial::native_floor;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Bundle runtimes own positive z; entry fixtures retain their authored frame.
+    pub(in crate::gameplay_transport) fn runtime_floor(&self, floor: i16) -> i16 {
+        if self.bundle_map().is_some() {
+            oteryn_protocol_oteryn::world_spatial::runtime_floor(floor)
+        } else {
+            floor
+        }
+    }
+
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.
     pub(in crate::gameplay_transport) fn bundle_map(&self) -> Option<&crate::map::boot::BundleMap> {

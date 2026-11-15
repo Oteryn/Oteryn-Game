@@ -330,3 +330,33 @@ mod visual_sprites;
 
 #[path = "boss_area.rs"]
 mod boss_area;
+
+#[test]
+fn ground_floor_presentation_wire_events_reach_native_scene() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    let position = oteryn_session::ActorPosition { x: 0, y: 0, floor: 7 };
+    outbox.spell_catalog_initialize(true, Some(
+        oteryn_session::spell_catalog::encode_catalog(&[oteryn_session::spell_catalog::SpellCatalogEntry {
+            cast_index: 19, name: "Healing".into(), words: "exura".into(), level: 8,
+            mana: 20, mana_percent: false, soul: 0, learned: true, available: true,
+            cooldown_groups: vec![1], rune_item: None,
+        }]).map_err(|e| format!("{e:?}"))?
+    ))?;
+    for kind in [
+        PresentationEventKind::SpellWords { caster: oteryn_session::EntityRef { identity: [1; 16], generation: 1 }, position, spell: 19 },
+        PresentationEventKind::MagicEffect { position, effect_id: 1, source: PresentationSource::Own },
+        PresentationEventKind::Missile { from: position, to: position, missile_id: 1, source: PresentationSource::Own },
+        value_event(7),
+    ] {
+        let baseline = view.scene().sprites().instances().len();
+        outbox.push(vec![oteryn_session::SessionEvent::Presentation(AppliedDelta {
+            server_sequence: 42, base_revision: 0, new_revision: 1,
+            value: vec![PresentationEvent { decision_ordinal: 1, emission_ordinal: 1, kind }],
+        })]);
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+        assert!(view.scene().sprites().instances().len() > baseline, "{kind:?}");
+        view.advance_presentation(std::time::Instant::now() + std::time::Duration::from_secs(2))?;
+    }
+    Ok(())
+}

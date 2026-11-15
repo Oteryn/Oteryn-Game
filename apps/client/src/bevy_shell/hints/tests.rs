@@ -384,3 +384,105 @@ fn help_lens_captures_selection_and_finishes_retained_owner() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn help_lens_picks_the_displayed_creature_during_camera_glide() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let mut app = fixture(0)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .lens_toggle()
+    );
+    app.update();
+    let point = {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        let play = owner.play.as_mut().ok_or("play")?;
+        play.view.use_shared_frontend();
+        play.view.arrow(crate::input::StepDir::East);
+        assert!(play.view.next_step().is_some());
+        play.view.apply(&oteryn_session::StepOutcome {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            disposition: oteryn_session::StepDisposition::Moved,
+            result_server_sequence: 1,
+            world_spatial_delta: Some(oteryn_session::AppliedDelta {
+                server_sequence: 2,
+                base_revision: 1,
+                new_revision: 2,
+                value: oteryn_session::WorldSpatialObservation {
+                    content_generation: [0; 32],
+                    actor_position: oteryn_session::ActorPosition {
+                        x: 101,
+                        y: 100,
+                        floor: 0,
+                    },
+                },
+            }),
+            world_object_overlay_delta: None,
+            gate_message_id: None,
+        })?;
+        let [x, y] = play
+            .view
+            .scene()
+            .view()
+            .tile_to_screen(oteryn_renderer::TileCoord::new(100, 100));
+        let [dx, dy] = play
+            .view
+            .camera_offset(std::time::Instant::now())
+            .ok_or("glide")?;
+        Vec2::new(x + dx + 16., y + dy + 16.)
+    };
+    let world = app.world().resource::<GameRegions>().world;
+    app.world_mut().entity_mut(world).insert((
+        ComputedNode {
+            size: Vec2::new(1024., 720.),
+            ..default()
+        },
+        UiGlobalTransform::from_translation(Vec2::new(512., 360.)),
+    ));
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "Help lens").then_some(entity))
+        .ok_or("lens")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1024,
+                    height: 720,
+                },
+                position: point + Vec2::new(100., 50.),
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    let owner = app.world().non_send::<HostOwner>();
+    assert_eq!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .feedback
+            .as_deref(),
+        oteryn_client_ui::lens_help::help_text("creature")
+    );
+    Ok(())
+}

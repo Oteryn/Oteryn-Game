@@ -140,19 +140,6 @@ impl HostOwner {
                 play.link.custom_hotkey_action(&play.view, &action);
             }
         }
-        // Stop clears queued clicks even while a target-walk receipt is pending. The
-        // original key still reaches the ordinary movement/turn handler below.
-        if crate::input::arrow_step(&routed).is_some() {
-            play.view.target_move_input(
-                &play.link,
-                &[NormalizedInputEvent::Key {
-                    code: oteryn_input_actions::KeyCode::ESCAPE,
-                    state: oteryn_input_actions::ButtonState::Pressed,
-                    modifiers: oteryn_input_actions::Modifiers::NONE,
-                    repeat: false,
-                }],
-            );
-        }
         if play.link.custom_hotkeys_input(&routed)
             || play.view.target_move_input(&play.link, &routed)
         {
@@ -513,6 +500,18 @@ mod tests {
             let mut view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
             let (link, mut commands, outbox) = play_channel();
             outbox.bevy_target_walk_selected();
+            outbox.battle_publish(
+                Some(oteryn_session::ActorCombatState {
+                    target: Some(oteryn_session::EntityRef {
+                        identity: [7; 16],
+                        generation: 1,
+                    }),
+                    modes: oteryn_session::FightModes::DEFAULT,
+                    in_fight: true,
+                }),
+                Some(-3),
+                &[],
+            );
             view.primary_click(TileCoord::new(98, 100), &link)?;
             view.tick(&link).map_err(|e| format!("{e:?}"))?;
             assert!(matches!(
@@ -541,6 +540,53 @@ mod tests {
                 commands.try_recv()?,
                 crate::combat_input::PlayCommand::Step(_)
             ));
+            assert!(commands.try_recv().is_err());
+        }
+        Ok(())
+    }
+    #[test]
+    fn manual_turn_keeps_the_active_attack() -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::{KeyCode, Modifier};
+        for (name, modifier) in [
+            ("CTRL", Modifier::Control),
+            ("ALT", Modifier::Alt),
+            ("SHIFT", Modifier::Shift),
+        ] {
+            let mut host = HostOwner::new(None)?;
+            let mut prefs = host.settings.preferences.clone();
+            prefs.rotation_modifier = name.into();
+            host.settings.apply(prefs);
+            let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+            view.set_preferences(host.settings.preferences.clone())?;
+            let (link, mut commands, outbox) = play_channel();
+            outbox.bevy_target_walk_selected();
+            outbox.battle_publish(
+                Some(oteryn_session::ActorCombatState {
+                    target: Some(oteryn_session::EntityRef {
+                        identity: [7; 16],
+                        generation: 1,
+                    }),
+                    modes: oteryn_session::FightModes::DEFAULT,
+                    in_fight: true,
+                }),
+                Some(-7),
+                &[],
+            );
+            install(&mut host, view, link);
+            host.route_input(
+                &[NormalizedInputEvent::Key {
+                    code: KeyCode::ARROW_UP,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::one(modifier),
+                    repeat: false,
+                }],
+                false,
+            );
+            let crate::combat_input::PlayCommand::ServerMechanic(turn) = commands.try_recv()?
+            else {
+                return Err("turn must preserve combat".into());
+            };
+            assert_eq!(turn.payload, [26, 2, 8, 1]);
             assert!(commands.try_recv().is_err());
         }
         Ok(())

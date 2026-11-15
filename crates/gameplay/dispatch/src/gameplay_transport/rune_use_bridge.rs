@@ -251,6 +251,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         visible: bool,
         field_runes: bool,
     ) -> Option<UseOutcome> {
+        let mut intent = intent;
+        if let Some(position) = &mut intent.use_with_position {
+            position.floor = self.runtime_floor(position.floor);
+        }
         let Ok((current, _)) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
                 .current_session_at(command.game_session_id)

@@ -141,7 +141,6 @@ pub(super) fn setup(
 
 pub(super) fn click(
     event: On<PointerClick>,
-    mut commands: Commands,
     guard: ModalGuard,
     controls: Query<&Control>,
     owner: NonSend<HostOwner>,
@@ -168,10 +167,6 @@ pub(super) fn click(
     };
     if event.button == PointerButton::Secondary {
         preferences.context = Some((owner.generation(), panel.revision, entry));
-    } else if event.button == PointerButton::Primary && event.count == 1 {
-        commands.trigger(Activate {
-            entity: event.entity,
-        });
     }
 }
 

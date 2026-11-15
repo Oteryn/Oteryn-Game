@@ -6,9 +6,23 @@ impl PlayView {
     ) {
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.visuals.extend(events.iter().map(|&kind| VisualCue {
-            kind,
-            received: now,
+        self.visuals.extend(events.iter().map(|&kind| {
+            // The presentation codec owns z=0..15; all scene consumers use native floors.
+            let mut kind = kind;
+            match &mut kind {
+                PresentationEventKind::MagicEffect { position, .. }
+                | PresentationEventKind::ValueText { position, .. }
+                | PresentationEventKind::SpellWords { position, .. }
+                | PresentationEventKind::Sound { position, .. } => {
+                    position.floor = oteryn_session::native_floor(position.floor);
+                }
+                PresentationEventKind::Missile { from, to, .. } => {
+                    from.floor = oteryn_session::native_floor(from.floor);
+                    to.floor = oteryn_session::native_floor(to.floor);
+                }
+                PresentationEventKind::AmbientSound { .. } => {}
+            }
+            VisualCue { kind, received: now }
         }));
         let excess = self.visuals.len().saturating_sub(MAX_VISUAL_CUES);
         self.visuals.drain(..excess);

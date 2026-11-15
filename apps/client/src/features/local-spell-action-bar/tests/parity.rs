@@ -683,6 +683,19 @@ fn native_battle_keys_accept_bindable_keypad_and_tab() -> Result<(), Box<dyn std
         ("NUMPAD7", 0x67),
         ("NUMPAD9", 0x69),
         ("TAB", 0x09),
+        ("BACKSPACE", 0x08),
+        ("INSERT", 0x2d),
+        ("DELETE", 0x2e),
+        ("HOME", 0x24),
+        ("END", 0x23),
+        ("PAGEUP", 0x21),
+        ("PAGEDOWN", 0x22),
+        ("NUMPAD0", 0x60),
+        ("NUMPAD2", 0x62),
+        ("NUMPAD4", 0x64),
+        ("NUMPAD5", 0x65),
+        ("NUMPAD6", 0x66),
+        ("NUMPAD8", 0x68),
     ] {
         assert!(link.bind_action_key(0, &format!("SUPER+ALT+{key}")));
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);

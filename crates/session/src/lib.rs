@@ -211,7 +211,7 @@ pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
 use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 pub use oteryn_protocol_oteryn::world_spatial::{
-    ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
+    ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation, native_floor,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::{
     self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,

@@ -45,14 +45,18 @@ impl PlayView {
                 } else {
                     continue;
                 }
+            } else if crate::input::arrow_step(std::slice::from_ref(event)).is_some() {
+                TargetMoveIntent::Stop
             } else {
                 continue;
             };
+            // Manual walking replaces autowalk without Escape's separate combat stop.
+            let manual = intent == TargetMoveIntent::Stop && *code != KeyCode::ESCAPE;
             if lock(&link.mailbox).world_input_blocked() {
                 return true;
             }
             if *repeat {
-                return true;
+                return !manual;
             }
             self.creature_drag.source = None;
 
@@ -60,18 +64,17 @@ impl PlayView {
                 !matches!(
                     input,
                     crate::play::Input::Arrow(_)
-                        | crate::play::Input::Attack(_)
                         | crate::play::Input::TargetWalk(_)
-                )
+                ) && (manual || !matches!(input, crate::play::Input::Attack(_)))
             });
-            if intent == TargetMoveIntent::Stop
+            if !manual && intent == TargetMoveIntent::Stop
                 && lock(&link.mailbox).battle.combat.is_some()
             {
                 // Domain 10 proves capability 17 is selected; its receipt clears the target.
                 link.request_combat(crate::combat_input::CombatCommand::Stop);
             }
             if !crate::play::mailbox::lock(&link.mailbox).target_move_selected {
-                return true;
+                return !manual;
             }
             if let Ok(payload) = encode_target_move_intent(intent) {
                 let _ = link
@@ -84,7 +87,7 @@ impl PlayView {
                         },
                     ));
             }
-            return true;
+            return !manual;
         }
         false
     }

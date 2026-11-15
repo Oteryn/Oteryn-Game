@@ -19,7 +19,7 @@ fn pinned_boss_area_category_reaches_wire_caller_and_gpu_alpha()
         &oteryn_client_assets::text_sha256(bytes),
     )?;
     let world = crate::map::World::builtin()?.with_effect_catalog(assets.effects().clone());
-    let mut view = PlayView::new(TileCoord::new(0, 0), 7, &[])?;
+    let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
     view.local.set_world(std::sync::Arc::new(world));
     let mut preferences = view.preferences().clone();
     preferences.boss_area_opacity = 10;

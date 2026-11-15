@@ -38,7 +38,7 @@ impl crate::play::Outbox {
         mailbox.combat_report(report);
     }
 
-    pub(in crate::play) fn battle_publish(
+    pub(crate) fn battle_publish(
         &self,
         state: Option<oteryn_session::ActorCombatState>,
         own_floor: Option<i16>,

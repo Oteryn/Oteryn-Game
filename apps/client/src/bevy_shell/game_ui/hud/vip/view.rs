@@ -502,7 +502,6 @@ fn message(owner: &HostOwner, target: PrivateMessage) {
 }
 fn row_click(
     event: On<PointerClick>,
-    mut commands: Commands,
     rows: Query<&Row>,
     owner: NonSend<HostOwner>,
     guard: ModalGuard,
@@ -537,20 +536,5 @@ fn row_click(
     // Secondary clicks open the shared presentation context menu (`presentation::click`).
     if event.button == primary && event.count >= 2 {
         message(&owner, target);
-        // The first click may have queued an editor before the double click arrived.
-        commands.queue(move |world: &mut World| {
-            let mut state = world.resource_mut::<State>();
-            if state.draft.as_ref().is_some_and(|draft| {
-                draft.generation == target.generation
-                    && draft.revision == target.revision
-                    && draft
-                        .contact
-                        .as_ref()
-                        .is_some_and(|contact| contact.entry == target.entry)
-            }) {
-                state.draft = None;
-                state.pending = None;
-            }
-        });
     }
 }

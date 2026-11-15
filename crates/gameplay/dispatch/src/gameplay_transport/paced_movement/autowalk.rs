@@ -67,7 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             MovementLocalPosition {
                 x: i32::from(pos.x),
                 y: i32::from(pos.y),
-                floor: -i16::from(pos.floor),
+                floor: self.runtime_floor(i16::from(pos.floor)),
             }
         };
         let explicit = matches!(target, AutoWalkTarget::Cell(_) | AutoWalkTarget::Follow(_));
@@ -77,12 +77,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             AutoWalkTarget::AdjacentCell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor.checked_neg().ok_or(())?,
+                floor: self.runtime_floor(at.floor),
             },
             AutoWalkTarget::Cell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor,
+                floor: self.runtime_floor(at.floor),
             },
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();

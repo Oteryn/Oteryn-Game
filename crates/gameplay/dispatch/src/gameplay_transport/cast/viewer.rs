@@ -10,7 +10,7 @@ pub(in crate::gameplay_transport) struct Viewport {
 fn native_position(
     mut position: world_spatial::ActorPosition,
 ) -> Option<world_spatial::ActorPosition> {
-    position.floor = position.floor.checked_abs()?.checked_neg()?;
+    position.floor = world_spatial::native_floor(position.floor);
     (-15..=0).contains(&position.floor).then_some(position)
 }
 impl Viewport {
@@ -274,15 +274,15 @@ fn relative_media(mut media: PublicMedia, viewport: Viewport) -> Option<PublicMe
                     if !viewport.visible(*position) {
                         return false;
                     }
-                    position.floor = position.floor.saturating_abs();
+                    position.floor = world_spatial::runtime_floor(position.floor);
                     project(position).is_some()
                 }
                 PresentationEventKind::Missile { from, to, .. } => {
                     if !viewport.visible(*from) || !viewport.visible(*to) {
                         return false;
                     }
-                    from.floor = from.floor.saturating_abs();
-                    to.floor = to.floor.saturating_abs();
+                    from.floor = world_spatial::runtime_floor(from.floor);
+                    to.floor = world_spatial::runtime_floor(to.floor);
                     project(from).is_some() && project(to).is_some()
                 }
                 _ => false,

@@ -194,7 +194,7 @@ fn lens_click(
         let (w, h) = play.view.scene().view().viewport_px();
         let creature = viewport
             .scene_point(point, UVec2::new(w, h))
-            .and_then(|point| play.view.scene().view().screen_to_tile(point.x, point.y))
+            .and_then(|point| play.view.click_tile(f64::from(point.x), f64::from(point.y)))
             .and_then(|tile| play.view.scene().target_at(tile))
             .is_some_and(|target| target.entity.is_some() && target.item.is_none());
         Some(if creature { "creature" } else { "world" })
