@@ -381,6 +381,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    /// Let the carried essence owner select its recipe before a House decoration
+    /// handler applies its single-instance source requirements.
+    pub(super) async fn use_rotten_essence_item(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+    ) -> Option<UseOutcome> {
+        let result = Box::pin(rotten_essence::use_essence(
+            self,
+            actor,
+            command,
+            &UseSource::Handle(item),
+        ))
+        .await?;
+        let disposition = match result {
+            Ok(disposition) | Err(disposition) => disposition,
+        };
+        Some(UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        })
+    }
+
     async fn use_carried_item(
         &self,
         actor: ExactActorRef,

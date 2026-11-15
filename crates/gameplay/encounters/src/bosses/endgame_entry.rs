@@ -59,7 +59,8 @@ impl Encounter {
             ),
             // Entry always names the source's initial purple phase. Blue/green
             // remain valid native terminal identities in the separate kill owner.
-            "oteryn:creature.goshnar_s_megalomania_blue"
+            "oteryn:creature.goshnar_s_megalomania"
+            | "oteryn:creature.goshnar_s_megalomania_blue"
             | "oteryn:creature.goshnar_s_megalomania_green"
             | "oteryn:creature.goshnar_s_megalomania_purple" => (
                 "oteryn:creature.goshnar_s_megalomania_purple",
