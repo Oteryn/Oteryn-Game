@@ -22,6 +22,12 @@ impl Outbox {
         mailbox.bar_actions.item_cooldowns.clear();
         match result {
             Ok(text) => {
+                #[cfg(feature = "bevy-shell")]
+                crate::play::feature_local_text_messages::view::record_look(
+                    &mut mailbox,
+                    command.action,
+                    &text,
+                );
                 mailbox
                     .world_context
                     .set_feedback(text, std::time::Instant::now());

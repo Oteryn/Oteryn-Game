@@ -2,6 +2,7 @@
 mod audio;
 mod audit;
 mod controls;
+mod creature_bars;
 mod exit;
 mod game_ui;
 mod gameplay_dialogs;
@@ -13,6 +14,7 @@ mod login;
 mod owner;
 mod scene;
 mod selection;
+mod text_messages;
 mod ui;
 mod window_drag;
 
@@ -166,12 +168,14 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .before(ui::project),
     );
     audio::install(&mut app);
+    creature_bars::install(&mut app);
     exit::install(&mut app);
     game_ui::install(&mut app);
     gameplay_dialogs::install(&mut app);
     health_circle::install(&mut app);
     hints::install(&mut app);
     login::install(&mut app);
+    text_messages::install(&mut app);
     window_drag::install(&mut app);
     app
 }

@@ -51,7 +51,13 @@ impl PlayView {
                 .map(|entry| entry.entity.entity)
         });
         let age = now.saturating_duration_since(self.party_icon_epoch);
-        let actor_options = actor_hud::Options::new(self.preferences(), self.floor, own_ref, age);
+        let actor_options = actor_hud::Options::new(
+            self.preferences(),
+            self.floor,
+            own_ref,
+            age,
+            self.shared_frontend,
+        );
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
         batch.lighting.opacity.clear();

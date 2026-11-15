@@ -3,12 +3,17 @@
 //! Magic effects and missiles resolve the verified catalog, with bounded offline placeholders.
 #[path = "actor_hud.rs"]
 mod actor_hud;
+#[cfg(feature = "bevy-shell")]
+#[path = "view/creature_bars.rs"]
+mod creature_bars;
 #[path = "icons.rs"]
 mod icons;
 #[path = "resources.rs"]
 mod resources;
 #[path = "visual.rs"]
 mod visual;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use actor_hud::health_rgb;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileCoord, TileView};
