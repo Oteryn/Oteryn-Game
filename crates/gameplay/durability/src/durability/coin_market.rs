@@ -139,17 +139,10 @@ impl CoinOwner {
         if !(0..=if own { 6 } else { 13 }).contains(&page) {
             return Err(invalid());
         }
-        self.run(move |tx,id|Box::pin(async move{
-  let rows=sqlx::query("WITH visible AS(SELECT o.*,row_number() OVER(PARTITION BY side ORDER BY CASE WHEN side=2 THEN price END,CASE WHEN side=1 THEN -price END,created_at,offer_id) AS side_row FROM game_coin_market_offers o WHERE world_id=$1::uuid AND (($2 AND account_id=$3::uuid) OR (NOT $2 AND state=1))) SELECT o.offer_id::text,c.name,o.side,o.amount,o.remaining,o.price,o.state,extract(epoch FROM o.expires_at)::bigint AS expires FROM visible o JOIN game_character_roots c ON c.character_id=o.character_id WHERE $2 OR o.side_row<=700 ORDER BY o.side,CASE WHEN $2 THEN -extract(epoch FROM o.created_at) END,CASE WHEN o.side=2 THEN o.price END,CASE WHEN o.side=1 THEN -o.price END,o.created_at,o.offer_id LIMIT 101 OFFSET $4").bind(&id.world).bind(own).bind(id.account()?).bind(page*100).fetch_all(&mut *tx).await?;
-  let next=if rows.len()>100 && page<if own{6}else{13}{Some((page+1).to_string())}else{None};
-  let rows=rows.iter().take(100).map(|r|Ok(json!({"offer":r.try_get::<String,_>("offer_id")?,"name":r.try_get::<String,_>("name")?,"side":if r.try_get::<i16,_>("side")?==1{"buy"}else{"sell"},"amount":r.try_get::<i64,_>("amount")?,"remaining":r.try_get::<i64,_>("remaining")?,"price":r.try_get::<i64,_>("price")?,"state":r.try_get::<i16,_>("state")?,"expires":r.try_get::<i64,_>("expires")?}))).collect::<Result<Vec<_>>>()?;
-  let mut recent=Vec::new();
-  if own {
-   for r in sqlx::query("SELECT operation_id::text,kind,amount,phase,last_error FROM game_coin_operations WHERE account_id=$1::uuid AND world_id=$2::uuid ORDER BY created_at DESC,operation_id DESC LIMIT 100").bind(id.account()?).bind(&id.world).fetch_all(&mut *tx).await?{recent.push(json!({"operation":r.try_get::<String,_>("operation_id")?,"kind":r.try_get::<String,_>("kind")?,"amount":r.try_get::<i64,_>("amount")?,"pending":r.try_get::<i16,_>("phase")?!=1,"error":r.try_get::<String,_>("last_error")?}));}
-  }
-  Ok(json!({"result":"ok","offers":rows,"next_offer_cursor":next,"recent_operations":recent}))
- })).await
+        self.run(move |tx, id| Box::pin(async move { view_page(tx, id, own, page).await }))
+            .await
     }
+
     pub async fn detail(&self, operation: String) -> Result<Value> {
         self.run(move |tx,id|Box::pin(async move{
   let r=sqlx::query("SELECT o.operation_id::text,o.kind,o.amount,o.price,o.phase,o.last_error,r.canonical_receipt FROM game_coin_operations o LEFT JOIN game_coin_receipts r USING(operation_id) WHERE o.operation_id=$1::uuid AND $2::uuid IN(o.account_id,o.seller,o.buyer) LIMIT 1").bind(operation).bind(id.account()?).fetch_optional(tx).await?;
@@ -253,4 +246,65 @@ pub fn public_receipt(mut value: Value, viewer: &str) -> Value {
         object.remove("counterparty_account_id");
     }
     value
+}
+
+async fn view_page(tx: &mut PgConnection, id: Identity, own: bool, page: i64) -> Result<Value> {
+    let rows=sqlx::query("WITH visible AS(SELECT o.*,row_number() OVER(PARTITION BY side ORDER BY CASE WHEN side=2 THEN price END,CASE WHEN side=1 THEN -price END,created_at,offer_id) AS side_row FROM game_coin_market_offers o WHERE world_id=$1::uuid AND (($2 AND account_id=$3::uuid AND state IN(0,1,2)) OR (NOT $2 AND state=1 AND expires_at>clock_timestamp()))) SELECT o.offer_id::text,c.name,o.side,o.amount,o.remaining,o.price,o.state,extract(epoch FROM o.expires_at)::bigint AS expires FROM visible o JOIN game_character_roots c ON c.character_id=o.character_id WHERE $2 OR o.side_row<=700 ORDER BY o.side,CASE WHEN $2 THEN -extract(epoch FROM o.created_at) END,CASE WHEN o.side=2 THEN o.price END,CASE WHEN o.side=1 THEN -o.price END,o.created_at,o.offer_id LIMIT 101 OFFSET $4").bind(&id.world).bind(own).bind(id.account()?).bind(page*100).fetch_all(&mut *tx).await?;
+    let next = if rows.len() > 100 && page < if own { 6 } else { 13 } {
+        Some((page + 1).to_string())
+    } else {
+        None
+    };
+    let rows=rows.iter().take(100).map(|r|Ok(json!({"offer":r.try_get::<String,_>("offer_id")?,"name":r.try_get::<String,_>("name")?,"side":if r.try_get::<i16,_>("side")?==1{"buy"}else{"sell"},"amount":r.try_get::<i64,_>("amount")?,"remaining":r.try_get::<i64,_>("remaining")?,"price":r.try_get::<i64,_>("price")?,"state":r.try_get::<i16,_>("state")?,"expires":r.try_get::<i64,_>("expires")?}))).collect::<Result<Vec<_>>>()?;
+    let mut recent = Vec::new();
+    if own {
+        for r in sqlx::query("SELECT operation_id::text,kind,amount,phase,last_error FROM game_coin_operations WHERE account_id=$1::uuid AND world_id=$2::uuid ORDER BY created_at DESC,operation_id DESC LIMIT 100").bind(id.account()?).bind(&id.world).fetch_all(&mut *tx).await?{recent.push(json!({"operation":r.try_get::<String,_>("operation_id")?,"kind":r.try_get::<String,_>("kind")?,"amount":r.try_get::<i64,_>("amount")?,"pending":r.try_get::<i16,_>("phase")?!=1,"error":r.try_get::<String,_>("last_error")?}));}
+    }
+    Ok(json!({"result":"ok","offers":rows,"next_offer_cursor":next,"recent_operations":recent}))
+}
+
+#[cfg(test)]
+mod offer_page_tests {
+    use super::*;
+    type TestResult = std::result::Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    fn check_pages(public: bool) -> TestResult {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move {
+                use sqlx::Connection;
+                let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                let mut tx = connection.begin().await?;
+                sqlx::raw_sql("CREATE TEMP TABLE game_character_roots(character_id uuid,name text);
+                    CREATE TEMP TABLE game_coin_market_offers(offer_id uuid,world_id uuid,account_id uuid,character_id uuid,side smallint,amount bigint,remaining bigint,price bigint,state smallint,expires_at timestamptz,created_at timestamptz);
+                    CREATE TEMP TABLE game_coin_operations(operation_id uuid,kind text,amount bigint,phase smallint,last_error text,account_id uuid,world_id uuid,created_at timestamptz);
+                    INSERT INTO game_character_roots VALUES('00000000-0000-7000-8000-000000000999','Trader');").execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_coin_market_offers SELECT ('00000000-0000-7000-8000-'||lpad(n::text,12,'0'))::uuid,'00000000-0000-7000-8000-000000000999','00000000-0000-7000-8000-000000000999','00000000-0000-7000-8000-000000000999',CASE WHEN n=701 AND NOT $1 THEN 2 ELSE 1 END,25,25,CASE WHEN n=701 THEN 1 ELSE 100 END,CASE WHEN $1 OR n=701 THEN 1 ELSE 3 END,clock_timestamp()+CASE WHEN n=701 THEN interval '1 day' ELSE interval '-1 day' END,clock_timestamp() FROM generate_series(1,701) n").bind(public).execute(&mut *tx).await?;
+                let mut found = false;
+                let mut expired = false;
+                for page in 0..if public { 14 } else { 7 } {
+                    let id = Identity { account: Some("00000000-0000-7000-8000-000000000999".into()), actor: None, world: "00000000-0000-7000-8000-000000000999".into() };
+                    let result = view_page(&mut tx, id, !public, page).await?;
+                    for offer in result["offers"].as_array().ok_or("missing offers")? {
+                        found |= offer["offer"] == "00000000-0000-7000-8000-000000000701";
+                        expired |= public && offer["offer"] != "00000000-0000-7000-8000-000000000701";
+                    }
+                    if result["next_offer_cursor"].is_null() { break; }
+                }
+                assert!(found, "actionable offer hidden by historical rows");
+                assert!(!expired, "expired offers entered the public ranking");
+                Ok(())
+            })
+        })?.join().map_err(|_| "test thread panicked")?
+    }
+
+    #[test]
+    fn own_actionable_offers_survive_closed_history() -> TestResult {
+        check_pages(false)
+    }
+
+    #[test]
+    fn public_offer_ranking_excludes_expired() -> TestResult {
+        check_pages(true)
+    }
 }
