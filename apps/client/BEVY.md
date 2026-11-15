@@ -5,6 +5,10 @@ admission, session, gameplay, preferences, scene and audio owners. It is a parti
 replacement for the legacy presentation. Build it from the same checkout as the
 server and its pinned content.
 
+The accepted login bulletin opens after admission. Reopen it with **News** in the
+connection form or **Ctrl+Alt+Shift+L** while playing. Its read-only news/calendar
+view supports month navigation, scrolling, and Close/Escape dismissal.
+
 ## Build
 
 On Windows, Linux or macOS, from the repository root:

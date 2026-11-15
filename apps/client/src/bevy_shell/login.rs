@@ -17,10 +17,12 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 use std::path::PathBuf;
+mod bulletin;
 mod submission;
 
 pub(super) struct LoginState {
     pub form: LoginForm,
+    pub bulletin: bulletin::State,
     pub visible: bool,
     pub revision: u64,
     path: Option<PathBuf>,
@@ -30,6 +32,7 @@ impl Default for LoginState {
     fn default() -> Self {
         Self {
             form: LoginForm::new(LoginSettings::default()),
+            bulletin: Default::default(),
             visible: false,
             revision: 0,
             path: None,
@@ -95,10 +98,12 @@ impl LoginField {
 pub(super) enum LoginControl {
     Submit,
     Cancel,
+    News,
 }
 impl LoginControl {
     pub fn id(self) -> &'static str {
         match self {
+            Self::News => "login.news",
             Self::Submit => "login.submit",
             Self::Cancel => "login.cancel",
         }
@@ -106,6 +111,7 @@ impl LoginControl {
 }
 
 pub(super) fn install(app: &mut App) {
+    bulletin::install(app);
     app.add_systems(
         PostUpdate,
         submission::finish.after(bevy::text::EditableTextSystems),
@@ -113,6 +119,7 @@ pub(super) fn install(app: &mut App) {
 }
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
+    bulletin::setup(&mut commands, &skins);
     let modal = commands
         .spawn((
             LoginDialog,
@@ -223,6 +230,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         })
         .id();
     for (control, caption, width) in [
+        (LoginControl::News, "News", 60.),
         (LoginControl::Submit, "Save and sign in", 130.),
         (LoginControl::Cancel, "Cancel", 60.),
     ] {
@@ -261,6 +269,7 @@ fn activate(
     }
     if let Ok(control) = controls.get(event.entity) {
         match control {
+            LoginControl::News => owner.login.bulletin.visible = true,
             LoginControl::Submit => {
                 submission::request(&mut owner, &fields);
             }

@@ -202,6 +202,7 @@ impl HostOwner {
     pub fn modal_active(&self) -> bool {
         self.draft.is_some()
             || self.login.visible
+            || self.login.bulletin.visible
             || self.selection.pending().is_some()
             || self.dialogs.active()
             || self
@@ -289,8 +290,11 @@ impl HostOwner {
             if result.is_ok() {
                 self.login.visible = false;
             }
-            // Bulletin remains owned by Reentry; rich bulletin presentation is a later module.
-            let _ = self.entry.as_mut().and_then(Reentry::take_bulletin);
+            if let Some(document) = self.entry.as_mut().and_then(Reentry::take_bulletin)
+                && let Err(error) = self.login.bulletin.receive(&document)
+            {
+                self.login.form.feedback(error);
+            }
             match result {
                 Ok((view, link)) => {
                     self.install_play(view, link);
@@ -339,6 +343,7 @@ impl HostOwner {
         self.selection.cancel();
         self.dialogs.clear();
         self.login.visible = false;
+        self.login.bulletin.visible = false;
         drop(self.play.take());
         if let Some(mut entry) = self.entry.take() {
             entry.cancel_entry();
