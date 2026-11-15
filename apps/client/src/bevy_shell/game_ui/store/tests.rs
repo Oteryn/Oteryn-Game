@@ -339,3 +339,171 @@ fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
     }
     Ok(())
 }
+
+#[test]
+fn store_search_and_sort_controls_send_catalogue_queries() -> ResultTest {
+    let (mut app, mut rx, outbox) = fixture(250)?;
+    assert!(text(&mut app).contains("Search products"));
+    for (field, mut value) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 3 {
+            *value = EditableText::new("outfit");
+        }
+    }
+    let search = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| {
+            let children = app.world().get::<Children>(e)?;
+            children
+                .iter()
+                .any(|child| {
+                    app.world()
+                        .get::<Text>(child)
+                        .is_some_and(|t| t.0 == "Search")
+                })
+                .then_some(*a)
+        })
+        .ok_or("search button")?;
+    click(&mut app, search.kind)?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.category.as_str(), query.search.as_str(), query.sort),
+        ("featured", "outfit", 0)
+    );
+    reply(
+        &outbox,
+        page(250).encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    let sort = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| {
+            let children = app.world().get::<Children>(e)?;
+            children
+                .iter()
+                .any(|child| {
+                    app.world()
+                        .get::<Text>(child)
+                        .is_some_and(|t| t.0 == "Price low–high")
+                })
+                .then_some(*a)
+        })
+        .ok_or("sort button")?;
+    click(&mut app, sort.kind)?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((query.search.as_str(), query.sort), ("outfit", 3));
+    Ok(())
+}
+
+#[test]
+fn store_filters_survive_paging_and_reset_cursors_when_changed() -> ResultTest {
+    let (mut app, mut rx, outbox) = fixture(250)?;
+    for (field, mut value) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 3 {
+            *value = EditableText::new("outfit");
+        }
+    }
+    click(&mut app, Kind::Search)?;
+    let _ = command(&mut rx)?;
+    // Pending requests cannot be replaced by a second search or sort.
+    click(&mut app, Kind::Sort(4))?;
+    assert!(rx.try_recv().is_err());
+    let mut next = page(250);
+    next.next = "server-next-page".into();
+    reply(
+        &outbox,
+        next.encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    click(&mut app, Kind::Page(1))?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.search.as_str(), query.sort, query.cursor.as_str()),
+        ("outfit", 0, "server-next-page")
+    );
+    reply(
+        &outbox,
+        next.encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    for sort in [1, 2, 3, 4, 0] {
+        click(&mut app, Kind::Sort(sort))?;
+        let query =
+            browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            (query.search.as_str(), query.sort, query.cursor.as_str()),
+            ("outfit", sort, "")
+        );
+        reply(
+            &outbox,
+            next.encode().map_err(|e| format!("{e:?}"))?,
+            CommandStatus::Accepted,
+        );
+        app.update();
+    }
+    click(&mut app, Kind::Category(2))?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (
+            query.category.as_str(),
+            query.search.as_str(),
+            query.cursor.as_str()
+        ),
+        ("cosmetics.outfits", "outfit", "")
+    );
+    reply(
+        &outbox,
+        next.encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    click(&mut app, Kind::ClearSearch)?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (
+            query.category.as_str(),
+            query.search.as_str(),
+            query.sort,
+            query.cursor.as_str()
+        ),
+        ("cosmetics.outfits", "", 0, "")
+    );
+    let mut empty = page(250);
+    empty.products.clear();
+    reply(
+        &outbox,
+        empty.encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    assert!(text(&mut app).contains("No products on this page"));
+    assert!(
+        !app.world_mut()
+            .query::<&Action>()
+            .iter(app.world())
+            .any(|a| a.kind == Kind::Buy)
+    );
+    assert!(rx.try_recv().is_err());
+    assert!(app.world().resource::<State>().confirmation.is_none());
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| field.0 == 3 && text.value().to_string().is_empty())
+    );
+    Ok(())
+}

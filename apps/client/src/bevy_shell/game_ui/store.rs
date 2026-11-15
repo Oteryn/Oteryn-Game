@@ -33,6 +33,7 @@ enum Kind {
     Buy,
     Cancel,
     Category(usize),
+    ClearSearch,
     Close,
     Confirm,
     Gift,
@@ -42,6 +43,8 @@ enum Kind {
     Page(i8),
     Product(usize),
     Products,
+    Search,
+    Sort(u8),
     TokenPayment,
     Transfer,
 }
@@ -73,7 +76,7 @@ impl Snapshot {
 }
 struct Confirmation {
     quote: StoreCataloguePage,
-    fields: [String; 3],
+    fields: [String; 4],
 }
 #[derive(Resource, Default)]
 struct State {
@@ -83,7 +86,7 @@ struct State {
     body: Option<Entity>,
     page: Page,
     confirmation: Option<Confirmation>,
-    fields: [String; 3],
+    fields: [String; 4],
     dirty: bool,
     pending: Option<(Action, Entity)>,
 }
@@ -155,6 +158,7 @@ fn project(
             commands.entity(root).despawn();
         }
         *state = State::default();
+        state.fields[3] = snapshot.store.browser.search.clone();
     } else {
         // Actions already captured their input; do not overwrite a newly selected form.
         if !state.dirty {
@@ -244,12 +248,7 @@ fn keyboard(
             } else {
                 Kind::Close
             };
-            actions::perform(
-                &owner,
-                &mut state,
-                Action { key, kind },
-                [String::new(), String::new(), String::new()],
-            );
+            actions::perform(&owner, &mut state, Action { key, kind }, Default::default());
         }
     }
 }
