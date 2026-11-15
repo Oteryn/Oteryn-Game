@@ -215,18 +215,16 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         } else {
             0
         };
-        let equipment = if parry_first && source_health <= i64::from(parry) {
-            0
+        let reflections: Vec<_> = if parry_first {
+            [(source, parry), (source, equipment)]
         } else {
-            equipment
-        };
-        let parry = if !parry_first && source_health <= i64::from(equipment) {
-            0
-        } else {
-            parry
-        };
-        let amount = parry.checked_add(equipment)?;
-        let principal = if amount > 0 {
+            [(source, equipment), (source, parry)]
+        }
+        .into_iter()
+        .filter(|(_, amount)| *amount > 0)
+        .collect();
+        let has_reflection = !reflections.is_empty();
+        let principal = if has_reflection {
             let lease = runtime.bound_attacker_lease(target, session).ok()?;
             Some(crate::combat::CapturedRewardPrincipal {
                 character: lease.character_id(),
@@ -237,14 +235,14 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
         } else {
             None
         };
-        if amount > 0
+        if has_reflection
             && self.states.equipment_reflection_kills.len() >= runtime.actor_slot_capacity()
         {
             return None;
         }
         self.states
             .equipment_reflection_kills
-            .try_reserve(usize::from(amount > 0))
+            .try_reserve(usize::from(has_reflection))
             .ok()?;
         let catalogue = self.catalogue;
         let root = &self.root;
@@ -270,8 +268,9 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             }
         };
         let mut minor = Vec::new();
-        let mut reflected = None;
-        let receipt = if amount > 0 {
+        let mut reflected = Vec::new();
+        reflected.try_reserve(2).ok()?;
+        let receipt = if has_reflection {
             let mut stream = b"charm-parry-source:".to_vec();
             stream.extend_from_slice(session.as_bytes());
             let sequence = if plan.is_some() {
@@ -282,23 +281,22 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
                 now.get()
             };
             runtime
-                .commit_source_damage_with_vitals(
-                    source,
+                .commit_source_damage_batch_with_vitals(
+                    &reflections,
                     target,
                     session,
                     &stream,
                     sequence,
-                    amount,
                     now.get() / 1000,
-                    |runtime, result| {
+                    |runtime, results| {
                         // The real source owner has already staged native reductions
                         // (including Enrage). Raw reflection >= HP is not a kill proof.
                         // Evaluate before the player write, against its exact successor.
                         let selected =
-                            evaluate_minor(self.states, runtime, result.health_after > 0);
+                            evaluate_minor(self.states, runtime, results.last()?.health_after > 0);
                         let receipt = commit(self.states, runtime)?;
                         minor = selected;
-                        reflected = Some(result);
+                        reflected.extend_from_slice(results);
                         Some(receipt)
                     },
                 )
@@ -307,33 +305,29 @@ impl PlayerLethalVitals for CharmSourceVitals<'_> {
             minor = evaluate_minor(self.states, runtime, source_health > 0);
             commit(self.states, runtime)?
         };
-        if let Some(result) = reflected.filter(|result| result.applied) {
+        for (index, result) in reflected
+            .iter()
+            .enumerate()
+            .filter(|(_, result)| result.applied)
+        {
             let removed = u64::try_from(result.health_before.saturating_sub(result.health_after))
                 .unwrap_or(0);
-            let parry_removed = if parry_first {
-                removed
-            } else {
-                removed.saturating_sub(u64::from(equipment))
-            }
-            .min(u64::from(parry));
-            if parry_removed > 0 {
-                self.states.analyser.impact_amount(
-                    target,
-                    session,
-                    parry_removed,
-                    Some(super::super::super::analyser::charm_element(
-                        CharmElement::Physical,
-                    )),
-                );
-            }
-            if removed > parry_removed {
-                self.states.analyser.impact_amount(
-                    target,
-                    session,
-                    removed - parry_removed,
-                    Some(oteryn_protocol_oteryn::damage_element::DamageElement::Untyped),
-                );
-            }
+            let is_parry = parry > 0
+                && if parry_first || equipment == 0 {
+                    index == 0
+                } else {
+                    index == 1
+                };
+            self.states.analyser.impact_amount(
+                target,
+                session,
+                removed,
+                Some(if is_parry {
+                    super::super::super::analyser::charm_element(CharmElement::Physical)
+                } else {
+                    oteryn_protocol_oteryn::damage_element::DamageElement::Untyped
+                }),
+            );
             if result.health_after == 0
                 && let Some(principal) = principal
             {

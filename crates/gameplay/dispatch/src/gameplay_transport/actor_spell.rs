@@ -2251,6 +2251,52 @@ impl ChannelSpellStates {
         now: crate::foundation::owner_timer::SemanticTimeMicros,
         catalogue: Option<&dyn oteryn_gameplay_progression::charm_effects::CharmCatalogueRead>,
     ) -> Option<NativeOwnedPlayerTickReceipt> {
+        use oteryn_gameplay_foundation::foundation::condition::COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK;
+        // Without charms, retain the existing batch owner. With charms, each occurrence
+        // must publish damage and settle its minors before the next cursor is selected.
+        if catalogue.is_none() {
+            return self.tick_source_player_condition_step(
+                runtime, target, session, facts, now, catalogue,
+            );
+        }
+        let mut ticks = Vec::new();
+        ticks
+            .try_reserve(COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK)
+            .ok()?;
+        let mut receipt = self
+            .tick_source_player_condition_step(runtime, target, session, facts, now, catalogue)?;
+        ticks.append(&mut receipt.ticks);
+        for _ in 1..COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK {
+            if ticks.is_empty() || receipt.death.is_some() {
+                break;
+            }
+            let Some(mut step) = self
+                .tick_source_player_condition_step(runtime, target, session, facts, now, catalogue)
+            else {
+                // Earlier occurrences are already settled; a refused next tick stays due.
+                break;
+            };
+            receipt.revision = step.revision;
+            if step.ticks.is_empty() {
+                break;
+            }
+            ticks.append(&mut step.ticks);
+            receipt.damage = receipt.damage.checked_add(step.damage)?;
+            receipt.death = step.death;
+        }
+        receipt.ticks = ticks;
+        Some(receipt)
+    }
+
+    fn tick_source_player_condition_step(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        facts: oteryn_gameplay_foundation::foundation::condition::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        catalogue: Option<&dyn oteryn_gameplay_progression::charm_effects::CharmCatalogueRead>,
+    ) -> Option<NativeOwnedPlayerTickReceipt> {
         use oteryn_gameplay_foundation::foundation::condition::{ConditionSourceKind, TickKind};
         if self.is_dead(target)
             || self.has_pending_spell_commit(target, session)
@@ -2268,7 +2314,13 @@ impl ChannelSpellStates {
             return None;
         }
         let mut next = before.clone();
-        let ticks = next.source_take_due(now.get(), facts);
+        let ticks = if catalogue.is_some() {
+            next.source_take_next_due(now.get(), facts)
+                .into_iter()
+                .collect()
+        } else {
+            next.source_take_due(now.get(), facts)
+        };
         let mut analyser_facts = Vec::new();
         let mut damage = 0u32;
         let mut public_cause = None;
@@ -2277,7 +2329,8 @@ impl ChannelSpellStates {
             .map(|_| runtime.visible_entities().creatures)
             .unwrap_or_default();
         let mut reflections: Vec<(ExactActorRef, u32)> = Vec::new();
-        let mut minors = Vec::new();
+        let mut minor = None;
+        let mut minor_outcomes = Vec::new();
 
         for tick in &ticks {
             if next.vitals().health == 0 {
@@ -2325,11 +2378,7 @@ impl ChannelSpellStates {
                     });
                     let source = source.filter(|source| {
                         runtime.companion_snapshot(*source).is_ok_and(|snapshot| {
-                            let lost = reflections
-                                .iter()
-                                .find(|(actor, _)| actor == source)
-                                .map_or(0, |(_, amount)| *amount);
-                            snapshot.health > i64::from(lost)
+                            snapshot.health > 0
                                 && snapshot.state.master.is_none()
                                 && !snapshot.state.policy.is_familiar
                         })
@@ -2379,36 +2428,12 @@ impl ChannelSpellStates {
                             )
                     {
                         if reflected > 0 {
-                            if let Some((_, total)) =
-                                reflections.iter_mut().find(|(actor, _)| *actor == source)
-                            {
-                                *total = total.checked_add(reflected)?;
-                            } else {
-                                reflections.try_reserve(1).ok()?;
-                                reflections.push((source, reflected));
-                            }
+                            reflections.try_reserve(1).ok()?;
+                            reflections.push((source, reflected));
                         }
-                        let lost = reflections
-                            .iter()
-                            .find(|(actor, _)| *actor == source)
-                            .map_or(0, |(_, amount)| *amount);
-                        let alive =
-                            runtime.companion_snapshot(source).ok()?.health > i64::from(lost);
-                        let outcomes = super::attack::charm_combat::evaluate_incoming_category(
-                            self,
-                            runtime,
-                            catalogue,
-                            &root,
-                            target,
-                            session,
-                            &race,
-                            identity,
-                            amount,
-                            oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
-                            alive,
-                        );
-                        minors.try_reserve(1).ok()?;
-                        minors.push((source, identity, outcomes));
+                        // Select defensive minors only after the native owner has staged
+                        // this reflection, using its reduced successor HP.
+                        minor = Some((source, identity, race, amount));
                     }
                     if let Some(value) = std::num::NonZeroU32::new(hit.applied) {
                         analyser_facts.push(oteryn_protocol_oteryn::analyser::AnalyserFact::DamageInput {
@@ -2421,7 +2446,7 @@ impl ChannelSpellStates {
                     damage = damage.checked_add(hit.applied)?;
                     next = successor;
                 }
-                // Food duration is consumed here; source_take_due already stepped its clock.
+                // Food duration is consumed here; source selection already stepped its clock.
                 TickKind::Regeneration {
                     key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
                     ..
@@ -2535,6 +2560,31 @@ impl ChannelSpellStates {
                 revision,
                 now.get() / 1000,
                 |runtime, results| {
+                    if let (Some((source, identity, race, amount)), Some(catalogue)) =
+                        (&minor, catalogue)
+                    {
+                        let alive = results.first().map_or_else(
+                            || {
+                                runtime
+                                    .companion_snapshot(*source)
+                                    .is_ok_and(|snapshot| snapshot.health > 0)
+                            },
+                            |result| result.health_after > 0,
+                        );
+                        minor_outcomes = super::attack::charm_combat::evaluate_incoming_category(
+                            self,
+                            runtime,
+                            catalogue,
+                            &root,
+                            target,
+                            session,
+                            race,
+                            *identity,
+                            *amount,
+                            oteryn_gameplay_progression::charm_effects::CharmCategory::Minor,
+                            alive,
+                        );
+                    }
                     if changed && !self.commit(runtime, target, session, next) {
                         return None;
                     }
@@ -2562,7 +2612,7 @@ impl ChannelSpellStates {
                 }
             }
         }
-        for (source, identity, outcomes) in minors {
+        if let Some((source, identity, _, _)) = minor {
             super::attack::charm_combat::apply_incoming_minor(
                 self,
                 runtime,
@@ -2572,7 +2622,7 @@ impl ChannelSpellStates {
                 session,
                 identity,
                 now.get(),
-                &outcomes,
+                &minor_outcomes,
             );
         }
         for fact in analyser_facts {
@@ -2583,7 +2633,7 @@ impl ChannelSpellStates {
         }
         Some(NativeOwnedPlayerTickReceipt {
             ticks,
-            revision,
+            revision: self.get(runtime, target, session)?.revision(),
             damage,
             death,
         })

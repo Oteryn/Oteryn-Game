@@ -1507,7 +1507,20 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default())
+        self.take_due_matching(
+            now,
+            facts,
+            true,
+            None,
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
+    }
+    /// Consume one due tick under the same ordering and per-time budget as `take_due`.
+    /// The caller can settle its effects before selecting the next occurrence.
+    pub fn take_next_due(&mut self, now: u64, facts: TickFacts) -> Option<ConditionTick<S>> {
+        self.take_due_matching(now, facts, true, None, RegenerationPzRewards::default(), 1)
+            .pop()
     }
     /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
     pub fn take_due_source_application(
@@ -1527,11 +1540,19 @@ impl<S: Clone> ConditionStore<S> {
             true,
             Some(&matches),
             RegenerationPzRewards::default(),
+            usize::MAX,
         )
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub fn take_due_non_damage(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None, RegenerationPzRewards::default())
+        self.take_due_matching(
+            now,
+            facts,
+            false,
+            None,
+            RegenerationPzRewards::default(),
+            usize::MAX,
+        )
     }
     pub fn take_due_with_regeneration(
         &mut self,
@@ -1539,7 +1560,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true, None, rewards)
+        self.take_due_matching(now, facts, true, None, rewards, usize::MAX)
     }
     pub fn take_due_non_damage_with_regeneration(
         &mut self,
@@ -1547,7 +1568,7 @@ impl<S: Clone> ConditionStore<S> {
         facts: TickFacts,
         rewards: RegenerationPzRewards,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false, None, rewards)
+        self.take_due_matching(now, facts, false, None, rewards, usize::MAX)
     }
     fn take_due_matching(
         &mut self,
@@ -1556,6 +1577,7 @@ impl<S: Clone> ConditionStore<S> {
         damage: bool,
         application_source: Option<&ConditionApplicationSource<'_, S>>,
         regeneration_rewards: RegenerationPzRewards,
+        limit: usize,
     ) -> Vec<ConditionTick<S>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
@@ -1564,7 +1586,7 @@ impl<S: Clone> ConditionStore<S> {
             self.pass_ticks = 0;
         }
         let mut ticks = Vec::new();
-        while self.pass_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK {
+        while self.pass_ticks < COND0_RL_03_DAMAGE_TICKS_PER_SIM_TICK && ticks.len() < limit {
             let next = self
                 .instances
                 .iter()
