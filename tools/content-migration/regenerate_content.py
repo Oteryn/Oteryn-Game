@@ -688,6 +688,8 @@ def main() -> int:
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
+        if tool.endswith("/reward_claim_authoring.py"):
+            run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
     # Claims above may add complete native container recipes. Rebuild their
