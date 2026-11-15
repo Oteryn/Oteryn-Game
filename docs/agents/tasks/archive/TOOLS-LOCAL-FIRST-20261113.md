@@ -4,18 +4,18 @@
 task_id: TOOLS-LOCAL-FIRST-20261113
 title: Retain local Tools metadata and qualify remaining UI fields
 mode: AUDIT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/tools-local-first-20261113
-pr: https://github.com/Oteryn/Oteryn-Game/pull/3179
+pr: 3205
 base_sha: ce45063507c22a11e0db7e9c0ff86dacbe6ff834
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: codex-tools-local-first-publication
 created_at: 2026-11-13T18:00:00Z
-updated_at: 2026-11-13T18:07:02Z
+updated_at: 2026-11-15T09:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/tools-local-first-20261113/
@@ -69,3 +69,9 @@ Earlier worker CUA claim was refused by another session lease; no input sent.
 GUI continuation waits for an owner-provided working login; no relogin attempted.
 No further field values changed. This successor freezes after packet validation
 and documentation checks; local metadata slice remains complete, UI audit partial.
+
+
+Packaged into PR #3205 (branch claude/happy-davinci-ijz3wy-ctevid), merged unchanged from this task's branch.
+
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK

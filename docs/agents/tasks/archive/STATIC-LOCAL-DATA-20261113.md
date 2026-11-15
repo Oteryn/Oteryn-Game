@@ -4,18 +4,18 @@
 task_id: STATIC-LOCAL-DATA-20261113
 title: Publish five bounded offline static evidence whitelists
 mode: AUDIT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/static-local-data-cloud-20261113
-pr: null
+pr: 3205
 base_sha: 3e168ce6afe374485da20ee0ac13d3749558e2f8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Cloud /root/mantra_resume
 created_at: 2026-11-13T13:00:17Z
-updated_at: 2026-11-13T13:00:17Z
+updated_at: 2026-11-15T09:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/static-local-data-20261113/**
@@ -87,6 +87,11 @@ achievement field4 remain held; map provenance463equal/2changed/8new distinct.
 - Component/integration/E2E: NOT_APPLICABLE, evidence-only, no game code/build.
 - Exact-head CI: pending authorized push; no old-head green claim.
 
+Packaged into PR #3205 (branch claude/happy-davinci-ijz3wy-ctevid), merged unchanged from this task's branch.
+
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK
+
 ## Self-review
 
 Author task-diff/hash/privacy inspection, not formal independent PR review.
@@ -101,3 +106,5 @@ REVIEW_PENDING. Required before merge; coordinator owns dispatch, no worker trig
 Active waiting/PARTIAL record. First commit cannot name its own SHA; exact returned
 remote head and freeze belong in live PR/handoff without a metadata-only commit.
 No ready, complete, merge or deploy claim.
+
+Closed out through package PR #3205; independent review state is recorded on the PR.

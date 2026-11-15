@@ -4,18 +4,18 @@
 task_id: OTV2-20261113-bestiary-client-gap-audit
 title: Retain source-first Bestiary inventory and qualified initial UI gaps
 mode: AUDIT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/bestiary-client-gap-audit-20261113
-pr: null
+pr: 3205
 base_sha: 3e168ce6afe374485da20ee0ac13d3749558e2f8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: codex-bestiary-evidence-publication
 created_at: 2026-11-13T10:30:00Z
-updated_at: 2026-11-13T10:35:17Z
+updated_at: 2026-11-15T09:10:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/evidence/bestiary-client-gap-audit-20261113/
@@ -93,3 +93,9 @@ retain animated results. No additional Bestiary collection is planned here.
 - `git diff --check`: PASS.
 - Component/integration/E2E: NOT_APPLICABLE, no game/runtime/content input changes.
 - Exact-head CI: pending first publication; no green/mergeability claim.
+
+
+Packaged into PR #3205 (branch claude/happy-davinci-ijz3wy-ctevid), merged unchanged from this task's branch.
+
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK
