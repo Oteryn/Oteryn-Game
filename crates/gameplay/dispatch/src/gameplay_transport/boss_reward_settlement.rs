@@ -303,7 +303,50 @@ fn plan_personal_death_with_slots(
     })
 }
 
-impl DurableKillSettle<'_, '_, '_, '_> {
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn prepare_boss_rewards(&self, entry: &PendingKillSettlement) -> bool {
+        let admission = self;
+        // W03 entitlement creation is independent of the top-damage principal's
+        // current presence and must precede the proficiency-only early return.
+        if entry.boss_slot_bonuses.get().is_none() {
+            if let Some(boss) = entry.row.as_ref().and_then(|row| row.boss.as_ref()) {
+                let participants = entry.boss_reward.as_ref().map_or_else(
+                    || vec![*entry.facts.principal.character.as_bytes()],
+                    |death| {
+                        death
+                            .participants
+                            .iter()
+                            .map(|p| *p.character.as_bytes())
+                            .collect()
+                    },
+                );
+                let bonuses = admission
+                    .root
+                    .boss_slot_loot_bonuses(
+                        admission.character,
+                        admission.holder,
+                        entry.facts.death.runtime_scope(),
+                        entry.facts.death.scope_ownership_generation(),
+                        boss.clone(),
+                        participants,
+                        entry.facts.died_at_unix_ms,
+                        entry.facts.boosted_boss,
+                    )
+                    .await;
+                let Ok(bonuses) = bonuses else {
+                    return false;
+                };
+                let _ = entry.boss_slot_bonuses.set(bonuses);
+            } else {
+                let _ = entry.boss_slot_bonuses.set(Vec::new());
+            }
+        }
+        if !self.settle_personal_boss_rewards(entry).await {
+            return false;
+        }
+        true
+    }
+
     /// The room's primary native death starts its authored after-kill return
     /// even when that creature creates no personal reward group. W03 keeps its
     /// existing atomic room decision and chest settlement in the transaction below.
@@ -314,7 +357,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         if entry.boss_reward.is_some() {
             return true;
         }
-        let admission = self.admission;
+        let admission = self;
         let Some(native) = admission
             .active_generation
             .and_then(|generation| generation.native_gameplay())
@@ -377,7 +420,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let Some(frozen) = &entry.boss_reward else {
             return true;
         };
-        let admission = self.admission;
+        let admission = self;
         let Some(native) = admission
             .active_generation
             .and_then(|generation| generation.native_gameplay())
