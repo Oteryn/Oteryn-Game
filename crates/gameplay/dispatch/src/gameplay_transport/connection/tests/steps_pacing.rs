@@ -676,7 +676,7 @@ fn drome_drunk_actual_movement_refusal_replay_and_exact_expiry() -> Result<(), B
 }
 
 #[test]
-fn drome_drunk_actual_movement_leaves_other_statuses_and_scopes_unchanged()
+fn drunk_actual_movement_respects_suppression_across_scopes_and_keys()
 -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
@@ -766,14 +766,19 @@ fn drome_drunk_actual_movement_leaves_other_statuses_and_scopes_unchanged()
                     let (outcome, _) = authority
                         .paced_step(authority.actor, authority.session, StepDirection::East)
                         .await;
-                    assert_eq!(outcome.disposition, StepDisposition::Moved, "{mode}");
                     let after = authority
                         .owner
                         .borrow()
                         .0
                         .read_actor_position(authority.actor)?;
-                    assert_eq!(after.position().x, before.position().x + 1, "{mode}");
-                    assert_eq!(after.position().y, before.position().y, "{mode}");
+                    if mode == "suppressed" {
+                        assert_eq!(outcome.disposition, StepDisposition::Moved, "{mode}");
+                        assert_eq!(after.position().x, before.position().x + 1, "{mode}");
+                        assert_eq!(after.position().y, before.position().y, "{mode}");
+                    } else {
+                        assert_eq!(outcome.disposition, StepDisposition::Blocked, "{mode}");
+                        assert_eq!(after, before, "the steered North wall must block {mode}");
+                    }
                 }
                 Ok(())
             })
