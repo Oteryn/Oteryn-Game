@@ -20,7 +20,7 @@ SHARED_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i283": (100, 160, 503),
     "oteryn:item.tibia.i284": (135, 180, 507),
     "oteryn:item.tibia.i285": (75, 150, 511),
-    "oteryn:item.tibia.i3031": (1, 1, 6818),
+    "oteryn:item.tibia.i3031": (10, 1, 6818),
     "oteryn:item.tibia.i23721": (150, 0, 47233),
 }
 

@@ -109,12 +109,16 @@ def apply_profile_weights(records, root):
 
 
 def apply_overlay_weights(root, weights):
-    """Give native-gameplay overlay profiles the client weight, changing only weight values.
+    """Refresh generated source overlays; donor captures are qualified by their consumers.
 
     Each overlay keeps its own byte layout: a record's weight is replaced on the
     line that names its key, and the parsed result must equal the expected edit."""
     changed = {}
     for path in sorted((root / OVERLAY_DIR).glob('*.json')):
+        # These producers emit Global weights. Other files retain raw donor
+        # facts and apply Global weights in memory when their owner admits them.
+        if path.name not in ('coin-item-profiles.json', 'event-item-profiles.json'):
+            continue
         raw = path.read_bytes()
         document = json.loads(raw)
         edits = {}

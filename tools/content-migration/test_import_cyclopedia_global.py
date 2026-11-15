@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,6 +63,29 @@ class ClientWeightAdmission(unittest.TestCase):
         stale = [identifier for identifier, weight in cyclopedia._overlay_profiles(document['records'])
                  if identifier in weights and weights[identifier] != weight['value']]
         self.assertEqual(stale, [])
+
+    def test_overlay_refresh_preserves_donor_captures(self):
+        record = {'production_definition': {'production_key': 'oteryn:item.tibia.i3031'},
+                  'semantics': {'physical': {'state': 'KNOWN', 'value': {
+                      'weight': {'state': 'KNOWN', 'value': 1}}}}}
+        raw = (json.dumps({'records': [record]}, indent=2) + '\n').encode()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            overlays = root / cyclopedia.OVERLAY_DIR
+            overlays.mkdir(parents=True)
+            captures = [overlays / name for name in (
+                'boss-reward-item-profiles.json', 'hireling-item-profiles.json',
+                'soulpit-echo-item-profiles.json', 'writing-item-profiles.json')]
+            coins = overlays / 'coin-item-profiles.json'
+            for capture in captures:
+                capture.write_bytes(raw)
+            coins.write_bytes(raw)
+            self.assertEqual(cyclopedia.apply_overlay_weights(root, {3031: 10}),
+                             {'coin-item-profiles.json': 1})
+            for capture in captures:
+                self.assertEqual(capture.read_bytes(), raw)
+            self.assertEqual(json.loads(coins.read_bytes())['records'][0]
+                             ['semantics']['physical']['value']['weight']['value'], 10)
 
     def test_profile_weights_replace_known_weight_only(self):
         record = {'production_definition': {'production_key': 'oteryn:item.tibia.i7439'},

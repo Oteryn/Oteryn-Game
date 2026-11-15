@@ -783,3 +783,34 @@ The five corrected rows have capture decimal-place errors; see `weight-correctio
 | i52359 | a muglex clan assassin soul core | 100 | 1000 | 10.00 oz | Matches Global capture/wiki; retained |
 | i52360 | a corrupted ghost soul core | 100 | 1000 | 10.00 oz | Matches Global capture/wiki; retained |
 | i52361 | a corrupted skeleton soul core | 100 | 1000 | 10.00 oz | Matches Global capture/wiki; retained |
+
+## Hireling regression triage
+
+The exact requested Cook bank-only, Cook carrot/package/replay, and Steward stash/replay/ACL
+cases each executed and passed on origin/main `beaaf9bc1bfff4f3d8a8b6afc3c39f4217cb80a6`
+using the unmodified dispatch binary compiled from that commit and an exact origin/main
+content snapshot. Each emitted `HIRELING_LIFECYCLE POSTGRES_CASE_COMPLETED`.
+The in-progress generated content was preserved and restored around this baseline run.
+The reported CI failures are not reproduced on that main snapshot; no additional weight
+correction is justified by them.
+
+Cook's cited `cook.rs:266` asserts a historical receipt replay.
+`hireling_services/purchase.rs:388` reads the receipt and never consults item weights.
+Steward's `steward.rs:34` calls `atelier.rs:137` / `hireling_services.rs:185`, which checks
+current House access, Steward entitlement and NPC conversation context before stash
+transfers. Those checks also do not consult item weights. No weight root cause is confirmed
+for these three CI reports.
+
+| Fixture item | Before #3213 | origin/main | Global capture | Disposition |
+|---|---:|---:|---|---|
+| i2854 backpack | 1800 | 1800 | 18.00 oz | Correct; retained |
+| i2856 present | 600 | 600 | 6.00 oz | Correct; retained |
+| i3028 small diamond | 10 | 10 | 0.10 oz | Correct; retained |
+| i3031 gold coin | 10 | 1 | Erroneous 0.01 oz | Corrected to 10 |
+| i3035 platinum coin | 10 | 10 | 0.10 oz | Correct; retained |
+| i3043 crystal coin | 10 | 10 | 0.10 oz | Correct; retained |
+| i9657 cyclops toe | 111 | 111 | 1.11 oz | Matches capture; retained |
+| i10405 warmaster's wristguards | 120 | 120 | 1.20 oz | Matches capture; retained |
+| i22189 ogre nose ring | 2100 | 420 | 4.20 oz | Matches Global; retained |
+| i29409 carrot pie | 620 | 620 | 6.20 oz | Matches Global; retained |
+| i35173 toolbox (asserted absent) | 0 | 0 | Not captured | No admitted output; retained |
