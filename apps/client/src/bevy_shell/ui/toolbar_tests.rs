@@ -20,12 +20,14 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
         "Quest Log",
         "Skills",
         "Spellbook",
+        "Store Inbox",
         "VIP",
     ] {
         let mut owner = HostOwner::new(None)?;
         owner.settings.preferences.visible_panels.clear();
         let (link, mut commands, outbox) = crate::play::play_channel();
         outbox.bevy_hud_skills_fixture()?;
+        outbox.bevy_cyclopedia_initialize(true, false, false);
         owner.play = Some(crate::bevy_shell::owner::ActivePlay {
             view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
             link,
@@ -95,8 +97,23 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
                     .as_ref()
                     .is_some_and(|play| play.link.spellbook_window_open())
             ),
+            Control::StoreInbox => {
+                let play = owner.play.as_ref().ok_or("missing play")?;
+                assert!(play.link.cyclopedia_character_panel().items.open);
+                let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()?
+                else {
+                    return Err("expected remote inbox summary request".into());
+                };
+                assert_eq!((command.capability, command.kind), (199, 388));
+                assert_eq!(command.payload, [130, 0, 0]);
+            }
             _ => return Err("unexpected toolbar action".into()),
         }
     }
     Ok(())
+}
+
+#[test]
+fn store_inbox_has_remote_toolbar_entry() {
+    assert!(TOOLBAR.iter().any(|entry| entry.0 == "Store Inbox"));
 }
