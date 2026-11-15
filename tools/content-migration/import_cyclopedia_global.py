@@ -59,6 +59,21 @@ def apply_weight(definition, weights):
     return True
 
 
+def only_weight_changed(before, after):
+    """True when after differs from before at most in a KNOWN physical weight leaf."""
+    try:
+        weight = after['semantics']['physical']['value']['weight']
+        if (after['semantics']['physical']['state'] != 'KNOWN' or weight.get('state') != 'KNOWN'
+                or type(weight.get('value')) is not int or not 0 <= weight['value'] <= 0xffffffff
+                or before['semantics']['physical']['state'] != 'KNOWN'):
+            return False
+        expected = json.loads(json.dumps(before))
+        expected['semantics']['physical']['value']['weight'] = weight
+        return expected == after
+    except (KeyError, TypeError, AttributeError):
+        return False
+
+
 def apply_admissions(item_records, root):
     """Client weights are tree-first; retain them across legacy regeneration."""
     weights = load_weights(root)

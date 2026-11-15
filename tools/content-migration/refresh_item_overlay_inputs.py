@@ -55,13 +55,19 @@ def accept_canonical_weight(before, after, profile):
         if (old['state'] != 'KNOWN' or new['state'] != 'KNOWN'
                 or weight.get('state') != 'KNOWN'
                 or type(weight.get('value')) is not int
-                or not 0 <= weight['value'] <= 0xffffffff
-                or profile['semantics']['physical'] != old):
+                or not 0 <= weight['value'] <= 0xffffffff):
+            raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
+        # A canonical weight filled from UNKNOWN to the profile's own known weight
+        # leaves the profile as it is; otherwise the profile must equal the old facts.
+        fills_profile = (old['value'].get('weight') == {'state': 'UNKNOWN'}
+                         and profile['semantics']['physical']['value'].get('weight') == weight)
+        if not fills_profile and profile['semantics']['physical'] != old:
             raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
         expected['semantics']['physical']['value']['weight'] = copy.deepcopy(weight)
         if expected != after:
             raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT')
-        profile['semantics']['physical'] = copy.deepcopy(new)
+        if not fills_profile:
+            profile['semantics']['physical'] = copy.deepcopy(new)
     except (KeyError, TypeError):
         raise ValueError('ITEM_OVERLAY_SELECTED_FACT_DRIFT') from None
     return expected

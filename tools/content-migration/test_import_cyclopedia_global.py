@@ -32,6 +32,15 @@ class ClientWeightAdmission(unittest.TestCase):
         self.assertEqual(records[1]['semantics']['physical'], {'state': 'UNKNOWN'})
         self.assertEqual(records[2]['semantics']['physical']['value']['weight']['value'], 7)
 
+    def test_only_weight_changed_accepts_weight_leaf_alone(self):
+        before = definition('oteryn:item.tibia.i7439', 200)
+        after = definition('oteryn:item.tibia.i7439', 290)
+        self.assertTrue(cyclopedia.only_weight_changed(before, after))
+        after['identity']['key'] = 'other'
+        self.assertFalse(cyclopedia.only_weight_changed(before, after))
+        self.assertFalse(cyclopedia.only_weight_changed(
+            definition('k', 1, state='UNKNOWN'), definition('k', 2)))
+
     def test_generated_tree_carries_client_weights(self):
         weights = cyclopedia.load_weights(ROOT)
         stale = []
