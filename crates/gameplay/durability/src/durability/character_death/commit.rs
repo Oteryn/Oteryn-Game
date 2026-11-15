@@ -258,6 +258,11 @@ impl DurabilityRoot {
                     if progression_update.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
+                    // The condition owner clears every persistent instance on death.
+                    // Invalidate the old logout image in the same fenced transaction.
+                    sqlx::query("DELETE FROM game_character_condition_snapshots WHERE character_id=encode($1,'hex')::uuid")
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .execute(&mut *tx).await?;
                     if let Some(build) = &build_loss {
                         update_death_build(
                             &mut tx,
