@@ -1,4 +1,5 @@
 //! Character Cyclopedia over the retained capability-199 owner and confirmed rows.
+pub(super) mod artwork;
 mod rows;
 mod widgets;
 use super::{
@@ -19,10 +20,11 @@ pub(super) enum Tab {
     General,
     Character(CharacterTab),
     Items,
+    Familiars,
     Badges,
 }
 impl Tab {
-    pub(super) const ALL: [Self; 12] = [
+    pub(super) const ALL: [Self; 13] = [
         Self::General,
         Self::Character(CharacterTab::Offence),
         Self::Character(CharacterTab::Defence),
@@ -32,6 +34,7 @@ impl Tab {
         Self::Character(CharacterTab::Achievements),
         Self::Items,
         Self::Character(CharacterTab::Appearances),
+        Self::Familiars,
         Self::Character(CharacterTab::StoreSummary),
         Self::Character(CharacterTab::Inspection),
         Self::Badges,
@@ -39,7 +42,7 @@ impl Tab {
     pub(super) fn intent(self) -> Intent {
         match self {
             Self::General => Intent::SelectTab(CharacterTab::GeneralStats),
-            Self::Character(CharacterTab::Appearances) => Intent::Appearances,
+            Self::Character(CharacterTab::Appearances) | Self::Familiars => Intent::Appearances,
             Self::Character(CharacterTab::Inspection) => Intent::ProfileInspection,
             Self::Character(tab) => Intent::SelectTab(tab),
             Self::Items => Intent::Items,
@@ -55,12 +58,28 @@ impl Tab {
             Self::Character(CharacterTab::RecentDeaths) => "Recent deaths",
             Self::Character(CharacterTab::RecentPvpKills) => "Recent PvP kills",
             Self::Character(CharacterTab::Achievements) => "Achievements",
-            Self::Character(CharacterTab::Appearances) => "Outfits / mounts",
+            Self::Character(CharacterTab::Appearances) => "All appearances",
             Self::Character(CharacterTab::StoreSummary) => "Store summary",
-            Self::Character(CharacterTab::Inspection) => "Inspection",
+            Self::Character(CharacterTab::Inspection) => "Character profile",
             Self::Items => "Item summary",
+            Self::Familiars => "Familiars",
             Self::Badges => "Badges",
         }
+    }
+    fn can_page(self, next: bool, panel: &CyclopediaCharacterPanel) -> bool {
+        if matches!(
+            self,
+            Self::Familiars | Self::Character(CharacterTab::Appearances)
+        ) {
+            return panel.gallery.page.as_ref().is_some_and(|page| {
+                if next {
+                    usize::from(page.offset) + page.entries.len() < usize::from(page.total)
+                } else {
+                    page.offset > 0
+                }
+            });
+        }
+        self.page(next).is_some()
     }
     fn page(self, next: bool) -> Option<Intent> {
         Some(match self {
@@ -71,7 +90,7 @@ impl Tab {
                     Intent::ItemsPrevious
                 }
             }
-            Self::Character(CharacterTab::Appearances) => {
+            Self::Character(CharacterTab::Appearances) | Self::Familiars => {
                 if next {
                     Intent::GalleryNext
                 } else {
@@ -114,6 +133,7 @@ struct State {
     widgets: Option<widgets::Widgets>,
 }
 pub(super) fn install(app: &mut App) {
+    artwork::install(app);
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());

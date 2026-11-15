@@ -85,7 +85,7 @@ fn texts(app: &mut App) -> Vec<String> {
 fn cyclopedia_tab_requests_data() -> TestResult {
     let (mut app, mut commands, outbox) = fixture()?;
     assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
-    let expected_tabs: [(Tab, &[u8]); 12] = [
+    let expected_tabs: [(Tab, &[u8]); 13] = [
         (Tab::General, &[1, 0, 0, 20]),
         (Tab::Character(CharacterTab::Offence), &[8, 0, 0, 20]),
         (Tab::Character(CharacterTab::Defence), &[9, 0, 0, 20]),
@@ -95,6 +95,7 @@ fn cyclopedia_tab_requests_data() -> TestResult {
         (Tab::Character(CharacterTab::Achievements), &[128, 0]),
         (Tab::Items, &[130, 0, 0]),
         (Tab::Character(CharacterTab::Appearances), &[129, 0, 0]),
+        (Tab::Familiars, &[129, 0, 0]),
         (Tab::Character(CharacterTab::StoreSummary), &[6, 0, 0, 20]),
         (Tab::Character(CharacterTab::Inspection), &[132]),
         (Tab::Badges, &[132]),
@@ -398,5 +399,212 @@ fn cyclopedia_reopened_while_pending_sends_its_tab_once_the_builder_accepts() ->
     app.update();
     assert_eq!(command(&mut commands)?.payload, [1, 0, 0, 20]);
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_familiar_page_is_reachable_and_distinguishes_catalogue_from_unlocks() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::gallery;
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    let caption = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(entity, text)| (text.0 == "Familiars").then_some(entity))
+        .ok_or("Familiars tab absent")?;
+    let button = app
+        .world()
+        .get::<ChildOf>(caption)
+        .ok_or("tab parent")?
+        .parent();
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
+    response(
+        &outbox,
+        gallery::Page {
+            offset: 0,
+            total: 2,
+            entries: vec![
+                gallery::Entry {
+                    kind: gallery::Kind::Mount,
+                    key: "oteryn:mount/bear".into(),
+                    look_type: 12,
+                },
+                gallery::Entry {
+                    kind: gallery::Kind::Familiar,
+                    key: "oteryn:familiar/sorcerer".into(),
+                    look_type: 13,
+                },
+            ],
+        }
+        .encode()
+        .map_err(|_| "gallery encode")?,
+    );
+    app.update();
+    let rows = texts(&mut app);
+    assert!(
+        rows.iter()
+            .any(|row| row.contains("oteryn:familiar/sorcerer"))
+    );
+    assert!(!rows.iter().any(|row| row.contains("oteryn:mount/bear")));
+    assert!(rows.iter().any(|row| row.contains("not account unlocks")));
+    click(&mut app, Kind::Refresh)?;
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_profile_shows_confirmed_identity_equipment_and_badges_together() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{Badge, EquippedItem, profile};
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(
+        &mut app,
+        Kind::Tab(Tab::Character(CharacterTab::Inspection)),
+    )?;
+    assert_eq!(command(&mut commands)?.payload, profile::request(None));
+    response(
+        &outbox,
+        profile::Profile {
+            character: [7; 16],
+            name: "Explorer".into(),
+            badges: vec![Badge::FledgelingHero],
+            equipment: vec![EquippedItem {
+                slot: 1,
+                definition: "oteryn:item/sword".into(),
+                quantity: 1,
+            }],
+        }
+        .encode()
+        .map_err(|_| "profile encode")?,
+    );
+    app.update();
+    let rows = texts(&mut app);
+    assert!(rows.iter().any(|row| row.contains("Explorer")));
+    assert!(rows.iter().any(|row| row.contains("oteryn:item/sword")));
+    assert!(
+        rows.iter()
+            .any(|row| row == &format!("Earned badge: {}", Badge::FledgelingHero.name()))
+    );
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_profile_refusal_removes_previously_confirmed_details() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{Badge, profile};
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(
+        &mut app,
+        Kind::Tab(Tab::Character(CharacterTab::Inspection)),
+    )?;
+    command(&mut commands)?;
+    response(
+        &outbox,
+        profile::Profile {
+            character: [7; 16],
+            name: "Explorer".into(),
+            badges: vec![Badge::FledgelingHero],
+            equipment: vec![],
+        }
+        .encode()
+        .map_err(|_| "profile encode")?,
+    );
+    app.update();
+    assert!(texts(&mut app).iter().any(|row| row.contains("Explorer")));
+    click(&mut app, Kind::Refresh)?;
+    command(&mut commands)?;
+    outbox.bevy_cyclopedia_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 2,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    });
+    app.update();
+    let rows = texts(&mut app);
+    assert!(
+        !rows
+            .iter()
+            .any(|row| row.contains("Explorer") || row.contains(Badge::FledgelingHero.name()))
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row.contains("refused the profile query"))
+    );
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_familiars_browse_shared_pages_and_keep_server_look_ids() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::gallery;
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Familiars))?;
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
+    response(
+        &outbox,
+        gallery::Page {
+            offset: 0,
+            total: 25,
+            entries: (0..24)
+                .map(|index| gallery::Entry {
+                    kind: gallery::Kind::Outfit,
+                    key: format!("outfit/{index}"),
+                    look_type: index + 1,
+                })
+                .collect(),
+        }
+        .encode()
+        .map_err(|_| "first gallery page")?,
+    );
+    app.update();
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|row| row.contains("No confirmed familiars on this appearance page"))
+    );
+    click(&mut app, Kind::Next)?;
+    assert_eq!(command(&mut commands)?.payload, gallery::request(24));
+    response(
+        &outbox,
+        gallery::Page {
+            offset: 24,
+            total: 25,
+            entries: vec![gallery::Entry {
+                kind: gallery::Kind::Familiar,
+                key: "oteryn:familiar/sorcerer".into(),
+                look_type: 13,
+            }],
+        }
+        .encode()
+        .map_err(|_| "last gallery page")?,
+    );
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&super::cyclopedia::artwork::Portrait>()
+            .iter(app.world())
+            .map(|portrait| portrait.0)
+            .collect::<Vec<_>>(),
+        [13]
+    );
+    let next_disabled = app
+        .world_mut()
+        .query::<(&Control, Option<&bevy::ui::InteractionDisabled>)>()
+        .iter(app.world())
+        .any(|(control, disabled)| control.kind == Kind::Next && disabled.is_some());
+    assert!(next_disabled);
+    click(&mut app, Kind::Previous)?;
+    assert_eq!(command(&mut commands)?.payload, gallery::request(0));
     Ok(())
 }

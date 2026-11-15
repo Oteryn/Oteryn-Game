@@ -63,9 +63,7 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
                 )
             })
             .collect(),
-        Tab::Character(CharacterTab::Appearances) => panel
-            .gallery
-            .rows()
+        Tab::Character(CharacterTab::Appearances) | Tab::Familiars => gallery_entries(tab, panel)
             .into_iter()
             .map(|r| format!("{:?}: {}", r.kind, r.key))
             .collect(),
@@ -86,7 +84,46 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
                     .into_iter()
                     .map(|r| format!("{}\n{}", r.label, r.detail)),
             );
+            if tab == Tab::Character(CharacterTab::Inspection)
+                && let Some(profile) = &panel.profile
+            {
+                if profile.equipment.is_empty() {
+                    rows.push("No equipment shared in this profile".into());
+                }
+                let mut visible = profile
+                    .badges
+                    .iter()
+                    .filter(|badge| !panel.hidden_badges.contains(&badge.id()))
+                    .peekable();
+                if visible.peek().is_none() {
+                    rows.push("No visible earned badges in this profile".into());
+                }
+                for badge in visible {
+                    rows.push(format!("Earned badge: {}", badge.name()));
+                }
+            }
             rows
         }
     }
+}
+pub(super) fn gallery_entries(
+    tab: Tab,
+    panel: &CyclopediaCharacterPanel,
+) -> Vec<&oteryn_client_runtime::cyclopedia_character::gallery::Entry> {
+    if !matches!(
+        tab,
+        Tab::Familiars | Tab::Character(CharacterTab::Appearances)
+    ) {
+        return Vec::new();
+    }
+    panel
+        .gallery
+        .rows()
+        .into_iter()
+        .filter(|entry| {
+            tab != Tab::Familiars
+                || entry.kind
+                    == oteryn_client_runtime::cyclopedia_character::gallery::Kind::Familiar
+        })
+        .collect()
 }
