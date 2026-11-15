@@ -48,6 +48,7 @@ pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Case {
+    OpenContainers,
     ParalyzeMonster,
     ParalyzePlayer,
     Replay,
@@ -137,6 +138,7 @@ async fn client_cast(
     first_id: u64,
 ) -> TestResult<UseIntent> {
     let mut source = None;
+    let mut backpack = None;
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
@@ -144,17 +146,62 @@ async fn client_cast(
             let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
             for domain in domains {
                 if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
-                    source = decode_character_inventory(domain.payload)
-                        .map_err(debug)?
-                        .entries
-                        .first()
-                        .map(|e| e.handle);
+                    let inventory = decode_character_inventory(domain.payload).map_err(debug)?;
+                    backpack = inventory.main_backpack.map(|item| item.handle);
+                    source = inventory.entries.first().map(|entry| entry.handle);
                 }
             }
         }
         if envelope.message_type() == MessageType::SnapshotCommit {
             break;
         }
+    }
+    if case == Case::OpenContainers {
+        let intent = UseIntent {
+            target: UseTarget::Item(backpack.ok_or("main backpack handle")?),
+            use_with: None,
+            use_with_map_item: None,
+            use_with_position: None,
+        };
+        send_use(
+            client,
+            first_id,
+            &intent,
+            Expected::Result(UseDisposition::Committed),
+        )
+        .await?;
+        let bag = UseIntent {
+            target: UseTarget::Item(source.ok_or("carried bag handle")?),
+            ..intent.clone()
+        };
+        send_use(
+            client,
+            first_id + 1,
+            &bag,
+            Expected::Result(UseDisposition::Committed),
+        )
+        .await?;
+        loop {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                    .map_err(debug)?;
+                if delta.domain_id
+                    == oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS
+                {
+                    let views = oteryn_protocol_oteryn::container_tree::decode_container_views(
+                        delta.payload,
+                    )
+                    .map_err(debug)?;
+                    if views.views.len() == 2 {
+                        break;
+                    }
+                }
+            }
+        }
+        client.shutdown().await?;
+        return Ok(intent);
     }
     let retry = original.is_some();
     let intent = match original {
@@ -202,6 +249,7 @@ async fn client_cast(
         None => 0,
     };
     match case {
+        Case::OpenContainers => return Err("container case handled before rune cast".into()),
         Case::ParalyzeMonster | Case::ParalyzePlayer => {
             if case == Case::ParalyzePlayer {
                 let mut modes = oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default();
@@ -488,6 +536,11 @@ async fn serve_cast(
 }
 
 #[test]
+fn rune_use_capability_preserves_main_and_carried_container_opening() -> TestResult {
+    large_stack(|| run(async |admin| run_case(admin, Case::OpenContainers).await))
+}
+
+#[test]
 fn rune_use_bridge_postgres_real_dispatch_casts_once_and_reloads_one_debit() -> TestResult {
     large_stack(scenario)
 }
@@ -746,8 +799,14 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     }
     assert!(owner.offered_capabilities().iter().all(|c| c.id != 22));
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        RUNE_USE_OFFERED,
-        if case == Case::NoCapability {
+        if case == Case::OpenContainers {
+            crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+        } else {
+            RUNE_USE_OFFERED
+        },
+        if case == Case::OpenContainers {
+            &[4, 6, 12, 14, 15, 22]
+        } else if case == Case::NoCapability {
             &[4, 6, 15]
         } else {
             &[4, 6, 15, 22]
@@ -758,14 +817,20 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
     // are read by the real current owners, with all normal runtime fences.
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)")
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
-    let source_key = if case == Case::UnqualifiedSource {
+    let source_key = if case == Case::OpenContainers {
+        "oteryn:item.tibia.i2853"
+    } else if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
     } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
         "oteryn:item.tibia.i3165"
     } else {
         "oteryn:item.tibia.i3174"
     };
-    seed_main_backpack(&harness, &[(source_key, 3)]).await?;
+    seed_main_backpack(
+        &harness,
+        &[(source_key, if case == Case::OpenContainers { 1 } else { 3 })],
+    )
+    .await?;
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
@@ -784,6 +849,17 @@ pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
                 .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(harm, 1, "paralysis records condition-only PvP aggression");
         }
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
+    if case == Case::OpenContainers {
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            serve_cast(&owner, &harness, admitted, victim, case, None),
+        )
+        .await??;
         drop(owner);
         drop(authority);
         drop(seal);

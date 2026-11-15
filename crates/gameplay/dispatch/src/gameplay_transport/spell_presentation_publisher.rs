@@ -573,6 +573,7 @@ struct SoundEntry {
     secondary: u16,
     creature: bool,
     effect: bool,
+    projectile_from: Option<MovementLocalPosition>,
     private: bool,
     house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
 }
@@ -618,6 +619,7 @@ impl SoundPublisher {
             secondary,
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
             effect: false,
+            projectile_from: None,
             private: false,
             house_scope: None,
         });
@@ -669,6 +671,21 @@ impl SoundPublisher {
             entry.house_scope = Some((house.scope, house.generation.get()));
         }
     }
+    fn record_committed(&mut self, runtime: &ChannelRuntimeV1, event: &CommittedPresentation) {
+        let (cue, effect, projectile_from) = match event.event.cue {
+            Cue::Sound(cue) => (cue, false, None),
+            Cue::Effect(cue) => (cue, true, None),
+            Cue::Projectile(cue) => (cue, false, Some(event.cause.origin())),
+        };
+        let before = self.revision;
+        self.record(runtime, event.cause.actor(), event.event.position, cue, 0);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.effect = effect;
+            entry.projectile_from = projectile_from;
+        }
+    }
     pub fn capture(
         &mut self,
         owner: &mut SpellPresentationOwner,
@@ -678,9 +695,7 @@ impl SoundPublisher {
             .take_for_current_publisher(runtime)
             .map_err(|_| Error::Stale)?
         {
-            if let Cue::Sound(cue) = event.event.cue {
-                self.record(runtime, event.cause.actor(), event.event.position, cue, 0);
-            }
+            self.record_committed(runtime, &event);
         }
         Ok(())
     }
@@ -748,7 +763,11 @@ impl SoundPublisher {
             let Ok(target) = view(sound.position) else {
                 continue;
             };
-            if !VisibilitySettings::REFERENCE.can_see(observer, target) {
+            let origin_visible = sound
+                .projectile_from
+                .and_then(|origin| view(origin).ok())
+                .is_some_and(|origin| VisibilitySettings::REFERENCE.can_see(observer, origin));
+            if !VisibilitySettings::REFERENCE.can_see(observer, target) && !origin_visible {
                 continue;
             }
             let source = if sound.actor == actor {
@@ -761,7 +780,20 @@ impl SoundPublisher {
             events.push(PresentationEvent {
                 decision_ordinal: u32::try_from(events.len() + 1).ok()?,
                 emission_ordinal: 1,
-                kind: if sound.effect {
+                kind: if let Some(from) = sound.projectile_from {
+                    PresentationEventKind::Missile {
+                        from: ActorPosition {
+                            floor: tibia_floor(from.floor)?,
+                            ..pos(from)
+                        },
+                        to: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        missile_id: u32::from(sound.cue),
+                        source,
+                    }
+                } else if sound.effect {
                     PresentationEventKind::MagicEffect {
                         position: ActorPosition {
                             floor: tibia_floor(sound.position.floor)?,

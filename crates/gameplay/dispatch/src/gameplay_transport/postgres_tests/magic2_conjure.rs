@@ -26,7 +26,16 @@ fn magic2_conjure_postgres_missing_bag_rolls_back_and_missing_reagent_is_termina
     large_stack(|| scenarios(&[(false, true), (false, false)]))
 }
 
+#[test]
+fn bundle_conjure_uses_existing_reagent_payment_mint_and_replay_owners() -> TestResult {
+    large_stack(|| scenarios_in_room(&[(true, false)], true))
+}
+
 fn scenarios(cases: &[(bool, bool)]) -> TestResult {
+    scenarios_in_room(cases, false)
+}
+
+fn scenarios_in_room(cases: &[(bool, bool)], bundle: bool) -> TestResult {
     run(async |admin| {
         // Compile content before opening the admission holder; cold Native setup can exceed
         // the holder's idle lifetime on a contended CI worker.
@@ -46,6 +55,7 @@ fn scenarios(cases: &[(bool, bool)]) -> TestResult {
                 &pin,
                 full,
                 missing_reagent,
+                bundle,
             )
             .await?;
         }
@@ -62,6 +72,7 @@ async fn scenario(
     pin: &crate::content::NativeEntryContentPin,
     full: bool,
     missing_reagent: bool,
+    bundle: bool,
 ) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, "magic2_conjure", true, false).await?;
     eprintln!("POSTGRES_STARTED MAGIC-2 conjure full={full}");
@@ -106,7 +117,7 @@ async fn scenario(
     }
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
-    owner.rooms = SeamRooms::new(Some(room), Some(room));
+    owner.rooms = SeamRooms::new((!bundle).then_some(room), Some(room));
     let formula = native.training_formula().ok_or("training formula")?;
     let build = convert_vocation(
         formula,

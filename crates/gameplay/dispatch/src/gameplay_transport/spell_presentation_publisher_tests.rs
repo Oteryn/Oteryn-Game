@@ -712,3 +712,124 @@ fn w18_house_decoration_effects_follow_current_house_custody_and_hide_channel_cu
         "matching coordinates cannot leak House speech"
     );
 }
+
+#[test]
+fn production_capture_fans_out_committed_spell_effects_once_per_observer() {
+    use oteryn_protocol_oteryn::presentation::{PresentationEventKind, PresentationSource};
+    let (mut runtime, caster, other, session) = runtime();
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(actor, _, _)| *actor == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    commit(&mut owner, &mut runtime, caster, session, 1);
+    let mut publisher = SoundPublisher::default();
+    publisher.capture(&mut owner, &runtime).unwrap();
+    let (cursor, own) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(own.len(), 1);
+    assert!(matches!(
+        own[0].kind,
+        PresentationEventKind::MagicEffect {
+            effect_id: 18,
+            source: PresentationSource::Own,
+            ..
+        }
+    ));
+    let (other_cursor, nearby) = publisher
+        .observe(&runtime, other, other_session, 0, true)
+        .unwrap();
+    assert_eq!(other_cursor, cursor);
+    assert_eq!(nearby.len(), 1);
+    assert!(matches!(
+        nearby[0].kind,
+        PresentationEventKind::MagicEffect {
+            effect_id: 18,
+            source: PresentationSource::Others,
+            ..
+        }
+    ));
+    publisher.capture(&mut owner, &runtime).unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, other, other_session, other_cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}
+
+#[test]
+fn production_journal_keeps_missiles_visible_from_their_origin() {
+    use oteryn_protocol_oteryn::presentation::{
+        PresentationEventKind, PresentationSource, decode_presentation_batch,
+        encode_presentation_batch,
+    };
+    let (mut runtime, caster, _, session) = runtime();
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    commit(&mut owner, &mut runtime, caster, session, 1);
+    let mut event = owner
+        .take_for_current_publisher(&runtime)
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap();
+    let origin = event.cause.origin();
+    event.event.cue = Cue::Projectile(18);
+    event.event.position.x = origin.x + 100;
+    let destination = event.event.position;
+    let mut publisher = SoundPublisher::default();
+    publisher.record_committed(&runtime, &event);
+    let (cursor, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    assert_eq!(
+        events.len(),
+        1,
+        "the visible origin qualifies a missile with an offscreen destination"
+    );
+    assert_eq!(
+        events[0].kind,
+        PresentationEventKind::Missile {
+            from: pos(origin),
+            to: pos(destination),
+            missile_id: 18,
+            source: PresentationSource::Own,
+        }
+    );
+    let encoded = encode_presentation_batch(&events).unwrap();
+    assert_eq!(decode_presentation_batch(&encoded).unwrap(), events);
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}

@@ -86,9 +86,9 @@ impl<'a> SeamRooms<'a> {
         }
     }
 
-    /// The world item casts and their commit.
+    /// The world item casts and their commit on source and bundle Worlds.
     pub fn gate_world_item_cast(&self) -> Option<&QualifiedNativeEntryRoom> {
-        self.qualified.as_deref()
+        self.combat.as_deref()
     }
 
     /// The field step ingress and its commit.

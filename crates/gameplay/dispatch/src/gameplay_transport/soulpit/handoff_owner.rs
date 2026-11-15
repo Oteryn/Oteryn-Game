@@ -111,11 +111,13 @@ impl NativeSoulpitHandoff {
                     else {
                         return Ok(None);
                     };
+                    // Pagination is local to this pass: every wake must visit
+                    // every active room and retain all of their deadlines.
                     *admission
                         .activity_runtimes
                         .soulpit_after
                         .lock()
-                        .map_err(|_| ())? = bindings.first().map(|binding| binding.handoff_id);
+                        .map_err(|_| ())? = None;
                     let due = if let Some(binding) = bindings.first() {
                         self.drive_soulpit_room(
                             admission,

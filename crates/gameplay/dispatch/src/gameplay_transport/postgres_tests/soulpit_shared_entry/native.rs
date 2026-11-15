@@ -344,7 +344,7 @@ fn scenario_inner(drive_native: bool, capacity: usize, soulseals:Option<super::s
                     .map_err(|_| "deliver entry barrier")?;
                 let started = initial.encounter.snapshot().started_at_micros;
                 let shared = crate::gameplay_transport::BossActivityHandoff;
-                shared
+                let first_due = shared
                     .drive_soulpit(&owner, started + 4_000_000, false)
                     .await
                     .map_err(|_| "production Soulpit spawn drive")?;
@@ -413,10 +413,12 @@ fn scenario_inner(drive_native: bool, capacity: usize, soulseals:Option<super::s
                         );
                     }
                 }
-                shared
+                let repeated_due = shared
                     .drive_soulpit(&owner, started + 4_000_000, false)
                     .await
                     .map_err(|_| "production Soulpit repeated deadline")?;
+                assert!(first_due.is_some(), "active encounter retains a deadline");
+                assert_eq!(repeated_due, first_due, "every wake visits the active room");
                 let repeated = {
                     let mut runtime = destination.runtime.lock().await;
                     let kernel = runtime.borrow_soulpit_kernel().map_err(debug)?;

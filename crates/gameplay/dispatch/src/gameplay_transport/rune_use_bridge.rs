@@ -70,10 +70,40 @@ impl LegacyRuneUse {
     }
 }
 
-pub(super) fn routes(intent: &UseIntent, selected: &SelectedCapabilities) -> bool {
-    selected.contains(CAPABILITY_RUNE_USE_V1)
-        && matches!(intent.target, UseTarget::Item(_))
-        && intent.use_with_map_item.is_none()
+pub(super) async fn routes<A: FreshAdmissionAuthority>(
+    intent: &UseIntent,
+    selected: &SelectedCapabilities,
+    authority: &A,
+    actor: ExactActorRef,
+    fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    view: Option<&SessionItemView>,
+) -> bool {
+    if !selected.contains(CAPABILITY_RUNE_USE_V1)
+        || !matches!(intent.target, UseTarget::Item(_))
+        || intent.use_with_map_item.is_some()
+    {
+        return false;
+    }
+    // An omitted rune target means self. Ordinary container opening uses the
+    // same wire shape, so leave it with the existing container dispatcher.
+    if intent.use_with.is_none()
+        && intent.use_with_position.is_none()
+        && let UseTarget::Item(handle) = intent.target
+        && let Some(key) = view.and_then(|view| view.resolve(handle))
+        && (!matches!(key, ItemKey::Instance(_)) || matches!(
+            authority.observe_container_with_house_capacity(
+                actor,
+                fence,
+                key,
+                selected.contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2),
+            ).await,
+            Some(super::container_view::ContainerObservation::Container { .. }
+                | super::container_view::ContainerObservation::TooFar)
+        ))
+    {
+        return false;
+    }
+    true
 }
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(

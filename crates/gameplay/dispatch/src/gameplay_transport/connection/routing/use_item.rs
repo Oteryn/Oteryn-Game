@@ -375,7 +375,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             }
             Ok(intent) if transport::rune_use_bridge::routes(
                 &intent, &admitted.continuity.selected_capabilities,
-            ) => match transport::rune_use_bridge::dispatch(
+                authority, actor, admitted.item_fence, item_view.as_ref(),
+            ).await => match transport::rune_use_bridge::dispatch(
                 authority, actor,
                 UseCommand {
                     game_session_id: admitted.game_session_id,

@@ -226,8 +226,8 @@ const INVENTORY: &[Entry] = &[
         plan: "world item casts",
         accessor: "gate_world_item_cast",
         key: "",
-        state: Gate::Closed {
-            owners: &["MAGIC-SUMMON-1", "MAGIC-ITEMS-1"],
+        state: Gate::AllocatedOpen {
+            task: "MAGIC-ITEMS-1",
         },
         calls: &[("gameplay_transport/world_item_cast.rs", 2)],
     },
@@ -748,6 +748,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                 if task == "WAVE-A2/C17c" {
                     assert_eq!(entry.accessor, "gate_parameter_cast");
                     assert_eq!(entry.key, "creature_appearance");
+                    continue;
+                }
+                if task == "MAGIC-ITEMS-1" {
+                    assert_eq!(entry.accessor, "gate_world_item_cast");
+                    assert_eq!(entry.key, "");
                     continue;
                 }
                 if task == "TK-W19" {
