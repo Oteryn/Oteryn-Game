@@ -33,6 +33,8 @@ pub struct Scene {
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
     floor_separator: u8,
+    #[cfg(feature = "bevy-shell")]
+    floor_quads: Vec<(std::ops::Range<usize>, i16)>,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
     pub(crate) minimap_floor: i16,
@@ -112,6 +114,8 @@ impl Scene {
             #[cfg(feature = "bevy-shell")]
             minimap_quads: 0..0,
             floor_separator: 0,
+            #[cfg(feature = "bevy-shell")]
+            floor_quads: Vec::new(),
             minimap_state: None,
             minimap_floor: -7,
             minimap_memory: Default::default(),
@@ -238,8 +242,14 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
+        let (mut sprites, dimmed, floor_quads) = self.world_sprites()?;
+        #[cfg(feature = "bevy-shell")]
+        {
+            self.floor_quads = floor_quads;
+        }
+        #[cfg(not(feature = "bevy-shell"))]
+        let _ = floor_quads;
         let atlas = self.atlas();
-        let (mut sprites, dimmed) = self.world_sprites()?;
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
             let scale = f32::from(self.label_scale) / 100.0;
@@ -331,4 +341,4 @@ mod appearance_cache;
 mod visual_scene;
 
 #[path = "features/0019-world-light/scene.rs"]
-mod floor_lighting;
+pub(crate) mod floor_lighting;

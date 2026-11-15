@@ -136,6 +136,7 @@ fn real_edge_labels_reuse_dense_projected_entities() -> TestResult {
     let mut app = App::new();
     app.insert_non_send(host)
         .init_resource::<SceneCache>()
+        .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
@@ -245,6 +246,111 @@ fn minimap_labels_clip_to_their_own_target_and_discard_invisible_glyphs() -> Tes
             viewport
         )
         .is_none()
+    );
+    Ok(())
+}
+
+#[test]
+fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::ActorPosition;
+    use oteryn_session::world_map::{
+        MapDefinition, MapItem, MapOrigin, MapTile, MapViewHeader, WorldMapViewSnapshot,
+    };
+    let origin = ActorPosition {
+        x: 100,
+        y: 200,
+        floor: -7,
+    };
+    let tile = |position| MapTile {
+        position,
+        items: vec![MapItem {
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+            count: 1,
+            sub_type: 0,
+            origin: MapOrigin::DisplayOnly,
+            appearance_id: 0,
+        }],
+        more: false,
+        ground_speed: 0,
+    };
+    let mut map = WorldMapViewSnapshot {
+        header: MapViewHeader {
+            content_generation: [0; 32],
+            bundle_digest: [0; 32],
+            reset_epoch: 1,
+            origin,
+            first_visible_floor: 0,
+        },
+        tiles: vec![
+            tile(origin),
+            tile(ActorPosition {
+                x: 101,
+                y: 201,
+                floor: -6,
+            }),
+        ],
+    };
+    let mut view = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    view.set_live_map(&map)?;
+    let mut host = HostOwner::new(None)?;
+    let (link, _, _) = play_channel();
+    host.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(640, 480),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        Some(&1.0)
+    );
+    map.header.first_visible_floor = -7;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_live_map(&map)?;
+    app.world_mut()
+        .resource_mut::<Time>()
+        .advance_by(std::time::Duration::from_millis(250));
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        Some(&0.5)
+    );
+    let mut query = app.world_mut().query::<&Sprite>();
+    assert!(
+        query
+            .iter(app.world())
+            .any(|sprite| sprite.color.alpha() == 0.5)
+    );
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        Some(&0.0)
+    );
+    map.header.first_visible_floor = 0;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view
+        .set_live_map(&map)?;
+    app.update();
+    assert_eq!(
+        app.world().resource::<SceneCache>().floor_alpha.get(&-6),
+        Some(&0.5)
     );
     Ok(())
 }
