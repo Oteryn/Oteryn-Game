@@ -62,7 +62,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_bluebear/ab_dendriel",
-    "keyword": "ab_dendriel",
+    "keyword": "ab'dendriel",
     "price": 130,
     "premium": false,
     "x": 32734,
@@ -306,7 +306,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_fearless/ab_dendriel",
-    "keyword": "ab_dendriel",
+    "keyword": "ab'dendriel",
     "price": 90,
     "premium": false,
     "x": 32734,
@@ -452,7 +452,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_greyhound/ab_dendriel",
-    "keyword": "ab_dendriel",
+    "keyword": "ab'dendriel",
     "price": 80,
     "premium": false,
     "x": 32734,
@@ -821,7 +821,7 @@
   },
   {
     "key": "oteryn:service.travel.captain_seahorse/ab_dendriel",
-    "keyword": "ab_dendriel",
+    "keyword": "ab'dendriel",
     "price": 70,
     "premium": true,
     "x": 32734,
@@ -1633,7 +1633,7 @@
   },
   {
     "key": "oteryn:service.travel.junkar_mines/robsons_isle",
-    "keyword": "robsons_isle",
+    "keyword": "robson's isle",
     "price": 70,
     "premium": false,
     "x": 32527,
@@ -1717,7 +1717,7 @@
   },
   {
     "key": "oteryn:service.travel.junkar_thais/robsons_isle",
-    "keyword": "robsons_isle",
+    "keyword": "robson's isle",
     "price": 80,
     "premium": false,
     "x": 32527,

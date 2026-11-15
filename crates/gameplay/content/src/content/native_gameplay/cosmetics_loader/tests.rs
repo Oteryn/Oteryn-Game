@@ -481,3 +481,91 @@ fn directory_index_and_identity_only_mount_records_are_not_cosmetics() -> TestRe
     }
     Ok(())
 }
+
+#[test]
+fn marriage_grant_survives_sex_qualified_selection_without_bypassing_authored_sex() -> TestResult {
+    use crate::content::native_gameplay::{
+        MARRIAGE_GRANT_KEY, MARRIAGE_PROVENANCE, NativeCosmeticsView,
+    };
+    use crate::domain::appearance::{AppearanceRejection, EarnedCosmetics};
+    use std::sync::Arc;
+
+    let mut f = Fixture::actual_source_raw_authored_document()?;
+    let mut wedding = f.document["outfits"][0].clone();
+    let wedding_key = "oteryn:outfit.newly-wed".to_owned();
+    wedding["key"] = json!(wedding_key);
+    wedding["starter_female"] = false.into();
+    wedding["starter_male"] = false.into();
+    for (_, bytes) in &f.shards {
+        let shard: Value = serde_json::from_slice(bytes)?;
+        for record in shard["records"].as_array().ok_or("records")? {
+            let sex = match record["source_id"].as_u64() {
+                Some(328) => "male",
+                Some(329) => "female",
+                _ => continue,
+            };
+            wedding[sex] = json!({"id": record["source_id"],
+                "source_record_sha256": record["source_record_sha256"]});
+        }
+    }
+    f.document["outfits"]
+        .as_array_mut()
+        .ok_or("outfits")?
+        .push(wedding);
+    f.document["grant_mappings"] = json!([{
+        "grant_key": "quest:male-only", "sex": "male",
+        "target": {"kind": "Outfit", "outfit_key": wedding_key},
+        "compatible_provenance": ["authored-r1"]
+    }]);
+    let view = NativeCosmeticsView {
+        source_digest: [1; 32],
+        content: Arc::new(f.compile().map_err(debug)?),
+        outfit_keys: vec!["oteryn:outfit.proposed".into(), wedding_key.clone()].into(),
+        mount_keys: vec!["oteryn:mount.proposed".into()].into(),
+    };
+    let selection = AppearanceSelection {
+        outfit_key: wedding_key.clone(),
+        colours: [0; 4],
+        addons: 0,
+        mount_key: None,
+    };
+    for sex in [Sex::Female, Sex::Male] {
+        let facts = vec![(MARRIAGE_GRANT_KEY.into(), MARRIAGE_PROVENANCE.into())];
+        let unlocks = EarnedCosmetics {
+            content: &view,
+            facts: &facts,
+        }
+        .with_sex(sex);
+        assert_eq!(validate_selection(&selection, sex, &view, &unlocks), Ok(()));
+        assert_eq!(unlocks.addon(&wedding_key, 1), UnlockFact::Incompatible);
+        assert_eq!(
+            unlocks.outfit(&"oteryn:outfit.proposed".into()),
+            UnlockFact::Incompatible
+        );
+        let facts = vec![(MARRIAGE_GRANT_KEY.into(), "wrong-provenance".into())];
+        let unlocks = EarnedCosmetics {
+            content: &view,
+            facts: &facts,
+        }
+        .with_sex(sex);
+        assert_eq!(
+            validate_selection(&selection, sex, &view, &unlocks),
+            Err(AppearanceRejection::OutfitNotAuthorized)
+        );
+        let facts = vec![("quest:male-only".into(), "authored-r1".into())];
+        let unlocks = EarnedCosmetics {
+            content: &view,
+            facts: &facts,
+        }
+        .with_sex(sex);
+        assert_eq!(
+            validate_selection(&selection, sex, &view, &unlocks),
+            if sex == Sex::Male {
+                Ok(())
+            } else {
+                Err(AppearanceRejection::OutfitNotAuthorized)
+            }
+        );
+    }
+    Ok(())
+}
