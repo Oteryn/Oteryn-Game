@@ -1,6 +1,6 @@
 //! Compact blessing ownership over the retained 0199 self-only query.
 use super::*;
-use bevy::{picking::hover::Hovered, window::PrimaryWindow};
+use bevy::{picking::hover::Hovered, ui::Pressed, window::PrimaryWindow};
 use std::time::Duration;
 
 // Storage keys and names from rulesets/character/blessings/catalogue.json.
@@ -18,6 +18,10 @@ const BLESSINGS: [(&str, &str, &str); 8] = [
 struct Panel(Entity);
 #[derive(Component)]
 struct Tooltip;
+#[derive(Component)]
+struct Details;
+#[derive(Component)]
+struct ToggleDetails;
 #[derive(Default, Resource)]
 struct Hover(bool);
 #[derive(Default)]
@@ -33,7 +37,13 @@ pub(super) fn spawn(app: &mut App) {
     app.init_resource::<Hover>()
         .init_resource::<UiScale>()
         .add_systems(Startup, setup.after(super::setup))
-        .add_systems(Update, (hover, project).chain().after(super::project));
+        .add_systems(Update, project_details.after(super::project))
+        .add_systems(
+            Update,
+            (toggle_details, hover, project)
+                .chain()
+                .after(super::project),
+        );
 }
 fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins: Res<Skins>) {
     let icons = commands
@@ -66,7 +76,35 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
             source::font(skins.font.clone(), false),
         ))
         .id();
-    commands.entity(root).add_children(&[title, icons]);
+    let toggle = commands
+        .spawn((
+            bevy::ui_widgets::Button,
+            ToggleDetails,
+            source::text(
+                "Ankh — blessing details",
+                source::font(skins.font.clone(), false),
+            ),
+        ))
+        .id();
+    let details = commands
+        .spawn((
+            Details,
+            GlobalZIndex(110),
+            BackgroundColor(Color::srgb_u8(25, 25, 25)),
+            source::text("", source::font(skins.font.clone(), false)),
+            Node {
+                display: Display::None,
+                position_type: PositionType::Absolute,
+                width: px(420.),
+                max_height: px(480.),
+                overflow: Overflow::scroll_y(),
+                ..default()
+            },
+        ))
+        .id();
+    commands
+        .entity(root)
+        .add_children(&[title, toggle, icons, details]);
     commands.entity(regions.equipment).add_child(root);
     commands
         .spawn((
@@ -83,6 +121,56 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
             GlobalZIndex(120),
         ))
         .insert(TextLayout::default());
+}
+fn toggle_details(
+    mut commands: Commands,
+    buttons: Query<Entity, (With<ToggleDetails>, Added<Pressed>)>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    details: Query<(Entity, &Node), With<Details>>,
+) {
+    if !owner.modal_active() && buttons.iter().any(|entity| guard.allows(entity)) {
+        for (entity, current) in &details {
+            let mut node = current.clone();
+            node.display = if node.display == Display::None {
+                Display::Flex
+            } else {
+                Display::None
+            };
+            commands.entity(entity).insert(node);
+        }
+    }
+}
+fn details_text(keys: &[String]) -> String {
+    let mut text = String::from("Blessing ownership\n");
+    for (key, _, name) in BLESSINGS {
+        let owned = keys
+            .iter()
+            .any(|value| value == &format!("oteryn:blessing.{key}"));
+        text.push_str(&format!(
+            "{name}: {}\n",
+            if owned { "owned" } else { "missing" }
+        ));
+    }
+    text.push_str("Death penalty details\nRegular blessings reduce experience and skill loss. Promotion also reduces these losses.\nFive or more regular blessings protect equipment and containers; red or black skulls override this protection.\nTwist of Fate protects regular blessings on qualifying PvP deaths, rather than adding regular death-loss protection.\nExact next-death losses, promotion and world modifiers are not supplied by the server.");
+    text
+}
+fn project_details(
+    owner: NonSend<HostOwner>,
+    mut details: Query<(&mut Text, &mut Node), With<Details>>,
+) {
+    for (mut text, mut node) in &mut details {
+        if let Some(snapshot) = owner
+            .play
+            .as_ref()
+            .and_then(|play| play.link.blessings_panel().snapshot)
+        {
+            text.0 = details_text(&snapshot.blessings);
+        } else {
+            text.0 = "Waiting for blessing ownership from the server.".into();
+            node.display = Display::None;
+        }
+    }
 }
 fn hover(
     owner: NonSend<HostOwner>,
@@ -261,219 +349,6 @@ fn label(key: &str) -> String {
             |(_, _, name)| (*name).to_owned(),
         )
 }
-
 #[cfg(test)]
-mod tests {
-    use super::super::*;
-    use crate::{
-        combat_input::{CombatCommand, CombatReport},
-        play::Stepper,
-    };
-    use oteryn_client_runtime::{
-        cyclopedia_character::{StoreSummary, TabView},
-        raw_feature::FeatureCommand,
-    };
-    use oteryn_session::{
-        GatedCommandResult, LogoutResult, SessionError, SessionEvent, StepDirection, StepOutcome,
-    };
-    use std::time::Duration;
-    type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
-
-    struct Feed(tokio::sync::mpsc::UnboundedReceiver<Vec<String>>);
-    impl Stepper for Feed {
-        fn feature_selected(&self, capability: u32) -> bool {
-            capability == 199
-        }
-        async fn feature(
-            &mut self,
-            command: &FeatureCommand,
-        ) -> Result<GatedCommandResult, SessionError> {
-            if command.capability != 199 || command.kind != 388 || command.payload != [6, 0, 0, 20]
-            {
-                return Err(SessionError::CapabilityNotSelected {
-                    capability: command.capability,
-                });
-            }
-            let blessings = self.0.recv().await.ok_or(SessionError::SessionUnusable)?;
-            let payload = TabView::StoreSummary(StoreSummary {
-                blessings,
-                permanent_prey_slots: 0,
-                prey_wildcards: 0,
-                hirelings: 0,
-            })
-            .encode()
-            .map_err(|_| SessionError::SessionUnusable)?;
-            Ok(GatedCommandResult {
-                command_id: 1,
-                server_sequence: 1,
-                status: oteryn_session::CommandStatus::Accepted,
-                payload,
-            })
-        }
-        fn drain(&mut self) -> Vec<SessionEvent> {
-            Vec::new()
-        }
-        async fn serve(&mut self, _duration: Duration) -> Result<(), SessionError> {
-            tokio::task::yield_now().await;
-            Ok(())
-        }
-        async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
-            Err(SessionError::SessionUnusable)
-        }
-        async fn combat(&mut self, _command: CombatCommand) -> Result<CombatReport, SessionError> {
-            Err(SessionError::SessionUnusable)
-        }
-        async fn logout(&mut self) -> Result<Option<LogoutResult>, SessionError> {
-            Ok(None)
-        }
-    }
-    fn run(check: impl FnOnce(&mut App) -> TestResult + Send + 'static) -> TestResult {
-        std::thread::Builder::new()
-            .stack_size(64 << 20)
-            .spawn(move || -> TestResult {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()?;
-                let (mut app, commands, outbox) =
-                    super::super::tests::app().map_err(|e| e.to_string())?;
-                runtime.block_on(async {
-                    let (send, receive) = tokio::sync::mpsc::unbounded_channel();
-                    let task =
-                        tokio::spawn(crate::play::run_session(Feed(receive), commands, outbox));
-                    tokio::time::timeout(Duration::from_secs(5), async {
-                        while !app
-                            .world()
-                            .non_send::<HostOwner>()
-                            .play
-                            .as_ref()
-                            .is_some_and(|p| p.link.cyclopedia_character_panel().selected)
-                        {
-                            tokio::task::yield_now().await;
-                        }
-                    })
-                    .await?;
-                    for keys in [
-                        vec!["oteryn:blessing.the_spiritual_shielding".to_string()],
-                        Vec::new(),
-                    ] {
-                        send.send(keys.clone())?;
-                        app.world()
-                            .non_send::<HostOwner>()
-                            .play
-                            .as_ref()
-                            .ok_or("play")?
-                            .link
-                            .blessings_request();
-                        tokio::time::timeout(Duration::from_secs(5), async {
-                            while !app
-                                .world()
-                                .non_send::<HostOwner>()
-                                .play
-                                .as_ref()
-                                .is_some_and(|p| {
-                                    p.link
-                                        .blessings_panel()
-                                        .snapshot
-                                        .as_ref()
-                                        .is_some_and(|s| s.blessings == keys)
-                                })
-                            {
-                                tokio::task::yield_now().await;
-                            }
-                        })
-                        .await?;
-                        app.update();
-                        check_state(&mut app, !keys.is_empty())?;
-                    }
-                    check(&mut app)?;
-                    task.abort();
-                    Ok(())
-                })
-            })?
-            .join()
-            .map_err(|_| "blessings test thread failed")?
-    }
-    fn check_state(app: &mut App, active: bool) -> TestResult {
-        let world = app.world_mut();
-        let mut query = world.query::<(&Name, &Text, &TextColor)>();
-        let (_, text, color) = query
-            .iter(world)
-            .find(|(name, _, _)| name.as_str() == "oteryn:blessing.the_spiritual_shielding")
-            .ok_or("blessing icon missing")?;
-        assert_eq!(text.0, if active { "+ SS" } else { "- SS" });
-        assert_eq!(
-            color.0,
-            if active {
-                Color::srgb_u8(120, 220, 120)
-            } else {
-                source::DISABLED_TEXT_COLOR
-            }
-        );
-        let (_, inactive, _) = query
-            .iter(world)
-            .find(|(name, _, _)| name.as_str() == "oteryn:blessing.twist_of_fate")
-            .ok_or("inactive blessing icon missing")?;
-        assert_eq!(inactive.0, "- TF");
-        let (_, tooltip, _) = query
-            .iter(world)
-            .find(|(name, _, _)| name.as_str() == "Blessings tooltip")
-            .ok_or("tooltip missing")?;
-        assert_eq!(
-            tooltip.0,
-            if active {
-                "Active blessings:\nThe Spiritual Shielding"
-            } else {
-                "You are not protected by any blessing."
-            }
-        );
-        Ok(())
-    }
-    #[test]
-    fn blessing_icons_state() -> TestResult {
-        run(|_| Ok(()))
-    }
-    #[test]
-    fn blessing_tooltip_none() -> TestResult {
-        run(|app| {
-            app.world_mut()
-                .non_send_mut::<HostOwner>()
-                .settings
-                .preferences
-                .tooltip_delay_ms = 0;
-            app.world_mut()
-                .non_send_mut::<HostOwner>()
-                .settings
-                .preferences
-                .tooltips_enabled = true;
-            let mut window = Window::default();
-            window.set_cursor_position(Some(Vec2::new(200., 100.)));
-            app.world_mut().spawn((window, bevy::window::PrimaryWindow));
-            let panel = app
-                .world_mut()
-                .query::<(Entity, &Name)>()
-                .iter(app.world())
-                .find_map(|(entity, name)| (name.as_str() == "Blessings status").then_some(entity))
-                .ok_or("blessings panel")?;
-            app.world_mut()
-                .entity_mut(panel)
-                .insert(bevy::picking::hover::Hovered(true));
-            app.update();
-            let visible = app
-                .world_mut()
-                .query::<(&Name, &Node)>()
-                .iter(app.world())
-                .any(|(name, node)| {
-                    name.as_str() == "Blessings tooltip" && node.display == Display::Flex
-                });
-            assert!(visible, "hover must show the actual tooltip");
-            assert!(
-                app.world_mut()
-                    .query::<(&Name, &Text)>()
-                    .iter(app.world())
-                    .any(|(name, text)| name.as_str() == "Blessings tooltip"
-                        && text.0 == "You are not protected by any blessing.")
-            );
-            Ok(())
-        })
-    }
-}
+#[path = "blessings/tests.rs"]
+mod tests;
