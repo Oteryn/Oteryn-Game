@@ -39,6 +39,7 @@ pub(super) mod rule_violation;
 pub(super) mod satellite_map;
 mod stash;
 mod store;
+mod store_inbox;
 mod task_board;
 mod trade;
 mod tutorial;

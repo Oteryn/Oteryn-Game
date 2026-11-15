@@ -20,6 +20,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Quest Log", Control::Quests),
     ("Skills", Control::Skills),
     ("Spellbook", Control::Spells),
+    ("Store Inbox", Control::StoreInbox),
     ("Unjustified Points", Control::UnjustifiedPoints),
     ("VIP", Control::Panel("vip")),
 ];
@@ -70,6 +71,11 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Notices => {
             if let Some(play) = &owner.play {
                 play.link.notices_set_open(true);
+            }
+        }
+        Control::StoreInbox => {
+            if let Some(play) = &owner.play {
+                play.link.store_inbox_set_open(true);
             }
         }
         Control::Skills => {

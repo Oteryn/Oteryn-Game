@@ -48,4 +48,18 @@ impl PlayLink {
         }
         true
     }
+    /// The accepted custody summary is remote, read-only, and combines Store and mail deliveries.
+    pub fn store_inbox_set_open(&self, open: bool) {
+        {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.cyclopedia_character;
+            panel.items.open = open;
+            if !open {
+                return;
+            }
+            // Never present a previous character/profile's holdings as this inbox.
+            panel.items.page = None;
+        }
+        self.cyclopedia_character_request(Intent::Items);
+    }
 }

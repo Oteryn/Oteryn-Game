@@ -236,6 +236,14 @@ no mount IDs or ownership are inferred. The catalogue arrives in appearance
 snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
 
+### Store Inbox (remote summary)
+
+**Store Inbox** in the toolbar opens confirmed character-inbox quantities, Refresh, and Previous/Next summary-page controls. Capability 199 / command 388 / selector 130 supplies the existing fenced custody summary. Pages cover all locations; only positive inbox quantities appear. An empty filtered page does not mean the whole inbox is empty. The server combines Store and other deliveries: this is a read-only slice, not full parity.
+
+**NEEDS-CONTRACT:** an accepted `StoreInboxOpenRequest` / `StoreInboxView` exchange (proposed names; no IDs allocated) identifying the Store-only root, returning session-scoped live item/container handles, entries and pagination, and authorizing existing use/move commands. The four-location summary has neither Store provenance nor handles. Command 186 claims a Platform fulfilment unit by key; it does not open/enumerate this inbox.
+
+Behaviour: [Tibia manual](../../docs/reference/tibia-manual/interface.md#343-store-inbox), remote access. Structure reference only: edubart/otclient `dab86e610991092fe8b2471f7de55a7c986b3cd2`, `modules/game_inventory/inventory.lua:35–42,102–104`: purse button uses a server-supplied inventory item. No source/assets copied.
+
 ### Depot boxes
 
 Open **Depot** in the toolbar or press **Ctrl+Shift+L** near a depot locker.
