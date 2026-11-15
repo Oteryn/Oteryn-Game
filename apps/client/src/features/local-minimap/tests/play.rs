@@ -387,3 +387,91 @@ fn minimap_edge_clicks_never_queue_out_of_world_navigation() -> Result<(), Batch
     );
     Ok(())
 }
+
+#[test]
+fn remembered_terrain_and_marks_follow_the_browsed_floor() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.set_live_map(&snapshot(100))?;
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.cells.clear();
+        map.tracking = false;
+        map.x = 140;
+        map.y = 240;
+        map.floor = -6;
+    }
+    play.scene.minimap_memory.tiles = vec![(140, 240, -7, 100), (141, 240, -6, 100)];
+    play.scene.minimap_memory.marks = [-7, -6]
+        .into_iter()
+        .enumerate()
+        .map(|(i, floor)| crate::play::MinimapMark {
+            x: 140 + i as i32,
+            y: 240,
+            floor,
+            label: "Floor mark".into(),
+        })
+        .collect();
+    play.scene.set_minimap(true, play.minimap.clone(), -7)?;
+    let quads = mini(&play);
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [60.0, 48.0]).count(),
+        1
+    );
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [64.0, 48.0]).count(),
+        3
+    );
+    crate::play::feature_local_minimap::state::lock(&play.minimap).floor = -7;
+    play.scene.set_minimap(true, play.minimap.clone(), -7)?;
+    let quads = mini(&play);
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [60.0, 48.0]).count(),
+        3
+    );
+    assert_eq!(
+        quads.iter().filter(|q| q.position == [64.0, 48.0]).count(),
+        1
+    );
+    Ok(())
+}
+
+#[test]
+fn zoomed_cells_retain_exploration_between_sampled_coordinates() -> Result<(), BatchError> {
+    for zoom in [2, 4, 8] {
+        let mut play = minimap_view()?;
+        play.set_live_map(&snapshot(100))?;
+        {
+            let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+            map.cells.clear();
+            map.tracking = false;
+            map.x = 140;
+            map.y = 240;
+            map.floor = -6;
+            map.zoom = zoom;
+            map.cells.insert((-6, 140 + zoom - 1, 240 + zoom - 1), 55);
+            // Outside the cell, and on another floor, must not colour empty cells.
+            map.cells.insert((-7, 140, 240 + zoom), 55);
+        }
+        play.scene.minimap_memory.tiles = vec![(140 + 2 * zoom - 1, 240 + zoom - 1, -6, 100)];
+        play.scene.minimap_memory.marks = vec![crate::play::MinimapMark {
+            x: 140 + 3 * zoom - 1,
+            y: 240 + zoom - 1,
+            floor: -6,
+            label: "Zoom mark".into(),
+        }];
+        play.scene.set_minimap(true, play.minimap.clone(), -7)?;
+        let quads = mini(&play);
+        for position in [[60.0, 48.0], [64.0, 48.0], [68.0, 48.0]] {
+            assert_eq!(
+                quads.iter().filter(|q| q.position == position).count(),
+                2,
+                "zoom {zoom} at {position:?}"
+            );
+        }
+        assert_eq!(
+            quads.iter().filter(|q| q.position == [60.0, 52.0]).count(),
+            1
+        );
+    }
+    Ok(())
+}

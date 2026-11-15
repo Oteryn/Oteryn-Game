@@ -15,6 +15,59 @@ pub fn lock(shared: &SharedMinimap) -> std::sync::MutexGuard<'_, Minimap> {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
+#[derive(Debug)]
+struct Editor {
+    stopped: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    thread: std::thread::JoinHandle<()>,
+}
+impl Editor {
+    fn close(self) {
+        self.stopped
+            .store(true, std::sync::atomic::Ordering::Release);
+        self.thread.thread().unpark();
+        let _ = self.thread.join();
+    }
+}
+// Only Windows opens this editor; tests exercise its thread ownership headlessly.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(super) fn open_editor(
+    shared: &SharedMinimap,
+    run: impl FnOnce(std::sync::Arc<std::sync::atomic::AtomicBool>) + Send + 'static,
+) {
+    let previous = {
+        let mut map = lock(shared);
+        if map.editor_open {
+            return;
+        }
+        map.editor_open = true;
+        map.editor.take()
+    };
+    if let Some(previous) = previous {
+        previous.close();
+    }
+    let stopped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let signal = stopped.clone();
+    let mut map = lock(shared);
+    match std::thread::Builder::new()
+        .name("minimap-marker-editor".into())
+        .spawn(move || run(signal))
+    {
+        Ok(thread) => map.editor = Some(Editor { stopped, thread }),
+        Err(_) => map.editor_open = false,
+    }
+}
+fn close_editor(shared: &SharedMinimap) {
+    let editor = lock(shared).editor.take();
+    // The editor saves under the map lock on exit; never join while holding it.
+    if let Some(editor) = editor {
+        editor.close();
+    }
+}
+impl Drop for crate::play::PlayView {
+    fn drop(&mut self) {
+        close_editor(&self.minimap);
+    }
+}
 type Binding = ([u8; 32], [u8; 32], u64);
 const MAX_CELLS: usize = 1_048_576;
 const MAX_MARKERS: usize = 512;
@@ -48,6 +101,7 @@ pub struct Minimap {
     // Read by the native Windows marker editor.
     #[cfg_attr(not(windows), allow(dead_code))]
     pub editor_open: bool,
+    editor: Option<Editor>,
     pub own: (i32, i32, i16),
     pub feedback: String,
     root: Option<PathBuf>,
@@ -67,6 +121,7 @@ impl Default for Minimap {
             zoom: 1,
             tracking: true,
             editor_open: false,
+            editor: None,
             own: (0, 0, -7),
             feedback: String::new(),
             root: std::env::var_os("LOCALAPPDATA").map(|p| PathBuf::from(p).join("Oteryn/minimap")),
@@ -365,3 +420,7 @@ mod play_persistence;
 #[cfg(test)]
 #[path = "tests/e2e_n07d.rs"]
 mod e2e_n07d;
+
+#[cfg(all(test, not(windows)))]
+#[path = "native.rs"]
+mod native_action_tests;
