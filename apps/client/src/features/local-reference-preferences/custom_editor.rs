@@ -164,7 +164,7 @@ fn run(parent: HWND, shared: &Arc<Mutex<Shared>>) {
             "Text: paste into composer",
             "Text: send immediately",
             "Object: use",
-            "Object: choose target with cursor",
+            "use object with crosshair",
             "Object: use on self",
             "Object: use on current target",
             "Object: equip / unequip",
@@ -259,8 +259,13 @@ fn run(parent: HWND, shared: &Arc<Mutex<Shared>>) {
             }
             if held.as_ref() != Some(&state.preferences) {
                 SendMessageW(existing, CB_RESETCONTENT, 0, 0);
-                for key in state.preferences.custom_hotkeys.keys() {
-                    SendMessageW(existing, CB_ADDSTRING, 0, wide(key).as_ptr() as isize);
+                for (key, action) in &state.preferences.custom_hotkeys {
+                    SendMessageW(
+                        existing,
+                        CB_ADDSTRING,
+                        0,
+                        wide(&action.hotkey_label(key)).as_ptr() as isize,
+                    );
                 }
                 let index = old_key.as_ref().and_then(|key| {
                     state

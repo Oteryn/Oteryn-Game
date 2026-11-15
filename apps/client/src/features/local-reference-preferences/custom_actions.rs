@@ -39,6 +39,14 @@ pub enum CustomAction {
     },
 }
 impl CustomAction {
+    pub fn hotkey_label(&self, key: &str) -> String {
+        if matches!(self, Self::Object { target: ObjectTarget::Cursor, .. }) {
+            format!("{key}: (use object with crosshair)")
+        } else {
+            key.to_owned()
+        }
+    }
+
     pub(super) fn valid(&self) -> bool {
         match self {
             Self::PassiveStatus { .. } | Self::Utility { .. } => true,
