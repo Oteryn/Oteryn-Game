@@ -688,14 +688,7 @@ impl ChannelRuntimeV1 {
                 && spawn.definition.points[cell].enabled
                 && self.spawn_schedule.pending(point).is_none()
             {
-                // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
-                // (Crystal `spawn_monster.cpp:443-458`).
-                let mut timing = spawn.definition.timing(cell)?;
-                timing.respawn_delay_micros =
-                    oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
-                        timing.respawn_delay_micros,
-                        oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
-                    );
+                let timing = self.spawn_timing(point)?;
                 let due_micros = self
                     .spawn_schedule
                     .creature_gone(point, timing, now_micros)
@@ -809,6 +802,11 @@ impl ChannelRuntimeV1 {
             // with the same one-second minimum after applying rates.
             timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
         }
+        timing.respawn_delay_micros =
+            oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
+                timing.respawn_delay_micros,
+                oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
+            );
         Ok(timing)
     }
     pub(super) fn spawn_cell(
@@ -827,9 +825,9 @@ impl ChannelRuntimeV1 {
             floor: cell.floor,
         })
     }
-    /// §6.3 Blocked reads the present players of [`Self::positioned_actor_census`] (committed,
-    /// positioned and in control); their interest area (MOVE-RL-11) is the caller's view
-    /// around these positions. SPAWN-CEILINGS-1 (Codex 4242270322): they are read from the
+    /// §6.3 Blocked reads committed, positioned players, including after control loss, and
+    /// excludes staff ghosts. Their interest area (MOVE-RL-11) is the caller's view around
+    /// these positions. SPAWN-CEILINGS-1 (Codex 4242270322): they are read from the
     /// occupied index without building the census of every creature; a player under a foreign
     /// position context refuses, as in the census.
     pub(super) fn present_player_positions(
@@ -852,7 +850,7 @@ impl ChannelRuntimeV1 {
             else {
                 continue;
             };
-            if lifecycle.control_loss.is_some() {
+            if lifecycle.staff_ghost {
                 continue;
             }
             if version.context != context {
