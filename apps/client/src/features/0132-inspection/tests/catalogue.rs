@@ -190,3 +190,142 @@ fn item_catalogue_search_drops_and_market_use_production_queues()
     assert!(link.discovery_panel().inspection.catalogue.is_empty());
     Ok(())
 }
+
+#[test]
+fn catalogue_continuations_reject_changed_inputs() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, _) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        panel.selected = true;
+        panel.catalogue_next = Some(50);
+        panel.last_request = Some(wire::Request::CatalogueQuery(
+            wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?,
+        ));
+        panel.search = "new".into();
+    }
+    link.item_catalogue_request(1);
+    assert!(
+        receiver.try_recv().is_err(),
+        "changed search reused old cursor"
+    );
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        panel.catalogue_query_categories = vec!["Weapons".into()];
+    }
+    link.item_catalogue_filter("old", "Weapons");
+    link.item_catalogue_request(1);
+    assert!(
+        receiver.try_recv().is_err(),
+        "changed category reused old cursor"
+    );
+    link.item_catalogue_filter("old", "");
+    link.item_catalogue_request(1);
+    let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing valid item continuation".into());
+    };
+    assert!(matches!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::CatalogueQuery(Query::Items { after: 50, .. })
+    ));
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        panel.pending = false;
+        panel.last_request = Some(wire::Request::CatalogueQuery(Query::Drops {
+            reference: 7,
+            after: 0,
+        }));
+        panel.catalogue_drop_next = Some(10);
+        panel.catalogue_definition = "8".into();
+    }
+    link.item_catalogue_request(8);
+    assert!(
+        receiver.try_recv().is_err(),
+        "changed item reused drop cursor"
+    );
+    lock(&link.mailbox)
+        .discovery
+        .inspection
+        .catalogue_definition = "7".into();
+    link.item_catalogue_request(8);
+    let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+        return Err("missing valid drop continuation".into());
+    };
+    assert!(matches!(
+        wire::decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::CatalogueQuery(Query::Drops {
+            reference: 7,
+            after: 10
+        })
+    ));
+    Ok(())
+}
+
+#[test]
+fn failed_catalogue_queries_cannot_reuse_previous_item_cursors()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        panel.selected = true;
+        panel.catalogue_next = Some(50);
+        panel.last_request = Some(wire::Request::CatalogueQuery(
+            wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?,
+        ));
+        panel.search = "new".into();
+    }
+    link.item_catalogue_request(0);
+    assert!(receiver.try_recv().is_ok());
+    outbox.discovery_result(
+        132,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Rejected,
+            payload: vec![],
+        },
+    );
+    link.item_catalogue_request(1);
+    assert!(
+        receiver.try_recv().is_err(),
+        "failed fresh query borrowed old item cursor"
+    );
+    Ok(())
+}
+
+#[test]
+fn failed_catalogue_queries_cannot_reuse_previous_drop_cursors()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        let panel = &mut mailbox.discovery.inspection;
+        panel.selected = true;
+        panel.catalogue_drop_next = Some(10);
+        panel.last_request = Some(wire::Request::CatalogueQuery(Query::Drops {
+            reference: 7,
+            after: 0,
+        }));
+        panel.catalogue_definition = "8".into();
+    }
+    link.item_catalogue_request(7);
+    assert!(receiver.try_recv().is_ok());
+    outbox.discovery_result(
+        132,
+        &ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Rejected,
+            payload: vec![],
+        },
+    );
+    link.item_catalogue_request(8);
+    assert!(
+        receiver.try_recv().is_err(),
+        "failed fresh query borrowed old drop cursor"
+    );
+    Ok(())
+}

@@ -107,7 +107,10 @@ impl Outbox {
             &mut shared.properties.pvp_expert,
             session,
         );
-        shared.properties.mail.selected = session.feature_selected(115);
+        shared.properties.mail = Panel {
+            selected: session.feature_selected(115),
+            ..Default::default()
+        };
         shared.properties.house_furniture_rotation =
             oteryn_client_ui::house_furniture_rotation::Panel {
                 selected: session.feature_selected(445),

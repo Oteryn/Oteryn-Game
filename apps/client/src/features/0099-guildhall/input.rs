@@ -21,6 +21,14 @@ pub(in crate::play) fn submit(
         panel.feedback = tr!("Waiting for the server").into();
         return;
     }
+    // Validate every submitted field before producing any command, including unused fields.
+    if panel
+        .fields
+        .iter()
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 512)) {
+        panel.feedback = "A form field exceeds its UTF-8 byte limit or contains invalid text".into();
+        return;
+    }
     match super::protocol::command(panel, intent) {
         Ok(command) => {
             if oteryn_client_ui::guildhall::request(panel, command.kind)
@@ -62,9 +70,10 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
-    if panel.pending || value.len() > 512 || value.contains('\0') {
+    if panel.pending {
         return;
     }
+    // Retain rejected input so a later submit cannot send the previous stored value.
     if let Some(slot) = panel.fields.get_mut(field) {
         if *slot == value {
             return;

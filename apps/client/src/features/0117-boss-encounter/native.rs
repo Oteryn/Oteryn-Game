@@ -75,6 +75,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
             },
             set_open: |mailbox, value| mailbox.boss_encounter.open = value,
             submit: |mailbox, commands, action, values| {
+                if values.iter().any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 512)) {
+                    mailbox.boss_encounter.feedback = Some("A form field exceeds its UTF-8 byte limit or contains invalid text");
+                    return;
+                }
                 if mailbox.boss_encounter.pending {
                     return;
                 }

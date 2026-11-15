@@ -21,6 +21,14 @@ pub(in crate::play) fn submit(
         panel.feedback = tr!("Waiting for the server").into();
         return;
     }
+    // Validate every submitted field before producing any command, including unused fields.
+    if panel
+        .fields
+        .iter()
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 7996)) {
+        panel.feedback = "A form field exceeds its UTF-8 byte limit or contains invalid text".into();
+        return;
+    }
     match super::protocol::command(panel, intent) {
         Ok(command) => {
             if oteryn_client_ui::mail::request(panel, command.kind)
@@ -60,7 +68,7 @@ impl PlayLink {
             if !mailbox.properties.mail.pending
                 && let Some(handle) = mailbox.inventory.selected_item().map(|item| item.handle)
             {
-                mailbox.properties.mail.fields[0] = handle.get().to_string();
+                edit(&mut mailbox.properties.mail, 0, handle.get().to_string());
             }
         }
         self.mail_open();
@@ -77,9 +85,13 @@ pub(in crate::play) fn edit(
     field: usize,
     value: String,
 ) {
-    if panel.pending || !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&value, 7996) {
+    if panel.pending {
         return;
     }
+    if field == 0 && panel.fields[0] != value {
+        panel.fields[2].clear();
+    }
+    // Retain rejected input so a later submit cannot send the previous stored value.
     if let Some(slot) = panel.fields.get_mut(field) {
         if *slot == value {
             return;
