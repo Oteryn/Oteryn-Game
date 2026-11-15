@@ -20,6 +20,7 @@ use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batc
 use crate::gameplay_transport::native_activity::NativeActivityOutcome;
 use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as rules;
 use oteryn_protocol_oteryn::boss_encounter as wire;
+use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
 
 #[test]
@@ -238,45 +239,84 @@ async fn scenario(admin: String) -> TestResult {
             .map(|row| row.0.placement_identity())
             .ok_or("source boss identity")?
     };
-    let root =
-        oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(native.source_digest());
-    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(boss_identity);
-    let draw = |ordinal| -> TestResult<u32> {
-        let value = oteryn_simulation_determinism::deterministic_decision_u64(
-            &root,
-            occurrence,
-            "primal-menace-think",
-            ordinal,
-        )
-        .map_err(debug)?;
-        Ok(((u128::from(value) * u128::from(rules::DRAW_PPM)) >> 64) as u32)
+    let now = destination.owner_now();
+    super::srx3_primal::drain_actual_native_through(&destination, now.get(), true).await?;
+    assert!(
+        destination
+            .states
+            .spell_states
+            .lock()
+            .await
+            .primal_callbacks
+            .source_started_for_test(),
+        "the real reserved onThink initializes the source wave clock"
+    );
+    let later =
+        |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
+    // The qualified callback uses os.time: its strictly-greater ten-second
+    // boundary is crossed at eleven seconds, followed by the same 3s warmup.
+    let wave_at = later(11_000_000);
+    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+        Sha256::new()
+            .chain_update(b"srx3:primal:callbacks:v1")
+            .chain_update(native.source_digest())
+            .chain_update(boss_identity)
+            .finalize()
+            .into(),
+    );
+    let mut occurrence = [0; 16];
+    occurrence[..8].copy_from_slice(&wave_at.get().to_be_bytes());
+    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
+    let mut ordinal = 0;
+    let mut draw = || -> TestResult<u32> {
+        // Match the qualified source stream's bounded unbiased integer draw.
+        let limit = u64::MAX - u64::MAX % u64::from(rules::DRAW_PPM);
+        for _ in 0..64 {
+            let value = oteryn_simulation_determinism::deterministic_decision_u64(
+                &root,
+                occurrence,
+                "primal_waves",
+                ordinal,
+            )
+            .map_err(debug)?;
+            ordinal += 1;
+            if value < limit {
+                return Ok((value % u64::from(rules::DRAW_PPM)) as u32);
+            }
+        }
+        Err("qualified source wave draw refused".into())
     };
     let expected_wave = usize::try_from(rules::wave_count(
         &rules::BEAST_WAVE,
         rules::hazard_points(&[]),
-        draw(0)?,
-        draw(1)?,
+        draw()?,
+        draw()?,
     ))?;
-    let now = destination.owner_now();
-    destination.drain_monster_melee_at(now).await;
-    let later =
-        |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
-    destination.drain_monster_melee_at(later(10_001_000)).await;
+    super::srx3_primal::drain_actual_native_through(&destination, wave_at.get(), true).await?;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
-    destination.drain_monster_melee_at(later(13_001_000)).await;
+    super::srx3_primal::drain_actual_native_through(&destination, later(14_000_000).get(), true)
+        .await?;
     assert_eq!(
         beasts(&destination).await?,
         expected_wave,
         "actual scheduled native Primal beasts match the source oracle"
     );
-    destination.drain_monster_melee_at(later(13_001_000)).await;
+    super::srx3_primal::drain_actual_native_through(&destination, later(14_000_000).get(), true)
+        .await?;
     assert_eq!(
         beasts(&destination).await?,
         expected_wave,
         "same owner turn cannot duplicate a wave"
     );
     eprintln!("SRVGAP2_PRIMAL_STAGE native_cadence_spawned_exact_wave");
-    destination.clock_origin -= Duration::from_millis(13_002);
+    destination.clock_origin = destination
+        .clock_origin
+        .checked_sub(Duration::from_micros(
+            later(14_001_000)
+                .get()
+                .saturating_sub(destination.owner_now().get()),
+        ))
+        .ok_or("actual native death follows the played source wave")?;
     let now = destination.owner_now();
     let boss_policy = native
         .policies()

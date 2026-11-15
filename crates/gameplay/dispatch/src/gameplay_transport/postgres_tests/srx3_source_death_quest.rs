@@ -241,7 +241,11 @@ fn srx3_source_death_real_malice_lethal_runs_copied_goal_and_preserves_pre_taint
                 "one actual unshared receiver gains XP before this death adds its first taint"
             );
             view.drain_monster_melee().await;
-            let _ = view.drain_kill_rewards(admitted.game_session_id).await;
+            assert_eq!(
+                view.drain_kill_rewards(admitted.game_session_id).await,
+                crate::gameplay_transport::kill_reward::DrainOutcome::Drained,
+                "the ordinary reward owner must reconcile the callback's room victory"
+            );
             let replay_xp:(i64,i64,String)=sqlx::query_as("SELECT d.base_xp,m.raw_share,d.created_xact_id::text FROM game_party_kill_xp_receipts d JOIN game_party_kill_xp_members m USING(death_key) WHERE d.death_key=$1 AND m.character_id=encode($2,'hex')::uuid")
                 .bind(&key).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(
