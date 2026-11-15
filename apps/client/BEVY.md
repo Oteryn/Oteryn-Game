@@ -74,6 +74,9 @@ With no text field focused, the existing gameplay shortcuts open:
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+I:** Imbuing shrine: choose a carried item, then a slot and imbuement.
+  Clear asks for confirmation. Refresh queries the existing shrine command;
+  the protocol has no unsolicited open event, balance, or protection charm.
 - **Ctrl+D:** Daily Reward wall, free/premium catalogue, streak and account/World
   history. Collect uses the server-confirmed shrine availability.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
