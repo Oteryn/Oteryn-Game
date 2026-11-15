@@ -1,4 +1,66 @@
-# Charm runtime completion — native Dodge increment
+# Charm runtime repair — combined source qualification
+
+## Current source state — 2026-11-15
+
+This section supersedes the historical "remaining completion work" statements
+below only for the mechanisms explicitly listed here. It does not claim fresh
+Tibia Test Server parity, a green whole-repository gate, merge or deployment.
+
+The canonical source combines incoming repair, #3176 Cleanse/Hex, outgoing
+native/ordinary/rune effects, the reachable secondary-auto critical path, and
+retained delayed native/chain consumers. Source 6dd050f1a2d8c12a2e33ab6766e7e903e70bce3f
+already contains main 719b33ac427f3d142673c6a817f7321203fa1b25 and the outgoing/due
+increment 70314e4334d325023b77cd4b5ac24262ead15e57.
+
+### Actual repaired consumers
+
+- G1: Wound, Poison, Freeze, Zap, Curse, Enflame, Divine Wrath, Overpower,
+  Overflux, Cripple, Fatal Hold and Carnage now join direct spell/rune and
+  existing delayed native/ordinary callbacks through the physical/player
+  owners. Cripple uses canonical paralysis; Carnage child kills enter normal
+  death settlement without recursive charm/Leech activation.
+- G2/G3: real native spell/melee Dodge, accepted incoming major/minor ordering,
+  pre-player-defence Parry basis, actual post-Enrage source survival, sourced
+  condition ticks, no-source/Agony exclusion and retained replay are tested.
+- G4: the existing secondary auto attack shares its critical draw and applies
+  only D186's assigned-race critical/Leech exceptions. Due casts retain their
+  own numerical/child inputs and exact phase receipt without paying twice.
+  This does not create an otherwise absent area-ammunition engine.
+- G5: existing #3176 single-selection canonical/player Cleanse and Hex
+  immunity are composed and executed; no parallel cleanse store was written.
+
+### Executed evidence and current boundaries
+
+| Source / check | Actual result | Boundary |
+|---|---|---|
+| Recovered outgoing/delayed workspace, all delayed cases | 23 passed, 0 failed | Before final main composition |
+| 6dd050f1a, focused charm/consumer selection | 113 passed, 0 failed | Includes 37 outgoing, 23 delayed, secondary auto and in-memory owner cases; isolated PostgreSQL route present |
+| 6dd050f1a, entity exact-phase replay test | 1 passed, 0 failed | Actual generated-child/physical receipt owner |
+| 6dd050f1a, `ability_engine` | 118 passed, 0 failed | Standalone server owner shim |
+| 6dd050f1a, eight library suites | 5782 passed, 1 failed | Gate inventory failure repaired below; 19 pre-existing skips; no PostgreSQL route in this broad run |
+| 6dd050f1a, additional consumer PG selection | 17 passed, 2 failed | Delayed mana assertions repaired below |
+| Follow-up Talisman/delayed/gate-inventory selection | 27 passed, 0 failed | Nextest run 773dab47-0a3e-4245-8016-2840eed8c996, real isolated PostgreSQL route present |
+| Governance unittest suite | 129 passed | Governance, not runtime proof |
+
+The follow-up adds the exact two new auto-attack gate calls to the inventory.
+It separately checks the unchanged cast cost and each delayed 0.25% wheel
+Mana Leech contribution, including a single durable cost receipt. Three unused
+legacy Talisman Leech functions were removed; their numeric, physical and
+replay tests now exercise the actual joined owner with the selected ceiling
+and pre-overkill basis, including the non-proccing second target. No ignore,
+catch-all success, timeout increase, resource grant or gate suppression was added.
+
+Counts overlap and are not summed. A passing route-less database early return
+is not counted as PostgreSQL coverage. Final exact-source broad tests, strict
+Clippy, independent successor review and GitHub gates are recorded separately
+when they have actually returned. Required Node boot already failed on main
+719b33ac427f3d142673c6a817f7321203fa1b25 (run 43679417535, job132707309262):
+49 failed qualification rows / 46 roots include missing legitimate player/world
+prerequisites. This failure is not waived and does not become charm evidence.
+
+## Historical incremental records
+
+### Native Dodge increment
 
 Task `OTV2-20261113-charms-leech-evidence`, PR #3183. This is an incremental
 AUTHORING record, not a declaration that every charm or boundary is complete.

@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT standalone task writer
 created_at: 2026-11-13T20:38:46Z
-updated_at: 2026-11-14T12:31:13Z
+updated_at: 2026-11-15T09:33:06.068777Z
 execution_policy: continuous_progress
 owned_paths:
   - crates/gameplay/combat-rules/src/resolution/equipped_offence.rs
@@ -81,6 +81,7 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_delayed.rs
   - crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/bundle_gates_tests.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -92,7 +93,8 @@ external_repositories: []
 
 Correct direct-hit and direct-area Leech, preserving the actual physical/player commit and
 replay boundaries; wire Low Blow and Savage Blow into qualified native/ordinary spell damage.
-This is a bounded slice of the owner's six-mechanic request, not six completed mechanics.
+The owner expanded this same task to all 25 charms and their existing runtime consumers.
+The other five mechanics in the original multi-mechanic request remain outside this PR.
 Coordination: #1622, allocation `CHARMS-LEECH-EVIDENCE-20261113`.
 
 ## Architecture and source of truth
@@ -102,7 +104,8 @@ Coordination: #1622, allocation `CHARMS-LEECH-EVIDENCE-20261113`.
   [implementation evidence](../evidence/OTV2-20261113-charms-leech-implementation.md).
 - Reference research: #3177 at `97685d43a194010559a3a92821089067dbb147a3`.
 - Existing external target date remains 2026-09-27. No migration/content/wire change.
-- Hex/Cleanse condition changes already owned by #3176 are excluded from this branch.
+- The existing #3176 Cleanse/Hex implementation at 8382ce41514c415996216d85d4d12a9e9a0e8070
+  was composed without changing its remote branch; no duplicate condition owner is introduced.
 
 ## High-risk authority/recovery qualification
 
@@ -307,3 +310,35 @@ All 20 preserved outgoing/delayed files were applied to the canonical tree with
 The four secondary files remain composed; no recovered work was discarded.
 Focused real-database regression results and subsequent exact-head gates remain
 required before final completion; no review/merge/deployment is claimed here.
+
+## Combined-tree qualification and concrete follow-up repairs — 2026-11-15
+
+Source 6dd050f1a2d8c12a2e33ab6766e7e903e70bce3f passed all 113 selected
+real-PostgreSQL charm/consumer regressions, the entity deferred-phase proof,
+and all 118 ability_engine tests. Its broader eight-library run executed 5783
+tests: 5782 passed and one failed because the exact gate-call inventory omitted
+the two new secondary-target fixture calls. That inventory is now updated, not
+relaxed. The additional 19-case PG run passed 17 and exposed two stale payment
+assertions: Grenade and full Outburst now correctly restore their delayed
+0.25% wheel Mana Leech. The updated test separately asserts the exact unchanged
+cast payment and the independent due-hit gain, plus one durable cost receipt.
+Both vocation slot-12 values are verified in the checked-in wheel catalogue.
+
+Strict Clippy exposed three now-unreachable legacy Talisman Leech functions.
+They are removed rather than suppressed. Their existing physical/replay tests
+now exercise the actual joined player/physical owner with the accepted ceiling,
+pre-overkill basis and ordinary Leech on the second non-proccing target. Source
+health, current player state and replay assertions remain exact. The combined
+correction requires its own rerun before being called qualified. No required
+CI failure is waived and this is not a completion, merge or deployment claim.
+
+## Narrow follow-up qualification
+
+The focused correction executed all 27 selected Talisman, delayed-strike and
+gate-inventory regressions successfully using the isolated PostgreSQL wrapper
+(exit 0; Nextest run 773dab47-0a3e-4245-8016-2840eed8c996). An intermediate
+test-only import typo was fixed through the existing public owner reexports;
+its failed compiler log is retained, not rewritten. No production visibility
+or authority was widened. The next committed source is frozen for strict
+checks, broad regression rerun, normal guarded publication and the one remaining
+independent successor review round. Required CI/Node boot remains outstanding.
