@@ -142,6 +142,24 @@ pub(super) fn build(
             commands.entity(root).add_child(entity);
         }
         let enabled = panel.selected && !panel.pending;
+        label(
+            commands,
+            skins,
+            root,
+            "Carried items — click to stow the whole stack at a depot",
+        );
+        let carried = line(commands, root);
+        for (row, item) in panel.carried.iter().enumerate() {
+            button(
+                commands,
+                skins,
+                carried,
+                state,
+                Kind::Stow(row),
+                &format!("Stow item {} × {}", item.item_definition_ref, item.count),
+                enabled,
+            );
+        }
         let filters = line(commands, root);
         for (kind, caption) in [
             (Kind::Filter, "Apply filters".to_owned()),

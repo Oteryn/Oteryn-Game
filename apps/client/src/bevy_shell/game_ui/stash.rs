@@ -30,6 +30,7 @@ enum Kind {
     Next,
     Refresh,
     Row(usize),
+    Stow(usize),
     Confirm,
     Cancel,
 }
@@ -117,6 +118,14 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
             {
                 play.link.stash_request_bound(panel, intent);
                 state.dirty = true;
+            }
+        }
+        Kind::Stow(row) if state.amount.is_none() => {
+            if let Some(panel) = &state.panel
+                && let Some(intent) =
+                    oteryn_client_ui::stash::carried_intent(panel, &panel.carried, row)
+            {
+                play.link.stash_request_bound(panel, intent);
             }
         }
         Kind::Sort if state.amount.is_none() => play.link.stash_sort(),

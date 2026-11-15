@@ -308,3 +308,39 @@ fn stash_amount_keys_in_one_frame_confirm_accumulated_amount() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn stash_stow_controls_are_disabled_while_request_pending() -> TestResult {
+    let (mut app, _, _) = fixture()?;
+    let mut panel = app
+        .world()
+        .resource::<State>()
+        .panel
+        .clone()
+        .ok_or("panel")?;
+    panel.carried.push(oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::MIN,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    });
+    panel.pending = true;
+
+    let mut queue = bevy::ecs::world::CommandQueue::default();
+    let mut commands = Commands::new(&mut queue, app.world());
+    widgets::build(
+        &mut commands,
+        app.world().resource::<Skins>(),
+        &State::default(),
+        &panel,
+        &mut InputFocus::default(),
+    );
+    queue.apply(app.world_mut());
+    assert!(
+        app.world_mut()
+            .query::<(&Control, &bevy::ui::InteractionDisabled)>()
+            .iter(app.world())
+            .any(|(c, _)| c.kind == Kind::Stow(0))
+    );
+    Ok(())
+}
