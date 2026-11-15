@@ -9,12 +9,14 @@ use bevy::{
 };
 use oteryn_renderer::{AtlasImage, QuadInstance, lighting::QuadLayer};
 
+mod smooth;
 #[cfg(test)]
 mod tests;
 pub(super) mod typing;
 
 #[derive(Resource, Default)]
 pub(super) struct SceneCache {
+    smooth: smooth::Cache,
     atlas: Option<AtlasImage>,
     image: Option<Handle<Image>>,
     entities: Vec<Entity>,
@@ -34,9 +36,10 @@ pub(super) fn project(
     window: Query<&Window, With<PrimaryWindow>>,
     mut cache: ResMut<SceneCache>,
     (viewport, time): (Res<WorldViewport>, Res<Time>),
-    mut images: ResMut<Assets<Image>>,
+    (mut images, mut mesh_assets): (ResMut<Assets<Image>>, smooth::MeshAssets),
     mut quads: Query<(&mut Sprite, &mut Transform, &mut RenderLayers), With<WorldQuad>>,
 ) {
+    cache.smooth.hide(&mut commands);
     let Some(play) = &owner.play else {
         for entity in cache.entities.drain(..) {
             commands.entity(entity).despawn();
@@ -103,6 +106,7 @@ pub(super) fn project(
     let SceneCache {
         floor_alpha,
         entities,
+        smooth,
         ..
     } = &mut *cache;
     let ordered = scene
@@ -110,7 +114,15 @@ pub(super) fn project(
         .instances()
         .iter()
         .enumerate()
-        .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Terrain), false))
+        .map(|(i, q)| {
+            (
+                q,
+                lighting.quad_tint(q, i, QuadLayer::Terrain),
+                false,
+                i,
+                QuadLayer::Terrain,
+            )
+        })
         .chain(
             scene
                 .sprites()
@@ -127,11 +139,13 @@ pub(super) fn project(
                     {
                         tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
                     }
-                    (q, tint, minimap_range.contains(&i))
+                    (q, tint, minimap_range.contains(&i), i, QuadLayer::Overlay)
                 }),
         );
+    let smooth_enabled = !lighting.sources.is_empty();
+    let mut batches = [smooth::Vertices::default(), smooth::Vertices::default()];
     let mut count = 0;
-    for (index, (quad, tint, minimap)) in ordered.enumerate() {
+    for (index, (quad, tint, minimap, source_index, source_layer)) in ordered.enumerate() {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
         let (scale, size, offset, clip_size) = if minimap {
             let size = super::game_ui::minimap::SIZE.as_vec2();
@@ -159,6 +173,25 @@ pub(super) fn project(
         ) else {
             continue;
         };
+        if smooth_enabled {
+            batches[usize::from(minimap)].push(
+                lighting,
+                quad,
+                source_index,
+                source_layer,
+                (
+                    &sprite,
+                    transform,
+                    QuadViewport {
+                        scale,
+                        size,
+                        offset,
+                        clip_size,
+                    },
+                ),
+            );
+            continue;
+        }
         if let Some(entity) = entities.get(count) {
             if let Ok((mut old_sprite, mut old_transform, mut old_layer)) = quads.get_mut(*entity) {
                 if *old_layer != layer {
@@ -175,6 +208,9 @@ pub(super) fn project(
             entities.push(commands.spawn((sprite, transform, WorldQuad, layer)).id());
         }
         count += 1;
+    }
+    if smooth_enabled {
+        smooth.draw(&mut commands, &mut mesh_assets, &image, batches);
     }
     for entity in entities.drain(count..) {
         commands.entity(entity).despawn();
