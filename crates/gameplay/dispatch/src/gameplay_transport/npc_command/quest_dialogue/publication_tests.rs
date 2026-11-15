@@ -217,3 +217,58 @@ fn committed_source_reply_keeps_receipt_success_after_the_session_disappears() -
     ));
     Ok(())
 }
+
+#[test]
+fn stale_committed_reply_preserves_inventory_refresh() -> Result<(), String> {
+    let fixture = Fixture::new()?;
+    let mut rendered = fixture.rendered();
+    rendered.inventory_changed = true;
+    fixture.talk("bye", 2_000_010);
+    let outcome = publish_committed_reply(fixture.current(), &fixture.context, rendered);
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(
+        outcome.inventory_changed,
+        "committed rewards require an inventory refresh"
+    );
+    assert!(outcome.conversation.is_none());
+    assert!(outcome.window.is_none());
+    Ok(())
+}
+
+#[test]
+fn stale_receipt_suppresses_the_entire_conversation_payload() -> Result<(), String> {
+    let fixture = Fixture::new()?;
+    let mut rendered = fixture.rendered();
+    rendered.inventory_changed = true;
+    rendered.window = Some(Default::default());
+    fixture.talk("bye", 2_000_010);
+    fixture.talk("hi", 4_000_010);
+    let outcome = super::super::publish_current_reply(
+        fixture.current() == Some(fixture.context.clone()),
+        rendered,
+    );
+    assert_eq!(outcome.disposition, NpcIntentDisposition::Ok);
+    assert!(outcome.inventory_changed);
+    assert!(
+        outcome.conversation.is_none(),
+        "an obsolete close must never reach the replacement conversation"
+    );
+    assert!(outcome.window.is_none());
+    Ok(())
+}
+
+#[test]
+fn stale_npc_reference_cannot_close_the_current_engagement() -> Result<(), String> {
+    let fixture = Fixture::new()?;
+    let stale = NpcTalkIntent {
+        npc_actor: EntityRef {
+            generation: fixture.intent.npc_actor.generation + 1,
+            ..fixture.intent.npc_actor
+        },
+        text: "bye".into(),
+    };
+    let before = fixture.chat.engaged(fixture.session);
+    assert!(super::super::end(&fixture.chat, fixture.session, &stale).is_none());
+    assert_eq!(fixture.chat.engaged(fixture.session), before);
+    Ok(())
+}

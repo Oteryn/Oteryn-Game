@@ -48,12 +48,13 @@ pub(super) enum Pending {
         topic: Topic,
     },
     Commit {
+        context: Context,
         fence: CurrentCharacterGameplayFence,
         command: CommandRef,
         mutation: Mutation,
         intent: NpcTalkIntent,
         payment: Option<Box<RottenBloodAccessPayment>>,
-        resume_topic: Option<(Context, EntityRef, Topic)>,
+        resume_topic: Option<Box<(Context, EntityRef, Topic)>>,
     },
 }
 
@@ -229,13 +230,16 @@ fn finish(admission: &ComposedFreshAdmission<'_, '_, '_>, session: GameSessionId
     {
         state.endgame = match state.endgame.take() {
             Some(Pending::Commit {
-                resume_topic: Some((context, npc, topic)),
+                resume_topic: Some(resume),
                 ..
-            }) => Some(Pending::Topic {
-                context,
-                npc,
-                topic,
-            }),
+            }) => {
+                let (context, npc, topic) = *resume;
+                Some(Pending::Topic {
+                    context,
+                    npc,
+                    topic,
+                })
+            }
             _ => None,
         };
     }
@@ -542,20 +546,23 @@ pub(super) async fn apply(
         // Crystal's successful yes and ordinary lore do not clear topic1.
         // Restore the exact conversation context only after a definite receipt.
         let resume_topic = match mutation {
-            Mutation::Soul(SoulWarCommand::Start) => {
-                Some((step.context.clone(), intent.npc_actor, Topic::SoulTask))
-            }
+            Mutation::Soul(SoulWarCommand::Start) => Some(Box::new((
+                step.context.clone(),
+                intent.npc_actor,
+                Topic::SoulTask,
+            ))),
             Mutation::Soul(SoulWarCommand::Cleanse) => match &state.endgame {
                 Some(Pending::Topic {
                     context,
                     npc,
                     topic,
-                }) => Some((context.clone(), *npc, *topic)),
+                }) => Some(Box::new((context.clone(), *npc, *topic))),
                 _ => None,
             },
             _ => None,
         };
         state.endgame = Some(Pending::Commit {
+            context: step.context.clone(),
             fence,
             command: reference,
             mutation,
@@ -662,7 +669,14 @@ pub(super) async fn apply(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            outcome
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &step.context,
+                outcome,
+            )
+            .await
         }
         Err(CharacterProgressionError::Unavailable(_)) => unknown(),
         Err(_) => {
@@ -686,6 +700,7 @@ pub(in crate::gameplay_transport) async fn resume(
         .endgame
         .clone()?;
     let Pending::Commit {
+        context,
         fence,
         command: reference,
         mutation,
@@ -769,7 +784,16 @@ pub(in crate::gameplay_transport) async fn resume(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            Some(result.unwrap_or_else(|| NpcTalkOutcome::only(NpcIntentDisposition::Rejected)))
+            Some(
+                publish_contextual_reply(
+                    admission,
+                    command.game_session_id,
+                    &intent,
+                    &context,
+                    result.unwrap_or_else(|| NpcTalkOutcome::only(NpcIntentDisposition::Rejected)),
+                )
+                .await,
+            )
         }
         Err(_) => Some(unknown()),
     }

@@ -348,7 +348,9 @@ fn scenario() -> TestResult {
                 },
             )
             .await;
-        assert!(has_line(&replay, "proposal has been recorded"));
+        assert!(replay.conversation.is_none(), "a reply after bye must not reopen the old conversation");
+        assert!(replay.inventory_changed);
+        assert_eq!(replay.disposition, NpcIntentDisposition::Ok);
         assert!(!replay.unknown);
         let conflict = owner
             .npc_talk(

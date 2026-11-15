@@ -55,6 +55,7 @@ pub(super) struct Conversation {
 pub(super) enum Pending {
     Topic(Conversation),
     Commit {
+        context: Context,
         character: CharacterId,
         request: QuestTransitionRequest,
         intent: NpcTalkIntent,
@@ -236,7 +237,7 @@ pub(super) async fn apply(
                 actor,
                 command.game_session_id,
                 &intent,
-            ) != Some(context)
+            ) != Some(context.clone())
             || !runtime
                 .bound_attacker_lease(actor, command.game_session_id)
                 .is_ok_and(|lease| {
@@ -272,6 +273,7 @@ pub(super) async fn apply(
             return rejected();
         }
         state.threatened_dreams = Some(Pending::Commit {
+            context: context.clone(),
             character: fence.character_id,
             request: request.clone(),
             intent: intent.clone(),
@@ -300,7 +302,14 @@ pub(super) async fn apply(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            response(&intent, reply)
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &context,
+                response(&intent, reply),
+            )
+            .await
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
@@ -326,6 +335,7 @@ pub(in crate::gameplay_transport) async fn resume(
         .threatened_dreams
         .clone()?;
     let Pending::Commit {
+        context,
         character,
         request,
         intent,
@@ -349,7 +359,16 @@ pub(in crate::gameplay_transport) async fn resume(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            Some(response(&intent, reply))
+            Some(
+                publish_contextual_reply(
+                    admission,
+                    command.game_session_id,
+                    &intent,
+                    &context,
+                    response(&intent, reply),
+                )
+                .await,
+            )
         }
         Ok(None) => {
             install_topic(admission, command.game_session_id, None);

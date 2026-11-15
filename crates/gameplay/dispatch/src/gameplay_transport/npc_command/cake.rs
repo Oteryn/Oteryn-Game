@@ -58,11 +58,8 @@ async fn committed_reply(
         ),
     );
     outcome.inventory_changed = true;
-    if !current && let Some(conversation) = outcome.conversation.as_mut() {
-        conversation.open = None;
-    }
     clear(admission, session);
-    outcome
+    publish_current_reply(current, outcome)
 }
 
 #[derive(Clone, Copy)]

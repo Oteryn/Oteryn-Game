@@ -10,16 +10,38 @@ use crate::spell::native_delayed::{
 
 pub(super) fn held_target(
     runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
     held: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
 ) -> Option<(ExactActorRef, TilePosition)> {
     let held = held?;
-    let actor = runtime
-        .visible_entities()
-        .creatures
+    let visible = runtime.visible_entities();
+    let matches = |actor: ExactActorRef, generation| {
+        actor.placement_identity() == held.identity && generation == held.generation
+    };
+    let (actor, health) = if let Some(player) = visible
+        .players
         .iter()
-        .find(|c| c.actor.placement_identity() == held.identity && c.generation == held.generation)
-        .map(|c| c.actor)?;
-    if runtime.live_creature_health(actor)? == 0 {
+        .find(|p| matches(p.actor, p.generation))
+    {
+        let (_, session, _) = states
+            .actors
+            .iter()
+            .find(|(actor, _, _)| *actor == player.actor)?;
+        (
+            player.actor,
+            u64::from(states.get(runtime, player.actor, *session)?.vitals().health),
+        )
+    } else {
+        let creature = visible
+            .creatures
+            .iter()
+            .find(|c| matches(c.actor, c.generation))?;
+        (
+            creature.actor,
+            runtime.live_creature_health(creature.actor)?,
+        )
+    };
+    if health == 0 {
         return None;
     }
     Some((
@@ -380,4 +402,65 @@ pub(in crate::gameplay_transport) fn strike_cues(
         });
     }
     Ok(cues)
+}
+
+#[cfg(test)]
+mod held_target_tests {
+    use super::*;
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+
+    #[test]
+    fn held_target_resolves_exact_living_player() -> Result<(), String> {
+        let (mut runtime, actor, session) = runtime_with_player(0x73);
+        runtime
+            .initialize_first_entry_position(actor)
+            .map_err(|e| format!("{e:?}"))?;
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(1),
+            )
+            .ok_or("player state")?;
+        let player = runtime
+            .visible_entities()
+            .players
+            .into_iter()
+            .find(|p| p.actor == actor)
+            .ok_or("visible player")?;
+        let reference = oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+            identity: actor.placement_identity(),
+            generation: player.generation,
+        };
+        assert_eq!(
+            held_target(&runtime, &states, Some(reference)),
+            Some((
+                actor,
+                tile(
+                    runtime
+                        .read_actor_position(actor)
+                        .map_err(|e| format!("{e:?}"))?
+                        .position()
+                )
+            ))
+        );
+        assert_eq!(
+            held_target(
+                &runtime,
+                &states,
+                Some(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+                    generation: reference.generation + 1,
+                    ..reference
+                })
+            ),
+            None
+        );
+        crate::gameplay_transport::actor_spell::tests::wound(&mut states, actor, session, 0);
+        assert_eq!(held_target(&runtime, &states, Some(reference)), None);
+        Ok(())
+    }
 }

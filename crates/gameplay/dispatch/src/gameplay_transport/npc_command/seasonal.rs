@@ -52,11 +52,8 @@ async fn committed_reply(
     ) == Some(context.clone());
     let mut outcome = NpcConversations::bank_reply(intent, "Merry Christmas!".into());
     outcome.inventory_changed = true;
-    if !current && let Some(conversation) = outcome.conversation.as_mut() {
-        conversation.open = None;
-    }
     clear(admission, session);
-    outcome
+    publish_current_reply(current, outcome)
 }
 
 // Crystal data/npclib/npc.lua:13-19 checks a left word boundary only;

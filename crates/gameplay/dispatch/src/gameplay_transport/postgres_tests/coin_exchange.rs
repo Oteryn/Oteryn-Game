@@ -416,7 +416,8 @@ fn scenario() -> TestResult {
             .await
             .ok_or("historical exchange")?;
         assert!(!replay.unknown);
-        assert_eq!(replay.conversation.ok_or("historical reply")?.open, None);
+        assert!(replay.conversation.is_none(), "a historical receipt must not send an obsolete close");
+        assert!(replay.inventory_changed);
         assert_eq!(inventory(&h).await?, after);
         assert!(sqlx::query("UPDATE game_coin_exchange_receipts SET amount=amount+1 WHERE command_id=$1::text::numeric").bind((next-1).to_string()).execute(&h.pool).await.is_err());
         assert_eq!(inventory(&h).await?, after);

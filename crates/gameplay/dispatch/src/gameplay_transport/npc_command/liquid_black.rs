@@ -406,7 +406,7 @@ pub(super) async fn apply(
         }
         state.liquid_black = Some(State::Commit {
             character: fence.character_id,
-            context: step.context,
+            context: step.context.clone(),
             request: request.clone(),
             intent: intent.clone(),
             reply: choice.reply,
@@ -430,7 +430,14 @@ pub(super) async fn apply(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            source_reply(&intent, choice.reply)
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &step.context,
+                source_reply(&intent, choice.reply),
+            )
+            .await
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
@@ -460,6 +467,7 @@ pub(in crate::gameplay_transport) async fn resume(
         request,
         intent,
         reply,
+        context,
         ..
     } = pending
     else {
@@ -485,7 +493,16 @@ pub(in crate::gameplay_transport) async fn resume(
                 admission
                     .refresh_quest_session(command.game_session_id, false)
                     .await;
-                Some(source_reply(&intent, reply))
+                Some(
+                    publish_contextual_reply(
+                        admission,
+                        command.game_session_id,
+                        &intent,
+                        &context,
+                        source_reply(&intent, reply),
+                    )
+                    .await,
+                )
             } else {
                 Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
             }

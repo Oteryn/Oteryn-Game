@@ -11,7 +11,7 @@ fn viola_mission_yes_book_handin_is_atomic_and_survives_restart() -> TestResult 
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("viola-handin", || scenario(false))?;
+    super::kill_reward_e2e::scenario_thread::run("viola-handin", || scenario(false, false))?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED viola_mission_yes_book_handin_is_atomic_and_survives_restart {:?}",
         started.elapsed()
@@ -24,14 +24,19 @@ fn viola_mission_yes_nested_book_refuses_full_bag_without_consuming() -> TestRes
         return Ok(());
     }
     let started = std::time::Instant::now();
-    super::kill_reward_e2e::scenario_thread::run("viola-nested", || scenario(true))?;
+    super::kill_reward_e2e::scenario_thread::run("viola-nested", || scenario(true, false))?;
     eprintln!(
         "POSTGRES_CASE_COMPLETED viola_mission_yes_nested_book_refuses_full_bag_without_consuming duration={:?}",
         started.elapsed()
     );
     Ok(())
 }
-fn scenario(nested: bool) -> TestResult {
+#[test]
+fn viola_cancelled_commit_reloads_queued_revision_cursor() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    super::kill_reward_e2e::scenario_thread::run("viola-cancel", || scenario(false, true))
+}
+fn scenario(nested: bool, cancel: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "viola_handin", false, false).await?;
         prepare_current_session(&h).await?;
@@ -367,6 +372,37 @@ fn scenario(nested: bool) -> TestResult {
             say(&mut owner, &admitted, npc, 104, "mission").await?;
             105
         };
+        if cancel {
+            let completion_id = completion_id + 100_000;
+            let command = crate::gameplay_transport::connection::UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id: completion_id,
+                item_fence: Some(fence.item_fence()),
+            };
+            let (reached, _release) = crate::gameplay_transport::npc_command::viola_commit_barrier(reference(command.game_session_id, completion_id)?);
+            owner.clock_origin = owner.clock_origin.checked_sub(std::time::Duration::from_secs(2)).ok_or("clock")?;
+            let mut cast = Box::pin(owner.npc_talk(deps.actor, command, oteryn_protocol_oteryn::npc_service::NpcTalkIntent { npc_actor: npc, text: "yes".into() }));
+            tokio::select! {
+                result = &mut cast => return Err(format!("commit did not reach cancellation barrier: {:?}", result.disposition).into()),
+                () = reached.notified() => {}
+            }
+            let committed_experience: i64 = sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+                .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(committed_experience - before, 800, "cancellation must follow the real Viola commit");
+            let mut queued = Box::pin(owner.revision_sequencer.acquire(fence.character_id));
+            tokio::select! {
+                biased;
+                _ = &mut queued => return Err("queued writer acquired an occupied slot".into()),
+                () = std::future::ready(()) => {}
+            }
+            drop(cast);
+            let mut queued = queued.await;
+            let observed = queued.cursor(&h.root, &authority).await.map_err(debug)?;
+            let independent = crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new();
+            let expected = independent.acquire(fence.character_id).await.cursor(&h.root, &authority).await.map_err(debug)?;
+            assert_eq!(observed, expected, "cancelled Viola commit left a stale queued cursor");
+            return Ok(());
+        }
         assert!(
             say(&mut owner, &admitted, npc, completion_id, "yes")
                 .await?

@@ -552,7 +552,7 @@ pub(super) async fn talk(
         )
     };
     if reply.actions.is_empty() {
-        return reward_reply(admission, actor, command, &intent, reply.line).await;
+        return reward_reply(admission, actor, command, &intent, &expected, reply.line).await;
     }
     let (Ok(id), Some(catalogue)) = (
         CommandId::new(command.command_id),
@@ -614,7 +614,7 @@ pub(super) async fn talk(
             actions: reply.actions.clone(),
             intent: intent.clone(),
             reply: reply.line.clone(),
-            context: expected,
+            context: expected.clone(),
         });
     }
     let progression = admission.progression_binding(command.game_session_id);
@@ -668,7 +668,7 @@ pub(super) async fn talk(
     admission
         .refresh_quest_session(command.game_session_id, false)
         .await;
-    reward_reply(admission, actor, command, &intent, reply.line).await
+    reward_reply(admission, actor, command, &intent, &expected, reply.line).await
 }
 
 async fn reward_reply(
@@ -676,6 +676,7 @@ async fn reward_reply(
     actor: ExactActorRef,
     command: UseCommand,
     intent: &NpcTalkIntent,
+    context: &Context,
     mut line: String,
 ) -> NpcTalkOutcome {
     use oteryn_protocol_oteryn::world_object::UseDisposition;
@@ -687,7 +688,7 @@ async fn reward_reply(
     // An attempted MINT may have committed before its acknowledgement was lost.
     // Refresh the authoritative inventory on every attempt without claiming success.
     reply.inventory_changed = delivered.is_some();
-    reply
+    publish_contextual_reply(admission, command.game_session_id, intent, context, reply).await
 }
 
 /// Earlier actions in a source utterance may already be committed. A definitive
@@ -848,7 +849,17 @@ pub(in crate::gameplay_transport) async fn resume(
     admission
         .refresh_quest_session(command.game_session_id, false)
         .await;
-    Some(reward_reply(admission, actor, command, &pending.intent, pending.reply).await)
+    Some(
+        reward_reply(
+            admission,
+            actor,
+            command,
+            &pending.intent,
+            &pending.context,
+            pending.reply,
+        )
+        .await,
+    )
 }
 
 #[path = "grizzly/recovery.rs"]

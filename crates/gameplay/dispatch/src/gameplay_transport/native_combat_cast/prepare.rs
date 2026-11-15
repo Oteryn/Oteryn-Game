@@ -385,7 +385,7 @@ async fn prepare_spatial(
     };
     let is_delayed = parameters.get("delay_ms").is_some();
     let held = is_delayed
-        .then(|| delayed_strikes::held_target(runtime, attack_target))
+        .then(|| delayed_strikes::held_target(runtime, states, attack_target))
         .flatten();
     let origin = if let Some(saved) = saved {
         saved.scheduled.position

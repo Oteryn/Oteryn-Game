@@ -67,6 +67,8 @@ mod service_context;
 mod session_transfer;
 mod threatened_dreams;
 mod viola;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use viola::viola_commit_barrier;
 mod wrath_sleeping_dragon;
 #[path = "yeo.rs"]
 mod yeo;
@@ -92,6 +94,7 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    reply_context: Option<RetainedReplyContext>,
     exchange: Option<coin_exchange::Pending>,
     benevola: Option<benevola::Pending>,
     yeo: Option<yeo::Pending>,
@@ -996,6 +999,12 @@ pub(super) async fn npc_bank_talk(
         // The Channel owner retains its runtime lock across native enqueue acceptance: the NPC,
         // range and Content facts above cannot change before the Bank owner accepts this work.
         // No std::sync conversation/session mutex is held across this await.
+        admission.states.npc_conversations.remember_reply_context(
+            command,
+            actor,
+            intent.npc_actor,
+            &(catalogue_revision, conversation_generation, npc_key.clone()),
+        );
         match admission
             .root
             .enqueue_npc_bank(
@@ -1018,7 +1027,7 @@ pub(super) async fn npc_bank_talk(
             .await
         {
             Ok(Some(completion)) => {
-                completed_bank_talk(
+                let outcome = completed_bank_talk(
                     admission,
                     actor,
                     session,
@@ -1027,7 +1036,8 @@ pub(super) async fn npc_bank_talk(
                     &completion.outcome,
                     completion.recipient_name,
                 )
-                .await
+                .await;
+                publish_retained_reply(admission, command, &intent, outcome).await
             }
             _ => unknown(),
         };
@@ -1204,18 +1214,17 @@ pub(super) async fn resume_bank_talk(
                 },
                 text: String::new(),
             };
-            Some(
-                completed_bank_talk(
-                    admission,
-                    actor,
-                    command.game_session_id,
-                    &intent,
-                    &completion.request,
-                    &completion.outcome,
-                    completion.recipient_name,
-                )
-                .await,
+            let outcome = completed_bank_talk(
+                admission,
+                actor,
+                command.game_session_id,
+                &intent,
+                &completion.request,
+                &completion.outcome,
+                completion.recipient_name,
             )
+            .await;
+            Some(publish_retained_reply(admission, command, &intent, outcome).await)
         }
         // An accepted original pending command cannot be abandoned or sequenced as a new
         // command because current ownership is temporarily unavailable or storage is unknown.
@@ -1341,6 +1350,124 @@ pub(in crate::gameplay_transport) fn bank_request(
     };
     matches.then_some(request)
 }
+#[derive(Clone)]
+struct RetainedReplyContext {
+    command: u64,
+    actor: ExactActorRef,
+    npc: EntityRef,
+    context: (u64, u64, String),
+}
+
+impl NpcConversations {
+    fn remember_reply_context(
+        &self,
+        command: super::connection::UseCommand,
+        actor: ExactActorRef,
+        npc: EntityRef,
+        context: &(u64, u64, String),
+    ) {
+        if let Ok(mut sessions) = self.sessions.lock() {
+            let state = sessions.entry(command.game_session_id).or_default();
+            // Replaying an identical command never replaces its original generation.
+            if state
+                .reply_context
+                .as_ref()
+                .is_none_or(|prior| prior.command != command.command_id)
+            {
+                state.reply_context = Some(RetainedReplyContext {
+                    command: command.command_id,
+                    actor,
+                    npc,
+                    context: context.clone(),
+                });
+            }
+        }
+    }
+
+    fn retained_reply_context(
+        &self,
+        command: super::connection::UseCommand,
+    ) -> Option<RetainedReplyContext> {
+        self.sessions
+            .lock()
+            .ok()?
+            .get(&command.game_session_id)?
+            .reply_context
+            .as_ref()
+            .filter(|prior| prior.command == command.command_id)
+            .cloned()
+    }
+}
+
+async fn publish_retained_reply(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    command: super::connection::UseCommand,
+    intent: &NpcTalkIntent,
+    outcome: NpcTalkOutcome,
+) -> NpcTalkOutcome {
+    let retained = admission
+        .states
+        .npc_conversations
+        .retained_reply_context(command)
+        .filter(|prior| prior.npc == intent.npc_actor);
+    if let Some(prior) = retained {
+        let runtime = admission.runtime.lock().await;
+        let current = admission.states.npc_conversations.current_npc(
+            &admission.states.chat,
+            &runtime,
+            prior.actor,
+            command.game_session_id,
+            intent,
+        ) == Some(prior.context);
+        publish_current_reply(current, outcome)
+    } else {
+        publish_current_reply(false, outcome)
+    }
+}
+
+/// Keep receipt and inventory facts independent of contextual presentation.
+fn publish_current_reply(current: bool, mut outcome: NpcTalkOutcome) -> NpcTalkOutcome {
+    if !current {
+        outcome.conversation = None;
+        outcome.window = None;
+    }
+    outcome
+}
+
+async fn reply_context_current(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    expected: &(u64, u64, String),
+) -> bool {
+    let runtime = admission.runtime.lock().await;
+    let Some(npc) = runtime.visible_entities().npcs.into_iter().find(|npc| {
+        npc.actor.placement_identity() == intent.npc_actor.identity
+            && npc.generation == intent.npc_actor.generation
+    }) else {
+        return false;
+    };
+    admission.states.chat.engaged(session) == Some(npc.actor)
+        && admission.states.chat.npc_conversation_generation(session) == Some(expected.1)
+        && runtime.npc_key(npc.actor) == Some(expected.2.as_str())
+        && admission
+            .states
+            .chat
+            .npc_talk()
+            .is_some_and(|book| book.catalogue_revision() == expected.0)
+}
+
+async fn publish_contextual_reply(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    session: GameSessionId,
+    intent: &NpcTalkIntent,
+    expected: &(u64, u64, String),
+    outcome: NpcTalkOutcome,
+) -> NpcTalkOutcome {
+    let current = reply_context_current(admission, session, intent, expected).await;
+    publish_current_reply(current, outcome)
+}
+
 async fn completed_bank_talk(
     admission: &super::ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -1364,9 +1491,9 @@ async fn completed_bank_talk(
         .npc_conversations
         .current_bank(&admission.states.chat, &runtime, actor, session, intent)
         .is_none()
-        && let Some(conversation) = reply.conversation.as_mut()
     {
-        conversation.open = None;
+        reply.conversation = None;
+        reply.window = None;
     }
     reply
 }
@@ -1400,9 +1527,10 @@ fn end(
     session: GameSessionId,
     intent: &NpcTalkIntent,
 ) -> Option<NpcConversation> {
-    let engaged = chat
-        .engaged(session)
-        .filter(|engaged| engaged.placement_identity() == intent.npc_actor.identity)?;
+    let engaged = chat.engaged(session).filter(|engaged| {
+        engaged.placement_identity() == intent.npc_actor.identity
+            && engaged.actor_local_generation() == intent.npc_actor.generation
+    })?;
     chat.end_engagement(session, engaged)
         .then(NpcConversation::default)
 }

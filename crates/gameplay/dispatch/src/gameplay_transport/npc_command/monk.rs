@@ -14,6 +14,7 @@ pub(super) struct Step {
 
 #[derive(Clone)]
 pub(super) struct Pending {
+    context: (u64, u64, String),
     character: CharacterId,
     request: QuestTransitionRequest,
     intent: NpcTalkIntent,
@@ -134,7 +135,7 @@ pub(super) async fn apply(
                 actor,
                 command.game_session_id,
                 &intent,
-            ) != Some(step.context)
+            ) != Some(step.context.clone())
             || !runtime
                 .bound_attacker_lease(actor, command.game_session_id)
                 .is_ok_and(|lease| {
@@ -158,6 +159,7 @@ pub(super) async fn apply(
             return unknown();
         }
         state.monk = Some(Pending {
+            context: step.context.clone(),
             character: fence.character_id,
             request: request.clone(),
             intent: intent.clone(),
@@ -181,7 +183,14 @@ pub(super) async fn apply(
             admission
                 .refresh_quest_session(command.game_session_id, false)
                 .await;
-            NpcConversations::bank_reply(&intent, step.reply)
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &step.context,
+                NpcConversations::bank_reply(&intent, step.reply),
+            )
+            .await
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
@@ -227,7 +236,16 @@ pub(in crate::gameplay_transport) async fn resume(
                 admission
                     .refresh_quest_session(command.game_session_id, false)
                     .await;
-                Some(NpcConversations::bank_reply(&pending.intent, pending.reply))
+                Some(
+                    publish_contextual_reply(
+                        admission,
+                        command.game_session_id,
+                        &pending.intent,
+                        &pending.context,
+                        NpcConversations::bank_reply(&pending.intent, pending.reply),
+                    )
+                    .await,
+                )
             } else {
                 Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected))
             }

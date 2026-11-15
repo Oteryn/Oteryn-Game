@@ -205,7 +205,10 @@ fn publish_committed_reply(
     if current.as_ref() == Some(expected) && rendered.disposition == NpcIntentDisposition::Ok {
         rendered
     } else {
-        NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+        NpcTalkOutcome {
+            inventory_changed: rendered.inventory_changed,
+            ..NpcTalkOutcome::only(NpcIntentDisposition::Ok)
+        }
     }
 }
 

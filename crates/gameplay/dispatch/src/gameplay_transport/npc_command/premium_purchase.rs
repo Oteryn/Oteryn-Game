@@ -215,6 +215,12 @@ pub(super) async fn apply(
     let Some(gate) = admission.premium_coordinator else {
         return rejected();
     };
+    admission.states.npc_conversations.remember_reply_context(
+        command,
+        actor,
+        intent.npc_actor,
+        &pending.context,
+    );
     match slot
         .commit_npc_purchase(
             admission.root,
@@ -226,7 +232,16 @@ pub(super) async fn apply(
         )
         .await
     {
-        Ok(PurchaseOutcome::Committed(receipt)) => completion(&intent, &receipt),
+        Ok(PurchaseOutcome::Committed(receipt)) => {
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &pending.context,
+                completion(&intent, &receipt),
+            )
+            .await
+        }
         Ok(PurchaseOutcome::Refused(reason)) => NpcConversations::bank_reply(
             &intent,
             match reason {
@@ -300,16 +315,19 @@ pub(in crate::gameplay_transport) async fn resume_premium_talk(
         .reconcile_premium_purchase(admission.character, admission.holder, fence, reference)
         .await
     {
-        Ok(Some(receipt)) => Some(completion(
-            &NpcTalkIntent {
+        Ok(Some(receipt)) => {
+            let intent = NpcTalkIntent {
                 npc_actor: EntityRef {
                     identity: receipt.npc_identity,
                     generation: receipt.npc_generation,
                 },
                 text: String::new(),
-            },
-            &receipt,
-        )),
+            };
+            Some(
+                publish_retained_reply(admission, command, &intent, completion(&intent, &receipt))
+                    .await,
+            )
+        }
         Ok(None) => None,
         Err(_) => Some(held_bank_outcome()),
     }

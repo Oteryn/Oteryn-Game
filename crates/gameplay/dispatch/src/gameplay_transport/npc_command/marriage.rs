@@ -177,18 +177,27 @@ pub(super) async fn replay(
                 {
                     return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
                 }
-                Some(completed(intent, &receipt))
+                Some(
+                    publish_retained_reply(admission, command, intent, completed(intent, &receipt))
+                        .await,
+                )
             } else {
-                Some(completed(
-                    &NpcTalkIntent {
-                        npc_actor: EntityRef {
-                            identity: receipt.npc_identity,
-                            generation: receipt.npc_generation,
-                        },
-                        text: String::new(),
+                let intent = NpcTalkIntent {
+                    npc_actor: EntityRef {
+                        identity: receipt.npc_identity,
+                        generation: receipt.npc_generation,
                     },
-                    &receipt,
-                ))
+                    text: String::new(),
+                };
+                Some(
+                    publish_retained_reply(
+                        admission,
+                        command,
+                        &intent,
+                        completed(&intent, &receipt),
+                    )
+                    .await,
+                )
             }
         }
         Ok(None) => None,
@@ -247,7 +256,7 @@ pub(super) async fn apply(
         actor,
         command.game_session_id,
         &intent,
-    ) != Some(pending.context)
+    ) != Some(pending.context.clone())
     {
         return rejected();
     }
@@ -302,6 +311,12 @@ pub(super) async fn apply(
     };
     let weights = super::super::item_ref_admission::NativeItemWeights(native)
         .with_wheel(admission.premium_coordinator);
+    admission.states.npc_conversations.remember_reply_context(
+        command,
+        actor,
+        intent.npc_actor,
+        &pending.context,
+    );
     match slot
         .commit_npc_marriage(
             admission.root,
@@ -313,7 +328,16 @@ pub(super) async fn apply(
         )
         .await
     {
-        Ok(MarriageOutcome::Committed(receipt)) => completed(&intent, &receipt),
+        Ok(MarriageOutcome::Committed(receipt)) => {
+            publish_contextual_reply(
+                admission,
+                command.game_session_id,
+                &intent,
+                &pending.context,
+                completed(&intent, &receipt),
+            )
+            .await
+        }
         Ok(MarriageOutcome::Refused(line)) => NpcConversations::bank_reply(&intent, line),
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,

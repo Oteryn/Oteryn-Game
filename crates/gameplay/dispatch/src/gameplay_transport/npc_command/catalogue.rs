@@ -429,17 +429,20 @@ pub(super) async fn apply(
                         | QuestTransitionOutcome::AlreadyCommitted(_)
                 ) =>
         {
+            admission
+                .refresh_quest_session(command.game_session_id, false)
+                .await;
+            let current =
+                reply_context_current(admission, command.game_session_id, &intent, &next.context)
+                    .await;
             install(
                 admission,
                 command.game_session_id,
-                (!commit.end_conversation).then_some(Conversation {
+                (current && !commit.end_conversation).then_some(Conversation {
                     topic: commit.next_topic,
                     ..next.clone()
                 }),
             );
-            admission
-                .refresh_quest_session(command.game_session_id, false)
-                .await;
             let mut response = response(
                 admission,
                 command.game_session_id,
@@ -452,7 +455,7 @@ pub(super) async fn apply(
             );
             response.inventory_changed =
                 !commit.read_only && (commit.inventory_changed || moves_items);
-            if commit.end_conversation {
+            if current && commit.end_conversation {
                 end_response(
                     admission,
                     command.game_session_id,
@@ -461,7 +464,7 @@ pub(super) async fn apply(
                     &mut response,
                 );
             }
-            response
+            publish_current_reply(current, response)
         }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
@@ -516,17 +519,24 @@ pub(in crate::gameplay_transport) async fn resume(
             .await
         {
             Ok(Some(commit)) => {
+                admission
+                    .refresh_quest_session(command.game_session_id, false)
+                    .await;
+                let current = reply_context_current(
+                    admission,
+                    command.game_session_id,
+                    &intent,
+                    &next.context,
+                )
+                .await;
                 install(
                     admission,
                     command.game_session_id,
-                    (!commit.end_conversation).then_some(Conversation {
+                    (current && !commit.end_conversation).then_some(Conversation {
                         topic: commit.next_topic,
                         ..next.clone()
                     }),
                 );
-                admission
-                    .refresh_quest_session(command.game_session_id, false)
-                    .await;
                 let mut response = response(
                     admission,
                     command.game_session_id,
@@ -538,7 +548,7 @@ pub(in crate::gameplay_transport) async fn resume(
                     },
                 );
                 response.inventory_changed = commit.inventory_changed || moves_items;
-                if commit.end_conversation {
+                if current && commit.end_conversation {
                     end_response(
                         admission,
                         command.game_session_id,
@@ -547,7 +557,7 @@ pub(in crate::gameplay_transport) async fn resume(
                         &mut response,
                     );
                 }
-                response
+                publish_current_reply(current, response)
             }
             Ok(None) => {
                 install(admission, command.game_session_id, None);

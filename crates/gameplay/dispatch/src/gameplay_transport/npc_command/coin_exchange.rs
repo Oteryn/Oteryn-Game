@@ -290,6 +290,25 @@ async fn execute(
             return Some(NpcTalkOutcome::only(NpcIntentDisposition::Rejected));
         }
     }
+    if let Some(request) = request.as_ref() {
+        admission.states.npc_conversations.remember_reply_context(
+            command,
+            actor,
+            EntityRef {
+                identity: request.npc_identity,
+                generation: request.npc_generation,
+            },
+            &(
+                request.catalogue_revision,
+                request.conversation_revision,
+                request.npc_key.clone(),
+            ),
+        );
+    }
+    let expected = admission
+        .states
+        .npc_conversations
+        .retained_reply_context(command);
     let result = admission
         .root
         .exchange_carried_coins(
@@ -316,22 +335,21 @@ async fn execute(
                 },
                 text: String::new(),
             };
-            let current = admission
-                .states
-                .npc_conversations
-                .current_bank(
-                    &admission.states.chat,
-                    &runtime,
-                    actor,
-                    command.game_session_id,
-                    &intent,
-                )
-                .is_some();
+            let current = admission.states.npc_conversations.current_bank(
+                &admission.states.chat,
+                &runtime,
+                actor,
+                command.game_session_id,
+                &intent,
+            );
+            let current = expected.is_some_and(|prior| {
+                prior.actor == actor
+                    && prior.npc == intent.npc_actor
+                    && current.as_ref() == Some(&prior.context)
+            });
             let mut outcome = NpcConversations::bank_reply(&intent, receipt.line);
             outcome.inventory_changed = receipt.changed;
-            if !current && let Some(conversation) = outcome.conversation.as_mut() {
-                conversation.open = None;
-            }
+            let outcome = publish_current_reply(current, outcome);
             Some(outcome)
         }
     }

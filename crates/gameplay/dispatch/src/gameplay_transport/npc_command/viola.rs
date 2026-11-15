@@ -14,6 +14,7 @@ pub(super) enum Pending {
         opened: u64,
     },
     Commit {
+        context: Context,
         character: crate::domain::CharacterId,
         command: CommandRef,
         intent: NpcTalkIntent,
@@ -229,6 +230,7 @@ pub(super) async fn apply(
     let reference = CommandRef::new(command.game_session_id, id);
     if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock() {
         sessions.entry(command.game_session_id).or_default().viola = Some(Pending::Commit {
+            context: step.context.clone(),
             character: fence.character_id,
             command: reference,
             intent: intent.clone(),
@@ -236,6 +238,8 @@ pub(super) async fn apply(
     } else {
         return unknown();
     }
+    // The transaction may commit even if its awaiting caller is cancelled.
+    slot.observe_endgame_progression();
     let result = admission
         .root
         .commit_viola(
@@ -250,9 +254,24 @@ pub(super) async fn apply(
             native.source_digest(),
         )
         .await;
-    slot.observe_endgame_progression();
+    #[cfg(test)]
+    pause_committed_viola(reference).await;
     match result {
-        Ok(reply) => complete(admission, command, &intent, Some(step.context), reply),
+        Ok(reply) => {
+            let current =
+                reply_context_current(admission, command.game_session_id, &intent, &step.context)
+                    .await;
+            publish_current_reply(
+                current,
+                complete(
+                    admission,
+                    command,
+                    &intent,
+                    current.then_some(step.context),
+                    reply,
+                ),
+            )
+        }
         Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(
             _,
         )) => unknown(),
@@ -270,15 +289,16 @@ pub(super) async fn resume(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
-    let (character, reference, intent) = {
+    let (character, reference, intent, context) = {
         let sessions = admission.states.npc_conversations.sessions.lock().ok()?;
         match sessions.get(&command.game_session_id)?.viola.as_ref()? {
             Pending::Commit {
+                context,
                 character,
                 command: reference,
                 intent,
             } if reference.command_id().get() == command.command_id => {
-                (*character, *reference, intent.clone())
+                (*character, *reference, intent.clone(), context.clone())
             }
             _ => return None,
         }
@@ -288,7 +308,20 @@ pub(super) async fn resume(
         .reconcile_viola(admission.character, character, reference)
         .await
     {
-        Ok(Some(reply)) => Some(complete(admission, command, &intent, None, reply)),
+        Ok(Some(reply)) => {
+            let current =
+                reply_context_current(admission, command.game_session_id, &intent, &context).await;
+            Some(publish_current_reply(
+                current,
+                complete(
+                    admission,
+                    command,
+                    &intent,
+                    current.then_some(context),
+                    reply,
+                ),
+            ))
+        }
         Ok(None) => {
             if let Ok(mut sessions) = admission.states.npc_conversations.sessions.lock()
                 && let Some(state) = sessions.get_mut(&command.game_session_id)
@@ -301,5 +334,50 @@ pub(super) async fn resume(
             unknown: true,
             ..NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
         }),
+    }
+}
+
+#[cfg(test)]
+struct CommitBarrier {
+    command: CommandRef,
+    reached: std::sync::Arc<tokio::sync::Notify>,
+    release: std::sync::Arc<tokio::sync::Notify>,
+}
+#[cfg(test)]
+static COMMIT_BARRIER: std::sync::Mutex<Option<CommitBarrier>> = std::sync::Mutex::new(None);
+
+#[cfg(test)]
+pub(in crate::gameplay_transport) fn viola_commit_barrier(
+    command: CommandRef,
+) -> (
+    std::sync::Arc<tokio::sync::Notify>,
+    std::sync::Arc<tokio::sync::Notify>,
+) {
+    let reached = std::sync::Arc::new(tokio::sync::Notify::new());
+    let release = std::sync::Arc::new(tokio::sync::Notify::new());
+    *COMMIT_BARRIER
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(CommitBarrier {
+        command,
+        reached: reached.clone(),
+        release: release.clone(),
+    });
+    (reached, release)
+}
+#[cfg(test)]
+async fn pause_committed_viola(command: CommandRef) {
+    let barrier = {
+        let mut slot = COMMIT_BARRIER
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if slot.as_ref().is_some_and(|b| b.command == command) {
+            slot.take()
+        } else {
+            None
+        }
+    };
+    if let Some(barrier) = barrier {
+        barrier.reached.notify_one();
+        barrier.release.notified().await;
     }
 }
