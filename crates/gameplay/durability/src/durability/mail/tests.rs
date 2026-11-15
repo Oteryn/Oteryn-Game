@@ -172,3 +172,25 @@ pub async fn mail_recipient_root_share_lock_blocks_terminal_change_until_transac
     after.rollback().await?;
     Ok(())
 }
+
+#[test]
+fn replay_requires_original_mailbox_and_item() {
+    let item = [7; 16];
+    let mailbox = 42_u64.to_be_bytes();
+    assert!(super::replay_intent_matches(&item, &mailbox, &item, 42));
+    assert!(!super::replay_intent_matches(&item, &mailbox, &item, 43));
+    assert!(!super::replay_intent_matches(&item, &mailbox, &[8; 16], 42));
+}
+
+#[test]
+fn reciprocal_mail_uses_the_same_root_lock_order() -> TestResult {
+    let mut low = [0; 16];
+    low[6] = 0x70;
+    low[8] = 0x80;
+    let mut high = low;
+    high[15] = 1;
+    let low = CharacterId::from_bytes(low)?;
+    let high = CharacterId::from_bytes(high)?;
+    assert_eq!(super::mail_root_lock_order(low, high), super::mail_root_lock_order(high, low));
+    Ok(())
+}
