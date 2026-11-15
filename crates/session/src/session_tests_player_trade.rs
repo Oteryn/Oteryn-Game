@@ -53,3 +53,38 @@ fn player_trade_and_container_pushes_are_typed_revision_checked_and_selected()
         Ok::<(), BoxError>(())
     })?)?.join().map_err(|_| "trade thread panicked")?
 }
+
+#[test]
+fn player_trade_contents_follow_negotiation_and_survive_session_reduction() -> Result<(), BoxError>
+{
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        for selected in [false,true] {
+            let capabilities: &[u32]=if selected { &[4,6,60,501] } else { &[4,6,60] };
+            let (client,mut server)=tokio::io::duplex(64*1024);
+            let initial=player_trade::encode_state(&Default::default()).map_err(|error|format!("{error:?}"))?;
+            let peer=tokio::spawn(async move {
+                join_peer_with(&mut server,capabilities,capabilities,&[],item_snapshot(vec![])?,&[(26,1,1,initial)]).await?;
+                read_frame(&mut server).await?;
+                let root=player_trade::Offer {definition:1,count:1,sub_type:0};
+                let mut state=player_trade::State {own:Some(root),partner:Some(EntityRef {identity:[4;16],generation:2}),phase:1,reason:0,..Default::default()};
+                state.contents[0]=vec![player_trade::ContentsItem {item:root,parent:None,name:"backpack".into()},player_trade::ContentsItem {item:player_trade::Offer {definition:2,count:7,sub_type:0},parent:Some(0),name:"fish".into()}];
+                let payload=player_trade::encode_state_for(&state,true).map_err(|error|format!("{error:?}"))?;
+                write_frame(&mut server,&encode_state_delta(1,41,26,1,2,1,&payload)?).await?;
+                write_frame(&mut server,&encode_command_result(1,42,7,CommandStatus::Accepted,&encode_step_result(StepDisposition::Blocked))?).await?;
+                Ok::<(),BoxError>(())
+            });
+            let mut session=Session::admit(client,admission_with(capabilities)?).await?;
+            let result=session.step(StepDirection::North).await;
+            peer.await??;
+            if !selected { assert!(matches!(result,Err(SessionError::SessionUnusable)));continue; }
+            result?;
+            let state=session.player_trade_state().ok_or("trade state")?;
+            assert_eq!(state.contents[0].len(),2);
+            assert_eq!(state.contents[0][1].parent,Some(0));
+            assert_eq!(state.contents[0][1].name,"fish");
+            assert_eq!(state.contents[0][1].item.count,7);
+            assert!(session.take_events().iter().any(|event|matches!(event,SessionEvent::PlayerTrade(update) if update.value==state)));
+        }
+        Ok::<(),BoxError>(())
+    })?)?.join().map_err(|_|"trade contents session thread panicked")?
+}

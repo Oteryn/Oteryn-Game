@@ -270,13 +270,13 @@ impl State {
                 if changed {
                     self.inventory(stream, authority, admitted).await?;
                 }
-                self.npc(stream, admitted, &update).await?;
+                self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
                 for delta in deltas {
                     self.item_delta(stream, admitted, &delta).await?;
                 }
-                self.npc(stream, admitted, &update).await?;
+                self.npc(stream, authority, admitted, &update).await?;
             }
             Dispatch::Use(outcome) if outcome.disposition == UseDisposition::Committed => {
                 self.inventory(stream, authority, admitted).await?;
@@ -362,14 +362,20 @@ impl State {
         self.refresh_map(stream, authority, admitted).await
     }
 
-    async fn npc<S: AsyncWrite + Unpin>(
+    async fn npc<S: AsyncWrite + Unpin, A: FreshAdmissionAuthority>(
         &mut self,
         stream: &mut S,
+        authority: &A,
         admitted: &mut AdmittedSession,
         update: &NpcUpdate,
     ) -> Result<(), ServeEnd> {
         let mut sequence = admitted.continuity.server_sequence;
         let frames = npc_update_frames(
+            authority,
+            (
+                admitted.game_session_id,
+                admitted.continuity.selected_capabilities,
+            ),
             admitted.continuity.connection_generation,
             &mut sequence,
             &mut admitted.continuity.npc,
@@ -499,7 +505,7 @@ impl State {
                 .npc_follow(self.actor, admitted.game_session_id, self.npc_shown)
                 .await
         {
-            self.npc(stream, admitted, &update).await?;
+            self.npc(stream, authority, admitted, &update).await?;
         }
         self.spatial(stream, authority, admitted, true).await
     }

@@ -688,7 +688,7 @@ fn hireling_package_resource_and_byte_worst_cases_are_bounded_by_existing_rows()
         let mut over = usage;
         over.participants += 1;
         assert_eq!(
-            check_npc_trade_usage(SIDE_BUY, false, true, false, false, &over),
+            check_npc_trade_usage(SIDE_BUY, false, true, false, false, false, &over),
             Err(AuditError::CapacityExceeded)
         );
         let mut ordinary = value.clone();
@@ -883,7 +883,15 @@ fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
     let mut over_value_lines = npc_trade_usage(&value);
     over_value_lines.value_lines = 2;
     assert_eq!(
-        check_npc_trade_usage(SIDE_BUY, false, false, false, false, &over_value_lines),
+        check_npc_trade_usage(
+            SIDE_BUY,
+            false,
+            false,
+            false,
+            false,
+            false,
+            &over_value_lines
+        ),
         Err(AuditError::InvalidInput)
     );
     // Prost accepts a repeated singular message by merging it. The canonical native gate

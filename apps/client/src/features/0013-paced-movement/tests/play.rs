@@ -169,6 +169,7 @@ fn world_sprite_preparation_retains_the_scrolling_edge_margin() -> Result<(), Ba
             .into_iter()
             .enumerate()
             .map(|(i, (x, y))| WorldSpatialEntity {
+                motion: None,
                 entity: oteryn_session::EntityRef {
                     identity: [i as u8 + 1; 16],
                     generation: 1,
@@ -209,6 +210,7 @@ fn tooltip_picks_the_displayed_creature_during_a_walk() -> Result<(), Box<dyn st
         generation: 1,
     };
     view = view.with_entities(vec![WorldSpatialEntity {
+        motion: None,
         entity,
         kind: oteryn_session::EntityKind::Creature,
         position: ActorPosition {

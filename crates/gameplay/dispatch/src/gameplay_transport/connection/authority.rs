@@ -260,6 +260,22 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    fn observe_projected_entities(
+        &self,
+        actor: ExactActorRef,
+        selected: SelectedCapabilities,
+    ) -> impl Future<Output = Option<ChannelEntities>> {
+        async move {
+            if selected.contains(
+                oteryn_protocol_oteryn::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2,
+            ) {
+                self.observe_named_visible_entities(actor).await
+            } else {
+                self.observe_visible_entities(actor).await
+            }
+        }
+    }
+
     /// S-ENTNAME: the same visibility read enriched with names for capability 286.
     fn observe_named_visible_entities(
         &self,
@@ -284,6 +300,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

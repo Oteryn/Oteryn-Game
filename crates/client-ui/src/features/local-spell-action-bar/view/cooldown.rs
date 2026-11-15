@@ -7,6 +7,8 @@ pub struct CooldownIcon {
     pub id: u32,
     pub group: bool,
     pub label: String,
+    /// Catalogue details; never used as a cast or timer authority.
+    pub tooltip: String,
     pub remaining_ms: u64,
     /// White overlay length, from full (1000) to expired (0).
     pub overlay_per_mille: u16,
@@ -44,6 +46,7 @@ pub fn cooldown_icons(panel: &ActionBarPanel, catalog: &CatalogState) -> Vec<Coo
             id,
             group,
             remaining_ms,
+            tooltip: String::new(),
             label: if group {
                 // S9 ordinals from tools/content-schema/spell-authoring/cooldown-groups.json.
                 [

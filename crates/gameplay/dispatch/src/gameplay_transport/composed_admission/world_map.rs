@@ -65,7 +65,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
     ) -> Option<world_spatial::ChannelEntities> {
+        self.observe_channel_entities_projected(actor, false).await
+    }
+
+    pub(in crate::gameplay_transport) async fn observe_channel_entities_projected(
+        &self,
+        actor: ExactActorRef,
+        forecasts: bool,
+    ) -> Option<world_spatial::ChannelEntities> {
         use world_spatial::VisibleKind;
+        let own_session = if forecasts {
+            self.runtime
+                .lock()
+                .await
+                .positioned_melee_census()
+                .ok()
+                .and_then(|census| {
+                    census
+                        .into_iter()
+                        .find(|(a, _, _)| *a == actor)
+                        .and_then(|(_, _, session)| session)
+                })
+        } else {
+            None
+        };
+        let equipment = if let Some(session) = own_session {
+            self.read_movement_equipment(actor, session).await
+        } else {
+            None
+        };
+        let legacy = if forecasts {
+            self.door.lock().await.blocking_cells().clone()
+        } else {
+            std::collections::BTreeSet::new()
+        };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         let now = self.owner_now();
@@ -83,6 +116,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                 )
             });
+            let visible = runtime.visible_entities();
+            for entry in &mut view.entities {
+                entry.motion = visible
+                    .players
+                    .iter()
+                    .chain(&visible.creatures)
+                    .chain(&visible.npcs)
+                    .find(|current| current.actor.placement_identity() == entry.identity)
+                    .and_then(|current| runtime.actor_motion(current.actor))
+                    .map(
+                        |(translation_revision, step_duration_ms, mount_look_type, _)| {
+                            oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                                translation_revision,
+                                step_duration_ms,
+                                mount_look_type,
+                                prewalk_ms: [0; 8],
+                            }
+                        },
+                    );
+            }
             self.states.staff_world.filter(actor, &mut view);
             return Some(view);
         }
@@ -108,7 +161,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Use the wire interest owner's exact floor/rectangle rules before cloning
         // health/policy and reading conditions. A full World has tens of thousands
         // of distant creatures; none need per-connection enrichment.
-        let entities = (visible
+        let mut entities: Vec<_> = (visible
             .players
             .iter()
             .map(|entry| (VisibleKind::Player, entry)))
@@ -122,6 +175,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         .filter(|(_, entry)| in_view(entry.position))
         .filter(|(_, entry)| !states.player_hidden_from(&runtime, actor, entry.actor, now))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
+            motion: runtime.actor_motion(entry.actor).map(
+                |(translation_revision, step_duration_ms, mount_look_type, _)| {
+                    oteryn_protocol_oteryn::actor_motion::ActorMotion {
+                        translation_revision,
+                        step_duration_ms,
+                        mount_look_type,
+                        prewalk_ms: [0; 8],
+                    }
+                },
+            ),
             display_name: None,
             health_percent: runtime
                 .companion_snapshot(entry.actor)
@@ -158,6 +221,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ))
         .chain(self.source_volatile_entities(&runtime))
         .collect();
+        if let Some(own_session) = own_session
+            && let Some(own) = entities
+                .iter_mut()
+                .find(|entry| entry.identity == actor.placement_identity())
+            && let Some(motion) = &mut own.motion
+        {
+            let (none, doors);
+            let blocking: &dyn crate::map::floor::CellBlocker = if self
+                .rooms()
+                .gate_source_world()
+                .is_some_and(|room| room.source_world().is_some())
+            {
+                none = std::collections::BTreeSet::<crate::content::LogicalCell>::new();
+                &none
+            } else if let Some(map) = self.bundle_map() {
+                doors = crate::map::floor::BundleDoors(&map.facts);
+                &doors
+            } else {
+                &legacy
+            };
+            let blocking = super::super::pvp_live::PvpBlocker {
+                inner: blocking,
+                cells: self.movement_cells(),
+                blocked: super::super::pvp_live::pz_blocked(&states, actor, own_session, now),
+            };
+            motion.prewalk_ms = super::super::actor_spell::actor_movement::prewalk_forecast(
+                &runtime,
+                &states,
+                self.movement_cells(),
+                actor,
+                own_session,
+                now.get(),
+                equipment
+                    .as_ref()
+                    .and_then(|read| read.current_delta(&runtime, &states, actor, own_session)),
+                &blocking,
+            );
+        }
         // CLOCK-1 (§11.4): an actor's light is its brightest current LIGHT condition, from the
         // runtime actor-condition owner (players and creatures) and, for a player, its spell
         // state, read under the same runtime lock (lock order: runtime, then spell_states). A

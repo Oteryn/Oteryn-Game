@@ -200,6 +200,7 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
         .world_context
         .pending = false;
     let target = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {

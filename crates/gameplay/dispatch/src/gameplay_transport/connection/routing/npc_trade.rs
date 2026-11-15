@@ -20,6 +20,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         // inventory delta (domain 9) follows when the session shows items; an unknown outcome
         // ends the connection before the CommandId is sequenced, so the resend replays.
         let step = match decode_npc_trade_intent(command.payload) {
+            Ok(intent)
+                if intent.quantity > 100
+                    && !admitted.continuity.selected_capabilities.contains(501) =>
+            {
+                NpcTradeStep::Refused(transport::npc_command::NpcTradeRefusal::only(
+                    NpcIntentDisposition::Rejected,
+                ))
+            }
             Ok(intent) => {
                 authority
                     .npc_trade(

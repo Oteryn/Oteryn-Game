@@ -1,0 +1,92 @@
+//! Volatile presentation facts, fenced by the exact actor and position revision.
+use super::*;
+
+#[derive(Debug)]
+pub(super) struct ActorPresentation {
+    actor: ExactActorRef,
+    walk: Option<(u64, u32)>,
+    mount: u32,
+    speed_bonus: u16,
+}
+
+impl ChannelRuntimeV1 {
+    /// Called in the same owner turn as a successful timed step. Any later
+    /// translation without this receipt is observed as a teleport, even adjacent.
+    pub fn record_walk(
+        &mut self,
+        actor: ExactActorRef,
+        snapshot: MovementPositionSnapshot,
+        duration: std::time::Duration,
+    ) {
+        if self.read_actor_position(actor).ok() != Some(snapshot) {
+            return;
+        }
+        let Ok(ms) = u32::try_from(duration.as_millis()) else {
+            return;
+        };
+        let entry = self.presentation_entry(actor);
+        entry.walk = Some((snapshot.last_translation_revision(), ms));
+    }
+
+    fn presentation_entry(&mut self, actor: ExactActorRef) -> &mut ActorPresentation {
+        let entry = self
+            .presentations
+            .entry(actor.actor_local_id())
+            .or_insert(ActorPresentation {
+                actor,
+                walk: None,
+                mount: 0,
+                speed_bonus: 0,
+            });
+        if entry.actor != actor {
+            *entry = ActorPresentation {
+                actor,
+                walk: None,
+                mount: 0,
+                speed_bonus: 0,
+            };
+        }
+        entry
+    }
+
+    /// The validated selected mount is supplied by the appearance owner; riding
+    /// never changes that selection. Control-loss and stale sessions cannot write.
+    pub fn set_riding(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        mount: u32,
+        speed_bonus: u16,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if self
+            .player_control_facts(actor, session)?
+            .control_loss
+            .is_some()
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        let entry = self.presentation_entry(actor);
+        entry.mount = mount;
+        entry.speed_bonus = if mount == 0 { 0 } else { speed_bonus };
+        Ok(())
+    }
+
+    pub fn actor_motion(&self, actor: ExactActorRef) -> Option<(u64, u32, u32, u16)> {
+        let snapshot = self.read_actor_position(actor).ok()?;
+        let entry = self
+            .presentations
+            .get(&actor.actor_local_id())
+            .filter(|p| p.actor == actor);
+        let revision = snapshot.last_translation_revision();
+        Some((
+            revision,
+            entry
+                .and_then(|p| p.walk)
+                .filter(|(at, _)| *at == revision)
+                .map_or(0, |(_, ms)| ms),
+            entry.map_or(0, |p| p.mount),
+            entry.map_or(0, |p| p.speed_bonus),
+        ))
+    }
+}

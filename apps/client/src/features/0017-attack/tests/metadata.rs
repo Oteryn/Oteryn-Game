@@ -8,6 +8,7 @@ use oteryn_session::{
 fn battle_profession_and_guild_filters_query_real_metadata_and_attack_the_filtered_actor()
 -> Result<(), Box<dyn std::error::Error>> {
     let actor = |id, health| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

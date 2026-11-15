@@ -25,6 +25,7 @@ fn click_on_empty_ground_queues_a_server_target() -> Result<(), BatchError> {
 #[test]
 fn only_a_creature_click_queues_an_attack() -> Result<(), BatchError> {
     let actor = |kind, x, id: u8| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -63,6 +64,7 @@ fn creature_click_dispatches_attack_and_reduces_the_report() -> Result<(), Batch
         generation: 1,
     };
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: target,
         kind: EntityKind::Creature,
@@ -153,6 +155,7 @@ fn world_context_own_tile_item_and_reset_binding() -> Result<(), BatchError> {
 #[test]
 fn world_context_creature_look_keeps_generation_without_attack() -> Result<(), BatchError> {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [3; 16],
@@ -199,6 +202,7 @@ fn world_context_creature_look_keeps_generation_without_attack() -> Result<(), B
 #[test]
 fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), BatchError> {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [4; 16],
@@ -295,6 +299,7 @@ fn modifier_mouse_release_reaches_authoritative_look_use_and_attack_callers()
             let tile = if modifier == Modifier::Alt {
                 let tile = TileCoord::new(101,200);
                 view = view.with_entities(vec![WorldSpatialEntity {
+                    motion: None,
                     entity: EntityRef { identity: [4;16], generation: 1 }, kind: EntityKind::Creature,
                     position: ActorPosition {x:tile.x,y:tile.y,floor:0}, display_name: None,
                     detail: oteryn_session::EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 }
@@ -373,6 +378,7 @@ fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::
         }
         let position = map.tiles[0].position;
         let mut entities = vec![WorldSpatialEntity {
+            motion: None,
             entity: EntityRef {
                 identity: [4; 16],
                 generation: 1,
@@ -389,6 +395,7 @@ fn control_click_cases(cases: &[(bool, bool, bool)]) -> Result<(), Box<dyn std::
         if entity_item {
             entities.clear();
             entities.push(WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [5; 16],
                     generation: 1,

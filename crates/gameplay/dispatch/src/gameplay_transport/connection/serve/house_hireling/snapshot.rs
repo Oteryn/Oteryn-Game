@@ -87,7 +87,11 @@ impl State {
                     .await
                     .ok_or(ServeEnd::Disconnected)?;
             let mut view = SessionVisibility::with_objects(items.is_some())
-                .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1));
+                .lit(selected.contains(CAPABILITY_WORLD_LIGHT_V1))
+                .with_motion(
+                    selected
+                        .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
+                );
             let (snapshot_type, payload) = appearances
                 .initial(
                     authority,
@@ -204,7 +208,9 @@ impl State {
                 stash_revision: 0,
                 pacer: StepPacer::resumed(authority.actor_step_deadline(actor).await),
                 step_holder: std::sync::Arc::new(()),
-                step_wait_receipts: authority.step_wait_receipts(),
+                step_wait_receipts: authority.step_wait_receipts()
+                    || selected
+                        .contains(oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
             },
             payloads,
         ))

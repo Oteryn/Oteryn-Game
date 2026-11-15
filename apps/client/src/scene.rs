@@ -38,6 +38,7 @@ struct ActorDraw {
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    actor_clocks: actor_motion::ActorClocks,
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
@@ -73,7 +74,6 @@ pub struct Scene {
     actor_draws: Vec<ActorDraw>,
     pub(crate) floor_visuals: Vec<(i16, Vec<oteryn_renderer::QuadInstance>, u8)>,
     names: Vec<(TileCoord, Vec<u16>)>,
-    #[cfg(feature = "bevy-shell")]
     name_entities: Vec<oteryn_session::EntityRef>,
     name_visibility: [bool; 3],
     name_marks: bool,
@@ -158,9 +158,9 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            actor_clocks: actor_motion::ActorClocks::default(),
             floor_visuals: Vec::new(),
             names: Vec::new(),
-            #[cfg(feature = "bevy-shell")]
             name_entities: Vec::new(),
             name_visibility: [true; 3],
             name_marks: true,
@@ -281,8 +281,13 @@ impl Scene {
         let _ = floor_quads;
         let atlas = self.atlas();
         let mut player_quads: Vec<_> = player_quads.into_iter().collect();
-        for (tile, cells) in &self.names {
+        for (index, (tile, cells)) in self.names.iter().enumerate() {
+            let [dx, dy] = self
+                .name_entities
+                .get(index)
+                .map_or([0.; 2], |entity| self.actor_offset(*entity));
             let [x, y] = self.view.tile_to_screen(*tile);
+            let (x, y) = (x + dx, y + dy);
             let name_start = sprites.len();
             let scale = f32::from(self.label_scale) / 100.0;
             let left =
@@ -377,6 +382,9 @@ impl Scene {
 
 #[cfg(test)]
 mod tests;
+
+#[path = "features/0502-actor-motion/scene.rs"]
+mod actor_motion;
 
 #[path = "features/0006-world-spatial-entities/scene.rs"]
 mod live_entities;

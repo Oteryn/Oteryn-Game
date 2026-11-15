@@ -5,6 +5,7 @@ use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, Normalized
 #[test]
 fn projection_replaces_visible_actors_and_rejects_stale_selection() {
     let entity = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -125,6 +126,7 @@ fn mode_input_waits_for_the_previous_server_answer() {
 #[test]
 fn battle_rows_follow_the_own_actors_floor() {
     let creature = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {

@@ -16,6 +16,7 @@ fn otc_textmsg_bevy_health_bars_follow_visible_actors_and_settings()
     let name = oteryn_session::EntityDisplayName::new("Visible actor")
         .map_err(|error| format!("{error:?}"))?;
     let entity = |id, kind, floor, x| WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [id; 16],
             generation: 1,

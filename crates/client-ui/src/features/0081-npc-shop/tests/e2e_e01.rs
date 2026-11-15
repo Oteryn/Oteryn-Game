@@ -29,6 +29,7 @@ fn e01_real_server_payloads_replay_into_native_panels() -> Result<(), Box<dyn st
             lines: vec!["Welcome. {trade}, {deposit}, {withdraw}, or {transfer}?".into()],
         };
         let window = npc_service::NpcTradeWindow {
+            details: Vec::new(),
             open: Some((npc, 11)),
             offers: vec![npc_service::NpcOffer {
                 item_definition_ref: 42,

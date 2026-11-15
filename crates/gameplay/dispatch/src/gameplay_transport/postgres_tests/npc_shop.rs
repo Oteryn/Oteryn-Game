@@ -9,8 +9,8 @@ use crate::content::{
     ProjectV2ServiceOfferDirection, npc_catalogue_preproduction_limits,
 };
 use crate::foundation::{
-    ChannelContentPin, MessageType, MovementFacing, NpcPlacement, NpcPlacementTable,
-    NpcPlacements, decode_wire_envelope,
+    ChannelContentPin, MessageType, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
+    decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -117,6 +117,26 @@ async fn exchange(
             loop {
                 let frame = read_frame(&mut client).await?;
                 let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::StateDelta {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                        .map_err(debug)?;
+                    if delta.domain_id
+                        == oteryn_protocol_oteryn::npc_service::STATE_DOMAIN_NPC_TRADE_WINDOW
+                    {
+                        let window =
+                            oteryn_protocol_oteryn::npc_service::decode_npc_trade_window_for(
+                                delta.payload,
+                                true,
+                            )
+                            .map_err(debug)?;
+                        assert_eq!(window.details.len(), window.offers.len());
+                        for detail in &window.details {
+                            assert!(!detail.name.is_empty());
+                            assert!(!detail.name.contains("Unknown"));
+                            assert!(detail.maximum_quantity > 0);
+                        }
+                    }
+                }
                 if envelope.message_type() == MessageType::CommandResult {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(result.command_id, *sent_id);
@@ -177,6 +197,9 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
+    run_shop_scenario_with_bulk(wandering_rashid, false)
+}
+fn run_shop_scenario_with_bulk(wandering_rashid: bool, bulk: bool) -> TestResult {
     run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "npc_shop_wire", true, false).await?;
@@ -192,9 +215,14 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         let active = controller.active().ok_or("active content")?;
         let destination = oteryn_gameplay_entities::rashid_schedule::destination_at(
             crate::gameplay_transport::npc_trade_command::unix_ms_now(),
-        ).placement;
+        )
+        .placement;
         let entry = if wandering_rashid {
-            (i32::from(destination.x), i32::from(destination.y), -i16::from(destination.floor))
+            (
+                i32::from(destination.x),
+                i32::from(destination.y),
+                -i16::from(destination.floor),
+            )
         } else {
             (2, 0, 7)
         };
@@ -219,7 +247,11 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         deps.initialize(&owner).await;
         // Rashid's captured source buys white cloth at 150 gold, after the quest.
         // Alice retains the synthetic four-gold meat offer for the generic case.
-        let sold_item = if wandering_rashid { "oteryn:item.tibia.i5917" } else { MEAT };
+        let sold_item = if wandering_rashid {
+            "oteryn:item.tibia.i5917"
+        } else {
+            MEAT
+        };
         let unit_price: u32 = if wandering_rashid { 150 } else { 4 };
         let total_gold = 8 * u64::from(unit_price);
         let catalogue = NpcDataCatalogue::load(
@@ -242,10 +274,20 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
             sub_type: None,
             parity_pending: false,
         };
+        let offers = if bulk {
+            let mut buy = offer.clone();
+            buy.direction = ProjectV2ServiceOfferDirection::SellToPlayer;
+            buy.unit_price = 1;
+            let mut sell = offer.clone();
+            sell.unit_price = 5000;
+            vec![buy, sell]
+        } else {
+            vec![offer.clone()]
+        };
         let book = NpcTalkBook::from_model(&model)
             .with(
                 TRADER,
-                NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(vec![offer.clone()]),
+                NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(offers),
             )
             .with(
                 RASHID,
@@ -254,7 +296,10 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         let revision = book.catalogue_revision();
         owner.states.chat.install_npc_talk(Arc::new(book));
         let session = deps.admitted.game_session_id;
-        owner.states.chat.admit(session, "Fixture Hero", owner.owner_now());
+        owner
+            .states
+            .chat
+            .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
         let npc = {
             let mut runtime = deps.runtime.lock().await;
@@ -269,26 +314,26 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
                 .place_npcs(
                     &{
                         let mut table = NpcPlacementTable {
-                        npcs: vec![
-                            NpcPlacements {
-                                key: if wandering_rashid { RASHID } else { TRADER }.into(),
-                                placements: vec![NpcPlacement {
-                                    floor: -i8::try_from(spot.floor)?,
-                                    x: u16::try_from(spot.x + 1)?,
-                                    y: u16::try_from(spot.y)?,
-                                    direction: MovementFacing::South,
-                                }],
-                            },
-                            NpcPlacements {
-                                key: if wandering_rashid { TRADER } else { RASHID }.into(),
-                                placements: vec![NpcPlacement {
-                                    floor: -i8::try_from(spot.floor)?,
-                                    x: u16::try_from(spot.x + 2)?,
-                                    y: u16::try_from(spot.y)?,
-                                    direction: MovementFacing::South,
-                                }],
-                            },
-                        ],
+                            npcs: vec![
+                                NpcPlacements {
+                                    key: if wandering_rashid { RASHID } else { TRADER }.into(),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + 1)?,
+                                        y: u16::try_from(spot.y)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                },
+                                NpcPlacements {
+                                    key: if wandering_rashid { TRADER } else { RASHID }.into(),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + 2)?,
+                                        y: u16::try_from(spot.y)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                },
+                            ],
                         };
                         table.npcs.sort_by(|left, right| left.key.cmp(&right.key));
                         table
@@ -297,16 +342,33 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
                     true,
                 )
                 .map_err(debug)?;
-            let placed = runtime.visible_entities().npcs.into_iter().find(|npc| {
-                runtime.npc_key(npc.actor) == Some(if wandering_rashid { RASHID } else { TRADER })
-            }).ok_or("shop actor absent")?;
+            let placed = runtime
+                .visible_entities()
+                .npcs
+                .into_iter()
+                .find(|npc| {
+                    runtime.npc_key(npc.actor)
+                        == Some(if wandering_rashid { RASHID } else { TRADER })
+                })
+                .ok_or("shop actor absent")?;
             EntityRef {
                 identity: placed.actor.placement_identity(),
                 generation: placed.generation,
             }
         };
         // Two meat stacks and a fish the trader does not buy.
-        seed_main_backpack(&h, &[(sold_item, 5), (FISH, 2), (sold_item, 3)]).await?;
+        if bulk {
+            seed_main_backpack(
+                &h,
+                &[
+                    ("oteryn:item.tibia.i3031", 100),
+                    ("oteryn:item.tibia.i3031", 100),
+                ],
+            )
+            .await?;
+        } else {
+            seed_main_backpack(&h, &[(sold_item, 5), (FISH, 2), (sold_item, 3)]).await?;
+        }
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -319,9 +381,63 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             // Capabilities 3 and 81 are offered by the bundle World only.
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[CAPABILITY_NPC_SERVICE_V1, CAPABILITY_NPC_SHOP_V1],
+            &[
+                CAPABILITY_NPC_SERVICE_V1,
+                4,
+                6,
+                CAPABILITY_NPC_SHOP_V1,
+                oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+            ],
         )
         .ok_or("npc shop selection")?;
+        if bulk {
+            let (window, bought) =
+                bulk_exchange(&owner, &mut admitted, npc, 1, NpcTradeSide::Buy, 150).await?;
+            assert!(window.details.iter().all(|detail| detail.name == "meat"));
+            let mut limits: Vec<_> = window
+                .offers
+                .iter()
+                .zip(&window.details)
+                .map(|(offer, detail)| (offer.side as u32, detail.maximum_quantity))
+                .collect();
+            limits.sort_unstable();
+            assert_eq!(limits, vec![(1, 2000), (2, 201)]);
+            let item_ref = active
+                .native_gameplay()
+                .and_then(|native| native.item_index())
+                .and_then(|index| index.definition_ref("Item", MEAT, "definition-r1"))
+                .ok_or("meat definition")?;
+            let mut counts: Vec<_> = bought
+                .entries
+                .iter()
+                .filter(|entry| entry.item_definition_ref == item_ref)
+                .map(|entry| entry.count.get())
+                .collect();
+            counts.sort_unstable();
+            assert_eq!(counts, vec![50, 100]);
+            let (_, sold) =
+                bulk_exchange(&owner, &mut admitted, npc, 4, NpcTradeSide::Sell, 125).await?;
+            assert_eq!(
+                sold.entries
+                    .iter()
+                    .filter(|entry| entry.item_definition_ref == item_ref)
+                    .map(|entry| entry.count.get())
+                    .sum::<u32>(),
+                25
+            );
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_npc_trades")
+                    .fetch_one(&h.pool)
+                    .await?,
+                2
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            h.cleanup().await?;
+            return Ok(());
+        }
+
         let intent = |action| NpcShopIntent {
             npc_actor: npc,
             catalogue_revision: revision,
@@ -345,37 +461,98 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
             Some((1, 2)),
             3,
             &intent(NpcShopAction::Look),
-        ).await?;
+        )
+        .await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(looked.disposition, NpcIntentDisposition::Ok);
-        assert!(looked.look_text.starts_with("You see "), "{}", looked.look_text);
+        assert!(
+            looked.look_text.starts_with("You see "),
+            "{}",
+            looked.look_text
+        );
         assert_eq!((looked.sold_units, looked.total_gold_units), (0, 0));
         assert_eq!(footprint(&h).await?, empty);
         assert_eq!(carried(&h).await?, seeded);
 
         if wandering_rashid {
-            use oteryn_gameplay_quests::quest::{QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack, QuestTransition};
-            use crate::durability::quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest};
+            use crate::durability::quest_state::{
+                QuestCause, QuestTransitionOutcome, QuestTransitionRequest,
+            };
+            use oteryn_gameplay_quests::quest::{
+                QuestComparison, QuestEffect, QuestEffectKind, QuestStateCatalogue, QuestTrack,
+                QuestTransition,
+            };
             let quest = "oteryn:quest.the_travelling_trader_quest";
             let track = "oteryn:quest-progress/chosen/travelling-trader/stage";
             let key = "oteryn:quest-transition/fixture/rashid-shop-access";
-            let refused = owner.npc_shop(deps.actor, UseCommand { game_session_id: session, command_id: 899, item_fence: Some(fence) }, intent(NpcShopAction::SellAll)).await;
+            let refused = owner
+                .npc_shop(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 899,
+                        item_fence: Some(fence),
+                    },
+                    intent(NpcShopAction::SellAll),
+                )
+                .await;
             assert_eq!(refused.result().disposition, NpcIntentDisposition::Rejected);
             assert_eq!(footprint(&h).await?, empty);
             assert_eq!(carried(&h).await?, seeded);
             // Only the prior quest is seeded; shop authority, payment and replay
             // still run through their production dispatch and locked item owner.
-            let catalogue = Arc::new(QuestStateCatalogue::new("content-1", vec![QuestTrack {
-                key: track.into(), quest: quest.into(), initial: -1, min: -1, max: 13,
-            }], vec![QuestTransition {
-                world_change: None, key: key.into(), quest: quest.into(), completes: true, experience: None,
-                effects: vec![QuestEffect { track: track.into(), from: QuestComparison::Eq(-1), effect: QuestEffectKind::Set(13) }],
-            }]).map_err(debug)?);
-            let quest_fence = owner.current_quest_fence(session).await.map_err(|()| "quest fence")?.ok_or("quest fence")?;
+            let catalogue = Arc::new(
+                QuestStateCatalogue::new(
+                    "content-1",
+                    vec![QuestTrack {
+                        key: track.into(),
+                        quest: quest.into(),
+                        initial: -1,
+                        min: -1,
+                        max: 13,
+                    }],
+                    vec![QuestTransition {
+                        world_change: None,
+                        key: key.into(),
+                        quest: quest.into(),
+                        completes: true,
+                        experience: None,
+                        effects: vec![QuestEffect {
+                            track: track.into(),
+                            from: QuestComparison::Eq(-1),
+                            effect: QuestEffectKind::Set(13),
+                        }],
+                    }],
+                )
+                .map_err(debug)?,
+            );
+            let quest_fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|()| "quest fence")?
+                .ok_or("quest fence")?;
             let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
-            let completed = slot.commit_quest_transition(owner.root, owner.character, owner.holder, quest_fence,
-                QuestTransitionRequest { transition_key: key.into(), cause: QuestCause::Command(crate::foundation::CommandRef::new(session, crate::foundation::CommandId::new(900).map_err(debug)?)) }, catalogue).await.map_err(debug)?;
-            assert!(matches!(completed, QuestTransitionOutcome::Committed(_)), "{completed:?}");
+            let completed = slot
+                .commit_quest_transition(
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    quest_fence,
+                    QuestTransitionRequest {
+                        transition_key: key.into(),
+                        cause: QuestCause::Command(crate::foundation::CommandRef::new(
+                            session,
+                            crate::foundation::CommandId::new(900).map_err(debug)?,
+                        )),
+                    },
+                    catalogue,
+                )
+                .await
+                .map_err(debug)?;
+            assert!(
+                matches!(completed, QuestTransitionOutcome::Committed(_)),
+                "{completed:?}"
+            );
         }
 
         // SELL_ALL sells both stacks, eight units in one durable trade.
@@ -390,7 +567,16 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
             carried(&h).await?,
             vec![
                 (FISH.to_owned(), 2),
-                (if wandering_rashid { crate::domain::currency::Coin::Platinum } else { crate::domain::currency::Coin::Gold }.production_key().to_owned(), if wandering_rashid { 12 } else { 32 }),
+                (
+                    if wandering_rashid {
+                        crate::domain::currency::Coin::Platinum
+                    } else {
+                        crate::domain::currency::Coin::Gold
+                    }
+                    .production_key()
+                    .to_owned(),
+                    if wandering_rashid { 12 } else { 32 }
+                ),
             ]
         );
         let after = footprint(&h).await?;
@@ -457,4 +643,176 @@ pub(super) fn run_shop_scenario(wandering_rashid: bool) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+#[test]
+fn npc_shop_postgres_authoritative_side_bounds_and_bulk_quantities() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| run_shop_scenario_with_bulk(false, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "bulk NPC trade thread panicked")??;
+    Ok(())
+}
+
+async fn bulk_exchange(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    npc: EntityRef,
+    first: u64,
+    side: NpcTradeSide,
+    quantity: u32,
+) -> TestResult<(
+    oteryn_protocol_oteryn::npc_service::NpcTradeWindow,
+    oteryn_protocol_oteryn::item_view::CharacterInventory,
+)> {
+    use oteryn_protocol_oteryn::npc_service as wire;
+    let before = *admitted;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let serving = async { serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await };
+    let driving = async {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        let mut shown = None;
+        for (command_id, text) in [(first, "hi"), (first + 1, "trade")] {
+            if text == "trade" {
+                shown = None;
+            }
+            let payload = wire::encode_npc_talk_intent(&NpcTalkIntent {
+                npc_actor: npc,
+                text: text.into(),
+            })
+            .map_err(debug)?;
+            write_frame(
+                &mut client,
+                &encode_client_command(
+                    before.continuity.connection_generation,
+                    &ClientCommandValue {
+                        command_id,
+                        command_type: COMMAND_TYPE_NPC_TALK_INTENT,
+                        payload: &payload,
+                    },
+                )
+                .map_err(debug)?,
+            )
+            .await?;
+            let mut result = false;
+            while !result || text == "trade" && shown.is_none() {
+                let frame = read_frame(&mut client).await?;
+                let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                    assert_eq!(reply.command_id, command_id);
+                    assert_eq!(
+                        wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
+                        NpcIntentDisposition::Ok
+                    );
+                    result = true;
+                } else if envelope.message_type() == MessageType::StateDelta {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                        .map_err(debug)?;
+                    if delta.domain_id == wire::STATE_DOMAIN_NPC_TRADE_WINDOW {
+                        shown = Some(
+                            wire::decode_npc_trade_window_for(delta.payload, true)
+                                .map_err(debug)?,
+                        );
+                    }
+                }
+            }
+        }
+        let window = shown.ok_or("shop window")?;
+        let (offer_index, offer) = window
+            .offers
+            .iter()
+            .enumerate()
+            .find(|(_, offer)| offer.side == side)
+            .ok_or("side offer")?;
+        assert!(!window.details[offer_index].name.is_empty());
+        assert!(quantity <= window.details[offer_index].maximum_quantity);
+        let mut shop = oteryn_dev_client::client_ui::npc_shop::LiveShop {
+            selected: true,
+            ..Default::default()
+        };
+        oteryn_dev_client::client_ui::trade_details::apply_window(&mut shop, window.clone());
+        let quote = shop
+            .quotes()
+            .into_iter()
+            .find(|quote| quote.side == side)
+            .ok_or("decoded UI quote")?;
+        assert!(
+            shop.quote_text(quote)
+                .contains(&window.details[offer_index].name)
+        );
+        assert_eq!(
+            shop.maximum_amount(quote),
+            window.details[offer_index].maximum_quantity
+        );
+        assert!(!shop.valid_amount(quote, shop.maximum_amount(quote) + 1));
+        let intent = shop
+            .trade(quote, quantity)
+            .ok_or("UI trade within authoritative bound")?;
+        assert_eq!(intent.expected_unit_price, offer.unit_price);
+        let payload = wire::encode_npc_trade_intent(&intent).map_err(debug)?;
+        write_frame(
+            &mut client,
+            &encode_client_command(
+                before.continuity.connection_generation,
+                &ClientCommandValue {
+                    command_id: first + 2,
+                    command_type: wire::COMMAND_TYPE_NPC_TRADE_INTENT,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?,
+        )
+        .await?;
+        let mut result = false;
+        let mut inventory = None;
+        while !result || inventory.is_none() {
+            let frame = read_frame(&mut client).await?;
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if envelope.message_type() == MessageType::CommandResult {
+                let reply = decode_command_result(envelope.payload()).map_err(debug)?;
+                assert_eq!(reply.command_id, first + 2);
+                assert_eq!(
+                    wire::decode_npc_intent_result(reply.payload).map_err(debug)?,
+                    NpcIntentDisposition::Ok
+                );
+                result = true;
+            } else if envelope.message_type() == MessageType::StateDelta {
+                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())
+                    .map_err(debug)?;
+                if delta.domain_id == 9 {
+                    inventory = Some(
+                        oteryn_protocol_oteryn::item_view::decode_character_inventory(
+                            delta.payload,
+                        )
+                        .map_err(debug)?,
+                    );
+                }
+            }
+        }
+        client.shutdown().await?;
+        Ok::<_, Box<dyn std::error::Error>>((window, inventory.ok_or("inventory")?))
+    };
+    let (ended, result) = tokio::time::timeout(
+        std::time::Duration::from_secs(60),
+        fixture::join_two(serving, driving),
+    )
+    .await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current)
+    | ConnectionEnd::AdmittedThenClosed(current, _) = ended
+    {
+        *admitted = current;
+    }
+    result
 }

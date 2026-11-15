@@ -303,10 +303,32 @@ pub(in crate::play) fn cooldown_bar_icons(
     if !mailbox.local_preferences.action_bar.cooldown_bar_enabled {
         return Vec::new();
     }
-    oteryn_client_ui::spell_action_bar::cooldown_icons(
+    let mut icons = oteryn_client_ui::spell_action_bar::cooldown_icons(
         &mailbox.spell_bar,
         &mailbox.spell_catalog.catalog,
-    )
+    );
+    for icon in &mut icons {
+        if !icon.group {
+            if let Some(info) = mailbox.spell_catalog.info.get(&icon.id) {
+                icon.tooltip = oteryn_client_ui::server_info::spell_text(info);
+            }
+        } else {
+            let mut durations: Vec<_> = mailbox
+                .spell_catalog
+                .info
+                .values()
+                .flat_map(|s| s.group_cooldowns_ms.iter())
+                .filter(|(id, _)| *id == icon.id)
+                .map(|(_, ms)| *ms)
+                .collect();
+            durations.sort_unstable();
+            durations.dedup();
+            if !durations.is_empty() {
+                icon.tooltip = format!("Base durations (ms): {durations:?}");
+            }
+        }
+    }
+    icons
 }
 
 impl PlayView {

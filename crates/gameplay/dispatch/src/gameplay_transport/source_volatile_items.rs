@@ -154,6 +154,7 @@ impl SourceVolatileProjection {
                     return None;
                 };
                 Some(ChannelEntity {
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: StepDirection::South,
@@ -311,6 +312,7 @@ mod tests {
     fn channel(projection: &SourceVolatileProjection) -> ChannelEntities {
         let observer = [9; 16];
         let mut entities = vec![ChannelEntity {
+            motion: None,
             display_name: None,
             health_percent: 100,
             direction: StepDirection::South,

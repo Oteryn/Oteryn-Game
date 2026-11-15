@@ -36,6 +36,8 @@ enum Kind {
     OnlyOwned,
     OpenBackpack,
 }
+type RenderedOffers = (Vec<(Quote, String)>, Option<Quote>);
+
 #[derive(Resource, Default)]
 struct State {
     generation: Option<u64>,
@@ -44,7 +46,7 @@ struct State {
     query: String,
     feedback: String,
     widgets: Option<widgets::Widgets>,
-    rendered: Option<(Vec<Quote>, Option<Quote>)>,
+    rendered: Option<RenderedOffers>,
     pending: Option<submission::Pending>,
     conversation: conversation::Ui,
 }
@@ -120,12 +122,13 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             match action.kind {
                 Kind::Trade => {
                     let Some(amount) = oteryn_client_ui::npc_shop::parse_amount(amount) else {
-                        state.feedback = "Amount must be an integer from 1 to 100.".into();
+                        state.feedback =
+                            "Amount must be a positive integer within this offer's limit.".into();
                         return false;
                     };
                     if !panel.live.selected || !panel.live.can_trade(quote, amount) {
                         state.feedback =
-                            "This amount cannot be traded with the current shop and backpack state."
+                            "This amount exceeds the offer limit or current backpack capacity."
                                 .into();
                         return false;
                     }
@@ -299,7 +302,12 @@ fn project(
     let Some(widgets) = state.widgets else {
         return;
     };
-    let snapshot = (rows.clone(), state.selection);
+    let snapshot = (
+        rows.iter()
+            .map(|quote| (*quote, panel.live.quote_text(*quote)))
+            .collect(),
+        state.selection,
+    );
     if state.rendered.as_ref() != Some(&snapshot) {
         commands.entity(widgets.rows).despawn_children();
         widgets::rows(
@@ -308,6 +316,7 @@ fn project(
             widgets.rows,
             generation,
             &rows,
+            &panel.live,
             state.selection,
         );
         state.rendered = Some(snapshot);
@@ -338,7 +347,7 @@ fn project(
         })
         .unwrap_or_else(|| {
             if state.selection.is_some() {
-                "Enter 1–100"
+                "Enter an amount within the offer limit"
             } else {
                 "Select goods"
             }

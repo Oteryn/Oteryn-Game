@@ -120,6 +120,7 @@ fn touch_hotbar_world_taps_equal_mouse_context_and_follow_keys()
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     for mode in 0..4 {
         let entity = WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: oteryn_session::EntityKind::Creature,
             entity: EntityRef {

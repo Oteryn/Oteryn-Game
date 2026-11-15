@@ -381,6 +381,62 @@ impl NpcConversations {
         intent: &NpcTradeIntent,
         items: Option<&ItemDefinitionIndex>,
     ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        self.trade_in_with_maximum(
+            chat,
+            runtime,
+            actor,
+            session,
+            intent,
+            items,
+            MAX_TRADE_QUANTITY,
+        )
+    }
+
+    /// Match metadata to this session's active native hireling window.
+    pub(super) fn hireling_quote(&self, session: GameSessionId, npc: EntityRef) -> bool {
+        self.sessions.lock().ok().is_some_and(|sessions| {
+            sessions
+                .get(&session)
+                .and_then(|state| state.hireling.as_ref())
+                .is_some_and(|hireling| hireling.npc == npc)
+        })
+    }
+
+    /// The negotiated shop extension uses the same range, catalogue and session owner.
+    pub fn trade_in_extended(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
+        self.trade_in_with_maximum(
+            chat,
+            runtime,
+            actor,
+            session,
+            intent,
+            items,
+            oteryn_gameplay_economy::npc_trade::NPC_TRADE_BULK_QUANTITY_MAX,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the exact current NPC context and negotiated quantity ceiling"
+    )]
+    fn trade_in_with_maximum(
+        &self,
+        chat: &ChatRuntime,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: &NpcTradeIntent,
+        items: Option<&ItemDefinitionIndex>,
+        maximum: u32,
+    ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
         use NpcIntentDisposition as Disposition;
         let Some(speaker) = service_context::speaker_position(runtime, actor, session) else {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::Rejected)));
@@ -439,12 +495,14 @@ impl NpcConversations {
             return Err(Box::new(rejected()));
         };
         if crate::durability::house_hireling::npc_identity(npc_key).is_some() {
-            return hireling_services::resolve_trade(self, session, npc_key, intent, items);
+            return hireling_services::resolve_trade(
+                self, session, npc_key, intent, items, maximum,
+            );
         }
         let Some(entry) = book.get(npc_key) else {
             return Err(Box::new(rejected()));
         };
-        if !(1..=MAX_TRADE_QUANTITY).contains(&intent.quantity) {
+        if !(1..=maximum).contains(&intent.quantity) {
             return Err(Box::new(rejected()));
         }
         if intent.catalogue_revision != book.catalogue_revision() {

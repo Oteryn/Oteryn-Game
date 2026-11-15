@@ -293,6 +293,7 @@ pub mod server_mechanic;
 
 #[path = "features/0031-tutorial-notices/protocol.rs"]
 pub mod tutorial_notices;
+pub use oteryn_session::tutorial_vocation;
 
 /// Stash command execution through the admitted session.
 #[path = "features/0062-stash/protocol.rs"]
@@ -355,3 +356,5 @@ pub mod server_modal;
 
 pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
+
+pub use oteryn_session::server_info;

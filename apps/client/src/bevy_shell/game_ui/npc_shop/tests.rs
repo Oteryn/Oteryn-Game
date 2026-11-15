@@ -32,6 +32,7 @@ fn publish(outbox: &crate::play::Outbox, revision: u64, price: u32) {
         base_revision: 0,
         new_revision: revision,
         value: npc_service::NpcTradeWindow {
+            details: Vec::new(),
             open: Some((
                 EntityRef {
                     identity: [9; 16],
@@ -132,7 +133,7 @@ fn refreshed_quote_and_session_generation_reject_old_selection_and_buttons() -> 
     );
     for invalid in ["0", "101", "abc"] {
         assert!(!perform(&mut host, &mut state, action, invalid));
-        assert!(state.feedback.contains("1 to 100"));
+        assert!(state.feedback.contains("limit"));
     }
     assert!(commands.try_recv().is_err());
     Ok(())
@@ -225,6 +226,7 @@ fn sell_only_catalogue_initially_selects_available_side() -> Result {
         base_revision: 7,
         new_revision: 8,
         value: npc_service::NpcTradeWindow {
+            details: Vec::new(),
             open: Some((
                 EntityRef {
                     identity: [9; 16],
@@ -276,5 +278,92 @@ fn npc_shop_explains_backpack_purchase_contract_limit() -> Result {
     app.update();
     assert!(app.world_mut().query::<&Text>().iter(app.world()).any(|text|
         text.0 == "Buy in backpacks: unavailable from this server. Purchases use your existing backpack."));
+    Ok(())
+}
+
+#[test]
+fn npc_shop_decoded_names_and_extended_amounts_reach_rows_and_commands() -> Result {
+    let (host, mut commands, outbox) = fixture()?;
+    let mut window = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .npc_shop_panel()
+        .live
+        .window;
+    window.details = vec![npc_service::NpcQuoteDetails {
+        name: "meat".into(),
+        maximum_quantity: 150,
+    }];
+    let payload = npc_service::encode_npc_trade_window_for(&window, true)
+        .map_err(|error| format!("{error:?}"))?;
+    let value = npc_service::decode_npc_trade_window_for(&payload, true)
+        .map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value,
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "meat")
+    );
+    let select = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find(|(_, action)| matches!(action.kind, Kind::Select(_)))
+        .map(|(entity, _)| entity)
+        .ok_or("select")?;
+    app.world_mut().trigger(Activate { entity: select });
+    app.update();
+    let selection = app
+        .world()
+        .resource::<State>()
+        .selection
+        .ok_or("selection")?;
+    let mut state = State {
+        selection: Some(selection),
+        ..default()
+    };
+    let generation = app.world().non_send::<HostOwner>().generation();
+    let action = Action {
+        generation,
+        kind: Kind::Trade,
+    };
+    assert!(!perform(
+        &mut app.world_mut().non_send_mut::<HostOwner>(),
+        &mut state,
+        action,
+        "151"
+    ));
+    assert!(perform(
+        &mut app.world_mut().non_send_mut::<HostOwner>(),
+        &mut state,
+        action,
+        "150"
+    ));
+    let PlayCommand::NpcTrade(intent) = commands.try_recv()? else {
+        return Err("trade command".into());
+    };
+    assert_eq!(intent.quantity, 150);
     Ok(())
 }

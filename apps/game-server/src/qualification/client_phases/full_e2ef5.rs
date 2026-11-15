@@ -2746,6 +2746,7 @@ mod continuation_two_tests {
             victim
         ));
         let entry = oteryn_dev_client::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             entity: victim,
             kind: oteryn_dev_client::EntityKind::Creature,
@@ -3918,6 +3919,7 @@ mod continuation_three_tests {
     fn companion_identity_requires_named_live_creature() -> TestResult {
         use oteryn_dev_client::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
         let mut entry = WorldSpatialEntity {
+            motion: None,
             display_name: Some(
                 oteryn_protocol_oteryn::entity_names::EntityDisplayName::new("Rat")
                     .map_err(|error| format!("display name: {error:?}"))?,

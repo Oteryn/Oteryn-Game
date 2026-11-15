@@ -708,3 +708,60 @@ fn outfit_search_filters_names_without_changing_draft() -> Result<(), Box<dyn st
     );
     Ok(())
 }
+#[test]
+fn actor_motion_outfit_toggle_sends_mount_action_independently_of_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{
+        ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
+        actor_motion::ActorMotion,
+    };
+    let (link, mut receiver, outbox) = crate::play::play_channel();
+    let actor = WorldSpatialEntity {
+        motion: Some(ActorMotion::default()),
+        display_name: None,
+        kind: EntityKind::Player,
+        entity: EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        },
+        position: ActorPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+        detail: EntityDetail::Actor {
+            direction: StepDirection::South,
+            appearance_ref: 1,
+            health_percent: 100,
+        },
+    };
+    outbox.bevy_mount_test_actor(actor);
+    send(&link, &Kind::Riding);
+    let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("mount command".into());
+    };
+    assert_eq!(
+        (command.capability, command.kind, command.payload),
+        (502, 6242, vec![8, 1])
+    );
+    assert!(link.appearance_panel().confirmed.is_none());
+    send(&link, &Kind::Riding);
+    assert!(
+        receiver.try_recv().is_err(),
+        "only one pending mount action"
+    );
+    // Reinitializing after a session handoff cancels the pending action.
+    outbox.bevy_mount_test_actor(WorldSpatialEntity {
+        motion: Some(ActorMotion {
+            mount_look_type: 139,
+            ..ActorMotion::default()
+        }),
+        ..actor
+    });
+    send(&link, &Kind::Riding);
+    let crate::combat_input::PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("dismount command".into());
+    };
+    assert_eq!(command.payload, [8, 0]);
+    Ok(())
+}

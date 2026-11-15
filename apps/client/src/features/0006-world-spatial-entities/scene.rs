@@ -39,7 +39,7 @@ impl Scene {
         &self,
         indicator: &oteryn_client_ui::player_typing::TypingIndicator,
     ) -> Option<[f32; 2]> {
-        let (_, (tile, cells)) =
+        let (entity, (tile, cells)) =
             self.name_entities
                 .iter()
                 .zip(&self.names)
@@ -48,6 +48,8 @@ impl Scene {
                         && entity.generation == indicator.generation.get()
                 })?;
         let [x, y] = self.view.tile_to_screen(*tile);
+        let [dx, dy] = self.actor_offset(*entity);
+        let (x, y) = (x + dx, y + dy);
         let scale = f32::from(self.label_scale) / 100.;
         let half_width = cells.len() as f32 * 4. * scale;
         let left = (x + self.view.tile_px() as f32 / 2. - half_width).max(0.);
@@ -75,6 +77,7 @@ impl Scene {
             next.cache.reset_atlas();
         }
         next.own_identity = self.own_identity;
+        next.actor_clocks = self.actor_clocks.clone();
         *self = next;
         Ok(())
     }
@@ -100,11 +103,14 @@ impl Scene {
         self.actor_draws.clear();
         self.own_draws = None;
         self.names.clear();
-        #[cfg(feature = "bevy-shell")]
         self.name_entities.clear();
         if !entries.is_empty() {
             self.cache.begin(self.world.atlas(), root);
         }
+        self.cache.retain_outfit_actors(entries);
+        self.actor_clocks
+            .entries
+            .retain(|entity, _| entries.iter().any(|entry| entry.entity.entity == *entity));
         for entry in entries {
             let entity = &entry.entity;
             if !matches!(entity.detail, EntityDetail::Actor { .. }) {
@@ -149,7 +155,21 @@ impl Scene {
                     _ => 0,
                 }
             };
-            let draws = self.cache.outfit(entry.look.as_ref(), direction);
+            let (gait, offset) = self.actor_clocks.sample(entity, is_own);
+            let mount = entity.motion.map_or(0, |motion| motion.mount_look_type);
+            let mut draws = self.cache.animated_outfit(
+                entry.look.as_ref(),
+                direction,
+                gait,
+                mount,
+                Some(entity.entity),
+            );
+            if !is_own {
+                for draw in &mut draws {
+                    draw.offset[0] += offset[0].round() as i32;
+                    draw.offset[1] += offset[1].round() as i32;
+                }
+            }
             if is_own {
                 self.own_draws = Some(draws);
             } else {
@@ -197,7 +217,6 @@ impl Scene {
                             },
                         ),
                     ));
-                    #[cfg(feature = "bevy-shell")]
                     self.name_entities.push(entity.entity);
                 }
             }

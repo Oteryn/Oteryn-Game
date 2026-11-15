@@ -13,6 +13,7 @@ fn named_battle_lists_filter_sort_save_and_attack_live_entities()
     };
     let (link, mut commands, outbox) = play_channel();
     let creature = |id, health| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: EntityRef {
@@ -286,6 +287,7 @@ fn o014_battle_list_filters_by_type_and_sorts_by_each_choice() {
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let row = |id, kind, health| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -349,6 +351,7 @@ fn n004_alt_click_attacks_a_creature_then_stops_when_it_is_the_target()
         generation: 1,
     };
     view.entities = vec![WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Creature,
         entity: creature,
@@ -423,6 +426,7 @@ fn alt_click_attacks_a_player_but_not_the_local_actor_and_honours_the_world_inpu
     view.entities = [(other, other_x), (own, own_x)]
         .into_iter()
         .map(|(entity, x)| WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity,

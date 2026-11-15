@@ -13,6 +13,11 @@ impl Mailbox {
         self.battle.pending = false;
         self.battle.pending_command = None;
         self.spellbook_details.pending = None;
+        self.server_info.pending.clear();
+        self.quest_info_revision = None;
+        self.quest.titles.clear();
+        self.spell_catalog.info.clear();
+        self.spellbook_details.info.clear();
         self.chat.pending = false;
         self.quest_pending = false;
         self.animus.pending = Default::default();
@@ -30,6 +35,9 @@ impl Mailbox {
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
         self.cyclopedia_character.augments = Default::default();
+        let blessing_details = self.cyclopedia_character.blessings.details_selected;
+        self.cyclopedia_character.blessings = Default::default();
+        self.cyclopedia_character.blessings.details_selected = blessing_details;
         self.properties.cyclopedia_map.atlas = None;
         self.properties.cyclopedia_map.atlas_query = Default::default();
         self.cyclopedia_tracker.pending = Default::default();
@@ -46,6 +54,8 @@ impl Mailbox {
         self.item_forge.scope_changed();
         self.store.pending = Default::default();
         self.sanctions.pending = false;
+        self.tutorial_vocation.pending = false;
+        self.tutorial_vocation.observation = None;
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();
         self.wheel.pending = Default::default();

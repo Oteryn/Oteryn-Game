@@ -289,6 +289,7 @@ mod reachability_tests {
             }),
             appearances: Some(vec![VisibleAppearance {
                 entity: WorldSpatialEntity {
+                    motion: None,
                     display_name: None,
                     kind: EntityKind::Player,
                     entity: EntityRef {

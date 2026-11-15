@@ -50,7 +50,7 @@ impl<S: SessionStream> Session<S> {
                         value,
                     ))
                 } else {
-                    let value = npc_service::decode_npc_trade_window(delta.payload)
+                    let value = npc_service::decode_npc_trade_window_for(delta.payload, self.is_selected(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1))
                         .map_err(|_| SessionError::SessionUnusable)?;
                     SessionEvent::NpcTradeWindow(applied(
                         server_sequence,

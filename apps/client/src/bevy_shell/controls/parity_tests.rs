@@ -16,6 +16,7 @@ fn parity_a_shift_world_click_uses_existing_look_command() -> Result<(), Box<dyn
         };
         let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
             .with_entities(vec![oteryn_session::WorldSpatialEntity {
+            motion: None,
             entity: target,
             kind: oteryn_session::EntityKind::Creature,
             position: oteryn_session::ActorPosition {

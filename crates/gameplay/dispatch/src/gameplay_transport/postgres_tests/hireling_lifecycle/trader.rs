@@ -27,10 +27,14 @@ pub(super) async fn scenario(h:&Harness,owner:&ComposedFreshAdmission<'_, '_, '_
         && offer.side==catalogue::Side::Sell).ok_or("highest executable sell row")?;
     let page=position/wire::MAX_OFFERS;
     let window=client.talk_window(npc,&format!("buy loot {}",page+1)).await?.window.ok_or("bounded trade window")?;
+    let detailed = crate::gameplay_transport::npc_shop::quote_window(owner, admitted.game_session_id, &window)
+        .ok_or("authoritative hireling quote")?;
     let (_,revision)=window.open.ok_or("open window")?;
     let index=position%wire::MAX_OFFERS;
     let shown=window.offers.get(index).ok_or("highest offer visible")?;
     assert_eq!((shown.side,shown.unit_price),(wire::NpcTradeSide::Sell,5_400_000));
+    assert_eq!(detailed.details[index].maximum_quantity, 1);
+    assert!(!detailed.details[index].name.is_empty());
     let intent=wire::NpcTradeIntent {npc_actor:npc,catalogue_revision:revision,offer_index:index as u32,
         side:wire::NpcTradeSide::Sell,quantity:1,expected_unit_price:5_400_000};
     let full_command=client.next_command;

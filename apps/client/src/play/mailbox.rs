@@ -56,6 +56,7 @@ pub struct Pushed {
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
     pub markers_reset: bool,
+    pub motion_reset: bool,
     pub chat_reset: bool,
     pub chat_lines: Vec<oteryn_session::ChatLine>,
     pub chat_rooms: Option<oteryn_session::ChatRoomSet>,
@@ -68,6 +69,7 @@ impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
         self.scope_changed |= newer.scope_changed;
+        self.motion_reset |= newer.motion_reset;
         super::feature_0023_presentation::protocol::absorb_visuals(
             &mut self.visuals,
             newer.visuals,
@@ -138,6 +140,8 @@ pub(super) struct Mailbox {
     pub(super) arena: oteryn_client_ui::arena::ArenaPanel,
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
+    pub(super) server_info: oteryn_client_ui::server_info::Panel,
+    pub(super) quest_info_revision: Option<u64>,
     pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,
@@ -182,6 +186,7 @@ pub(super) struct Mailbox {
     pub(super) daily_boost: oteryn_client_ui::daily_boost::DailyBoostPanel,
     pub(super) highscores: oteryn_client_ui::highscores::HighscoresPanel,
     pub(super) highscores_shutdown: bool,
+    pub(super) tutorial_vocation: oteryn_client_ui::tutorial_vocation::VocationPanel,
     pub(super) sanctions: oteryn_client_ui::sanction_record::SanctionsPanel,
     pub(super) depot_search: oteryn_client_ui::depot_search::DepotSearchPanel,
     pub(super) hotkey_equip: oteryn_client_ui::hotkey_equip::HotkeyEquipPanel,
@@ -255,6 +260,8 @@ pub(super) struct Mailbox {
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
     pub(super) chat_public_shutdown: bool,
+    pub(super) motion_selected: bool,
+    pub(super) mount_pending: bool,
     // CL26s2: player-typing panel state and native-window shutdown.
     pub(super) player_typing: oteryn_client_ui::player_typing::PlayerTypingPanel,
     pub(super) player_typing_shutdown: bool,

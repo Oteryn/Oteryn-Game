@@ -141,7 +141,7 @@ fn toggle_details(
         }
     }
 }
-fn details_text(keys: &[String]) -> String {
+fn ownership_text(keys: &[String]) -> String {
     let mut text = String::from("Blessing ownership\n");
     for (key, _, name) in BLESSINGS {
         let owned = keys
@@ -152,6 +152,10 @@ fn details_text(keys: &[String]) -> String {
             if owned { "owned" } else { "missing" }
         ));
     }
+    text
+}
+fn details_text(keys: &[String]) -> String {
+    let mut text = ownership_text(keys);
     text.push_str("Death penalty details\nRegular blessings reduce experience and skill loss. Promotion also reduces these losses.\nFive or more regular blessings protect equipment and containers; red or black skulls override this protection.\nTwist of Fate protects regular blessings on qualifying PvP deaths, rather than adding regular death-loss protection.\nExact next-death losses, promotion and world modifiers are not supplied by the server.");
     text
 }
@@ -160,12 +164,18 @@ fn project_details(
     mut details: Query<(&mut Text, &mut Node), With<Details>>,
 ) {
     for (mut text, mut node) in &mut details {
-        if let Some(snapshot) = owner
-            .play
-            .as_ref()
-            .and_then(|play| play.link.blessings_panel().snapshot)
+        if let Some(panel) = owner.play.as_ref().map(|play| play.link.blessings_panel())
+            && panel.holdings().is_some()
         {
-            text.0 = details_text(&snapshot.blessings);
+            text.0 = if panel.details.is_some() {
+                format!(
+                    "{}\n{}",
+                    ownership_text(panel.holdings().unwrap_or_default()),
+                    panel.text()
+                )
+            } else {
+                details_text(panel.holdings().unwrap_or_default())
+            };
         } else {
             text.0 = "Waiting for blessing ownership from the server.".into();
             node.display = Display::None;
@@ -237,8 +247,8 @@ fn project(
         state.last_refresh = Some(now);
     }
     let blessings = character.blessings;
-    let snapshot = blessings.snapshot.as_ref().map(|s| &s.blessings);
-    if new_session || state.snapshot.as_ref() != snapshot {
+    let snapshot = blessings.holdings();
+    if new_session || state.snapshot.as_deref() != snapshot {
         commands.entity(panel.0).despawn_children();
         if let Some(keys) = snapshot {
             for (key, short, _) in BLESSINGS {
@@ -262,7 +272,7 @@ fn project(
                 }
             }
         }
-        state.snapshot = snapshot.cloned();
+        state.snapshot = snapshot.map(<[String]>::to_vec);
     }
     let next = snapshot.map_or_else(
         || {

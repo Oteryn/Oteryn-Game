@@ -159,6 +159,7 @@ fn hud_name_controls_separate_owner_players_and_creatures() -> Result<(), Box<dy
     .map(|(id, kind)| {
         Ok(VisibleAppearance {
             entity: WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [id; 16],
                     generation: 1,

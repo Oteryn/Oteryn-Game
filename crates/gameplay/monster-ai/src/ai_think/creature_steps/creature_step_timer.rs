@@ -84,7 +84,9 @@ impl CreatureAiTable {
                 continue;
             }
             // Preflight the next cadence before publishing a position at an exhausted clock.
-            if creature_step_duration(runtime, actor, source, ground, cell(next), cadence_now)
+            let duration =
+                creature_step_duration(runtime, actor, source, ground, cell(next), cadence_now);
+            if duration
                 .and_then(|duration| duration.checked_mul(if near { 2 } else { 1 }))
                 .and_then(|duration| cadence_now.checked_after(duration))
                 .is_none()
@@ -110,6 +112,12 @@ impl CreatureAiTable {
             if moved.is_err() {
                 motion.stop();
                 continue;
+            }
+            if let (Ok(after), Some(duration)) = (
+                moved.as_ref(),
+                duration.and_then(|duration| duration.checked_mul(if near { 2 } else { 1 })),
+            ) {
+                runtime.record_walk(actor, *after, duration);
             }
             entry.state.attack_facing = step;
             motion.expected = moved.ok();

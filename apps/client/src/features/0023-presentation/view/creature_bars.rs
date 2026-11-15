@@ -14,11 +14,14 @@ impl PlayView {
         let mut bars = Vec::new();
         let view = self.scene.view();
         let scale = f32::from(self.preferences().interface_scale) / 100.;
-        let mut push = |tile: TileCoord, health: u8| {
+        let mut push = |tile: TileCoord, health: u8, offset: [f32; 2]| {
             if view.contains(tile) {
                 let [x, y] = view.tile_to_screen(tile);
                 bars.push(CreatureHealthBar {
-                    at: [x + 2. * scale, (y - 4. * scale).max(10. * scale)],
+                    at: [
+                        x + offset[0] + 2. * scale,
+                        (y + offset[1] - 4. * scale).max(10. * scale),
+                    ],
                     width: (view.tile_px() as f32 - 4. * scale).max(1.),
                     health: health.min(100),
                 });
@@ -46,12 +49,19 @@ impl PlayView {
             };
             let is_own = own_identity == Some(entity.entity.identity);
             if is_own {
-                push(self.own, health_percent);
+                push(self.own, health_percent, [0.; 2]);
                 own_shown = true;
             } else if entity.position.floor == self.floor {
                 push(
                     TileCoord::new(entity.position.x, entity.position.y),
                     health_percent,
+                    {
+                        let [dx, dy] = self.scene.actor_offset(entity.entity);
+                        let [cx, cy] = self
+                            .camera_offset(std::time::Instant::now())
+                            .unwrap_or([0.; 2]);
+                        [dx + cx, dy + cy]
+                    },
                 );
             }
         }
@@ -60,6 +70,7 @@ impl PlayView {
                 self.own,
                 (u64::from(vitals.health.min(vitals.max_health)) * 100
                     / u64::from(vitals.max_health)) as u8,
+                [0.; 2],
             );
         }
         bars

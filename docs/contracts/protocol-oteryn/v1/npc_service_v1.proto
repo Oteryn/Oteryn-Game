@@ -94,4 +94,11 @@ message NpcTradeWindowV1 {
   oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
   uint64 catalogue_revision = 2;
   repeated NpcOfferV1 offers = 3;
+  repeated NpcQuoteDetailsV1 details = 4; // Only with capability 501; aligned with offers.
+}
+
+// Capability 501. A zero maximum means this offer cannot be traded in this form.
+message NpcQuoteDetailsV1 {
+  string name = 1; // 1..128 UTF-8 bytes, no NUL.
+  uint32 maximum_quantity = 2;
 }

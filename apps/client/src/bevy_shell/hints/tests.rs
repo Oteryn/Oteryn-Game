@@ -13,6 +13,7 @@ fn fixture(delay: u16) -> Result<App, Box<dyn std::error::Error>> {
     let tile = oteryn_renderer::TileCoord::new(100, 100);
     let mut view =
         PlayView::new(tile, 0, &[])?.with_entities(vec![oteryn_session::WorldSpatialEntity {
+            motion: None,
             entity: oteryn_session::EntityRef {
                 identity: [7; 16],
                 generation: 1,
@@ -155,6 +156,7 @@ fn accepted_delay_entity_generation_focus_and_disable_reset_hover_without_sleepi
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
         let play = owner.play.as_mut().ok_or("play")?;
         let entity = oteryn_session::WorldSpatialEntity {
+            motion: None,
             entity: oteryn_session::EntityRef {
                 identity: [7; 16],
                 generation: 2,

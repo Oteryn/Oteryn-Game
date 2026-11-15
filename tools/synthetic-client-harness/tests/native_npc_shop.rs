@@ -183,6 +183,7 @@ fn position(x: i32) -> ActorPosition {
 }
 fn actor(x: i32) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

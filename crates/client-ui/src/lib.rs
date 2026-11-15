@@ -10,6 +10,8 @@ pub mod guide;
 #[path = "components/login_queue.rs"]
 pub mod login_queue;
 
+#[path = "features/0502-actor-motion/mod.rs"]
+pub mod actor_motion;
 #[path = "features/0025-appearance/mod.rs"]
 pub mod appearance;
 #[path = "features/0291-cast-chat/mod.rs"]
@@ -116,6 +118,8 @@ pub mod achievement_notices;
 #[path = "features/0170-arena/mod.rs"]
 pub mod arena;
 
+#[path = "features/0503-blessings-dialog/protocol.rs"]
+mod blessings_dialog;
 #[path = "features/0225-boss-difficulty/mod.rs"]
 pub mod boss_difficulty;
 #[path = "features/0492-boss-difficulty-pity/protocol.rs"]
@@ -277,6 +281,8 @@ pub mod wheel_allocation;
 /// Tutorial notices and their shared server-save history.
 #[path = "features/0031-tutorial-notices/mod.rs"]
 pub mod tutorial_notices;
+#[path = "features/0504-tutorial-vocation/mod.rs"]
+pub mod tutorial_vocation;
 
 #[path = "features/0497-sanction-record/mod.rs"]
 pub mod sanction_record;
@@ -313,6 +319,8 @@ pub mod target_move;
 /// NPC shop look and sell-all panel state.
 #[path = "features/0081-npc-shop/mod.rs"]
 pub mod npc_shop;
+#[path = "features/0501-trade-details/protocol.rs"]
+pub mod trade_details;
 
 /// Imbuement shrine state, actions, and plain-text view.
 #[path = "features/0068-imbue/mod.rs"]
@@ -390,3 +398,6 @@ pub mod support_intake;
 
 #[path = "features/0499-item-appearance/protocol.rs"]
 pub mod item_appearance;
+
+#[path = "features/0500-server-info/mod.rs"]
+pub mod server_info;

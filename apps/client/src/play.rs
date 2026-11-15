@@ -78,6 +78,7 @@ pub struct PlayView {
     in_flight: bool,
     /// Own walk glide and held arrows.
     walk: Option<(oteryn_client_simulation::walk::Glide, std::time::Instant)>,
+    prewalk: Option<(oteryn_session::ActorPosition, TileCoord)>,
     chord: oteryn_client_ui::diagonal_movement::ArrowChord,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,

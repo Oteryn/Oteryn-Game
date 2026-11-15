@@ -130,6 +130,7 @@ impl FreshAdmissionAuthority for Owners {
             observer: own,
             entities: vec![
                 ChannelEntity {
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
@@ -140,6 +141,7 @@ impl FreshAdmissionAuthority for Owners {
                     revision: 0,
                 },
                 ChannelEntity {
+                    motion: None,
                     display_name: None,
                     health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

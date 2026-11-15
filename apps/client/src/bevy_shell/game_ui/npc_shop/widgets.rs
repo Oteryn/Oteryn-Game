@@ -194,7 +194,7 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     label(commands, skin, trade, "Search");
     field(commands, skin, trade, Field::Search, "", 80);
     label(commands, skin, trade, "Amount");
-    field(commands, skin, trade, Field::Amount, "1", 3);
+    field(commands, skin, trade, Field::Amount, "1", 10);
     label(commands, skin, trade, "Price");
     let price = label(commands, skin, trade, "");
     label(commands, skin, trade, "Gold");
@@ -242,6 +242,7 @@ pub(super) fn rows(
     parent: Entity,
     generation: u64,
     rows: &[Quote],
+    shop: &oteryn_client_ui::npc_shop::LiveShop,
     selection: Option<Quote>,
 ) {
     for quote in rows {
@@ -256,7 +257,6 @@ pub(super) fn rows(
                 Name::new("npc-shop.offer"),
                 Node {
                     width: percent(100.),
-                    height: px(35.),
                     min_height: px(35.),
                     flex_shrink: 0.,
                     align_items: AlignItems::Center,
@@ -301,12 +301,22 @@ pub(super) fn rows(
                 Pickable::IGNORE,
             ))
             .id();
-        label(commands, skin, caption, "Unknown item");
         label(
             commands,
             skin,
             caption,
-            &format!("{} gold / {} items", quote.price, quote.count),
+            shop.quote_name(*quote).unwrap_or("Unknown item"),
+        );
+        label(
+            commands,
+            skin,
+            caption,
+            &format!(
+                "{} gold / {} items; limit {}",
+                quote.price,
+                quote.count,
+                shop.maximum_amount(*quote)
+            ),
         );
         commands.entity(button).add_child(caption);
     }

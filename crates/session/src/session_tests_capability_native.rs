@@ -151,6 +151,7 @@ fn npc_service_and_staff_prerequisites_route_with_interleaved_domains() -> Resul
                     lines: vec!["Trade?".into()],
                 };
                 let window = npc_service::NpcTradeWindow {
+                    details: Vec::new(),
                     open: Some((npc, 7)),
                     offers: vec![npc_service::NpcOffer {
                         item_definition_ref: 5,

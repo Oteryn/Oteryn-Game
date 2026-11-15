@@ -203,10 +203,16 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
         effect_work_units: 3 * whole
             + 2 * (burns - whole)
             + 2 * minted
-            + 2 * u64::from(value.bank_debit.is_some()) + 2 * children
+            + 2 * u64::from(value.bank_debit.is_some())
+            + 2 * children
             + u64::from(value.house_furniture_kit.is_some())
-            + u64::from(value.fluid_subtype.is_some_and(|subtype| subtype != 0)
-                && value.cause.as_ref().is_some_and(|cause| cause.side == SIDE_BUY)),
+            + u64::from(
+                value.fluid_subtype.is_some_and(|subtype| subtype != 0)
+                    && value
+                        .cause
+                        .as_ref()
+                        .is_some_and(|cause| cause.side == SIDE_BUY),
+            ),
         events: 1,
     }
 }
@@ -217,6 +223,7 @@ fn check_npc_trade_usage(
     package: bool,
     kit: bool,
     hireling_sell: bool,
+    bulk: bool,
     usage: &TransactionResourceUsage,
 ) -> Result<(), AuditError> {
     let (touched, custody, participants, work) = if package || kit {
@@ -226,7 +233,9 @@ fn check_npc_trade_usage(
             PACKAGE_RL06_PARTICIPANTS_MAX,
             PACKAGE_RL06_EFFECT_WORK_UNITS_MAX,
         )
-    } else if sell_all || hireling_sell {
+    } else if bulk && side == SIDE_BUY {
+        (42, 42, 42, 106)
+    } else if sell_all || hireling_sell || bulk {
         (
             SELL_ALL_RL01_TOUCHED_ITEM_INSTANCES_MAX,
             SELL_ALL_RL02_LOCATION_CUSTODY_LINES_MAX,
@@ -342,9 +351,49 @@ fn line_item(line: &OneItemNpcTradeLineV1) -> Option<&[u8]> {
 #[path = "npc_trade/yeo_audit.rs"]
 mod yeo;
 
+/// Compatibility gate for the original ordinary single-stack event shape.
 pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if ordinary_bulk(value) {
+        return Err(AuditError::InvalidInput);
+    }
+    check_npc_trade_shape(value)
+}
+
+fn ordinary_bulk(value: &OneItemNpcTradeV1) -> bool {
+    !value.sell_all
+        && value.cause.as_ref().is_some_and(|cause| {
+            matches!(cause.side, SIDE_BUY | SIDE_SELL)
+                && (value.quantity > NPC_TRADE_QUANTITY_MAX
+                    || value
+                        .lines
+                        .iter()
+                        .filter(|line| {
+                            line.kind
+                                == if cause.side == SIDE_BUY {
+                                    LINE_ITEM_MINT
+                                } else {
+                                    LINE_ITEM_BURN
+                                }
+                        })
+                        .count()
+                        > 1)
+        })
+}
+
+// Native event encoding/decoding admits the negotiated bounded multi-stack extension.
+fn check_extended_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
+    if ordinary_bulk(value) {
+        check_npc_trade_shape(value)
+    } else {
+        check_npc_trade(value)
+    }
+}
+
+fn check_npc_trade_shape(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     if value.fluid_subtype.is_some_and(|subtype| subtype > 20)
-        || value.full_charges.is_some_and(|charges| !(1..=65535).contains(&charges))
+        || value
+            .full_charges
+            .is_some_and(|charges| !(1..=65535).contains(&charges))
         || (value.fluid_subtype.is_some() && value.full_charges.is_some())
     {
         return Err(AuditError::InvalidInput);
@@ -381,10 +430,18 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     }
     let side = cause.side;
     if side == SIDE_EXCHANGE {
-        if cause.npc_key == "oteryn:npc.uzgod" { obsidian_knife::check(value)?; }
-        else if cause.npc_key == "oteryn:npc.seymour" {
-            pick_exchange::check_recipe(value, "oteryn:npc.seymour", "oteryn:item.tibia.i2856", "oteryn:item.tibia.i3374")?;
-        } else { pick_exchange::check(value)?; }
+        if cause.npc_key == "oteryn:npc.uzgod" {
+            obsidian_knife::check(value)?;
+        } else if cause.npc_key == "oteryn:npc.seymour" {
+            pick_exchange::check_recipe(
+                value,
+                "oteryn:npc.seymour",
+                "oteryn:item.tibia.i2856",
+                "oteryn:item.tibia.i3374",
+            )?;
+        } else {
+            pick_exchange::check(value)?;
+        }
     }
     let hireling_sell = sell_hireling::audit_source(value);
     if side == SIDE_SELL && value.house_key.is_some() && !hireling_sell {
@@ -412,7 +469,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     let quantity_max = if sell_all {
         SELL_ALL_UNITS_MAX
     } else {
-        NPC_TRADE_QUANTITY_MAX
+        oteryn_gameplay_economy::npc_trade::NPC_TRADE_BULK_QUANTITY_MAX
     };
     if command.command_id == 0
         || value.runtime_scope_ownership_generation == 0
@@ -423,6 +480,17 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     {
         return Err(AuditError::InvalidInput);
     }
+    let mut identities = std::collections::BTreeSet::new();
+    for line in &value.lines {
+        let state = line
+            .before
+            .as_ref()
+            .or(line.after.as_ref())
+            .ok_or(AuditError::InvalidInput)?;
+        if !identities.insert(state.item_instance_id.as_slice()) {
+            return Err(AuditError::InvalidInput);
+        }
+    }
     let burns = value
         .lines
         .iter()
@@ -430,7 +498,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         .count();
     let (burn_lines, mint_lines) = value.lines.split_at(burns);
     // A BUY at price 0 burns nothing; conservation below refuses any other BUY without a burn.
-    if (side == SIDE_SELL && !sell_all && burns != 1)
+    if (side == SIDE_SELL && burns == 0)
         || (sell_all && burns == 0)
         || burns > FEE_INPUTS_MAX
         || mint_lines
@@ -469,11 +537,11 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
             if is_coin(before) {
                 return Err(AuditError::InvalidInput);
             }
-            if sell_all {
+            if sell_all || (side == SIDE_SELL && burns > 1) {
                 let whole = line.after.as_ref().is_some_and(|after| after.quantity == 0);
                 let ordered = previous.is_none_or(|(_, ordinal)| line.placement_ordinal < ordinal);
                 let same = item_definition.is_none() || item_definition == before.definition;
-                if !whole || !ordered || !same {
+                if (!whole && (sell_all || index + 1 != burn_lines.len())) || !ordered || !same {
                     return Err(AuditError::InvalidInput);
                 }
                 previous = Some((0, line.placement_ordinal));
@@ -494,7 +562,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
     let mut coins = Vec::new();
     let last_burn_ordinal = burn_lines.iter().map(|line| line.placement_ordinal).max();
     let mut previous_ordinal: Option<u64> = None;
-    for (index, line) in mint_lines.iter().enumerate() {
+    for line in mint_lines {
         let units = check_mint(line, &value.world_id)?;
         let after = line.after.as_ref().ok_or(AuditError::InvalidInput)?;
         let consecutive = match previous_ordinal {
@@ -506,13 +574,28 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         }
         previous_ordinal = Some(line.placement_ordinal);
         if line.kind == LINE_ITEM_MINT {
-            // The bought item is the last line, and never a coin.
-            if index + 1 != mint_lines.len() || is_coin(after) {
+            // Bought stacks are consecutive after all change, of one definition.
+            if is_coin(after)
+                || (side == SIDE_BUY
+                    && item_definition
+                        .as_ref()
+                        .is_some_and(|definition| Some(definition) != after.definition.as_ref()))
+            {
                 return Err(AuditError::InvalidInput);
             }
-            item_units = Some(units);
+            item_units = Some(if side == SIDE_EXCHANGE {
+                units
+            } else {
+                item_units
+                    .unwrap_or(0)
+                    .checked_add(units)
+                    .ok_or(AuditError::InvalidInput)?
+            });
             item_definition = after.definition.clone();
         } else {
+            if side == SIDE_BUY && item_units.is_some() {
+                return Err(AuditError::InvalidInput);
+            }
             let coin = state_coin(after)?;
             minted += u64::from(units) * coin.worth();
             coins.push((coin, units));
@@ -587,6 +670,7 @@ fn check_ordinary_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError>
         value.hireling_package.is_some(),
         value.house_furniture_kit.is_some(),
         hireling_sell,
+        ordinary_bulk(value),
         &npc_trade_usage(value),
     )
 }
@@ -647,7 +731,7 @@ fn decode_npc_trade_payload_within(wire: &[u8]) -> Result<OneItemNpcTradeV1, Aud
     {
         return Err(AuditError::CapacityExceeded);
     }
-    check_npc_trade(&trade)?;
+    check_extended_trade(&trade)?;
     Ok(trade)
 }
 
@@ -714,7 +798,7 @@ pub fn encode_npc_trade_event(
     if identity.occurred_at_unix_ms <= 0 {
         return Err(AuditError::InvalidInput);
     }
-    check_npc_trade(&trade)?;
+    check_extended_trade(&trade)?;
     if tuple == Type2EventTuple::V1 && trade.bank_debit.is_some() {
         return Err(AuditError::InvalidInput);
     }

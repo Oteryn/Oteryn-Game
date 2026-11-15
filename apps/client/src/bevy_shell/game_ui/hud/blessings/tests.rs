@@ -242,3 +242,101 @@ fn blessing_tooltip_none() -> TestResult {
         Ok(())
     })
 }
+
+#[test]
+fn blessings_dialog_server_capture_reaches_ankh_bevy_text() -> TestResult {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| -> Result<(), String> {
+        let (mut app, mut commands, outbox) = super::super::tests::app().map_err(|e| e.to_string())?;
+        outbox.bevy_cyclopedia_initialize(true, false, false);
+        outbox.bevy_blessings_details_initialize();
+        app.update();
+        let query = std::iter::from_fn(|| commands.try_recv().ok()).find_map(|command| match command {
+            crate::combat_input::PlayCommand::Feature(command) if command.payload == [134] => Some(command), _ => None
+        }).ok_or("blessing query")?;
+        assert_eq!((query.capability, query.kind), (199, 388));
+        let payload = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../../crates/client-ui/src/features/0503-blessings-dialog/fixtures/server-reply.bin")).map_err(|e| e.to_string())?;
+        outbox.bevy_cyclopedia_result(&GatedCommandResult { command_id: 1, server_sequence: 1, status: oteryn_session::CommandStatus::Accepted, payload });
+        app.update();
+        let text = app.world_mut().query_filtered::<&Text, With<super::Details>>().single(app.world()).map_err(|e| e.to_string())?;
+        assert!(text.0.contains("Experience loss protection:"));
+        assert!(text.0.contains("The Spiritual Shielding: owned"));
+        assert!(text.0.contains("Heart of the Mountain: missing"));
+        assert!(text.0.contains("Acquired:"));
+        assert!(text.0.contains("UTC"));
+        assert!(text.0.contains("Backpack, including its contents:"));
+        Ok(())
+    })?.join().map_err(|_| "blessings Bevy thread")??;
+    Ok(())
+}
+
+#[test]
+fn tutorial_vocation_server_capture_buttons_submit_and_close_in_bevy() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            let (mut app, mut commands, outbox) =
+                super::super::tests::app().map_err(|e| e.to_string())?;
+            super::super::super::tutorial::install(&mut app);
+            outbox.bevy_tutorial_vocation_initialize();
+            app.update();
+            let query = std::iter::from_fn(|| commands.try_recv().ok())
+                .find_map(|command| match command {
+                    crate::combat_input::PlayCommand::Feature(command) if command.kind == 6243 => {
+                        Some(command)
+                    }
+                    _ => None,
+                })
+                .ok_or("offer query")?;
+            assert!(query.payload.is_empty());
+            let capture = concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../crates/client-ui/src/features/0504-tutorial-vocation/fixtures/"
+            );
+            let payload =
+                std::fs::read(format!("{capture}offer.bin")).map_err(|e| e.to_string())?;
+            outbox.bevy_tutorial_vocation_result(&GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload,
+            });
+            app.update();
+            let button = app
+                .world_mut()
+                .query::<(&Text, &ChildOf)>()
+                .iter(app.world())
+                .find(|(text, _)| text.0 == "Select Paladin")
+                .map(|(_, parent)| parent.parent())
+                .ok_or("Paladin button")?;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity: button });
+            let command = std::iter::from_fn(|| commands.try_recv().ok())
+                .find_map(|command| match command {
+                    crate::combat_input::PlayCommand::Feature(command) if command.kind == 6243 => {
+                        Some(command)
+                    }
+                    _ => None,
+                })
+                .ok_or("choice command")?;
+            assert_eq!((command.capability, command.payload), (504, vec![4]));
+            let payload =
+                std::fs::read(format!("{capture}selected.bin")).map_err(|e| e.to_string())?;
+            outbox.bevy_tutorial_vocation_result(&GatedCommandResult {
+                command_id: 2,
+                server_sequence: 2,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload,
+            });
+            app.update();
+            assert!(
+                !app.world_mut()
+                    .query::<&Text>()
+                    .iter(app.world())
+                    .any(|text| text.0.starts_with("Select "))
+            );
+            Ok(())
+        })?
+        .join()
+        .map_err(|_| "vocation Bevy thread")??;
+    Ok(())
+}

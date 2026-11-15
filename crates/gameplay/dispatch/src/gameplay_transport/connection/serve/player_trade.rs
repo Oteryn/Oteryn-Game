@@ -23,7 +23,13 @@ pub(super) async fn refresh<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmission
         return Err(ServeEnd::Disconnected);
     }
     if revision > base {
-        let payload = wire::encode_state(&state).map_err(|_| ServeEnd::Disconnected)?;
+        let payload = wire::encode_state_for(
+            &state,
+            session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1),
+        )
+        .map_err(|_| ServeEnd::Disconnected)?;
         let sequence = session
             .sequence
             .checked_add(1)

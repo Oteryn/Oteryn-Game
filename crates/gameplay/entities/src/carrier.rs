@@ -117,6 +117,7 @@ mod player_control;
 pub use player_control::RuntimeSessionAbsence;
 
 mod positions;
+mod presentation;
 
 mod raid_spawn;
 
@@ -1128,6 +1129,7 @@ struct CommittedAssignmentOwnerCycle {
 /// resource: no session map or second index is introduced.
 #[derive(Debug)]
 pub struct ScopeRuntimeV1 {
+    presentations: std::collections::BTreeMap<u32, presentation::ActorPresentation>,
     binding: ScopeRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
@@ -1275,6 +1277,7 @@ impl ChannelRuntimeV1 {
             carrier,
             content,
             companion_policies: None,
+            presentations: std::collections::BTreeMap::new(),
             owner_cycle:
                 oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_owner_cycle_grant(
                     CommittedAssignmentOwnerCycle {

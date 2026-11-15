@@ -15,6 +15,7 @@ type Fixture = (
 );
 fn player() -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: EntityDisplayName::new("Visible player").ok(),
         entity: EntityRef {
             identity: [4; 16],

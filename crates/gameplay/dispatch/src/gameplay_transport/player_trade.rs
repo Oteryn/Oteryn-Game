@@ -163,6 +163,7 @@ struct Record {
     items: [Option<[u8; 16]>; 2],
     backpacks: [Option<CharacterBackpack>; 2],
     projections: [Option<wire::Offer>; 2],
+    contents: [Vec<wire::ContentsItem>; 2],
     commands: [CommandRef; 2],
     pair: Option<CommandRef>,
     id: Option<[u8; 16]>,
@@ -181,8 +182,11 @@ struct Book {
     records: HashMap<GameSessionId, Record>,
 }
 impl Book {
+    fn record_ref(&self, session: GameSessionId) -> Option<&Record> {
+        self.records.get(self.index.get(&session)?)
+    }
     fn record(&self, session: GameSessionId) -> Option<Record> {
-        self.records.get(self.index.get(&session)?).cloned()
+        self.record_ref(session).cloned()
     }
     fn publish(&mut self, record: &Record) -> Option<()> {
         for side in 0..2 {
@@ -195,6 +199,14 @@ impl Book {
             let partner = partner.actor;
             let live = self.live.get_mut(&record.sessions[side])?;
             let state = State {
+                contents: [
+                    record.contents[side].clone(),
+                    if record.projections[side].is_some() {
+                        record.contents[1 - side].clone()
+                    } else {
+                        Vec::new()
+                    },
+                ],
                 trade_id: record.id,
                 partner: Some(entity(partner)),
                 own: record.projections[side],
@@ -226,9 +238,13 @@ impl Book {
     fn close(&mut self, record: &Record, result: ResultCode) -> Option<()> {
         // A disconnect may close a copied record while its observation awaits I/O.
         // The first closure wins; an old snapshot also cannot close a successor trade.
-        if !self.records.get(&record.sessions[0]).is_some_and(|current| {
-            current.sessions == record.sessions && current.commands[0] == record.commands[0]
-        }) {
+        if !self
+            .records
+            .get(&record.sessions[0])
+            .is_some_and(|current| {
+                current.sessions == record.sessions && current.commands[0] == record.commands[0]
+            })
+        {
             return Some(());
         }
         #[cfg(test)]

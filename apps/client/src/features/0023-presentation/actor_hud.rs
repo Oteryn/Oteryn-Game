@@ -171,6 +171,7 @@ mod health_tests {
         let preferences = crate::play::ReferencePreferences { creature_bars: true, ..Default::default() };
         for (health, rgb) in [(100,[0,4,0]), (93,[0,4,0]), (92,[2,3,2]), (61,[2,3,2]), (60,[3,3,0]), (31,[3,3,0]), (30,[4,0,0]), (9,[4,0,0]), (8,[3,0,0]), (4,[3,0,0]), (3,[3,0,0]), (1,[3,0,0])] {
             let entity = WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef { identity: [1;16], generation: 1 },
                 position: oteryn_session::ActorPosition { x: 1, y: 1, floor: 0 },
                 kind: EntityKind::Creature, display_name: None,

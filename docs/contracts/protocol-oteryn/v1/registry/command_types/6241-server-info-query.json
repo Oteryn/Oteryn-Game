@@ -1,0 +1,10 @@
+{
+  "id": 6241,
+  "name": "SERVER_INFO_QUERY",
+  "owner_decision": "srvinfo Tibia Global presentation",
+  "capability": 500,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/server-info-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/server-info-v1.md#reply",
+  "max_payload_bytes": 256,
+  "max_result_payload_bytes": 65536
+}

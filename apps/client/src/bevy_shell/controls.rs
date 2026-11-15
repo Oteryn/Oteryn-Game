@@ -167,6 +167,7 @@ impl HostOwner {
             return;
         }
         if play.link.analyser_input(&routed)
+            || play.link.mount_input(&routed)
             || play.link.appearance_input(&routed)
             || play.link.charm_progression_input(&routed)
             || play.link.cyclopedia_character_input(&routed)

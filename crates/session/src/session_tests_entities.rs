@@ -128,6 +128,7 @@ fn actor(
     position: ActorPosition,
 ) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind,
         entity: EntityRef {
@@ -151,6 +152,7 @@ fn own(position: ActorPosition) -> WorldSpatialEntity {
 
 fn corpse(marker: u8, position: ActorPosition) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Corpse,
         entity: EntityRef {

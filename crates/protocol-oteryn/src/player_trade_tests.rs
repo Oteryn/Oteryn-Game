@@ -32,6 +32,7 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
     assert!(encode_intent(Intent::Accept { trade_id: [0; 16] }).is_err());
     assert_eq!(ResultCode::Completed.payload(), [8, 3]);
     let state = State {
+        contents: Default::default(),
         trade_id: Some([3; 16]),
         partner: Some(partner),
         own: Some(Offer {
@@ -93,5 +94,56 @@ fn player_trade_wire_roundtrip_and_bounds() -> Result<(), Error> {
         })
         .is_err()
     );
+    Ok(())
+}
+
+#[test]
+fn trade_contents_are_negotiated_bounded_and_parent_indexed() -> Result<(), Error> {
+    let root = Offer {
+        definition: 1,
+        count: 1,
+        sub_type: 0,
+    };
+    let mut state = State {
+        own: Some(root),
+        partner: Some(EntityRef {
+            identity: [1; 16],
+            generation: 1,
+        }),
+        phase: 1,
+        reason: 0,
+        ..Default::default()
+    };
+    state.contents[0] = vec![
+        ContentsItem {
+            item: root,
+            parent: None,
+            name: "backpack".into(),
+        },
+        ContentsItem {
+            item: Offer {
+                definition: 2,
+                count: 9,
+                sub_type: 0,
+            },
+            parent: Some(0),
+            name: "fish".into(),
+        },
+    ];
+    let encoded = encode_state_for(&state, true)?;
+    assert!(decode_state(&encoded).is_err());
+    assert_eq!(decode_state_for(&encoded, true)?, state);
+    assert!(decode_state_for(&encode_state(&state)?, true)?.contents[0].is_empty());
+    state.contents[0][1].parent = Some(1);
+    assert!(encode_state_for(&state, true).is_err());
+    state.contents[0][1].parent = None;
+    assert!(encode_state_for(&state, true).is_err());
+    state.contents[0][1].parent = Some(0);
+    let child = state.contents[0][1].clone();
+    state.contents[0].resize(MAX_CONTENTS_ITEMS, child.clone());
+    let maximum = encode_state_for(&state, true)?;
+    assert_eq!(decode_state_for(&maximum, true)?, state);
+    state.contents[0].push(child);
+    assert!(encode_state_for(&state, true).is_err());
     Ok(())
 }

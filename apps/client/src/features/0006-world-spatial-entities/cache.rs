@@ -1,7 +1,7 @@
 //! Play-view lifetime assets and atlas cells. Recentring does not reload or repack them.
 use super::*;
 use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
-use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
+use oteryn_client_assets::{AppearanceIndex, AssetStore, CELL_RGBA_BYTES, Catalog, SpriteSheets};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
@@ -17,7 +17,8 @@ pub(super) struct PresentationCache {
     attempted: bool,
     pixels: Vec<u8>,
     glyphs: BTreeMap<(char, [u8; 3]), u16>,
-    outfits: BTreeMap<OutfitKey, Vec<Draw>>,
+    outfits: BTreeMap<OutfitKey, OutfitFrame>,
+    outfit_free: Vec<u16>,
     palette: Vec<[u8; 3]>,
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
@@ -43,6 +44,7 @@ impl PresentationCache {
         self.pixels.clear();
         self.glyphs.clear();
         self.outfits.clear();
+        self.outfit_free.clear();
         self.visuals.clear();
         #[cfg(feature = "bevy-shell")]
         self.items.clear();
@@ -94,10 +96,22 @@ impl PresentationCache {
         Some(count as u16)
     }
 
+    #[cfg(test)]
     pub(super) fn outfit(
         &mut self,
         look: Option<&oteryn_session::Look>,
         direction: u32,
+    ) -> Vec<Draw> {
+        self.animated_outfit(look, direction, (0, None), 0, None)
+    }
+
+    pub(super) fn animated_outfit(
+        &mut self,
+        look: Option<&oteryn_session::Look>,
+        direction: u32,
+        (elapsed_ms, step_ms): (u64, Option<u32>),
+        mount: u32,
+        actor: Option<oteryn_session::EntityRef>,
     ) -> Vec<Draw> {
         if matches!(look, Some(oteryn_session::Look::EmptyOutfit)) {
             return Vec::new();
@@ -110,12 +124,33 @@ impl PresentationCache {
         else {
             return marker();
         };
-        let key = (*look_type, direction, *colours, *addons);
-        if let Some(draws) = self.outfits.get(&key) {
-            return draws.clone();
+        let moving = step_ms.is_some();
+        let (phase, mount_phase) = self.assets.as_ref().map_or((0, 0), |assets| {
+            let assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
+            (
+                assets
+                    .index
+                    .outfit_preview(*look_type, moving)
+                    .map_or(0, |a| {
+                        outfit_phase(a.phases, &a.phase_ms, elapsed_ms, step_ms)
+                    }),
+                assets.index.outfit_preview(mount, moving).map_or(0, |a| {
+                    outfit_phase(a.phases, &a.phase_ms, elapsed_ms, step_ms)
+                }),
+            )
+        });
+        let style = (*look_type, direction, *colours, *addons, mount);
+        let key = actor.map_or((None, Some(style)), |actor| (Some(actor), None));
+        let stamp = (phase, mount_phase, moving);
+        if let Some(frame) = self.outfits.get(&key)
+            && frame.stamp == stamp
+            && frame.style == style
+        {
+            return frame.draws.clone();
         }
-        // Bound even negative cache entries when appearances change over a long session.
-        if self.outfits.len() >= 1024 {
+        // Animation reuses this style's atlas cells rather than retaining every
+        // phase of every visible outfit for the lifetime of the connection.
+        if self.outfits.len() >= 1024 && !self.outfits.contains_key(&key) {
             return marker();
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
@@ -124,21 +159,97 @@ impl PresentationCache {
                 [Some(head), Some(body), Some(legs), Some(feet)] => Some([head, body, legs, feet]),
                 _ => None,
             };
-            outfit_cells(&mut assets, *look_type, direction, *addons, colours)
+            let mut cells = if mount != 0 {
+                outfit_cells(
+                    &mut assets,
+                    mount,
+                    direction,
+                    0,
+                    None,
+                    (mount_phase, moving, false),
+                )?
+            } else {
+                Vec::new()
+            };
+            cells.extend(outfit_cells(
+                &mut assets,
+                *look_type,
+                direction,
+                *addons,
+                colours,
+                (phase, moving, mount != 0),
+            )?);
+            Some(cells)
         });
+        let (mut slots, retired) = self.outfits.remove(&key).map_or_else(
+            || (Vec::new(), Vec::new()),
+            |frame| {
+                if frame.style == style {
+                    (frame.cells, Vec::new())
+                } else {
+                    (Vec::new(), frame.cells)
+                }
+            },
+        );
         let draws = resolved
             .and_then(|cells| {
-                if self.count() + cells.len() > oteryn_renderer::world::MAX_CELLS {
+                if self.count()
+                    + cells
+                        .len()
+                        .saturating_sub(slots.len() + self.outfit_free.len())
+                    > oteryn_renderer::world::MAX_CELLS
+                {
                     return None;
                 }
                 cells
                     .into_iter()
-                    .map(|(offset, rgba)| self.append(&rgba).map(|cell| Draw { cell, offset }))
+                    .enumerate()
+                    .map(|(index, (offset, rgba))| {
+                        let cell = if let Some(cell) = slots.get(index).copied() {
+                            let at = usize::from(cell) * CELL_RGBA_BYTES;
+                            self.pixels[at..at + CELL_RGBA_BYTES].copy_from_slice(&rgba);
+                            self.image = None;
+                            cell
+                        } else {
+                            let cell = if let Some(cell) = self.outfit_free.pop() {
+                                let at = usize::from(cell) * CELL_RGBA_BYTES;
+                                self.pixels[at..at + CELL_RGBA_BYTES].copy_from_slice(&rgba);
+                                self.image = None;
+                                cell
+                            } else {
+                                self.append(&rgba)?
+                            };
+                            slots.push(cell);
+                            cell
+                        };
+                        Some(Draw { cell, offset })
+                    })
                     .collect()
             })
             .unwrap_or_else(marker);
-        self.outfits.insert(key, draws.clone());
+        self.outfit_free.extend(retired);
+        self.outfits.insert(
+            key,
+            OutfitFrame {
+                style,
+                stamp,
+                cells: slots,
+                draws: draws.clone(),
+            },
+        );
         draws
+    }
+
+    pub(super) fn retain_outfit_actors(&mut self, entries: &[oteryn_session::VisibleAppearance]) {
+        let free = &mut self.outfit_free;
+        self.outfits.retain(|(actor, _), frame| {
+            let retained =
+                actor.is_none_or(|actor| entries.iter().any(|entry| entry.entity.entity == actor));
+            if !retained {
+                free.extend_from_slice(&frame.cells);
+            }
+            retained
+        });
     }
 
     pub(super) fn name(&mut self, name: &str, health: u8) -> Vec<u16> {
@@ -174,7 +285,7 @@ impl PresentationCache {
 
     pub(super) fn image(&mut self) -> Result<Arc<AtlasImage>, BatchError> {
         let count = self.count();
-        if self.packed_cells != count {
+        if self.image.is_none() || self.packed_cells != count {
             self.image = Some(Arc::new(oteryn_renderer::world::atlas_from_cells(
                 self.pixels.clone(),
                 count,
@@ -222,6 +333,51 @@ include!("cache_outfits.rs");
 mod outfit_tests {
     use super::*;
     #[test]
+    fn actor_motion_same_outfit_keeps_independent_pixels_and_recycles_frame_cells()
+    -> Result<(), BatchError> {
+        fn pixels(cache: &PresentationCache, draws: &[Draw]) -> Vec<u8> {
+            draws
+                .iter()
+                .flat_map(|draw| {
+                    let at = usize::from(draw.cell) * CELL_RGBA_BYTES;
+                    cache.pixels[at..at + CELL_RGBA_BYTES].iter().copied()
+                })
+                .collect()
+        }
+        let mut cache = PresentationCache::default();
+        let world = World::builtin()?;
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        cache.begin(world.atlas(), Some(root));
+        let look = oteryn_session::Look::Outfit {
+            look_type: 128,
+            colours: [0; 4],
+            addons: 0,
+        };
+        let actor = |tag| oteryn_session::EntityRef {
+            identity: [tag; 16],
+            generation: 1,
+        };
+        let fast = cache.animated_outfit(Some(&look), 2, (100, Some(200)), 0, Some(actor(1)));
+        let fast_pixels = pixels(&cache, &fast);
+        let slow = cache.animated_outfit(Some(&look), 2, (100, Some(800)), 0, Some(actor(2)));
+        assert_eq!(pixels(&cache, &fast), fast_pixels);
+        assert_ne!(pixels(&cache, &slow), fast_pixels);
+        for elapsed in [0, 50, 100, 150] {
+            cache.animated_outfit(Some(&look), 2, (elapsed, Some(200)), 0, Some(actor(1)));
+        }
+        let cells = cache.count();
+        for elapsed in (0..20_000).step_by(50) {
+            let draws =
+                cache.animated_outfit(Some(&look), 2, (elapsed, Some(200)), 0, Some(actor(1)));
+            assert!(draws.iter().any(|draw| draw.cell > MARKER_CELL));
+        }
+        assert_eq!(cache.count(), cells);
+        cache.retain_outfit_actors(&[]);
+        cache.animated_outfit(Some(&look), 2, (0, Some(200)), 0, Some(actor(3)));
+        assert_eq!(cache.count(), cells);
+        Ok(())
+    }
+    #[test]
     fn spatial_outfit_cache_composes_colours_addons_and_reuses_exact_looks()
     -> Result<(), BatchError> {
         let mut cache = PresentationCache::default();
@@ -244,8 +400,8 @@ mod outfit_tests {
             draws
                 .iter()
                 .flat_map(|draw| {
-                    let at = usize::from(draw.cell) * 4096;
-                    cache.pixels[at..at + 4096].iter().copied()
+                    let at = usize::from(draw.cell) * CELL_RGBA_BYTES;
+                    cache.pixels[at..at + CELL_RGBA_BYTES].iter().copied()
                 })
                 .collect::<Vec<_>>()
         };

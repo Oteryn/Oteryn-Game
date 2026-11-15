@@ -73,16 +73,43 @@ impl LiveShop {
                 .sum()
         })
     }
+    fn quote_index(&self, quote: Quote) -> Option<usize> {
+        if self.window.open != Some((quote.npc, quote.revision)) {
+            return None;
+        }
+        self.window.offers.iter().position(|offer| {
+            offer.item_definition_ref == quote.item
+                && offer.side == quote.side
+                && offer.count == quote.count
+                && offer.unit_price == quote.price
+        })
+    }
+    pub fn maximum_amount(&self, quote: Quote) -> u32 {
+        let Some(index) = self.quote_index(quote) else {
+            return 0;
+        };
+        self.window
+            .details
+            .get(index)
+            .map_or(100, |detail| detail.maximum_quantity)
+    }
+    pub fn quote_name(&self, quote: Quote) -> Option<&str> {
+        Some(&self.window.details.get(self.quote_index(quote)?)?.name)
+    }
     pub fn quote_text(&self, quote: Quote) -> String {
+        let name = self
+            .quote_name(quote)
+            .map_or_else(|| format!("item #{}", quote.item), str::to_owned);
         lfmt!(
-            "{:?} item #{} × {} — {} gold / offer — carried {}",
+            "{:?} {} × {} — {} gold / offer — carried {} — limit {}",
             quote.side,
-            quote.item,
+            name,
             quote.count,
             quote.price,
             self.inventory
                 .as_ref()
-                .map_or_else(|| "unknown".into(), |_| self.owned(quote.item).to_string())
+                .map_or_else(|| "unknown".into(), |_| self.owned(quote.item).to_string()),
+            self.maximum_amount(quote)
         )
     }
     pub fn total(&self, quote: Quote, amount: u32) -> String {
@@ -93,7 +120,7 @@ impl LiveShop {
         )
     }
     pub fn look(&self, quote: Quote) -> Option<super::npc_shop::NpcShopIntent> {
-        let index = self.quotes().iter().position(|live| *live == quote)?;
+        let index = self.quote_index(quote)?;
         Some(super::npc_shop::NpcShopIntent {
             npc_actor: quote.npc,
             catalogue_revision: quote.revision,
@@ -116,6 +143,9 @@ impl LiveShop {
     }
     /// Mirrors the server economy's quantity and side-specific total bounds.
     pub fn valid_amount(&self, quote: Quote, amount: u32) -> bool {
+        if !self.window.details.is_empty() {
+            return (1..=self.maximum_amount(quote)).contains(&amount);
+        }
         let maximum = match quote.side {
             NpcTradeSide::Buy => 20_000_000 + 999_999_999_999u64,
             NpcTradeSide::Sell => 1_009_999,
@@ -127,14 +157,14 @@ impl LiveShop {
             return None;
         }
         if !self.valid_amount(quote, amount) {
-            self.feedback = tr!("Amount must be 1–100 and within the server's gold limit").into();
+            self.feedback = tr!("Amount exceeds this offer's server limit").into();
             return None;
         }
         if !self.can_trade(quote, amount) {
             self.feedback = "No free backpack slot in the current view; enable Ignore capacity to ask the server".into();
             return None;
         }
-        let index = self.quotes().iter().position(|live| *live == quote)?;
+        let index = self.quote_index(quote)?;
         let intent = npc_service::NpcTradeIntent {
             npc_actor: quote.npc,
             catalogue_revision: quote.revision,

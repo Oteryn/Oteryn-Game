@@ -8,6 +8,7 @@ fn world_party_target_uses_live_player_kind_floor_and_generation() -> Result<(),
         ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity,
     };
     let player = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {
@@ -271,6 +272,7 @@ fn open_shared_party_refreshes_until_closed() -> Result<(), Error> {
 fn party_targets_other_player_on_own_tile_by_identity() -> Result<(), Error> {
     use oteryn_session::{ActorPosition, EntityDetail, EntityKind, EntityRef, StepDirection, WorldSpatialEntity};
     let own = WorldSpatialEntity {
+        motion: None,
         display_name: None, kind: EntityKind::Player,
         entity: EntityRef { identity: [1;16], generation: 1 },
         position: ActorPosition { x: 1, y: 1, floor: 7 },

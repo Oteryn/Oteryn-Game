@@ -15,6 +15,7 @@ pub(in crate::gameplay_transport) fn offered(
             c.id != CAPABILITY_APPEARANCE_V1
                 && c.id != CAPABILITY_FORGE_CREATURE_V1
                 && c.id != CAPABILITY_EMPTY_OUTFIT_V1
+                && c.id != oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1
         })
         .collect();
     if available {
@@ -44,6 +45,17 @@ pub(in crate::gameplay_transport) fn offered(
             OfferedCapability {
                 id: CAPABILITY_EMPTY_OUTFIT_V1,
                 requires: &[6, 25],
+            },
+        );
+    }
+    if available {
+        let id = oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1;
+        let at = result.partition_point(|c| c.id < id);
+        result.insert(
+            at,
+            OfferedCapability {
+                id,
+                requires: &[6, 13, 25],
             },
         );
     }

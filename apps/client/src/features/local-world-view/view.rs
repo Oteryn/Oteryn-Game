@@ -127,7 +127,9 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
-        self.scene.scroll = self.camera_offset(std::time::Instant::now()).unwrap_or([0.; 2]);
+        self.scene.scroll = self
+            .camera_offset(std::time::Instant::now())
+            .unwrap_or([0.; 2]);
         self.scene.target_frame = self.preferences().game_window.target_frame;
         self.scene.set_name_visibility(self.preferences().hud_names);
         self.scene.set_name_options(
@@ -152,10 +154,18 @@ impl PlayView {
 
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        let before = (self.own, self.floor);
+        let was_prewalk = self.prewalk.is_some();
+        if pushed.motion_reset || pushed.scope_changed {
+            self.walk = None;
+            self.prewalk = None;
+            self.scene.reset_actor_animation();
+        }
         if pushed.scope_changed {
             self.server_messages.clear();
             self.message_namespace = self.message_namespace.wrapping_add(1);
             self.walk = None;
+            self.prewalk = None;
             self.party_icons.clear();
             self.party_icons_refresh = None;
             self.inputs.clear();
@@ -181,9 +191,49 @@ impl PlayView {
             self.set_live_map(map)?;
         }
         if let Some(position) = pushed.own {
-            self.place(position);
+            if let Some((origin, predicted)) = self.prewalk {
+                if position != origin
+                    && (position.x != predicted.x
+                        || position.y != predicted.y
+                        || position.floor != origin.floor)
+                {
+                    self.prewalk = None;
+                    self.place(position);
+                }
+            } else {
+                self.place(position);
+            }
         }
         if let Some(entries) = &pushed.appearances {
+            if let Some(own) = entries
+                .iter()
+                .find(|entry| Some(entry.entity.entity.identity) == self.scene.own_identity())
+                && let Some(motion) = own.entity.motion
+                && self
+                    .appearances
+                    .iter()
+                    .find(|entry| entry.entity.entity == own.entity.entity)
+                    .and_then(|entry| entry.entity.motion)
+                    .is_some_and(|old| old.translation_revision != motion.translation_revision)
+            {
+                if motion.step_duration_ms == 0 {
+                    self.prewalk = None;
+                    self.walk = None;
+                    self.place(own.entity.position);
+                } else if !was_prewalk
+                    && before.1 == self.floor
+                    && !pushed.motion_reset
+                    && !pushed.scope_changed
+                {
+                    self.walk = oteryn_client_simulation::walk::Glide::new(
+                        before.0,
+                        self.own,
+                        std::time::Duration::from_millis(u64::from(motion.step_duration_ms)),
+                    )
+                    .map(|glide| (glide, std::time::Instant::now()))
+                    .or(self.walk);
+                }
+            }
             self.appearances.clone_from(entries);
         }
         if let Some(entities) = &pushed.entities {

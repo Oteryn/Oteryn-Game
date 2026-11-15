@@ -10,7 +10,7 @@ use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
 use crate::movement::speed::{
-    EngineeringGroundSpeed, GroundSpeedSource, player_step_duration, runtime_player_speed,
+    EngineeringGroundSpeed, GroundSpeedSource, player_effective_speed, player_step_duration,
 };
 use crate::movement::{
     CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
@@ -135,13 +135,18 @@ fn baseline_speed(
     session: GameSessionId,
     now_us: u64,
 ) -> Option<u16> {
-    runtime_player_speed(
-        runtime,
-        actor,
-        session,
+    let delta = runtime
+        .actor_active_speed_delta(
+            actor,
+            Some(session),
+            SemanticTimeMicros::from_micros(now_us),
+        )
+        .ok()?;
+    Some(player_effective_speed(
         crate::gameplay_transport::PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER,
-        SemanticTimeMicros::from_micros(now_us),
-    )
+        delta,
+        i64::from(runtime.actor_motion(actor).map_or(0, |motion| motion.3)),
+    ))
 }
 
 /// An initialized player's effective speed: its base speed, the runtime condition owner's and
@@ -173,8 +178,113 @@ fn spell_state_speed(
         state,
         now_us,
         runtime_delta,
-        equipment,
+        equipment + i64::from(runtime.actor_motion(actor).map_or(0, |motion| motion.3)),
     ))
+}
+
+/// Read-only forecast using the same destination proof and speed calculation as
+/// the step owner. Special destinations are deliberately left to that owner.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "forecast binds the same independently owned inputs as movement"
+)]
+pub(in crate::gameplay_transport) fn prewalk_forecast(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    equipment_delta: Option<i32>,
+    blocking: &dyn crate::map::floor::CellBlocker,
+) -> [u32; 8] {
+    use CardinalStep::*;
+    let source = crate::movement::source_floor_change::is_source_profile(cells);
+    let speed = states.get(runtime, actor, session).map_or_else(
+        || baseline_speed(runtime, actor, session, now_us),
+        |state| {
+            spell_state_speed(
+                runtime,
+                state,
+                actor,
+                session,
+                now_us,
+                equipment_delta,
+                source,
+            )
+        },
+    );
+    let Some(expected) = runtime.read_actor_position(actor).ok() else {
+        return [0; 8];
+    };
+    if states.is_dead(actor)
+        || runtime.player_control_facts(actor, session).is_err()
+        || (states.get(runtime, actor, session).is_some()
+            && !states.native_condition_movement_allowed(
+                runtime,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(now_us),
+            ))
+    {
+        return [0; 8];
+    }
+    [
+        North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest,
+    ]
+    .map(|direction| {
+        let from = expected.position();
+        let (dx, dy) = direction.delta();
+        let Some(x) = from.x.checked_add(dx) else {
+            return 0;
+        };
+        let Some(y) = from.y.checked_add(dy) else {
+            return 0;
+        };
+        let onto = MovementLocalPosition {
+            x,
+            y,
+            floor: from.floor,
+        };
+        if blocking.blocks(cell(onto))
+            || crate::map::floor::is_teleport(cells, cell(onto))
+            || runtime.position_occupied_by_other(actor, onto) != Ok(false)
+        {
+            return 0;
+        }
+        let duration = if crate::map::floor::table_of(cells).is_some() {
+            let Ok(proof) = crate::map::floor::prepare_bundle_step(
+                runtime, cells, actor, session, expected, direction, false, blocking,
+            ) else {
+                return 0;
+            };
+            if proof.destination() != onto {
+                return 0;
+            }
+            duration_onto(&EngineeringGroundSpeed, onto, speed, direction)
+        } else if source {
+            let Ok(proof) = crate::movement::source_floor_change::prepare_source_step(
+                runtime, cells, actor, session, expected, direction,
+            ) else {
+                return 0;
+            };
+            if proof.destination() != onto {
+                return 0;
+            }
+            duration_onto(&proof, onto, speed, direction)
+        } else {
+            if cells.index().lookup(cells.scope(), cell(onto))
+                != Ok(crate::content::CollisionClass::Walkable)
+            {
+                return 0;
+            }
+            duration_onto(&EngineeringGroundSpeed, onto, speed, direction)
+        };
+        duration
+            .ok()
+            .and_then(|duration| u32::try_from(duration.as_millis()).ok())
+            .unwrap_or(0)
+    })
 }
 
 /// Equipment delta is supplied only by the actual persisted-equipment owner. An actor without
@@ -284,6 +394,16 @@ pub fn step_in_channel_with_source_step(
         && let Some(state) = states.get_mut(runtime, actor, session)
     {
         state.cooldowns = cooldowns;
+    }
+    let (dx, dy) = direction.delta();
+    let from = expected.position();
+    let to = result.0.position();
+    if to.floor == from.floor
+        && from.x.checked_add(dx) == Some(to.x)
+        && from.y.checked_add(dy) == Some(to.y)
+        && !crate::map::floor::is_teleport(cells, cell(to))
+    {
+        runtime.record_walk(actor, result.0, result.1);
     }
     Ok(result)
 }
@@ -1108,6 +1228,99 @@ mod tests {
                 .x,
             1
         );
+    }
+
+    #[test]
+    fn actor_motion_forecast_matches_real_step_and_riding_is_independent() {
+        let (mut runtime, mut states, room, actor, session) = owner();
+        let empty = std::collections::BTreeSet::new();
+        let forecast = prewalk_forecast(
+            &runtime,
+            &states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            None,
+            &empty,
+        );
+        assert_eq!(forecast[1], 550);
+        let blocked = std::collections::BTreeSet::from([LogicalCell { x: 1, y: 0, z: 0 }]);
+        assert_eq!(
+            prewalk_forecast(
+                &runtime,
+                &states,
+                room.movement_cells(),
+                actor,
+                session,
+                0,
+                None,
+                &blocked
+            )[1],
+            0
+        );
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+        let wrong = GameSessionId::decode(&id(99)).unwrap();
+        assert!(runtime.set_riding(actor, wrong, 139, 10).is_err());
+        runtime.set_riding(actor, session, 139, 10).unwrap();
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 139);
+        let riding = prewalk_forecast(
+            &runtime,
+            &states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            None,
+            &empty,
+        );
+        let (snapshot, duration) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            room.movement_cells(),
+            actor,
+            session,
+            0,
+            CardinalStep::East,
+            &empty,
+            None,
+        )
+        .unwrap();
+        assert_eq!(u128::from(riding[1]), duration.as_millis());
+        assert!(riding[1] < forecast[1]);
+        let motion = runtime.actor_motion(actor).unwrap();
+        assert_eq!(
+            (motion.0, motion.1),
+            (snapshot.last_translation_revision(), riding[1])
+        );
+        runtime.set_riding(actor, session, 0, 0).unwrap();
+        assert_eq!(runtime.actor_motion(actor).unwrap().2, 0);
+    }
+
+    #[test]
+    fn actor_motion_teleport_is_not_a_walk_receipt_or_prewalk_destination() {
+        let (mut runtime, mut states, cells, actor, session) =
+            bundle_owner_of(crate::map::boot::tests::teleport_bundle);
+        let empty = std::collections::BTreeSet::new();
+        assert_eq!(
+            prewalk_forecast(&runtime, &states, &cells, actor, session, 0, None, &empty)[2],
+            0
+        );
+        let (snapshot, _) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            0,
+            CardinalStep::South,
+            &empty,
+            None,
+        )
+        .unwrap();
+        let motion = runtime.actor_motion(actor).unwrap();
+        assert_eq!(motion.0, snapshot.last_translation_revision());
+        assert_eq!(motion.1, 0);
     }
     #[test]
     fn initialized_player_on_engineering_ground_is_paced_from_its_base_speed() {

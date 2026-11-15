@@ -173,6 +173,11 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
+    oteryn_protocol_oteryn::trade_details::CAPABILITY_TRADE_DETAILS_V1,
+    oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1,
+    oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1,
+    oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -195,6 +200,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::world_clock::CAPABILITY_WORLD_LIGHT_V1,
     oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1,
+    oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1,
     oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
     oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
     oteryn_protocol_oteryn::capability_tables::CAPABILITY_ITEM_LOOK_V1,
@@ -288,6 +294,8 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
+    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {

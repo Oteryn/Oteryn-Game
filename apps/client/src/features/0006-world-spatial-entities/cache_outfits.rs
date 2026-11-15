@@ -1,6 +1,15 @@
 // Standing outfit cells: base and selected addons, each tinted by its own mask.
 type OutfitCell = ([i32; 2], Vec<u8>);
-type OutfitKey = (u32, u32, [u16; 4], u8);
+type OutfitStyle = (u32, u32, [u16; 4], u8, u32);
+type OutfitKey = (Option<oteryn_session::EntityRef>, Option<OutfitStyle>);
+
+#[derive(Clone)]
+struct OutfitFrame {
+    style: OutfitStyle,
+    stamp: (u32, u32, bool),
+    cells: Vec<u16>,
+    draws: Vec<Draw>,
+}
 
 impl PresentationCache {
     pub(crate) fn set_palette(&mut self, palette: &[[u8; 3]]) -> bool {
@@ -10,6 +19,11 @@ impl PresentationCache {
         self.palette.clear();
         self.palette.extend_from_slice(palette);
         // Previously packed cells remain valid for retained scene snapshots.
+        self.outfit_free.extend(
+            self.outfits
+                .values()
+                .flat_map(|frame| frame.cells.iter().copied()),
+        );
         self.outfits.clear();
         true
     }
@@ -21,15 +35,20 @@ fn outfit_cells(
     direction: u32,
     addons: u8,
     colours: Option<[[u8; 3]; 4]>,
+    (phase, moving, mounted): (u32, bool, bool),
 ) -> Option<Vec<OutfitCell>> {
-    let appearance = assets.index.outfit(look_type)?;
+    let appearance = assets.index.outfit_preview(look_type, moving)?;
     let sheets = &mut assets.sheets;
     let mut cells = Vec::new();
     for pattern in 0..appearance.pattern_height.min(3) {
         if pattern > 0 && addons & (1 << (pattern - 1)) == 0 {
             continue;
         }
-        let at = ((pattern * appearance.pattern_width + direction % appearance.pattern_width)
+        let depth = u32::from(mounted && appearance.pattern_depth > 1);
+        let at = ((((phase * appearance.pattern_depth + depth) * appearance.pattern_height
+            + pattern)
+            * appearance.pattern_width
+            + direction % appearance.pattern_width)
             * appearance.layers) as usize;
         let sprite = *appearance.sprite_ids.get(at)?;
         if sprite == 0 {
@@ -121,4 +140,23 @@ mod tint_tests {
             .concat()
         );
     }
+}
+
+fn outfit_phase(phases: u32, phase_ms: &[u32], elapsed_ms: u64, step_ms: Option<u32>) -> u32 {
+    if let Some(step_ms) = step_ms {
+        return oteryn_client_ui::actor_motion::walking_phase(phases, elapsed_ms, step_ms);
+    }
+    let cycle = phase_ms.iter().map(|ms| u64::from(*ms)).sum::<u64>().max(1);
+    let mut remaining = elapsed_ms % cycle;
+    phase_ms
+        .iter()
+        .position(|ms| {
+            if remaining < u64::from(*ms) {
+                true
+            } else {
+                remaining -= u64::from(*ms);
+                false
+            }
+        })
+        .unwrap_or(0) as u32
 }

@@ -31,7 +31,11 @@ impl PlayView {
     }
 
     pub(in crate::play) fn advance_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.scene.actor_animation(now, self.walk);
         self.advance_world_animation(now)?;
+        if self.appearances.iter().any(|entry| entry.entity.motion.is_some()) {
+            self.rebuild()?;
+        }
         if self.visuals.is_empty() && !self.tutorial_overlay.enabled && self.hit_flash.is_none() {
             return Ok(());
         }
@@ -45,7 +49,11 @@ impl PlayView {
     }
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        self.scene.actor_animation(now, self.walk);
         self.advance_world_animation(now)?;
+        if self.appearances.iter().any(|entry| entry.entity.motion.is_some()) {
+            self.rebuild()?;
+        }
         self.project_presentation_at(now)
     }
 

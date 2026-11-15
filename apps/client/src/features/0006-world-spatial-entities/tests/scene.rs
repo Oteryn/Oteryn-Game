@@ -1,4 +1,97 @@
 use super::*;
+
+#[test]
+fn actor_motion_world_outfit_renders_mount_and_walking_then_standing_frames()
+-> Result<(), BatchError> {
+    use oteryn_session::actor_motion::ActorMotion;
+    fn pixels(scene: &Scene) -> Vec<u8> {
+        let atlas = scene.atlas();
+        let px = atlas.cell_px() as usize;
+        let columns = atlas.width() as usize / px;
+        scene.actor_draws[0]
+            .draws
+            .iter()
+            .flat_map(|draw| {
+                let index = usize::from(draw.cell);
+                (0..px).flat_map(move |y| {
+                    let at = (((index / columns) * px + y) * atlas.width() as usize
+                        + index % columns * px)
+                        * 4;
+                    atlas.rgba()[at..at + px * 4].iter().copied()
+                })
+            })
+            .collect()
+    }
+    let tile = TileCoord::new(100, 200);
+    let mut scene =
+        Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
+    let now = std::time::Instant::now();
+    scene.actor_animation(now, None);
+    let mut entry = VisibleAppearance {
+        forge_stacks: None,
+        light: None,
+        entity: oteryn_session::WorldSpatialEntity {
+            motion: Some(ActorMotion::default()),
+            display_name: None,
+            kind: oteryn_session::EntityKind::Player,
+            entity: oteryn_session::EntityRef {
+                identity: [1; 16],
+                generation: 1,
+            },
+            position: oteryn_session::ActorPosition {
+                x: 100,
+                y: 200,
+                floor: 0,
+            },
+            detail: EntityDetail::Actor {
+                direction: oteryn_session::StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: Some(oteryn_session::Look::Outfit {
+            look_type: 128,
+            colours: [0; 4],
+            addons: 0,
+        }),
+    };
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, Some(root))?;
+    let standing = pixels(&scene);
+    assert!(
+        scene.actor_draws[0]
+            .draws
+            .iter()
+            .any(|draw| draw.cell > MARKER_CELL)
+    );
+    entry.entity.motion = Some(ActorMotion {
+        mount_look_type: 139,
+        ..ActorMotion::default()
+    });
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    let mounted = pixels(&scene);
+    assert_ne!(mounted, standing);
+    entry.entity.position.x += 1;
+    entry.entity.motion = Some(ActorMotion {
+        translation_revision: 1,
+        step_duration_ms: 200,
+        ..ActorMotion::default()
+    });
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    let first = pixels(&scene);
+    scene.actor_animation(now + std::time::Duration::from_millis(100), None);
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(
+        scene.actor_offset(entry.entity.entity),
+        [-(scene.view.tile_px() as f32) / 2., 0.],
+    );
+    let walking = pixels(&scene);
+    assert_ne!(walking, first);
+    scene.actor_animation(now + std::time::Duration::from_millis(200), None);
+    scene.set_presentations_from(&[entry], 0, None)?;
+    assert_eq!(pixels(&scene), standing);
+    Ok(())
+}
 #[test]
 fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Result<(), BatchError> {
     let tile = TileCoord::new(100, 200);
@@ -6,6 +99,7 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
         Scene::centered_on(Arc::new(World::builtin()?), None, tile, StepDir::South, &[])?;
     let mut entry = VisibleAppearance {
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             entity: oteryn_session::EntityRef {
                 identity: [8; 16],
                 generation: 1,
@@ -77,6 +171,7 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
         forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Citizen")
                     .map_err(|_| BatchError::InvalidView)?,
@@ -149,6 +244,7 @@ fn other_actor_keeps_object_marker_and_local_player() -> Result<(), BatchError> 
         &[tile],
     )?;
     let entity = oteryn_session::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: oteryn_session::EntityKind::Creature,
         entity: oteryn_session::EntityRef {
@@ -198,6 +294,7 @@ fn recenter_reuses_loaded_assets_outfits_glyphs_and_packed_atlas() -> Result<(),
         forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Citizen")
                     .map_err(|_| BatchError::InvalidView)?,
@@ -284,6 +381,7 @@ fn play_view_rebuild_retains_the_same_cached_image() -> Result<(), BatchError> {
         forge_stacks: None,
         light: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Player")
                     .map_err(|_| BatchError::InvalidView)?,
@@ -333,6 +431,7 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
         light: None,
         forge_stacks: Some(3),
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: Some(
                 oteryn_session::EntityDisplayName::new("Rat")
                     .map_err(|_| BatchError::InvalidView)?,
@@ -439,6 +538,7 @@ fn parity_a_health_updates_recolour_cached_name_glyphs() -> Result<(), BatchErro
     )?;
     let mut entry = VisibleAppearance {
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             entity: oteryn_session::EntityRef {
                 identity: [8; 16],
                 generation: 1,

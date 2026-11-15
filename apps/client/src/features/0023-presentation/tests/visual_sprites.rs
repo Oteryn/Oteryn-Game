@@ -280,7 +280,7 @@ fn received_lower_floor_actor_is_painted_in_its_floor_and_removed_with_observati
     let before = view.scene().sprites().len();
     let (link,_,outbox) = play_channel();
     let mut actor = oteryn_session::VisibleAppearance {
-        entity:oteryn_session::WorldSpatialEntity {entity:oteryn_session::EntityRef {identity:[4;16],generation:1},kind:oteryn_session::EntityKind::Creature,
+        entity:oteryn_session::WorldSpatialEntity {motion: None, entity:oteryn_session::EntityRef {identity:[4;16],generation:1},kind:oteryn_session::EntityKind::Creature,
             position:ActorPosition {floor:-7,..own},display_name:None,
             detail:oteryn_session::EntityDetail::Actor {direction:oteryn_session::StepDirection::South,appearance_ref:1,health_percent:100}},
         look:None,light:None,forge_stacks:None,

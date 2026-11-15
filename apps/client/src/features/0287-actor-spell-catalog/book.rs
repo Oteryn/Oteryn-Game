@@ -3,6 +3,7 @@ use crate::play::{Outbox, PlayLink, mailbox::lock};
 use oteryn_client_runtime::spell_catalog::spellbook_details::{PAGE_SIZE, Page, Query};
 #[derive(Debug, Clone, Default)]
 pub struct SpellbookState {
+    pub info: std::collections::BTreeMap<u32, oteryn_session::server_info::SpellInfo>,
     pub archive: super::archive::ArchiveBindings,
     pub archive_edit: u64,
     pub selected: bool,
@@ -64,6 +65,9 @@ impl SpellbookState {
         if let Some(entry) = page.entries.get(row) {
             use std::fmt::Write;
             let spell = &entry.spell;
+            if let Some(info) = self.info.get(&spell.cast_index) {
+                text.push_str(&oteryn_client_ui::server_info::spell_text(info));
+            }
             let _ = write!(
                 text,
                 "\r\n\r\n{} / {}\r\nLevel {} · Mana {}{} · Soul {} · Rune magic level {}\r\nPremium required: {} · Learned: {} · Eligible now: {}\r\nRecovery categories: {}\r\nVocations: {}\r\nEligibility does not promise a legal target or an expired cooldown.",

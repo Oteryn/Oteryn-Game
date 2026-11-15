@@ -103,14 +103,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             (10, 10, 720, 280),
             WS_BORDER | WS_VSCROLL | LBS_NOTIFY as u32,
         );
-        control(
-            hwnd,
-            "STATIC",
-            tr!("Offers (1–100):"),
-            0,
-            (10, 300, 130, 25),
-            0,
-        );
+        control(hwnd, "STATIC", tr!("Amount"), 0, (10, 300, 130, 25), 0);
         let amount = control(
             hwnd,
             "EDIT",

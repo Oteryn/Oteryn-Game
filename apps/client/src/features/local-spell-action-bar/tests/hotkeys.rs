@@ -79,6 +79,7 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
     let (link, mut commands, outbox) = play_channel();
     outbox.targeting_initialize(true);
     let actor = |id| WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: EntityKind::Player,
         entity: EntityRef {

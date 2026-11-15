@@ -32,6 +32,8 @@ pub trait PlayerTradeContent: ItemLoopContent {
 /// Immutable complete before-state captured by this owner under both Character locks.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TradeLeaf {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    contents: Vec<TradeLeaf>,
     item: Value,
     entry: Value,
     key: Option<Value>,
@@ -41,6 +43,59 @@ pub struct TradeLeaf {
 }
 
 impl TradeLeaf {
+    /// Frozen descendants in breadth-first display order; their parents precede them.
+    pub fn contents(&self) -> &[TradeLeaf] {
+        &self.contents
+    }
+
+    /// Resolve only an identity when a writer checks whether this offer reserves it.
+    pub fn instance_at(&self, index: u8) -> Result<Option<[u8; 16]>, DurabilityError> {
+        let node = if index == 0 {
+            Some(self)
+        } else {
+            self.contents.get(usize::from(index) - 1)
+        };
+        node.map(|leaf| snapshot::uuid(&leaf.item, "item_instance_id"))
+            .transpose()
+    }
+
+    /// An inspection index is local to this frozen offer and never a transferable handle.
+    pub fn indexed_item(
+        &self,
+        index: u8,
+    ) -> Result<Option<([u8; 16], super::item_mint::TypedDefinitionRef, u32)>, DurabilityError>
+    {
+        let Some(identity) = self.instance_at(index)? else {
+            return Ok(None);
+        };
+        let leaf = if index == 0 {
+            self
+        } else {
+            self.contents
+                .get(usize::from(index) - 1)
+                .ok_or(DurabilityError::InvalidStoredState)?
+        };
+        let (definition, count) = leaf.definition_and_quantity()?;
+        Ok(Some((identity, definition, count)))
+    }
+
+    /// Relative parent index in this frozen offer, with index zero naming its root.
+    pub fn parent_index(&self, index: usize) -> Result<Option<u8>, DurabilityError> {
+        let Some(child) = self.contents.get(index) else {
+            return Ok(None);
+        };
+        let parent = snapshot::uuid(&child.entry, "parent_item_instance_id")?;
+        for (position, item) in std::iter::once(self)
+            .chain(self.contents.iter().take(index))
+            .enumerate()
+        {
+            if snapshot::uuid(&item.item, "item_instance_id")? == parent {
+                return Ok(u8::try_from(position).ok());
+            }
+        }
+        Err(DurabilityError::InvalidStoredState)
+    }
+
     /// Content identity and whole quantity for the session-local offer projection.
     pub fn definition_and_quantity(
         &self,
@@ -106,10 +161,24 @@ impl PlayerTradeRequest {
             .participants
             .iter()
             .map(|p| {
-                Ok(json!({
-                    "fence": fence_binding(&p.accepted)?, "command": p.command.command_id().get(),
-                    "leaf": p.leaf,
-                }))
+                use sha2::{Digest, Sha256};
+                let mut leaf = serde_json::to_value(&p.leaf).map_err(|_| DurabilityError::InvalidStoredState)?;
+                leaf.as_object_mut().ok_or(DurabilityError::InvalidStoredState)?.remove("contents");
+                let mut party = json!({ "fence": fence_binding(&p.accepted)?, "command": p.command.command_id().get(), "leaf": leaf });
+                if !p.leaf.contents.is_empty() {
+                    let mut nodes = std::iter::once(&p.leaf).chain(&p.leaf.contents).map(|leaf| {
+                        let id = snapshot::uuid(&leaf.item, "item_instance_id")?;
+                        let mut value = serde_json::to_value(leaf).map_err(|_| DurabilityError::InvalidStoredState)?;
+                        value.as_object_mut().ok_or(DurabilityError::InvalidStoredState)?.remove("contents");
+                        Ok((id,value))
+                    }).collect::<Result<Vec<_>,DurabilityError>>()?;
+                    nodes.sort_unstable_by_key(|(id,_)| *id);
+                    let snapshots: Vec<_> = nodes.iter().map(|(_,value)| value).collect();
+                    let contents = serde_json::to_vec(&snapshots).map_err(|_| DurabilityError::InvalidStoredState)?;
+                    party["contents_count"] = json!(nodes.len());
+                    party["contents_sha256"] = json!(Sha256::digest(&contents).to_vec());
+                }
+                Ok(party)
             })
             .collect::<Result<Vec<_>, DurabilityError>>()?;
         serde_json::to_vec(&json!({

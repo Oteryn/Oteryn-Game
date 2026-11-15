@@ -29,18 +29,19 @@ fn player_trade_postgres_offer_waits_for_busy_holder() -> TestResult {
 }
 #[test]
 fn player_trade_postgres_counter_look_and_accept_retain_foreground_priority() -> TestResult {
-    run_scenario_with_read_priority(false, false, true)
+    run_scenario_with_read_priority(false, false, true, false)
 }
 pub(super) fn run_scenario(inspection: bool) -> TestResult {
     run_scenario_with_offer_contention(inspection, false)
 }
 fn run_scenario_with_offer_contention(inspection: bool, offer_contention: bool) -> TestResult {
-    run_scenario_with_read_priority(inspection, offer_contention, false)
+    run_scenario_with_read_priority(inspection, offer_contention, false, false)
 }
 fn run_scenario_with_read_priority(
     inspection: bool,
     offer_contention: bool,
     read_priority: bool,
+    contents: bool,
 ) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
@@ -52,7 +53,7 @@ fn run_scenario_with_read_priority(
                 let h = Harness::create(admin, "player_trade_wire", true)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, inspection, offer_contention, read_priority)
+                let result = scenario(&h, inspection, offer_contention, read_priority, contents)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -69,7 +70,18 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
         .execute(&mut *tx)
         .await?;
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(character.as_slice()).execute(&mut *tx).await?;
-    for (item, definition, quantity) in [(bag, "oteryn:item.tibia.i2854", 1), (leaf, key, 3)] {
+    for (item, definition, quantity) in [
+        (bag, "oteryn:item.tibia.i2854", 1),
+        (
+            leaf,
+            key,
+            if key == "oteryn:item.tibia.i2854" {
+                1
+            } else {
+                3
+            },
+        ),
+    ] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($5,'hex')::uuid)")
             .bind(id(item).as_slice()).bind(id(WORLD).as_slice()).bind(definition).bind(quantity).bind(id(120).as_slice()).execute(&mut *tx).await?;
     }
@@ -85,6 +97,7 @@ async fn scenario(
     inspection: bool,
     offer_contention: bool,
     read_priority: bool,
+    contents: bool,
 ) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
@@ -106,7 +119,11 @@ async fn scenario(
         *currents[0].commit().character_id().as_bytes(),
         90,
         91,
-        "oteryn:item.tibia.i3607",
+        if contents {
+            "oteryn:item.tibia.i2854"
+        } else {
+            "oteryn:item.tibia.i3607"
+        },
     )
     .await?;
     seed(
@@ -114,10 +131,32 @@ async fn scenario(
         *currents[1].commit().character_id().as_bytes(),
         92,
         93,
-        "oteryn:item.tibia.i3604",
+        if contents {
+            "oteryn:item.tibia.i2854"
+        } else {
+            "oteryn:item.tibia.i3604"
+        },
     )
     .await?;
 
+    if contents {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        for root in [91u8, 93] {
+            for (child, parent, key, quantity) in [
+                (root + 40, root, "oteryn:item.tibia.i2854", 1i64),
+                (root + 60, root + 40, "oteryn:item.tibia.i3607", 3),
+            ] {
+                sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',$4,1,encode($1,'hex')::uuid)")
+                    .bind(id(child).as_slice()).bind(id(WORLD).as_slice()).bind(key).bind(quantity).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)")
+                    .bind(id(child).as_slice()).bind(id(WORLD).as_slice()).bind(id(parent).as_slice()).execute(&mut *tx).await?;
+            }
+        }
+        tx.commit().await?;
+    }
     if inspection {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
@@ -299,7 +338,9 @@ async fn scenario(
         assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
-            if inspection {
+            if contents {
+                &[3, 4, 6, 21, 60, 132, 501]
+            } else if inspection {
                 &[4, 6, 21, 60, 132]
             } else {
                 &[4, 6, 21, 60]
@@ -328,8 +369,10 @@ async fn scenario(
     );
     let driving = async {
         let mut a = Peer::open(client_a).await?;
+        a.details = contents;
         start_b.send(()).map_err(|_| "start second session")?;
         let mut b = Peer::open(client_b).await?;
+        b.details = contents;
 
         let offer_a = Intent::Offer {
             partner: targets[1],
@@ -372,6 +415,34 @@ async fn scenario(
         assert!(state.message.is_empty());
         assert!(state.own.is_some() && state.counter.is_some());
         let trade_id = state.trade_id.ok_or("trade id")?;
+        if contents {
+            assert!(
+                first.contents[1].is_empty(),
+                "counter tree stays undisclosed"
+            );
+            assert_eq!(state.contents.each_ref().map(Vec::len), [3, 3]);
+            assert_eq!(
+                state.contents[0]
+                    .iter()
+                    .map(|node| node.parent)
+                    .collect::<Vec<_>>(),
+                vec![None, Some(0), Some(1)]
+            );
+            a.trade_state(&state).await?;
+            let payload = oteryn_protocol_oteryn::inspection::encode_request(
+                oteryn_protocol_oteryn::inspection::Request::Trade {
+                    counter: true,
+                    index: 2,
+                },
+            )
+            .map_err(debug)?;
+            let result = a.command(153, &payload).await?;
+            let reply = oteryn_protocol_oteryn::inspection::decode_reply(&result).map_err(debug)?;
+            assert_eq!(reply.status, 1);
+            assert_eq!(reply.items[0].count, 3);
+            assert!(!reply.items[0].name.is_empty());
+        }
+
         if inspection {
             use oteryn_protocol_oteryn::inspection::{self as inspect, Request};
             let reply = a
@@ -633,10 +704,26 @@ async fn scenario(
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
         let expected_a = index
-            .definition_ref("Item", "oteryn:item.tibia.i3604", "definition-r1")
+            .definition_ref(
+                "Item",
+                if contents {
+                    "oteryn:item.tibia.i2854"
+                } else {
+                    "oteryn:item.tibia.i3604"
+                },
+                "definition-r1",
+            )
             .ok_or("a item")?;
         let expected_b = index
-            .definition_ref("Item", "oteryn:item.tibia.i3607", "definition-r1")
+            .definition_ref(
+                "Item",
+                if contents {
+                    "oteryn:item.tibia.i2854"
+                } else {
+                    "oteryn:item.tibia.i3607"
+                },
+                "definition-r1",
+            )
             .ok_or("b item")?;
         a.inventory(expected_a).await?;
         b.inventory(expected_b).await?;
@@ -907,7 +994,10 @@ async fn scenario(
             .ok_or("restart backpack")?;
         assert_eq!(backpack.entries.len(), 1);
         assert_eq!(backpack.entries[0].item.item_instance_id, id(expected));
-        assert_eq!(backpack.entries[0].item.quantity, 3);
+        assert_eq!(
+            backpack.entries[0].item.quantity,
+            if contents { 1 } else { 3 }
+        );
     }
     assert_eq!(sqlx::query_scalar::<_,i64>("SELECT count(*) FROM game_item_audit_outbox a JOIN game_player_trades t ON t.event_id=a.event_id").fetch_one(&h.pool).await?,1);
     Ok(())
@@ -923,11 +1013,20 @@ async fn read_priority_case(
     use crate::gameplay_transport::session_ingress::SessionCommandStream;
     for session in admitted {
         let expected = crate::gameplay_transport::character_gameplay_fence::current(
-            owner, session.game_session_id, true,
-        ).await.ok_or("separate canonical fence reads")?;
-        let batched = owner.current_quest_fence_durable(session.game_session_id).await?
+            owner,
+            session.game_session_id,
+            true,
+        )
+        .await
+        .ok_or("separate canonical fence reads")?;
+        let batched = owner
+            .current_quest_fence_durable(session.game_session_id)
+            .await?
             .ok_or("batched canonical fence")?;
-        assert_eq!(batched, expected, "batch preserves every current generation and revision");
+        assert_eq!(
+            batched, expected,
+            "batch preserves every current generation and revision"
+        );
         owner.trade_open(*session).await.ok_or("open trade owner")?;
     }
     let mut streams = [
@@ -1096,12 +1195,17 @@ async fn trade_command_handoff(
         let _observation = root.foreground_demand()?;
         let background = root.clone();
         root.spawn_task(async move {
-            assert!(matches!(background.try_issue_semantic_pass(),
-                Err(crate::durability::DurabilityError::RootUnavailable)));
+            assert!(matches!(
+                background.try_issue_semantic_pass(),
+                Err(crate::durability::DurabilityError::RootUnavailable)
+            ));
             Ok::<(), crate::durability::DurabilityError>(())
-        }).await.map_err(debug)??;
+        })
+        .await
+        .map_err(debug)??;
         Ok::<(), Box<dyn std::error::Error>>(())
-    }).await?;
+    })
+    .await?;
     let result = command.await?;
     root.try_issue_background_semantic_pass()?
         .run(|_, _| Box::pin(async { Ok(()) }))
@@ -1117,6 +1221,7 @@ struct Peer {
     last_inventory: Option<item_view::CharacterInventory>,
     last_trade: Option<Vec<u8>>,
     trade_revision: u64,
+    details: bool,
     sequence: u64,
 }
 impl Drop for Peer {
@@ -1165,6 +1270,7 @@ impl Peer {
             last_inventory: None,
             last_trade: None,
             trade_revision: 1,
+            details: false,
             sequence: 0,
         };
         loop {
@@ -1254,10 +1360,24 @@ impl Peer {
         Ok(r)
     }
     async fn trade_state(&mut self, state: &wire::State) -> TestResult {
-        let expected = wire::encode_state(state).map_err(debug)?;
+        let expected = wire::encode_state_for(state, self.details).map_err(debug)?;
         while self.last_trade.as_ref() != Some(&expected) {
             let frame = self.read().await?;
             self.capture(&frame)?;
+        }
+        if self.details {
+            let decoded =
+                wire::decode_state_for(self.last_trade.as_deref().ok_or("trade bytes")?, true)
+                    .map_err(debug)?;
+            let panel = oteryn_dev_client::client_ui::player_trade::PlayerTradePanel {
+                selected: true,
+                state: Some(decoded),
+                ..Default::default()
+            };
+            assert_eq!(
+                panel.state.as_ref().ok_or("retained trade UI")?.contents,
+                state.contents
+            );
         }
         Ok(())
     }
@@ -1272,4 +1392,9 @@ impl Peer {
         }
         Ok(())
     }
+}
+
+#[test]
+fn player_trade_postgres_frozen_nested_contents_wire_inspection_and_swap() -> TestResult {
+    run_scenario_with_read_priority(false, false, false, true)
 }

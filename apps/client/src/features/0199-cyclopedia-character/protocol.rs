@@ -1,6 +1,13 @@
 use crate::play::{Outbox, mailbox::lock};
 use oteryn_client_runtime::raw_feature::GatedCommandResult;
 impl Outbox {
+    pub(in crate::play) fn blessings_details_initialize(&self, selected: bool) {
+        lock(&self.0)
+            .cyclopedia_character
+            .blessings
+            .details_selected = selected;
+    }
+
     pub(in crate::play) fn cyclopedia_character_initialize(&self, selected: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.cyclopedia_character.selected = selected;
@@ -38,6 +45,9 @@ impl Outbox {
     pub(crate) fn bevy_cyclopedia_initialize(&self, selected: bool, vocation: bool, deaths: bool) {
         self.cyclopedia_character_initialize(selected);
         self.cyclopedia_character_extensions(vocation, deaths);
+    }
+    pub(crate) fn bevy_blessings_details_initialize(&self) {
+        self.blessings_details_initialize(true);
     }
     pub(crate) fn bevy_cyclopedia_result(&self, result: &GatedCommandResult) {
         self.cyclopedia_character_result(result);

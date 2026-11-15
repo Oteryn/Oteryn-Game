@@ -36,6 +36,7 @@ fn fixture(counted: bool, actor: bool) -> Result<Fixture, Box<dyn std::error::Er
         floor: 0,
     };
     let ground = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [1; 16],
@@ -52,6 +53,7 @@ fn fixture(counted: bool, actor: bool) -> Result<Fixture, Box<dyn std::error::Er
     let mut entities = vec![ground];
     if actor {
         entities.push(WorldSpatialEntity {
+            motion: None,
             display_name: None,
             entity: EntityRef {
                 identity: [2; 16],

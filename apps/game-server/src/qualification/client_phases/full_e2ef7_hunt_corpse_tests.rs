@@ -11,6 +11,7 @@ fn position(x: i32) -> ActorPosition {
 
 fn creature() -> spatial::WorldSpatialEntity {
     spatial::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: spatial::EntityKind::Creature,
         entity: spatial::EntityRef {
@@ -28,6 +29,7 @@ fn creature() -> spatial::WorldSpatialEntity {
 
 fn corpse(marker: u8, x: i32) -> spatial::WorldSpatialEntity {
     spatial::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: spatial::EntityKind::Corpse,
         entity: spatial::EntityRef {

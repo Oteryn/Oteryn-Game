@@ -408,5 +408,7 @@
  "Dust (Premium)": "Stoft (Premium)",
  "Elite tasks: monsters deal +100% damage and take -50% damage.\n": "Elituppdrag: monster orsakar +100% skada och tar -50% skada.\n",
  "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token": "Prisjakt: status {}, svårighet {}, omlottningspolletter {} — varje omlottning kostar 1 pollett",
- "Reroll bounty (1 token)": "Lotta om prisjakt (1 pollett)"
+ "Reroll bounty (1 token)": "Lotta om prisjakt (1 pollett)",
+ "{:?} {} × {} — {} gold / offer — carried {} — limit {}": "{:?} {} × {} — {} guld / erbjudande — bär {} — gräns {}",
+ "Amount exceeds this offer's server limit": "Antalet överskrider serverns gräns för erbjudandet"
 }

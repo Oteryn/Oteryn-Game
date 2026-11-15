@@ -292,6 +292,8 @@ const INVENTORY: &[Entry] = &[
             // digest or the source artifact digest itself and proves the bed head and House
             // from that same map (`bed_sleep_production.rs`).
             ("gameplay_transport/composed_admission/objects.rs", 2),
+            // Actor-motion forecasts use the same source-versus-bundle door selection.
+            ("gameplay_transport/composed_admission/world_map.rs", 1),
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
@@ -910,6 +912,8 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
+    // Actor-motion riding uses the activated source room for appearance and movement.
+    ("gameplay_transport/postgres_tests/actor_motion.rs", 1),
     // Atelier resource fixtures bind a real Bundle with qualified room None.
     ("gameplay_transport/postgres_tests/atelier/wire_paid.rs", 1),
     // Boss PG fixtures explicitly bind their activated source and Instance rooms.

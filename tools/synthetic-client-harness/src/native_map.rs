@@ -241,6 +241,7 @@ fn native_live_appearance_snapshot_reaches_visible_scene()
                         tiles: Vec::new(),
                     };
                     let entity = oteryn_session::WorldSpatialEntity {
+                        motion: None,
                         display_name: Some(
                             oteryn_session::EntityDisplayName::new("Live Rat")
                                 .map_err(|e| format!("{e:?}"))?,

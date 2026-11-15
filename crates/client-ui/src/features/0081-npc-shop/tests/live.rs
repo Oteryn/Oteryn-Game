@@ -16,6 +16,7 @@ fn quote_identity_survives_display_order_but_not_revision() -> Result<(), String
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 9)),
         offers: vec![offer],
     });
@@ -34,6 +35,7 @@ fn quote_identity_survives_display_order_but_not_revision() -> Result<(), String
     shop.result(NpcIntentDisposition::Stale);
     assert!(shop.text().contains("Stale"));
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 10)),
         offers: vec![offer],
     });
@@ -66,6 +68,7 @@ fn quote_lookup_uses_item_side_count_and_price_not_a_display_position() -> Resul
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((npc, 7)),
         offers: vec![first, second],
     });
@@ -116,6 +119,7 @@ fn trade_rejects_quantity_101_before_sending() {
         ..Default::default()
     };
     shop.apply_window(npc_service::NpcTradeWindow {
+        details: Vec::new(),
         open: Some((
             EntityRef {
                 identity: [2; 16],

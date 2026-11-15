@@ -5,6 +5,7 @@ fn interface_scale_projects_panels_and_live_labels_without_zooming_the_map()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{fit_ui_scale, scale_ui_rect};
     let entity = WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [9; 16],
             generation: 1,
@@ -57,6 +58,7 @@ fn tooltips_use_visible_server_names_delay_and_generation() -> Result<(), Box<dy
     use crate::play::HoverTooltip;
     use std::time::{Duration, Instant};
     let entity = WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [7; 16],
             generation: 1,

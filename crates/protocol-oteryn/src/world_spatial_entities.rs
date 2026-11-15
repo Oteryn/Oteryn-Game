@@ -61,6 +61,7 @@ pub type EntityLights = BTreeMap<[u8; ENTITY_IDENTITY_BYTES], EntityLight>;
 /// fields 11-12 under capability 19.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct EntityFields {
+    pub actor_motion: bool,
     pub display_names: bool,
     pub item_handles: bool,
     pub light: bool,
@@ -70,6 +71,8 @@ pub struct EntityFields {
 impl EntityFields {
     pub fn selected(selected_capabilities: &[u32]) -> Self {
         Self {
+            actor_motion: selected_capabilities
+                .contains(&crate::actor_motion::CAPABILITY_ACTOR_MOTION_V1),
             display_names: selected_capabilities
                 .contains(&crate::entity_names::CAPABILITY_WORLD_SPATIAL_ENTITIES_V2),
             item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
@@ -81,6 +84,7 @@ impl EntityFields {
 
     const fn handles(item_handles: bool) -> Self {
         Self {
+            actor_motion: false,
             display_names: false,
             item_handles,
             light: false,
@@ -124,6 +128,7 @@ pub enum EntityDetail {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WorldSpatialEntity {
+    pub motion: Option<crate::actor_motion::ActorMotion>,
     /// Present on live actors only when capability WORLD_SPATIAL_ENTITIES_V2 was selected.
     pub display_name: Option<crate::entity_names::EntityDisplayName>,
     pub kind: EntityKind,
@@ -276,6 +281,15 @@ fn encode_entity(
     } else if fields.display_names && entity.display_name.is_some() {
         return Err(WorldSpatialError::Malformed);
     }
+    if fields.actor_motion && !actor_kind(entity.kind) && entity.motion.is_some() {
+        return Err(WorldSpatialError::Malformed);
+    }
+    if fields.actor_motion
+        && actor_kind(entity.kind)
+        && let Some(motion) = entity.motion
+    {
+        push_message(&mut output, 14, &motion.encode()?);
+    }
     if output.len() > entry_limit(fields) {
         return Err(WorldSpatialError::LimitExceeded);
     }
@@ -284,6 +298,7 @@ fn encode_entity(
 
 fn entry_limit(fields: EntityFields) -> usize {
     MAX_ENTITY_ENTRY_BYTES
+        + if fields.actor_motion { 50 } else { 0 }
         + if fields.display_names {
             crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES + 2
         } else {
@@ -345,6 +360,7 @@ fn decode_entity(
     let (mut item, mut quantity, mut handle) = (None, None, None);
     let (mut light_level, mut light_color) = (None, None);
     let mut display_name = None;
+    let mut motion = None;
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => once(&mut kind, varint_u32(input, &mut cursor)?)?,
@@ -365,6 +381,10 @@ fn decode_entity(
             0x50 if fields.item_handles => once(&mut handle, read_varint(input, &mut cursor)?)?,
             0x58 if fields.light => once(&mut light_level, varint_u32(input, &mut cursor)?)?,
             0x60 if fields.light => once(&mut light_color, varint_u32(input, &mut cursor)?)?,
+            0x72 if fields.actor_motion => once(
+                &mut motion,
+                crate::actor_motion::ActorMotion::decode(read_bytes(input, &mut cursor)?)?,
+            )?,
             0x6a if fields.display_names => {
                 let bytes = read_bytes(input, &mut cursor)?;
                 if bytes.len() > crate::entity_names::MAX_ENTITY_DISPLAY_NAME_BYTES {
@@ -401,6 +421,9 @@ fn decode_entity(
     if fields.display_names && actor_kind(kind) != display_name.is_some() {
         return Err(WorldSpatialError::Malformed);
     }
+    if !actor_kind(kind) && motion.is_some() {
+        return Err(WorldSpatialError::Malformed);
+    }
     let detail = if actor_kind(kind) {
         if item.is_some() || quantity.is_some() || handle.is_some() {
             return Err(WorldSpatialError::Malformed);
@@ -434,6 +457,7 @@ fn decode_entity(
         }
     };
     let entity = WorldSpatialEntity {
+        motion,
         display_name,
         kind,
         entity: EntityRef {
@@ -968,6 +992,7 @@ mod tests {
 
     fn actor(kind: EntityKind, n: u32) -> WorldSpatialEntity {
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind,
             entity: EntityRef {
@@ -985,6 +1010,7 @@ mod tests {
 
     fn object(kind: EntityKind, n: u32) -> WorldSpatialEntity {
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind,
             entity: id(n),
@@ -1135,6 +1161,7 @@ mod tests {
         // WORLDINT0-RL-20: the 6 light bytes keep each entry within 128 B and the payload within
         // the decision 4.4 bound.
         let fields = EntityFields {
+            actor_motion: false,
             display_names: false,
             item_handles: true,
             light: true,
@@ -1565,6 +1592,7 @@ mod tests {
     }
 
     const LIT: EntityFields = EntityFields {
+        actor_motion: false,
         display_names: false,
         item_handles: false,
         light: true,

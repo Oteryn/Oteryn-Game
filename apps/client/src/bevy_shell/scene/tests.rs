@@ -73,6 +73,7 @@ fn real_edge_labels_reuse_dense_projected_entities() -> TestResult {
     for (identity, x) in [(1, right), (2, origin.x)] {
         appearances.push(VisibleAppearance {
             entity: WorldSpatialEntity {
+                motion: None,
                 entity: EntityRef {
                     identity: [identity; 16],
                     generation: 1,
@@ -681,6 +682,7 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
         generation: 1,
     };
     let actor = WorldSpatialEntity {
+        motion: None,
         entity,
         kind: EntityKind::Npc,
         position,

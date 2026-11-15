@@ -11,6 +11,7 @@ fn clxa_character_light_reaches_native_scene_and_expires_on_update()
     let entry = VisibleAppearance {
         forge_stacks: None,
         entity: oteryn_session::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: EntityKind::Player,
             entity: EntityRef {
@@ -129,6 +130,7 @@ fn local_player_gets_minimum_light_without_reported_personal_light() -> Result<(
     view.scene.set_own_identity([1;16]);
     let own = VisibleAppearance {
         entity: WorldSpatialEntity {
+            motion: None,
             entity: EntityRef { identity: [1;16], generation: 1 },
             position: ActorPosition { x: 0, y: 0, floor: 7 },
             kind: EntityKind::Player, display_name: None,

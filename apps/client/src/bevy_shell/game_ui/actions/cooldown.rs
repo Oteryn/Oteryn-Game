@@ -68,6 +68,9 @@ pub(super) fn project(
                     icon.remaining_ms as f64 / 1000.
                 )
             };
+            if !icon.tooltip.is_empty() {
+                hint.0.push_str(&format!("\n{}", icon.tooltip));
+            }
         }
     }
     for icon in &icons {

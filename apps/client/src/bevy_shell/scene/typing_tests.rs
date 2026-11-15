@@ -12,6 +12,7 @@ fn typing_app() -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>
     let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
     view.set_presentations(vec![VisibleAppearance {
         entity: WorldSpatialEntity {
+            motion: None,
             entity: EntityRef {
                 identity: [7; 16],
                 generation: 9,

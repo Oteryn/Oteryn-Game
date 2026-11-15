@@ -71,6 +71,7 @@ fn native_follow_uses_the_selected_generation_and_decodes_the_reply()
         generation: 7,
     };
     let entity = oteryn_session::WorldSpatialEntity {
+        motion: None,
         display_name: None,
         kind: oteryn_session::EntityKind::Player,
         entity: target,

@@ -37,6 +37,7 @@ pub use oteryn_protocol_oteryn::achievement_notices;
 mod activity_handoff;
 /// Server-committed shared activity scope receipts.
 pub use oteryn_protocol_oteryn::activity_scope;
+pub use oteryn_protocol_oteryn::actor_motion;
 pub use oteryn_protocol_oteryn::analyser_catalogue;
 pub use oteryn_protocol_oteryn::analyser_party;
 pub use oteryn_protocol_oteryn::battle_metadata;
@@ -63,6 +64,7 @@ pub use gated_command::world_context;
 pub use oteryn_protocol_oteryn::highscores;
 /// The own Platform sanction record (capability 497).
 pub use oteryn_protocol_oteryn::sanction_record;
+pub use oteryn_protocol_oteryn::server_info;
 pub mod container_tree;
 mod hotkey_equip_transport;
 #[path = "features/0004-item-view-move/protocol.rs"]
@@ -177,6 +179,7 @@ mod server_save_countdown;
 mod tutorial_notices;
 pub use oteryn_protocol_oteryn::server_save_countdown::ServerSaveCountdown;
 pub use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+pub use oteryn_protocol_oteryn::tutorial_vocation;
 pub use oteryn_protocol_oteryn::{
     arena, boss_difficulty, boss_rewards, character_info, cyclopedia_character, cyclopedia_tracker,
     premium_overview, weapon_proficiency, weapon_proficiency_state, zones_nologout::ServerMessage,

@@ -299,6 +299,7 @@ fn pending_look_does_not_consume_primary_click() -> Result<(), BatchError> {
     assert!(matches!(view.inputs.front(), Some(Input::TargetWalk(_))));
     view.inputs.pop_front();
     let creature = WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [7; 16],

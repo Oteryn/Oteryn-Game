@@ -33,7 +33,7 @@ pub use crate::monster_combat_lane::native_invisibility::{
 pub use crate::monster_combat_lane::native_invisibility::{SelfInvisibleSource, SelfSpeedSource};
 
 #[path = "actor_movement.rs"]
-mod actor_movement;
+pub(super) mod actor_movement;
 #[path = "familiar_cast.rs"]
 mod familiar_cast;
 #[path = "actor_spell/house_admission.rs"]

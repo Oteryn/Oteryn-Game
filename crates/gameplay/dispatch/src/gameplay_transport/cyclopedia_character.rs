@@ -74,6 +74,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 wire::encode_badges(&badges).map_err(|_| ())
             }
             wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                if payload.first() == Some(&wire::blessings_dialog::SELECTOR) {
+                    if payload != [wire::blessings_dialog::SELECTOR]
+                        || !admitted
+                            .continuity
+                            .selected_capabilities
+                            .contains(wire::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1)
+                    {
+                        return Err(());
+                    }
+                    let current = super::character_gameplay_fence::current(
+                        self,
+                        admitted.game_session_id,
+                        false,
+                    )
+                    .await
+                    .ok_or(())?;
+                    if current.connection_generation.get()
+                        != admitted.continuity.connection_generation
+                        || current.character_id != fence.character_id
+                    {
+                        return Err(());
+                    }
+                    let premium = self
+                        .session_premium_gate(admitted.game_session_id)
+                        .await
+                        .premium_current();
+                    return self
+                        .root
+                        .read_blessings_dialog(self.character, self.holder, current, premium)
+                        .await
+                        .map_err(|_| ())?
+                        .encode()
+                        .ok_or(());
+                }
                 if payload.first() == Some(&wire::protection::SELECTOR) {
                     if payload != [wire::protection::SELECTOR] { return Err(()); }
                     let current = super::character_gameplay_fence::current(self, admitted.game_session_id, false).await.ok_or(())?;

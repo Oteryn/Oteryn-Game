@@ -96,6 +96,7 @@ pub(super) async fn open(
         ),
     );
     outcome.window = Some(NpcTradeWindow {
+        details: Vec::new(),
         open: Some((intent.npc_actor, window.revision)),
         offers: window.shown.clone(),
     });
@@ -122,6 +123,7 @@ pub(in crate::gameplay_transport) fn resolve_trade(
     key: &str,
     intent: &NpcTradeIntent,
     items: &ItemDefinitionIndex,
+    maximum: u32,
 ) -> Result<NpcTradeOffer, Box<NpcTradeRefusal>> {
     let rejected = || Box::new(NpcTradeRefusal::only(NpcIntentDisposition::Rejected));
     let Ok(sessions) = owner.sessions.lock() else {
@@ -139,7 +141,7 @@ pub(in crate::gameplay_transport) fn resolve_trade(
     if hireling.context.2 != key
         || hireling.npc != intent.npc_actor
         || !catalogue::allowed(window.category, hireling.snapshot.skills)
-        || !(1..=MAX_TRADE_QUANTITY).contains(&intent.quantity)
+        || !(1..=maximum).contains(&intent.quantity)
     {
         return Err(rejected());
     }
@@ -151,6 +153,7 @@ pub(in crate::gameplay_transport) fn resolve_trade(
             update: NpcUpdate {
                 conversation: None,
                 window: Some(NpcTradeWindow {
+                    details: Vec::new(),
                     open: Some((intent.npc_actor, fresh.revision)),
                     offers: fresh.shown.clone(),
                 }),

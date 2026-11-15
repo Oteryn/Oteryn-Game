@@ -39,6 +39,11 @@ impl Outbox {
         mailbox.dialogue_events(&events);
         mailbox.npc_shop_events(&events);
         for event in &events {
+            if let SessionEvent::GatedSnapshotReplaced(delta) = event
+                && delta.value.domain_id == 1
+            {
+                mailbox.pushed.motion_reset = true;
+            }
             if let SessionEvent::ContainerViews(update) = event {
                 super::super::feature_0230_browse_field::protocol::replace_views(
                     &mut mailbox.browse_field,
@@ -136,6 +141,8 @@ impl Outbox {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -154,6 +161,7 @@ impl Outbox {
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.sanctions = Default::default();
+        mailbox.tutorial_vocation = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
@@ -196,6 +204,8 @@ impl Outbox {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -214,6 +224,7 @@ impl Outbox {
         mailbox.highscores = Default::default();
         mailbox.highscores_shutdown = true;
         mailbox.sanctions = Default::default();
+        mailbox.tutorial_vocation = Default::default();
         mailbox.chat.guild = Default::default();
         mailbox.chat.guild_selected = false;
         mailbox.chat.guild_open = false;
@@ -353,6 +364,8 @@ impl Drop for PlayLink {
         mailbox.cast_chat = Default::default();
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
+        mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();

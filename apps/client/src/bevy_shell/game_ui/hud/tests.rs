@@ -13,6 +13,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn row(generation: u64) -> WorldSpatialEntity {
     WorldSpatialEntity {
+        motion: None,
         display_name: None,
         entity: EntityRef {
             identity: [2; 16],

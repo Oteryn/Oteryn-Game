@@ -24,12 +24,14 @@ enum Kind {
     Addon(u8),
     Colour(usize, usize),
     Mount(String),
+    Riding,
     Ok,
     Close,
 }
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    riding: Option<bool>,
     search: String,
     dirty: bool,
     playback: animation::Playback,
@@ -101,7 +103,7 @@ fn edit(panel: &mut Panel, kind: &Kind) -> bool {
             panel.fields[3] = colours.join(",");
             true
         }
-        Kind::Preview(_) | Kind::Ok | Kind::Close => false,
+        Kind::Preview(_) | Kind::Ok | Kind::Close | Kind::Riding => false,
     }
 }
 fn activate(
@@ -171,6 +173,10 @@ fn cancel(link: &crate::play::PlayLink) {
     link.appearance_close();
 }
 fn send(link: &crate::play::PlayLink, kind: &Kind) {
+    if matches!(kind, Kind::Riding) {
+        link.mount_request();
+        return;
+    }
     let mut panel = link.appearance_panel();
     if panel.pending {
         return;
@@ -254,6 +260,9 @@ fn project(
         return;
     }
     let generation = owner.generation();
+    let riding = play.link.riding();
+    state.dirty |= state.riding != riding;
+    state.riding = riding;
     if !state.dirty && state.rendered.as_ref() == Some(&(generation, panel.clone())) {
         return;
     }
@@ -364,6 +373,16 @@ fn project(
             Kind::Mount(String::new()),
             "No mount",
         );
+        if let Some(riding) = play.link.riding() {
+            button(
+                &mut commands,
+                &skin,
+                root,
+                generation,
+                Kind::Riding,
+                if riding { "Mount: on" } else { "Mount: off" },
+            );
+        }
         for key in catalogue
             .mounts
             .iter()

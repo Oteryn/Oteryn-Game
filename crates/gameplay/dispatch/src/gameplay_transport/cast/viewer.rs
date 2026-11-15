@@ -322,6 +322,7 @@ mod tests {
             floor: 7,
         };
         let entity = world_spatial::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: world_spatial::EntityKind::Player,
             entity: world_spatial::EntityRef {
@@ -489,6 +490,7 @@ mod tests {
             floor: -7,
         };
         let entity = |id: u8| world_spatial::WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind: world_spatial::EntityKind::Player,
             entity: world_spatial::EntityRef {

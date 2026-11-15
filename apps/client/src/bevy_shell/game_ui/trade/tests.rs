@@ -483,3 +483,67 @@ fn labelled_offer_inspection_routes_each_side_and_displays_server_description() 
     }
     Ok(())
 }
+
+#[test]
+fn trade_contents_decode_render_and_indexed_inspection_use_the_retained_snapshot() -> TestResult {
+    let (mut app, mut commands, outbox) = app()?;
+    let mut state = panel().state.ok_or("state")?;
+    let root = state.own.ok_or("own")?;
+    state.contents[0] = vec![
+        player_trade::ContentsItem {
+            item: root,
+            parent: None,
+            name: "backpack".into(),
+        },
+        player_trade::ContentsItem {
+            item: player_trade::Offer {
+                definition: 42,
+                count: 7,
+                sub_type: 0,
+            },
+            parent: Some(0),
+            name: "fish".into(),
+        },
+    ];
+    let payload =
+        player_trade::encode_state_for(&state, true).map_err(|error| format!("{error:?}"))?;
+    let state =
+        player_trade::decode_state_for(&payload, true).map_err(|error| format!("{error:?}"))?;
+    outbox.push(vec![oteryn_session::SessionEvent::PlayerTrade(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: state,
+        },
+    )]);
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("fish ×7"))
+    );
+    let child = control(&mut app, Kind::Inspect(false, 1))?;
+    app.world_mut().trigger(Activate { entity: child });
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("inspection command absent".into());
+    };
+    assert_eq!(command.capability, 132);
+    assert_eq!(
+        oteryn_client_ui::inspection::decode_request(&command.payload)
+            .map_err(|error| format!("{error:?}"))?,
+        oteryn_client_ui::inspection::Request::Trade {
+            counter: false,
+            index: 1
+        }
+    );
+    Ok(())
+}

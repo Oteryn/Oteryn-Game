@@ -15,6 +15,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.spell_bar_initialize(session.feature_snapshot(20));
     outbox.bar_item_cooldowns_initialize(session.feature_selected(463));
     outbox.appearance_initialize(session);
+    outbox.actor_motion_initialize(session.feature_selected(502));
     outbox.equipment_initialize(session.equipment_selected());
     outbox.world_context_initialize(session.feature_selected(28), session.feature_selected(11));
     outbox.targeting_initialize(session.feature_selected(15));
@@ -51,6 +52,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.potion_durations_initialize(session.feature_selected(381));
     outbox.death_protection_initialize(session.feature_selected(382));
     outbox.quest_initialize(session.quest_state());
+    outbox.server_info_initialize(session.feature_selected(500));
     outbox.task_board_initialize(session.task_board_selected());
     outbox.task_board_weekly_results_initialize(session.feature_selected(474));
     outbox.stash_initialize(session.stash_selected());
@@ -97,6 +99,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
     outbox.chat_initialize(session.feature_selected(oteryn_session::CAPABILITY_CHAT_V1));
     outbox.chat_party_room_initialize(session.feature_selected(240));
     outbox.cyclopedia_character_initialize(session.feature_selected(199));
+    outbox.blessings_details_initialize(session.feature_selected(503));
     outbox.cyclopedia_character_extensions(
         session.feature_selected(
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_CHARACTER_VOCATION_V1,
@@ -112,6 +115,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
         session.server_mechanic_selected(9),
         session.feature_selected(498),
     );
+    outbox.tutorial_vocation_initialize(session.feature_selected(504));
     outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));

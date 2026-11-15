@@ -30,5 +30,13 @@ message PlayerTradeStateV1 {
   uint32 phase = 7; // OFFERED=1, READY=2, TRANSFERRING=3, CLOSED=4
   uint32 reason = 8; // open=0, COMPLETED=1, CANCELLED=2, NO_ROOM=3, STALE=4, REJECTED=5
   string message = 9; // At most 256 UTF-8 bytes.
-  string look = 10; // At most 4096 UTF-8 bytes; read-only leaf inspection.
+  string look = 10; // At most 4096 UTF-8 bytes; read-only root inspection.
+  repeated PlayerTradeContentsItemV1 own_contents = 11; // Capability 501 only.
+  repeated PlayerTradeContentsItemV1 counter_contents = 12; // Disclosed with counter.
+}
+
+message PlayerTradeContentsItemV1 {
+  PlayerTradeOfferV1 item = 1;
+  uint32 parent_plus_one = 2; // Zero only for index zero; parents precede children.
+  string name = 3; // 1..128 UTF-8 bytes, no NUL; up to 100 items per side.
 }

@@ -280,6 +280,7 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
         Some(encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?),
     )?;
     let actor = WorldSpatialEntity {
+        motion: None,
         entity: EntityRef {
             identity: [1; 16],
             generation: 1,

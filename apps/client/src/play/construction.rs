@@ -60,6 +60,7 @@ impl PlayView {
             map_floor: None,
             in_flight: false,
             walk: None,
+            prewalk: None,
             chord: Default::default(),
             inputs: VecDeque::new(),
             cursor_spell: None,

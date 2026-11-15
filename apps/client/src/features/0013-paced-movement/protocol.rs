@@ -1,8 +1,8 @@
 use crate::input::StepDir;
 use crate::play::PlayView;
-use oteryn_renderer::BatchError;
 use oteryn_client_simulation::movement::{DEFAULT_GROUND_SPEED, StepSpeedTable};
 use oteryn_client_simulation::walk::Glide;
+use oteryn_renderer::BatchError;
 use oteryn_session::{StepDirection, StepDisposition, StepOutcome};
 use std::time::{Duration, Instant};
 
@@ -56,6 +56,10 @@ impl PlayView {
         let now = Instant::now();
         let moved = outcome.disposition == StepDisposition::Moved;
         let previous = self.walk;
+        let prediction = self.prewalk.take();
+        if !moved && let Some((origin, _)) = prediction {
+            self.place(origin);
+        }
         if !moved {
             self.walk = None;
         }
@@ -69,12 +73,25 @@ impl PlayView {
                 } else {
                     Duration::from_millis(u64::from(outcome.step_wait_ms))
                 };
-                self.walk = Glide::new(from, self.own, duration).map(|glide| {
-                    let glide = previous.map_or(glide, |(old, start)| {
-                        glide.continuing(old, now.saturating_duration_since(start))
+                if let Some((origin, predicted)) = prediction {
+                    self.walk = (predicted == self.own)
+                        .then(|| {
+                            Glide::new(
+                                oteryn_renderer::TileCoord::new(origin.x, origin.y),
+                                predicted,
+                                duration,
+                            )
+                            .zip(previous.map(|(_, started)| started))
+                        })
+                        .flatten();
+                } else {
+                    self.walk = Glide::new(from, self.own, duration).map(|glide| {
+                        let glide = previous.map_or(glide, |(old, start)| {
+                            glide.continuing(old, now.saturating_duration_since(start))
+                        });
+                        (glide, now)
                     });
-                    (glide, now)
-                });
+                }
             }
         }
         if let Some(delta) = &outcome.world_object_overlay_delta {

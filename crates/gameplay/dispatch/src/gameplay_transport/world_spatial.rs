@@ -143,6 +143,7 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub motion: Option<oteryn_protocol_oteryn::actor_motion::ActorMotion>,
     pub display_name: Option<EntityDisplayName>,
     pub health_percent: u8,
     pub direction: StepDirection,
@@ -208,6 +209,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
         ),
     };
     WorldSpatialEntity {
+        motion: entity.motion,
         display_name: entity.display_name,
         kind,
         entity: EntityRef {
@@ -249,6 +251,7 @@ pub struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
     objects: bool,
+    motion: bool,
     light: bool,
     /// The light last sent for each shown lit entity.
     lights: EntityLights,
@@ -279,6 +282,10 @@ impl SessionVisibility {
     /// The same view that also shows lights when `light`, the session's capability 19.
     pub fn lit(self, light: bool) -> Self {
         Self { light, ..self }
+    }
+
+    pub(crate) fn with_motion(self, motion: bool) -> Self {
+        Self { motion, ..self }
     }
 
     /// The light last sent for each shown lit entity, for the encoders.
@@ -398,6 +405,11 @@ impl SessionVisibility {
         {
             return Err(WorldSpatialError::Malformed);
         }
+        if !self.motion {
+            for entity in &mut selected {
+                entity.motion = None;
+            }
+        }
         attach(&mut selected)?;
         Ok((query, selected))
     }
@@ -502,7 +514,10 @@ impl SessionVisibility {
                 (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
             let corpse_changed = matches!((&prior.detail, &entity.detail),
                 (EntityDetail::Object { item_definition_ref: before, .. }, EntityDetail::Object { item_definition_ref: after, .. }) if before != after);
-            if (health_changed || corpse_changed || prior.display_name != entity.display_name)
+            if (health_changed
+                || corpse_changed
+                || prior.display_name != entity.display_name
+                || prior.motion != entity.motion)
                 && !delta
                     .enter
                     .iter()
@@ -615,6 +630,7 @@ mod tests {
         let mut identity = [0_u8; ENTITY_IDENTITY_BYTES];
         identity[15] = n;
         WorldSpatialEntity {
+            motion: None,
             display_name: None,
             kind,
             entity: EntityRef {
@@ -854,6 +870,7 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            motion: None,
             display_name: None,
             health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,

@@ -8,6 +8,101 @@ const GOLDEN: &[u8] = include_bytes!(concat!(
 ));
 
 #[test]
+fn actor_motion_survives_real_session_join_and_visibility_dispatch() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(actor_motion_session_scenario)?
+        .join()
+        .map_err(|_| "actor motion session thread")?
+}
+
+fn actor_motion_session_scenario() -> Result<(), BoxError> {
+    block_on(async {
+        use oteryn_protocol_oteryn::{actor_motion::ActorMotion, world_spatial_entities as wire};
+        let (appearance, mut entity, _) = appearance_fixture::snapshot()?;
+        entity.motion = Some(ActorMotion {
+            prewalk_ms: [550; 8],
+            ..ActorMotion::default()
+        });
+        let fields = wire::EntityFields::selected(&[6, 13, 25, 502]);
+        let snapshot = wire::WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT_GENERATION,
+            actor_position: entity.position,
+            own_identity: OWN,
+            entities: vec![entity],
+        };
+        let spatial = (
+            2,
+            wire::encode_world_spatial_entities_snapshot_with_fields(
+                &snapshot,
+                fields,
+                &wire::EntityLights::new(),
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        );
+        let domain = (21, 1, 1, appearance.encode().map_err(|e| format!("{e:?}"))?);
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                CLIENT_SUPPORTED_CAPABILITIES,
+                &[6, 13, 25, 502],
+                &[],
+                spatial,
+                &[domain],
+            )
+            .await?;
+            let mut rest = Vec::new();
+            server.read_to_end(&mut rest).await?;
+            Ok::<_, BoxError>(())
+        });
+        let mut session = Session::admit(client, entity_admission()?).await?;
+        assert_eq!(
+            session.visible_appearances()[0].entity.motion,
+            entity.motion
+        );
+        for (revision, duration, mount) in [(6, 200, 139), (7, 0, 139), (8, 0, 0)] {
+            entity.position.x += 1;
+            entity.motion = Some(ActorMotion {
+                translation_revision: revision,
+                step_duration_ms: duration,
+                mount_look_type: mount,
+                prewalk_ms: [200; 8],
+            });
+            let delta = wire::WorldSpatialEntitiesDelta {
+                content_generation: CONTENT_GENERATION,
+                actor_position: entity.position,
+                enter: vec![],
+                update: vec![entity],
+                leave: vec![],
+            };
+            let bytes = wire::encode_world_spatial_entities_delta_with_fields(
+                &delta,
+                fields,
+                &wire::EntityLights::new(),
+            )
+            .map_err(|e| format!("{e:?}"))?;
+            let frame = encode_state_delta(1, 35 + revision, 1, revision - 1, revision, 2, &bytes)?;
+            session.apply_state_delta(
+                35 + revision,
+                oteryn_protocol_oteryn::decode_wire_envelope(&frame)?.payload(),
+            )?;
+            assert_eq!(
+                session.visible_appearances()[0].entity.motion,
+                entity.motion
+            );
+            assert_eq!(
+                session.visible_appearances()[0].entity.position,
+                entity.position
+            );
+        }
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn appearance_result_first_and_observation_first_converge_through_session_dispatch()
 -> Result<(), BoxError> {
     block_on(async {

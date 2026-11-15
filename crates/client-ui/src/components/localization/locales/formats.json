@@ -193,5 +193,6 @@
  "{name} has been excluded from the channel",
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
  "Weapon proficiency XP: {}% chance to gain double XP\n",
- "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token"
+ "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
+ "{:?} {} × {} — {} gold / offer — carried {} — limit {}"
 ]
