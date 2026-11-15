@@ -12,11 +12,8 @@ import json
 from pathlib import Path
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
-    args = parser.parse_args()
-    root = args.root
+def load_weights(root):
+    """Return client weights (hundredths of an ounce) by Item id from the verified capture."""
     capture = root / 'docs/reference/content-prep/item-cyclopedia-capture-1'
     raw = (capture / 'items.jsonl').read_bytes()
     manifest = json.loads((capture / 'manifest.json').read_bytes())
@@ -41,6 +38,40 @@ def main():
         if value != int(value) or not 0 <= value <= 0xffffffff:
             raise ValueError('Unrepresentable weight')
         weights[identifier] = int(value)
+    return weights
+
+
+def apply_weight(definition, weights):
+    """Set a KNOWN physical weight to the client value; return True when it changed."""
+    identity = definition.get('identity', definition.get('authoring', {}).get('item', {}))
+    key = identity.get('key', '')
+    prefix = 'oteryn:item.tibia.i' if key.startswith('oteryn:item.tibia.i') else 'candidate:item/'
+    if not key.startswith(prefix) or not key[len(prefix):].isdigit():
+        return False
+    identifier = int(key[len(prefix):])
+    physical = definition.get('semantics', {}).get('physical', {})
+    if identifier not in weights or physical.get('state') != 'KNOWN':
+        return False
+    desired = {'state': 'KNOWN', 'value': weights[identifier]}
+    if physical['value'].get('weight') == desired:
+        return False
+    physical['value']['weight'] = desired
+    return True
+
+
+def apply_admissions(item_records, root):
+    """Client weights are tree-first; retain them across legacy regeneration."""
+    weights = load_weights(root)
+    for definition in item_records:
+        apply_weight(definition, weights)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
+    args = parser.parse_args()
+    root = args.root
+    weights = load_weights(root)
     counts = Counter()
     constructors = []
 
@@ -57,22 +88,7 @@ def main():
         document = json.loads(path.read_bytes())
         changed = False
         for record in document['records']:
-            definition = record.get('definition', record)
-            identity = definition.get('identity', definition.get('authoring', {}).get('item', {}))
-            key = identity.get('key', '')
-            prefix = 'oteryn:item.tibia.i' if key.startswith('oteryn:item.tibia.i') else 'candidate:item/'
-            if not key.startswith(prefix) or not key[len(prefix):].isdigit():
-                continue
-            identifier = int(key[len(prefix):])
-            if identifier not in weights:
-                continue
-            semantics = definition.get('semantics', {})
-            physical = semantics.get('physical', {})
-            if physical.get('state') != 'KNOWN':
-                continue
-            desired = {'state': 'KNOWN', 'value': weights[identifier]}
-            if physical['value'].get('weight') != desired:
-                physical['value']['weight'] = desired
+            if apply_weight(record.get('definition', record), weights):
                 counts[str(path.relative_to(root))] += 1
                 changed = True
         if changed:
