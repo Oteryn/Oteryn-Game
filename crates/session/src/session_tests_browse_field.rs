@@ -38,3 +38,34 @@ fn browse_field_moves_both_directions_and_up_receives_field_delta() -> Result<()
         Ok(())
     }))?.join().map_err(|_|"browse-field test panicked")??
 }
+
+#[test]
+fn map_delta_bounds_handles_in_retained_view() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        use oteryn_protocol_oteryn::world_map::*;
+        let selected: &[u32] = &[4,6,12,14,18];
+        let header = MapViewHeader { content_generation:CONTENT_GENERATION, bundle_digest:[0x22;32], reset_epoch:0, origin:at(0,0), first_visible_floor:0 };
+        let item = MapItem { definition:MapDefinition::Item(std::num::NonZeroU32::MIN), count:1, sub_type:0, origin:MapOrigin::Handle(std::num::NonZeroU64::MIN), appearance_id:1 };
+        let mut remaining = MAX_MAP_VIEW_HANDLES;
+        let mut tiles = vec![];
+        for y in -5..5 { for x in -7..4 {
+            let count = remaining.min(MAX_TILE_ITEMS);
+            if count > 0 { tiles.push(MapTile { position:at(x,y), items:vec![item;count], more:false, ground_speed:150 }); remaining -= count; }
+        }}
+        assert_eq!(remaining, 0);
+        tiles.sort_by_key(|tile| tile_order(&tile.position));
+        let map = encode_world_map_snapshot(&WorldMapViewSnapshot { header, tiles }).map_err(|e|format!("{e:?}"))?;
+        let (client, mut server) = tokio::io::duplex(262144);
+        let peer = tokio::spawn(async move { join_peer_with(&mut server,selected,selected,&[],item_snapshot(vec![])?,&[(14,1,1,vec![]),(17,0,1,map)]).await });
+        let mut admission = item_admission()?; admission.supported_capabilities=selected;
+        let mut session = Session::admit(client,admission).await?;
+        peer.await??;
+        let value = WorldMapViewDelta { header, tiles:vec![MapTile { position:at(4,0),items:vec![item],more:false,ground_speed:150 }],cleared:vec![] };
+        let encoded = encode_world_map_delta(&header,&value).map_err(|e|format!("{e:?}"))?;
+        let wire = encode_state_delta(1,41,17,0,1,1,&encoded)?;
+        let envelope = decode_wire_envelope(&wire)?;
+        assert!(map_transport::apply(&mut session,41,envelope.payload()).is_err());
+        assert_eq!(session.world_map_snapshot().map(|s| s.tiles.iter().map(|t|t.items.len()).sum::<usize>()),Some(MAX_MAP_VIEW_HANDLES));
+        Ok(())
+    }))?.join().map_err(|_|"map budget test panicked")??
+}

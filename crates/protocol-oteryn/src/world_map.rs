@@ -267,8 +267,22 @@ fn check_ascending<'a>(positions: impl Iterator<Item = &'a ActorPosition>) -> Re
     Ok(())
 }
 
+fn check_handles(tiles: &[MapTile]) -> Result<()> {
+    if tiles
+        .iter()
+        .flat_map(|tile| &tile.items)
+        .filter(|item| matches!(item.origin, MapOrigin::Handle(_)))
+        .count()
+        > MAX_MAP_VIEW_HANDLES
+    {
+        return Err(WorldMapWireError::LimitExceeded);
+    }
+    Ok(())
+}
+
 fn check_snapshot(snapshot: &WorldMapViewSnapshot) -> Result<()> {
     check_header(&snapshot.header)?;
+    check_handles(&snapshot.tiles)?;
     if snapshot.tiles.len() > MAX_SNAPSHOT_TILES {
         return Err(WorldMapWireError::LimitExceeded);
     }
@@ -286,6 +300,7 @@ pub type MapViewBinding = MapViewHeader;
 
 fn check_delta(view: &MapViewBinding, delta: &WorldMapViewDelta) -> Result<()> {
     check_header(&delta.header)?;
+    check_handles(&delta.tiles)?;
     if delta.tiles.len() + delta.cleared.len() > MAX_DELTA_ENTRIES {
         return Err(WorldMapWireError::LimitExceeded);
     }

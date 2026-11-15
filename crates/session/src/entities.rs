@@ -96,6 +96,17 @@ impl WorldEntities {
             }
             next.entities.insert(entity.entity, *entity);
         }
+        let mut handles = std::collections::BTreeSet::new();
+        for entity in next.entities.values() {
+            if let EntityDetail::Object {
+                item_handle: Some(handle),
+                ..
+            } = entity.detail
+                && !handles.insert(handle)
+            {
+                return Err(inconsistent("duplicate item handle in entity store"));
+            }
+        }
         next.lights.extend(lights);
         if next.entities.len() > MAX_SNAPSHOT_ENTITIES {
             return Err(inconsistent("more entities than the snapshot bound"));

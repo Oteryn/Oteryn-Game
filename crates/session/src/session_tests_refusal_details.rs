@@ -81,3 +81,45 @@ fn refusal_suffix_requires_selection_and_rejects_unknown_or_success_detail() -> 
         .join()
         .map_err(|_| "refusal suffix test panicked")??
 }
+
+#[test]
+fn hotkey_refusal_detail_preserves_session() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        let selected: &[u32] = &[4, 6, 12, 14, 66, 179];
+        let (client, mut server) = tokio::io::duplex(65536);
+        let peer = tokio::spawn(async move {
+            join_peer_with(&mut server, CLIENT_SUPPORTED_CAPABILITIES, selected, &[], item_snapshot(vec![])?, &[(9, 1, 1, item_view::encode_character_inventory_with_equip_drop(&CharacterInventory::default(), true).map_err(|e| format!("{e:?}"))?), (14, 1, 1, vec![])]).await?;
+            for sequence in [41, 42] {
+                let bytes = read_frame(&mut server).await?;
+                let envelope = decode_wire_envelope(&bytes)?;
+                let command = envelope.client_command(1)?;
+                let mut payload = vec![8, 5];
+                refusal_detail::append_refusal_detail(&mut payload, selected, Some(refusal_detail::RefusalDetail::NotEnoughRoom));
+                write_frame(&mut server, &encode_command_result(1, sequence, command.command_id, CommandStatus::Accepted, &payload)?).await?;
+            }
+            Ok::<(), BoxError>(())
+        });
+        let mut admission = item_admission()?;
+        admission.supported_capabilities = CLIENT_SUPPORTED_CAPABILITIES;
+        let mut session = Session::admit(client, admission).await?;
+        for _ in 0..2 {
+            let result = session.equip_item_definition(std::num::NonZeroU32::MIN).await?;
+            assert_eq!(result.outcome, ItemMoveOutcome::NoRoom);
+            assert_eq!(session.last_refusal_detail(), Some(refusal_detail::RefusalDetail::NotEnoughRoom));
+        }
+        peer.await??;
+        Ok(())
+    }))?.join().map_err(|_| "hotkey refusal test panicked")??
+}
+
+#[test]
+fn admission_bounds_backpressured_bootstrap() -> Result<(), BoxError> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| block_on(async {
+        let (client, _server) = tokio::io::duplex(1);
+        let mut admission = admission_with(&[])?;
+        admission.deadline = Duration::from_millis(10);
+        let result = tokio::time::timeout(Duration::from_secs(1), Session::admit(client, admission)).await;
+        assert!(matches!(result, Ok(Err(SessionError::Timeout(_)))));
+        Ok(())
+    }))?.join().map_err(|_| "bootstrap deadline test panicked")??
+}
