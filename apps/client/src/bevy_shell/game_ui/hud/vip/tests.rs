@@ -504,6 +504,8 @@ fn vip_double_click_and_secondary_message_open_private_conversation() -> TestRes
     assert!(app.world().resource::<State>().draft.is_none());
     app.world_mut()
         .trigger(click(row, PointerButton::Primary, 2));
+    app.update();
+    assert!(app.world().resource::<State>().draft.is_none());
     assert_eq!(
         app.world()
             .non_send::<HostOwner>()

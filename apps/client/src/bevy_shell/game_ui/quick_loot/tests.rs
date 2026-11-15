@@ -410,6 +410,7 @@ fn quick_loot_can_add_carried_item_and_remove_confirmed_filter_entry() -> TestRe
                 main_backpack: None,
                 equipment: vec![],
                 entries: vec![oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: 7.try_into()?,
                     item_definition_ref: 42.try_into()?,
                     count: 1.try_into()?,

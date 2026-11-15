@@ -22,6 +22,7 @@ async fn exchange_carried() -> Result<(), BoxError> {
     };
     let item = |handle| -> Result<ItemEntry, BoxError> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(handle).ok_or("handle")?,
             item_definition_ref: std::num::NonZeroU32::MIN,
             count: std::num::NonZeroU32::MIN,

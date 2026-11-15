@@ -183,6 +183,7 @@ fn plain_use_editor_assignment_sends_direct_item_use() -> Result<(), Box<dyn std
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: std::num::NonZeroU64::MIN,
                 item_definition_ref: std::num::NonZeroU32::new(256).ok_or("definition")?,
                 count: std::num::NonZeroU32::MIN,
@@ -218,12 +219,14 @@ fn saved_item_subtype_selects_matching_container_and_multiaction_readiness()
         Some(oteryn_session::CharacterInventory {
             entries: vec![
                 oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::MIN,
                     item_definition_ref: definition,
                     count: NonZeroU32::MIN,
                     sub_type: 0,
                 },
                 oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: filled,
                     item_definition_ref: definition,
                     count: NonZeroU32::MIN,
@@ -260,6 +263,7 @@ fn saved_item_subtype_selects_matching_container_and_multiaction_readiness()
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: NonZeroU64::MIN,
                 item_definition_ref: definition,
                 count: NonZeroU32::MIN,

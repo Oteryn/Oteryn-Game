@@ -15,6 +15,8 @@ mod smooth;
 #[cfg(test)]
 mod tests;
 pub(super) mod typing;
+#[cfg(test)]
+mod typing_tests;
 
 #[derive(Resource, Default)]
 pub(super) struct SceneCache {

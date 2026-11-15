@@ -711,6 +711,7 @@ fn target_item_without_attacked_creature_starts_crosshair() -> Result<(), Box<dy
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: std::num::NonZeroU64::MIN,
                 item_definition_ref: definition,
                 count: std::num::NonZeroU32::MIN,

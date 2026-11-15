@@ -302,6 +302,7 @@ fn use_button_saves_subtype_and_activates_direct_item_use() -> TestResult {
     let (mut app, _) = super::super::tests::fixture()?;
     let (link, mut commands, outbox) = play_channel();
     let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,

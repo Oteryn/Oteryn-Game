@@ -168,7 +168,7 @@ pub(super) fn click(
     };
     if event.button == PointerButton::Secondary {
         preferences.context = Some((owner.generation(), panel.revision, entry));
-    } else if event.button == PointerButton::Primary {
+    } else if event.button == PointerButton::Primary && event.count == 1 {
         commands.trigger(Activate {
             entity: event.entity,
         });

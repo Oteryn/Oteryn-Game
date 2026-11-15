@@ -325,6 +325,7 @@ fn activity_transition_cancels_pending_and_deferred_item_reads()
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: NonZeroU64::MIN,
                 item_definition_ref: NonZeroU32::new(256).ok_or("definition")?,
                 count: NonZeroU32::MIN,

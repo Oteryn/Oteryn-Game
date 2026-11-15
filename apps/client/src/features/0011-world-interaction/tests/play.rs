@@ -232,6 +232,7 @@ fn world_context_npc_is_inspectable_without_becoming_attackable() -> Result<(), 
 fn tileless_context_revalidates_carried_items() -> Result<(), Box<dyn std::error::Error>> {
     let view = view()?;
     let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::MIN,
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

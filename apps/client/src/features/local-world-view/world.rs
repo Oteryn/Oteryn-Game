@@ -266,8 +266,9 @@ impl World {
         if self.animations.is_empty() {
             return None;
         }
-        let epoch = ANIMATION_EPOCH.get_or_init(|| now);
-        let elapsed = now.saturating_duration_since(*epoch).as_millis();
+        let elapsed = now
+            .saturating_duration_since(Self::animation_epoch())
+            .as_millis();
         let mut next = None;
         for animation in self.animations.iter() {
             let position = animation.position;

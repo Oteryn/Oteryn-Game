@@ -166,6 +166,13 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
             .next_loot
             .is_none()
     );
+    click(&mut app, Kind::Catalogue(3))?;
+    assert!(
+        receiver.try_recv().is_err(),
+        "undiscovered loot stays locked"
+    );
+    assert!(!labels(&mut app).contains("Gold coin"));
+    app.update();
     // Loot pagination becomes available only after confirmed completed discovery.
     click(&mut app, Kind::Progress)?;
     let progress = command(&mut receiver)?;
@@ -195,12 +202,6 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     publish(&command(&mut receiver)?, &page)?;
     app.update();
     assert!(labels(&mut app).contains("Gold coin"));
-    click(&mut app, Kind::Catalogue(3))?;
-    assert!(
-        receiver.try_recv().is_err(),
-        "undiscovered loot stays locked"
-    );
-    assert!(!labels(&mut app).contains("Gold coin"));
     app.update();
     click(&mut app, Kind::Progress)?;
     let progress = command(&mut receiver).map_err(|error| format!("progress: {error}"))?;
