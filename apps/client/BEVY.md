@@ -82,6 +82,8 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
   and Offer History. Create buy/sell offers, cancel selected own offers, and accept
   buy/sell offers with bounded quantities through the existing server intents.
+- **Ctrl+Shift+S:** coin Store, with category browsing, purchase confirmation,
+  coin gifts/transfers, purchase history and the coin ledger.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
