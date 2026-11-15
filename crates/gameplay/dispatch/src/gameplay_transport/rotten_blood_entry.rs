@@ -105,10 +105,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(ActivityRefusal::ContentUnavailable)?;
         // Both accepted paths authenticate the real current map, never raw XYZ.
         let runtime = self.runtime.lock().await;
-        let qualified = origin.pinned_activity_source_room() == source(key)
-            || active
-                .qualify_published_world_context(origin, runtime.content_pin())
-                .is_some();
+        let origin_pin = runtime.content_pin().clone();
+        let world_origin = active.qualify_published_world_context(origin, &origin_pin);
+        let qualified =
+            origin.pinned_activity_source_room() == source(key) || world_origin.is_some();
         drop(runtime);
         if !qualified {
             return Err(ActivityRefusal::ContentUnavailable);
@@ -123,6 +123,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 active,
                 &template,
+                world_origin.as_ref().map(|_| (origin, &origin_pin)),
             )
             .await
             .map_err(|_| ActivityRefusal::AuthorityRejected)?

@@ -338,13 +338,16 @@ fn run_murcion_source_entry_checks(
                 .activity_runtimes
                 .get(instance, fence.scope_ownership_generation.get())
                 .ok_or("actual source owner")?;
-            owner.runtime_view(&registered).drain_monster_melee().await;
+            super::srx3_activity_source_fixture::drive_native_cycle(
+                &owner.runtime_view(&registered),
+            )
+            .await;
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(2))
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
-            view.drain_monster_melee().await;
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
             let runtime = view.runtime.lock().await;
             let creatures = runtime.visible_entities().creatures;
             let count = |key: &[u8]| {
@@ -710,12 +713,18 @@ fn run_murcion_source_entry_checks(
                     .clock_origin
                     .checked_sub(std::time::Duration::from_secs(2))
                     .ok_or("mushroom first-think clock")?;
-                owner.runtime_view(&registered).drain_monster_melee().await;
+                super::srx3_activity_source_fixture::drive_native_cycle(
+                    &owner.runtime_view(&registered),
+                )
+                .await;
                 owner.clock_origin = owner
                     .clock_origin
                     .checked_sub(std::time::Duration::from_secs(20))
                     .ok_or("mushroom fuse clock")?;
-                owner.runtime_view(&registered).drain_monster_melee().await;
+                super::srx3_activity_source_fixture::drive_native_cycle(
+                    &owner.runtime_view(&registered),
+                )
+                .await;
                 let runtime = registered.runtime.lock().await;
                 for child in original_mushrooms {
                     assert!(
@@ -857,7 +866,18 @@ fn run_rotten_native_lethal_case_checks(
                     floor: 15,
                 },
             )?;
-            let deps = scene.dependencies()?;
+            let deps = if check_source_step {
+                // The Player and both retained lethal Creature projections need
+                // three slots; the default one-child fixture has only two.
+                Dependencies::with_content_and_capacity(
+                    scene.pin.clone(),
+                    scene.room.clone(),
+                    crate::spell::cast::v1_spell_book().map_err(debug)?,
+                    3,
+                )?
+            } else {
+                scene.dependencies()?
+            };
             let h =
                 Harness::create_with_admission_seed(admin, "srx3_rotten_child_xp", false, false)
                     .await?;

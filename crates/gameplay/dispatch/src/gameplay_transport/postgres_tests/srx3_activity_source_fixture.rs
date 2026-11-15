@@ -14,6 +14,17 @@ pub(super) struct SourceScene {
     pub(super) room: QualifiedNativeEntryRoom,
     pub(super) pin: ChannelContentPin,
 }
+
+/// The native portion of source_item_cycle's stages 7..=11. A bare AI turn
+/// may instead finish an older physical onMove callback and return, so it
+/// cannot stand in for this production sequence in an encounter fixture.
+pub(super) async fn drive_native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    owner.drain_rotten_movement_callbacks().await;
+    let _ = owner.drain_native_ai_timers().await;
+    owner.drain_monster_melee().await;
+    owner.drain_rotten_movement_callbacks().await;
+    owner.drain_bak_first_think_claims().await;
+}
 impl SourceScene {
     pub(super) fn new(
         source: PinnedActivitySourceRoom,

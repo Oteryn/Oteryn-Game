@@ -20,7 +20,7 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("actual portal scope")?;
-    owner.runtime_view(&registered).drain_monster_melee().await;
+    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered)).await;
     // Move the real target away, allowing the native boss to vacate the centre.
     // One real lure step vacates the boss centre without drawing the source
     // Elders beyond the separate two-tile STEP predicate.
@@ -38,7 +38,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "actual source portal approach"
         );
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
     }
     owner.clock_origin = owner
         .clock_origin
@@ -46,7 +46,7 @@ pub(super) async fn exercise(
         .ok_or("source addEvent clock")?;
     {
         let view = owner.runtime_view(&registered);
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
         view.drain_rotten_portal_callbacks().await;
     }
     {
@@ -118,7 +118,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "actual paced Elder lure"
         );
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
     }
     let route = {
         let view = owner.runtime_view(&registered);
@@ -226,7 +226,7 @@ pub(super) async fn exercise(
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("massive attack clock")?;
             let view = owner.runtime_view(&registered);
-            view.drain_monster_melee().await;
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
             let states = view.states.spell_states.lock().await;
             let due = deadlines[usize::from(phase - 1)].1;
             if view.owner_now().get() < due {
@@ -301,7 +301,7 @@ pub(super) async fn exercise(
     };
     {
         let view = owner.runtime_view(&registered);
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await;
         view.drain_rotten_portal_callbacks().await;
         let runtime = view.runtime.lock().await;
         let states = view.states.spell_states.lock().await;

@@ -69,6 +69,7 @@ pub(super) async fn exercise(
             step.disposition,
             oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
         );
+        view.drain_rotten_movement_callbacks().await;
     }
     let view = owner.runtime_view(&registered);
     {
