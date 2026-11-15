@@ -5,7 +5,9 @@ impl PlayLink {
         lock(&self.mailbox).weapon_proficiency.open
     }
     pub fn weapon_proficiency_hud(&self) -> Option<oteryn_client_ui::weapon_proficiency::HudView> {
-        oteryn_client_ui::weapon_proficiency::hud_view(&lock(&self.mailbox).weapon_proficiency)
+        let mailbox = lock(&self.mailbox);
+        let definition = equipped_weapon(&mailbox)?;
+        oteryn_client_ui::weapon_proficiency::hud_view_for(&mailbox.weapon_proficiency, definition)
     }
     #[must_use]
     pub fn weapon_proficiency_panel(&self) -> WeaponProficiencyPanel {
@@ -25,4 +27,23 @@ pub enum ProficiencyAction {
     Refresh,
     Weapon(usize),
     Perk(usize, usize),
+}
+
+pub(in crate::play) fn equipped_weapon(mailbox: &crate::play::mailbox::Mailbox) -> Option<u32> {
+    use oteryn_session::item_view::EquipmentSlot;
+    let entries = &mailbox.weapon_proficiency.catalogue.as_ref()?.entries;
+    mailbox
+        .inventory
+        .inventory
+        .as_ref()?
+        .equipment
+        .iter()
+        .filter(|item| {
+            matches!(
+                item.slot,
+                EquipmentSlot::RightHand | EquipmentSlot::LeftHand
+            )
+        })
+        .map(|item| item.item.item_definition_ref.get())
+        .find(|definition| entries.iter().any(|entry| entry.definition == *definition))
 }

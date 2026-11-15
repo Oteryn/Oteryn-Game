@@ -16,7 +16,12 @@ impl Mailbox {
         self.boss_encounter.slots = None;
         self.boss_encounter.pending_kind = 0;
         self.chat_public.pending = Default::default();
+        self.daily_reward_refresh_wall |= self.daily_reward_refresh_details;
         self.daily_reward.pending = Default::default();
+        self.daily_reward.details_pending = false;
+        self.daily_reward.details_attempted = false;
+        self.daily_reward.returner.pending = false;
+        self.daily_reward.returner_pending = None;
         self.containers.pending = Default::default();
         self.depot.pending = Default::default();
         self.cyclopedia_character.pending = Default::default();
@@ -32,6 +37,8 @@ impl Mailbox {
         self.potion_durations.pending = Default::default();
         self.item_forge.scope_changed();
         self.store.pending = Default::default();
+        self.store.gift.pending = None;
+        self.store.coin_history.pending = false;
         self.sanctions.pending = false;
         self.weapon_proficiency.invalidate_observation();
         self.achievements.pending = Default::default();

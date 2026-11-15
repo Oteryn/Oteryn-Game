@@ -51,6 +51,7 @@ impl PlayLink {
                 };
                 if !*repeat {
                     panel.item_definition = definition.get();
+                    panel.upgrade_tier = panel.binding_tiers[slot];
                     if let Some(command) = oteryn_client_ui::hotkey_equip::control_request(panel)
                         && self
                             .commands

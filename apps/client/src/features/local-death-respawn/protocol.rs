@@ -130,6 +130,9 @@ impl Outbox {
                 },
             ));
         }
+        if let Some(command) = mailbox.daily_reward_follow_up() {
+            return Ok(command);
+        }
         loop {
             let command = match commands.try_recv() {
                 Ok(command) => command,

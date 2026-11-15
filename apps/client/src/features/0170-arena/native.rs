@@ -202,7 +202,7 @@ fn run(
             if IsWindow(hwnd) == 0 {
                 break;
             }
-            let Some(shared) = weak.upgrade() else {
+            let Some(shared) = crate::play::mailbox::native_mailbox(&weak, &commands) else {
                 break;
             };
             let mut mailbox = lock(&shared);

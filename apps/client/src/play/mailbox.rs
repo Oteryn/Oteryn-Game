@@ -256,6 +256,9 @@ pub(super) struct Mailbox {
     pub(super) player_typing_shutdown: bool,
     // CL26s3
     pub(super) daily_reward: oteryn_client_ui::daily_reward::DailyRewardPanel,
+    pub(super) daily_reward_refresh_wall: bool,
+    pub(super) daily_reward_refresh_details: bool,
+    pub(super) daily_reward_claim_feedback: Option<&'static str>,
     pub(super) daily_reward_shutdown: bool,
     // CL26s4
     pub(super) boss_rewards: oteryn_client_ui::boss_rewards::BossRewardsPanel,
@@ -305,3 +308,24 @@ pub struct Outbox(pub(super) SharedMailbox);
 #[path = "mailbox/operations.rs"]
 mod operations;
 pub use operations::{PlayLink, play_channel};
+
+/// Check startup under the panel owner's lock.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn native_startup_result(open: &mut bool, started: bool) -> bool {
+    if !started {
+        *open = false;
+    }
+    started
+}
+
+/// Native panels borrow session state only while the command owner is alive.
+#[cfg(any(windows, test))]
+pub(in crate::play) fn native_mailbox(
+    weak: &std::sync::Weak<Mutex<Mailbox>>,
+    commands: &UnboundedSender<PlayCommand>,
+) -> Option<Arc<Mutex<Mailbox>>> {
+    if commands.is_closed() {
+        return None;
+    }
+    weak.upgrade()
+}

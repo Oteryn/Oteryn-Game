@@ -346,3 +346,245 @@ mod browser;
 
 #[path = "cosmetic_tokens.rs"]
 mod cosmetic_tokens;
+
+#[test]
+fn store_retry_blocks_catalogue_replacement() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    let page = StoreCataloguePage {
+        catalog_revision: "A".into(),
+        offers: vec![StoreOffer {
+            offer_key: "mount".into(),
+            title: "Mount A".into(),
+            price: 25,
+            currency: "TIBIA_COIN".into(),
+        }],
+        next_page_cursor: String::new(),
+        total_coins: 100,
+        transferable_coins: 0,
+    };
+    crate::play::mailbox::lock(&link.mailbox).store.catalogue = Some(page.clone());
+    assert!(link.store_confirm_purchase(&page, "", "", ""));
+    let first = commands.try_recv()?;
+    outbox.store_result(
+        &oteryn_client_runtime::server_mechanic::ServerMechanicResponse {
+            command_id: 1,
+            status: oteryn_session::CommandStatus::Rejected,
+            server_sequence: 1,
+            payload: vec![],
+        },
+    );
+    link.store_browse("featured", "", 0, 0);
+    assert!(
+        commands.try_recv().is_err(),
+        "retry quote must not be replaced by browsing"
+    );
+    let category = oteryn_client_ui::store::categories()
+        .into_iter()
+        .next()
+        .ok_or("category")?;
+    assert!(!link.store_category(&category));
+    assert!(commands.try_recv().is_err());
+    link.store_request(183, vec![]);
+    assert!(commands.try_recv().is_err());
+    assert_eq!(link.store_panel().catalogue, Some(page.clone()));
+    assert!(link.store_confirm_purchase(&page, "", "", ""));
+    let crate::combat_input::PlayCommand::ServerMechanic(first) = first else {
+        return Err("purchase".into());
+    };
+    let crate::combat_input::PlayCommand::ServerMechanic(retry) = commands.try_recv()? else {
+        return Err("retry".into());
+    };
+    assert_eq!(first.payload, retry.payload);
+    Ok(())
+}
+
+#[test]
+fn activity_discard_releases_independent_pending_and_retains_gift_identity()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    outbox.daily_reward_initialize(true);
+    let fields = ["Alice".into(), "25".into()];
+    assert!(link.coin_gift_control(0, fields.clone()));
+    commands.try_recv()?;
+    outbox.coin_gift_result(&oteryn_session::GatedCommandResult { command_id: 1, server_sequence: 1, status: oteryn_session::CommandStatus::Accepted, payload: oteryn_protocol_oteryn::coin_transfer::encode_reply(r#"{"result":"ok","quote":"019a65f0-0000-7000-8000-000000000001","recipient":"Alice","amount":"25","transferable":"100","non_transferable":"50"}"#).map_err(|_| "quote")? });
+    assert!(link.coin_gift_control(1, fields.clone()));
+    let confirmed = link.store_panel().gift.confirmed;
+    {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.daily_reward.returner.install(Some([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7]), false);
+        m.hireling.selected = true;
+    }
+    link.returner_reward_request(true);
+    link.hireling_request(oteryn_client_ui::hireling::Intent::Refresh);
+    crate::play::mailbox::lock(&link.mailbox).activity_reset_commands = true;
+    assert!(outbox.death_command(&mut commands).is_err());
+    {
+        let m = crate::play::mailbox::lock(&link.mailbox);
+        assert!(m.store.gift.pending.is_none());
+        assert!(!m.daily_reward.returner.pending);
+        assert!(m.daily_reward.returner_pending.is_none());
+        assert!(m.hireling.pending.is_none());
+        assert_eq!(m.store.gift.confirmed, confirmed);
+        assert_eq!(
+            m.daily_reward.returner.offer.as_ref().map(|o| o.id),
+            Some([0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 7])
+        );
+    }
+    assert!(link.coin_gift_control(3, fields));
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::ServerMechanic(c) if oteryn_protocol_oteryn::coin_transfer::decode(&c.payload).ok() == confirmed)
+    );
+    link.returner_reward_request(true);
+    assert!(commands.try_recv().is_ok());
+    Ok(())
+}
+
+#[path = "../native/commands.rs"]
+mod store_controls;
+#[test]
+fn store_gender_control_is_distinct_from_classic_store() {
+    #[cfg(windows)]
+    let _handle = store_controls::handle;
+    let mut panel = oteryn_client_ui::store::StorePanel::default();
+    assert!(store_controls::preview_control(&mut panel, 15, 0));
+    assert_eq!(panel.browser.gender, 1);
+    assert!(!store_controls::preview_control(
+        &mut panel,
+        store_controls::CLASSIC_STORE,
+        0
+    ));
+    assert!(!store_controls::preview_control(&mut panel, 15, 1));
+    assert_eq!(panel.browser.gender, 1);
+}
+
+#[test]
+fn native_coin_history_can_request_older_pages_and_restart()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    assert!(store_controls::history_control(&link, 13, 0));
+    commands.try_recv()?;
+    outbox.store_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: encode_coin_history_page(&CoinHistoryPage {
+            entries: vec![CoinHistoryEntry {
+                entry_id: 42,
+                kind: "TRANSFER".into(),
+                currency: "TIBIA_COIN".into(),
+                available_delta: -25,
+                reserved_delta: 0,
+                order_id: None,
+                offer_key: None,
+                quantity: None,
+                created_at: 1,
+            }],
+            next_page_cursor: "42".into(),
+        })
+        .map_err(|_| "history")?,
+    });
+    assert!(store_controls::history_control(&link, 27, 0));
+    let crate::combat_input::PlayCommand::ServerMechanic(c) = commands.try_recv()? else {
+        return Err("history command".into());
+    };
+    assert_eq!(
+        decode_coin_history_request(&c.payload)
+            .map_err(|_| "request")?
+            .page_cursor,
+        "42"
+    );
+    outbox.store_result(&oteryn_session::GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: encode_coin_history_page(&CoinHistoryPage {
+            entries: vec![],
+            next_page_cursor: String::new(),
+        })
+        .map_err(|_| "history")?,
+    });
+    assert!(!store_controls::history_control(&link, 27, 0));
+    assert!(commands.try_recv().is_err());
+    assert!(store_controls::history_control(&link, 13, 0));
+    let crate::combat_input::PlayCommand::ServerMechanic(c) = commands.try_recv()? else {
+        return Err("history command".into());
+    };
+    assert!(
+        decode_coin_history_request(&c.payload)
+            .map_err(|_| "request")?
+            .page_cursor
+            .is_empty()
+    );
+    Ok(())
+}
+
+#[test]
+fn store_retry_uses_retained_selected_quote_across_presentations()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cui3::store::*;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.store_initialize(true, false);
+    let page = StoreCataloguePage {
+        catalog_revision: "A".into(),
+        offers: vec![
+            StoreOffer {
+                offer_key: "other".into(),
+                title: "Other product".into(),
+                price: 1,
+                currency: "TIBIA_COIN".into(),
+            },
+            StoreOffer {
+                offer_key: "mount".into(),
+                title: "Confirmed mount".into(),
+                price: 25,
+                currency: "TIBIA_COIN".into(),
+            },
+        ],
+        next_page_cursor: String::new(),
+        total_coins: 100,
+        transferable_coins: 0,
+    };
+    let first = {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.store.catalogue = Some(page.clone());
+        native::purchase(&mut m.store, 1, true).ok_or("purchase")?
+    };
+    outbox.store_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Rejected,
+        payload: vec![],
+    });
+    let quote =
+        oteryn_client_ui::store::confirmation_quote(&link.store_panel()).ok_or("retained quote")?;
+    assert_eq!(quote.offers.len(), 1);
+    assert_eq!(quote.offers[0].title, "Confirmed mount");
+    assert!(!link.store_confirm_purchase(&page, "", "", ""));
+    assert!(commands.try_recv().is_err());
+    assert!(link.store_confirm_purchase(&quote, "", "", ""));
+    let crate::combat_input::PlayCommand::ServerMechanic(retry) = commands.try_recv()? else {
+        return Err("retry".into());
+    };
+    assert_eq!(first.payload, retry.payload);
+    assert_eq!(link.store_panel().selected_offer, 1);
+    let request = decode_purchase_request(&retry.payload).map_err(|_| "request")?;
+    outbox.store_result(&oteryn_session::GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: encode_purchase_result(&StorePurchaseResult {
+            code: StorePurchaseCode::Accepted,
+            order_id: Some(request.purchase_request_id),
+            operation_id: Some(request.purchase_request_id),
+        })
+        .map_err(|_| "result")?,
+    });
+    assert!(link.store_panel().confirmed_quote.is_none());
+    assert!(link.store_panel().confirmed_purchase.is_none());
+    Ok(())
+}

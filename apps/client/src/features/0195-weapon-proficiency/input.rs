@@ -17,6 +17,7 @@ impl PlayLink {
     pub fn weapon_proficiency_open_track(&self, advancement: bool) {
         {
             let mut mailbox = lock(&self.mailbox);
+            let equipped = super::view::equipped_weapon(&mailbox);
             let p = &mut mailbox.weapon_proficiency;
             if p.pending {
                 return;
@@ -24,7 +25,7 @@ impl PlayLink {
             let definition = if advancement {
                 p.advancements.first().copied()
             } else {
-                p.progress_entry().map(|entry| entry.definition)
+                equipped
             };
             let row = definition.and_then(|definition| {
                 p.catalogue
@@ -156,6 +157,22 @@ impl PlayLink {
             p.pending = false;
             p.feedback = Some(tr!("The session has ended"));
             return false;
+        }
+        true
+    }
+}
+
+#[cfg(any(windows, test))]
+impl PlayLink {
+    pub(in crate::play) fn weapon_proficiency_begin_native(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.weapon_proficiency;
+        if panel.open {
+            return false;
+        }
+        panel.open = true;
+        if !panel.pending {
+            panel.catalogue_offset = 0;
         }
         true
     }

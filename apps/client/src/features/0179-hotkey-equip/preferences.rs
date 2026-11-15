@@ -7,12 +7,15 @@ use std::{num::NonZeroU32, path::Path};
 #[serde(deny_unknown_fields)]
 pub struct ItemHotkeys {
     pub bindings: [Option<NonZeroU32>; oteryn_client_ui::hotkey_equip::ITEM_HOTKEY_SLOTS],
+    #[serde(default)]
+    pub tiers: [u8; oteryn_client_ui::hotkey_equip::ITEM_HOTKEY_SLOTS],
     pub smart: bool,
 }
 impl Default for ItemHotkeys {
     fn default() -> Self {
         Self {
             bindings: [None; oteryn_client_ui::hotkey_equip::ITEM_HOTKEY_SLOTS],
+            tiers: [0; oteryn_client_ui::hotkey_equip::ITEM_HOTKEY_SLOTS],
             smart: true,
         }
     }
@@ -58,6 +61,7 @@ impl SettingsState {
             let mut preferences = self.preferences.clone();
             preferences.item_hotkeys = ItemHotkeys {
                 bindings: panel.bindings,
+                tiers: panel.binding_tiers,
                 smart: panel.smart,
             };
             panel.dirty = false;
@@ -67,6 +71,7 @@ impl SettingsState {
         } else {
             panel.dirty = false;
             panel.bindings = self.preferences.item_hotkeys.bindings;
+            panel.binding_tiers = self.preferences.item_hotkeys.tiers;
             panel.smart = self.preferences.item_hotkeys.smart;
         }
     }

@@ -37,7 +37,9 @@ pub struct StorePanel {
     pub hireling_sex: u8,
     pub hireling_id: Option<[u8; 16]>,
     /// Frozen confirmed wire request; uncertain outcomes retry these exact bytes.
+    /// `confirmed_quote` retains the selected display quote until a decoded terminal result.
     pub confirmed_purchase: Option<Vec<u8>>,
+    pub confirmed_quote: Option<StoreCataloguePage>,
     pub purchase_request_id: [u8; 16],
     pub purchase_confirmed: bool,
     pub fulfilment_unit_id: String,

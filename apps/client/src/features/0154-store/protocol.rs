@@ -8,6 +8,7 @@ impl Outbox {
         if mailbox.store.hireling_modal_id == Some(answer.dialog_id) {
             mailbox.store.hireling_modal_id = None;
             mailbox.store.confirmed_purchase = None;
+            mailbox.store.confirmed_quote = None;
             mailbox.store.feedback = None;
         }
     }

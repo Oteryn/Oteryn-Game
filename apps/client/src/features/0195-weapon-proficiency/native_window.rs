@@ -42,12 +42,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
         return;
     }
-    {
-        let mut m = lock(&link.mailbox);
-        if m.weapon_proficiency.open {
-            return;
-        }
-        m.weapon_proficiency.open = true;
+    if !link.weapon_proficiency_begin_native() {
+        return;
     }
     let weak = Arc::downgrade(&link.mailbox);
     let rollback = weak.clone();

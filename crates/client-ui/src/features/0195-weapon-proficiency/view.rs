@@ -155,10 +155,18 @@ pub struct HudView {
     pub advancement: Option<(u32, String)>,
 }
 pub fn hud_view(p: &WeaponProficiencyPanel) -> Option<HudView> {
+    hud_view_for(p, p.progress_entry()?.definition)
+}
+pub fn hud_view_for(p: &WeaponProficiencyPanel, definition: u32) -> Option<HudView> {
     if !p.selected {
         return None;
     }
-    let entry = p.progress_entry()?;
+    let entry = p
+        .catalogue
+        .as_ref()?
+        .entries
+        .iter()
+        .find(|entry| entry.definition == definition)?;
     let advancement = p.advancements.first().and_then(|definition| {
         let entry = p
             .catalogue
@@ -171,7 +179,19 @@ pub fn hud_view(p: &WeaponProficiencyPanel) -> Option<HudView> {
     Some(HudView {
         definition: entry.definition,
         name: entry.name.clone(),
-        percent: super::progress_percent(entry),
+        percent: {
+            let thresholds =
+                &entry.thresholds[..(entry.levels.len() + 2).min(entry.thresholds.len())];
+            let next = thresholds
+                .iter()
+                .position(|threshold| *threshold > entry.experience);
+            next.map_or(100, |next| {
+                let previous = next.checked_sub(1).map_or(0, |index| thresholds[index]);
+                let span = thresholds[next] - previous;
+                (u64::from(entry.experience.saturating_sub(previous)) * 100 / u64::from(span))
+                    as u32
+            })
+        },
         pending: p.pending,
         advancement,
     })

@@ -40,7 +40,11 @@ pub fn categories() -> Vec<String> {
 }
 
 pub fn select_category(panel: &mut StorePanel, key: &str) -> Option<ServerMechanicCommand> {
-    if !panel.selected || panel.pending || !categories().iter().any(|category| category == key) {
+    if !panel.selected
+        || panel.pending
+        || panel.confirmed_purchase.is_some()
+        || !categories().iter().any(|category| category == key)
+    {
         return None;
     }
     panel.category = key.to_owned();

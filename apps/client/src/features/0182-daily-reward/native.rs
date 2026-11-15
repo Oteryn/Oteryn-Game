@@ -1,21 +1,45 @@
-//! Native daily reward wall and one-click claim controls.
+//! Native reward action dispatch shared with regression tests.
 #![allow(unsafe_code)]
+pub(in crate::play) fn enqueue_action(
+    mailbox: &mut crate::play::mailbox::Mailbox,
+    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
+    intent: oteryn_client_ui::daily_reward::Intent,
+) {
+    crate::play::feature_0182_daily_reward::input::enqueue(mailbox, commands, intent);
+}
+
+#[cfg(windows)]
 use crate::combat_input::PlayCommand;
+#[cfg(windows)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::daily_reward::{Intent, panel_text, request};
+#[cfg(windows)]
+use oteryn_client_ui::daily_reward::{Intent, panel_text};
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use std::sync::{Arc, Weak};
+#[cfg(windows)]
 use std::time::Duration;
+#[cfg(windows)]
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
+#[cfg(windows)]
 const REFRESH: usize = 101;
+#[cfg(windows)]
 const CLAIM: usize = 102;
+#[cfg(windows)]
 const DETAILS: usize = 104;
+#[cfg(windows)]
 const RETURNER: usize = 106;
+#[cfg(windows)]
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
+#[cfg(windows)]
 #[derive(Default)]
 struct Actions(Vec<usize>);
+#[cfg(windows)]
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND {
@@ -33,12 +57,14 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(windows)]
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")
         .encode_utf16()
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
         return;
@@ -61,6 +87,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         close(&rollback);
     }
 }
+#[cfg(windows)]
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -138,7 +165,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if IsWindow(hwnd) == 0 {
                 break;
             }
-            let Some(shared) = weak.upgrade() else { break };
+            let Some(shared) = crate::play::mailbox::native_mailbox(&weak, &commands) else { break };
             let mut mailbox = lock(&shared);
             if mailbox.daily_reward_shutdown {
                 break;
@@ -150,7 +177,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     continue;
                 }
                 if action == DETAILS {
-                    super::super::input::enqueue_details(&mut mailbox, &commands);
+                    crate::play::feature_0182_daily_reward::input::enqueue_details(&mut mailbox, &commands);
                     continue;
                 }
                 let intent = if action == CLAIM {
@@ -158,18 +185,13 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 } else {
                     Intent::Refresh
                 };
-                if let Some(command) = request(&mut mailbox.daily_reward, intent)
-                    && commands.send(PlayCommand::DailyReward(command)).is_err()
-                {
-                    mailbox.daily_reward.pending = false;
-                    mailbox.daily_reward.feedback = Some(tr!("The session has ended"));
-                }
+                enqueue_action(&mut mailbox, &commands, intent);
             }
             if mailbox.daily_reward.wall.is_some()
                 && !mailbox.daily_reward.details_attempted
                 && !mailbox.daily_reward.pending
             {
-                super::super::input::enqueue_details(&mut mailbox, &commands);
+                crate::play::feature_0182_daily_reward::input::enqueue_details(&mut mailbox, &commands);
             }
             if held.as_ref() != Some(&mailbox.daily_reward) {
                 SetWindowTextW(text, wide(&panel_text(&mailbox.daily_reward)).as_ptr());
@@ -191,6 +213,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         drop(actions);
     }
 }
+#[cfg(windows)]
 fn control(parent: HWND, class: &str, label: &str, id: usize, rect: [i32; 4], style: u32) -> HWND {
     unsafe {
         CreateWindowExW(
@@ -209,6 +232,7 @@ fn control(parent: HWND, class: &str, label: &str, id: usize, rect: [i32; 4], st
         )
     }
 }
+#[cfg(windows)]
 fn close(weak: &WeakMailbox) {
     if let Some(shared) = weak.upgrade() {
         lock(&shared).daily_reward.open = false;

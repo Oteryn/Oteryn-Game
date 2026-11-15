@@ -200,6 +200,8 @@ mod windows {
                 [10, 360, 280, 30],
                 WS_BORDER | ES_NUMBER as u32,
             );
+            control(hwnd, "STATIC", "Upgrade tier (0–10)", 205, [10, 395, 180, 22], 0);
+            let tier = control(hwnd, "EDIT", "0", 204, [190, 395, 90, 22], WS_BORDER | ES_NUMBER as u32 | WS_TABSTOP);
             let submit = control(
                 hwnd,
                 "BUTTON",
@@ -209,6 +211,7 @@ mod windows {
                 WS_TABSTOP,
             );
             if [
+                tier,
                 input,
                 smart,
                 submit,
@@ -237,7 +240,7 @@ mod windows {
                 if IsWindow(hwnd) == 0 {
                     break;
                 }
-                let Some(shared) = weak.upgrade() else {
+                let Some(shared) = crate::play::mailbox::native_mailbox(&weak, &commands) else {
                     break;
                 };
                 let mut mailbox = lock(&shared);
@@ -246,6 +249,13 @@ mod windows {
                     let slot = usize::try_from(SendMessageW(keys, LB_GETCURSEL, 0, 0)).unwrap_or(0);
                     if slot >= ITEM_HOTKEY_SLOTS {
                         continue;
+                    }
+                    if matches!(action, ASSIGN | SUBMIT) {
+                        let mut text = [0_u16; 4];
+                        let len = GetWindowTextW(tier, text.as_mut_ptr(), 4);
+                        let Ok(value) = String::from_utf16_lossy(&text[..len.max(0) as usize]).parse::<u8>() else { continue; };
+                        if value > 10 || (value != 0 && !panel.tiered) { continue; }
+                        panel.upgrade_tier = value;
                     }
                     match action {
                         SMART => {
@@ -284,6 +294,7 @@ mod windows {
                         USE => {
                             if let Some(definition) = panel.bindings[slot] {
                                 panel.item_definition = definition.get();
+                                panel.upgrade_tier = panel.binding_tiers[slot];
                                 if let Some(command) = control_request(panel)
                                     && commands
                                         .send(crate::combat_input::PlayCommand::ServerMechanic(
@@ -307,12 +318,13 @@ mod windows {
                     SendMessageW(keys, LB_RESETCONTENT, 0, 0);
                     for (slot, definition) in panel.bindings.iter().enumerate() {
                         let label = format!(
-                            "F{}: {}",
+                            "F{}: {} (tier {})",
                             slot + 1,
                             definition.map_or_else(
                                 || tr!("Unassigned").into(),
                                 |value| lfmt!("Item {value}", value = value)
-                            )
+                            ),
+                            panel.binding_tiers[slot]
                         );
                         SendMessageW(keys, LB_ADDSTRING, 0, wide(&label).as_ptr() as isize);
                     }

@@ -117,6 +117,11 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             control(hwnd, "BUTTON", tr!("Purchase selected offer…"), 4, 235, 35, 0);
                         let next = control(hwnd, "BUTTON", tr!("Next catalogue page"), 5, 275, 30, 0);
                         let get_coins = control(hwnd, "BUTTON", tr!("Get coins (sandbox)"), 9, 550, 30, 0);
+                        MoveWindow(get_coins, 10, 550, 210, 30, 1);
+                        let history = control(hwnd, "BUTTON", "Coin history", 14, 550, 30, 0);
+                        MoveWindow(history, 230, 550, 105, 30, 1);
+                        let older = control(hwnd, "BUTTON", "Older coins", 15, 550, 30, 0);
+                        MoveWindow(older, 340, 550, 105, 30, 1);
                         control(hwnd, "STATIC", tr!("Hireling name / sex (1 male, 2 female) / identity (UUID)"), 0, 310, 35, 0);
                         let name = control(hwnd, "EDIT", "", 6, 350, 25, WS_BORDER);
                         let sex = control(hwnd, "EDIT", "1", 7, 380, 25, WS_BORDER);
@@ -138,7 +143,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             if IsWindow(hwnd) == 0 {
                                 break;
                             }
-                            let Some(shared) = weak.upgrade() else {
+                            let Some(shared) = crate::play::mailbox::native_mailbox(&weak, &commands) else {
                                 break;
                             };
                             let mut mailbox = lock(&shared);
@@ -152,18 +157,18 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                 let panel = &mut mailbox.store;
                                 let command = {
                                     match action {
-                                        11 if !panel.pending => {
+                                        11 if !panel.pending && panel.confirmed_purchase.is_none() => {
                                             let mut text = [0u16; 257];
                                             let n = GetWindowTextW(search, text.as_mut_ptr(), 257);
                                             panel.search = String::from_utf16_lossy(&text[..n.max(0) as usize]);
                                             None
                                         }
-                                        12 if !panel.pending => {
+                                        12 if !panel.pending && panel.confirmed_purchase.is_none() => {
                                             use store::StoreSort;
                                             panel.sort = match panel.sort { StoreSort::Catalogue => StoreSort::Title, StoreSort::Title => StoreSort::Price, StoreSort::Price => StoreSort::Catalogue };
                                             None
                                         }
-                                        3 if !panel.pending => {
+                                        3 if !panel.pending && panel.confirmed_purchase.is_none() => {
                                             if displayed == panel.catalogue && displayed_rows == store::visible_offers(panel) {
                                                 panel.selected_offer = usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)).ok()
                                                     .and_then(|index| displayed_rows.get(index).copied()).unwrap_or(usize::MAX);
@@ -171,7 +176,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                             None
                                         }
                                         9 => { if let Some(launcher) = &coin_shop { launcher.start(); } None }
-                                        2 | 5 if !panel.pending => {
+                                        14 | 15 => store::coin_history(panel, action == 15),
+                                        2 | 5 if !panel.pending && panel.confirmed_purchase.is_none() => {
                                             let keys = store::categories();
                                             let index = usize::try_from(SendMessageW(category, CB_GETCURSEL, 0, 0)).ok();
                                             if let Some(key) = index.and_then(|index| keys.get(index)) { panel.category.clone_from(key); }
@@ -181,15 +187,19 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                             store::catalogue(panel)
                                         }
                                         4 if !panel.pending && panel.selected
-                                            && displayed == panel.catalogue && displayed_rows == store::visible_offers(panel) => {
+                                            && displayed == panel.catalogue && (panel.confirmed_purchase.is_some() || displayed_rows == store::visible_offers(panel)) => {
                                             let read = |hwnd| {
                                                 let mut text = [0u16; 64];
                                                 let len = GetWindowTextW(hwnd, text.as_mut_ptr(), 64);
                                                 String::from_utf16_lossy(&text[..len.max(0) as usize])
                                             };
                                             customization(panel, &read(name), &read(sex), &read(identity));
-                                            let index = usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)).ok()
-                                                .and_then(|index| displayed_rows.get(index).copied());
+                                            let index = if panel.confirmed_purchase.is_some() {
+                                                Some(panel.selected_offer)
+                                            } else {
+                                                usize::try_from(SendMessageW(offers, LB_GETCURSEL, 0, 0)).ok()
+                                                    .and_then(|index| displayed_rows.get(index).copied())
+                                            };
                                             if let Some(index) = index
                                                 && let Some(offer) = panel
                                                     .catalogue
@@ -247,7 +257,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                 }
                             }
                             let panel = &mut mailbox.store;
-                            let visible = store::visible_offers(panel);
+                            let visible = if panel.confirmed_purchase.is_some() {
+                                panel.catalogue.as_ref().and_then(|page| page.offers.get(panel.selected_offer))
+                                    .map(|_| vec![panel.selected_offer]).unwrap_or_default()
+                            } else { store::visible_offers(panel) };
                             if displayed != panel.catalogue || displayed_rows != visible {
                                 SendMessageW(offers, LB_RESETCONTENT, 0, 0);
                                 if let Some(page) = &panel.catalogue {
@@ -266,12 +279,18 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                     }
                                 }
                                 displayed_rows = visible;
-                                panel.selected_offer = usize::MAX;
+                                if panel.confirmed_purchase.is_none() {
+                                    panel.selected_offer = usize::MAX;
+                                }
                                 displayed = panel.catalogue.clone();
                             }
-                            EnableWindow(next, i32::from(panel.selected && !panel.pending && panel.catalogue.as_ref().is_some_and(|p| !p.next_page_cursor.is_empty())));
+                            EnableWindow(offers, i32::from(panel.selected && !panel.pending && panel.confirmed_purchase.is_none()));
+                            if panel.confirmed_purchase.is_some() {
+                                SendMessageW(offers, LB_SETCURSEL, 0, 0);
+                            }
+                            EnableWindow(next, i32::from(panel.selected && !panel.pending && panel.confirmed_purchase.is_none() && panel.catalogue.as_ref().is_some_and(|p| !p.next_page_cursor.is_empty())));
                             EnableWindow(get_coins, i32::from(coin_shop.as_ref().is_some_and(|launcher|launcher.can_start())));
-                            EnableWindow(refresh, i32::from(panel.selected && !panel.pending));
+                            EnableWindow(refresh, i32::from(panel.selected && !panel.pending && panel.confirmed_purchase.is_none()));
                             EnableWindow(
                                 buy,
                                 i32::from(
@@ -283,7 +302,10 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                                             .is_some_and(|page| !page.offers.is_empty()),
                                 ),
                             );
-                            SetWindowTextW(status, wide(&panel_text(panel)).as_ptr());
+                            let text = if panel.page == store::StorePage::CoinHistory {
+                                store::coin_history_text(&panel.coin_history)
+                            } else { panel_text(panel) };
+                            SetWindowTextW(status, wide(&text).as_ptr());
                             drop(mailbox);
                             std::thread::sleep(std::time::Duration::from_millis(100));
                         }

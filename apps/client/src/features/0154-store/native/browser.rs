@@ -188,16 +188,22 @@ unsafe fn run(link: &PlayLink) {
                 SendMessageW(offers, LB_SETCURSEL, panel.browser.selected, 0);
                 selected = panel.browser.selected;
             }
+            let retry_quote = panel.confirmed_quote.as_ref().filter(|_| panel.confirmed_purchase.is_some());
             let product = panel
                 .browser
                 .page
                 .as_ref()
-                .and_then(|p| p.products.get(panel.browser.selected));
+                .and_then(|p| p.products.get(panel.browser.selected))
+                .filter(|product| retry_quote.is_none_or(|quote| {
+                    quote.catalog_revision == product.revision
+                        && quote.offers.first().is_some_and(|offer| offer.offer_key == product.offer.offer_key)
+                }));
             let current =
                 product.map(|p| (p.artwork, panel.browser.gender, panel.browser.direction));
             if signature != current {
                 signature = current;
                 pixels = None;
+                if current.is_none() { SetWindowTextW(image, wide("Preview unavailable").as_ptr()); }
                 if let Some((art, gender, dir)) = current {
                     let rendered = assets
                         .as_mut()
@@ -219,7 +225,9 @@ unsafe fn run(link: &PlayLink) {
             }
             SetWindowTextW(
                 detail,
-                wide(&product.map_or_else(
+                wide(&retry_quote.and_then(|quote| quote.offers.first().map(|offer| {
+                    format!("Original confirmed purchase:\r\n{}\r\n{} {}\r\nRevision: {}", offer.title, offer.price, offer.currency, quote.catalog_revision)
+                })).unwrap_or_else(|| product.map_or_else(
                     || "No matching products".into(),
                     |p| {
                         format!(
@@ -227,7 +235,7 @@ unsafe fn run(link: &PlayLink) {
                             p.offer.title, p.offer.price, p.offer.currency, p.category, p.revision
                         )
                     },
-                ))
+                )))
                 .as_ptr(),
             );
             SetWindowTextW(
@@ -239,8 +247,8 @@ unsafe fn run(link: &PlayLink) {
                 ))
                 .as_ptr(),
             );
-            for h in [category, search, sort, refresh, previous, next, buy] {
-                EnableWindow(h, i32::from(!panel.pending));
+            for h in [category, search, sort, refresh, previous, next, offers] {
+                EnableWindow(h, i32::from(!panel.pending && panel.confirmed_purchase.is_none()));
             }
             SetWindowTextW(
                 buy,
@@ -253,12 +261,13 @@ unsafe fn run(link: &PlayLink) {
             );
             EnableWindow(
                 previous,
-                i32::from(!panel.pending && panel.browser.cursors.len() > 1),
+                i32::from(!panel.pending && panel.confirmed_purchase.is_none() && panel.browser.cursors.len() > 1),
             );
             EnableWindow(
                 next,
                 i32::from(
                     !panel.pending
+                        && panel.confirmed_purchase.is_none()
                         && panel
                             .browser
                             .page

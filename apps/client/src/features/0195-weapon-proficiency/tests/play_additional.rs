@@ -396,6 +396,11 @@ fn proficiency_advancement_is_detected_from_real_play_results()
         let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
         mailbox.weapon_proficiency.pending = false;
     }
+    {
+        use oteryn_session::item_view::{CharacterInventory, EquippedItem, EquipmentSlot, ItemEntry};
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.inventory.apply(Some(CharacterInventory { equipment: vec![EquippedItem { slot: EquipmentSlot::RightHand, item: ItemEntry { handle: std::num::NonZeroU64::new(1).ok_or("handle")?, item_definition_ref: std::num::NonZeroU32::new(258).ok_or("definition")?, count: std::num::NonZeroU32::new(1).ok_or("count")?, sub_type: 0 }}], ..Default::default() }));
+    }
     link.weapon_proficiency_open_track(false);
     let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
         return Err("progress bar open".into());

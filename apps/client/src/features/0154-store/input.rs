@@ -126,8 +126,27 @@ impl PlayLink {
         identity: &str,
     ) -> bool {
         let mut m = lock(&self.mailbox);
-        if m.store.catalogue.as_ref() != Some(expected) || m.store.pending {
+        let displayed = if m.store.confirmed_purchase.is_some() {
+            m.store.confirmed_quote.as_ref()
+        } else {
+            m.store.catalogue.as_ref()
+        };
+        if displayed != Some(expected) || m.store.pending {
             return false;
+        }
+        if let Some(payload) = &m.store.confirmed_purchase {
+            let Ok(quote) = oteryn_client_runtime::cui3::store::decode_purchase_request(payload) else {
+                return false;
+            };
+            if expected.catalog_revision != quote.catalog_revision
+                || expected.offers.first().is_none_or(|offer| {
+                    offer.offer_key != quote.offer_key
+                        || offer.price != quote.price
+                        || offer.currency != quote.currency
+                })
+            {
+                return false;
+            }
         }
         super::view::native::customization(&mut m.store, name, sex, identity);
         let Some(command) = super::view::native::purchase(&mut m.store, 0, true) else {

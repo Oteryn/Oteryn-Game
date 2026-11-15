@@ -9,9 +9,19 @@ use std::num::NonZeroU32;
 pub const ITEM_HOTKEY_SLOTS: usize = 12;
 
 pub fn assign(panel: &mut HotkeyEquipPanel, slot: usize, definition: u32) -> bool {
-    if slot >= ITEM_HOTKEY_SLOTS || (definition != 0 && !panel.items.contains(&definition)) {
+    if slot >= ITEM_HOTKEY_SLOTS
+        || (definition != 0
+            && (panel.upgrade_tier > 10
+                || (panel.upgrade_tier != 0 && !panel.tiered)
+                || !panel.items.contains(&definition)))
+    {
         return false;
     }
     panel.bindings[slot] = NonZeroU32::new(definition);
+    panel.binding_tiers[slot] = if definition == 0 {
+        0
+    } else {
+        panel.upgrade_tier
+    };
     true
 }

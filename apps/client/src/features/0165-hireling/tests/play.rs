@@ -97,3 +97,62 @@ fn hireling_controls_use_real_codec_requests_and_apply_replies() -> Result<(), E
     })??;
     Ok(())
 }
+
+#[path = "../native.rs"]
+mod native_notifications;
+#[test]
+fn native_hireling_notifications_dispatch_real_requests() -> Result<(), Error> {
+    #[cfg(windows)]
+    let _open: fn(&PlayLink) = native_notifications::open_window;
+    let (link, mut commands, _) = play_channel();
+    let mut m = crate::play::mailbox::lock(&link.mailbox);
+    m.hireling.selected = true;
+    m.hireling.target = Some((7, 9, -1));
+    for (id, expected) in [
+        (
+            101,
+            hireling::Request::Summon {
+                x: 7,
+                y: 9,
+                floor: -1,
+            },
+        ),
+        (102, hireling::Request::Dismiss),
+        (103, hireling::Request::Query),
+    ] {
+        let mut actions = Vec::new();
+        native_notifications::record_notification(&mut actions, id | (1 << 16));
+        assert!(actions.is_empty());
+        native_notifications::record_notification(&mut actions, id);
+        native_notifications::dispatch_notifications(&mut m, &link.commands, actions);
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Hireling(c) if c.0 == expected)
+        );
+        m.hireling.pending = None;
+    }
+    Ok(())
+}
+
+#[test]
+fn native_startup_failure_releases_hireling_and_tracker_open_flags() {
+    let (link, _, _) = play_channel();
+    let mut m = crate::play::mailbox::lock(&link.mailbox);
+    m.hireling.open = true;
+    m.cyclopedia_tracker.open = true;
+    assert!(!crate::play::mailbox::native_startup_result(
+        &mut m.hireling.open,
+        false
+    ));
+    assert!(!m.hireling.open);
+    assert!(!crate::play::mailbox::native_startup_result(
+        &mut m.cyclopedia_tracker.open,
+        false
+    ));
+    assert!(!m.cyclopedia_tracker.open);
+    m.hireling.open = true;
+    assert!(crate::play::mailbox::native_startup_result(
+        &mut m.hireling.open,
+        true
+    ));
+    assert!(m.hireling.open);
+}

@@ -164,14 +164,15 @@ pub(super) unsafe fn create(hwnd: HWND) -> Layout {
             (14, "Gift coins", 428),
             (9, tr!("Get coins (sandbox)"), 636),
         ] {
-            control(hwnd, "BUTTON", label, id, [x, 705, 194, 28], WS_TABSTOP);
+            control(hwnd, "BUTTON", label, id, [x, 705, if id == 13 { 94 } else { 194 }, 28], WS_TABSTOP);
         }
 
+        control(hwnd, "BUTTON", "Older coins", 27, [320, 705, 94, 28], WS_TABSTOP);
         control(
             hwnd,
             "BUTTON",
             "Classic Store",
-            15,
+            super::commands::CLASSIC_STORE,
             [844, 705, 170, 28],
             WS_TABSTOP,
         );

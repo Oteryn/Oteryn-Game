@@ -21,7 +21,7 @@ impl PlayLink {
                     return None;
                 }
                 let panel = &mut mailbox.store;
-                if !panel.selected || panel.pending {
+                if !panel.selected || panel.pending || panel.confirmed_purchase.is_some() {
                     return None;
                 }
                 panel.catalogue = None;

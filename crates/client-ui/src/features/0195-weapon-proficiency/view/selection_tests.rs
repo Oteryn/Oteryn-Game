@@ -90,3 +90,24 @@ fn t123_catalogue_text_names_weapons_and_marks_the_selected_perk_instead_of_show
     assert!(!text.contains("[41]"));
     assert!(!text.contains("selected Some"));
 }
+
+#[test]
+fn proficiency_hud_progress_is_relative_to_next_level() -> Result<(), Box<dyn std::error::Error>> {
+    let mut p = panel();
+    p.select_weapon(0);
+    for (xp, expected) in [
+        (0, 0),
+        (50, 50),
+        (100, 0),
+        (150, 25),
+        (299, 99),
+        (300, 0),
+        (450, 50),
+        (600, 100),
+        (900, 100),
+    ] {
+        p.catalogue.as_mut().ok_or("catalogue")?.entries[0].experience = xp;
+        assert_eq!(hud_view(&p).ok_or("hud")?.percent, expected, "XP {xp}");
+    }
+    Ok(())
+}

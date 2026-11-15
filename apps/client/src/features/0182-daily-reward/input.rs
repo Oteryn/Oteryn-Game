@@ -58,6 +58,7 @@ pub(in crate::play) fn enqueue(
     }
     if let Some(command) = request(&mut mailbox.daily_reward, intent) {
         if intent == Intent::Refresh {
+            mailbox.daily_reward_refresh_wall = false;
             mailbox.daily_reward.details_attempted = false;
         }
         if commands.send(PlayCommand::DailyReward(command)).is_err() {
@@ -71,16 +72,18 @@ pub(in crate::play) fn enqueue_details(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
 ) {
-    if mailbox.world_input_blocked() {
+    if mailbox.world_input_blocked() || mailbox.daily_reward_refresh_wall {
         return;
     }
     if let Some(command) =
         oteryn_client_ui::daily_reward::request_details(&mut mailbox.daily_reward)
-        && commands.send(PlayCommand::Feature(command)).is_err()
     {
-        mailbox.daily_reward.pending = false;
-        mailbox.daily_reward.details_pending = false;
-        mailbox.daily_reward.feedback = Some("The session has ended");
+        mailbox.daily_reward_refresh_details = false;
+        if commands.send(PlayCommand::Feature(command)).is_err() {
+            mailbox.daily_reward.pending = false;
+            mailbox.daily_reward.details_pending = false;
+            mailbox.daily_reward.feedback = Some("The session has ended");
+        }
     }
 }
 

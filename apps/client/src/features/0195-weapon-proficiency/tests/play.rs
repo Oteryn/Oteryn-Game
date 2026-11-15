@@ -312,3 +312,91 @@ mod live_state {
 
 #[path = "play_additional.rs"]
 mod additional;
+
+#[test]
+fn proficiency_hud_and_click_follow_equipment_not_catalogue_selection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{mailbox::lock, play_channel};
+    use oteryn_client_runtime::{
+        inventory::{CharacterInventory, ItemEntry},
+        weapon_proficiency::{
+            ProficiencyCatalogueEntry, ProficiencyCatalogueLevel, ProficiencyCataloguePage,
+        },
+    };
+    use oteryn_session::item_view::{EquipmentSlot, EquippedItem};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.weapon_proficiency_initialize(true);
+    outbox.weapon_proficiency_state_initialize(true);
+    {
+        let mut m = lock(&link.mailbox);
+        m.weapon_proficiency.catalogue = Some(ProficiencyCataloguePage {
+            offset: 0,
+            total: 2,
+            entries: [258, 259]
+                .into_iter()
+                .map(|definition| ProficiencyCatalogueEntry {
+                    definition,
+                    weapon: format!("weapon{definition}"),
+                    name: format!("Weapon {definition}"),
+                    experience: 15,
+                    thresholds: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                    levels: vec![ProficiencyCatalogueLevel {
+                        selected: None,
+                        perks: vec![],
+                    }],
+                })
+                .collect(),
+        });
+        m.inventory.apply(Some(CharacterInventory {
+            equipment: vec![EquippedItem {
+                slot: EquipmentSlot::RightHand,
+                item: ItemEntry {
+                    handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
+                    item_definition_ref: std::num::NonZeroU32::new(258).ok_or("definition")?,
+                    count: std::num::NonZeroU32::new(1).ok_or("count")?,
+                    sub_type: 0,
+                },
+            }],
+            ..Default::default()
+        }));
+    }
+    link.weapon_proficiency_select_weapon(1);
+    let _ = commands.try_recv();
+    outbox.weapon_proficiency_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Rejected,
+        payload: vec![],
+    });
+    assert_eq!(link.weapon_proficiency_hud().ok_or("hud")?.definition, 258);
+    link.weapon_proficiency_open_track(false);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(c) if c.payload == 258u32.to_be_bytes())
+    );
+    lock(&link.mailbox).inventory.apply(None);
+    assert!(link.weapon_proficiency_hud().is_none());
+    Ok(())
+}
+
+#[test]
+fn native_proficiency_reopen_starts_at_zero_without_disrupting_pending_page()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{mailbox::lock, play_channel};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.weapon_proficiency_initialize(true);
+    lock(&link.mailbox).weapon_proficiency.catalogue_offset = 16;
+    assert!(link.weapon_proficiency_begin_native());
+    link.weapon_proficiency_request(Intent::Catalogue);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Feature(c) if c.payload == 0u32.to_be_bytes())
+    );
+    {
+        let mut m = lock(&link.mailbox);
+        m.weapon_proficiency.open = false;
+        m.weapon_proficiency.catalogue_offset = 8;
+    }
+    assert!(link.weapon_proficiency_begin_native());
+    assert_eq!(link.weapon_proficiency_panel().catalogue_offset, 8);
+    assert!(link.weapon_proficiency_panel().pending);
+    Ok(())
+}

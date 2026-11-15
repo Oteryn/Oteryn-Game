@@ -36,7 +36,7 @@ pub fn browse(
     sort: u8,
     step: i8,
 ) -> Option<ServerMechanicCommand> {
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || panel.confirmed_purchase.is_some() {
         return None;
     }
     let browser = &mut panel.browser;

@@ -1,14 +1,17 @@
 //! User actions preserve the selected server quote through confirmation and retries.
 #![allow(unsafe_code, reason = "Controls remain on their creating thread")]
+#[cfg(windows)]
 use super::{
     controls::{text, wide},
     store,
 };
+#[cfg(windows)]
 use crate::{
-    combat_input::PlayCommand,
     play::{PlayLink, mailbox::lock},
 };
+#[cfg(windows)]
 use windows_sys::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
+#[cfg(windows)]
 pub(super) unsafe fn handle(
     link: &PlayLink,
     hwnd: HWND,
@@ -29,7 +32,7 @@ pub(super) unsafe fn handle(
                 link.store_payment(tokens);
                 continue;
             }
-            if id == 15 && note == 0 {
+            if id == CLASSIC_STORE && note == 0 {
                 super::super::open_classic_window(link);
                 continue;
             }
@@ -57,11 +60,7 @@ pub(super) unsafe fn handle(
                 link.discovery_open(285);
                 continue;
             }
-            if id == 13 && note == 0 {
-                let mut m = lock(&link.mailbox);
-                if let Some(c) = store::coin_history(&mut m.store, false) {
-                    let _ = link.commands.send(PlayCommand::ServerMechanic(c));
-                }
+            if history_control(link, id, note) {
                 continue;
             }
             if id == 4 && note == 0 {
@@ -72,7 +71,7 @@ pub(super) unsafe fn handle(
                 let Some(expected) = displayed_quote else {
                     continue;
                 };
-                if snapshot.catalogue.as_ref() != Some(expected) {
+                if store::confirmation_quote(&snapshot).as_ref() != Some(expected) {
                     continue;
                 }
                 let quote = Some(expected.clone());
@@ -105,13 +104,7 @@ pub(super) unsafe fn handle(
                 }
                 continue;
             }
-            if matches!(id, 15 | 16) && note == 0 {
-                let mut m = lock(&link.mailbox);
-                if id == 15 {
-                    m.store.browser.gender ^= 1;
-                } else {
-                    m.store.browser.direction = (m.store.browser.direction + 1) % 4;
-                }
+            if preview_control(&mut lock(&link.mailbox).store, id, note) {
                 continue;
             }
             let browse = (id == 1 && note == LBN_SELCHANGE as usize)
@@ -154,4 +147,32 @@ pub(super) unsafe fn handle(
             }
         }
     }
+}
+
+pub(in crate::play) const CLASSIC_STORE: usize = 18;
+pub(in crate::play) fn preview_control(
+    panel: &mut oteryn_client_ui::store::StorePanel,
+    id: usize,
+    note: usize,
+) -> bool {
+    if note != 0 || id == CLASSIC_STORE {
+        return false;
+    }
+    match id {
+        15 => panel.browser.gender ^= 1,
+        16 => panel.browser.direction = (panel.browser.direction + 1) % 4,
+        _ => return false,
+    }
+    true
+}
+
+pub(in crate::play) fn history_control(
+    link: &crate::play::PlayLink,
+    id: usize,
+    note: usize,
+) -> bool {
+    if !matches!(id, 13 | 27) || note != 0 {
+        return false;
+    }
+    link.coin_history(id == 27)
 }

@@ -182,3 +182,65 @@ fn t041_object_selector_and_smart_option_persist() -> Result<(), Box<dyn std::er
     let _ = std::fs::remove_file(path);
     Ok(())
 }
+
+#[test]
+fn assigned_hotkey_retains_tier_after_selection_and_reload()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_tiered(true);
+    outbox.hotkey_equip_items(vec![256]);
+    crate::play::mailbox::lock(&link.mailbox)
+        .hotkey_equip
+        .upgrade_tier = 4;
+    assert!(link.hotkey_equip_assign(0, 256));
+    let mut settings = crate::play::SettingsState::new(None);
+    settings.sync_item_hotkeys(&link);
+    let serialized = serde_json::to_vec(&settings.preferences)?;
+    let preferences = serde_json::from_slice(&serialized)?;
+    let mut restored = crate::play::SettingsState::new(None);
+    restored.apply(preferences);
+    {
+        let mut m = crate::play::mailbox::lock(&link.mailbox);
+        m.hotkey_equip.upgrade_tier = 0;
+        m.hotkey_equip.bindings = Default::default();
+    }
+    restored.sync_item_hotkeys(&link);
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(58)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    for _ in 0..2 {
+        assert!(link.hotkey_equip_input(std::slice::from_ref(&event)));
+        let crate::combat_input::PlayCommand::ServerMechanic(c) = commands.try_recv()? else {
+            return Err("hotkey".into());
+        };
+        assert_eq!(c.payload, [0, 0, 1, 0, 4]);
+        outbox.hotkey_equip_result(&oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: vec![8, 1],
+        });
+    }
+    Ok(())
+}
+
+#[test]
+fn native_panels_stop_on_closed_receiver_even_with_overlapping_mailbox_holders()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, commands, _) = play_channel();
+    let weak = std::sync::Arc::downgrade(&link.mailbox);
+    let first_panel =
+        crate::play::mailbox::native_mailbox(&weak, &link.commands).ok_or("first panel")?;
+    let second_panel =
+        crate::play::mailbox::native_mailbox(&weak, &link.commands).ok_or("second panel")?;
+    drop(commands);
+    assert!(weak.upgrade().is_some());
+    assert!(crate::play::mailbox::native_mailbox(&weak, &link.commands).is_none());
+    drop((first_panel, second_panel));
+    Ok(())
+}

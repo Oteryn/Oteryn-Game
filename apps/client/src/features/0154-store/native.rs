@@ -10,7 +10,9 @@ pub(in crate::play) fn purchase(
     if panel.pending || !panel.selected {
         return None;
     }
-    panel.selected_offer = selection;
+    if panel.confirmed_purchase.is_none() {
+        panel.selected_offer = selection;
+    }
     panel.purchase_confirmed = confirmed;
     if confirmed && panel.confirmed_purchase.is_none() {
         // CLIGAP-W09 accepted transport difference: retries reuse the confirmed

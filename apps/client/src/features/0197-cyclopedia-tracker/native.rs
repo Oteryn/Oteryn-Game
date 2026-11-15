@@ -29,7 +29,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
     }
     let weak = std::sync::Arc::downgrade(&link.mailbox);
     let commands = link.commands.clone();
-    let _ = std::thread::Builder::new()
+    let started = std::thread::Builder::new()
         .name("cyclopedia-tracker-panel".into())
         .spawn(move || unsafe {
             let h = CreateWindowExW(
@@ -118,7 +118,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 if IsWindow(h) == 0 {
                     break;
                 }
-                let Some(s) = weak.upgrade() else { break };
+                let Some(s) = crate::play::mailbox::native_mailbox(&weak, &commands) else { break };
                 for id in actions.0.drain(..) {
                     if matches!(id, 107 | 108) {
                         widget::open(weak.clone(), commands.clone(), id == 108);
@@ -150,7 +150,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 lock(&s).cyclopedia_tracker.open = false
             }
             DestroyWindow(h);
-        });
+        }).is_ok();
+    crate::play::mailbox::native_startup_result(&mut lock(&link.mailbox).cyclopedia_tracker.open, started);
 }
 unsafe fn ctl(h: HWND, c: &str, t: &str, id: usize, b: [i32; 4], x: u32) -> HWND {
     unsafe {

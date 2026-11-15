@@ -127,6 +127,9 @@ pub(super) unsafe fn window(
                 {
                     let command = {
                         let mut mailbox = lock(&link.mailbox);
+                        if mailbox.store.confirmed_purchase.is_some() {
+                            continue;
+                        }
                         if mailbox.store.category.is_empty() {
                             mailbox.store.category = "featured".into();
                         }

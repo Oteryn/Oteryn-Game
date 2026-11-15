@@ -3,6 +3,7 @@ use oteryn_client_runtime::cui3::item_view::ItemMoveOutcome;
 pub struct HotkeyEquipPanel {
     pub items: Vec<u32>,
     pub bindings: [Option<std::num::NonZeroU32>; super::ITEM_HOTKEY_SLOTS],
+    pub binding_tiers: [u8; super::ITEM_HOTKEY_SLOTS],
     pub selected: bool,
     pub smart: bool,
     pub smart_active: bool,

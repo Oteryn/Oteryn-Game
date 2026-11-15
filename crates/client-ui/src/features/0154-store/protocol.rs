@@ -40,7 +40,7 @@ fn encoded(
 // CLIGAP-W09 accepted transport difference: follow Game's opaque catalogue cursor,
 // reset it on category changes; Crystal sends category offers without this cursor.
 pub fn catalogue(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || panel.confirmed_purchase.is_some() {
         return None;
     }
     panel.page = StorePage::Catalogue;
@@ -94,7 +94,15 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
             panel.feedback = Some(tr!("Select an offer from the server catalogue").into());
             None
         })?;
-    let revision = panel.catalogue.as_ref()?.catalog_revision.clone();
+    let page = panel.catalogue.as_ref()?;
+    let revision = page.catalog_revision.clone();
+    let confirmed_quote = StoreCataloguePage {
+        catalog_revision: revision.clone(),
+        offers: vec![offer.clone()],
+        next_page_cursor: String::new(),
+        total_coins: page.total_coins,
+        transferable_coins: page.transferable_coins,
+    };
     panel.purchase_confirmed = false;
     // Crystal 201189f, data/modules/scripts/gamestore/gamestore.lua:6302-6332:
     // hire / rename / sex-change identities. init.lua:1877-1900,1951-1972,1990-2020:
@@ -135,6 +143,7 @@ pub fn purchase(panel: &mut StorePanel) -> Option<ServerMechanicCommand> {
     let kind = purchase_kind(&payload);
     let command = encoded(panel, kind, Ok(payload))?;
     panel.confirmed_purchase = Some(command.payload.clone());
+    panel.confirmed_quote = Some(confirmed_quote);
     Some(command)
 }
 
@@ -170,6 +179,14 @@ pub fn request(
     command: ServerMechanicCommand,
 ) -> Option<ServerMechanicCommand> {
     if !panel.selected || panel.pending {
+        return None;
+    }
+    if panel.confirmed_purchase.is_some()
+        && matches!(
+            command.command_type,
+            COMMAND_TYPE_STORE_CATALOGUE_PAGE | store::browse::COMMAND_TYPE
+        )
+    {
         return None;
     }
     if command.capability == oteryn_client_runtime::server_modal::CAPABILITY_SERVER_MODAL_V1
@@ -233,6 +250,7 @@ pub fn apply_result(panel: &mut StorePanel, result: &ServerMechanicResponse) {
         }
         _ => store::decode_purchase_result(&result.payload).map(|v| {
             panel.confirmed_purchase = None;
+            panel.confirmed_quote = None;
             if panel.pending_action == store::cosmetic_tokens::PURCHASE
                 && v.code == StorePurchaseCode::Accepted
             {
@@ -293,10 +311,10 @@ pub fn choose_payment(panel: &mut StorePanel, tokens: bool) -> bool {
 
 /// Retain the server product identity and price while confirming an explicit token choice.
 pub fn confirmation_quote(panel: &StorePanel) -> Option<StoreCataloguePage> {
-    let quote = panel.catalogue.as_ref()?;
     if panel.confirmed_purchase.is_some() {
-        return Some(quote.clone());
+        return panel.confirmed_quote.clone();
     }
+    let quote = panel.catalogue.as_ref()?;
     let product = panel
         .browser
         .page
