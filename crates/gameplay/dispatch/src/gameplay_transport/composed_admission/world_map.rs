@@ -2,6 +2,12 @@ use super::*;
 #[path = "house_hireling_view.rs"]
 mod house_hireling_view;
 
+/// Domain-1 positions are native-frame (ground -7, as the map view origin); the movement
+/// runtime keeps legacy `z` (ground 7). Sign-insensitive, like the cast viewer's conversion.
+pub(in crate::gameplay_transport) const fn native_floor(floor: i16) -> i16 {
+    floor.saturating_abs().saturating_neg()
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
     /// on a fixture World.
@@ -23,7 +29,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor_position: ActorPosition {
                 x: position.x,
                 y: position.y,
-                floor: position.floor,
+                floor: native_floor(position.floor),
             },
         }
     }
@@ -137,7 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             position: ActorPosition {
                 x: entry.position.x,
                 y: entry.position.y,
-                floor: entry.position.floor,
+                floor: native_floor(entry.position.floor),
             },
             revision: entry.revision,
         })
@@ -195,5 +201,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         self.states.staff_world.filter(actor, &mut view);
         Some(view)
+    }
+}
+
+#[cfg(test)]
+mod native_floor_tests {
+    use super::native_floor;
+
+    #[test]
+    fn spatial_floors_use_the_map_view_frame() {
+        // Ground is legacy z 7 in the movement runtime and -7 in the map view origin.
+        assert_eq!(native_floor(7), -7);
+        assert_eq!(native_floor(-7), -7);
+        assert_eq!(native_floor(6), -6);
+        assert_eq!(native_floor(0), 0);
+        assert_eq!(native_floor(15), -15);
     }
 }
