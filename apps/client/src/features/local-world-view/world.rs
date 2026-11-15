@@ -4,6 +4,25 @@ use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, Hook, Placement, SpriteSheets};
 use oteryn_session::world_map::WorldMapViewSnapshot;
 
+struct RawItem {
+    layer: u8,
+    elevation: u32,
+    frames: Vec<Vec<oteryn_client_assets::DrawCell>>,
+    phase_ms: Vec<u32>,
+}
+#[derive(Debug, Clone)]
+struct ItemAnimation {
+    over: bool,
+    frames: Vec<Vec<Draw>>,
+    phase_ms: Vec<u32>,
+}
+#[derive(Debug, Clone)]
+pub(super) struct TileAnimation {
+    key: (i16, i32, i32),
+    elevation: i32,
+    items: Vec<ItemAnimation>,
+}
+
 impl World {
     pub(crate) fn from_live_map(map: &WorldMapViewSnapshot) -> Result<Self, BatchError> {
         let mut world = Self::builtin()?;
@@ -35,7 +54,10 @@ impl World {
         Ok(world)
     }
 
-    fn resolve_live_map(root: &Path, map: &WorldMapViewSnapshot) -> Result<Self, String> {
+    pub(crate) fn resolve_live_map(
+        root: &Path,
+        map: &WorldMapViewSnapshot,
+    ) -> Result<Self, String> {
         let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
             &root.join(MANIFEST_PATH),
@@ -89,12 +111,34 @@ impl World {
                     } else {
                         3
                     };
-                    cells += resolved.cells.len();
+                    let appearance = index
+                        .get(u32::from(item.appearance_id))
+                        .ok_or("appearance disappeared")?;
+                    let mut frames = vec![resolved.cells];
+                    for phase in 1..appearance.phases {
+                        frames.push(
+                            index
+                                .resolve_phase(
+                                    &sheets,
+                                    u32::from(item.appearance_id),
+                                    placement,
+                                    phase,
+                                )
+                                .map_err(|error| error.to_string())?
+                                .cells,
+                        );
+                    }
+                    cells += frames.iter().map(Vec::len).max().unwrap_or(0);
                     within_draw_cap(cells)?;
-                    items.push((layer, resolved.elevation, resolved.cells));
+                    items.push(RawItem {
+                        layer,
+                        elevation: resolved.elevation,
+                        frames,
+                        phase_ms: appearance.phase_ms.clone(),
+                    });
                 }
             }
-            items.sort_by_key(|(layer, _, _)| *layer);
+            items.sort_by_key(|item| item.layer);
             entries.push((tile.position, items));
         }
         let mut player: [Vec<oteryn_client_assets::DrawCell>; 4] = Default::default();
@@ -108,7 +152,7 @@ impl World {
         let atlas = WorldAtlas::prepare(
             entries
                 .iter()
-                .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
+                .flat_map(|(_, items)| items.iter().flat_map(|item| item.frames.iter().flatten()))
                 .chain(player.iter().flatten()),
             |sprite, x, y| {
                 sheets
@@ -117,10 +161,47 @@ impl World {
             },
         )?;
         let slot = |cell: &oteryn_client_assets::DrawCell| atlas.slot(cell);
+        let mut animations = Vec::new();
         let tiles = entries
             .iter()
             .map(|(position, items)| {
-                let mut tile = project_tile(items, slot);
+                let first: Vec<_> = items
+                    .iter()
+                    .map(|item| (item.layer, item.elevation, item.frames[0].clone()))
+                    .collect();
+                let mut tile = project_tile(&first, slot);
+                if items.iter().any(|item| item.frames.len() > 1) {
+                    let (lifts, _) =
+                        oteryn_client_simulation::world::stack_lifts(items.iter().map(|item| {
+                            (
+                                item.layer,
+                                oteryn_client_simulation::world::item_height(item.elevation),
+                            )
+                        }));
+                    let shift = i32::from(position.floor - origin.floor);
+                    animations.push(TileAnimation {
+                        key: (position.floor, position.x - shift, position.y - shift),
+                        elevation: tile.elevation,
+                        items: items
+                            .iter()
+                            .zip(lifts)
+                            .map(|(item, lift)| ItemAnimation {
+                                over: item.layer == 4,
+                                frames: item
+                                    .frames
+                                    .iter()
+                                    .map(|cells| {
+                                        cells
+                                            .iter()
+                                            .filter_map(|cell| project_cell(cell, lift, slot))
+                                            .collect()
+                                    })
+                                    .collect(),
+                                phase_ms: item.phase_ms.clone(),
+                            })
+                            .collect(),
+                    });
+                }
                 if tile.under.is_empty() && tile.over.is_empty() {
                     tile.under.push(Draw {
                         cell: MARKER_CELL,
@@ -137,6 +218,7 @@ impl World {
                 .collect()
         });
         let mut world = Self {
+            animations,
             effects: Default::default(),
             center: (origin.x, origin.y, origin.floor),
             first_visible_floor: map.header.first_visible_floor,
@@ -172,6 +254,56 @@ impl World {
                 .or_default()
                 .insert(projected, tile);
         }
+    }
+
+    pub(crate) fn animation_epoch() -> std::time::Instant {
+        static EPOCH: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+        *EPOCH.get_or_init(std::time::Instant::now)
+    }
+
+    pub(crate) fn animation_phases(&self, elapsed_ms: u64) -> Vec<usize> {
+        self.animations
+            .iter()
+            .flat_map(|tile| &tile.items)
+            .map(|item| {
+                let total: u64 = (0..item.frames.len())
+                    .map(|phase| u64::from(item.phase_ms.get(phase).copied().unwrap_or(100).max(1)))
+                    .sum();
+                let mut age = elapsed_ms % total;
+                for phase in 0..item.frames.len() {
+                    let duration =
+                        u64::from(item.phase_ms.get(phase).copied().unwrap_or(100).max(1));
+                    if age < duration {
+                        return phase;
+                    }
+                    age -= duration;
+                }
+                0
+            })
+            .collect()
+    }
+
+    pub(crate) fn animation_tiles(&self, phases: &[usize]) -> HashMap<(i16, i32, i32), MapTile> {
+        let mut phases = phases.iter();
+        self.animations
+            .iter()
+            .map(|animation| {
+                let mut tile = MapTile {
+                    elevation: animation.elevation,
+                    ..Default::default()
+                };
+                for item in &animation.items {
+                    let phase = phases.next().copied().unwrap_or(0);
+                    let draws = if item.over {
+                        &mut tile.over
+                    } else {
+                        &mut tile.under
+                    };
+                    draws.extend(item.frames[phase].iter().copied());
+                }
+                (animation.key, tile)
+            })
+            .collect()
     }
 
     /// Painter order: the deepest floor first, the highest visible floor last.

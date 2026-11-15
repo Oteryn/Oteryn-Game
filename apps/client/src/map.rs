@@ -30,6 +30,7 @@ pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 
 #[derive(Debug, Clone)]
 pub struct World {
+    animations: Vec<live_map::TileAnimation>,
     effects: oteryn_client_assets::EffectCatalog,
     center: (i32, i32, i16),
     pub(crate) first_visible_floor: i16,
@@ -56,6 +57,7 @@ impl World {
     pub fn builtin() -> Result<Self, BatchError> {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
+            animations: Vec::new(),
             effects: Default::default(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
             first_visible_floor: i16::from(START_FLOOR),
@@ -127,6 +129,7 @@ impl World {
         }
         let atlas = atlas.into_image();
         Ok(Self {
+            animations: Vec::new(),
             effects: Default::default(),
             center,
             first_visible_floor: center.2,

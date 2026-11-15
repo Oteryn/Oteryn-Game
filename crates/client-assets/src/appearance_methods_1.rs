@@ -86,6 +86,17 @@ impl AppearanceIndex {
         appearance_id: u32,
         placement: Placement,
     ) -> Result<ResolvedEntry, AssetError> {
+        self.resolve_phase(sheets, appearance_id, placement, 0)
+    }
+
+    /// Resolve one map animation phase with the same placement patterns as `resolve`.
+    pub fn resolve_phase(
+        &self,
+        sheets: &SpriteSheets,
+        appearance_id: u32,
+        placement: Placement,
+        phase: u32,
+    ) -> Result<ResolvedEntry, AssetError> {
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
@@ -98,13 +109,16 @@ impl AppearanceIndex {
             .objects
             .get(&appearance_id)
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
+        if phase >= appearance.phases {
+            return Err(AssetError::UnknownSprite { sprite_id: 0 });
+        }
         let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
         entry(
             appearance,
             sheets,
             (pattern_x, pattern_y, pattern_z),
             0..appearance.layers,
-            0,
+            phase,
         )
     }
 }

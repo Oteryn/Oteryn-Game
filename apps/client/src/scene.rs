@@ -29,6 +29,8 @@ const _: () = assert!(
 
 #[derive(Debug, Clone)]
 pub struct Scene {
+    animation_phases: Vec<usize>,
+    animated_tiles: std::collections::HashMap<(i16, i32, i32), crate::map::MapTile>,
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
@@ -128,6 +130,8 @@ impl Scene {
             minimap_memory: Default::default(),
             minimap_origin: None,
             world,
+            animation_phases: Vec::new(),
+            animated_tiles: Default::default(),
             lit_atlas: None,
             anchor,
             own,

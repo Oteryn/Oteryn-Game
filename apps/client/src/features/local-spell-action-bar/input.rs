@@ -139,6 +139,24 @@ pub(in crate::play) fn edit_slot(
     }
     if action >= 3 {
         use super::view::{BarAction, PassiveAbility};
+        let sub_type = if (9..=13).contains(&action) {
+            match fields
+                .get(8)
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+            {
+                Some(value) => match value.parse::<u32>() {
+                    Ok(value) => Some(value),
+                    Err(_) => {
+                        mailbox.spell_bar.feedback = "Enter a nonnegative item subtype".into();
+                        return;
+                    }
+                },
+                None => None,
+            }
+        } else {
+            None
+        };
         let extra = match action {
             3 => fields
                 .get(2)
@@ -165,15 +183,17 @@ pub(in crate::play) fn edit_slot(
             7 => Some(BarAction::Passive {
                 ability: PassiveAbility::Serene,
             }),
-            9..=12 => fields
+            9..=13 => fields
                 .get(2)
                 .and_then(|text| text.trim().parse().ok())
                 .map(|definition| BarAction::Use {
                     definition,
+                    sub_type,
                     mode: match action {
                         9 => super::view::ItemUseMode::SelfActor,
                         10 => super::view::ItemUseMode::Target,
                         11 => super::view::ItemUseMode::Cursor,
+                        13 => super::view::ItemUseMode::Use,
                         _ => super::view::ItemUseMode::CursorPosition,
                     },
                 }),

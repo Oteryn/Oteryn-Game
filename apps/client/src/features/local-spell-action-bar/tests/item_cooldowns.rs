@@ -61,6 +61,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
             actions: vec![
                 BarAction::Use {
                     definition,
+                    sub_type: None,
                     mode: ItemUseMode::CursorPosition
                 },
                 BarAction::Spell {
@@ -116,16 +117,19 @@ fn multiaction_reads_real_item_exhaustion_before_one_queued_action()
         assert_eq!(wire::decode_query(&query.payload), Some(vec![256]));
         assert!(commands.try_recv().is_err());
         crate::play::mailbox::lock(&link.mailbox).bar_actions.cursor = None;
-        outbox.bar_item_cooldowns_result(&oteryn_session::GatedCommandResult {
-            command_id: 1,
-            server_sequence: 1,
-            status: oteryn_session::CommandStatus::Accepted,
-            payload: wire::encode_reply(&[wire::ItemCooldown {
-                definition: 256,
-                remaining_ms,
-            }])
-            .ok_or("reply")?,
-        });
+        outbox.bar_item_cooldowns_result(
+            outbox.bar_action_scope(),
+            &oteryn_session::GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload: wire::encode_reply(&[wire::ItemCooldown {
+                    definition: 256,
+                    remaining_ms,
+                }])
+                .ok_or("reply")?,
+            },
+        );
         view.tick(&link).map_err(|_| "tick action")?;
         if remaining_ms > 0 {
             assert!(
@@ -158,7 +162,7 @@ fn pending_item_read_cannot_execute_an_edited_assignment() -> Result<(), Box<dyn
             send_automatically: true
         }
     ));
-    outbox.bar_item_cooldowns_result(&result(0)?);
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &result(0)?);
     view.tick(&link).map_err(|_| "edited tick")?;
     assert!(commands.try_recv().is_err());
     assert!(!link.bar_activation_pending());
@@ -176,12 +180,15 @@ fn rejected_item_read_releases_the_real_input_queue_without_firing_an_alternativ
         crate::combat_input::PlayCommand::Feature(_)
     ));
     assert!(commands.try_recv().is_err());
-    outbox.bar_item_cooldowns_result(&oteryn_session::GatedCommandResult {
-        command_id: 1,
-        server_sequence: 1,
-        status: oteryn_session::CommandStatus::Rejected,
-        payload: vec![],
-    });
+    outbox.bar_item_cooldowns_result(
+        outbox.bar_action_scope(),
+        &oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Rejected,
+            payload: vec![],
+        },
+    );
     view.tick(&link).map_err(|_| "refused tick")?;
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==2)
@@ -203,7 +210,7 @@ fn item_query_reply_must_match_the_requested_definitions() -> Result<(), Box<dyn
         remaining_ms: 0,
     }])
     .ok_or("mismatch")?;
-    outbox.bar_item_cooldowns_result(&reply);
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &reply);
     view.tick(&link).map_err(|_| "mismatch tick")?;
     assert!(commands.try_recv().is_err());
     assert!(!link.bar_activation_pending());
@@ -218,7 +225,7 @@ fn item_query_preserves_action_order_before_later_casts() -> Result<(), Box<dyn 
     view.tick(&link).map_err(|_| "query tick")?;
     let _ = commands.try_recv()?;
     assert!(commands.try_recv().is_err());
-    outbox.bar_item_cooldowns_result(&result(0)?);
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &result(0)?);
     view.tick(&link).map_err(|_| "action tick")?;
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::WorldContext(command) if command.target==Target::Position(original))
@@ -237,7 +244,7 @@ fn preview_item_read_never_casts_or_uses_an_item() -> Result<(), Box<dyn std::er
         commands.try_recv()?,
         crate::combat_input::PlayCommand::Feature(_)
     ));
-    outbox.bar_item_cooldowns_result(&result(0)?);
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &result(0)?);
     view.tick(&link).map_err(|_| "preview reply")?;
     assert!(commands.try_recv().is_err());
     assert!(!link.bar_activation_pending());
@@ -251,5 +258,108 @@ fn unselected_item_cooldown_capability_sends_no_item_or_spell()
     view.cast(NonZeroU32::MIN);
     view.tick(&link).map_err(|_| "unselected tick")?;
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn activity_transition_cancels_pending_and_deferred_item_reads()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::activity_scope::*;
+    let (link, mut commands, outbox, mut view, _) = fixture()?;
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(link.bar_item_read_pending());
+    let action = crate::play::mailbox::lock(&link.mailbox)
+        .bar_actions
+        .saved
+        .0[&0]
+        .clone();
+    assert!(link.assign_bar_action(1, action));
+    let origin_scope = outbox.bar_action_scope();
+    // A different activation waits behind the preview query.
+    link.cast_spell_slot(NonZeroU32::new(2).ok_or("slot")?);
+    assert!(link.bar_activation_pending());
+    let mut id = [1; 16];
+    id[6] = 0x70;
+    id[8] = 0x80;
+    let mut successor = id;
+    successor[15] = 2;
+    let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id,
+        source_session: id,
+        session: successor,
+        scope: ActivityScope::Instance {
+            world: id,
+            instance: id,
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 2,
+        selection: vec![117, 463],
+        requires_ack: false,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+        server_sequence: 3,
+        base_revision: 0,
+        new_revision: 1,
+        value: oteryn_session::GatedSnapshot {
+            domain_id: STATE_DOMAIN_ACTIVITY_SCOPE,
+            snapshot_type: 1,
+            revision: 1,
+            payload,
+        },
+    })]);
+    assert_ne!(outbox.bar_action_scope(), origin_scope);
+    assert!(outbox.death_command(&mut commands).is_err());
+    assert!(!link.bar_item_read_pending());
+    assert!(!link.bar_activation_pending());
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &result(0)?);
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .bar_actions
+            .item_cooldowns
+            .is_empty()
+    );
+    view.tick(&link).map_err(|_| "scope tick")?;
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![oteryn_session::ItemEntry {
+                handle: NonZeroU64::MIN,
+                item_definition_ref: NonZeroU32::new(256).ok_or("definition")?,
+                count: NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        }),
+        true,
+    );
+    link.pump_bar_item_cooldowns(true);
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Feature(_)
+    ));
+    outbox.bar_item_cooldowns_result(origin_scope, &result(0)?);
+    assert!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .bar_actions
+            .item_cooldowns
+            .is_empty()
+    );
+    assert!(
+        !crate::play::mailbox::lock(&link.mailbox)
+            .bar_actions
+            .item_cooldown_read
+            .as_ref()
+            .ok_or("read")?
+            .ready
+    );
+    outbox.bar_item_cooldowns_result(outbox.bar_action_scope(), &result(0)?);
+    link.pump_bar_item_cooldowns(false);
+    view.logout();
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Logout
+    ));
     Ok(())
 }

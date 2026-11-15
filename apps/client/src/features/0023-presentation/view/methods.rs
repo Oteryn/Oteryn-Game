@@ -28,13 +28,14 @@ impl PlayView {
     }
 
     pub(in crate::play) fn project_presentation(&mut self, now: Instant) -> Result<(), BatchError> {
+        let map_changed = self.scene.advance_map_animation(now)?;
         // Palette pixels remain emissive: overlays must be legible in dark areas.
         let (frames, changed) = if self.preferences().show_effects {
             self.scene.visual_frames(&self.visuals, now, self.floor)?
         } else {
             (Vec::new(), false)
         };
-        if changed {
+        if changed || map_changed {
             self.weather_scene();
             self.light_scene()?;
         }

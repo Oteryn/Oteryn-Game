@@ -50,6 +50,7 @@ enum Edit {
     InsertText,
     Equip,
     Use,
+    CursorPosition,
     SelfActor,
     Target,
     Cursor,
@@ -122,6 +123,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         "Drag an object onto an unlocked action slot to assign it.",
         "Text",
         "Keyboard chord",
+        "Item subtype (blank: any)",
     ]
     .into_iter()
     .enumerate()
@@ -205,7 +207,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         (Edit::Text, "Send text"),
         (Edit::InsertText, "Insert text"),
         (Edit::Equip, "Equip"),
-        (Edit::Use, "Use position"),
+        (Edit::Use, "Use item"),
+        (Edit::CursorPosition, "Use position"),
         (Edit::SelfActor, "Use on self"),
         (Edit::Target, "Use on target"),
         (Edit::Cursor, "Use at cursor"),
@@ -268,7 +271,7 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    let mut values: [String; 4] = Default::default();
+    let mut values: [String; 5] = Default::default();
     for (field, text) in &fields {
         if let Some(value) = values.get_mut(field.0) {
             *value = text.value().to_string();
@@ -292,7 +295,7 @@ fn activate(
     };
 }
 
-fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[String; 4]) -> bool {
+fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[String]) -> bool {
     if slot >= ROW_SLOTS * 3 {
         return false;
     }
@@ -327,9 +330,25 @@ fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[Stri
                 },
             },
         ),
-        Edit::Equip | Edit::Use | Edit::SelfActor | Edit::Target | Edit::Cursor => {
+        Edit::Equip
+        | Edit::Use
+        | Edit::CursorPosition
+        | Edit::SelfActor
+        | Edit::Target
+        | Edit::Cursor => {
             let Ok(definition) = values[1].trim().parse::<std::num::NonZeroU32>() else {
                 return false;
+            };
+            let sub_type = match values
+                .get(4)
+                .map(|value| value.trim())
+                .filter(|value| !value.is_empty())
+            {
+                Some(value) => match value.parse::<u32>() {
+                    Ok(value) => Some(value),
+                    Err(_) => return false,
+                },
+                None => None,
             };
             link.assign_bar_action(
                 slot,
@@ -341,10 +360,12 @@ fn apply(link: &crate::play::PlayLink, slot: usize, action: Edit, values: &[Stri
                 } else {
                     BarAction::Use {
                         definition,
+                        sub_type,
                         mode: match action {
                             Edit::SelfActor => ItemUseMode::SelfActor,
                             Edit::Target => ItemUseMode::Target,
                             Edit::Cursor => ItemUseMode::Cursor,
+                            Edit::Use => ItemUseMode::Use,
                             _ => ItemUseMode::CursorPosition,
                         },
                     }
@@ -387,7 +408,7 @@ pub(super) fn project(
     }
     if state.rendered != state.selected {
         if let Some((slot, _)) = state.selected {
-            let mut values: [String; 4] = Default::default();
+            let mut values: [String; 5] = Default::default();
             values[3] = owner
                 .settings
                 .preferences
@@ -398,9 +419,15 @@ pub(super) fn project(
                 .unwrap_or_default();
             match owner.settings.preferences.bar_actions.0.get(&slot) {
                 Some(BarAction::Text { text, .. }) => values[2].clone_from(text),
-                Some(BarAction::Use { definition, .. } | BarAction::Equip { definition, .. }) => {
-                    values[1] = definition.to_string()
+                Some(BarAction::Use {
+                    definition,
+                    sub_type,
+                    ..
+                }) => {
+                    values[1] = definition.to_string();
+                    values[4] = sub_type.map_or_else(String::new, |value| value.to_string());
                 }
+                Some(BarAction::Equip { definition, .. }) => values[1] = definition.to_string(),
                 _ => {}
             }
             for (entity, field, mut text) in &mut fields {

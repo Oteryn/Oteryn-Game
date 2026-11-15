@@ -76,6 +76,7 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
                 "Use on self",
                 "Use on current target",
                 "Use with crosshair",
+                "Use item",
             ],
         };
         if matches!(action, BarAction::Spell { .. }) {
@@ -109,6 +110,7 @@ unsafe fn choose_aim(parent: HWND, mut action: BarAction, point: POINT) -> Optio
                     1 => ItemUseMode::CursorPosition,
                     2 => ItemUseMode::SelfActor,
                     3 => ItemUseMode::Target,
+                    5 => ItemUseMode::Use,
                     _ => ItemUseMode::Cursor,
                 }
             }
@@ -131,6 +133,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
         let Some(shared) = weak.upgrade() else {
             return;
         };
+        let scope = lock(&shared).bar_actions.scope;
         let (choices, known, mut assigned) = {
             let mailbox = lock(&shared);
             let spells = oteryn_client_ui::spell_action_bar::dialog_spells(
@@ -151,18 +154,19 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     )
                 })
                 .collect::<Vec<_>>();
-            let mut definitions = std::collections::BTreeSet::new();
-            for item in super::item_actions::visible_items(&mailbox) {
-                if definitions.insert(item.item_definition_ref) {
-                    known.push(true);
-                    choices.push((
-                        format!("Object {}", item.item_definition_ref),
-                        BarAction::Use {
-                            definition: item.item_definition_ref,
-                            mode: ItemUseMode::CursorPosition,
-                        },
-                    ));
-                }
+            for item in super::editor_items(&mailbox) {
+                known.push(true);
+                choices.push((
+                    format!(
+                        "Object {} (subtype {})",
+                        item.item_definition_ref, item.sub_type
+                    ),
+                    BarAction::Use {
+                        definition: item.item_definition_ref,
+                        sub_type: Some(item.sub_type),
+                        mode: ItemUseMode::Use,
+                    },
+                ));
             }
             let mut assigned: [Option<BarAction>; 3] = std::array::from_fn(|_| None);
             if let Some(BarAction::Multi { actions }) = mailbox.bar_actions.saved.0.get(&slot) {
@@ -273,7 +277,7 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
             if IsWindow(hwnd) == 0 {
                 break;
             }
-            if lock(&shared).world_input_blocked() {
+            if !super::editor_active(&lock(&shared), scope) {
                 break;
             }
             let held = GetAsyncKeyState(i32::from(VK_LBUTTON)) < 0;
@@ -314,7 +318,10 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                         && cursor.y >= bounds.top
                         && cursor.y < bounds.bottom
                     {
-                        assigned[index] = choose_aim(hwnd, action.clone(), cursor);
+                        super::choose_editor_assignment(
+                            &mut assigned[index],
+                            choose_aim(hwnd, action.clone(), cursor),
+                        );
                     }
                 }
             }
@@ -327,7 +334,10 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                             && let Some((_, action)) =
                                 shown.get(index).and_then(|&choice| choices.get(choice))
                         {
-                            assigned[id - 110] = choose_aim(hwnd, action.clone(), cursor);
+                            super::choose_editor_assignment(
+                                &mut assigned[id - 110],
+                                choose_aim(hwnd, action.clone(), cursor),
+                            );
                         }
                     }
                     120..=122 => assigned[id - 120] = None,
@@ -349,6 +359,9 @@ fn run(weak: std::sync::Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>, s
                     130 => {
                         let actions = assigned.iter().flatten().cloned().collect();
                         let mut mailbox = lock(&shared);
+                        if !super::editor_active(&mailbox, scope) {
+                            break;
+                        }
                         let saved = assignments::set_action(
                             &mut mailbox,
                             slot,

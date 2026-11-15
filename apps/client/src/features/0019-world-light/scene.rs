@@ -64,7 +64,11 @@ impl Scene {
                             &[]
                         },
                     ),
-                    |x, y| self.world.floor_tile(floor, x, y),
+                    |x, y| {
+                        self.animated_tiles
+                            .get(&(floor, x, y))
+                            .or_else(|| self.world.floor_tile(floor, x, y))
+                    },
                     |x, y| {
                         let tile = TileCoord::new(x, y);
                         if !own_floor {

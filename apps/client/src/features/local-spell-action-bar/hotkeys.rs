@@ -172,20 +172,28 @@ pub(in crate::play) fn native_key(
     virtual_key: u32,
     modifiers: Modifiers,
 ) -> bool {
-    let code = match virtual_key {
-        0x41..=0x5a => virtual_key - 0x41 + 4,
-        0x31..=0x39 => virtual_key - 0x31 + 30,
-        0x30 => 39,
-        0x70..=0x7b => virtual_key - 0x70 + 58,
-        0x7c..=0x87 => virtual_key - 0x7c + 104,
-        0x20 => 44,
-        0x25 => 80,
-        0x26 => 82,
-        0x27 => 79,
-        0x28 => 81,
-        _ => return false,
+    // Resolve native key names through the same chord parser as normalized game input.
+    let key = match virtual_key {
+        0x41..=0x5a | 0x30..=0x39 => char::from_u32(virtual_key).map(|key| key.to_string()),
+        0x70..=0x7b => Some(format!("F{}", virtual_key - 0x70 + 1)),
+        key => Some(
+            match key {
+                0x20 => "SPACE",
+                0x25 => "ARROWLEFT",
+                0x26 => "ARROWUP",
+                0x27 => "ARROWRIGHT",
+                0x28 => "ARROWDOWN",
+                0x61 => "NUMPAD1",
+                0x63 => "NUMPAD3",
+                0x67 => "NUMPAD7",
+                0x69 => "NUMPAD9",
+                0x09 => "TAB",
+                _ => return false,
+            }
+            .to_owned(),
+        ),
     };
-    let Ok(code) = KeyCode::new(code as u16) else {
+    let Some((code, _)) = key.as_deref().and_then(parse) else {
         return false;
     };
     let slot = mailbox

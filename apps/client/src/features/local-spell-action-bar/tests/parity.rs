@@ -213,6 +213,7 @@ fn cursor_position_item_uses_real_play_queue_without_second_click()
         0,
         BarAction::Use {
             definition: NonZeroU32::new(256).ok_or("item")?,
+            sub_type: None,
             mode: ItemUseMode::CursorPosition
         }
     ));
@@ -461,6 +462,7 @@ fn native_battle_key_uses_hovered_entity_generation_without_crosshair()
         0,
         BarAction::Use {
             definition,
+            sub_type: None,
             mode: ItemUseMode::CursorPosition
         }
     ));
@@ -582,6 +584,7 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
             actions: vec![
                 BarAction::Use {
                     definition,
+                    sub_type: None,
                     mode: ItemUseMode::CursorPosition
                 },
                 BarAction::Spell {
@@ -625,4 +628,292 @@ fn multiaction_skips_rune_group_cooldown_then_uses_live_item_handle()
         assert!(commands.try_recv().is_err());
     }
     Ok(())
+}
+
+#[test]
+fn multiaction_skips_unaffordable_mana_and_soul_in_labels_and_activation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::spell_catalog::*;
+    for (mana, percent, soul, vitals) in [
+        (
+            51,
+            false,
+            0,
+            ActorVitals {
+                mana: 50,
+                max_mana: 101,
+                ..Default::default()
+            },
+        ),
+        (
+            51,
+            true,
+            0,
+            ActorVitals {
+                mana: 50,
+                max_mana: 101,
+                ..Default::default()
+            },
+        ),
+        (
+            0,
+            false,
+            2,
+            ActorVitals {
+                soul: 1,
+                ..Default::default()
+            },
+        ),
+    ] {
+        let (link, mut commands, outbox) = play_channel();
+        let mut view = view()?;
+        outbox.vitals(Some(ActorVitals {
+            health: 100,
+            max_health: 100,
+            ..vitals
+        }));
+        let entries = [
+            SpellCatalogEntry {
+                cast_index: 1,
+                name: "Expensive".into(),
+                words: "expensive".into(),
+                level: 1,
+                mana,
+                mana_percent: percent,
+                soul,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![],
+                rune_item: None,
+            },
+            SpellCatalogEntry {
+                cast_index: 2,
+                name: "Free".into(),
+                words: "free".into(),
+                level: 1,
+                mana: 0,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![],
+                rune_item: None,
+            },
+        ];
+        outbox.spell_catalog_initialize(
+            true,
+            Some(encode_catalog(&entries).map_err(|e| format!("{e:?}"))?),
+        )?;
+        let action = serde_json::from_str(
+            r#"{"kind":"Multi","actions":[{"kind":"Spell","name":"Expensive","words":"expensive"},{"kind":"Spell","name":"Free","words":"free"}]}"#,
+        )?;
+        assert!(link.assign_bar_action(0, action));
+        assert!(link.spell_slot_labels()[0].contains("Next 2/2: Free"));
+        view.cast(std::num::NonZeroU32::MIN);
+        view.tick(&link).map_err(|_| "tick")?;
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 2)
+        );
+        assert!(commands.try_recv().is_err());
+        outbox.vitals(Some(ActorVitals {
+            health: 100,
+            max_health: 100,
+            mana: 51,
+            max_mana: 101,
+            soul: 2,
+            ..Default::default()
+        }));
+        assert!(link.spell_slot_labels()[0].contains("Next 1/2: Expensive"));
+        view.cast(std::num::NonZeroU32::MIN);
+        view.tick(&link).map_err(|_| "tick")?;
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 1)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn auto_insert_survives_archive_resolution_and_records_identity_edit()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::spell_catalog::*;
+    let (link, mut commands, outbox) = play_channel();
+    let entry = |cast_index| SpellCatalogEntry {
+        cast_index,
+        name: "Learned".into(),
+        words: "learned".into(),
+        level: 1,
+        mana: 0,
+        mana_percent: false,
+        soul: 0,
+        learned: true,
+        available: true,
+        cooldown_groups: vec![],
+        rune_item: None,
+    };
+    outbox.spell_catalog_initialize(
+        true,
+        Some(encode_catalog(&[entry(71)]).map_err(|e| format!("{e:?}"))?),
+    )?;
+    assert!(link.assign_spell_slot(0, None));
+    let before = crate::play::mailbox::lock(&link.mailbox)
+        .spellbook_details
+        .archive_edit;
+    crate::play::mailbox::lock(&link.mailbox)
+        .local_preferences
+        .action_bar
+        .auto_insert = true;
+    assert!(link.spell_slot_labels()[0].contains("Learned"));
+    assert!(link.spell_slot_labels()[0].contains("Learned"));
+    let mut bindings =
+        crate::play::feature_0287_actor_spell_catalog::view::ArchiveBindings::default();
+    assert!(link.sync_archive_bindings(&mut bindings, before).is_some());
+    assert!(bindings.labels()[0].contains("Learned"));
+    outbox.spell_catalog_initialize(
+        true,
+        Some(encode_catalog(&[entry(97)]).map_err(|e| format!("{e:?}"))?),
+    )?;
+    link.cast_spell_slot(std::num::NonZeroU32::MIN);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 97)
+    );
+    Ok(())
+}
+
+#[test]
+fn native_battle_keys_accept_bindable_keypad_and_tab() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{Modifier, Modifiers};
+    let (link, mut commands, _) = play_channel();
+    assert!(link.assign_bar_action(
+        0,
+        crate::play::BarAction::Text {
+            text: "key".into(),
+            send_automatically: false,
+        }
+    ));
+    for (key, native) in [
+        ("NUMPAD1", 0x61),
+        ("NUMPAD3", 0x63),
+        ("NUMPAD7", 0x67),
+        ("NUMPAD9", 0x69),
+        ("TAB", 0x09),
+    ] {
+        assert!(link.bind_action_key(0, &format!("SUPER+ALT+{key}")));
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.chat.text.clear();
+        assert!(
+            crate::play::feature_local_spell_action_bar::view::native_key(
+                &mut mailbox,
+                &link.commands,
+                native,
+                Modifiers::one(Modifier::Super).with(Modifier::Alt),
+            )
+        );
+        assert_eq!(mailbox.chat.text, "key");
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn target_item_without_attacked_creature_starts_crosshair() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{BarAction, ItemUseMode};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.targeting_initialize(true);
+    let definition = std::num::NonZeroU32::new(256).ok_or("definition")?;
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![oteryn_session::ItemEntry {
+                handle: std::num::NonZeroU64::MIN,
+                item_definition_ref: definition,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        }),
+        true,
+    );
+    assert!(link.assign_bar_action(
+        0,
+        BarAction::Use {
+            definition,
+            sub_type: None,
+            mode: ItemUseMode::Target
+        }
+    ));
+    link.cast_spell_slot(std::num::NonZeroU32::MIN);
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert_eq!(
+        mailbox.world_context.targeting,
+        Some(std::num::NonZeroU64::MIN)
+    );
+    assert!(!mailbox.world_context.rune_targeting);
+    assert!(!mailbox.world_context.pending);
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn cancelled_editor_choice_preserves_existing_assignment() {
+    let action = crate::play::BarAction::Spell {
+        name: "Original".into(),
+        words: "original".into(),
+        aim: Default::default(),
+    };
+    let mut target = Some(action.clone());
+    crate::play::feature_local_spell_action_bar::view::choose_editor_assignment(&mut target, None);
+    assert_eq!(target, Some(action));
+    let replacement = crate::play::BarAction::Spell {
+        name: "Replacement".into(),
+        words: "replacement".into(),
+        aim: Default::default(),
+    };
+    crate::play::feature_local_spell_action_bar::view::choose_editor_assignment(
+        &mut target,
+        Some(replacement.clone()),
+    );
+    assert_eq!(target, Some(replacement));
+}
+
+#[test]
+fn multiaction_editor_stays_closed_after_session_end_is_polled() {
+    for logout in [false, true] {
+        let (link, _commands, outbox) = play_channel();
+        assert!(
+            crate::play::feature_local_spell_action_bar::view::editor_active(
+                &crate::play::mailbox::lock(&link.mailbox),
+                0
+            )
+        );
+        if logout {
+            outbox.logged_out();
+        } else {
+            outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
+        }
+        while link.poll().is_some() {}
+        assert!(
+            !crate::play::feature_local_spell_action_bar::view::editor_active(
+                &crate::play::mailbox::lock(&link.mailbox),
+                0
+            )
+        );
+        let (fresh, _, _) = play_channel();
+        assert!(
+            crate::play::feature_local_spell_action_bar::view::editor_active(
+                &crate::play::mailbox::lock(&fresh.mailbox),
+                0
+            )
+        );
+    }
+}
+
+#[test]
+fn multiaction_editor_rejects_changed_origin_scope() {
+    let (link, _, _) = play_channel();
+    let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert!(crate::play::feature_local_spell_action_bar::view::editor_active(&mailbox, 0));
+    mailbox.bar_actions.scope = 1;
+    assert!(!crate::play::feature_local_spell_action_bar::view::editor_active(&mailbox, 0));
+    assert!(crate::play::feature_local_spell_action_bar::view::editor_active(&mailbox, 1));
 }

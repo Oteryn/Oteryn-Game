@@ -31,4 +31,43 @@ mod visual_tests {
         );
         Ok(())
     }
+    #[test]
+    fn map_phases_preserve_placement_and_reject_out_of_range_frames()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let store = AssetStore::open_pinned(
+            &root.join("content/assets/files"),
+            &root.join(crate::world::MANIFEST_PATH),
+            crate::world::MANIFEST_SHA256,
+        )?;
+        let catalog = Catalog::load(&store)?;
+        let index = AppearanceIndex::load(&store, &catalog)?;
+        let sheets = SpriteSheets::new(store, catalog);
+        let appearance = index
+            .iter()
+            .filter(|appearance| {
+                appearance.phases > 1
+                    && appearance.sprite_ids.first() != appearance.sprite_ids.get(1)
+            })
+            .min_by_key(|appearance| appearance.id)
+            .ok_or("animated map item")?;
+        let placement = Placement::at(100, 200, -7);
+        let first = index.resolve(&sheets, appearance.id, placement)?;
+        assert_eq!(
+            first,
+            index.resolve_phase(&sheets, appearance.id, placement, 0)?
+        );
+        assert_ne!(
+            first.cells,
+            index
+                .resolve_phase(&sheets, appearance.id, placement, 1)?
+                .cells
+        );
+        assert!(
+            index
+                .resolve_phase(&sheets, appearance.id, placement, appearance.phases)
+                .is_err()
+        );
+        Ok(())
+    }
 }

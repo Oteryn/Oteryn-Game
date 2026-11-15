@@ -472,10 +472,7 @@ fn t058_auto_insert_uses_learned_server_catalog_once() {
         });
     }
     assert!(link.spell_slot_labels()[4].contains("Oteryn test spell"));
-    crate::play::mailbox::lock(&link.mailbox)
-        .spell_bar
-        .bar
-        .bind(4, None);
+    assert!(link.assign_spell_slot(4, None));
     assert!(!link.spell_slot_labels()[4].contains("Oteryn test spell"));
 }
 

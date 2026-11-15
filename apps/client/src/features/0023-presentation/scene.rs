@@ -8,6 +8,21 @@ use std::{sync::Arc, time::Instant};
 type VisualFrames = Vec<Option<Vec<Draw>>>;
 
 impl Scene {
+    pub(crate) fn advance_map_animation(&mut self, now: Instant) -> Result<bool, BatchError> {
+        let age = u64::try_from(
+            now.saturating_duration_since(crate::map::World::animation_epoch())
+                .as_millis(),
+        )
+        .unwrap_or(u64::MAX);
+        let phases = self.world.animation_phases(age);
+        if phases == self.animation_phases {
+            return Ok(false);
+        }
+        self.animated_tiles = self.world.animation_tiles(&phases);
+        self.animation_phases = phases;
+        self.rebuild_sprites()?;
+        Ok(true)
+    }
     pub(crate) fn visual_frames(
         &mut self,
         cues: &[VisualCue],

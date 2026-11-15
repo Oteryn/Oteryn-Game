@@ -66,12 +66,19 @@ impl Outbox {
         state.deferred_item_read = None;
         state.item_cooldown_rejected.clear();
     }
+    pub(in crate::play) fn bar_action_scope(&self) -> u64 {
+        lock(&self.0).bar_actions.scope
+    }
     pub(in crate::play) fn bar_item_cooldowns_result(
         &self,
+        scope: u64,
         result: &oteryn_session::GatedCommandResult,
     ) {
         let mut mailbox = lock(&self.0);
         let state = &mut mailbox.bar_actions;
+        if state.scope != scope {
+            return;
+        }
         let Some(request) = &mut state.item_cooldown_read else {
             return;
         };

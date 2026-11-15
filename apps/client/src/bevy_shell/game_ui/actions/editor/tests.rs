@@ -138,3 +138,60 @@ fn escape_belongs_to_top_server_dialog_before_action_editor() -> TestResult {
     assert!(!app.world().resource::<EditorState>().active());
     Ok(())
 }
+
+#[test]
+fn use_button_saves_subtype_and_activates_direct_item_use() -> TestResult {
+    use crate::play::{BarAction, ItemUseMode, PlayLink, SettingsState, play_channel};
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, mut commands, outbox) = play_channel();
+    let item = oteryn_session::ItemEntry {
+        handle: 7.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 7,
+    };
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![item],
+            ..Default::default()
+        }),
+        Some(Default::default()),
+        true,
+        true,
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    set(&mut app, 1, "42");
+    set(&mut app, 4, "7");
+    let save = control(&mut app, |edit| matches!(edit, Edit::Use))?;
+    app.world_mut().trigger(Activate { entity: save });
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let mut settings = SettingsState::new(None);
+    settings.sync_bar_actions(link);
+    assert_eq!(
+        settings.preferences.bar_actions.0.get(&0),
+        Some(&BarAction::Use {
+            definition: item.item_definition_ref,
+            sub_type: Some(7),
+            mode: ItemUseMode::Use,
+        })
+    );
+    link.cast_spell_slot(std::num::NonZeroU32::MIN);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command)
+        if command.target == oteryn_client_runtime::world_interaction::Target::Item(item.handle)
+        && command.action == oteryn_client_runtime::world_interaction::Action::Use)
+    );
+    Ok(())
+}

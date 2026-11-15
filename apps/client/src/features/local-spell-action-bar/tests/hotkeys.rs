@@ -132,6 +132,7 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
             0,
             BarAction::Use {
                 definition: NonZeroU32::new(256).ok_or("item")?,
+                sub_type: None,
                 mode
             }
         ));
@@ -152,6 +153,7 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
         0,
         BarAction::Use {
             definition: NonZeroU32::new(256).ok_or("item")?,
+            sub_type: None,
             mode: ItemUseMode::Cursor
         }
     ));
@@ -170,5 +172,111 @@ fn item_hotkeys_resolve_live_handles_for_self_target_and_cursor()
             .targeting
             .is_none()
     );
+    Ok(())
+}
+
+#[test]
+fn plain_use_editor_assignment_sends_direct_item_use() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::world_interaction::{Action, Target};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![oteryn_session::ItemEntry {
+                handle: std::num::NonZeroU64::MIN,
+                item_definition_ref: std::num::NonZeroU32::new(256).ok_or("definition")?,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        }),
+        true,
+    );
+    let fields = vec!["1".into(), "".into(), "256".into()];
+    crate::play::feature_local_spell_action_bar::input::edit_slot(
+        &mut crate::play::mailbox::lock(&link.mailbox),
+        &link.commands,
+        13,
+        &fields,
+    );
+    link.cast_spell_slot(std::num::NonZeroU32::MIN);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command)
+        if command.target == Target::Item(std::num::NonZeroU64::MIN) && command.action == Action::Use && command.selection.is_none())
+    );
+    Ok(())
+}
+
+#[test]
+fn saved_item_subtype_selects_matching_container_and_multiaction_readiness()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.targeting_initialize(true);
+    let definition = NonZeroU32::new(256).ok_or("definition")?;
+    let filled = NonZeroU64::new(2).ok_or("handle")?;
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![
+                oteryn_session::ItemEntry {
+                    handle: NonZeroU64::MIN,
+                    item_definition_ref: definition,
+                    count: NonZeroU32::MIN,
+                    sub_type: 0,
+                },
+                oteryn_session::ItemEntry {
+                    handle: filled,
+                    item_definition_ref: definition,
+                    count: NonZeroU32::MIN,
+                    sub_type: 7,
+                },
+            ],
+            ..Default::default()
+        }),
+        true,
+    );
+    let action = BarAction::Use {
+        definition,
+        sub_type: Some(7),
+        mode: ItemUseMode::Use,
+    };
+    assert_eq!(
+        crate::play::feature_local_spell_action_bar::view::editor_items(
+            &crate::play::mailbox::lock(&link.mailbox)
+        )
+        .count(),
+        2
+    );
+    let saved = serde_json::to_string(&action)?;
+    assert!(link.assign_bar_action(0, serde_json::from_str(&saved)?));
+    assert!(link.spell_slot_labels()[0].contains("Visible: 1"));
+    link.cast_spell_slot(NonZeroU32::MIN);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command)
+        if command.target == oteryn_client_runtime::world_interaction::Target::Item(filled))
+    );
+    crate::play::mailbox::lock(&link.mailbox)
+        .world_context
+        .pending = false;
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![oteryn_session::ItemEntry {
+                handle: NonZeroU64::MIN,
+                item_definition_ref: definition,
+                count: NonZeroU32::MIN,
+                sub_type: 0,
+            }],
+            ..Default::default()
+        }),
+        true,
+    );
+    outbox.bar_item_cooldowns_initialize(true);
+    assert!(link.assign_bar_action(
+        0,
+        BarAction::Multi {
+            actions: vec![action]
+        }
+    ));
+    assert!(link.spell_slot_labels()[0].contains("cooling down"));
+    link.cast_spell_slot(NonZeroU32::MIN);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

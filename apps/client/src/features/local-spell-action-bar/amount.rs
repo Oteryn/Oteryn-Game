@@ -2,6 +2,13 @@
 use crate::play::mailbox::Mailbox;
 use std::collections::BTreeSet;
 pub(super) fn visible_count(mailbox: &Mailbox, definition: u32) -> Option<u64> {
+    visible_subtype_count(mailbox, definition, None)
+}
+pub(super) fn visible_subtype_count(
+    mailbox: &Mailbox,
+    definition: u32,
+    sub_type: Option<u32>,
+) -> Option<u64> {
     let inventory = mailbox.inventory.inventory.as_ref()?;
     let mut seen = BTreeSet::new();
     let carried = inventory
@@ -18,7 +25,11 @@ pub(super) fn visible_count(mailbox: &Mailbox, definition: u32) -> Option<u64> {
     Some(
         carried
             .chain(containers)
-            .filter(|item| item.item_definition_ref.get() == definition && seen.insert(item.handle))
+            .filter(|item| {
+                item.item_definition_ref.get() == definition
+                    && sub_type.is_none_or(|value| item.sub_type == value)
+                    && seen.insert(item.handle)
+            })
             .map(|item| u64::from(item.count.get()))
             .sum(),
     )

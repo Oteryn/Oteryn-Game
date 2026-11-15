@@ -404,3 +404,50 @@ fn first_visible_floor_open_sky() -> Result<(), BatchError> {
     assert_eq!(world.first_visible_floor, 0);
     Ok(())
 }
+
+#[test]
+fn live_map_items_advance_frames_during_presentation() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
+    use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let store = AssetStore::open_pinned(
+        &root.join("content/assets/files"),
+        &root.join(MANIFEST_PATH),
+        MANIFEST_SHA256,
+    )?;
+    let catalog = Catalog::load(&store)?;
+    let index = AppearanceIndex::load(&store, &catalog)?;
+    let appearance = index
+        .iter()
+        .filter(|appearance| {
+            appearance.phases > 1 && appearance.sprite_ids.first() != appearance.sprite_ids.get(1)
+        })
+        .min_by_key(|appearance| appearance.id)
+        .ok_or("animated map appearance")?;
+    let mut map = live_snapshot(100);
+    map.header.origin.floor = -7;
+    map.header.first_visible_floor = -7;
+    map.tiles.truncate(1);
+    map.tiles[0].position = map.header.origin;
+    map.tiles[0].items[0].appearance_id = appearance.id.try_into()?;
+    map.tiles[0].items.truncate(1);
+    let world = Arc::new(World::resolve_live_map(&root, &map)?);
+    let mut view = view()?;
+    view.place(map.header.origin);
+    view.set_world(world)?;
+    let now = World::animation_epoch();
+    view.project_presentation(now)?;
+    let before = view.scene().sprites().instances().to_vec();
+    view.project_presentation(
+        now + std::time::Duration::from_millis(u64::from(appearance.phase_ms[0])),
+    )?;
+    assert_ne!(view.scene().sprites().instances(), before.as_slice());
+    let cycle: u64 = appearance
+        .phase_ms
+        .iter()
+        .map(|duration| u64::from(*duration))
+        .sum();
+    view.project_presentation(now + std::time::Duration::from_millis(cycle))?;
+    assert_eq!(view.scene().sprites().instances(), before.as_slice());
+    Ok(())
+}
