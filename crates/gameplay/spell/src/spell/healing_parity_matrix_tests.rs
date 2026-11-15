@@ -37,7 +37,7 @@ const SELECTION: &[u8] =
 const HEALING: &str = include_str!("../../../../../docs/reference/parity/healing.json");
 
 /// The matrix may grow; it must never shrink. Raise this with the data, never lower it.
-const MIN_ROWS: usize = 721;
+const MIN_ROWS: usize = 724;
 const NOW: u64 = 1_000;
 
 fn hex(bytes: &[u8]) -> String {

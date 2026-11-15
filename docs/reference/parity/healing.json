@@ -6274,15 +6274,15 @@
    },
    "status": "KnownGap",
    "expected": {
-    "min": 684,
+    "min": 678,
     "max": 849
    },
    "current": {
     "min": 881,
     "max": 1363
    },
-   "source": "Global test server 2026-11-15: monk level 757, ML 54 incl. boost, max HP 8400, max mana 8305, wheel +16 Damage and Healing; OCR samples, a few dozen per row",
-   "notes": "Global heal 684-849 (no virtue, no Harmony). Content gives a higher minimum; Content owns the formula fix. Flip to Evidence when the owner matches."
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global heal 678-849 with Virtue of Justice, which matches no virtue. Content gives a higher range; Content owns the formula fix. Flip to Evidence when the owner matches."
   },
   {
    "id": "spell.spirit-mend.global.harmony-5",
@@ -6299,15 +6299,15 @@
    },
    "status": "KnownGap",
    "expected": {
-    "min": 684,
-    "max": 849
+    "min": 676,
+    "max": 856
    },
    "current": {
     "min": 881,
     "max": 1363
    },
-   "source": "Global test server 2026-11-15: monk level 757, ML 54 incl. boost, max HP 8400, max mana 8305, wheel +16 Damage and Healing; OCR samples, a few dozen per row",
-   "notes": "Global: Harmony does not change Spirit Mend (same 684-849). Same content divergence as the no-virtue row."
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global: Harmony does not change Spirit Mend (676-856, the same as no virtue within sampling). Same content divergence as the no-virtue row."
   },
   {
    "id": "spell.spirit-mend.global.virtue-sustain",
@@ -6324,15 +6324,15 @@
    },
    "status": "KnownGap",
    "expected": {
-    "min": 1091,
-    "max": 1314
+    "min": 1093,
+    "max": 1278
    },
    "current": {
     "min": 1497,
     "max": 2317
    },
-   "source": "Global test server 2026-11-15: monk level 757, ML 54 incl. boost, max HP 8400, max mana 8305, wheel +16 Damage and Healing; OCR samples, a few dozen per row",
-   "notes": "Global heal 1091-1314 under Virtue of Sustain (serene), about x1.6 of the plain row. A solo monk is serene after initialisation."
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global heal 1093-1278 under Virtue of Sustain, about x1.55 of the plain row (content applies x1.7)."
   },
   {
    "id": "spell.spirit-mend.global.mana-cooldown",
@@ -6350,6 +6350,80 @@
    },
    "source": "TibiaWiki Spirit Mend (mana 210, cooldown 1 s); same Global test server session",
    "notes": "Mana 210 and cooldown 1 s (wiki)."
+  },
+  {
+   "id": "spell.spirit-mend.global.ml52.no-virtue",
+   "case": "spell.cast",
+   "inputs": {
+    "spell": "spirit_mend",
+    "vocation": "exalted_monk",
+    "level": 757,
+    "ml": 52,
+    "final": true,
+    "wheel_flat_healing": 16,
+    "spell_name": "spirit mend"
+   },
+   "status": "KnownGap",
+   "expected": {
+    "min": 658,
+    "max": 829
+   },
+   "current": {
+    "min": 857,
+    "max": 1323
+   },
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global heal 658-829 with Virtue of Justice, which matches no virtue. Content gives a higher range; Content owns the formula fix. Flip to Evidence when the owner matches."
+  },
+  {
+   "id": "spell.spirit-mend.global.ml52.harmony-5",
+   "case": "spell.cast",
+   "inputs": {
+    "spell": "spirit_mend",
+    "vocation": "exalted_monk",
+    "level": 757,
+    "ml": 52,
+    "final": true,
+    "wheel_flat_healing": 16,
+    "spell_name": "spirit mend",
+    "harmony": 5
+   },
+   "status": "KnownGap",
+   "expected": {
+    "min": 654,
+    "max": 829
+   },
+   "current": {
+    "min": 857,
+    "max": 1323
+   },
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global: Harmony does not change Spirit Mend (654-829, the same as no virtue within sampling). Same content divergence as the no-virtue row."
+  },
+  {
+   "id": "spell.spirit-mend.global.ml52.virtue-sustain",
+   "case": "spell.cast",
+   "inputs": {
+    "spell": "spirit_mend",
+    "vocation": "exalted_monk",
+    "level": 757,
+    "ml": 52,
+    "final": true,
+    "wheel_flat_healing": 16,
+    "spell_name": "spirit mend",
+    "stance": "sustain"
+   },
+   "status": "KnownGap",
+   "expected": {
+    "min": 1059,
+    "max": 1241
+   },
+   "current": {
+    "min": 1456,
+    "max": 2249
+   },
+   "source": "Global test server 2026-11-15 (final laptop measurement): monk level 757, wheel +16 Damage and Healing; n=30-35 samples per row. Justice and Harmony do not change healing; Sustain is about +55% (x1.55). Repeating a virtue turns it off, so earlier samples taken that way are invalid.",
+   "notes": "Global heal 1059-1241 under Virtue of Sustain, about x1.55 of the plain row (content applies x1.7)."
   },
   {
    "id": "spell.mass-spirit-mend.global.mana-cooldown",
