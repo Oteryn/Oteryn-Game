@@ -30,9 +30,10 @@ async fn native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) {
     owner.drain_monster_melee().await;
     owner.drain_rotten_movement_callbacks().await;
     owner.drain_bak_first_think_claims().await;
+    owner.drain_rotten_portal_callbacks().await;
 }
 
-async fn settle_native_work(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+pub(super) async fn settle_native_work(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
     loop {
         let (pending, before) = native_work_state(owner).await?;
         if !pending {

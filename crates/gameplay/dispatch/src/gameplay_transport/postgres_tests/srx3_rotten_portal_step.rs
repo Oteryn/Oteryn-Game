@@ -31,6 +31,8 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source approach clock")?;
         let view = owner.runtime_view(&registered);
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -111,6 +113,8 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source Elder lure clock")?;
         let view = owner.runtime_view(&registered);
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -173,6 +177,8 @@ pub(super) async fn exercise(
             .ok_or("source ingress clock")?;
         let view = owner.runtime_view(&registered);
         let started = view.owner_now().get();
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -181,7 +187,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "real committed STEP into source action50001"
         );
-        view.drain_rotten_movement_callbacks().await;
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         step_window = Some((started, view.owner_now().get()));
     }
     let (step_started, step_finished) = step_window.ok_or("actual portal ingress interval")?;
