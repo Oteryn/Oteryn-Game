@@ -139,7 +139,10 @@ pub(super) fn perform(
         Kind::Previous | Kind::Next => {
             let next = matches!(action.kind, Kind::Next);
             if action.key.tab == Tab::Quests {
-                let pages = quest_log::quest_rows(&quest).len().div_ceil(32).max(1);
+                let pages = model::quest_rows(&quest, state.hide_completed)
+                    .len()
+                    .div_ceil(32)
+                    .max(1);
                 state.quest_page = if next {
                     state.quest_page.saturating_add(1).min(pages - 1)
                 } else {
@@ -168,6 +171,10 @@ pub(super) fn perform(
     }
     if action.key.tab == Tab::Quests {
         match action.kind {
+            Kind::Completed => {
+                state.hide_completed = !state.hide_completed;
+                state.quest_page = 0;
+            }
             Kind::Refresh => link.quest_request(&QuestLogQuery::ListOnly),
             Kind::Search | Kind::Sort => {
                 if values.search.len() > 512 || values.search.contains('\0') {

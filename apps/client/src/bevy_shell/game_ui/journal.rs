@@ -40,6 +40,7 @@ enum Kind {
     Cast,
     Castable,
     Close,
+    Completed,
     Refresh,
     Search,
     Sort,
@@ -61,6 +62,7 @@ enum Field {
     Maximum,
 }
 type JournalControls = Or<(With<Field>, With<Action>)>;
+type JournalText = (&'static mut Text, Has<Detail>, Has<Status>, Has<Tracker>);
 
 #[derive(Component)]
 struct Overlay;
@@ -68,6 +70,8 @@ struct Overlay;
 struct Detail;
 #[derive(Component)]
 struct Status;
+#[derive(Component)]
+struct Tracker;
 #[derive(Component)]
 struct FilterCaption(Kind);
 #[derive(Resource, Default)]
@@ -80,6 +84,7 @@ struct State {
     missions: Vec<model::Row>,
     feedback: String,
     quest_page: usize,
+    hide_completed: bool,
     pending: Option<submission::Pending>,
 }
 pub(super) fn open_quests(owner: &mut HostOwner) {
@@ -136,7 +141,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<State>,
     mut overlays: Query<(Entity, &mut Node), With<Overlay>>,
-    mut text: Query<(&mut Text, Has<Detail>, Has<Status>)>,
+    mut text: Query<JournalText>,
     mut focus: ResMut<InputFocus>,
     controls: Query<(), JournalControls>,
 ) {
@@ -194,6 +199,9 @@ fn project(
         if let Some(old) = state.widgets.take() {
             commands.entity(old.root).despawn();
         }
+        if state.key.is_none_or(|old| old.generation != key.generation) {
+            state.hide_completed = false;
+        }
         state.key = Some(key);
         state.tab = tab;
         state.selected_spell = None;
@@ -218,14 +226,18 @@ fn project(
     let Some(widgets) = state.widgets else {
         return;
     };
-    let projection = model::project(
-        tab,
-        &quests,
-        &book,
-        &catalogue,
-        state.selected_spell,
-        state.quest_page,
-    );
+    let projection = if tab == Tab::Quests {
+        model::quests(&quests, state.quest_page, state.hide_completed)
+    } else {
+        model::project(
+            tab,
+            &quests,
+            &book,
+            &catalogue,
+            state.selected_spell,
+            state.quest_page,
+        )
+    };
     state.selected_spell = projection.selected_spell;
     if state.rows != projection.rows {
         commands.entity(widgets.rows).despawn_children();
@@ -243,9 +255,11 @@ fn project(
         );
         state.missions = projection.missions;
     }
-    for (mut text, detail, status) in &mut text {
+    for (mut text, detail, status, tracker) in &mut text {
         let value = if detail {
             Some(projection.detail.as_str())
+        } else if tracker {
+            Some(projection.tracker.as_str())
         } else if status {
             Some(if state.feedback.is_empty() {
                 projection.status.as_str()
@@ -340,7 +354,11 @@ fn keyboard(
         );
     }
 }
-fn refresh_labels(owner: NonSend<HostOwner>, mut labels: Query<(&FilterCaption, &mut Text)>) {
+fn refresh_labels(
+    owner: NonSend<HostOwner>,
+    state: Res<State>,
+    mut labels: Query<(&FilterCaption, &mut Text)>,
+) {
     if labels.is_empty() {
         return;
     }
@@ -351,6 +369,12 @@ fn refresh_labels(owner: NonSend<HostOwner>, mut labels: Query<(&FilterCaption, 
     let book = play.link.spellbook_state();
     for (label, mut text) in &mut labels {
         let value: String = match label.0 {
+            Kind::Completed => if state.hide_completed {
+                "Show completed: off"
+            } else {
+                "Show completed: on"
+            }
+            .into(),
             Kind::Sort => {
                 oteryn_client_ui::quest_log::QUEST_SORT_LABELS[quest.list_sort.selection()].into()
             }

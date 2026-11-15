@@ -519,6 +519,21 @@ fn journal_builds_both_source_shaped_windows_with_real_text_controls() -> Result
             &catalogue,
         );
         queue.apply(&mut world);
+        if tab == Tab::Quests {
+            assert!(
+                world
+                    .query::<&Action>()
+                    .iter(&world)
+                    .any(|action| matches!(action.kind, Kind::Completed))
+            );
+            assert_eq!(
+                world
+                    .query_filtered::<Entity, With<Tracker>>()
+                    .iter(&world)
+                    .count(),
+                1
+            );
+        }
         let font = world.get::<TextFont>(built.search).ok_or("search font")?;
         assert_eq!(font.font_size, bevy::text::FontSize::Px(11.));
         let field = world
@@ -539,6 +554,204 @@ fn journal_builds_both_source_shaped_windows_with_real_text_controls() -> Result
 }
 
 mod text_input;
+
+#[test]
+fn questlog_sort_and_completed_filter() -> Result {
+    let (mut host, mut commands, outbox) = host()?;
+    let mut confirmed = quest_state();
+    confirmed.list.push(QuestListEntry {
+        quest_index: 2,
+        completed: true,
+    });
+    outbox.bevy_journal_quest_state(confirmed);
+    open_quests(&mut host);
+    let _ = commands.try_recv()?;
+    outbox.bevy_journal_quest_result(&result(vec![]));
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Quests,
+    };
+    let mut state = State {
+        key: Some(key),
+        quest_page: 7,
+        ..default()
+    };
+    let values = actions::Values::default();
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    assert_eq!(
+        model::quests(&link.quest_panel(), 0, false)
+            .rows
+            .iter()
+            .map(|r| r.id)
+            .collect::<Vec<_>>(),
+        vec![model::RowId::Quest(2), model::RowId::Quest(73)]
+    );
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Completed
+        },
+        &values
+    ));
+    assert!(state.hide_completed);
+    assert_eq!(state.quest_page, 0);
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    assert_eq!(
+        model::quests(&link.quest_panel(), 0, state.hide_completed)
+            .rows
+            .iter()
+            .map(|r| r.id)
+            .collect::<Vec<_>>(),
+        vec![model::RowId::Quest(73)]
+    );
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Completed
+        },
+        &values
+    ));
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Sort
+        },
+        &values
+    ));
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    let rows = model::quests(&link.quest_panel(), 0, state.hide_completed).rows;
+    assert_eq!(
+        rows.iter().map(|r| r.id).collect::<Vec<_>>(),
+        vec![model::RowId::Quest(73), model::RowId::Quest(2)]
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn questlog_search() -> Result {
+    let (mut host, mut commands, outbox) = host()?;
+    let mut confirmed = quest_state();
+    confirmed.list.push(QuestListEntry {
+        quest_index: 2,
+        completed: true,
+    });
+    outbox.bevy_journal_quest_state(confirmed);
+    open_quests(&mut host);
+    let _ = commands.try_recv()?;
+    outbox.bevy_journal_quest_result(&result(vec![]));
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Quests,
+    };
+    let mut state = State {
+        key: Some(key),
+        quest_page: 4,
+        ..default()
+    };
+    for (search, expected) in [
+        (" GUIDE ", vec![model::RowId::Quest(73)]),
+        ("Quest 2", vec![model::RowId::Quest(2)]),
+        ("missing", vec![]),
+    ] {
+        assert!(actions::perform(
+            &mut host,
+            &mut state,
+            Action {
+                key,
+                kind: Kind::Search
+            },
+            &actions::Values {
+                search: search.into(),
+                ..default()
+            }
+        ));
+        let link = &host.play.as_ref().ok_or("play")?.link;
+        assert_eq!(
+            model::quests(&link.quest_panel(), 0, false)
+                .rows
+                .iter()
+                .map(|r| r.id)
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert_eq!(state.quest_page, 0);
+    }
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn questlog_track_toggle() -> Result {
+    let (mut host, mut commands, outbox) = host()?;
+    let confirmed = quest_state();
+    outbox.bevy_journal_quest_state(confirmed.clone());
+    open_quests(&mut host);
+    let _ = commands.try_recv()?;
+    outbox.bevy_journal_quest_result(&result(vec![]));
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Quests,
+    };
+    let mut state = State {
+        key: Some(key),
+        ..default()
+    };
+    let values = actions::Values::default();
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Mission(73, 1)
+        },
+        &values
+    ));
+    for tracked in [true, false] {
+        assert!(actions::perform(
+            &mut host,
+            &mut state,
+            Action {
+                key,
+                kind: Kind::Track
+            },
+            &values
+        ));
+        let PlayCommand::QuestLog(payload) = commands.try_recv()? else {
+            return Err("tracking request missing".into());
+        };
+        assert_eq!(
+            decode_quest_log_query(&payload).map_err(|_| "query")?,
+            QuestLogQuery::Track {
+                quest_indexes: if tracked { vec![73] } else { vec![] }
+            }
+        );
+        let link = &host.play.as_ref().ok_or("play")?.link;
+        assert_eq!(
+            model::quests(&link.quest_panel(), 0, false)
+                .tracker
+                .contains("Find the guide"),
+            !tracked,
+            "tracking must wait for server confirmation"
+        );
+        outbox.bevy_journal_quest_result(&result(vec![]));
+        let mut next = confirmed.clone();
+        if tracked && let Some(QuestLogView::Line(line)) = &confirmed.log.view {
+            next.log.tracked.push(line.clone());
+        }
+        outbox.bevy_journal_quest_state(next);
+        let link = &host.play.as_ref().ok_or("play")?.link;
+        let projection = model::quests(&link.quest_panel(), 0, false);
+        assert_eq!(projection.tracker.contains("Find the guide"), tracked);
+    }
+    Ok(())
+}
 
 #[test]
 fn spell_list_cast_sends_intent() -> Result {
