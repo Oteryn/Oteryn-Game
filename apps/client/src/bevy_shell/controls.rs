@@ -98,6 +98,9 @@ impl HostOwner {
             play.link.open_party();
             return;
         }
+        if play.link.weapon_proficiency_input(&routed) {
+            return;
+        }
         if oteryn_client_ui::store::open_key(&routed) {
             play.link.store_set_open(!play.link.store_panel().open);
             return;

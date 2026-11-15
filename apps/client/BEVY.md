@@ -87,6 +87,9 @@ With no text field focused, the existing gameplay shortcuts open:
   buy/sell offers with bounded quantities through the existing server intents.
 - **Ctrl+Shift+S:** coin Store, with category browsing, purchase confirmation,
   coin gifts/transfers, purchase history and the coin ledger.
+- **Ctrl+Shift+P:** Weapon proficiency. Requests the existing server catalogue,
+  shows weapon levels and XP progress, and offers perks only at reached levels.
+  This protocol has no server event that opens this window.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.

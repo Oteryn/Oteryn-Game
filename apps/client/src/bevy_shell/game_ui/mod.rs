@@ -18,6 +18,7 @@ mod npc_shop;
 pub(super) mod options;
 mod outfit;
 pub(super) mod party;
+mod proficiency;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
@@ -249,6 +250,7 @@ pub(super) fn install(app: &mut App) {
     npc_shop::install(app);
     outfit::install(app);
     party::install(app);
+    proficiency::install(app);
     quick_loot::install(app);
     store::install(app);
     satellite_map::install(app);
