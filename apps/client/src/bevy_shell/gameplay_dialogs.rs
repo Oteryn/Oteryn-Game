@@ -1,6 +1,6 @@
 //! Generation-bound Bevy presentation for existing logout and world-context owners.
 use super::{
-    game_ui::{item_details, party},
+    game_ui::{item_details, party, rule_violation},
     owner::{HostOwner, Phase},
 };
 use bevy::{
@@ -25,9 +25,10 @@ struct Request {
 enum Content {
     Logout,
     Context {
-        menu: Option<Menu>,
+        menu: Option<Box<Menu>>,
         party: Option<Box<party::Target>>,
         inspection: Option<(TileCoord, oteryn_session::EntityRef)>,
+        report: Option<Box<rule_violation::Target>>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -38,6 +39,7 @@ enum Choice {
     Inspect,
     Invite,
     Party,
+    Report,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -69,12 +71,14 @@ impl HostOwner {
         let menu = self
             .play
             .as_ref()
-            .and_then(|play| play.view.world_context(tile, &play.link));
+            .and_then(|play| play.view.world_context(tile, &play.link))
+            .map(Box::new);
         // Capture the player before opening our own modal, which correctly blocks new world input.
         let party = party::context(self, tile).map(Box::new);
+        let report = rule_violation::context(self, tile).map(Box::new);
         let inspection = item_details::player_context(self, tile).map(|entity| (tile, entity));
         if self.phase == Phase::Playing
-            && (menu.is_some() || party.is_some() || inspection.is_some())
+            && (menu.is_some() || party.is_some() || report.is_some() || inspection.is_some())
         {
             self.dialogs.open(
                 self.generation(),
@@ -82,6 +86,7 @@ impl HostOwner {
                     menu,
                     party,
                     inspection,
+                    report,
                 },
             );
         }
@@ -147,6 +152,13 @@ impl HostOwner {
                     true
                 })
             }
+            (
+                Content::Context {
+                    report: Some(target),
+                    ..
+                },
+                Choice::Report,
+            ) => rule_violation::open(self, &target),
             _ => false,
         }
     }
@@ -312,7 +324,18 @@ fn project(
             menu,
             party,
             inspection,
+            report,
         } => {
+            if report.is_some() {
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Report",
+                    Choice::Report,
+                );
+            }
             for (index, (label, _)) in menu.iter().flat_map(|menu| menu.entries.iter()).enumerate()
             {
                 button(
@@ -484,9 +507,10 @@ mod tests {
         host.dialogs.open(
             host.generation(),
             Content::Context {
-                menu: Some(menu),
+                menu: Some(Box::new(menu)),
                 party: None,
                 inspection: None,
+                report: None,
             },
         );
         let id = host.dialogs.pending.as_ref().ok_or("context")?.id;

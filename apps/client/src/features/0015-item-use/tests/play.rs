@@ -266,3 +266,13 @@ fn native_inventory_targeting_keeps_other_panels_alive() -> Result<(), Box<dyn s
 
 #[path = "play_additional.rs"]
 mod additional;
+
+#[test]
+fn use_with_sets_crosshair_cursor() {
+    let (link, _, _) = play_channel();
+    assert!(!link.use_with_armed());
+    super::super::mailbox::lock(&link.mailbox).world_context.begin_targeting(std::num::NonZeroU64::MIN);
+    assert!(link.use_with_armed());
+    super::super::mailbox::lock(&link.mailbox).world_context.cancel_targeting();
+    assert!(!link.use_with_armed());
+}

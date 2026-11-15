@@ -1,5 +1,6 @@
 //! Named catalogue, offer books and confirmed purchases over the retained MARKET_V1 owner.
 mod actions;
+mod offers;
 mod purchase;
 #[cfg(test)]
 mod tests;
@@ -11,7 +12,7 @@ use super::{
 };
 use bevy::{input_focus::InputFocus, prelude::*, text::EditableText, ui_widgets::Activate};
 use oteryn_client_ui::market::{
-    MarketPanel,
+    Intent, MarketPanel, MarketView,
     details::{Query as MarketQuery, Ware},
 };
 use oteryn_client_ui_bevy as source;
@@ -34,21 +35,28 @@ enum Kind {
     Catalogue(i32),
     Book(i32),
     Statistics,
+    Intent(Intent),
+    Browse,
 }
 #[derive(Component)]
 struct Overlay;
 #[derive(Component)]
 struct Search;
+type Editors = Or<(With<Search>, With<offers::Field>)>;
 #[derive(Resource, Default)]
 struct State {
     key: Option<Key>,
     seen: Option<MarketPanel>,
     selected: Option<Ware>,
+    offer: Option<usize>,
+    sell: Option<bool>,
+    dirty: bool,
     root: Option<Entity>,
     body: Option<Entity>,
     pending: Option<(Action, Entity, Entity)>,
 }
 pub(super) fn install(app: &mut App) {
+    offers::install(app);
     purchase::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
@@ -92,7 +100,7 @@ fn project(
     mut state: ResMut<State>,
     mut overlay: Query<(Entity, &mut Node), With<Overlay>>,
     mut focus: ResMut<InputFocus>,
-    fields: Query<(), With<Search>>,
+    fields: Query<(), Editors>,
 ) {
     let Ok((overlay, mut node)) = overlay.single_mut() else {
         return;
@@ -114,12 +122,17 @@ fn project(
     let generation = owner.generation();
     if state.key.is_some_and(|key| key.generation == generation)
         && state.seen.as_ref() == Some(&panel)
+        && !state.dirty
     {
         return;
     }
     if focus.get().is_some_and(|entity| fields.contains(entity)) {
         focus.clear();
     }
+    if state.seen.as_ref() != Some(&panel) {
+        state.offer = None;
+    }
+    state.dirty = false;
     let revision = state.key.map_or(0, |key| key.revision.wrapping_add(1));
     if state.key.is_none_or(|key| key.generation != generation) {
         if let Some(root) = state.root.take() {
@@ -163,6 +176,8 @@ fn project(
         key,
         &panel,
         state.selected.as_ref(),
+        state.offer,
+        state.sell.unwrap_or(panel.sell),
     ));
     state.seen = Some(panel);
 }

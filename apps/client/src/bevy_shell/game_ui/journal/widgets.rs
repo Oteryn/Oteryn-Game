@@ -113,7 +113,7 @@ pub(super) fn build(
         .id();
     commands.entity(left).add_child(title);
     if key.tab == Tab::Spells && book.selected {
-        for kind in [Kind::Vocation, Kind::Premium, Kind::Group] {
+        for kind in [Kind::Vocation, Kind::Premium, Kind::Group, Kind::Castable] {
             let button = action(commands, skin, left, key, kind, "", 320.);
             let caption = commands
                 .spawn((
@@ -199,14 +199,23 @@ pub(super) fn build(
         80.,
     );
     if key.tab == Tab::Quests {
-        let sort = action(commands, skin, left, key, Kind::Sort, "", 320.);
-        let label = commands
-            .spawn((
-                source::button_caption("", skin.font.clone()),
-                FilterCaption(Kind::Sort),
+        for kind in [Kind::Sort, Kind::Completed] {
+            let button = action(commands, skin, left, key, kind, "", 320.);
+            let label = commands
+                .spawn((
+                    source::button_caption("", skin.font.clone()),
+                    FilterCaption(kind),
+                ))
+                .id();
+            commands.entity(button).add_child(label);
+        }
+        let hint = commands
+            .spawn(source::text(
+                "Search quest ID or known mission text",
+                source::font(skin.font.clone(), true),
             ))
             .id();
-        commands.entity(sort).add_child(label);
+        commands.entity(left).add_child(hint);
     }
     let missions = scroll(commands, right, false);
     if key.tab == Tab::Spells {
@@ -230,6 +239,23 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(description).add_child(detail);
+    if key.tab == Tab::Quests {
+        let tracker = scroll(commands, right, true);
+        let text = commands
+            .spawn((
+                source::text("", source::font(skin.font.clone(), false)),
+                Tracker,
+            ))
+            .insert((
+                TextLayout::default(),
+                Node {
+                    width: percent(100.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(tracker).add_child(text);
+    }
     let controls = row(commands, right);
     if key.tab == Tab::Quests {
         action(
@@ -238,10 +264,11 @@ pub(super) fn build(
             controls,
             key,
             Kind::Track,
-            "Track / Untrack",
-            130.,
+            "Track / Untrack quest",
+            150.,
         );
     } else {
+        action(commands, skin, controls, key, Kind::Cast, "Cast", 64.);
         for slot in 0..4 {
             action(
                 commands,

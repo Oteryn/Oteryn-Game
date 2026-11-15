@@ -84,6 +84,10 @@ impl SettingsState {
                         }
                     }
                 }
+                for (key, action) in &self.preferences.custom_hotkeys {
+                    text.push_str(&action.hotkey_label(key));
+                    text.push_str("\r\n");
+                }
                 text.push_str(tr!("\r\nUse the Controls settings pages to edit shortcuts. Gameplay settings choose mouse behavior and chase cancellation. Screenshots chooses the destination, capture scope and automatic events."));
                 text
             }

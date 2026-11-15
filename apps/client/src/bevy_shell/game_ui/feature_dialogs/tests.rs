@@ -147,3 +147,4 @@ fn shared_notices_close_preserves_server_owned_history() {
 }
 
 mod text_input;
+mod text_window;
