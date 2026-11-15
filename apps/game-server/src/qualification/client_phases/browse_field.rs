@@ -45,9 +45,8 @@ pub(super) async fn browse_field(
             oteryn_protocol_oteryn::container_tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    let views =
-        oteryn_protocol_oteryn::container_tree::decode_container_views_for(&delta.payload, true)
-            .map_err(|e| format!("browse views: {e:?}"))?;
+    let views = selected_container_views(client.selected_capabilities(), &delta.payload)
+        .map_err(|e| format!("browse views: {e:?}"))?;
     let view = views
         .views
         .iter()
@@ -92,7 +91,7 @@ pub(super) async fn browse_field(
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    if !tree::decode_container_views_for(&closed.payload, true)
+    if !selected_container_views(client.selected_capabilities(), &closed.payload)
         .map_err(|error| format!("closed browse views: {error:?}"))?
         .views
         .is_empty()

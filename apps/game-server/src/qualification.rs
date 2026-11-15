@@ -92,6 +92,68 @@ fn evidence(line: &str) {
     }
 }
 
+/// Domain 14 under the schema the session negotiated, as `oteryn_session::container_tree`
+/// decodes it: browse field (230), house capacity (446) and item appearances (499) each
+/// change the wire, so a fixed-schema decode refuses a valid delta as malformed.
+fn selected_container_views(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::container_tree::ContainerViews, impl std::fmt::Debug> {
+    oteryn_protocol_oteryn::container_tree::decode_container_views_with_appearances(
+        payload,
+        selected.contains(&oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1),
+        selected.contains(
+            &oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ),
+        selected.contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+    )
+}
+
+#[cfg(test)]
+mod selected_container_views_tests {
+    use super::selected_container_views;
+    use oteryn_protocol_oteryn::container_tree::{
+        ContainerView, ContainerViews, decode_container_views,
+        encode_container_views_with_appearances,
+    };
+    use oteryn_protocol_oteryn::item_view::{CAPABILITY_ITEM_APPEARANCE_V1, ItemEntry};
+    use std::num::{NonZeroU32, NonZeroU64};
+
+    fn views() -> Option<ContainerViews> {
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: NonZeroU64::new(1)?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![ItemEntry {
+                    appearance_id: 2854,
+                    handle: NonZeroU64::new(2)?,
+                    item_definition_ref: NonZeroU32::new(2854)?,
+                    count: NonZeroU32::new(1)?,
+                    sub_type: 0,
+                }],
+                browse: None,
+            }],
+        })
+    }
+
+    /// Node boot run 72: the starter backpack delta under capability 499 failed the fixed
+    /// v1 decode with `Malformed`; the negotiated decode reads it back exactly.
+    #[test]
+    fn container_delta_decodes_under_the_negotiated_appearance_schema() -> Result<(), String> {
+        let views = views().ok_or("non-zero literals")?;
+        let payload = encode_container_views_with_appearances(&views, false, false, true)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(decode_container_views(&payload).is_err());
+        assert_eq!(
+            selected_container_views(&[14, CAPABILITY_ITEM_APPEARANCE_V1], &payload).ok(),
+            Some(views)
+        );
+        Ok(())
+    }
+}
+
 /// Row reporters write `e2e_all` lines in several shapes. `report.py` accepts
 /// one: `e2e_all scenario=<id> status=<verdict> seconds=<n>[ evidence=<token>]`
 /// followed by the harness's optional typed failure suffix.

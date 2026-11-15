@@ -80,8 +80,8 @@ use oteryn_protocol_oteryn::browse_field as browse;
 use oteryn_protocol_oteryn::container_tree as tree;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 
-fn view_of(payload: &[u8]) -> TestResult<tree::ContainerViews> {
-    tree::decode_container_views_for(payload, true)
+fn view_of(selected: &[u32], payload: &[u8]) -> TestResult<tree::ContainerViews> {
+    selected_container_views(selected, payload)
         .map_err(|error| format!("step=views-decode observed={error:?}").into())
 }
 
@@ -112,7 +112,7 @@ async fn browse_open(
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    let view = view_of(&delta.payload)?
+    let view = view_of(client.selected_capabilities(), &delta.payload)?
         .views
         .into_iter()
         .find(|view| view.browse.is_some());
@@ -142,7 +142,7 @@ async fn view_intent(
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    Ok((outcome, view_of(&delta.payload)?.views))
+    Ok((outcome, view_of(client.selected_capabilities(), &delta.payload)?.views))
 }
 
 fn here(client: &DevClientSession) -> WorldTilePosition {
