@@ -144,3 +144,122 @@ fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
     assert!(open(&owner), "the rebound chord opens the outfit window");
     Ok(())
 }
+
+fn editor_app() -> Result<(App, crate::play::Outbox), Box<dyn std::error::Error>> {
+    let mut owner = HostOwner::new(None)?;
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut p = panel();
+    p.open = true;
+    outbox.bevy_outfit_test_panel(p);
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    Ok((app, outbox))
+}
+#[test]
+fn outfit_escape_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _) = editor_app()?;
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(500), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    app.world_mut().despawn(higher);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn outfit_cancel_restores_confirmed_appearance() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, outbox) = editor_app()?;
+    let mut p = panel();
+    p.open = true;
+    p.confirmed = Some(oteryn_client_runtime::appearance::Selected {
+        selection: oteryn_client_runtime::appearance::Selection {
+            outfit_key: "knight".into(),
+            addons: 0,
+            mount_key: None,
+            colours: [0; 4],
+        },
+        revision: 1,
+        provenance: "test".into(),
+    });
+    outbox.bevy_outfit_test_panel(p);
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    for kind in [
+        Kind::Outfit("mage".into()),
+        Kind::Addon(2),
+        Kind::Colour(0, 1),
+        Kind::Mount("horse".into()),
+    ] {
+        send(link, &kind);
+    }
+    app.update();
+    let close = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(id, a)| matches!(a.kind, Kind::Close).then_some(id))
+        .ok_or("cancel")?;
+    app.world_mut().trigger(Activate { entity: close });
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    link.appearance_open();
+    assert_eq!(
+        &link.appearance_panel().fields[..4],
+        &["knight", "0", "", "0,0,0,0"]
+    );
+    Ok(())
+}

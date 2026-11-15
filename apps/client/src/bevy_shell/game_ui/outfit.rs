@@ -104,17 +104,52 @@ fn activate(
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
-    if action.generation != owner.generation() {
+    if action.generation != owner.generation() || owner.modal_active() {
         return;
     }
     let Some(play) = &owner.play else {
         return;
     };
     if matches!(action.kind, Kind::Close) {
-        play.link.appearance_close();
+        cancel(&play.link);
         return;
     }
     send(&play.link, &action.kind);
+}
+fn cancel(link: &crate::play::PlayLink) {
+    let panel = link.appearance_panel();
+    if !panel.pending {
+        let selection = panel
+            .confirmed
+            .as_ref()
+            .map(|confirmed| &confirmed.selection);
+        let outfit = selection
+            .map(|s| s.outfit_key.clone())
+            .or_else(|| {
+                panel
+                    .catalogue
+                    .as_ref()?
+                    .outfits
+                    .first()
+                    .map(|outfit| outfit.key.clone())
+            })
+            .unwrap_or_default();
+        let [head, body, legs, feet] = selection.map_or([0; 4], |s| s.colours);
+        for (index, value) in [
+            outfit,
+            selection.map_or(0, |s| s.addons).to_string(),
+            selection
+                .and_then(|s| s.mount_key.clone())
+                .unwrap_or_default(),
+            format!("{head},{body},{legs},{feet}"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            link.appearance_edit(index, value);
+        }
+    }
+    link.appearance_close();
 }
 fn send(link: &crate::play::PlayLink, kind: &Kind) {
     let mut panel = link.appearance_panel();
@@ -164,6 +199,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<State>,
     mut images: ResMut<Assets<Image>>,
+    guard: ModalGuard,
 ) {
     let Some(play) = &owner.play else {
         for entity in &windows {
@@ -172,8 +208,11 @@ fn project(
         state.rendered = None;
         return;
     };
-    if keys.just_pressed(KeyCode::Escape) {
-        play.link.appearance_close();
+    if keys.just_pressed(KeyCode::Escape)
+        && !owner.modal_active()
+        && windows.iter().any(|entity| guard.allows(entity))
+    {
+        cancel(&play.link);
     }
     let panel = play.link.appearance_panel();
     if !panel.open {

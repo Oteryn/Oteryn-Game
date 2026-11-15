@@ -370,3 +370,95 @@ fn market_accept_buy_offer_without_items_is_disabled() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn market_anonymous_checkbox_is_retained_in_buy_and_sell_requests() -> TestResult {
+    let (mut app, mut commands, outbox, root) = setup()?;
+    let item = button(&mut app, root, Kind::Item(0))?;
+    app.world_mut().trigger(Activate { entity: item });
+    let book = feature(&mut commands)?;
+    outbox.bevy_market_reply(
+        &book,
+        &result(&wire::Reply::Book {
+            definition: 42,
+            page: 0,
+            rows: vec![],
+            statistics: wire::Statistics {
+                definition: 42,
+                as_of_us: 2592000000000,
+                ..default()
+            },
+            has_next: false,
+        })?,
+    );
+    app.update();
+    edit(&mut app, "market.create.amount", "2")?;
+    edit(&mut app, "market.create.price", "100")?;
+    let checkbox = find(&mut app, "market.create.anonymous")?;
+    app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+        source: checkbox,
+        value: true,
+        is_final: true,
+    });
+    app.update();
+    for (side, action) in [("market.create.buy", 5), ("market.create.sell", 6)] {
+        click(&mut app, side)?;
+        click(&mut app, "market.create.confirm")?;
+        let request = command(&mut commands)?;
+        assert_eq!(request.action, action);
+        assert!(request.anonymous);
+        reply(&outbox, action, vec![]);
+        app.update();
+    }
+    Ok(())
+}
+
+#[test]
+fn market_catalogue_controls_submit_all_supported_filters() -> TestResult {
+    let (mut app, mut commands, _, _) = setup()?;
+    for (name, value) in [
+        ("vocation", "2"),
+        ("minimum", "10"),
+        ("maximum", "100"),
+        ("forge", "3"),
+    ] {
+        edit(&mut app, &format!("market.filter.{name}"), value)?;
+    }
+    let depot = find(&mut app, "market.filter.depot")?;
+    app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+        source: depot,
+        value: true,
+        is_final: true,
+    });
+    app.update();
+    click(&mut app, "market.filter.apply")?;
+    let command = feature(&mut commands)?;
+    let wire::Query::Catalogue { filter, page } =
+        wire::decode_query(&command.payload).map_err(|e| format!("{e:?}"))?
+    else {
+        return Err("catalogue query".into());
+    };
+    assert_eq!(page, 0);
+    assert_eq!(filter.vocation, Some(2));
+    assert_eq!(filter.minimum_level, Some(10));
+    assert_eq!(filter.maximum_level, Some(100));
+    assert_eq!(filter.forge_class, Some(3));
+    assert!(filter.depot_only);
+    Ok(())
+}
+
+#[test]
+fn market_catalogue_rejects_invalid_filter_fields() -> TestResult {
+    let (mut app, mut commands, _, _) = setup()?;
+    for value in ["0", "7", "bad"] {
+        edit(&mut app, "market.filter.vocation", value)?;
+        click(&mut app, "market.filter.apply")?;
+        assert!(commands.try_recv().is_err());
+    }
+    edit(&mut app, "market.filter.vocation", "")?;
+    edit(&mut app, "market.filter.minimum", "100")?;
+    edit(&mut app, "market.filter.maximum", "10")?;
+    click(&mut app, "market.filter.apply")?;
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

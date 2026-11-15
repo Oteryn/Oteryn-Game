@@ -264,3 +264,72 @@ fn prey_reroll_needs_confirmation() -> TestResult {
     ));
     Ok(())
 }
+
+fn named(app: &mut App, name: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(id, n)| (n.as_str() == name).then_some(id))
+        .ok_or_else(|| name.to_owned().into())
+}
+#[test]
+fn prey_wildcard_chooser_requires_confirmation_and_sends_exact_key() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let field = named(&mut app, "prey.wildcard.creature.2")?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(bevy::text::EditableText::new("oteryn:creature.rat"));
+    let choose = named(&mut app, "prey.wildcard.choose.2")?;
+    app.world_mut().trigger(Activate { entity: choose });
+    assert!(commands.try_recv().is_err());
+    app.update();
+    let confirm = named(&mut app, "prey.wildcard.confirm")?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Prey(
+        oteryn_client_ui::prey::prey::Request::SelectAny { slot: 2, creature }
+    ) if creature == "oteryn:creature.rat")
+    );
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+#[test]
+fn prey_displays_balance_and_each_free_reroll() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let labels: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.clone())
+        .collect();
+    assert!(labels.iter().any(|t| t == "Wildcards: 5"));
+    assert_eq!(
+        labels
+            .iter()
+            .filter(|t| t.as_str() == "Free list reroll available")
+            .count(),
+        3
+    );
+    Ok(())
+}
+
+#[test]
+fn prey_wildcard_chooser_resolves_displayed_creature_names() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let field = named(&mut app, "prey.wildcard.creature.2")?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(bevy::text::EditableText::new("Rat"));
+    let choose = named(&mut app, "prey.wildcard.choose.2")?;
+    app.world_mut().trigger(Activate { entity: choose });
+    app.update();
+    let confirm = named(&mut app, "prey.wildcard.confirm")?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Prey(
+        oteryn_client_ui::prey::prey::Request::SelectAny { slot: 2, creature }
+    ) if creature == "oteryn:creature.rat")
+    );
+    Ok(())
+}
