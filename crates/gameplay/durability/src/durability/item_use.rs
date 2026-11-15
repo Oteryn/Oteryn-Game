@@ -62,7 +62,7 @@ pub mod temple_scroll;
 
 pub use carried_inventory::ItemUseInventory;
 mod hireling_lamp;
-pub(super) use carried_inventory::read_use_inventory;
+pub(super) use carried_inventory::{read_carried_inventory, read_use_inventory};
 use carried_source::lock_use_path;
 use drome_cube::DromeCubeError;
 

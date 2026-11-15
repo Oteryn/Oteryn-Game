@@ -1024,11 +1024,9 @@ impl RevisionSlot {
     fn settle<T: SequencedOutcome, E: SequencedError>(&mut self, result: &Result<T, E>) {
         match result {
             Ok(outcome) => {
-                if let Some(committed) = outcome.committed_revision() {
-                    let cursor = self
-                        .cursor
-                        .map_or(committed, |cursor| cursor.max(committed));
-                    *self.cursor = Some(cursor);
+                // A receipt may be historical. Only a loaded root revision can seed the cursor.
+                if let (Some(committed), Some(cursor)) = (outcome.committed_revision(), *self.cursor) {
+                    *self.cursor = Some(cursor.max(committed));
                 }
             }
             Err(error) if error.is_mismatch() => {
@@ -1549,6 +1547,59 @@ mod tests {
         });
         assert_eq!(result, Ok(Receipt(Some(revision(5)))));
         assert_eq!((attempts.get(), seen.get()), (1, Some(revision(4))));
+    }
+
+    #[test]
+    fn historical_replay_with_unknown_cursor_reloads_before_fresh_write() {
+        let id = character(5);
+        let sequencer = CharacterRevisionSequencer::new();
+        block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            let replay = slot.sequenced(
+                |_| std::future::ready(Ok(revision(10))),
+                fence(id),
+                Expect::Replay(revision(4)),
+                |fence| {
+                    assert_eq!(fence.expected_character_revision, revision(4));
+                    std::future::ready(Ok::<_, Failure>(Receipt(Some(revision(5)))))
+                },
+            ).await;
+            assert_eq!(replay, Ok(Receipt(Some(revision(5)))));
+            let fresh = slot.sequenced(
+                |_| std::future::ready(Ok(revision(10))),
+                fence(id),
+                Expect::Cursor(OnMismatch::FailClosed),
+                |fence| std::future::ready(if fence.expected_character_revision == revision(10) {
+                    Ok(Receipt(Some(revision(11))))
+                } else {
+                    Err(Failure::Mismatch)
+                }),
+            ).await;
+            assert_eq!(fresh, Ok(Receipt(Some(revision(11)))));
+        });
+    }
+
+    #[test]
+    fn historical_party_receipt_keeps_unknown_cursor_unknown() {
+        use crate::durability::character_progression::{CommittedExperienceAward, ExperienceRewardOccurrence};
+        use oteryn_simulation_determinism::ExactI64;
+        let id = character(5);
+        let sequencer = CharacterRevisionSequencer::new();
+        block_on(async {
+            let mut slot = sequencer.acquire(id).await;
+            slot.observe_party_experience(&Ok(ExperienceCommitOutcome::AlreadyCommitted(CommittedExperienceAward {
+                occurrence: ExperienceRewardOccurrence::from_bytes(*id.as_bytes()).expect("occurrence"),
+                character_id: id,
+                original_character_revision: revision(4),
+                committed_character_revision: revision(5),
+                level_before: 1,
+                level_after: 1,
+                experience_before: ExactI64::new(0),
+                experience_after: ExactI64::new(1),
+                experience_awarded: ExactI64::new(1),
+            })));
+            assert_eq!(*slot.cursor, None);
+        });
     }
 
     #[test]

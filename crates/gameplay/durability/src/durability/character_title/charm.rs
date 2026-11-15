@@ -54,10 +54,11 @@ impl Source {
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         character: CharacterId,
     ) -> Result<u64, DurabilityError> {
-        let points = self
+        let mut points = self
             .facts
             .completed_entry_charm_points(tx, character)
             .await?;
+        points.extend(crate::durability::charm_state::echo_warden::earned_points(tx, character).await?);
         let bound = oteryn_protocol_oteryn::charm::MAX_CHARMS;
         let rows = sqlx::query(
             "SELECT charm_key,unlocked_stage FROM game_character_charm_unlocks \
@@ -84,5 +85,28 @@ impl Source {
         let balance = derive_balance(self.catalogue.catalogue(), &unlocks, points, false)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
         Ok(balance.points_earned.saturating_sub(balance.points_spent))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn beastly_counts_warden_earnings() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+            tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+                use sqlx::Connection;
+                let Ok(url) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else { return Ok(()); };
+                let mut connection = sqlx::PgConnection::connect(&url).await?;
+                let mut tx = connection.begin().await?;
+                sqlx::raw_sql("CREATE TEMP TABLE game_character_bestiary_progress(character_id uuid,race_key text,kill_count bigint); CREATE TEMP TABLE game_character_charm_unlocks(character_id uuid,charm_key text,unlocked_stage smallint); CREATE TEMP TABLE game_character_echo_warden_rewards(character_id uuid,species_key text,charm_points smallint);").execute(&mut *tx).await?;
+                let character = CharacterId::from_bytes([1,2,3,4,5,6,0x70,8,0x80,10,11,12,13,14,15,1])?;
+                sqlx::query("INSERT INTO game_character_echo_warden_rewards SELECT encode($1,'hex')::uuid,n::text,100 FROM generate_series(1,20) n").bind(character.as_bytes().as_slice()).execute(&mut *tx).await?;
+                let source = source().ok_or("missing canonical charm source")?;
+                assert_eq!(source.available(&mut tx, character).await?, 2000);
+                Ok(())
+            })
+        })?.join().map_err(|_| "test thread panicked")?
     }
 }
