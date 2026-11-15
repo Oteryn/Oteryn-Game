@@ -335,8 +335,10 @@ fn assert_scripted_scope(
             &closed,
             None
         )
-        .is_err(),
-        "ordinary teleport still refuses the blocked script pad"
+        .is_ok(),
+        // The retained 354/25100 pad is walkable; native item 25100 has
+        // blocks_movement=false and immovable_block_solid=false.
+        "ordinary teleport accepts the walkable source pad"
     );
     assert!(
         crate::map::floor::prepare_scripted_quest_teleport_facing(

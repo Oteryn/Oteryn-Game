@@ -31,7 +31,7 @@ fn srx3_native_retained_teleport_moves_registered_hp0_but_not_completed_source()
                 .ok_or("actual Maxxen teleport slot")?;
             assert_eq!(source.entry().ability.key, "oteryn:ability.spell.maxxenteleport");
             let pin = ChannelContentPin::from_activation(world, 1, native.source_digest(), [2; 32], [3; 32], [4; 32], (100, 100, 7));
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(world, ChannelId::decode(&id(81)).map_err(|error| format!("retained teleport fixture: {error:?}"))?, NodeId::decode(&id(82)).map_err(|error| format!("retained teleport fixture: {error:?}"))?, 1, 1, 1, "runtime-scope-assignment:1", 8, pin).map_err(|error| format!("retained teleport fixture: {error:?}"))?;
+            let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(RuntimeScopeRefV1::instance(world, id(81)).map_err(|error| format!("retained teleport fixture: {error:?}"))?, NodeId::decode(&id(82)).map_err(|error| format!("retained teleport fixture: {error:?}"))?, 1, 1, 1, "runtime-scope-assignment:1", 8, pin).map_err(|error| format!("retained teleport fixture: {error:?}"))?;
             native.install_companion_policies(&mut runtime).map_err(|error| format!("retained teleport fixture: {error:?}"))?;
             let maximum = runtime.companion_policy(key).map_err(|error| format!("retained teleport fixture: {error:?}"))?.maximum_health;
             let start = MovementLocalPosition { x: 100, y: 100, floor: 7 };

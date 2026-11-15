@@ -338,7 +338,10 @@ mod tests {
     fn eligibility_requires_an_active_trial_and_an_unsaturated_counter() {
         let counter = &COUNTERS[0];
         let mut tracks = BTreeMap::new();
-        assert!(active(&tracks).is_empty());
+        // Crystal's Cults terminal settlement sets Humans.Mission to two
+        // from either zero or one, independently of this trial's phase.
+        let settlement = "oteryn:quest-transition/native-kills/cults-essence";
+        assert_eq!(active(&tracks), vec![settlement]);
         tracks.insert(counter.gate.into(), 1);
         assert!(active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), counter.maximum);
@@ -347,6 +350,13 @@ mod tests {
         assert!(!active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), 0);
         tracks.insert(counter.gate.into(), 2);
+        assert_eq!(active(&tracks), vec![settlement]);
+        let cults = &phase_settlements::COUNTERS[0];
+        for value in [0, 1] {
+            tracks.insert(cults.track.into(), value);
+            assert_eq!(active(&tracks), vec![settlement]);
+        }
+        tracks.insert(cults.track.into(), 2);
         assert!(active(&tracks).is_empty());
         assert!(!tracks_creature("oteryn:creature.rat"));
     }

@@ -680,6 +680,47 @@ fn classic_runtime_keeps_main_death_path_while_source_room_death_stays_pending()
 }
 
 #[test]
+fn ordinary_channel_uses_classic_deaths_without_source_room_registration() {
+    let key = "oteryn:creature.goshnar_s_megalomania_blue";
+    let world = WorldId::decode(&id(1)).unwrap();
+    let mut channel = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(2)).unwrap(),
+        NodeId::decode(&id(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    assert!(channel.uses_classic_creature_deaths());
+    channel
+        .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
+        .unwrap();
+    let policy = channel.companion_policy(key).unwrap();
+    let actor = ExactActorRef(
+        channel
+            .admit_encounter_fixture_actor(
+                ActorState(1),
+                key,
+                policy.maximum_health,
+                Some(LocalPosition {
+                    x: 33710,
+                    y: 31634,
+                    floor: 14,
+                }),
+            )
+            .unwrap(),
+    );
+    channel.install_creature_policy(actor, key).unwrap();
+    canonical_lethal(&mut channel, actor, key);
+    assert!(!channel.has_pending_source_creature_deaths());
+    assert!(!channel.source_creature_death_pending(actor).unwrap());
+}
+
+#[test]
 fn srx3_source_death_begin_freezes_profile_and_copied_events_once_before_handlers() {
     let (mut runtime, boss) = registered_source_fixture_at(7);
     let death = canonical_lethal(
