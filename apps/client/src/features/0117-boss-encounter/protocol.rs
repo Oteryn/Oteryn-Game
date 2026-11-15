@@ -53,7 +53,7 @@ pub(in crate::play) fn activity_scope_receipt(
         .next_back()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "bevy-shell"))]
 impl Outbox {
     pub(crate) fn bevy_bosstiary_initialize(&self) { self.boss_encounter_initialize(true); }
     pub(crate) fn bevy_bosstiary_result(&self, result: &GatedCommandResult) { self.boss_encounter_result(result); }
