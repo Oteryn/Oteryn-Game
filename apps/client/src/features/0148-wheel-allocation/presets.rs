@@ -12,6 +12,7 @@ use tokio::sync::mpsc::UnboundedSender;
 fn path() -> Result<std::path::PathBuf, String> {
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
+#[cfg(feature = "bevy-shell")]
 pub(in crate::play) fn submit_named(mailbox: &mut Mailbox, action: usize, selected: &str) {
     match path() {
         Ok(path) => submit_at(mailbox, action, selected, &path),
