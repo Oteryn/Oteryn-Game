@@ -19,6 +19,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Quest Log", Control::Quests),
     ("Skills", Control::Skills),
     ("Spellbook", Control::Spells),
+    ("Unjustified Points", Control::UnjustifiedPoints),
     ("VIP", Control::Panel("vip")),
 ];
 pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
@@ -30,6 +31,7 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Market => crate::bevy_shell::game_ui::open_market(owner),
         Control::Party => crate::bevy_shell::game_ui::open_party(owner),
         Control::Quests => crate::bevy_shell::game_ui::open_quests(owner),
+        Control::UnjustifiedPoints => crate::bevy_shell::game_ui::unjustified_points::open(owner),
         Control::Spells => crate::bevy_shell::game_ui::open_spells(owner),
         Control::Panel(id) => {
             if let Some(play) = &owner.play {

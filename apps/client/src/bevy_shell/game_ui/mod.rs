@@ -41,6 +41,7 @@ mod store;
 mod task_board;
 mod trade;
 mod tutorial;
+pub(super) mod unjustified_points;
 pub(super) mod viewport;
 mod wheel;
 use super::{owner::HostOwner, ui::Skins};

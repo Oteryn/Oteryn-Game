@@ -3,7 +3,7 @@ use super::{
     actions, analyser, bug_report, chat, cyclopedia, feature_dialogs, forge, highscores, hotkeys,
     hud, imbuing, inventory, item_details, journal, market, minimap, modal, npc_shop, options,
     outfit, party, prey, proficiency, project, projection, quick_loot, reward_wall, rule_violation,
-    satellite_map, stash, store, task_board, trade, tutorial, wheel,
+    satellite_map, stash, store, task_board, trade, tutorial, unjustified_points, wheel,
 };
 use bevy::prelude::*;
 
@@ -39,6 +39,7 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
     satellite_map::install(app);
     reward_wall::install(app);
     trade::install(app);
+    unjustified_points::install(app);
     wheel::install(app);
     tutorial::install(app);
     app.add_systems(
