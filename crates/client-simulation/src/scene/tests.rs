@@ -28,15 +28,39 @@ fn scene_projection_preserves_painter_order_offsets_and_wrapping_anchor() -> Res
     )?;
     assert_eq!(
         draws.iter().map(|(_, draw)| draw.cell).collect::<Vec<_>>(),
-        [3, 4, 8, 6, 7, 5]
+        [8, 8, 8, 3, 4, 8, 6, 7, 5]
     );
-    assert!(draws.iter().all(|(tile, _)| *tile == (i32::MAX, i32::MAX)));
+    let last = (i32::MAX, i32::MAX);
+    assert_eq!(
+        draws.iter().map(|(tile, _)| *tile).collect::<Vec<_>>(),
+        [
+            (i32::MAX - 1, i32::MAX - 1),
+            (i32::MAX, i32::MAX - 1),
+            (i32::MAX - 1, i32::MAX),
+            last,
+            last,
+            last,
+            last,
+            last,
+            last,
+        ]
+    );
     assert_eq!(
         draws
             .iter()
             .map(|(_, draw)| draw.offset)
             .collect::<Vec<_>>(),
-        [[2, 3], [2, 3], [-6, -5], [-6, -5], [-6, -5], [2, 3]]
+        [
+            [2, 3],
+            [2, 3],
+            [2, 3],
+            [2, 3],
+            [2, 3],
+            [-6, -5],
+            [-6, -5],
+            [-6, -5],
+            [2, 3]
+        ]
     );
     assert_eq!(scene_origin((i32::MIN, i32::MIN)), (i32::MIN, i32::MIN));
     assert_eq!(scene_origin((0, 0)), (-7, -5));

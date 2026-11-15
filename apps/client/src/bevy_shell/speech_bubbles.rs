@@ -19,8 +19,8 @@ mod tests;
 #[derive(Resource, Default)]
 pub(super) struct SpeechBubbles {
     texts: Texts,
-    previous: Vec<oteryn_client_runtime::chat::ChatLine>,
-    seen: bool,
+    received: Option<u64>,
+    scope: Option<(u64, u64)>,
     entities: Vec<Entity>,
 }
 
@@ -36,25 +36,35 @@ pub(super) fn project(
     let state = &mut *state;
     let (Some(play), Some(window), Some(skins)) = (&owner.play, window.single().ok(), skins) else {
         state.texts.clear();
-        state.previous.clear();
-        state.seen = false;
+        state.received = None;
+        state.scope = None;
         for entity in state.entities.drain(..) {
             commands.entity(entity).despawn();
         }
         return;
     };
     let now = u64::try_from(time.elapsed().as_millis()).unwrap_or(u64::MAX);
-    let lines = play.link.chat_panel().lines;
+    let panel = play.link.chat_panel();
+    let scope = (owner.generation(), panel.scope);
+    if state.scope != Some(scope) {
+        state.texts.clear();
+        state.received = None;
+        state.scope = Some(scope);
+    }
     // Lines already in the log when the map opens are history, not speech.
-    if state.seen {
-        for line in logic::new_lines(&state.previous, &lines) {
-            if let Some(speech) = Speech::from_line(line) {
+    if let Some(received) = state.received {
+        for line in logic::new_lines(received, panel.received, &panel.lines) {
+            if panel.console.communication.visible(line)
+                && let Some(speech) = Speech::from_line(line)
+            {
                 state.texts.add(&speech, now);
             }
         }
     }
-    state.seen = true;
-    state.previous = lines;
+    state.received = Some(panel.received);
+    state
+        .texts
+        .retain_visible(|name| panel.console.communication.allows(name));
     state.texts.expire(now);
 
     let view = play.view.scene().view();
@@ -74,6 +84,10 @@ pub(super) fn project(
     for (index, text) in visible.iter().enumerate() {
         let (x, y, _) = text.position();
         let [dx, dy] = view.tile_to_screen(TileCoord::new(x, y));
+        let [cx, cy] = play
+            .view
+            .camera_offset(std::time::Instant::now())
+            .unwrap_or([0.; 2]);
         let rgb = logic::colour(text.mode());
         let colour = Color::srgb_u8(rgb[0], rgb[1], rgb[2]);
         let Some(entity) = state.entities.get(index).copied() else {
@@ -110,7 +124,7 @@ pub(super) fn project(
             paint.0 = shown;
         }
         let (left, top) = logic::layout_rect(
-            (dx / scale, dy / scale),
+            ((dx + cx) / scale, (dy + cy) / scale),
             (measured.x, measured.y),
             (scene_size.x / scale, scene_size.y / scale),
         );

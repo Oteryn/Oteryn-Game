@@ -46,7 +46,9 @@ impl ArrowChord {
         let mut pressed = None;
         for event in events {
             match event {
-                NormalizedInputEvent::DeviceLost => self.pressed_at = [None; 4],
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::CaptureChanged { captured: false }
+                | NormalizedInputEvent::DeviceLost => self.pressed_at = [None; 4],
                 NormalizedInputEvent::Key { code, state, .. } => {
                     let Some(key) = Self::KEYS.iter().position(|arrow| arrow == code) else {
                         continue;

@@ -541,6 +541,107 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
 }
 
 #[test]
+fn walking_projection_keeps_touch_controls_fixed_and_moves_world_quads() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use oteryn_session::{
+        ActorPosition, AppliedDelta, CommandStatus, StepDisposition, StepOutcome,
+        WorldSpatialObservation,
+    };
+    let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
+    view.enable_touch_controls();
+    view.apply(&StepOutcome {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        disposition: StepDisposition::Moved,
+        result_server_sequence: 1,
+        world_spatial_delta: Some(AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position: ActorPosition {
+                    x: 101,
+                    y: 100,
+                    floor: 7,
+                },
+            },
+        }),
+        world_object_overlay_delta: None,
+        gate_message_id: None,
+    })?;
+    assert!(view.camera_offset(std::time::Instant::now()).is_some());
+    let scene = view.scene();
+    let count = scene.tiles().instances().len();
+    let (w, h) = scene.view().viewport_px();
+    // Touch controls are appended after world sprites, close to the bottom left.
+    let (i, quad) = scene
+        .sprites()
+        .instances()
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_, q)| q.position[0] < 200. && q.position[1] > h as f32 / 2.)
+        .ok_or("touch quad")?;
+    let expected = project_quad(
+        quad,
+        [1.; 4],
+        count + i,
+        &Handle::default(),
+        scene.atlas(),
+        QuadViewport {
+            scale: 1.,
+            size: Vec2::new(w as f32, h as f32),
+            offset: Vec2::ZERO,
+            clip_size: Vec2::new(w as f32, h as f32),
+            scroll: Vec2::ZERO,
+        },
+    )
+    .ok_or("fixed control")?
+    .1;
+    let (link, _, _) = play_channel();
+    let mut host = HostOwner::new(None)?;
+    host.play = Some(super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<SceneCache>()
+        .init_resource::<Time>()
+        .init_resource::<Assets<Image>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ZERO,
+            size: UVec2::new(w, h),
+        })
+        .add_systems(Update, project);
+    app.world_mut().spawn((Window::default(), PrimaryWindow));
+    app.update();
+    let entity = app
+        .world()
+        .resource::<SceneCache>()
+        .entities
+        .iter()
+        .find(|e| {
+            app.world()
+                .get::<Transform>(**e)
+                .is_some_and(|t| t.translation.z == expected.translation.z)
+        })
+        .ok_or("projected control")?;
+    assert_eq!(app.world().get::<Transform>(*entity), Some(&expected));
+    let terrain = app
+        .world()
+        .resource::<SceneCache>()
+        .entities
+        .iter()
+        .filter_map(|e| app.world().get::<Transform>(*e))
+        .find(|t| t.translation.z == 0.)
+        .ok_or("terrain")?;
+    assert!(
+        terrain.translation.x > -(w as f32) / 2. + 24.,
+        "terrain scrolls during walk"
+    );
+    Ok(())
+}
+
+#[test]
 fn resource_gauges_do_not_duplicate_sidebar_hud_in_bevy_scene() -> TestResult {
     use crate::play::{PlayView, play_channel};
     use oteryn_session::ActorVitals;

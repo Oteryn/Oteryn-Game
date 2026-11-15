@@ -90,7 +90,7 @@ impl crate::play::PlayView {
         let mut consumed = false;
         for &(x, y) in clicks {
             if let Some(tile) =
-                crate::input::click_tile(self.scene().view(), f64::from(x), f64::from(y))
+                self.click_tile(f64::from(x), f64::from(y))
                 && let Some(partner) = self.player_trade_context_target(tile)
             {
                 consumed = true;

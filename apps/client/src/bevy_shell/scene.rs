@@ -122,6 +122,7 @@ pub(super) fn project(
         .enumerate()
         .map(|(i, q)| {
             (
+                i,
                 q,
                 lighting.quad_tint(q, i, QuadLayer::Terrain),
                 false,
@@ -145,13 +146,20 @@ pub(super) fn project(
                     {
                         tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
                     }
-                    (q, tint, minimap_range.contains(&i), i, QuadLayer::Overlay)
+                    (
+                        tile_count + i,
+                        q,
+                        tint,
+                        minimap_range.contains(&i),
+                        i,
+                        QuadLayer::Overlay,
+                    )
                 }),
         );
     let smooth_enabled = !lighting.sources.is_empty();
     let mut batches = [smooth::Vertices::default(), smooth::Vertices::default()];
     let mut count = 0;
-    for (index, (quad, tint, minimap, source_index, source_layer)) in ordered.enumerate() {
+    for (index, quad, tint, minimap, source_index, source_layer) in ordered {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
         let follows_player = index >= tile_count
             && player_quads

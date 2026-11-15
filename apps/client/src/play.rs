@@ -75,11 +75,9 @@ pub struct PlayView {
     scene: Scene,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
-    /// The own step being smoothed, and when it began.
+    /// Own walk glide, last landing and held arrows.
     walk: Option<(oteryn_client_simulation::walk::Glide, std::time::Instant)>,
-    /// When the last step landed, to pace the next glide by.
     walk_landed: Option<std::time::Instant>,
-    /// Arrow keys held now, for diagonal chords.
     chord: oteryn_client_ui::diagonal_movement::ArrowChord,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,

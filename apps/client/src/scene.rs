@@ -6,7 +6,9 @@
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
 use crate::map::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
-use oteryn_client_simulation::scene::{scene_origin, visit_scene_entities};
+use oteryn_client_simulation::scene::{
+    scene_origin, visit_scene_entities_scrolled as visit_scene_entities,
+};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
 };
@@ -32,8 +34,8 @@ pub struct Scene {
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
-    /// Sprite quads that stay put while a walking camera scrolls: the own outfit and name.
-    player_quads: Vec<std::ops::Range<usize>>,
+    /// Fixed sprite ranges: the own actor and screen overlays.
+    pub(crate) player_quads: Vec<std::ops::Range<usize>>,
     /// Retained corner gauges and circles omitted by the Bevy HUD.
     #[cfg(feature = "bevy-shell")]
     pub(crate) native_hud_quads: std::ops::Range<usize>,
@@ -50,6 +52,7 @@ pub struct Scene {
     anchor: Option<TileCoord>,
     own: TileCoord,
     facing: StepDir,
+    pub(crate) scroll: [f32; 2],
     view: TileView,
     tiles: TileBatch,
     sprites: SpriteBatch,
@@ -135,6 +138,7 @@ impl Scene {
             anchor,
             own,
             facing,
+            scroll: [0.; 2],
             view,
             tiles,
             sprites: SpriteBatch::new(),
@@ -249,10 +253,7 @@ impl Scene {
         self.rebuild_sprites()
     }
 
-    /// Row by row, [`SCAN_MARGIN`] tiles past the view on the right and bottom (the world drops
-    /// map cells reaching further up and left): each tile's map items, its markers and the
-    /// player, then what goes over them.
-    /// The target highlight is drawn last.
+    /// Painter order over the scrolled viewport and guard tiles; the target is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let (mut sprites, dimmed, floor_quads, player_quads) = self.world_sprites()?;
         #[cfg(feature = "bevy-shell")]

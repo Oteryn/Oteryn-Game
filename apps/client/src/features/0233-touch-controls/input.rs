@@ -69,8 +69,7 @@ impl PlayView {
                         && (at[0] - start[0]).hypot(at[1] - start[1]) <= 12.0 * layout.scale
                         && layout.button(at).is_none()
                         && layout.distance(at) > layout.radius
-                        && let Some(tile) =
-                            crate::input::click_tile(self.scene.view(), at[0], at[1])
+                        && let Some(tile) = self.click_tile(at[0], at[1])
                     {
                         self.touch_tile(link, tile)?;
                     }

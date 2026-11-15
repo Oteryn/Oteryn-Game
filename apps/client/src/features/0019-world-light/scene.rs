@@ -57,14 +57,25 @@ impl Scene {
                         return Ok(());
                     }
                     let at = sprites.len();
-                    let pushed = sprites.push_offset(
-                        &self.view,
-                        atlas,
-                        TileCoord::new(x, y),
-                        draw.cell,
-                        draw.offset,
-                        oteryn_client_domain::world::CELL_PX,
-                    )?;
+                    let side = self.view.tile_px() as f32;
+                    let scale = side / oteryn_client_domain::world::CELL_PX as f32;
+                    let [sx, sy] = self.view.tile_to_screen(TileCoord::new(x, y));
+                    let position = [
+                        sx + draw.offset[0] as f32 * scale,
+                        sy + draw.offset[1] as f32 * scale,
+                    ];
+                    let (w, h) = self.view.viewport_px();
+                    let pushed = position[0] + side > -side - self.scroll[0].max(0.)
+                        && position[1] + side > -side - self.scroll[1].max(0.)
+                        && position[0] < w as f32 + side - self.scroll[0].min(0.)
+                        && position[1] < h as f32 + side - self.scroll[1].min(0.);
+                    if pushed {
+                        sprites.push_quad(oteryn_renderer::QuadInstance {
+                            position,
+                            size: [side; 2],
+                            uv: atlas.uv_rect(draw.cell)?,
+                        })?;
+                    }
                     // Elevation shifts a draw's offset, so the own outfit is told by its cell.
                     if pushed
                         && (x, y) == (self.own.x, self.own.y)
@@ -105,6 +116,7 @@ impl Scene {
                             )
                             .collect()
                     },
+                    self.scroll.map(|v| v / self.view.tile_px() as f32),
                     &mut *emit,
                 )?;
             }

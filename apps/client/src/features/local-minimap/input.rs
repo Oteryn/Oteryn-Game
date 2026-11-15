@@ -41,7 +41,7 @@ impl PlayView {
         if self.minimap_click(x, y) {
             return Ok(());
         }
-        if let Some(tile) = crate::input::click_tile(self.scene().view(), x, y) {
+        if let Some(tile) = self.click_tile(x, y) {
             self.click(tile)?;
         }
         Ok(())

@@ -34,7 +34,7 @@ impl PlayView {
                     let tile = self
                         .creature_drag
                         .pointer
-                        .and_then(|(x, y)| crate::input::click_tile(self.scene.view(), x, y));
+                        .and_then(|(x, y)| self.click_tile(x, y));
                     let mailbox = lock(&link.mailbox);
                     let blocked = mailbox.world_input_blocked()
                         || mailbox.world_context.pending

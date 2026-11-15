@@ -142,6 +142,7 @@ pub(super) fn route(
         }
     }
 }
+// Keep scene pixels for fixed controls; PlayView::click_tile reverses world scrolling.
 fn map_pointer(
     owner: &HostOwner,
     viewport: WorldViewport,

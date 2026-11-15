@@ -34,6 +34,9 @@ impl HostOwner {
             events
         };
         let controls = self.settings.control_events(events, chat);
+        if let Some(play) = &mut self.play {
+            play.view.observe_arrow_releases(&controls);
+        }
         let (routed, open) = self.settings.input_in_context(&controls, chat);
         let clicks = self.controls.mouse.route(&routed);
         let spells = self.controls.spells.route(&routed);
@@ -194,8 +197,7 @@ impl HostOwner {
             if suppress_primary && !click.secondary {
                 continue;
             }
-            if let Some(tile) = crate::input::click_tile(play.view.scene().view(), click.x, click.y)
-            {
+            if let Some(tile) = play.view.click_tile(click.x, click.y) {
                 if click.secondary {
                     if !play.view.gameplay_secondary_click(&play.link) {
                         context = Some(tile);

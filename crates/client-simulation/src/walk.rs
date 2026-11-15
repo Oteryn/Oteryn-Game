@@ -9,11 +9,12 @@ const MAX_GLIDE: Duration = Duration::from_millis(2_000);
 const MIN_GLIDE: Duration = Duration::from_millis(50);
 
 /// One adjacent step, drawn at its destination with an offset that shrinks to zero.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Glide {
     from: TileCoord,
     to: TileCoord,
     duration: Duration,
+    carry: [f32; 2],
 }
 
 impl Glide {
@@ -24,7 +25,21 @@ impl Glide {
         let dx = i64::from(to.x) - i64::from(from.x);
         let dy = i64::from(to.y) - i64::from(from.y);
         let adjacent = dx.abs() <= 1 && dy.abs() <= 1 && (dx != 0 || dy != 0);
-        (adjacent && !duration.is_zero()).then_some(Self { from, to, duration })
+        (adjacent && !duration.is_zero()).then_some(Self {
+            from,
+            to,
+            duration,
+            carry: [0.; 2],
+        })
+    }
+
+    /// Start this adjacent step from the previous glide's current visual position.
+    #[must_use]
+    pub fn continuing(mut self, previous: Self, elapsed: Duration) -> Self {
+        if previous.to == self.from {
+            self.carry = previous.offset(elapsed, 1.0);
+        }
+        self
     }
 
     #[must_use]
@@ -43,8 +58,8 @@ impl Glide {
     pub fn offset(&self, elapsed: Duration, tile_px: f32) -> [f32; 2] {
         let remaining = 1.0 - (elapsed.as_secs_f32() / self.duration.as_secs_f32()).clamp(0.0, 1.0);
         [
-            (self.from.x - self.to.x) as f32 * tile_px * remaining,
-            (self.from.y - self.to.y) as f32 * tile_px * remaining,
+            ((self.from.x - self.to.x) as f32 + self.carry[0]) * tile_px * remaining,
+            ((self.from.y - self.to.y) as f32 + self.carry[1]) * tile_px * remaining,
         ]
     }
 
