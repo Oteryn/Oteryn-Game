@@ -171,9 +171,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::chat::private_channel_extended::CAPABILITY_CHAT_CHANNEL_PARTICIPANTS_V1,
     oteryn_protocol_oteryn::chat::line_extended::CAPABILITY_CHAT_LINE_SEQUENCE_V1,
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
-    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in

@@ -14,6 +14,7 @@ impl Mailbox {
         self.battle.pending_command = None;
         self.spellbook_details.pending = None;
         self.server_info.pending.clear();
+        self.quest_info_revision = None;
         self.quest.titles.clear();
         self.spell_catalog.info.clear();
         self.spellbook_details.info.clear();

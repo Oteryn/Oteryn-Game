@@ -139,6 +139,7 @@ pub(super) struct Mailbox {
     pub(super) cast_chat: oteryn_client_ui::cast_chat::Panel,
     pub(super) cast_control: oteryn_client_ui::cast_control::Panel,
     pub(super) server_info: oteryn_client_ui::server_info::Panel,
+    pub(super) quest_info_revision: Option<u64>,
     pub(super) spellbook_details: super::feature_0287_actor_spell_catalog::view::SpellbookState,
     pub(super) spell_catalog: oteryn_client_ui::spell_catalog::Panel,
     pub(super) spell_bar: oteryn_client_ui::spell_action_bar::ActionBarPanel,

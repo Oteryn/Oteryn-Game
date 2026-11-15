@@ -81,6 +81,21 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                 return;
             }
         }
+        if let Some(command) = outbox.server_info_quest_observation_command() {
+            match session.feature(&command).await {
+                Ok(result) => {
+                    outbox.server_info_result(&oteryn_session::server_info::Query::Quests, &result)
+                }
+                Err(error) => {
+                    if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            publish(&mut session, &outbox, &mut held);
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {

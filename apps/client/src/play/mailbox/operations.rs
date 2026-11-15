@@ -137,6 +137,7 @@ impl Outbox {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -198,6 +199,7 @@ impl Outbox {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();
@@ -356,6 +358,7 @@ impl Drop for PlayLink {
         mailbox.cast_control = Default::default();
         mailbox.spellbook_details = Default::default();
         mailbox.server_info = Default::default();
+        mailbox.quest_info_revision = None;
         mailbox.spell_catalog = Default::default();
         mailbox.hud_resource = Default::default();
         mailbox.spell_bar = Default::default();

@@ -26,6 +26,19 @@ impl PlayLink {
     }
 }
 impl Outbox {
+    /// Server-pushed quest revisions also need their titles, without a user query.
+    pub(in crate::play) fn server_info_quest_observation_command(
+        &self,
+    ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+        let mut m = lock(&self.0);
+        let revision = m.quest.state.revision?;
+        if !m.server_info.selected || m.quest_info_revision == Some(revision) {
+            return None;
+        }
+        let command = server_info::request(&mut m.server_info, Query::Quests)?;
+        m.quest_info_revision = Some(revision);
+        Some(command)
+    }
     pub(in crate::play) fn server_info_initial_commands(
         &self,
     ) -> Vec<oteryn_client_runtime::raw_feature::FeatureCommand> {
@@ -53,6 +66,7 @@ impl Outbox {
             selected,
             ..Default::default()
         };
+        m.quest_info_revision = None;
         m.quest.titles.clear();
         m.spell_catalog.info.clear();
         m.spellbook_details.info.clear();
@@ -94,6 +108,11 @@ impl Outbox {
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl Outbox {
+    pub(crate) fn bevy_server_info_quest_observation_command(
+        &self,
+    ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
+        self.server_info_quest_observation_command()
+    }
     pub(crate) fn bevy_server_info_initialize(&self) {
         self.server_info_initialize(true);
     }

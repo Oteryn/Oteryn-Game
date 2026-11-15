@@ -93,3 +93,71 @@ fn server_info_spell_reply_reaches_bevy_detail_and_cooldown_bar() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn server_info_unsolicited_quest_revision_refreshes_titles_once() -> Result {
+    use oteryn_client_ui::quest_log::{QuestListEntry, QuestLogView};
+    let (host, _commands, outbox) = super::tests::host()?;
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    let mut state = super::tests::quest_state();
+    outbox.bevy_journal_quest_state(state.clone());
+    assert!(
+        outbox
+            .bevy_server_info_quest_observation_command()
+            .is_none()
+    );
+    outbox.bevy_server_info_initialize();
+    let command = outbox
+        .bevy_server_info_quest_observation_command()
+        .ok_or("initial titles")?;
+    assert_eq!(Query::decode(&command.payload), Some(Query::Quests));
+    outbox.bevy_server_info_result(
+        &Query::Quests,
+        &result(
+            Reply::Quests(vec![(73, "Rat Investigation".into())])
+                .encode()
+                .ok_or("encode")?,
+        ),
+    );
+    assert!(
+        outbox
+            .bevy_server_info_quest_observation_command()
+            .is_none()
+    );
+    state.revision = Some(2);
+    state.list.push(QuestListEntry {
+        quest_index: 74,
+        completed: false,
+    });
+    state.log.view = Some(QuestLogView::List(state.list.clone()));
+    // A pushed revision, without quest_request or another user command.
+    outbox.bevy_journal_quest_state(state);
+    let command = outbox
+        .bevy_server_info_quest_observation_command()
+        .ok_or("pushed titles")?;
+    assert_eq!(Query::decode(&command.payload), Some(Query::Quests));
+    outbox.bevy_server_info_result(
+        &Query::Quests,
+        &result(
+            Reply::Quests(vec![
+                (73, "Rat Investigation".into()),
+                (74, "A New Trail".into()),
+            ])
+            .encode()
+            .ok_or("encode")?,
+        ),
+    );
+    let projection = model::quests(&link.quest_panel(), 0, false);
+    assert!(
+        projection
+            .rows
+            .iter()
+            .any(|r| r.id == model::RowId::Quest(74) && r.label == "A New Trail")
+    );
+    assert!(
+        outbox
+            .bevy_server_info_quest_observation_command()
+            .is_none()
+    );
+    Ok(())
+}
