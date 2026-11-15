@@ -21,6 +21,12 @@ impl PlayView {
         &self.scene
     }
 
+    /// The floor the camera shows.
+    #[must_use]
+    pub const fn floor(&self) -> i16 {
+        self.floor
+    }
+
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the decoded map floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
