@@ -3,7 +3,7 @@
 //! attack entry can satisfy these assertions.
 use super::{Harness, TestResult, debug, exchange_command, wire};
 use crate::combat_attack::AttackState;
-use crate::foundation::{CommandRef, ExactActorRef, GameSessionState, RuntimeScopeRefV1};
+use crate::foundation::{CommandRef, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::connection::AdmittedSession;
 use oteryn_protocol_oteryn::activity_scope::ActivityScope;
@@ -17,6 +17,9 @@ pub(super) struct AttackContinuity {
     modes: ExpertFightModes,
     observed_at: SemanticTimeMicros,
     deadline: SemanticTimeMicros,
+    analyser: String,
+    source_actor: ExactActorRef,
+    source_session: GameSessionId,
 }
 
 pub(super) async fn prepare_attack(
@@ -24,6 +27,11 @@ pub(super) async fn prepare_attack(
     admitted: AdmittedSession,
 ) -> TestResult<AttackContinuity> {
     let actor = admitted.runtime_actor.ok_or("source attack actor")?;
+    assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+    owner.states.analyser.impact(actor, admitted.game_session_id, 7, None);
+    let analyser = format!("{:?}", owner.states.analyser.accounting(actor, admitted.game_session_id)
+        .ok_or("source analyser")?.1);
+
     let now = owner.owner_now();
     let runtime = owner.runtime.lock().await;
     let mut attack = owner.states.attack.lock().await;
@@ -50,6 +58,9 @@ pub(super) async fn prepare_attack(
         modes,
         observed_at: now,
         deadline,
+        analyser,
+        source_actor: actor,
+        source_session: admitted.game_session_id,
     })
 }
 
@@ -59,6 +70,15 @@ async fn assert_attack(
     expected: &AttackContinuity,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("transferred attack actor")?;
+    assert!(owner.states.analyser.accounting(expected.source_actor, expected.source_session).is_none(),
+        "committed handoff must remove the obsolete analyser session");
+    let retained = owner.states.analyser.accounting(actor, admitted.game_session_id)
+        .ok_or("transferred analyser stream")?;
+    assert_eq!(format!("{:?}", retained.1), expected.analyser);
+    assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+    assert_eq!(format!("{:?}", owner.states.analyser.accounting(actor, admitted.game_session_id)
+        .ok_or("snapshotted transferred analyser")?.1), expected.analyser);
+
     let runtime = owner.runtime.lock().await;
     runtime
         .player_control_facts(actor, admitted.game_session_id)
@@ -147,6 +167,9 @@ pub(super) async fn assert_entry_and_timeout_return(
             + 1,
     );
     assert_attack(origin, *admitted, &expected).await?;
+    assert!(instance.states.analyser.accounting(source.runtime_actor.ok_or("old analyser actor")?,
+        source.game_session_id).is_none(), "return must remove the Instance analyser session");
+
     assert!(
         instance
             .runtime

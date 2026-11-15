@@ -47,6 +47,8 @@ fn entity_ref(actor: ExactActorRef) -> oteryn_protocol_oteryn::world_spatial_ent
 struct Stream {
     actor: ExactActorRef,
     generation: u64,
+    /// The first destination snapshot keeps the committed handoff's measurement interval.
+    handoff_pending: bool,
     /// Capability 486 selected: damage input may carry the attacker.
     attributed: bool,
     pending: AnalyserPendingQueue,
@@ -87,6 +89,16 @@ impl AnalyserStreams {
         {
             return None;
         }
+        if let Some(held) = streams
+            .get_mut(&session)
+            .filter(|held| held.actor == actor && held.handoff_pending)
+        {
+            held.generation = generation;
+            held.attributed = attributed;
+            held.items = items;
+            held.handoff_pending = false;
+            return Some(false);
+        }
         let discarded = streams
             .get(&session)
             .is_some_and(|held| !held.pending.is_empty());
@@ -95,6 +107,7 @@ impl AnalyserStreams {
             Stream {
                 actor,
                 generation,
+                handoff_pending: false,
                 attributed,
                 pending: AnalyserPendingQueue::default(),
                 totals: Default::default(),
@@ -103,6 +116,29 @@ impl AnalyserStreams {
             },
         );
         Some(discarded)
+    }
+
+    /// Caller has committed the exact source-to-destination session handoff.
+    pub(super) fn rebind(
+        &self,
+        source_actor: ExactActorRef,
+        source_session: GameSessionId,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) {
+        if let Ok(mut streams) = self.0.lock()
+            && streams
+                .get(&source_session)
+                .is_some_and(|held| held.actor == source_actor)
+            && let Some(mut held) = streams.remove(&source_session)
+        {
+            held.actor = actor;
+            // A new session can restart at generation 1. Its first fenced snapshot
+            // authorizes draining; no predecessor connection may drain this key.
+            held.generation = 0;
+            held.handoff_pending = true;
+            streams.insert(session, held);
+        }
     }
 
     pub(super) fn forget(&self, session: GameSessionId) {

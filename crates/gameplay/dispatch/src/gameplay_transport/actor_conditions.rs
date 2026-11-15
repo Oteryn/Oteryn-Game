@@ -19,9 +19,7 @@ impl ChannelSpellStates {
             && self
                 .get(runtime, actor, session)
                 .is_some_and(|s| s.vitals().health > 0)
-            && runtime
-                .player_control_facts(actor, session)
-                .is_ok_and(|f| f.control_loss.is_none())
+            && runtime.player_control_facts(actor, session).is_ok()
     }
     fn condition_actor_current(
         &self,
@@ -190,23 +188,23 @@ impl ChannelSpellStates {
         session: GameSessionId,
         now: SemanticTimeMicros,
     ) -> bool {
-        if !self.condition_player_current(runtime, target, session) {
-            return false;
-        }
-        let Some(state) = self.get(runtime, target, session) else {
-            return false;
-        };
-        let store = state.owned_conditions();
-        store.accepts_time(now.get())
-            && !store.has_status(
-                oteryn_gameplay_domain::domain::condition::StatusKind::Rooted,
-                now.get(),
-            )
-            && !store.has_status(
-                oteryn_gameplay_domain::domain::condition::StatusKind::Feared,
-                now.get(),
-            )
+        use oteryn_gameplay_domain::domain::condition::StatusKind;
+        !self.is_dead(target)
+            && runtime
+                .actor_conditions_at(target, Some(session), now.get())
+                .is_ok_and(|store| {
+                    !store.has_status(StatusKind::Rooted, now.get())
+                        && !store.has_status(StatusKind::Feared, now.get())
+                })
+            && self.get(runtime, target, session).is_none_or(|state| {
+                let store = state.owned_conditions();
+                state.vitals().health > 0
+                    && store.accepts_time(now.get())
+                    && !store.has_status(StatusKind::Rooted, now.get())
+                    && !store.has_status(StatusKind::Feared, now.get())
+            })
     }
+
     pub fn native_effective_attributes(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -719,6 +717,46 @@ mod native_composite_tests {
         )
         .unwrap()]
     }
+    #[test]
+    fn retained_player_receives_source_conditions_after_control_loss() {
+        let (mut runtime, mut states, player, session, source, _, _) = ready(0xd4);
+        runtime
+            .record_control_loss(
+                player,
+                session,
+                crate::foundation::ControlLossMark {
+                    epoch: 1,
+                    grace_deadline: 5_000,
+                },
+            )
+            .unwrap();
+        states.detach(&runtime, player, session);
+        let stamp = runtime.issue_owner_work().unwrap();
+        let root = GameplayDecisionRoot::from_bytes([102; 32]);
+        let receipt = states
+            .apply_composite_attack_damage_current(
+                &mut runtime,
+                player,
+                session,
+                3,
+                "retained:condition",
+                source,
+                &definitions(),
+                &facts(&root),
+                &[],
+                stamp,
+            )
+            .unwrap();
+        assert_eq!(receipt.applied, 3);
+        assert_eq!(
+            states
+                .get(&runtime, player, session)
+                .unwrap()
+                .owned_invisible_at(0),
+            Ok(true)
+        );
+    }
+
     #[test]
     fn current_source_conditions_share_atomic_damage_and_replay_then_refuse_retirement() {
         let (mut runtime, mut states, player, session, source, _, _) = ready(0x7e);

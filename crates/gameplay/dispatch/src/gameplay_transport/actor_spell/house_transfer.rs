@@ -238,6 +238,7 @@ impl ChannelSpellStates {
         self.move_house_prey(actor, source, destination);
         self.item_uses.move_house(actor, source, destination);
         attack.move_house(actor, source, destination);
+        self.analyser.rebind(actor, source, actor, destination);
         // spell_timers/presentations and source occurrence memos retain their
         // immutable original CommandRef and scope. Their existing native due
         // checks decide whether they remain applicable; this cannot retarget a

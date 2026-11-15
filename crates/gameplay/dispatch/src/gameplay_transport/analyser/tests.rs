@@ -159,3 +159,63 @@ fn hit_attribution_reaches_only_selected_sessions_with_the_attacker_entity() {
         ]
     );
 }
+
+#[test]
+fn handoff_rebind_preserves_queue_totals_start_and_new_generation() {
+    let (_, source_actor, source_session) = runtime_with_player(35);
+    let (_, actor, session) = runtime_with_player(36);
+    let streams = AnalyserStreams::default();
+    assert_eq!(
+        streams.snapshot_attributed(source_actor, source_session, 5, None, true),
+        Some(false)
+    );
+    streams.impact(source_actor, source_session, 7, None);
+    let started = streams
+        .0
+        .lock()
+        .expect("streams")
+        .get(&source_session)
+        .expect("source")
+        .started;
+    let totals = format!(
+        "{:?}",
+        streams
+            .accounting(source_actor, source_session)
+            .expect("accounting")
+            .1
+    );
+    streams.rebind(source_actor, source_session, actor, session);
+    assert!(streams.accounting(source_actor, source_session).is_none());
+    assert!(streams.next(source_actor, source_session, 5).is_none());
+    assert!(streams.next(actor, session, 5).is_none());
+    assert_eq!(
+        streams.snapshot_attributed(actor, session, 1, None, true),
+        Some(false)
+    );
+    // Retrying the committed move cannot remove the destination or reset its interval.
+    streams.rebind(source_actor, source_session, actor, session);
+    assert_eq!(
+        format!(
+            "{:?}",
+            streams.accounting(actor, session).expect("retained").1
+        ),
+        totals
+    );
+    assert_eq!(
+        streams
+            .0
+            .lock()
+            .expect("streams")
+            .get(&session)
+            .expect("destination")
+            .started,
+        started
+    );
+    assert_eq!(
+        decode_analyser_facts(&streams.next(actor, session, 1).expect("retained queue"))
+            .expect("facts"),
+        vec![AnalyserFact::Impact(AnalyserImpact::Healing(
+            NonZeroU32::new(7).expect("positive")
+        ))]
+    );
+}

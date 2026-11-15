@@ -23,7 +23,7 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
 }
 
 #[test]
-fn a4_invisible_postgres_other_player_cannot_see_or_target_caster() -> TestResult {
+fn a4_invisible_postgres_other_player_sees_empty_outfit_and_can_target_caster() -> TestResult {
     invisibility_case::<true>()
 }
 
@@ -203,6 +203,11 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
             sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+            if WITH_OBSERVER {
+                // Admit PvP independently of the invisibility projection under test.
+                sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')").bind(id(42).as_slice()).execute(&h.pool).await?;
+                sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'invisibility-pvp-fixture')").bind(id(42).as_slice()).execute(&h.pool).await?;
+            }
             let spell = (1..=u32::try_from(native.spell_book().source_len())?)
                 .filter_map(std::num::NonZeroU32::new)
                 .find(|i| {
@@ -267,8 +272,7 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
             drop(states);
             drop(runtime);
             if let Some(observer) = observer {
-                // SRV6 owner difference: unlike Crystal player.cpp:1383-1396,
-                // another player must receive no invisible player entity.
+                // Crystal keeps invisible players observable and targetable.
                 let channel = owner
                     .observe_visible_entities(observer)
                     .await
@@ -285,10 +289,10 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .map_err(debug)?;
                 let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
                 assert!(
-                    !received.entities.iter().any(|entity| entity.entity.identity
+                    received.entities.iter().any(|entity| entity.entity.identity
                         == actor.placement_identity()
                         && entity.entity.generation == actor.actor_local_generation()),
-                    "the spectator must not receive the invisible player entity"
+                    "the spectator must receive the invisible player entity"
                 );
                 let entity = oteryn_protocol_oteryn::appearance::EntityRef {
                     identity: actor.placement_identity(),
@@ -314,8 +318,9 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .await
                     .ok_or("invisible appearance projection")?;
                 assert!(
-                    projected.bindings.is_empty(),
-                    "invisible appearance must not leak to another player"
+                    projected.bindings.len() == 1
+                        && projected.bindings[0].look == oteryn_protocol_oteryn::appearance::Look::EmptyOutfit,
+                    "the spectator must receive an empty outfit"
                 );
                 let legacy = owner
                     .appearance_observation_projected(
@@ -327,15 +332,38 @@ fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
                     .await
                     .ok_or("legacy invisible appearance projection")?;
                 assert!(
-                    legacy.bindings.is_empty(),
-                    "visibility is independent of empty-outfit capability"
+                    legacy.bindings.len() == 1
+                        && matches!(legacy.bindings[0].look, oteryn_protocol_oteryn::appearance::Look::Outfit { .. }),
+                    "legacy observers still receive the player appearance"
                 );
+                {
+                    let runtime = deps.runtime.lock().await;
+                    assert!(owner.states.attack.lock().await.set_expert_modes(
+                        &runtime, observer, observer_session,
+                        oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                            modes: oteryn_protocol_oteryn::attack::FightModes {
+                                secure: false,
+                                ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
+                            },
+                            expert: oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist,
+                        },
+                    ));
+                }
+                tokio::time::timeout(std::time::Duration::from_secs(15), async {
+                    loop {
+                        let immune: bool = sqlx::query_scalar("SELECT authorization_decided_at>floor(extract(epoch FROM clock_timestamp()))::bigint-10 FROM game_durability_fresh_admission_receipts r JOIN game_durability_reconnect_sessions s ON COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key)=r.replay_key WHERE s.game_session_id=encode($1,'hex')::uuid")
+                            .bind(observer_session.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+                        if !immune { break; }
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    }
+                    Ok::<_, sqlx::Error>(())
+                }).await??;
                 assert_eq!(
                     owner
                         .attack_target(observer, observer_session, 2, Some(entity))
                         .await,
-                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::TargetNotVisible,
-                    "a known entity reference cannot bypass invisibility"
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok,
+                    "ordinary invisibility must not reject player targeting"
                 );
             }
             owner.clock_origin -= std::time::Duration::from_secs(2);

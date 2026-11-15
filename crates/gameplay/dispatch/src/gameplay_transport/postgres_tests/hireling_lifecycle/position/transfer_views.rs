@@ -4,6 +4,7 @@ use crate::foundation::GameSessionId;
 
 pub(super) struct Views {
     source: GameSessionId,
+    analyser: String,
     instants: [u64;3],
     stamina: u16,
     future_stamina: [Option<u16>;3],
@@ -15,6 +16,11 @@ pub(super) struct Views {
 pub(super) async fn before(owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession, actor: ExactActorRef) -> TestResult<Views> {
     let source = admitted.game_session_id;
+    assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+    owner.states.analyser.impact(actor, source, 7, None);
+    let analyser = format!("{:?}", owner.states.analyser.accounting(actor, source)
+        .ok_or("source House analyser")?.1);
+
     // Publish the source observation through its existing fenced owner. An
     // absent durable PvP row produces an empty live CombatLock, including when
     // the wire refreshes it before the exit. Capture that exact owned state.
@@ -31,7 +37,7 @@ pub(super) async fn before(owner: &ComposedFreshAdmission<'_, '_, '_>,
     let now = owner.owner_now().get();
     let instants = [now, now+60_000_000, now+120_000_000];
     Ok(Views {
-        source, instants,
+        source, instants, analyser,
         stamina: states.live_stamina(actor, source).ok_or("source live stamina")?,
         future_stamina: instants.map(|at| states.stamina_after_experience(actor, source, at)),
         prey: states.house_prey_transfer_observation(actor, source),
@@ -44,6 +50,14 @@ pub(super) async fn before(owner: &ComposedFreshAdmission<'_, '_, '_>,
 
 pub(super) async fn after(owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession, actor: ExactActorRef, before: Views) -> TestResult {
+    assert!(owner.states.analyser.accounting(actor, before.source).is_none(),
+        "House handoff must remove the obsolete analyser session");
+    let retained = owner.states.analyser.accounting(actor, admitted.game_session_id)
+        .ok_or("transferred House analyser")?;
+    assert_eq!(format!("{:?}", retained.1), before.analyser);
+    assert_eq!(owner.analyser_snapshot(admitted).await, Some(false));
+    assert_eq!(format!("{:?}", owner.states.analyser.accounting(actor, admitted.game_session_id)
+        .ok_or("snapshotted House analyser")?.1), before.analyser);
     let runtime = owner.runtime.lock().await;
     let states = owner.states.spell_states.lock().await;
     let attack = owner.states.attack.lock().await;

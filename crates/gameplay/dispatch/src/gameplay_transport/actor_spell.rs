@@ -820,10 +820,6 @@ impl ChannelSpellStates {
         self.get_mut(runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
-        let controls = runtime.player_control_facts(actor, session).ok()?;
-        if controls.control_loss.is_some() {
-            return None;
-        }
         let in_pz = qualified_protection_zone(runtime, cells, actor);
         let state = self.get_mut(runtime, actor, session)?;
         let has_dot = crate::spell::actor_conditions::has_periodic_damage(state);
@@ -2017,13 +2013,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         target: ExactActorRef,
         session: GameSessionId,
     ) -> Option<(u32, u32, u64)> {
-        if self.is_dead(target)
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
+        if self.is_dead(target) || runtime.player_control_facts(target, session).is_err() {
             return None;
         }
         let state = self.get(runtime, target, session)?;
@@ -2154,11 +2144,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
         if magnitude == 0
             || self.is_dead(target)
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
+            || runtime.player_control_facts(target, session).is_err()
         {
             return None;
         }
@@ -2245,11 +2231,7 @@ impl ChannelSpellStates {
         if self.is_dead(target)
             || self.has_pending_spell_commit(target, session)
             || runtime.assert_actor_spell_unreserved(target).is_err()
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
+            || runtime.player_control_facts(target, session).is_err()
         {
             return None;
         }
@@ -2742,13 +2724,7 @@ impl ChannelSpellStates {
         analyser_source: impl Into<super::analyser::HitSource>,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
         use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
-        if magnitude == 0
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
+        if magnitude == 0 || runtime.player_control_facts(target, session).is_err() {
             return None;
         }
         if self

@@ -735,6 +735,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let old = source.game_session_id;
         let new = next.game_session_id;
         let actor = next.runtime_actor.ok_or(())?;
+        let source_actor = source.runtime_actor.ok_or(())?;
         let character = source.item_fence.ok_or(())?.character_id;
         if next.item_fence.ok_or(())?.character_id != character {
             return Err(());
@@ -799,6 +800,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         self.states
             .cyclopedia_tracker_refresh
             .transfer_activity(&destination.states.cyclopedia_tracker_refresh, character)?;
+        self.states.analyser.rebind(source_actor, old, actor, new);
         destination.states.command_ingress.admit(new);
         self.states.appearance_commands.forget(old);
         self.states.chat.forget(old);

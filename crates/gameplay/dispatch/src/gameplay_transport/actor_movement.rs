@@ -24,7 +24,7 @@ use std::time::Duration;
 pub type StepInChannel = Result<(MovementPositionSnapshot, Duration), MovementError>;
 
 impl ChannelSpellStates {
-    /// Resolve Drome control before field/floor preflight. The common movement owner
+    /// Resolve movement conditions before field/floor preflight. The common movement owner
     /// repeats this pure decision with the same frozen time/position, so a prepared
     /// destination cannot diverge after SQL and a command replay consumes no new RNG.
     pub(in crate::gameplay_transport) fn drome_step_direction(
@@ -35,15 +35,6 @@ impl ChannelSpellStates {
         now_us: u64,
         requested: CardinalStep,
     ) -> Result<CardinalStep, MovementError> {
-        if !runtime.is_tibiadrome(actor) {
-            return Ok(requested);
-        }
-        let Some(state) = self
-            .get(runtime, actor, session)
-            .filter(|state| state.drome_practice)
-        else {
-            return Ok(requested);
-        };
         // Crystal 201189f creature.cpp:286-291: ROOTED/FEARED refuse walking.
         if !self.native_condition_movement_allowed(
             runtime,
@@ -53,12 +44,15 @@ impl ChannelSpellStates {
         ) {
             return Err(MovementError::Blocked);
         }
-        use oteryn_gameplay_domain::domain::condition::{ConflictKey, StatusKind};
-        if !state
-            .owned_conditions()
-            .active_at(ConflictKey::Status(StatusKind::Drunk), now_us)
-            .is_some_and(|instance| instance.definition().key() == "drome.drunk")
-        {
+        use oteryn_gameplay_domain::domain::condition::StatusKind;
+        let drunk = self.get(runtime, actor, session).is_some_and(|state| {
+            state
+                .owned_conditions()
+                .has_status(StatusKind::Drunk, now_us)
+        }) || runtime
+            .actor_conditions_at(actor, Some(session), now_us)
+            .is_ok_and(|store| store.has_status(StatusKind::Drunk, now_us));
+        if !drunk {
             return Ok(requested);
         }
         use oteryn_simulation_determinism::{
@@ -559,6 +553,252 @@ mod tests {
         crate::foundation::{ChannelId, NodeId, WorldId},
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };
+    fn install_movement_condition(
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        definition: &crate::foundation::ConditionDefinition,
+        runtime_slot: bool,
+    ) {
+        use crate::foundation::{
+            ActorConditionTransition, ApplicationFacts, ConditionSource, ConditionSourceKind,
+        };
+        let root = GameplayDecisionRoot::from_bytes([51; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([51; 16]),
+        };
+        if runtime_slot {
+            let plan = runtime
+                .prepare_actor_condition(
+                    actor,
+                    Some(session),
+                    ActorConditionTransition::Apply {
+                        definition,
+                        source: ConditionSource {
+                            actor,
+                            session: Some(session),
+                            kind: ConditionSourceKind::SelfUse,
+                        },
+                        immunities: &[],
+                        facts,
+                    },
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+            runtime
+                .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0))
+                .unwrap();
+        } else {
+            let next = states
+                .get(runtime, actor, session)
+                .unwrap()
+                .stage_owned_test_conditions(std::slice::from_ref(definition), &facts)
+                .unwrap();
+            assert!(states.commit(runtime, actor, session, next));
+        }
+    }
+
+    fn ordinary_step_restrictions(runtime_slot: bool) {
+        use crate::foundation::{ConditionDefinition, ConditionValues, StatusKind};
+        for kind in [StatusKind::Rooted, StatusKind::Feared] {
+            for &with_state in if runtime_slot {
+                &[true, false][..]
+            } else {
+                &[true][..]
+            } {
+                let (mut runtime, mut states, room, actor, session) = owner();
+                assert!(!runtime.is_tibiadrome(actor));
+                if with_state {
+                    states
+                        .initialize(
+                            &runtime,
+                            actor,
+                            session,
+                            crate::gameplay_transport::actor_spell::tests::FACTS,
+                            (0, 0),
+                            SemanticTimeMicros::from_micros(0),
+                        )
+                        .unwrap();
+                }
+                let definition = ConditionDefinition::new(
+                    "source.movement.restriction",
+                    1,
+                    ConditionValues::TimedStatus {
+                        kind,
+                        duration_ms: 1000,
+                    },
+                )
+                .unwrap();
+                install_movement_condition(
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    &definition,
+                    runtime_slot,
+                );
+                let before = runtime.read_actor_position(actor).unwrap();
+                assert!(
+                    matches!(
+                        step_in_channel(
+                            &mut runtime,
+                            &mut states,
+                            room.movement_cells(),
+                            actor,
+                            session,
+                            1,
+                            CardinalStep::East,
+                            &std::collections::BTreeSet::new(),
+                            None
+                        ),
+                        Err(MovementError::Blocked)
+                    ),
+                    "{kind:?} must block ordinary STEP before preflight"
+                );
+                assert_eq!(runtime.read_actor_position(actor).unwrap(), before);
+                assert_eq!(
+                    states.drome_step_direction(
+                        &runtime,
+                        actor,
+                        session,
+                        1_000_000,
+                        CardinalStep::East
+                    ),
+                    Ok(CardinalStep::East)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn ordinary_step_blocks_owned_root_and_fear() {
+        ordinary_step_restrictions(false);
+    }
+
+    #[test]
+    fn ordinary_step_blocks_runtime_root_and_fear() {
+        ordinary_step_restrictions(true);
+    }
+
+    fn ordinary_drunk_step(runtime_slot: bool) {
+        use crate::foundation::{ConditionDefinition, ConditionValues, StatusKind};
+        for &with_state in if runtime_slot {
+            &[true, false][..]
+        } else {
+            &[true][..]
+        } {
+            let (mut runtime, mut states, room, actor, session) = owner();
+            if with_state {
+                states
+                    .initialize(
+                        &runtime,
+                        actor,
+                        session,
+                        crate::gameplay_transport::actor_spell::tests::FACTS,
+                        (0, 0),
+                        SemanticTimeMicros::from_micros(0),
+                    )
+                    .unwrap();
+            }
+            // Prove both candidate cells walkable before applying the condition.
+            for direction in [CardinalStep::East, CardinalStep::East, CardinalStep::West] {
+                step_in_channel(
+                    &mut runtime,
+                    &mut states,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    direction,
+                    &std::collections::BTreeSet::new(),
+                    None,
+                )
+                .unwrap();
+            }
+            let definition = ConditionDefinition::new(
+                "source.acolyte.drunk",
+                1,
+                ConditionValues::TimedStatus {
+                    kind: StatusKind::Drunk,
+                    duration_ms: 1000,
+                },
+            )
+            .unwrap();
+            install_movement_condition(
+                &mut runtime,
+                &mut states,
+                actor,
+                session,
+                &definition,
+                runtime_slot,
+            );
+            assert!(!runtime.is_tibiadrome(actor));
+            // Find a frozen source draw that steers back onto the proven cell.
+            // With the defect, every draw returns East; still drive STEP to expose it.
+            let now = (1..=4096)
+                .find(|&now| {
+                    states.drome_step_direction(&runtime, actor, session, now, CardinalStep::East)
+                        == Ok(CardinalStep::West)
+                })
+                .unwrap_or(1);
+            let resolved =
+                states.drome_step_direction(&runtime, actor, session, now, CardinalStep::East);
+            assert_eq!(
+                states.drome_step_direction(&runtime, actor, session, now, CardinalStep::East),
+                resolved
+            );
+            let before = runtime.read_actor_position(actor).unwrap().position();
+            let (after, _) = step_in_channel(
+                &mut runtime,
+                &mut states,
+                room.movement_cells(),
+                actor,
+                session,
+                now,
+                CardinalStep::East,
+                &std::collections::BTreeSet::new(),
+                None,
+            )
+            .unwrap();
+            assert_eq!(
+                after.position(),
+                MovementLocalPosition {
+                    x: before.x - 1,
+                    ..before
+                },
+                "an ordinary source Drunk condition must steer the real STEP"
+            );
+            assert_eq!(
+                states.drome_step_direction(
+                    &runtime,
+                    actor,
+                    session,
+                    1_000_000,
+                    CardinalStep::East
+                ),
+                Ok(CardinalStep::East)
+            );
+        }
+    }
+
+    #[test]
+    fn ordinary_drunk_owned_condition_steers_real_step() {
+        ordinary_drunk_step(false);
+    }
+
+    #[test]
+    fn ordinary_drunk_runtime_condition_steers_real_step() {
+        ordinary_drunk_step(true);
+    }
+
     #[test]
     fn diagonal_player_duration_uses_three_rounded_source_steps() {
         let onto = MovementLocalPosition {

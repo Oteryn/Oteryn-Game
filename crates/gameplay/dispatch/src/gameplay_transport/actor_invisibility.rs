@@ -5,8 +5,8 @@ use crate::gameplay_transport::world_spatial;
 use crate::monster_combat_lane::native_invisibility::*;
 
 impl ChannelSpellStates {
-    /// SRV6 owner difference from Crystal player.cpp:1383-1396: other players
-    /// cannot observe or target an invisible player. The player's own view stays intact.
+    /// Crystal player.cpp:1383-1396 keeps invisible players observable and targetable.
+    /// Only an unreadable condition owner withholds the entity; appearance projects invisibility.
     pub(in crate::gameplay_transport) fn player_hidden_from(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -22,16 +22,16 @@ impl ChannelSpellStates {
             return false;
         };
         if runtime.house_actor_state(target, *session).is_ok() {
-            return state.owned_invisible_at(now.get()).unwrap_or(true)
+            return state.owned_invisible_at(now.get()).is_err()
                 || runtime
                     .house_actor_conditions_at(target, *session, now.get())
-                    .map_or(true, |conditions| conditions.invisible_at(now.get()));
+                    .is_err();
         }
         self.get(runtime, target, *session).is_some_and(|state| {
-            state.owned_invisible_at(now.get()).unwrap_or(true)
+            state.owned_invisible_at(now.get()).is_err()
                 || runtime
                     .actor_conditions_at(target, Some(*session), now.get())
-                    .map_or(true, |conditions| conditions.invisible_at(now.get()))
+                    .is_err()
         })
     }
 

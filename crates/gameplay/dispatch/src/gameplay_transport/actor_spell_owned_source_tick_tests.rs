@@ -842,3 +842,40 @@ fn elite_creature_poison_tick_doubles_damage_from_historical_provenance() -> Res
     assert_eq!(receipt.damage, 20);
     Ok(())
 }
+
+#[test]
+fn retained_player_receives_periodic_damage_after_control_loss() -> Result<(), String> {
+    let (mut runtime, mut states, actor, session) = ready(0xd3);
+    install(&mut states, &runtime, actor, session, &[poison(10)]);
+    let health = states
+        .get(&runtime, actor, session)
+        .ok_or("body")?
+        .vitals()
+        .health;
+    runtime
+        .record_control_loss(
+            actor,
+            session,
+            crate::foundation::ControlLossMark {
+                epoch: 1,
+                grace_deadline: 5_000,
+            },
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    states.detach(&runtime, actor, session);
+    let facts = TickFacts {
+        in_protection_zone: false,
+        standing_on_field: None,
+    };
+    let receipt = pass(&mut states, &mut runtime, actor, session, 1_000_000, facts)
+        .ok_or("retained body must receive periodic damage")?;
+    assert_eq!(receipt.damage, 10);
+    let after = states
+        .get(&runtime, actor, session)
+        .ok_or("retained body")?
+        .clone();
+    assert_eq!(after.vitals().health, health - 10);
+    assert!(pass(&mut states, &mut runtime, actor, session, 1_000_000, facts).is_some());
+    assert_eq!(states.get(&runtime, actor, session), Some(&after));
+    Ok(())
+}

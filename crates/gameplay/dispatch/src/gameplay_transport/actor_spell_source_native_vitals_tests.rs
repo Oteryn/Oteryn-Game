@@ -616,3 +616,53 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
     }
     Ok(())
 }
+
+#[test]
+fn retained_player_receives_source_damage_mana_and_healing_after_control_loss() -> Result<(), String>
+{
+    let (mut runtime, mut states, actor, session) = ready(0xd1);
+    runtime
+        .record_control_loss(
+            actor,
+            session,
+            crate::foundation::ControlLossMark {
+                epoch: 1,
+                grace_deadline: 5_000,
+            },
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    states.detach(&runtime, actor, session);
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1);
+    let hit = states
+        .apply_attack_damage(&mut runtime, actor, session, 10, "retained:damage", now)
+        .ok_or("retained body must receive damage")?;
+    assert_eq!(hit.health_after, 175);
+    let mana = states
+        .apply_attack_mana_drain(&mut runtime, actor, session, 7, "retained:mana", now)
+        .ok_or("retained body must receive mana drain")?;
+    assert_eq!(mana.applied, 7);
+    let heal = states
+        .apply_source_player_heal(&mut runtime, actor, session, 5, "retained:heal", now)
+        .ok_or("retained body must receive healing")?;
+    assert_eq!(heal.applied, 5);
+    assert_eq!(heal.health_after, 180);
+    assert_eq!(
+        states.apply_attack_damage(&mut runtime, actor, session, 10, "retained:damage", now),
+        Some(hit)
+    );
+    assert_eq!(
+        states
+            .get(&runtime, actor, session)
+            .ok_or("current body")?
+            .vitals()
+            .health,
+        180
+    );
+    let (_, _, stale) = runtime_with_player(0xd2);
+    assert!(
+        states
+            .apply_attack_damage(&mut runtime, actor, stale, 10, "retained:stale", now)
+            .is_none()
+    );
+    Ok(())
+}
