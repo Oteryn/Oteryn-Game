@@ -62,6 +62,7 @@ enum Control {
     Number(&'static str),
     Choice(&'static str),
     Select(&'static str, usize),
+    Help,
     Reset,
     Apply,
     Ok,

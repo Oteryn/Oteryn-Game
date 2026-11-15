@@ -1,6 +1,7 @@
 use super::*;
 use bevy::input_focus::tab_navigation::TabIndex;
 use bevy::ui_widgets::ScrollArea;
+mod help;
 #[cfg(test)]
 mod layout_tests;
 mod rows;
@@ -326,6 +327,7 @@ pub(super) fn page(
                 rows::choice(commands, skins, *row, values, read(draft))
             }
         };
+        let entity = help::wrap(commands, skins, *row, entity);
         commands.entity(parent).add_child(entity);
     }
 }

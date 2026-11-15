@@ -86,3 +86,33 @@ pub(super) const EFFECTS: [Row; 8] = [
         graphics.cloud
     ),
 ];
+
+impl Row {
+    /// Graphics-page help also follows the shared controls into Basic Options.
+    pub fn help(self) -> Option<&'static str> {
+        Some(match self.id {
+            "graphics.fullscreen" => {
+                "Use a borderless fullscreen window on the current monitor. Turn this off to return to a window. Choose Apply or OK to change the window mode."
+            }
+            "graphics.vsync" => {
+                "Synchronise presentation with the display to reduce tearing. The frame rate depends on your display and graphics backend. Turning this off allows unsynchronised presentation. Choose Apply or OK to change it."
+            }
+            "graphics.integer_scaling" => {
+                "Round the game world's tile size to whole sprite-size multiples, keeping pixel edges consistent. The result is limited by the available game window. This does not change interface text size. Choose Apply or OK to change it."
+            }
+            "graphics.world_zoom" => {
+                "Change the size of tiles and creatures in the game window. The scale is capped to fit the visible map; integral scaling can round it further. This does not change interface text size. Choose Apply or OK to change it."
+            }
+            "graphics.ambient" => {
+                "Raise the minimum ambient brightness used for world lighting. Higher values brighten dark surroundings before indoor dimming is applied. Show Lights on the Effects page must be enabled. Choose Apply or OK to change it."
+            }
+            "graphics.indoor" => {
+                "Reduce ambient brightness underground or beneath a roof. Zero adds no indoor dimming; higher values darken the surroundings. Show Lights on the Effects page must be enabled. Choose Apply or OK to change it."
+            }
+            "graphics.separator" => {
+                "Darken visible floors below your character to make floor boundaries easier to distinguish. Zero adds no lower-floor dimming. Show Lights on the Effects page must be enabled. Choose Apply or OK to change it."
+            }
+            _ => return None,
+        })
+    }
+}
