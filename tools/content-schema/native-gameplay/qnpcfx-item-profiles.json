@@ -197,7 +197,7 @@
     },
     {
       "path": "tools/content-migration/quest_batch3_item_profiles.py",
-      "sha256": "a39681f845e4ec72d759682962b99a4266bfeca9f577f2fb7720387ef07426d4"
+      "sha256": "50e5bd72b7a1711748443081c55194a8bc99992bf0edc70398a995b024a1b99f"
     }
   ],
   "canonical_inputs": [
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "652fc1afd55fded6e61ae6da2d3bec52198c2f7dc3eb80cae4c63f5c1eed57a7"
+      "sha256": "95fbd5f853216ae1cb7c88789ff42c5c91995a7838b32b380b57c136d5ad41b3"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",
