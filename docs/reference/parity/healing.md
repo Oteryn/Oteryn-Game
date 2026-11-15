@@ -23,9 +23,9 @@ Confidence: MEASURED, WIKI, REFERENCE (see README). Audit rows C04, C06, C09, I1
 | Nature's Embrace | stats | base 2000, mana 400, level 275, cd 60 s | TW 1190771 | WIKI | same | player-spells.json | MATCH |
 | Exura-named aliases (san, vita, gran mas res, ico, med ico) | redirects | TW redirects to Divine/Ultimate Healing, Mass Healing, Wound Cleansing, Fair Wound Cleansing | TW | WIKI | alias resolution not checked | - | UNKNOWN |
 | Intense Healing Rune (adura gran) | spell stats | mana 120, level 15, cd 2 s, group 2 s | TW 1186611 | WIKI | spell mana 120, level 15, cd 2000 | player-spells.json `spell/intense_healing_rune` | MATCH |
-| Intense Healing Rune | rune cooldown | cd 2 s, group cd 2 s | TW 1186611 | WIKI | rune bundle cd 1000, group healing | rune bundle `rune/intense_healing_rune` | MISMATCH |
+| Intense Healing Rune | rune-use cooldown | unknown; conjure-page cd is not rune-use evidence; to be measured in the Global client | TW 1186611 (conjure spell page) | REFERENCE | rune bundle cd 1000, group healing | rune bundle `rune/intense_healing_rune` | UNKNOWN |
 | Ultimate Healing Rune (adura vita) | spell stats | mana 400, level 24, cd 2 s, group 2 s; 2026: not usable on other characters | TW 1186610 | WIKI | mana 400, level 24, cd 2000; targets self or own summons | player-spells.json `spell/ultimate_healing_rune` | MATCH |
-| Ultimate Healing Rune | rune cooldown | cd 2 s, group cd 2 s | TW 1186610 | WIKI | rune bundle cd 1000, group healing | rune bundle `rune/ultimate_healing_rune` | MISMATCH |
+| Ultimate Healing Rune | rune-use cooldown | unknown; conjure-page cd is not rune-use evidence; to be measured in the Global client | TW 1186610 (conjure spell page) | REFERENCE | rune bundle cd 1000, group healing | rune bundle `rune/ultimate_healing_rune` | UNKNOWN |
 | Rune use, cooldown gate | mechanics | not a value | audit C06, C04 | REFERENCE | DONE in audit | see audit | MATCH (audit) |
 
 ## B. Potions
@@ -34,11 +34,11 @@ Confidence: MEASURED, WIKI, REFERENCE (see README). Audit rows C04, C06, C09, I1
 |---|---|---|---|---|---|---|---|
 | Great Health (i239) | HP, level, vocation | 425-575, 80, knights | TW 1183256 | WIKI | same | items-12500-12999 | MATCH |
 | Ultimate Health (i7643) | HP, level, vocation | 650-850, 130, knights | TW 1183257 | WIKI | same | items-31500-31999 | MATCH |
-| Supreme Health (i23375) | HP | 875-1175, level 200, knights | TW 1183258 | WIKI | 875-1125 | items-12000-12499 | MISMATCH |
-| Great Mana (i238) | vocations | 150-250 mana, level 80, all vocations since 2026-06-20 | TW 1190635 | WIKI | druid, monk, paladin, sorcerer (knight missing) | items-12500-12999 | MISMATCH |
+| Supreme Health (i23375) | HP | 875-1175, level 200, knights | TW 1183258 | WIKI | 875-1125 | items-12000-12499 | FIXED (15bc1214c) |
+| Great Mana (i238) | vocations | 150-250 mana, level 80, all vocations since 2026-06-20 | TW 1190635 | WIKI | druid, monk, paladin, sorcerer (knight missing) | items-12500-12999 | FIXED (15bc1214c) |
 | Ultimate Mana (i23373) | mana, vocations | 425-575, level 130, sorcerer and druid; 2026 change not stated for this potion | TW 1183206 | WIKI | same | items | MATCH (vocation after 2026 UNKNOWN) |
-| Great Spirit (i7642) | mana | HP 250-350, mana 125-185, level 80, monk and paladin | TW 1183259 | WIKI | HP 250-350, mana 100-200 | items-31500-31999 | MISMATCH |
-| Ultimate Spirit (i23374) | mana | HP 420-580, mana 150-250, level 130, monk and paladin | TW 1183261; MEAS (within 150-250) | MEASURED | HP 420-580, mana 250-350 | items-12000-12499 | MISMATCH |
+| Great Spirit (i7642) | mana | HP 250-350, mana 125-185, level 80, monk and paladin | TW 1183259 | WIKI | HP 250-350, mana 100-200 | items-31500-31999 | FIXED (15bc1214c) |
+| Ultimate Spirit (i23374) | mana | HP 420-580, mana 150-250, level 130, monk and paladin | TW 1183261; MEAS (within 150-250) | MEASURED | HP 420-580, mana 250-350 | items-12000-12499 | FIXED (15bc1214c) |
 | Supreme Spirit | all | no TW page | - | REFERENCE | not in repo | - | UNKNOWN |
 | Distilled Ultimate Mana (i53164) | all | 2026 distilled variant | TW Vocation Adjustments 2026 | WIKI | present, not analysed | - | UNKNOWN |
 | Potion use path | mechanics | not a value | audit I14 (PARTIAL) | REFERENCE | see audit | see audit | UNKNOWN |

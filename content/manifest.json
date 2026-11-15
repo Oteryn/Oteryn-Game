@@ -909,10 +909,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "338cd6617316c09aaa171e5586b82c450685e57f8dbeace0e5d1cd314f6cdcfd",
+          "sha256": "f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "987d440d2103c04140cfb5f5dc1fd3b330d7b405c3f4c75ac59bcf166641b274"
+            "sha256": "486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"
           }
         },
         {

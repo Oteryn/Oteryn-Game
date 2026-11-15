@@ -20,7 +20,7 @@ Confidence (the `measured?` column):
 - WIKI: stated by TW at the given revision.
 - REFERENCE: only an OTS donor or an inference.
 
-Status: MATCH, MISMATCH, UNKNOWN (no Global source found), GAP (we lack the mechanic or its consumer).
+Status: MATCH, MISMATCH, FIXED (was a mismatch, corrected in the cited commit), UNKNOWN (no Global source found), GAP (we lack the mechanic or its consumer).
 
 When the Crystal re-audit (`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`) marks a mechanic DONE with evidence, a row cites the audit row id instead of re-deriving it.
 

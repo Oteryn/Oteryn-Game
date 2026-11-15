@@ -30,15 +30,6 @@ class HealingGlobalOverrides(unittest.TestCase):
         self.assertEqual(seen.pop('oteryn:item.tibia.i238'), {'state': 'NOT_APPLICABLE'})
         self.assertEqual(seen, expected)
 
-    def test_healing_runes_use_the_two_second_cooldown(self):
-        bundles = json.loads((ROOT / 'content/abilities/definitions/player-spells.json').read_bytes())['bundles']
-        runes = {b['bundle']['spell']['identity']['key']: b['bundle']['spell'] for b in bundles
-                 if b['bundle']['spell']['identity']['key'].startswith('candidate:spell/rune/')}
-        for name in ('intense_healing_rune', 'ultimate_healing_rune'):
-            spell = runes[f'candidate:spell/rune/{name}']
-            self.assertEqual(spell['cooldown_ms'], 2000, name)
-            self.assertEqual([g['cooldown_ms'] for g in spell['groups']], [2000], name)
-
 
 if __name__ == '__main__':
     unittest.main()
