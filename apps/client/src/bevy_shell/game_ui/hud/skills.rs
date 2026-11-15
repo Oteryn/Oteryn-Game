@@ -1,5 +1,8 @@
 //! SkillWidgetEntry.qml: right-aligned values and a five-pixel progress line.
 use super::*;
+use bevy::picking::hover::Hovered;
+#[path = "skills_interaction.rs"]
+mod interaction;
 use crate::play::feature_0274_loyalty_skills::view::SkillsNumbers;
 #[derive(Component)]
 struct Header;
@@ -14,6 +17,7 @@ struct Track(usize);
 #[derive(Component)]
 struct Fill(usize);
 pub(super) fn install(app: &mut App) {
+    interaction::install(app);
     app.add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, project.after(super::project));
 }
@@ -36,19 +40,21 @@ fn setup(mut commands: Commands, regions: Res<super::super::GameRegions>, skins:
     let header = commands
         .spawn((
             Header,
+            Hovered::default(),
             source::text("", source::font(skins.font.clone(), false)),
             Node {
                 width: percent(100.),
                 ..default()
             },
         ))
-        .insert(TextLayout::default())
+        .insert((TextLayout::default(), Pickable::default()))
         .id();
     commands.entity(root).add_child(header);
     for index in 0..8 {
         let slot = commands
             .spawn((
                 Slot(index),
+                Hovered::default(),
                 Node {
                     width: percent(100.),
                     flex_direction: FlexDirection::Column,
@@ -125,7 +131,7 @@ fn project(
 ) {
     let Some(play) = &owner.play else { return };
     let widget = play.link.skills_widget();
-    let layout = &play.view.preferences().skills_layout;
+    let layout = &owner.settings.preferences.skills_layout;
     for (mut text, header, label, value) in &mut text {
         let next = if header.is_some() {
             widget.header.replace("\r\n", "\n")
