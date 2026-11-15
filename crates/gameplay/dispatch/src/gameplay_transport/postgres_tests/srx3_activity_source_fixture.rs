@@ -62,6 +62,17 @@ async fn native_work_state(
             crate::gameplay_transport::source_death::next_source_work(&runtime, &states, native)
                 .map_err(debug)?;
         let movement = runtime.pending_rotten_movement(16).map_err(debug)?;
+        let vitals: Vec<_> = runtime
+            .positioned_actor_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|(actor, _, session)| {
+                let session = session?;
+                states
+                    .get(&runtime, actor, session)
+                    .map(|state| (actor, state.vitals()))
+            })
+            .collect();
         let mushroom = states
             .rotten_blood_callbacks
             .mushroom_progress_for_test()
@@ -79,7 +90,7 @@ async fn native_work_state(
                 || !movement.is_empty()
                 || work.is_some_and(|(_, due)| due <= owner.owner_now().get()),
             format!(
-                "{work:?} {:?} {:?} {movement:?} {mushroom:?} {:?} {:?}",
+                "{work:?} {:?} {:?} {movement:?} {mushroom:?} {vitals:?} {:?} {:?}",
                 states.native_profile_pass.pending(),
                 states.rotten_area.pending(),
                 runtime.current_live_creature_census().map_err(debug)?,
