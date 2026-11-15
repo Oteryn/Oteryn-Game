@@ -10,6 +10,8 @@ use bevy::{
 };
 use model::{Contact, Snapshot};
 use oteryn_client_ui::vip::Intent;
+#[path = "vip/contact_menu.rs"]
+mod contact_menu;
 #[path = "vip/dialog.rs"]
 mod dialog;
 #[path = "vip/groups.rs"]
@@ -124,7 +126,7 @@ pub(super) fn install(app: &mut App) {
             Update,
             (
                 view::project,
-                view::contact_menu,
+                contact_menu::project,
                 view::descriptions,
                 groups::project,
                 view::dialog,
