@@ -650,6 +650,9 @@ async fn prepare_source_reader<'native>(
         let Some(session) = *session else {
             continue;
         };
+        let Ok((false, _, _)) = runtime.actor_staff_visibility(*target) else {
+            continue;
+        };
         if !area && !chain_candidates && *target != proposal.target {
             continue;
         }
