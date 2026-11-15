@@ -104,10 +104,15 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
-        let death_events = self.companion_policies.as_ref().and_then(|table| {
-            table.native_death_events(&policy.definition_key, &policy.definition_revision)
-        });
-        if oteryn_gameplay_content::content::native_creature_death_events::requires_native_death_events(
+        let death_events = if self.classic_creature_deaths {
+            None
+        } else {
+            self.companion_policies.as_ref().and_then(|table| {
+                table.native_death_events(&policy.definition_key, &policy.definition_revision)
+            })
+        };
+        if !self.classic_creature_deaths
+            && oteryn_gameplay_content::content::native_creature_death_events::requires_native_death_events(
             &policy.definition_key,
         ) && death_events.is_none() {
             return Err(CarrierError::InvalidSpawnDefinition);
@@ -790,6 +795,19 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::InvalidCreatureTarget);
         }
         Ok(policy)
+    }
+    /// Mark a runtime that belongs to no qualified source room before any
+    /// creature is admitted. Its creatures keep main's classic death path:
+    /// no native source death task and no held reward settlement.
+    pub fn use_classic_creature_deaths(&mut self) -> Result<(), CarrierError> {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        if self.carrier.occupied.iter().any(|&slot| {
+            matches!(self.carrier.slots[slot as usize], Slot::CreatureOccupied { .. })
+        }) {
+            return Err(CarrierError::PlanConflict);
+        }
+        self.classic_creature_deaths = true;
+        Ok(())
     }
     pub fn install_companion_policies(
         &mut self,

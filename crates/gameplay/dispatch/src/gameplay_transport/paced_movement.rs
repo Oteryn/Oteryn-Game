@@ -225,27 +225,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Environmental StepIn callbacks survive both a missing optional field
         // capability and loss of volatile MINT hints on owner reconstruction.
         // The reader and Item writer still prove actual scoped Ground custody.
-        let native_blood_listener = self
-            .active_generation
-            .and_then(|active| active.native_gameplay())
-            .is_some_and(|native| super::soul_war_callbacks::qualifies_source(&runtime, native));
+        // Field ingress cannot qualify without its registered field-step room
+        // (field_step_ingress.rs); such Worlds keep the ordinary STEP owner.
+        let field_step_room = self.rooms().gate_field_step_ingress().is_some();
+        let native_blood_listener = field_step_room
+            && self
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .is_some_and(|native| {
+                    super::soul_war_callbacks::qualifies_source(&runtime, native)
+                });
         let origin = runtime.read_actor_position(actor).ok();
         let snow_origin = self.bundle_map().is_some_and(|map| {
             origin.is_some_and(|at| special_movement::snow_at(map, at.position()))
         });
         let outcome = if self.bundle_map().is_some()
             && !native_blood_listener
-            && !origin.is_some_and(|origin| {
-                states.cloak_blood_ingress_needed(
-                    &runtime,
-                    self.movement_cells(),
-                    actor,
-                    session,
-                    origin,
-                    cardinal,
-                    blocking,
-                )
-            })
+            && !(field_step_room
+                && origin.is_some_and(|origin| {
+                    states.cloak_blood_ingress_needed(
+                        &runtime,
+                        self.movement_cells(),
+                        actor,
+                        session,
+                        origin,
+                        cardinal,
+                        blocking,
+                    )
+                }))
             && self
                 .required_capabilities
                 .effective()

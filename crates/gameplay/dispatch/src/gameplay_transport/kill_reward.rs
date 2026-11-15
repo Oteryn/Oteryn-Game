@@ -3220,6 +3220,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut taken = match taken {
                 TakeOutcome::Empty => continue,
+                // Crystal settles onDeath and the reward on the death itself:
+                // a held source death task is driven here, then retaken.
+                TakeOutcome::CapacityWait
+                    if self
+                        .runtime
+                        .lock()
+                        .await
+                        .has_pending_source_creature_deaths()
+                        && Box::pin(self.drive_head_source_death()).await =>
+                {
+                    continue;
+                }
                 TakeOutcome::CapacityWait => return DrainOutcome::Deferred,
                 TakeOutcome::Taken(taken) => taken,
             };

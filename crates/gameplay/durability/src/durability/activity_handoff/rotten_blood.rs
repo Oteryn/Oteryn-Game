@@ -98,6 +98,7 @@ pub(super) async fn validate_entry(
     tx: &mut Transaction<'_, Postgres>,
     request: &ActivityEnterRequest,
     _now: i64,
+    source_room: bool,
 ) -> Result<bool> {
     let creature = match request.activity_key.as_str() {
         "oteryn:boss.ichgahal" => "oteryn:creature.ichgahal",
@@ -110,7 +111,9 @@ pub(super) async fn validate_entry(
     let boss =
         oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::from_creature_key(creature)
             .ok_or(DurabilityError::InvalidStoredState)?;
-    if boss == oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::Bakragore {
+    // Crystal rotten_bakragore.lua lever partitions are source cells; the
+    // unpublished catalogue fallback admits at its own lever cells.
+    if source_room && boss == oteryn_gameplay_quests::quest::rotten_blood::RottenBloodBoss::Bakragore {
         let mut selected = None;
         for participant in &request.participants {
             let p = participant.source_position.cell;

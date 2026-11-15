@@ -771,8 +771,15 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
             .fetch_one(&harness.pool)
             .await?;
         assert_eq!(victories, 30);
-        let steps: i64 = sqlx::query_scalar("SELECT count(*) FROM game_arena_match_receipts WHERE command_id > 18446744073709551615")
-            .fetch_one(&harness.pool).await?;
+        // Every pit exit of the 3 ranks x 10 pits above is a native portal STEP
+        // (portal_step.rs), bound by its own native origin, not a command id.
+        let steps: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
+        )
+        .bind(i32::try_from(b"oteryn:svargrond-native-step:v1".len())?)
+        .bind(b"oteryn:svargrond-native-step:v1".as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
         assert_eq!(steps, 30, "native steps have their own durable receipt namespace");
         if native_portals {
             for (prefix, callback) in [
@@ -782,7 +789,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 let native_receipts: i64 = sqlx::query_scalar(
                     "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
                 ).bind(i32::try_from(prefix.len())?).bind(prefix).fetch_one(&harness.pool).await?;
-                assert_eq!(native_receipts, 10, "one native {callback} receipt per pit");
+                assert_eq!(native_receipts, 30, "one native {callback} receipt per pit and rank");
             }
         }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;

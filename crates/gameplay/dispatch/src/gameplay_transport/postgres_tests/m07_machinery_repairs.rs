@@ -76,9 +76,13 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         assert!(map.facts.apply_quest_callback(remote_key,1,original,&[],&[],false,None));
     }
     assert_eq!(Box::pin(use_source(owner,admitted,6,0,target)).await?,UseDisposition::Committed);
-    assert_eq!(counts(h).await?,(0,1,7));
+    // Bricklayers' kits are stackable (content/items/definitions/
+    // spell-native-profiles.json, oteryn:item.tibia.i7785 stack.stackable=true,
+    // stack_max=100): the seven carried kits are one merged stack, so the burn
+    // writes one consumption of quantity seven.
+    assert_eq!(counts(h).await?,(0,1,1));
     let transactions:i64=sqlx::query_scalar("SELECT count(DISTINCT transaction_id) FROM game_quest_callback_consumptions").fetch_one(&h.pool).await?;
-    assert_eq!(transactions,1,"all seven physical instances use one atomic burn");
+    assert_eq!(transactions,1,"the whole seven-kit budget uses one atomic burn");
     let state=owner.root.read_character_quest_state(owner.character,fence.character_id).await.map_err(debug)?;
     assert_eq!(state.tracks().get(&callback.storage[0].track),Some(&1));
     assert_eq!(state.tracks().get(&callback.state_ops[0].track),Some(&1));
@@ -90,7 +94,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
         assert!(map.facts.quest_callback_blocked(map.overlay.base(),crate::map::overlay::TilePos{x:passage.position.x,y:passage.position.y,floor:passage.position.floor},false),"repaired walls must block, including the clicked wall");
     }
     assert_eq!(Box::pin(use_source(owner,admitted,6,0,target)).await?,UseDisposition::Committed);
-    assert_eq!(counts(h).await?,(0,1,7));
+    assert_eq!(counts(h).await?,(0,1,1));
     // A later external damage projection must not erase persistent personal credit.
     for passage in &callback.passages {
         let key=key_for(owner,passage.position,passage.replacement.ok_or("repaired appearance")?)?;
@@ -101,7 +105,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     }
     for n in 98..105 {mint_kit(owner,fence,n).await?;}
     assert_eq!(Box::pin(use_source(owner,admitted,7,2,target)).await?,UseDisposition::Rejected,"repeated physical damage cannot double-credit a personal site");
-    assert_eq!(counts(h).await?,(7,1,7));
+    assert_eq!(counts(h).await?,(7,1,1));
     Ok(())
 }
 async fn mint_kit(owner:&ComposedFreshAdmission<'_, '_, '_>,fence:CurrentCharacterGameplayFence,n:u64)->TestResult {
@@ -121,6 +125,9 @@ fn key_for(owner:&ComposedFreshAdmission<'_, '_, '_>,position:Position,appearanc
     found.ok_or_else(||"wall key".into())
 }
 async fn use_source(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admitted:&mut AdmittedSession,id:u64,revision:u64,target:&NativeSelector)->TestResult<UseDisposition> {
+    // Every fresh USE, refused ones included, keeps main's 200 ms world-action
+    // interval (map_door.rs WorldActionGate); pace each attempt past it.
+    owner.clock_origin=owner.clock_origin.checked_sub(std::time::Duration::from_secs(1)).ok_or("pace")?;
     let map=owner.bundle_map().ok_or("map")?;
     let key=placement_key(crate::map::overlay::TilePos{x:target.position.x,y:target.position.y,floor:target.position.floor},target.ordinal).ok_or("source key")?;
     let mut placement=map.overlay.base().digest().to_vec();placement.extend_from_slice(&key.to_be_bytes());

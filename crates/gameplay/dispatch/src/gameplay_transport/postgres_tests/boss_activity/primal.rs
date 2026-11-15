@@ -119,12 +119,23 @@ pub(super) async fn scenario(admin: String) -> TestResult {
     );
     assert!(barrier.is_none());
     assert_unentered(&h, &owner, admitted, source_cell).await?;
+    // A published source room resolves only under the carrier's actual origin
+    // pin (boss_room.rs read_definition); an unpinned read is closed by design.
+    let origin_pin = {
+        let runtime = owner.runtime.lock().await;
+        crate::durability::activity_handoff::ActivityContentPin {
+            coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+            map_revision_digest: runtime.map_revision_digest(),
+            server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+        }
+    };
     let definition = crate::durability::activity_handoff::ActivityHandoffOwner::new(h.root.clone())
-        .read_boss_room(
+        .read_boss_room_with_pin(
             &authority,
             &h.node,
             admitted.item_fence.ok_or("current source fence")?,
             crate::gameplay_transport::primal_entry::BOSS,
+            origin_pin,
         )
         .await?
         .ok_or("authored source catalogue is visible to the current fence")?;

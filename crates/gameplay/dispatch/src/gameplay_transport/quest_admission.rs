@@ -86,6 +86,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 .collect(),
                         );
                     }
+                    // A rejected fence proves this session is no longer current
+                    // (replaced or ended); the current session reads its own marks.
+                    Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected) => {}
                     Err(_) => {
                         map_marks = Some(Vec::new());
                         retry = true;

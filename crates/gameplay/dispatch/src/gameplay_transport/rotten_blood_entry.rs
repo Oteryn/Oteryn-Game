@@ -29,6 +29,22 @@ fn source(key: &str) -> Option<Room> {
     })
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Whether the actor stands in this boss's authenticated source room, by
+    /// the same proof `prepare_rotten_blood_catalogue` requires. Without it the
+    /// lever stays on the generic endgame catalogue path.
+    pub(super) async fn rotten_blood_source_qualified(&self, key: &str) -> bool {
+        let (Some(active), Some(origin)) = (
+            self.active_generation,
+            self.effective_rooms().gate_field_step_ingress(),
+        ) else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        origin.pinned_activity_source_room() == source(key)
+            || active
+                .qualify_published_world_context(origin, runtime.content_pin())
+                .is_some()
+    }
     fn rotten_blood_template(
         &self,
         key: &str,

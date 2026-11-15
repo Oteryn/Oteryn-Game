@@ -289,6 +289,23 @@ impl ActivityHandoffOwner {
     }
 }
 
+/// Whether this World/boss is served by a source publication. The legacy
+/// catalogue fallback keeps its own fixture lever cells, so the Crystal lever
+/// partitions apply only to published source rooms.
+async fn published_source_room(
+    tx: &mut Transaction<'_, Postgres>,
+    r: &ActivityEnterRequest,
+) -> Result<bool> {
+    let world = r
+        .participants
+        .iter()
+        .find(|p| p.source.character_id.as_bytes() == r.initiating_character_id.as_bytes())
+        .map(|p| p.source.runtime_scope.world_id())
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_boss_room_publications WHERE world_id=encode($1,'hex')::uuid AND boss_key=$2)")
+        .bind(world.as_bytes().as_slice()).bind(&r.activity_key).fetch_one(&mut **tx).await?)
+}
+
 async fn read_definition(
     tx: &mut Transaction<'_, Postgres>,
     key: &str,
@@ -543,10 +560,11 @@ pub(super) async fn prepare_in_transaction<
     {
         return Ok(Err(ActivityRefusal::AuthorityRejected));
     }
-    if super::rotten_blood::is_rotten(&r.activity_key)
-        && !super::rotten_blood::validate_entry(tx, r, now).await?
-    {
-        return Ok(Err(ActivityRefusal::AuthorityRejected));
+    if super::rotten_blood::is_rotten(&r.activity_key) {
+        let source_room = published_source_room(tx, r).await?;
+        if !super::rotten_blood::validate_entry(tx, r, now, source_room).await? {
+            return Ok(Err(ActivityRefusal::AuthorityRejected));
+        }
     }
     let reset: Option<String> = sqlx::query_scalar(
         "SELECT reset_epoch::text FROM game_world_reset_read_locked(encode($1,'hex')::uuid)",

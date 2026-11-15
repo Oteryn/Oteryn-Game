@@ -222,22 +222,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.drain_detached_megalomania_timer(permit, now).await? {
             return Ok(true);
         }
-        let room = self.effective_rooms().gate_monster_ai().ok_or(())?;
+        let room = self.effective_rooms().gate_monster_ai().ok_or_else(|| {eprintln!("QMDIAG sdm 225");})?;
         let native = self
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .ok_or(())?;
+            .ok_or_else(|| {eprintln!("QMDIAG sdm 229");})?;
         let (notice, profile, step, timer, map_plan, names_plan, scope, generation) = {
             let runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.try_lock().map_err(|_| ())?;
-            let notice = runtime.next_source_creature_death().map_err(|_| ())?;
+            let states = self.states.spell_states.try_lock().map_err(|_| {eprintln!("QMDIAG sdm 232");})?;
+            let notice = runtime.next_source_creature_death().map_err(|_| {eprintln!("QMDIAG sdm 233");})?;
             let profile = if notice.is_none() {
                 states.native_profile_pass.pending()
             } else {
                 None
             };
             let step = if notice.is_none() && profile.is_none() {
-                states.spite_steps.creatures.front().map_err(|_| ())?
+                states.spite_steps.creatures.front().map_err(|_| {eprintln!("QMDIAG sdm 240");})?
             } else {
                 None
             };
@@ -249,10 +249,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .soul_war_callbacks
                 .malice
                 .as_ref()
-                .ok_or(())?
+                .ok_or_else(|| {eprintln!("QMDIAG sdm 252");})?
                 .next_due_ms()
                 .and_then(|due| due.checked_mul(1_000))
-                .ok_or(())?;
+                .ok_or_else(|| {eprintln!("QMDIAG sdm 255");})?;
             if states
                 .native_callbacks
                 .next_source_due_time()?
@@ -269,7 +269,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .spite_steps
                         .creatures
                         .next_due_us(&runtime)
-                        .map_err(|_| ())?,
+                        .map_err(|_| {eprintln!("QMDIAG sdm 272");})?,
                 )
                 .chain(
                     super::monster_profile_cycle::physical_spell::next_source_due_time(
@@ -290,14 +290,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Ok(false);
             }
-            let objects = self.door.try_lock().map_err(|_| ())?;
+            let objects = self.door.try_lock().map_err(|_| {eprintln!("QMDIAG sdm 293");})?;
             let map_plan = crate::movement::monster_map::PreparedMonsterMapRead::prepare(
                 &runtime,
                 room,
                 &objects,
                 &soul_war_malice::due_timer_cells(),
             )
-            .ok_or(())?;
+            .ok_or_else(|| {eprintln!("QMDIAG sdm 300");})?;
             let names = self.prepare_source_names(&runtime, &["Soul Cage", "Goshnar's Malice"])?;
             (
                 notice,
@@ -326,7 +326,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             generation,
             now,
         );
-        self.root.try_issue_semantic_pass().map_err(|_| ())?
+        self.root.try_issue_semantic_pass().map_err(|_| {eprintln!("QMDIAG sdm 329");})?
             .run_with_context(&mut context, |holder, deadline, context| {
                 Box::pin(async move {
                     let (owner, permit, map_plan, names, notice, profile, step, timer, room, native, scope, generation, now) = context;

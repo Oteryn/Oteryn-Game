@@ -435,6 +435,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     pin,
                 )
                 .map_err(|_| ActivityRefusal::ContentUnavailable)?;
+                // A generic template room is no qualified source room: its
+                // creatures keep main's classic death path.
+                runtime
+                    .use_classic_creature_deaths()
+                    .map_err(|_| ActivityRefusal::ContentUnavailable)?;
                 runtime
                     .install_companion_policies(native.policies().clone())
                     .map_err(|_| ActivityRefusal::ContentUnavailable)?;

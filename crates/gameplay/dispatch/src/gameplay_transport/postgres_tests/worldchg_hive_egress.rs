@@ -269,12 +269,16 @@ pub(super) fn scenario_with_bindings(prove_bindings: bool) -> TestResult {
                 .await?
                 .ok_or("activated Hive")?;
             super::engworldchg::assert_binding_lifecycle(&h, world_id, 1).await?;
+            // The canonical Hive quest has no personal mission in the source
+            // (quests/src/quest/authored_bindings/occurrence.rs:121, Crystal
+            // storages.lua:1886), so the writer refuses any personal transition
+            // on it. The activation gate is proven on a fixture quest instead.
             super::engworldchg::assert_native_quest_transition(
                 &h,
                 &owner,
                 admitted.game_session_id,
                 "hive_born",
-                "oteryn:quest.authored.hive_born_world_change",
+                "oteryn:quest.fixture.engworldchg_hive_born",
             )
             .await?;
             assert!(h.root.world_changes(world_id, 0).await?.is_none());

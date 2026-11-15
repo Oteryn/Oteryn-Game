@@ -626,6 +626,58 @@ fn srx3_source_death_fifo_records_actual_lethal_before_reward_or_first_think() {
 }
 
 #[test]
+fn classic_runtime_keeps_main_death_path_while_source_room_death_stays_pending() {
+    let key = "oteryn:creature.goshnar_s_megalomania_blue";
+    // A qualified source room keeps the pending task the reward drain drives.
+    let (mut source, boss) = registered_source_fixture_at(9);
+    canonical_lethal(&mut source, boss, key);
+    assert!(source.has_pending_source_creature_deaths());
+    assert!(source.source_creature_death_pending(boss).unwrap());
+    // A runtime outside every qualified source room keeps main's classic path.
+    let world = WorldId::decode(&id(1)).unwrap();
+    let scope = RuntimeScopeRefV1::instance(world, id(10)).unwrap();
+    let mut classic = ChannelRuntimeV1::from_committed_scope_assignment(
+        scope,
+        NodeId::decode(&id(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    classic.use_classic_creature_deaths().unwrap();
+    classic
+        .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
+        .unwrap();
+    let policy = classic.companion_policy(key).unwrap();
+    let actor = ExactActorRef(
+        classic
+            .admit_encounter_fixture_actor(
+                ActorState(1),
+                key,
+                policy.maximum_health,
+                Some(LocalPosition {
+                    x: 33710,
+                    y: 31634,
+                    floor: 14,
+                }),
+            )
+            .unwrap(),
+    );
+    classic.install_creature_policy(actor, key).unwrap();
+    canonical_lethal(&mut classic, actor, key);
+    assert!(!classic.has_pending_source_creature_deaths());
+    assert!(!classic.source_creature_death_pending(actor).unwrap());
+    // The choice is fixed before the first creature is admitted.
+    assert_eq!(
+        classic.use_classic_creature_deaths(),
+        Err(CarrierError::PlanConflict)
+    );
+}
+
+#[test]
 fn srx3_source_death_begin_freezes_profile_and_copied_events_once_before_handlers() {
     let (mut runtime, boss) = registered_source_fixture_at(7);
     let death = canonical_lethal(

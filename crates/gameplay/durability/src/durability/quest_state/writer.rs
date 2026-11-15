@@ -682,15 +682,15 @@ impl DurabilityRoot {
         let required_mint = oteryn_gameplay_quests::quest::completion_sets::required_mint_claim(
             &request.transition_key,
         )
-        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        .map_err(|_| {eprintln!("QMDIAG qinv 685"); CharacterProgressionError::InvalidInput})?;
         if required_mint.is_some() && !matches!(request.cause, QuestCause::ClaimObligation(_)) {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 687"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let hit_key = request
             .transition_key
             .starts_with(oteryn_gameplay_quests::quest::authored_bindings::hits::PREFIX);
         if hit_key != matches!(request.cause, QuestCause::NativeHit(_)) {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 693"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // A caller-supplied command is not evidence of a native key-door opening.
         if request
@@ -698,11 +698,11 @@ impl DurabilityRoot {
             .starts_with(oteryn_gameplay_quests::quest::authored_bindings::door_use::PREFIX)
             && native.is_none()
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 701"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let timer_recipe = oteryn_gameplay_quests::quest::timers::recipe(&request.transition_key);
         if timer_recipe.is_some() != matches!(request.cause, QuestCause::ServerTimer(_)) {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 705"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let native_key = hit_key
             || request
@@ -720,7 +720,7 @@ impl DurabilityRoot {
                 .as_ref()
                 .is_some_and(|death| !death.valid(&request, &catalogue))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 723"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // Personal objectives and NPC programmes have their own fenced writers.
         // A generic command or a caller-supplied death id is not native proof.
@@ -731,7 +731,7 @@ impl DurabilityRoot {
                 .starts_with("oteryn:quest-transition/native-kill/")
             || request.transition_key.starts_with("oteryn:quest-npc/")
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 734"); return Err(CharacterProgressionError::InvalidInput);}
         }
         if reward_callbacks.iter().any(|c| {
             c.participants.iter().enumerate().any(|(i, _)| {
@@ -739,10 +739,10 @@ impl DurabilityRoot {
                     == request.transition_key
             })
         }) {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 742"); return Err(CharacterProgressionError::InvalidInput);}
         }
         if oteryn_gameplay_quests::quest::world_callbacks::load()
-            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .map_err(|_| {eprintln!("QMDIAG qinv 745"); CharacterProgressionError::InvalidInput})?
             .iter()
             .any(|callback| {
                 // Ownership survives a caller renaming the synthetic transition.
@@ -764,7 +764,7 @@ impl DurabilityRoot {
                     .is_some_and(|transition| transition.key == request.transition_key)
             })
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 767"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let terrain_usage = catalogue
             .authored_bindings()
@@ -787,7 +787,7 @@ impl DurabilityRoot {
             && terrain_usage.is_none())
             || (terrain_usage.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 790"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let board_usage = catalogue.authored_bindings().and_then(|bindings| {
             bindings
@@ -807,7 +807,7 @@ impl DurabilityRoot {
             && board_usage.is_none())
             || (board_usage.is_some() && !matches!(request.cause, QuestCause::Command(_)))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 810"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let collection = catalogue
             .authored_bindings()
@@ -832,7 +832,7 @@ impl DurabilityRoot {
             .and_then(|c| c.map_mark.as_ref())
             .is_some_and(|mark| !mark.valid())
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 835"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // Ownership survives a caller removing or renaming a bound effect.
         if let Some(transition) = catalogue.transition(&request.transition_key) {
@@ -842,7 +842,7 @@ impl DurabilityRoot {
                 context.is_some(),
                 &world_callbacks,
             )
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 845"); CharacterProgressionError::InvalidInput})?;
         }
         let shared_entrance = context.is_some()
             && world_callbacks.iter().any(|callback| {
@@ -872,7 +872,7 @@ impl DurabilityRoot {
             || request.transition_key == oteryn_gameplay_quests::quest::dreamer_carrot::KEY)
             != shared_entrance
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 875"); return Err(CharacterProgressionError::InvalidInput);}
         }
         if reward_callback.is_none()
             && benevola.is_none()
@@ -881,16 +881,16 @@ impl DurabilityRoot {
                 .transition(&request.transition_key)
                 .is_some_and(|t| t.effects.is_empty() && !t.completes)
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 884"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let reward_achievement =
             super::super::reward_claim_mint::quest::prepare_achievement(reward_callback.as_ref())
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+                .map_err(|_| {eprintln!("QMDIAG qinv 888"); CharacterProgressionError::InvalidInput})?;
         if (request.transition_key
             == super::super::world_event::changes::counters::benevola::HANDOVER)
             != benevola.is_some()
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 893"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let source_key = request
             .transition_key
@@ -942,7 +942,7 @@ impl DurabilityRoot {
                     || essence.is_some()
                     || flame.is_some())
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 945"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // A bare callback key/context must not manufacture a prepared boss phase.
         // The closed native flame caller is mounted separately after its real USE RED.
@@ -958,7 +958,7 @@ impl DurabilityRoot {
                 .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
             || flame.is_some() && (context.is_none() || payment.is_some() || essence.is_some())
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 961"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // The specialised owner evaluates these computed rules under the locked snapshot.
         // A generic NPC transition cannot bypass the action/cause validation.
@@ -982,20 +982,20 @@ impl DurabilityRoot {
                     || !grizzly::valid_cause(action, request.cause)
             })
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 985"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // A paid-access state change must be composed with the existing fee
         // owner; the public generic Quest entry point cannot grant it for free.
         if (request.transition_key == oteryn_gameplay_quests::quest::rotten_blood::PURCHASE_ACCESS)
             != payment.is_some()
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 992"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let native_claim = reward_callback
             .as_ref()
             .is_some_and(|callback| callback.world_claim.is_some());
         if native_claim && (context.is_none() || !matches!(request.cause, QuestCause::Use(_))) {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 998"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let essence_key = oteryn_gameplay_quests::quest::rotten_blood::ESSENCES
             .iter()
@@ -1006,7 +1006,7 @@ impl DurabilityRoot {
                 .as_ref()
                 .is_some_and(|input| input.request(&fence).ok().as_ref() != Some(&request))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 1009"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let callback = if context.is_some() && !native_claim && !soul_step {
             Some(
@@ -1023,7 +1023,7 @@ impl DurabilityRoot {
             .as_ref()
             .map(oteryn_gameplay_quests::quest::world_callbacks::legacy_world_claim)
             .transpose()
-            .map_err(|_| CharacterProgressionError::InvalidInput)?
+            .map_err(|_| {eprintln!("QMDIAG qinv 1026"); CharacterProgressionError::InvalidInput})?
             .flatten();
         let world_reward = callback.as_ref().and_then(|c| c.item_reward().as_ref());
         let world_disguise = callback
@@ -1042,7 +1042,7 @@ impl DurabilityRoot {
                 && !((matches!(request.cause, QuestCause::Use(_)) && !step_world_reward)
                     || (matches!(request.cause, QuestCause::Step(_)) && step_world_reward)))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 1045"); return Err(CharacterProgressionError::InvalidInput);}
         }
         if callback
             .as_ref()
@@ -1055,20 +1055,20 @@ impl DurabilityRoot {
                     || a.peer_use.is_some()
             })
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 1058"); return Err(CharacterProgressionError::InvalidInput);}
         }
         let lionheart = super::hero_of_bounac::prepare(&request)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1061"); CharacterProgressionError::InvalidInput})?;
         let wayfarer = super::wrath_sleeping_dragon::prepare(&request)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1063"); CharacterProgressionError::InvalidInput})?;
         let journal_achievement = super::world_change_journal_rewards::prepare(&request)
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1065"); CharacterProgressionError::InvalidInput})?;
         let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1067"); CharacterProgressionError::InvalidInput})?;
         let mount_achievement = super::super::quest_mount_rewards::prepare(callback.as_ref())
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1069"); CharacterProgressionError::InvalidInput})?;
         let dance_achievement = super::super::quest_unnatural_selection::prepare(callback.as_ref())
-            .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            .map_err(|_| {eprintln!("QMDIAG qinv 1071"); CharacterProgressionError::InvalidInput})?;
         // Native rules require a world occurrence even if a caller renames the
         // transition. Inspect the effects, not only the authored callback key.
         let native_world_rule =
@@ -1112,7 +1112,7 @@ impl DurabilityRoot {
                             || callback.effects.restore_disguise)
                 }))
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 1115"); return Err(CharacterProgressionError::InvalidInput);}
         }
         if fence.character_lease_generation == 0
             || !native.as_ref().map_or_else(
@@ -1125,7 +1125,7 @@ impl DurabilityRoot {
             )
             || !valid_quest_key(&request.transition_key)
         {
-            return Err(CharacterProgressionError::InvalidInput);
+            {eprintln!("QMDIAG qinv 1128"); return Err(CharacterProgressionError::InvalidInput);}
         }
         // §5.3: a command cause belongs to the fenced GameSession; a still-pending one after a
         // same-GameSession reconnect commits with the current generation, and a replaced
@@ -1164,7 +1164,7 @@ impl DurabilityRoot {
                     ),
                 )
             {
-                return Err(CharacterProgressionError::InvalidInput);
+                {eprintln!("QMDIAG qinv 1167"); return Err(CharacterProgressionError::InvalidInput);}
             }
         }
         if let Some(death) = &native {
@@ -1178,7 +1178,7 @@ impl DurabilityRoot {
             && !soul_step
         {
             let bytes = serde_json::to_vec(&(context, &callback))
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+                .map_err(|_| {eprintln!("QMDIAG qinv 1181"); CharacterProgressionError::InvalidInput})?;
             let digest = Sha256::new()
                 .chain_update(binding)
                 .chain_update(bytes)
