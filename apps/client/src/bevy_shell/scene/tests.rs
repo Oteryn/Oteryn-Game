@@ -138,6 +138,8 @@ fn real_edge_labels_reuse_dense_projected_entities() -> TestResult {
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(width + 64, height + 64),
@@ -443,6 +445,8 @@ fn floor_fade_reaches_bevy_sprite_alpha() -> TestResult {
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(640, 480),
