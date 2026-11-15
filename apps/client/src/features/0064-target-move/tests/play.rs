@@ -195,6 +195,14 @@ fn an_unselected_walk_sends_nothing_and_leaves_arrows_usable() -> Result<(), Bat
     Ok(())
 }
 
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_target_walk_selected(&self) {
+        self.target_move_initialize(true);
+        self.target_walk_initialize(true);
+    }
+}
+
 #[test]
 fn escape_stops_authoritative_combat_and_movement() -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();

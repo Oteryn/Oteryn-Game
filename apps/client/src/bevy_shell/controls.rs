@@ -70,6 +70,19 @@ impl HostOwner {
         for action in custom {
             play.link.custom_hotkey_action(&play.view, &action);
         }
+        // Stop clears queued clicks even while a target-walk receipt is pending. The
+        // original key still reaches the ordinary movement/turn handler below.
+        if crate::input::arrow_step(&routed).is_some() {
+            play.view.target_move_input(
+                &play.link,
+                &[NormalizedInputEvent::Key {
+                    code: oteryn_input_actions::KeyCode::ESCAPE,
+                    state: oteryn_input_actions::ButtonState::Pressed,
+                    modifiers: oteryn_input_actions::Modifiers::NONE,
+                    repeat: false,
+                }],
+            );
+        }
         if play.link.custom_hotkeys_input(&routed)
             || play.view.target_move_input(&play.link, &routed)
         {
@@ -215,5 +228,124 @@ impl HostOwner {
     /// A shared popup may consume the OS release; clear its retained pointer state.
     pub(super) fn pointer_context_closed(&mut self) {
         self.controls.mouse.context_closed();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::play::{PlayView, play_channel};
+    use oteryn_input_actions::{
+        ButtonState, Modifiers, MouseButton, PointerCoordinate, PointerDelta, PointerMotion,
+        PointerPosition,
+    };
+    use oteryn_renderer::TileCoord;
+
+    fn install(host: &mut HostOwner, mut view: PlayView, link: crate::play::PlayLink) {
+        view.use_shared_frontend();
+        link.use_shared_frontend();
+        host.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        host.phase = crate::bevy_shell::owner::Phase::Playing;
+    }
+
+    #[test]
+    fn autowalk_bevy_left_ground_release_sends_native_target()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut host = HostOwner::new(None)?;
+        let view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
+        let tile = crate::input::click_tile(view.scene().view(), 48.0, 48.0).ok_or("map tile")?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.bevy_target_walk_selected();
+        install(&mut host, view, link);
+        host.route_input(
+            &[
+                NormalizedInputEvent::PointerMoved {
+                    position: PointerPosition::new(
+                        PointerCoordinate::new(48)?,
+                        PointerCoordinate::new(48)?,
+                    ),
+                    motion: PointerMotion::new(PointerDelta::new(0)?, PointerDelta::new(0)?),
+                },
+                NormalizedInputEvent::MouseButton {
+                    button: MouseButton::PRIMARY,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::NONE,
+                },
+            ],
+            false,
+        );
+        host.route_input(
+            &[NormalizedInputEvent::MouseButton {
+                button: MouseButton::PRIMARY,
+                state: ButtonState::Released,
+                modifiers: Modifiers::NONE,
+            }],
+            false,
+        );
+        let play = host.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            commands.try_recv()?,
+            crate::combat_input::PlayCommand::TargetWalk(oteryn_session::ActorPosition {
+                x: tile.x,
+                y: tile.y,
+                floor: -3
+            })
+        );
+        assert!(commands.try_recv().is_err());
+        Ok(())
+    }
+    #[test]
+    fn autowalk_bevy_wasd_and_arrows_cancel_before_manual_step()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::KeyCode;
+        for code in [
+            KeyCode::ARROW_UP,
+            KeyCode::ARROW_RIGHT,
+            KeyCode::ARROW_DOWN,
+            KeyCode::ARROW_LEFT,
+            KeyCode::new(26)?,
+            KeyCode::new(7)?,
+            KeyCode::new(22)?,
+            KeyCode::new(4)?,
+        ] {
+            let mut host = HostOwner::new(None)?;
+            let mut prefs = host.settings.preferences.clone();
+            prefs.controls.movement = crate::play::MovementKeys::ArrowsAndWasd;
+            host.settings.apply(prefs);
+            let mut view = PlayView::new(TileCoord::new(100, 100), -3, &[])?;
+            let (link, mut commands, outbox) = play_channel();
+            outbox.bevy_target_walk_selected();
+            view.primary_click(TileCoord::new(98, 100), &link)?;
+            view.tick(&link).map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(
+                commands.try_recv()?,
+                crate::combat_input::PlayCommand::TargetWalk(_)
+            ));
+            view.primary_click(TileCoord::new(97, 100), &link)?;
+            install(&mut host, view, link);
+            host.route_input(
+                &[NormalizedInputEvent::Key {
+                    code,
+                    state: ButtonState::Pressed,
+                    modifiers: Modifiers::NONE,
+                    repeat: false,
+                }],
+                false,
+            );
+            let crate::combat_input::PlayCommand::ServerMechanic(stop) = commands.try_recv()?
+            else {
+                return Err("stop before step".into());
+            };
+            assert_eq!(stop.payload, [16, 1]);
+            let play = host.play.as_mut().ok_or("play")?;
+            play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(
+                commands.try_recv()?,
+                crate::combat_input::PlayCommand::Step(_)
+            ));
+            assert!(commands.try_recv().is_err());
+        }
+        Ok(())
     }
 }
