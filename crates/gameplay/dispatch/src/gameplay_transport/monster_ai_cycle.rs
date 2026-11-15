@@ -428,7 +428,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     session.is_none()
                         && states.monster_melee.creature_ai.state(*actor).is_none()
                         && players.iter().any(|player| {
-                            crate::ai_think::targeting::sees(*player, position.position())
+                            crate::ai_think::targeting::sees_native(position.position(), *player)
                         })
                 })
                 .map(|(actor, ..)| *actor)

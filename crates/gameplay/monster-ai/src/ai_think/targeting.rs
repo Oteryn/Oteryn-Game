@@ -53,7 +53,7 @@ pub fn sees(player: MovementLocalPosition, creature: MovementLocalPosition) -> b
 
 /// Pinned Creature::canSee: a symmetric eleven-tile viewport from the
 /// monster, independently of the client's reference viewport.
-pub(super) fn sees_native(creature: MovementLocalPosition, player: MovementLocalPosition) -> bool {
+pub fn sees_native(creature: MovementLocalPosition, player: MovementLocalPosition) -> bool {
     match (
         VisibilityPosition::new(creature.x, creature.y, creature.floor),
         VisibilityPosition::new(player.x, player.y, player.floor),
