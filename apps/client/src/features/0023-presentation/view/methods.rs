@@ -55,6 +55,7 @@ impl PlayView {
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
         batch.lighting.opacity.clear();
+        let resource_start = batch.len();
         let circle_quads = resources::draw(
             batch,
             view,
@@ -63,7 +64,8 @@ impl PlayView {
             self.own,
             resource_options,
         )?;
-        actor_hud::draw(
+        let resource_quads = resource_start..batch.len();
+        let mut fixed = actor_hud::draw(
             batch,
             view,
             atlas,
@@ -72,6 +74,8 @@ impl PlayView {
             &self.party_icons,
             actor_options,
         )?;
+        fixed.push(resource_quads);
+        let fixed_start = batch.len();
         if let Some(received) = hit_flash
             && oteryn_client_ui::analyser_hit_attribution::hit_flash_visible(
                 now.saturating_duration_since(received),
@@ -87,7 +91,9 @@ impl PlayView {
         }
         draw_tutorial(batch, view, atlas, &self.tutorial_overlay, now)?;
         crate::play::feature_0233_touch_controls::view::draw(batch, view, atlas, &self.touch)?;
+        fixed.push(fixed_start..batch.len());
         if !effects {
+            self.scene.player_quads.extend(fixed);
             #[cfg(feature = "bevy-shell")]
             { self.scene.health_circle_quads = circle_quads; }
             return Ok(());
@@ -216,6 +222,7 @@ impl PlayView {
                 _ => {}
             }
         }
+        self.scene.player_quads.extend(fixed);
         #[cfg(feature = "bevy-shell")]
         { self.scene.health_circle_quads = circle_quads; }
         #[cfg(not(feature = "bevy-shell"))]

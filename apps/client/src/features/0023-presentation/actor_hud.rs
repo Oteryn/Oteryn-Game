@@ -45,13 +45,15 @@ pub(super) fn draw(
     entities: &[WorldSpatialEntity],
     icons: &[PartyIcon],
     options: Options,
-) -> Result<(), BatchError> {
+) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
+    let mut fixed = Vec::new();
     let scale = f32::from(options.scale) / 100.0;
     for entity in entities {
         let tile = TileCoord::new(entity.position.x, entity.position.y);
         if entity.position.floor != options.floor || !view.contains(tile) {
             continue;
         }
+        let start = batch.len();
         let [x, y] = view.tile_to_screen(tile);
         let pvp = options.pvp_frame && icons.iter().any(|icon| icon.entity == entity.entity && icon.skull != 0);
         let loot = options.loot_highlight && entity.kind == EntityKind::Corpse;
@@ -121,7 +123,11 @@ pub(super) fn draw(
                 }
             }
         }
+        if options.own.map_or(tile == own, |own| own == entity.entity) {
+            fixed.push(start..batch.len());
+        }
     }
+    let start = batch.len();
     if options.own_marks
         && let Some(own_ref) = options.own
         && let Some(icon) = icons.iter().find(|icon| icon.entity == own_ref)
@@ -138,5 +144,6 @@ pub(super) fn draw(
             options.age,
         )?;
     }
-    Ok(())
+    fixed.push(start..batch.len());
+    Ok(fixed)
 }

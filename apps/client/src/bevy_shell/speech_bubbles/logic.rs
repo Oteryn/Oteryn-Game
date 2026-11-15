@@ -43,14 +43,10 @@ impl Speech {
     }
 }
 
-/// The lines of `lines` that are not already in `previous`: the longest suffix of `previous`
-/// that opens `lines` is the part both logs share.
-pub(super) fn new_lines<'a>(previous: &[ChatLine], lines: &'a [ChatLine]) -> &'a [ChatLine] {
-    let overlap = (0..=previous.len().min(lines.len()))
-        .rev()
-        .find(|&n| previous[previous.len() - n..] == lines[..n])
-        .unwrap_or(0);
-    &lines[overlap..]
+/// New occurrences, including identical messages in a full bounded log.
+pub(super) fn new_lines(previous: u64, received: u64, lines: &[ChatLine]) -> &[ChatLine] {
+    let count = usize::try_from(received.wrapping_sub(previous)).unwrap_or(usize::MAX);
+    &lines[lines.len().saturating_sub(count)..]
 }
 
 /// How long a message stays: 60 ms per character, at least 3 s, doubled for a yell.
@@ -169,6 +165,10 @@ impl Texts {
             }
         }
         self.0.retain(|t| !t.messages.is_empty());
+    }
+
+    pub fn retain_visible(&mut self, allows: impl Fn(&str) -> bool) {
+        self.0.retain(|text| allows(&text.name));
     }
 
     pub fn clear(&mut self) {

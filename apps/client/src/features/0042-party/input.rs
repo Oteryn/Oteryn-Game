@@ -66,7 +66,7 @@ impl PlayLink {
                 }
                 oteryn_client_ui::party::Action::Context(x, y) => {
                     let target =
-                        crate::input::click_tile(view.scene().view(), f64::from(x), f64::from(y))
+                        view.click_tile(f64::from(x), f64::from(y))
                             .and_then(|tile| view.party_target(tile));
                     let Some(target) = target else {
                         continue;

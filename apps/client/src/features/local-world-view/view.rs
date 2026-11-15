@@ -97,6 +97,7 @@ impl PlayView {
             &entities,
         )?;
         self.apply_preference_scale()?;
+        self.scene.scroll = self.camera_offset(std::time::Instant::now()).unwrap_or([0.; 2]);
         self.scene.target_frame = self.preferences().game_window.target_frame;
         self.scene.set_name_visibility(self.preferences().hud_names);
         self.scene.set_name_options(
@@ -122,6 +123,8 @@ impl PlayView {
     /// Applies the latest live map window, own position, visible entities and overlay entries.
     pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
         if pushed.scope_changed {
+            self.walk = None;
+            self.walk_landed = None;
             self.party_icons.clear();
             self.party_icons_refresh = None;
             self.inputs.clear();

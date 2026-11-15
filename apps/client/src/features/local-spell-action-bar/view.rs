@@ -310,7 +310,7 @@ impl PlayView {
         let cursor = self
             .creature_drag
             .pointer
-            .and_then(|(x, y)| crate::input::click_tile(self.scene.view(), x, y))
+            .and_then(|(x, y)| self.click_tile(x, y))
             .map(|tile| {
                 let position = oteryn_session::ActorPosition {
                     x: tile.x,

@@ -1,6 +1,6 @@
 //! Native shell input phase; mechanics keep their input mapping in feature adapters.
 use super::*;
-use oteryn_client::input::{arrow_step, click_tile, logout_key};
+use oteryn_client::input::{arrow_step, logout_key};
 
 impl Application {
     pub(super) fn handle_input(
@@ -12,6 +12,9 @@ impl Application {
             .settings
             .control_events(events, self.play.as_ref().map(|play| &play.link));
         let events = controls.as_slice();
+        if let Some(play) = &mut self.play {
+            play.view.observe_arrow_releases(events);
+        }
         if self.capture_input(events) {
             return;
         }
@@ -210,7 +213,7 @@ impl Application {
             let mut render_failed = false;
             for click in clicks {
                 if click.toggle_attack {
-                    if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                    if let Some(tile) = play.view.click_tile(click.x, click.y) {
                         play.view.attack_toggle_click(tile, &play.link);
                     }
                     continue;
@@ -221,7 +224,7 @@ impl Application {
                 if !click.secondary && play.view.minimap_click(click.x, click.y) {
                     continue;
                 }
-                if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                if let Some(tile) = play.view.click_tile(click.x, click.y) {
                     if click.secondary {
                         if play.view.gameplay_secondary_click(&play.link) {
                             continue;
@@ -251,7 +254,7 @@ impl Application {
         }
         for click in clicks {
             let picked = self.scene.as_mut().and_then(|scene| {
-                let tile = click_tile(scene.view(), click.x, click.y)?;
+                let tile = oteryn_client::input::click_tile(scene.view(), click.x, click.y)?;
                 Some((tile, scene.select_tile(tile)))
             });
             // Without a session a click only selects a visible entity or object.

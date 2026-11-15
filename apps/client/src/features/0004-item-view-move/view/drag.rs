@@ -134,11 +134,7 @@ impl PlayLink {
         };
         let tile = (unsafe { GetAncestor(under, GA_ROOT) } == main)
             .then(|| {
-                crate::input::click_tile(
-                    view.scene().view(),
-                    f64::from(point.x - origin.x),
-                    f64::from(point.y - origin.y),
-                )
+                view.click_tile(f64::from(point.x - origin.x), f64::from(point.y - origin.y))
             })
             .flatten();
         let (source, destination, changed, start, prompt_open, cancel) = {

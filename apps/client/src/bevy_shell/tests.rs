@@ -461,3 +461,55 @@ fn proficiency_shortcut_requests_catalogue_only_outside_blocked_input() -> TestR
     );
     Ok(())
 }
+
+#[test]
+fn arrow_chord_observes_modal_resets_and_consumed_releases() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::feature_0013_paced_movement::protocol::bevy_diagonal_fixture(&outbox);
+    host.install_play(view, link);
+    let key = |code, state| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false);
+    host.open_graphics();
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Released)], false);
+    host.cancel();
+    host.route_input(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false);
+    let play = host.play.as_mut().ok_or("play")?;
+    assert_eq!(play.view.next_step(), Some(crate::input::StepDir::West));
+    Ok(())
+}
+
+#[test]
+fn arrow_chord_observes_releases_consumed_by_chat() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, _, outbox) = crate::play::play_channel();
+    crate::play::feature_0013_paced_movement::protocol::bevy_diagonal_fixture(&outbox);
+    host.install_play(view, link);
+    let key = |code, state| NormalizedInputEvent::Key {
+        code,
+        state,
+        modifiers: Modifiers::NONE,
+        repeat: false,
+    };
+    host.route_input(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)], false);
+    host.route_input(
+        &[
+            key(KeyCode::new(88)?, ButtonState::Pressed),
+            key(KeyCode::ARROW_UP, ButtonState::Released),
+        ],
+        false,
+    );
+    host.route_input(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)], false);
+    let play = host.play.as_mut().ok_or("play")?;
+    assert_eq!(play.view.next_step(), Some(crate::input::StepDir::West));
+    Ok(())
+}

@@ -111,7 +111,7 @@ pub(super) fn project(
         .instances()
         .iter()
         .enumerate()
-        .map(|(i, q)| (q, lighting.quad_tint(q, i, QuadLayer::Terrain), false))
+        .map(|(i, q)| (i, q, lighting.quad_tint(q, i, QuadLayer::Terrain), false))
         .chain(
             scene
                 .sprites()
@@ -128,11 +128,11 @@ pub(super) fn project(
                     {
                         tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
                     }
-                    (q, tint, minimap_range.contains(&i))
+                    (tile_count + i, q, tint, minimap_range.contains(&i))
                 }),
         );
     let mut count = 0;
-    for (index, (quad, tint, minimap)) in ordered.enumerate() {
+    for (index, quad, tint, minimap) in ordered {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
         let follows_player = index >= tile_count
             && player_quads

@@ -113,7 +113,7 @@ impl PlayLink {
             ) {
                 let pointer = lock(&self.mailbox).dialogue_pointer;
                 if let Some((x, y)) = pointer
-                    && let Some(tile) = crate::input::click_tile(view.scene().view(), x, y)
+                    && let Some(tile) = view.click_tile(x, y)
                     && let Some(npc) = view.npc_at(tile)
                 {
                     target = Some(npc);

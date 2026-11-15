@@ -158,7 +158,7 @@ fn tile(owner: &HostOwner, viewport: WorldViewport, point: Option<Vec2>) -> Opti
     let view = &owner.play.as_ref()?.view;
     let (w, h) = view.scene().view().viewport_px();
     let local = viewport.scene_point(point?, UVec2::new(w, h))?;
-    crate::input::click_tile(view.scene().view(), f64::from(local.x), f64::from(local.y))
+    view.click_tile(f64::from(local.x), f64::from(local.y))
 }
 fn reset(ui: &mut InventoryUi, gesture: &mut Gesture, owner: &HostOwner) {
     if (gesture.active || ui.dragged.is_some())

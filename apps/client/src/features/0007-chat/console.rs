@@ -288,11 +288,10 @@ impl Outbox {
         let mut mailbox = lock(&self.0);
         for event in events {
             match event {
-                oteryn_session::SessionEvent::ChatLine(delta) => mailbox
-                    .chat
-                    .console
-                    .metadata
-                    .received(&delta.value, received),
+                oteryn_session::SessionEvent::ChatLine(delta) => {
+                    mailbox.chat.pending_lines = mailbox.chat.pending_lines.wrapping_add(1);
+                    mailbox.chat.console.metadata.received(&delta.value, received);
+                }
                 oteryn_session::SessionEvent::ServerMessage(delta) => {
                     use oteryn_client_ui::chat::NoticeClass;
                     let (class, text) = match &delta.value {
@@ -309,6 +308,7 @@ impl Outbox {
                     mailbox.chat.console.notices.push(class, &text, received);
                 }
                 oteryn_session::SessionEvent::ChatSnapshot(_) => {
+                    mailbox.chat.scope = mailbox.chat.scope.wrapping_add(1);
                     mailbox.chat.console.metadata.reset_history();
                     mailbox.chat.console.reset_extensions();
                 }

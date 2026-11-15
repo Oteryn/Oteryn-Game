@@ -55,13 +55,22 @@ impl PlayView {
         self.in_flight = false;
         let now = Instant::now();
         let moved = outcome.disposition == StepDisposition::Moved;
+        let previous = self.walk;
+        if !moved {
+            self.walk = None;
+        }
         if let Some(delta) = &outcome.world_spatial_delta {
             let (from, floor) = (self.own, self.floor);
             self.place(delta.value.actor_position);
             if moved && floor == self.floor {
                 let gap = self.walk_landed.map(|landed| now.duration_since(landed));
                 let duration = glide_duration(gap, default_step_duration());
-                self.walk = Glide::new(from, self.own, duration).map(|glide| (glide, now));
+                self.walk = Glide::new(from, self.own, duration).map(|glide| {
+                    let glide = previous.map_or(glide, |(old, start)| {
+                        glide.continuing(old, now.saturating_duration_since(start))
+                    });
+                    (glide, now)
+                });
             }
         }
         self.walk_landed = moved.then_some(now);
@@ -78,6 +87,25 @@ impl crate::play::Outbox {
     }
 }
 impl PlayView {
+    /// Releases and focus resets must arrive even when another handler consumes input.
+    pub fn observe_arrow_releases(
+        &mut self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+    ) {
+        use oteryn_input_actions::{ButtonState, NormalizedInputEvent as Event};
+        for event in events {
+            if !matches!(
+                event,
+                Event::Key {
+                    state: ButtonState::Pressed,
+                    ..
+                }
+            ) {
+                self.chord.step(std::slice::from_ref(event));
+            }
+        }
+    }
+
     pub fn diagonal_movement_input(
         &mut self,
         link: &crate::play::PlayLink,
@@ -100,5 +128,41 @@ impl PlayView {
         } else {
             false
         }
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+pub(crate) fn bevy_diagonal_fixture(outbox: &crate::play::Outbox) {
+    outbox.diagonal_movement_initialize(true);
+}
+
+impl PlayView {
+    /// Pick world artwork in scene pixels, reversing the walking camera translation.
+    pub fn click_tile(&self, x: f64, y: f64) -> Option<oteryn_renderer::TileCoord> {
+        let view = self.scene.view();
+        let (w, h) = view.viewport_px();
+        if !x.is_finite()
+            || !y.is_finite()
+            || x < 0.
+            || y < 0.
+            || x >= f64::from(w)
+            || y >= f64::from(h)
+        {
+            return None;
+        }
+        let [dx, dy] = if self.shared_frontend {
+            self.camera_offset(Instant::now()).unwrap_or([0.; 2])
+        } else {
+            [0.; 2]
+        };
+        let side = f64::from(view.tile_px());
+        Some(oteryn_renderer::TileCoord::new(
+            view.origin()
+                .x
+                .checked_add(((x - f64::from(dx)) / side).floor() as i32)?,
+            view.origin()
+                .y
+                .checked_add(((y - f64::from(dy)) / side).floor() as i32)?,
+        ))
     }
 }

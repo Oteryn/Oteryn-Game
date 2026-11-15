@@ -105,3 +105,19 @@ fn opposing_arrows_do_not_cancel_into_a_diagonal_and_device_loss_releases_all() 
         Some(StepDir::West)
     );
 }
+
+#[test]
+fn focus_and_capture_loss_release_held_arrow_chords() {
+    for reset in [
+        NormalizedInputEvent::FocusChanged { focused: false },
+        NormalizedInputEvent::CaptureChanged { captured: false },
+    ] {
+        let mut chord = ArrowChord::default();
+        chord.step(&[arrow(KeyCode::ARROW_UP, ButtonState::Pressed)]);
+        chord.step(&[reset]);
+        assert_eq!(
+            chord.step(&[arrow(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            Some(StepDir::West)
+        );
+    }
+}

@@ -175,19 +175,19 @@ fn only_local_lines_become_speech_and_only_new_ones_are_taken() {
     let b = local("Ann", "b", 2);
     let c = local("Ann", "c", 3);
     assert_eq!(
-        new_lines(&[], std::slice::from_ref(&a)),
+        new_lines(0, 1, std::slice::from_ref(&a)),
         std::slice::from_ref(&a)
     );
     assert_eq!(
-        new_lines(&[a.clone(), b.clone()], &[a.clone(), b.clone(), c.clone()]),
+        new_lines(2, 3, &[a.clone(), b.clone(), c.clone()]),
         std::slice::from_ref(&c)
     );
     // A full log drops its oldest line as it takes the newest.
     assert_eq!(
-        new_lines(&[a, b.clone()], &[b.clone(), c.clone()]),
+        new_lines(2, 3, &[b.clone(), c.clone()]),
         std::slice::from_ref(&c)
     );
-    assert!(new_lines(std::slice::from_ref(&b), std::slice::from_ref(&b)).is_empty());
+    assert!(new_lines(3, 3, std::slice::from_ref(&b)).is_empty());
 }
 
 #[test]
@@ -200,4 +200,234 @@ fn an_unmeasured_text_stays_visible_to_layout_and_transparent() {
         world.get::<TextColor>(entity).map(|c| c.0.alpha()),
         Some(0.)
     );
+}
+
+fn bubble_app() -> Result<(bevy::prelude::App, crate::play::Outbox), Box<dyn std::error::Error>> {
+    use super::super::{
+        game_ui::viewport::WorldViewport,
+        owner::{ActivePlay, HostOwner},
+        ui::Skins,
+    };
+    use bevy::prelude::*;
+    let mut host = HostOwner::new(None)?;
+    let (link, _, outbox) = crate::play::play_channel();
+    host.play = Some(ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(10, 2), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.insert_non_send(host)
+        .init_resource::<WorldViewport>()
+        .init_resource::<Time>()
+        .init_resource::<super::SpeechBubbles>()
+        .insert_resource(Skins {
+            buttons: oteryn_client_ui_bevy::ButtonImages {
+                up: default(),
+                down: default(),
+            },
+            checked: default(),
+            unchecked: default(),
+            frame: default(),
+            inset: default(),
+            font: default(),
+        })
+        .add_systems(Update, super::project);
+    app.world_mut()
+        .spawn((Window::default(), bevy::window::PrimaryWindow));
+    app.update();
+    Ok((app, outbox))
+}
+
+fn receive(
+    app: &mut bevy::prelude::App,
+    outbox: &crate::play::Outbox,
+    lines: Vec<ChatLine>,
+    serial: u64,
+) {
+    let line = lines.last().cloned();
+    if let Some(line) = line {
+        outbox.push(vec![oteryn_session::SessionEvent::ChatLine(
+            oteryn_session::AppliedDelta {
+                server_sequence: serial,
+                base_revision: serial - 1,
+                new_revision: serial,
+                value: line,
+            },
+        )]);
+    }
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(outbox, Default::default(), lines);
+    app.update();
+}
+
+#[test]
+fn repeated_speech_in_a_full_log_refreshes_through_project()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, outbox) = bubble_app()?;
+    let lines = vec![local("Ann", "again", 10); 64];
+    receive(&mut app, &outbox, lines.clone(), 1);
+    receive(&mut app, &outbox, lines, 2);
+    let state = app.world().resource::<super::SpeechBubbles>();
+    assert_eq!(first(&state.texts).map(StaticText::len), Some(2));
+    Ok(())
+}
+
+#[test]
+fn communication_filters_apply_before_speech_is_retained() -> Result<(), Box<dyn std::error::Error>>
+{
+    use oteryn_client_ui::chat::CommunicationList;
+    for list in [CommunicationList::Ignore, CommunicationList::Blacklist] {
+        let (mut app, outbox) = bubble_app()?;
+        app.world()
+            .non_send::<super::super::owner::HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_communication(Some(list), "Ann", true);
+        receive(&mut app, &outbox, vec![local("Ann", "hidden", 10)], 1);
+        assert!(first(&app.world().resource::<super::SpeechBubbles>().texts).is_none());
+    }
+    Ok(())
+}
+
+#[test]
+fn speech_tracks_the_walk_camera_before_layout() -> Result<(), Box<dyn std::error::Error>> {
+    use bevy::prelude::*;
+    let (mut app, outbox) = bubble_app()?;
+    receive(&mut app, &outbox, vec![local("Ann", "hello", 10)], 1);
+    app.update();
+    let entity = app.world().resource::<super::SpeechBubbles>().entities[0];
+    // Feed a measured layout to the real projector without loading external font assets.
+    app.world_mut()
+        .entity_mut(entity)
+        .insert(bevy::text::TextLayoutInfo {
+            size: Vec2::new(80., 20.),
+            ..default()
+        });
+    app.update();
+    let before = app
+        .world()
+        .get::<Transform>(entity)
+        .ok_or("transform")?
+        .translation;
+    {
+        let mut host = app
+            .world_mut()
+            .non_send_mut::<super::super::owner::HostOwner>();
+        host.play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .apply(&oteryn_session::StepOutcome {
+                command_id: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                disposition: oteryn_session::StepDisposition::Moved,
+                result_server_sequence: 1,
+                world_spatial_delta: Some(oteryn_session::AppliedDelta {
+                    server_sequence: 1,
+                    base_revision: 0,
+                    new_revision: 1,
+                    value: oteryn_session::WorldSpatialObservation {
+                        content_generation: [0; 32],
+                        actor_position: ActorPosition {
+                            x: 11,
+                            y: 2,
+                            floor: 7,
+                        },
+                    },
+                }),
+                world_object_overlay_delta: None,
+                gate_message_id: None,
+            })?;
+    }
+    app.update();
+    let after = app
+        .world()
+        .get::<Transform>(entity)
+        .ok_or("transform")?
+        .translation;
+    assert!(
+        (after.x - before.x).abs() < 2.,
+        "bubble must glide with speaker: {before:?} -> {after:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn committed_activity_scope_discards_source_speech() -> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_session::{AppliedDelta, GatedSnapshot, SessionEvent, activity_scope::*};
+    let (mut app, outbox) = bubble_app()?;
+    receive(&mut app, &outbox, vec![local("Ann", "source", 10)], 1);
+    assert!(first(&app.world().resource::<super::SpeechBubbles>().texts).is_some());
+    let id = |n| {
+        let mut id = [n; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id
+    };
+    let payload = encode_activity_scope(&ActivityScopeSnapshot {
+        handoff: id(1),
+        source_session: id(2),
+        session: id(3),
+        scope: ActivityScope::Instance {
+            world: id(4),
+            instance: id(5),
+        },
+        scope_generation: 1,
+        connection_generation: 1,
+        lease_generation: 1,
+        selection: vec![117],
+        requires_ack: false,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    outbox.push(vec![SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 0,
+        new_revision: 1,
+        value: GatedSnapshot {
+            domain_id: STATE_DOMAIN_ACTIVITY_SCOPE,
+            snapshot_type: 1,
+            revision: 1,
+            payload,
+        },
+    })]);
+    app.update();
+    assert!(first(&app.world().resource::<super::SpeechBubbles>().texts).is_none());
+    Ok(())
+}
+
+#[test]
+fn speech_receipts_wait_for_the_matching_log_snapshot() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, outbox) = bubble_app()?;
+    let first_line = local("Ann", "one", 10);
+    let next_line = local("Bob", "two", 11);
+    receive(&mut app, &outbox, vec![first_line.clone()], 1);
+    outbox.push(vec![oteryn_session::SessionEvent::ChatLine(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: next_line.clone(),
+        },
+    )]);
+    app.update();
+    assert_eq!(
+        first(&app.world().resource::<super::SpeechBubbles>().texts).map(StaticText::len),
+        Some(1)
+    );
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        Default::default(),
+        vec![first_line, next_line],
+    );
+    app.update();
+    let state = app.world().resource::<super::SpeechBubbles>();
+    assert_eq!(state.texts.on_floor(7).count(), 2);
+    assert!(
+        state
+            .texts
+            .on_floor(7)
+            .any(|text| text.compose() == "Bob says:\ntwo")
+    );
+    Ok(())
 }
