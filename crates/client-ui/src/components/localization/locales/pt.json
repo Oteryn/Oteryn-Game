@@ -3,6 +3,7 @@
  "Waiting for the server to return you to your temple.": "Aguardando o servidor retornar você ao seu templo.",
  "Protection details are unavailable for this death.": "Os detalhes de proteção desta morte estão indisponíveis.",
  "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.": "Você morreu.\n{}\n{}\nAs perdas exatas de experiência, habilidades e itens estão indisponíveis.",
+ "Appearance changes are unavailable: the server has not supplied the required outfit data": "Não é possível alterar a aparência: o servidor não enviou os dados de traje necessários",
  "lesser": "menores",
  "greater": "maiores",
  "Reshape mod": "Remodelar mod.",

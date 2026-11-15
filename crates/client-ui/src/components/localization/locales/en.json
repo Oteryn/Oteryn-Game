@@ -3,6 +3,7 @@
  "Waiting for the server to return you to your temple.": "Waiting for the server to return you to your temple.",
  "Protection details are unavailable for this death.": "Protection details are unavailable for this death.",
  "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.": "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.",
+ "Appearance changes are unavailable: the server has not supplied the required outfit data": "Appearance changes are unavailable: the server has not supplied the required outfit data",
  "lesser": "lesser",
  "greater": "greater",
  "Reshape mod": "Reshape mod",
