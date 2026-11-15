@@ -59,9 +59,9 @@ async fn apply(
     let command = match action {
         Action::Refresh(kind) => {
             let page = client.bazaar_page(token, kind, None, cancel).await?;
+            view.feedback = tr!("Server account data refreshed.").into();
             view.install_page(page);
             view.selected_view = kind;
-            view.feedback = tr!("Server account data refreshed.").into();
             return Ok(());
         }
         Action::Next => {
@@ -200,7 +200,7 @@ async fn apply(
     accept(view, receipt);
     Ok(())
 }
-fn accept(view: &mut View, receipt: OperationReceipt) {
+pub(super) fn accept(view: &mut View, receipt: OperationReceipt) {
     if view.receipt.as_ref().is_some_and(|old| {
         old.request_id == receipt.request_id
             && old.state != OperationState::Pending

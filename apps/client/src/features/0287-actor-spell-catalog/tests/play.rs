@@ -57,10 +57,25 @@ fn t033_selected_spell_assigns_slot_without_sending_a_cast()
         cooldown_groups: vec![1],
         rune_item: None,
     };
+    let mut previous = entry.clone();
+    previous.cast_index = 20;
+    previous.name = "Previous".into();
+    previous.words = "previous".into();
     outbox.spell_catalog_initialize(
         true,
-        Some(encode_catalog(&[entry]).map_err(|e| format!("{e:?}"))?),
+        Some(encode_catalog(&[entry, previous]).map_err(|e| format!("{e:?}"))?),
     )?;
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(crate::play::feature_0287_actor_spell_catalog::view::assign_cast_index(
+            &mut mailbox, 2, Some(20),
+        ));
+    }
+    assert!(link.assign_bar_action(2, crate::play::feature_local_spell_action_bar::view::BarAction::Text {
+        text: "old action".into(),
+        send_automatically: true,
+    }));
+    assert!(link.spell_catalog_select(19));
     assert!(link.spell_catalog_assign(2));
     assert_eq!(
         crate::play::mailbox::lock(&link.mailbox)
@@ -69,6 +84,12 @@ fn t033_selected_spell_assigns_slot_without_sending_a_cast()
             .fields()[2],
         "19"
     );
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        assert!(!mailbox.bar_actions.saved.0.contains_key(&2));
+        crate::play::feature_0287_actor_spell_catalog::view::resolve_archive_bindings(&mut mailbox);
+        assert_eq!(mailbox.spell_bar.bar.fields()[2], "19");
+    }
     assert!(commands.try_recv().is_err());
     let capacity = crate::play::mailbox::lock(&link.mailbox)
         .spell_bar

@@ -3,19 +3,27 @@
     unsafe_code,
     reason = "Window and controls remain on their creating thread"
 )]
+#[cfg(all(windows, not(test)))]
 use super::{Arc, Dialog, DialogInput, Entry, Mutex, Submission};
+#[cfg(all(windows, not(test)))]
 use oteryn_client_ui::server_modal::Answer;
+#[cfg(all(windows, not(test)))]
 use std::ptr::{null, null_mut};
+#[cfg(all(windows, not(test)))]
 use tokio::sync::{mpsc::Sender, oneshot};
+#[cfg(all(windows, not(test)))]
 use windows_sys::Win32::{
     Foundation::*,
     UI::{Input::KeyboardAndMouse::EnableWindow, WindowsAndMessaging::*},
 };
+#[cfg(all(windows, not(test)))]
 #[path = "image.rs"]
 mod image;
+#[cfg(all(windows, not(test)))]
 fn wide(value: &str) -> Vec<u16> {
     value.encode_utf16().chain(Some(0)).collect()
 }
+#[cfg(all(windows, not(test)))]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -41,11 +49,13 @@ unsafe fn control(
         )
     }
 }
+#[cfg(all(windows, not(test)))]
 #[derive(Default)]
 struct Action {
     button: Option<usize>,
     close: bool,
 }
+#[cfg(all(windows, not(test)))]
 unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         let action = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Action;
@@ -62,6 +72,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) 
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(all(windows, not(test)))]
 fn read_text(edit: HWND) -> String {
     unsafe {
         let length = GetWindowTextLengthW(edit).max(0) as usize;
@@ -70,6 +81,7 @@ fn read_text(edit: HWND) -> String {
         String::from_utf16_lossy(&text[..copied])
     }
 }
+#[cfg(all(windows, not(test)))]
 pub(super) fn run(
     dialog: Dialog,
     input: Option<DialogInput>,
@@ -152,9 +164,11 @@ pub(super) fn run(
             },
             |rect| control(hwnd, "STATIC", "", 12, rect, 0),
         );
-        for (_, label) in &dialog.choices {
+        fill_choices(&dialog, |label| {
             SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }
+        }, |index| {
+            SendMessageW(list, LB_SETCURSEL, index, 0);
+        });
         let mut buttons = Vec::new();
         for (index, (_, label)) in dialog.buttons.iter().enumerate() {
             buttons.push(control(
@@ -175,11 +189,25 @@ pub(super) fn run(
         let mut message: MSG = std::mem::zeroed();
         while IsWindow(hwnd) != 0 && !sender.is_closed() {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
-                if message.message == WM_KEYDOWN && message.wParam == 27 {
-                    action.close = true;
-                } else if IsDialogMessageW(hwnd, &message) == 0 {
-                    TranslateMessage(&message);
-                    DispatchMessageW(&message);
+                let selected = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
+                let multiline = field == Some(message.hwnd) && input.as_ref().is_some_and(|input| {
+                    input.kind == oteryn_client_runtime::server_modal::input::InputKind::Edit
+                });
+                let allow_confirm = !multiline && (message.hwnd == list || field == Some(message.hwnd) || message.hwnd == hwnd);
+                let key = if message.message == WM_KEYDOWN {
+                    key_action(&dialog, message.wParam, selected, allow_confirm)
+                } else {
+                    KeyAction::Dispatch
+                };
+                match key {
+                    KeyAction::Close => action.close = true,
+                    KeyAction::Confirm(index) => action.button = Some(index),
+                    KeyAction::Dispatch => {
+                        if IsDialogMessageW(hwnd, &message) == 0 {
+                            TranslateMessage(&message);
+                            DispatchMessageW(&message);
+                        }
+                    }
                 }
             }
             if let Some(image) = &dialog.image {
@@ -257,5 +285,92 @@ pub(super) fn run(
             MsgWaitForMultipleObjects(0, null(), 0, 30, QS_ALLINPUT);
         }
         DestroyWindow(hwnd);
+    }
+}
+
+fn fill_choices(
+    dialog: &oteryn_client_ui::server_modal::Dialog,
+    mut add: impl FnMut(&str),
+    select: impl FnOnce(usize),
+) {
+    for (_, label) in &dialog.choices {
+        add(label);
+    }
+    if !dialog.choices.is_empty() {
+        select(0);
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum KeyAction {
+    Close,
+    Confirm(usize),
+    Dispatch,
+}
+
+fn key_action(
+    dialog: &oteryn_client_ui::server_modal::Dialog,
+    key: usize,
+    selected: Option<usize>,
+    allow_confirm: bool,
+) -> KeyAction {
+    if key == 27 {
+        return KeyAction::Close;
+    }
+    if key == 13 && allow_confirm
+        && let Some(index) = dialog.buttons.iter().position(|(id, _)| Some(*id) != dialog.cancel_button)
+    {
+        let answer = oteryn_client_ui::server_modal::Answer {
+            dialog_id: dialog.id,
+            button_id: dialog.buttons[index].0,
+            choice_id: selected.and_then(|row| dialog.choices.get(row).map(|(id, _)| *id)),
+        };
+        if dialog.accepts(answer) {
+            return KeyAction::Confirm(index);
+        }
+    }
+    KeyAction::Dispatch
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_client_ui::server_modal::Dialog;
+    fn dialog() -> Dialog {
+        Dialog {
+            id: 73,
+            title: "Choose".into(),
+            message: "Server options".into(),
+            choices: vec![(9, "Nine".into())],
+            buttons: vec![(8, "Cancel".into()), (4, "Accept".into())],
+            cancel_button: Some(8),
+            image: None,
+        }
+    }
+    #[test]
+    fn native_modal_initially_selects_first_server_choice() {
+        let mut labels = Vec::new();
+        let mut selected = None;
+        fill_choices(&dialog(), |label| labels.push(label.to_owned()), |row| selected = Some(row));
+        assert_eq!(labels, ["Nine"]);
+        assert_eq!(selected, Some(0));
+        selected = None;
+        let mut empty = dialog();
+        empty.choices.clear();
+        fill_choices(&empty, |label| labels.push(label.to_owned()), |row| selected = Some(row));
+        assert_eq!(selected, None);
+    }
+    #[test]
+    fn native_modal_enter_validates_confirmation_and_preserves_multiline_editing() {
+        let mut dialog = dialog();
+        assert_eq!(key_action(&dialog, 13, Some(0), true), KeyAction::Confirm(1));
+        assert_eq!(key_action(&dialog, 13, None, true), KeyAction::Dispatch);
+        assert_eq!(key_action(&dialog, 13, Some(3), true), KeyAction::Dispatch);
+        assert_eq!(key_action(&dialog, 13, Some(0), false), KeyAction::Dispatch);
+        assert_eq!(key_action(&dialog, 27, None, false), KeyAction::Close);
+        dialog.choices.clear();
+        assert_eq!(key_action(&dialog, 13, None, true), KeyAction::Confirm(1));
+        dialog.buttons.pop();
+        assert_eq!(key_action(&dialog, 13, None, true), KeyAction::Dispatch);
     }
 }

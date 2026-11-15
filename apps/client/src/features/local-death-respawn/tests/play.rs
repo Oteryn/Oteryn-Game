@@ -331,3 +331,71 @@ fn coalesced_alive_vitals_refreshes_death_receipt_without_query_feedback() -> Re
     );
     Ok(())
 }
+
+#[test]
+fn death_discards_queued_battle_and_bulk_moves_and_releases_controls() -> Result<(), String> {
+    use crate::combat_input::PlayCommand;
+    let (link, mut commands, outbox) = play_channel();
+    let movement = oteryn_client_runtime::inventory::MoveRequest {
+        source: std::num::NonZeroU64::MIN,
+        destination: oteryn_session::ItemMoveDestination::MainBackpack,
+        count: None,
+    };
+    for command in [
+        PlayCommand::MoveItem(movement),
+        PlayCommand::MovementSpeech(oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "exani hur up".into(),
+        }),
+        PlayCommand::BrowseFieldMove(oteryn_session::ItemMoveIntent {
+            source: movement.source,
+            destination: movement.destination,
+        }),
+        PlayCommand::WorldContext(oteryn_client_runtime::world_interaction::Command {
+            target: oteryn_client_runtime::world_interaction::Target::Item(movement.source),
+            action: oteryn_client_runtime::world_interaction::Action::Use,
+            selection: None,
+        }),
+        PlayCommand::MoveContents(vec![movement]),
+        PlayCommand::MoveContainerContents(vec![movement]),
+    ] {
+        link.commands.send(command).map_err(|e| e.to_string())?;
+    }
+    {
+        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+        mailbox.battle.combat = Some(oteryn_session::ActorCombatState {
+            target: None,
+            modes: oteryn_session::FightModes::DEFAULT,
+            in_fight: false,
+        });
+        mailbox.item_movement.pending = true;
+        mailbox.containers.bulk.pending = true;
+        mailbox.browse_field.pending = true;
+        mailbox.world_context.pending = true;
+        mailbox.chat_public.pending = true;
+    }
+    link.battle_request(oteryn_client_ui::battle::Action::Stop);
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals { health, max_health: 150, ..Default::default() }));
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    let mailbox = crate::play::mailbox::lock(&link.mailbox);
+    assert!(!mailbox.battle.pending);
+    assert!(mailbox.battle.pending_command.is_none());
+    assert!(!mailbox.item_movement.pending);
+    assert!(!mailbox.world_context.pending);
+    assert!(!mailbox.containers.bulk.pending);
+    assert!(!mailbox.browse_field.pending);
+    assert!(!mailbox.chat_public.pending);
+    Ok(())
+}
+
+#[test]
+fn death_preserves_queued_public_chat_pending_state() {
+    let (link, mut commands, outbox) = play_channel();
+    crate::play::mailbox::lock(&link.mailbox).chat_public.selected = true;
+    link.chat_public_request(oteryn_client_ui::chat_public_channels::Intent::Open(oteryn_session::ChatRoom::World));
+    outbox.vitals(Some(ActorVitals { health: 0, max_health: 150, ..Default::default() }));
+    assert!(matches!(outbox.death_command(&mut commands), Ok(crate::combat_input::PlayCommand::ChatPublic(_))));
+    assert!(crate::play::mailbox::lock(&link.mailbox).chat_public.pending);
+}

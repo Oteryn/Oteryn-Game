@@ -1,9 +1,12 @@
+#[cfg(windows)]
 use super::window::Window;
 use super::*;
 
+#[cfg(windows)]
 pub(super) fn present(view: &View, cancel: CancellationToken) -> Action {
     form(view, cancel).unwrap_or(Action::Back)
 }
+#[cfg(windows)]
 fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
     let window = Window::new(
         tr!("Oteryn — Character Bazaar and world transfer"),
@@ -119,11 +122,10 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                     .is_some_and(|w| w.id == q.destination_world_id)
         });
         transfer.enable(view.can_transfer() && quote_matches);
+        if let Some(action) = navigation_action(event) {
+            return Some(action);
+        }
         match event {
-            1 => return Some(Action::Refresh(AuctionView::All)),
-            2 => return Some(Action::Refresh(AuctionView::Own)),
-            3 => return Some(Action::Refresh(AuctionView::History)),
-            4 => return Some(Action::Next),
             5 => {
                 if let (Some(a), Ok(coins)) = (
                     view.page
@@ -175,11 +177,33 @@ fn form(view: &View, cancel: CancellationToken) -> Option<Action> {
                     return Some(Action::Receipt(r.request_id.clone()));
                 }
             }
-            10 => return Some(Action::Retry),
-            11 => return Some(Action::Status),
-            13 => return Some(Action::CoinShop),
-            99 => return Some(Action::Back),
             _ => {}
         }
+    }
+}
+
+fn navigation_action(event: usize) -> Option<Action> {
+    match event {
+        1 => Some(Action::Refresh(AuctionView::All)),
+        2 => Some(Action::Refresh(AuctionView::Own)),
+        3 => Some(Action::Refresh(AuctionView::History)),
+        4 => Some(Action::Next),
+        10 => Some(Action::Retry),
+        11 => Some(Action::Status),
+        13 => Some(Action::CoinShop),
+        14 => Some(Action::Premium),
+        99 => Some(Action::Back),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn premium_overview_button_opens_premium_action() {
+        assert!(matches!(navigation_action(14), Some(Action::Premium)));
+        assert!(matches!(navigation_action(13), Some(Action::CoinShop)));
+        assert!(navigation_action(0).is_none());
     }
 }

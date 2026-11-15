@@ -34,6 +34,17 @@ impl Mailbox {
         self.death.dead || self.death_reset_commands
     }
 
+    fn cancel_death_gameplay_requests(&mut self) {
+        self.battle.pending = false;
+        self.battle.pending_command = None;
+        self.item_movement.pending = false;
+        self.containers.bulk = Default::default();
+        self.browse_field.pending = false;
+        self.world_context.pending = false;
+        self.world_context.targeting = None;
+        self.world_context.rune_targeting = false;
+    }
+
     pub(in crate::play) fn apply_death_vitals(&mut self, vitals: ActorVitals) {
         // An absent/default vitals snapshot is not a reported death.
         if vitals.max_health > 0 {
@@ -41,6 +52,7 @@ impl Mailbox {
             if dead && !self.death.dead {
                 self.death.deaths = self.death.deaths.saturating_add(1);
                 self.death_reset_commands = true;
+                self.cancel_death_gameplay_requests();
                 self.daily_reward.pending = false;
                 self.target_walk.pending = false;
                 self.target_walk.response = None;
@@ -144,11 +156,22 @@ impl Outbox {
                     | PlayCommand::TargetWalk(_)
                     | PlayCommand::Combat(_)
                     | PlayCommand::DailyReward(_)
+                    | PlayCommand::Battle(_)
+                    | PlayCommand::MoveItem(_)
+                    | PlayCommand::MoveContents(_)
+                    | PlayCommand::MoveContainerContents(_)
+                    | PlayCommand::BrowseFieldMove(_)
+                    | PlayCommand::WorldContext(_)
+                    | PlayCommand::MovementSpeech(_)
             );
             let movement_control = matches!(&command, PlayCommand::ServerMechanic(request) if matches!(request.capability, 64 | 82));
             if !blocked || !(world_input || movement_control) {
                 return Ok(command);
             }
+            if matches!(command, PlayCommand::MovementSpeech(_)) {
+                mailbox.chat_public.pending = false;
+            }
+            mailbox.cancel_death_gameplay_requests();
         }
     }
 }

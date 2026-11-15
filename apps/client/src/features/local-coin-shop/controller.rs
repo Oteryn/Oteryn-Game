@@ -135,11 +135,15 @@ async fn refresh(
             )
         })
         .collect();
-    if let Some(pending) = &view.pending
+    if let Some(request_id) = view
+        .pending
+        .as_ref()
+        .map(|request| &request.request_id)
+        .or_else(|| view.order.as_ref().map(|order| &order.request_id))
         && let Some(order) = catalogue
             .recent_orders
             .iter()
-            .find(|o| o.request_id == pending.request_id)
+            .find(|o| &o.request_id == request_id)
     {
         accept(view, order.clone())?;
     }
