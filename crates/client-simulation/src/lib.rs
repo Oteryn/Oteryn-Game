@@ -2,6 +2,8 @@
 
 /// Deterministic viewport and scene projection.
 pub mod scene;
+/// Walk smoothing offsets.
+pub mod walk;
 /// Deterministic world draw projection.
 pub mod world;
 
