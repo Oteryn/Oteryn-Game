@@ -11,6 +11,7 @@ mod bulk;
 #[cfg(test)]
 mod bulk_tests;
 mod dialogs;
+mod presentation;
 #[cfg(test)]
 mod tests;
 mod view;
@@ -115,6 +116,7 @@ struct Prompt {
 }
 #[derive(Resource, Default)]
 struct InventoryUi {
+    windows: std::collections::BTreeMap<u8, presentation::Window>,
     selection: Option<Slot>,
     menu: Option<(Slot, Vec2)>,
     split_count: u32,
