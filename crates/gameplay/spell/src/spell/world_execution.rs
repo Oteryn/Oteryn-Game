@@ -275,6 +275,34 @@ async fn read_items(
     .map_err(WorldRelocationError::Items)
 }
 
+fn relocation_destination_denied(
+    rope: bool,
+    collision: CollisionClass,
+    static_blocks: bool,
+    target: &crate::content::QualifiedSpellTile,
+    items: &[crate::durability::spell_items_abi::DurableTileItem],
+    occupied: bool,
+) -> bool {
+    if rope {
+        collision != CollisionClass::Walkable
+            || static_blocks
+            || !target.ground_present()
+            || target.flags().block_solid
+            || target.flags().immovable_block_solid
+            || target.flags().immovable_block_item
+            || target.flags().immovable_nonfield_block_item
+            || items
+                .iter()
+                .any(|item| item.blocks_movement || item.immovable_block_solid)
+            || occupied
+    } else {
+        !target.ground_present()
+            || target.flags().immovable_block_solid
+            || target.flags().floor_change
+            || items.iter().any(|item| item.immovable_block_solid)
+    }
+}
+
 /// Derives the target from the real current facing and source-qualified tiles, then
 /// reads blocking items itself under the sealed current transaction authority. Callers
 /// cannot substitute a planner Move, item snapshot, facing or destination. The accepted
@@ -330,23 +358,25 @@ pub async fn prepare_relocation<'owner, 'database>(
     } else {
         -i32::from(source.floor)
     };
+    let parameters = &spell.spell()["execution"]["native_behavior"]["parameters"];
+    let levitate = parameters["mode"].as_str() == Some("levitate");
     let origin = tile_in_transaction(tx, authority, room, runtime, source)
         .await?
         .ok_or(WorldRelocationError::MissingTileMetadata)?;
-    if !origin.ground_present()
-        || origin.flags().block_solid
-        || (room.source_world().is_none()
-            && cells
-                .index()
-                .lookup(cells.scope(), cell(source))
-                .map_err(|e| WorldRelocationError::Admission(Error::SourceCell(e)))?
-                != CollisionClass::Walkable)
+    if !levitate
+        && (!origin.ground_present()
+            || origin.flags().block_solid
+            || (room.source_world().is_none()
+                && cells
+                    .index()
+                    .lookup(cells.scope(), cell(source))
+                    .map_err(|e| WorldRelocationError::Admission(Error::SourceCell(e)))?
+                    != CollisionClass::Walkable))
     {
         return Ok(WorldRelocationOutcome::Refused {
             reason: "not_possible",
         });
     }
-    let parameters = &spell.spell()["execution"]["native_behavior"]["parameters"];
     if spell.spell()["execution"]["native_behavior"]["key"].as_str() != Some("vertical_move") {
         return Err(WorldRelocationError::Admission(Error::UnsupportedRecipe));
     }
@@ -519,27 +549,16 @@ pub async fn prepare_relocation<'owner, 'database>(
             .map_err(|e| WorldRelocationError::Admission(Error::SourceCell(e)))?
     };
     let items = read_items(tx, authority, room, runtime, destination).await?;
-    let denied = collision != CollisionClass::Walkable
-        || static_owner.blocks_movement(destination)
-        || if rope {
-            !target.ground_present()
-                || target.flags().block_solid
-                || target.flags().immovable_block_solid
-                || target.flags().immovable_block_item
-                || target.flags().immovable_nonfield_block_item
-                || items
-                    .items
-                    .iter()
-                    .any(|item| item.blocks_movement || item.immovable_block_solid)
-                || runtime
-                    .position_occupied_by_other(actor, destination)
-                    .map_err(|e| WorldRelocationError::Admission(Error::Actor(e)))?
-        } else {
-            !target.ground_present()
-                || target.flags().immovable_block_solid
-                || target.flags().floor_change
-                || items.items.iter().any(|item| item.immovable_block_solid)
-        };
+    let denied = relocation_destination_denied(
+        rope,
+        collision,
+        static_owner.blocks_movement(destination),
+        target,
+        &items.items,
+        rope && runtime
+            .position_occupied_by_other(actor, destination)
+            .map_err(|e| WorldRelocationError::Admission(Error::Actor(e)))?,
+    );
     if denied {
         return Ok(if rope {
             WorldRelocationOutcome::RopeTeleportDenied
@@ -767,14 +786,6 @@ pub fn preflight_relocation(
         return Err(Error::ContentGenerationMismatch);
     }
     let source = current.position();
-    match cells
-        .index()
-        .lookup(scope, cell(source))
-        .map_err(Error::SourceCell)?
-    {
-        CollisionClass::Walkable => (),
-        CollisionClass::Blocked => return Err(Error::SourceBlocked),
-    }
     let native = &spell.spell()["execution"]["native_behavior"];
     let recipe = match (
         native["key"].as_str(),
@@ -784,6 +795,15 @@ pub fn preflight_relocation(
         (Some("vertical_move"), Some("rope_up")) => VerticalRecipe::MagicRope,
         _ => return Err(Error::UnsupportedRecipe),
     };
+    if recipe == VerticalRecipe::MagicRope
+        && cells
+            .index()
+            .lookup(scope, cell(source))
+            .map_err(Error::SourceCell)?
+            != CollisionClass::Walkable
+    {
+        return Err(Error::SourceBlocked);
+    }
     let HouseMovementPlan::Move {
         target_is_caster: true,
         destination,
@@ -922,6 +942,127 @@ mod tests {
             runtime.borrow_movement_position().read(actor).unwrap(),
             expected
         );
+    }
+
+    #[test]
+    fn levitate_ignores_movable_destination_blockers_but_keeps_immovable_and_floor_checks() {
+        use crate::content::{NativeSpellTileFlags, QualifiedSpellTile};
+        use crate::durability::spell_items_abi::DurableTileItem;
+        let flags = NativeSpellTileFlags {
+            block_solid: true,
+            block_projectile: false,
+            immovable_block_solid: false,
+            immovable_block_item: false,
+            immovable_nonfield_block_item: false,
+            floor_change: false,
+            protection_zone: false,
+        };
+        let target = QualifiedSpellTile::from_bundle(Some((103, 100)), vec![2454], flags, None);
+        let mut items = vec![DurableTileItem {
+            item_instance_id: [1; 16],
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "test:blocker".into(),
+                revision_ref: "r1".into(),
+            },
+            state_revision: 1,
+            top_down_ordinal: 1,
+            blocks_movement: true,
+            blocks_projectile: false,
+            immovable_block_solid: false,
+            expires_at_unix_ms: None,
+            field_origin: None,
+            creature_field_origin: None,
+        }];
+        assert!(!relocation_destination_denied(
+            false,
+            CollisionClass::Blocked,
+            true,
+            &target,
+            &items,
+            false
+        ));
+        assert!(relocation_destination_denied(
+            true,
+            CollisionClass::Blocked,
+            true,
+            &target,
+            &items,
+            false
+        ));
+        items[0].immovable_block_solid = true;
+        assert!(relocation_destination_denied(
+            false,
+            CollisionClass::Walkable,
+            false,
+            &target,
+            &items,
+            false
+        ));
+        for (ground, flags) in [
+            (None, flags),
+            (
+                Some((103, 100)),
+                NativeSpellTileFlags {
+                    immovable_block_solid: true,
+                    ..flags
+                },
+            ),
+            (
+                Some((103, 100)),
+                NativeSpellTileFlags {
+                    floor_change: true,
+                    ..flags
+                },
+            ),
+        ] {
+            let denied = QualifiedSpellTile::from_bundle(ground, vec![], flags, None);
+            assert!(relocation_destination_denied(
+                false,
+                CollisionClass::Walkable,
+                false,
+                &denied,
+                &[],
+                false
+            ));
+        }
+    }
+
+    #[test]
+    fn levitate_preflight_does_not_require_an_ordinary_walkable_source() {
+        let room = room(1);
+        let mut runtime = runtime(&room, false);
+        let (actor, expected) = admit(&mut runtime, 10);
+        let blocked = runtime
+            .borrow_movement_position()
+            .commit_cardinal(
+                expected,
+                MovementLocalPosition {
+                    x: 0,
+                    y: -1,
+                    floor: 0,
+                },
+            )
+            .unwrap();
+        let mut destination = proposal(false);
+        let HouseMovementPlan::Move {
+            destination: ref mut position,
+            ..
+        } = destination
+        else {
+            panic!("move")
+        };
+        position.y = -1;
+        let result = preflight_relocation(
+            &spell("Levitate"),
+            &mut runtime,
+            room.movement_cells(),
+            actor,
+            blocked,
+            &destination,
+        );
+        assert!(result.is_ok(), "{result:?}");
+        assert_unchanged(&mut runtime, actor, blocked);
     }
 
     #[test]
@@ -1064,7 +1205,7 @@ mod tests {
                 blocked,
                 &proposal(false)
             ),
-            Err(Error::SourceBlocked)
+            Err(Error::InvalidGeometry)
         );
         assert_unchanged(&mut runtime, actor, blocked);
     }

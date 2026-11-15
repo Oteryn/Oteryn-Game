@@ -5514,6 +5514,7 @@ dependencies = [
 name = "oteryn-gameplay-spell"
 version = "0.1.0"
 dependencies = [
+ "num-bigint",
  "oteryn-gameplay-combat",
  "oteryn-gameplay-combat-rules",
  "oteryn-gameplay-content",

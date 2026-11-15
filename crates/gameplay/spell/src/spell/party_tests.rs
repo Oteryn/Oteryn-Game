@@ -553,3 +553,21 @@ fn cancel_magic_shield_removes_the_shield_condition() {
         Err(CastRejection::NotEnoughMana { required: 50 })
     );
 }
+
+#[test]
+fn scaled_party_casts_with_forty_members_remain_affordable() {
+    for (name, base, expected) in [
+        ("Heal Party", 120, 79),
+        ("Enchant Party", 120, 79),
+        ("Protect Party", 90, 60),
+        ("Train Party", 60, 40),
+    ] {
+        let (bundle, dependencies) = heal_party_bundle(parameters(scaled(base)), 2000);
+        let spell = spell_from_bundle(&bundle, &dependencies).expect(name);
+        let party = Party::new().around(39);
+        let result = cast(&spell, expected, &Cooldowns::default(), at_ms(0), &party)
+            .expect("affordable forty-member cast");
+        assert_eq!(result.mana_spent, expected);
+        assert_eq!(result.party.len(), 40);
+    }
+}
