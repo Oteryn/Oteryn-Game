@@ -683,6 +683,7 @@ def main() -> int:
     refresh_source_cohort_extent()
     repin_rust_inventory()
     run(["python3", "tools/content-schema/store-authoring/build_runtime_catalogue.py", "--refresh-owner-offers"])
+    run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])

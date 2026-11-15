@@ -1,0 +1,32 @@
+[
+  {
+    "id": 3031,
+    "captured_weight": "0.01 oz",
+    "global_weight": "0.10 oz",
+    "basis": "Gold coin: 0.10 oz per coin, as for platinum and crystal coins; owner-confirmed Global value."
+  },
+  {
+    "id": 9147,
+    "captured_weight": "0.10 oz",
+    "global_weight": "1.00 oz",
+    "basis": "Glob of grease: known Global weight 1.00 oz; capture decimal-place error."
+  },
+  {
+    "id": 19371,
+    "captured_weight": "1.70 oz",
+    "global_weight": "17.00 oz",
+    "basis": "Glass of goo: known Global weight 17.00 oz; capture decimal-place error."
+  },
+  {
+    "id": 25729,
+    "captured_weight": "20.00 oz",
+    "global_weight": "2.00 oz",
+    "basis": "Dark moon mirror: known Global weight 2.00 oz; capture decimal-place error."
+  },
+  {
+    "id": 25730,
+    "captured_weight": "20.00 oz",
+    "global_weight": "2.00 oz",
+    "basis": "Lit moon mirror: known Global weight 2.00 oz; capture decimal-place error."
+  }
+]

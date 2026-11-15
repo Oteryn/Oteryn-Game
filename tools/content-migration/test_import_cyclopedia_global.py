@@ -19,6 +19,11 @@ def definition(key, weight, state='KNOWN'):
 class ClientWeightAdmission(unittest.TestCase):
     def test_capture_weights_match_client(self):
         weights = cyclopedia.load_weights(ROOT)
+        for identifier, expected in {3031: 10, 3035: 10, 3043: 10,
+                                     9147: 100, 19371: 1700,
+                                     25729: 200, 25730: 200}.items():
+            with self.subTest(identifier=identifier):
+                self.assertEqual(weights[identifier], expected)
         self.assertEqual(weights[7439], 290)
         self.assertEqual(weights[7443], 290)
 
