@@ -128,9 +128,9 @@ fn cults_scenario(reenter: bool) -> TestResult {
                 world.map_revision_digest(),
                 (100, 100, 7),
             );
-            let mut runtime = ChannelRuntimeV1::from_committed_assignment(
-                deps.admitted.world_id,
-                deps.admitted.channel_id,
+            let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+                crate::foundation::RuntimeScopeRefV1::instance(deps.admitted.world_id, id(81))
+                    .map_err(debug)?,
                 crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
                 1,
                 1,
