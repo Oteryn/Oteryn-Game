@@ -814,3 +814,60 @@ for these three CI reports.
 | i22189 ogre nose ring | 2100 | 420 | 4.20 oz | Matches Global; retained |
 | i29409 carrot pie | 620 | 620 | 6.20 oz | Matches Global; retained |
 | i35173 toolbox (asserted absent) | 0 | 0 | Not captured | No admitted output; retained |
+
+## Changes larger than tenfold
+
+An identity-matched sweep of all changed JSON profiles/definitions in #3213 finds
+792 positive-weight changes of at least tenfold: the 777 exact changes above plus
+the following 15. None is a starter item. The retained capture is not sufficient to
+resolve every conflict independently; uncertain values remain unchanged.
+
+| Item | Name | Before | #3213 | Capture | Verdict |
+|---|---|---:|---:|---|---|
+| i12045 | a music box | 200 | 2700 | 27.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12057 | a reward box | 100 | 1800 | 18.00 oz | Capture/wiki conflict; Global value uncertain; retained |
+| i12147 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12148 | cake with a cherry | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12152 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12153 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12154 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i12155 | cake | 500 | 1 | 0.01 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i24949 | a costume bag | 100 | 3800 | 38.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i25689 | a golden brush | 1240 | 100 | 1.00 oz | Capture/wiki conflict; Global value uncertain; retained |
+| i32626 | an amber | 1250 | 100 | 1.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i33935 | a crown | 1900 | 90 | 0.90 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i39395 | a mercurial wing | 10 | 470 | 4.70 oz | Capture/wiki conflict; Global value uncertain; retained |
+| i46626 | a greater fragment | 500 | 10 | 0.10 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+| i903 | a badger fur | 65 | 1000 | 10.00 oz | Matches capture/wiki marker; independent Global confirmation uncertain; retained |
+
+## Starter/capacity and node-boot triage
+
+All 28 distinct Crystal starter item identities, including the backpack, have
+identical active weights before #3213, on origin/main, and in this repair.
+The complete kit totals (backpack, worn equipment and carried quantities included) are:
+
+| Vocation | Centi-ounces | Ounces |
+|---|---:|---:|
+| none | 7100 | 71.00 |
+| sorcerer | 18600 | 186.00 |
+| druid | 18600 | 186.00 |
+| paladin | 34400 | 344.00 |
+| knight | 42700 | 427.00 |
+| monk | 31000 | 310.00 |
+
+The vocationless kit is 71 oz, below the Global capacity projection's minimum
+580 oz at level 1 (`item_capacity.rs:86-108`). The other kits retain their
+pre-#3213 weights. The largest kit is 427 oz. The historical first-entry grant
+checks item identity, stack limits and container slots, not carried mass
+(`durability/starter_grant.rs:98-122`). The separate Newhaven grant requires known
+weights but does not compare their aggregate mass with carry capacity.
+
+C01 (`full_row_c01.rs:189-209`) requires a legitimately equipped weapon and armor.
+The provisioned no-vocation kit intentionally has no worn equipment
+(`items/src/starting_loadout.rs:12`; `full_row_c19b.rs:1-5,68-84`). C19b explicitly
+reports the missing reachable vocation-change route after proving rope/shovel
+custody and empty equipment. Giving the no-vocation kit weapons to silence C01
+would change gameplay policy and conceal that missing route. No starter weight
+correction is supported by this evidence. A boot custody `Unavailable` alone
+does not establish a weight cause; recovery/fence/database failures can produce
+that result before any weight accounting.

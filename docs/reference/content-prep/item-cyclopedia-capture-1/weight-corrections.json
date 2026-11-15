@@ -3,7 +3,7 @@
     "id": 3031,
     "captured_weight": "0.01 oz",
     "global_weight": "0.10 oz",
-    "basis": "Gold coin: 0.10 oz per coin, as for platinum and crystal coins; owner-confirmed Global value."
+    "basis": "Gold coin: donor-confirmed 10 centi-oz in the pre-ITEMGLOB native coin profile generated from Canary data/items/items.xml (build_source_item_profiles.py). Global gold, platinum and crystal coins each weigh 0.10 oz. Crystal's raw 1-centi-oz observation is retained as donor evidence."
   },
   {
     "id": 9147,

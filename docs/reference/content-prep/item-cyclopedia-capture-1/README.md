@@ -54,7 +54,8 @@ retained capture. The original bytes and capture manifest remain intact. The imp
 checks each original string before applying the correction, so a replacement capture
 cannot silently inherit stale errata. Units remain ounces, converted to centi-ounces
 by multiplying by 100; there is no global scale change. These corrections use known
-Tibia Global item weights (gold also explicitly confirmed by the owner), rather than
+Tibia Global item weights (gold also corroborated by the pre-ITEMGLOB
+native Canary coin profile), rather than
 treating every captured wiki disagreement as authoritative. They are corrections to
 the capture, not a fresh native-client observation. Platinum and crystal coins already
 read 0.10 oz and need no correction.
