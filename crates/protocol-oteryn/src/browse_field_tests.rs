@@ -19,6 +19,7 @@ fn page(view_id: u8, index: u16, total: u16) -> Result<ContainerView, String> {
     let entries = (0..count)
         .map(|entry| {
             Ok(ItemEntry {
+                appearance_id: u16::MAX,
                 handle: handle(u64::MAX - base - u64::from(entry))?,
                 item_definition_ref: NonZeroU32::MAX,
                 count: NonZeroU32::MAX,
@@ -513,7 +514,7 @@ fn browse_field_full_pages_have_a_measured_bounded_payload() -> Result<(), Strin
     // View zero omits its proto3 default id. Thirty entries and the signed native coordinates
     // account for the capability-specific increase; legacy domain14 codecs retain their bound.
     assert_eq!(encoded.len(), MAX_BROWSE_FIELD_VIEWS_BYTES - 2);
-    assert_eq!(MAX_BROWSE_FIELD_VIEWS_BYTES, 15_488);
+    assert_eq!(MAX_BROWSE_FIELD_VIEWS_BYTES, 17_408);
     assert_eq!(MAX_LIVE_ITEM_HANDLES_BROWSE_FIELD, 811);
     assert_eq!(decode_container_views_for(&encoded, true), Ok(views));
     assert_eq!(

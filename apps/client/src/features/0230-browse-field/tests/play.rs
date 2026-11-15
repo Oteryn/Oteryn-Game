@@ -143,6 +143,7 @@ fn browse_field_native_item_controls_preserve_move_and_up_routes()
         floor: 0,
     };
     let item = ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::MIN,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,
@@ -215,6 +216,7 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
             entries: (2_u64..=26)
                 .map(|id| {
                     Ok(oteryn_session::ItemEntry {
+                        appearance_id: 0,
                         handle: id.try_into()?,
                         item_definition_ref: 2854_u32.try_into()?,
                         count: 1_u32.try_into()?,

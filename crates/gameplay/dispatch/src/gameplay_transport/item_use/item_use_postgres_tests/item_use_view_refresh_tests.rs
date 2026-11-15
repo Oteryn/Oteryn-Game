@@ -125,7 +125,20 @@ pub(super) async fn run(
                     assert_eq!(delta.new_revision, delta.base_revision + 1);
                     views_revision = Some(delta.new_revision);
                     if last_result == use_command {
-                        refreshes.push(decode_container_views(delta.payload).map_err(debug)?);
+                        let views = decode_container_views(delta.payload).map_err(debug)?;
+                        for item in views.views.iter().flat_map(|view| &view.entries) {
+                            let (key, _) = index
+                                .definition_at(item.item_definition_ref)
+                                .ok_or("indexed container entry")?;
+                            assert_eq!(
+                                item.appearance_id,
+                                crate::map::view::appearance_id(
+                                    key,
+                                    crate::map::palette_appearance(key).map(u32::from)
+                                )
+                            );
+                        }
+                        refreshes.push(views);
                     }
                 }
             }

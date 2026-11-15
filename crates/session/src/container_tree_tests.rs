@@ -180,6 +180,7 @@ fn house_capacity_maximum_crosses_real_session_snapshot_and_delta_frames() -> Re
         for id in 0..16_u8 {
             let base = u64::from(id) * 100;
             let entries = (0..25_u64).map(|n| Ok(ItemEntry {
+                appearance_id: u16::MAX,
                 handle: ItemHandle::new(u64::MAX-base-n).ok_or("maximum entry handle")?,
                 item_definition_ref:std::num::NonZeroU32::MAX,
                 count:std::num::NonZeroU32::MAX,sub_type:u32::MAX,
@@ -192,7 +193,7 @@ fn house_capacity_maximum_crosses_real_session_snapshot_and_delta_frames() -> Re
         }
         let payload = encode_container_views_with_house_capacity(&views,false,true).map_err(|e|format!("{e:?}"))?;
         assert_eq!(payload.len(),MAX_HOUSE_CONTAINER_VIEWS_BYTES);
-        assert_eq!(payload.len(),12862);
+        assert_eq!(payload.len(),14462);
         assert!(decode_container_views_for(&payload,false).is_err());
         let (client,mut server)=tokio::io::duplex(256*1024);
         let peer_payload=payload.clone();

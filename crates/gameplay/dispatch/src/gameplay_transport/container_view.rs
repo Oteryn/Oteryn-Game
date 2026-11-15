@@ -532,6 +532,7 @@ fn encode_view(
             .iter()
             .map(|item| {
                 Ok(ItemEntry {
+                    appearance_id: item.appearance_id,
                     handle: table.handle(&item.key).ok_or(ItemViewError::Encode)?,
                     item_definition_ref: item.item_definition_ref,
                     count: item.count,

@@ -169,6 +169,7 @@ fn player_trade_inventory_push_reaches_visible_picker() -> Result<(), Error> {
         new_revision: 2,
         value: CharacterInventory {
             entries: vec![ItemEntry {
+                appearance_id: 0,
                 handle: 7.try_into()?,
                 item_definition_ref: 123.try_into()?,
                 count: 2.try_into()?,

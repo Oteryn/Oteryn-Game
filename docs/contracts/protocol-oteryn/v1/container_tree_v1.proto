@@ -22,11 +22,11 @@ package oteryn.protocol.v1.container_tree;
 
 import "item_view_v1.proto";
 
-// One open container view. Ordinary views remain at most 646 encoded bytes (view id 2,
-// container 11, parent 11, capacity 2, 20 entry elements of 31). With capability 230 selected,
-// a browse view is at most 965 bytes (30 entries, no parent and up to 20 bytes of metadata).
+// One open container view. Ordinary views remain at most 726 encoded bytes (view id 2,
+// container 11, parent 11, capacity 2, 20 entry elements of 35). With capability 230 selected,
+// a browse view is at most 1085 bytes (30 entries, no parent and up to 20 bytes of metadata).
 // With authenticated HOUSE_CONTAINER_CAPACITY_V2 (446, requires 14 and 49), an actual
-// named-House container may instead have 25 entries and at most 801 encoded bytes.
+// named-House container may instead have 25 entries and at most 901 encoded bytes.
 // Legacy ordinary views and every carried container retain the 20-entry bound.
 message ContainerViewV1 {
   // 0 to 15 (BAGS0-RL-03), unique within the domain.
@@ -59,9 +59,9 @@ message BrowseFieldPageV1 {
 
 // StateDomainSnapshot.payload of domain 14, snapshot type 1, and StateDelta.payload of domain 14,
 // delta type 1. A delta carries every open view. Views in strictly ascending view id, at most 16
-// (BAGS0-RL-03). The whole payload is at most 10,384 bytes in legacy ordinary mode,
-// at most 12,862 bytes with 446 and no 230, and at most 15,488 bytes with 230 (including
-// mixed House views). The existing domain 14 type 1 registry ceiling 15,488 covers
+// (BAGS0-RL-03). The whole payload is at most 11,664 bytes in legacy ordinary mode,
+// at most 14,462 bytes with 446 and no 230, and at most 17,408 bytes with 230 (including
+// mixed House views). The existing domain 14 type 1 registry ceiling 17,408 covers
 // all three negotiated modes; no legacy decoder accepts 25 merely from that ceiling.
 // Within a view the container, the parent and the entries hold distinct handles. Ordinary
 // containers appear in one view only. With capability 230, views may share a browse container

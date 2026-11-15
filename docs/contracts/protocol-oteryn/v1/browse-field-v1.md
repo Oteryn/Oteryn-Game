@@ -95,9 +95,9 @@ view id returns `Stale` on Seek until reopened.
 
 Ordinary durable views have no browse metadata and keep capacity 1 through
 20, even in a selected browse session. The existing legacy codec functions
-continue to reject field 6 and retain the 10384-byte limit. The selected
-codec functions accept up to 15488 bytes: sixteen views, each at most
-965 bytes plus a three-byte repeated-message wrapper. This aggregate bound
+continue to reject field 6 and retain the 11664-byte limit. The selected
+codec functions accept up to 17408 bytes: sixteen views, each at most
+1085 bytes plus a three-byte repeated-message wrapper. This aggregate bound
 is registered on domain 14; it does not permit an unselected session to
 receive the extension.
 

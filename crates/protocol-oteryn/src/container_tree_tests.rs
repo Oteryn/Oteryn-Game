@@ -20,6 +20,7 @@ fn handle(value: u64) -> ItemHandle {
 /// The largest entry: every varint at its maximum.
 fn worst_entry(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: u16::MAX,
         handle: handle(u64::MAX - n),
         item_definition_ref: NonZeroU32::MAX,
         count: NonZeroU32::MAX,
@@ -29,6 +30,7 @@ fn worst_entry(n: u64) -> ItemEntry {
 
 fn small_entry(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(n),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -69,16 +71,16 @@ fn views(list: Vec<ContainerView>) -> ContainerViews {
 
 #[test]
 fn views_hold_16_views_of_20_entries_and_refuse_more() {
-    // One worst-case view is the measured 646 bytes; 16 of them are the registered 10,384.
+    // One worst-case view is the measured 726 bytes; 16 of them are the registered 11,664.
     let one =
         encode_container_views(&views(vec![worst_view(MAX_CONTAINER_VIEW_ID)])).expect("one view");
     assert_eq!(one.len(), 3 + MAX_CONTAINER_VIEW_BYTES);
-    assert_eq!(MAX_CONTAINER_VIEW_BYTES, 646);
+    assert_eq!(MAX_CONTAINER_VIEW_BYTES, 726);
     let full = views((0..=MAX_CONTAINER_VIEW_ID).map(worst_view).collect());
     let bytes = encode_container_views(&full).expect("16 views");
     // View 0 omits its proto3 default id, two bytes under the bound.
     assert_eq!(bytes.len(), MAX_CONTAINER_VIEWS_BYTES - 2);
-    assert_eq!(MAX_CONTAINER_VIEWS_BYTES, 10_384);
+    assert_eq!(MAX_CONTAINER_VIEWS_BYTES, 11_664);
     assert_eq!(decode_container_views(&bytes), Ok(full.clone()));
 
     // A seventeenth view fails closed both ways (view ids stop at 15, so the extra one repeats
@@ -554,7 +556,7 @@ fn registries_bind_capability_14_and_its_limits() {
         assert_eq!(
             types[0]["max_payload_bytes"].as_u64(),
             // Capability 230 adds thirty-entry browse pages to this domain; legacy codecs
-            // and the original BAGS0 resource limit above remain bounded by 10,384 bytes.
+            // and the original BAGS0 resource limit above remain bounded by 11,664 bytes.
             Some(crate::browse_field::MAX_BROWSE_FIELD_VIEWS_BYTES as u64)
         );
         assert_eq!(

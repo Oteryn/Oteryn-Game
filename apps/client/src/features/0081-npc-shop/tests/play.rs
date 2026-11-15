@@ -192,6 +192,7 @@ fn npc_shop_retains_twenty_fifth_container_source_only_when_negotiated()
             entries: (2_u64..=26)
                 .map(|id| {
                     Ok(oteryn_session::ItemEntry {
+                        appearance_id: 0,
                         handle: id.try_into()?,
                         item_definition_ref: 2854_u32.try_into()?,
                         count: 1_u32.try_into()?,

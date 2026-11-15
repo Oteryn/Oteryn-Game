@@ -79,8 +79,8 @@ pub const MAX_LIVE_ITEM_HANDLES: usize = (crate::world_spatial_entities::MAX_SNA
 pub const MAX_LIVE_ITEM_HANDLES_MAP_VIEW: usize =
     MAX_LIVE_ITEM_HANDLES + crate::world_map::MAX_MAP_VIEW_HANDLES;
 
-/// One `ItemEntryV1`, measured: handle 1 + 10, definition 1 + 5, count 1 + 5, sub-type 1 + 5.
-pub const MAX_ITEM_ENTRY_BYTES: usize = 29;
+/// One `ItemEntryV1`, measured: handle 1 + 10, definition 1 + 5, count 1 + 5, sub-type 1 + 5, appearance 1 + 3.
+pub const MAX_ITEM_ENTRY_BYTES: usize = 33;
 /// One `ItemEntryV1` as an element of a repeated field: its tag, a 1-byte length and the entry.
 const MAX_ITEM_ENTRY_ELEMENT_BYTES: usize = 2 + MAX_ITEM_ENTRY_BYTES;
 /// Domain 9 snapshot and delta: 30 entry elements.
@@ -118,6 +118,8 @@ pub type ItemHandle = NonZeroU64;
 /// `ItemEntryV1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ItemEntry {
+    /// Client appearance binding; 0 means no appearance.
+    pub appearance_id: u16,
     pub handle: ItemHandle,
     pub item_definition_ref: NonZeroU32,
     /// The whole stack.
@@ -357,6 +359,7 @@ pub(crate) fn encode_entry(output: &mut Vec<u8>, field: u64, entry: &ItemEntry) 
     push_varint_field(&mut body, 2, u64::from(entry.item_definition_ref.get()));
     push_varint_field(&mut body, 3, u64::from(entry.count.get()));
     push_nonzero_varint_field(&mut body, 4, u64::from(entry.sub_type));
+    push_nonzero_varint_field(&mut body, 5, u64::from(entry.appearance_id));
     push_message_field(output, field, &body);
 }
 
@@ -365,17 +368,21 @@ pub(crate) fn decode_entry(input: &[u8]) -> WireResult<ItemEntry> {
         return Err(ItemViewWireError::LimitExceeded);
     }
     let mut cursor = 0;
-    let (mut handle, mut definition, mut count, mut sub_type) = (None, None, None, None);
+    let (mut handle, mut definition, mut count, mut sub_type, mut appearance) =
+        (None, None, None, None, None);
     while cursor < input.len() {
         match read_varint(input, &mut cursor)? {
             0x08 => set_once(&mut handle, read_varint(input, &mut cursor)?)?,
             0x10 => set_once(&mut definition, read_uint32(input, &mut cursor)?)?,
             0x18 => set_once(&mut count, read_uint32(input, &mut cursor)?)?,
             0x20 => set_once(&mut sub_type, read_uint32(input, &mut cursor)?)?,
+            0x28 => set_once(&mut appearance, read_varint(input, &mut cursor)?)?,
             _ => return malformed(),
         }
     }
     Ok(ItemEntry {
+        appearance_id: u16::try_from(appearance.unwrap_or(0))
+            .map_err(|_| ItemViewWireError::Malformed)?,
         handle: nonzero_u64(handle.unwrap_or(0))?,
         item_definition_ref: nonzero_u32(definition.unwrap_or(0))?,
         count: nonzero_u32(count.unwrap_or(0))?,

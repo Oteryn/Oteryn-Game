@@ -82,10 +82,17 @@ pub enum ItemKey {
 /// One item of a view, with its server-internal key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ViewItem {
+    pub appearance_id: u16,
     pub key: ItemKey,
     pub item_definition_ref: NonZeroU32,
     pub count: NonZeroU32,
     pub sub_type: u32,
+}
+
+/// Matches the world map's content-key binding, including provisional donor keys.
+pub(super) fn appearance_of(definition: &TypedDefinitionRef) -> u16 {
+    let key = &definition.production_key;
+    crate::map::view::appearance_id(key, crate::map::palette_appearance(key).map(u32::from))
 }
 
 /// Domain 9's content: the main backpack slot and its direct entries in display order, and under
@@ -109,6 +116,7 @@ pub fn inventory_from_backpack(
     };
     let item = |item: &crate::durability::item_transfer::InventoryItem| {
         Some(ViewItem {
+            appearance_id: appearance_of(&item.definition),
             key: ItemKey::Instance(item.item_instance_id),
             item_definition_ref: definition_ref(&item.definition)?,
             count: NonZeroU32::new(item.quantity)?,
@@ -969,6 +977,7 @@ impl SessionItemView {
 
     fn entry(&self, item: &ViewItem) -> Result<ItemEntry, ItemViewError> {
         Ok(ItemEntry {
+            appearance_id: item.appearance_id,
             handle: self.table.handle(&item.key).ok_or(ItemViewError::Encode)?,
             item_definition_ref: item.item_definition_ref,
             count: item.count,

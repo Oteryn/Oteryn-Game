@@ -103,6 +103,7 @@ fn handle(value: u64) -> ItemHandle {
 
 fn entry(handle_value: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 2854,
         handle: handle(handle_value),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),

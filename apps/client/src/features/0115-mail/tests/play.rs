@@ -259,7 +259,7 @@ fn srx1_native_writing_selected_item_utf8_save_and_write_once_refusal() -> Resul
         oteryn_client_runtime::ClientRuntime::new().checked()?.block_on(async {
             let exchanges = Arc::new(Script { entries: Mutex::new(VecDeque::new()), release: tokio::sync::Semaphore::new(0) });
             let (link, incoming, outbox) = play_channel();
-            let item = oteryn_session::ItemEntry { handle: 7.try_into()?, item_definition_ref: 1.try_into()?, count: 1.try_into()?, sub_type: 0 };
+            let item = oteryn_session::ItemEntry { appearance_id: 0, handle: 7.try_into()?, item_definition_ref: 1.try_into()?, count: 1.try_into()?, sub_type: 0 };
             let task = tokio::spawn(run_session(Peer { exchanges: Arc::clone(&exchanges), inventory: Some(oteryn_session::CharacterInventory { main_backpack: Some(oteryn_session::ItemEntry { handle: 1.try_into()?, ..item }), entries: vec![item], equipment: vec![] }) }, incoming, outbox));
             ready(&link).await?;
             // Mail readiness is published before the initial inventory snapshot.

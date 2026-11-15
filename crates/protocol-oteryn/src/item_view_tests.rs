@@ -14,6 +14,7 @@ fn handle(value: u64) -> ItemHandle {
 /// The largest entry: every varint at its maximum.
 fn worst(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: u16::MAX,
         handle: handle(u64::MAX - n),
         item_definition_ref: NonZeroU32::MAX,
         count: NonZeroU32::MAX,
@@ -23,6 +24,7 @@ fn worst(n: u64) -> ItemEntry {
 
 fn small(n: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(n),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -62,7 +64,7 @@ fn the_largest_entry_and_payloads_are_measured() {
 
     let full = encode_character_inventory(&inventory(29, worst)).expect("30 items");
     assert_eq!(full.len(), MAX_CHARACTER_INVENTORY_BYTES);
-    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 930);
+    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 1050);
 
     let full = encode_open_container(&OpenContainer {
         container_handle: Some(handle(u64::MAX)),
@@ -70,7 +72,7 @@ fn the_largest_entry_and_payloads_are_measured() {
     })
     .expect("30 entries");
     assert_eq!(full.len(), MAX_OPEN_CONTAINER_BYTES);
-    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 941);
+    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 1061);
 
     let intent = encode_item_move_intent(&ItemMoveIntent {
         source: handle(u64::MAX),
@@ -222,7 +224,7 @@ fn views_refuse_orphan_entries_repeated_handles_and_zero_values() {
         &[0x08, 0x07, 0x18, 0x01],                         // no definition
         &[0x08, 0x07, 0x10, 0x03],                         // no count
         &[0x08, 0x00, 0x10, 0x03, 0x18, 0x01],             // zero handle
-        &[0x08, 0x07, 0x10, 0x03, 0x18, 0x01, 0x28, 0x01], // unknown field 5
+        &[0x08, 0x07, 0x10, 0x03, 0x18, 0x01, 0x30, 0x01], // unknown field 6
         &[0x08, 0x07, 0x08, 0x08, 0x10, 0x03, 0x18, 0x01], // repeated handle
         &[0x08, 0x07, 0x10, 0x03, 0x18],                   // truncated
     ];
@@ -496,7 +498,7 @@ fn without_capability_12_command_9_and_domain_9_decode_as_item_view_1a() {
             Ok(view.clone())
         );
     }
-    // Field 3 and the equipment are refused, and the 930-byte bound holds.
+    // Field 3 and the equipment are refused, and the 1050-byte bound holds.
     let view = equipped_inventory(small);
     let bytes = encode_character_inventory_with_equip_drop(&view, true).expect("cap 12");
     assert_eq!(
@@ -576,12 +578,12 @@ fn equipped_views_are_measured_and_bounded_at_30_items() {
     assert_eq!(body.len(), MAX_EQUIPPED_ITEM_BYTES);
     push_message_field(&mut element, 3, &body);
     assert_eq!(element.len(), MAX_EQUIPPED_ITEM_ELEMENT_BYTES);
-    assert_eq!(MAX_EQUIPPED_ITEM_ELEMENT_BYTES, 35);
+    assert_eq!(MAX_EQUIPPED_ITEM_ELEMENT_BYTES, 39);
 
     let full = equipped_inventory(worst);
     let bytes = encode_character_inventory_with_equip_drop(&full, true).expect("30 items");
     assert_eq!(bytes.len(), MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES);
-    assert_eq!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES, 966);
+    assert_eq!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES, 1086);
     assert_eq!(
         decode_character_inventory_with_equip_drop(&bytes, true),
         Ok(full.clone())
@@ -931,4 +933,20 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
         }
     }
     Ok(())
+}
+
+#[test]
+fn entry_appearance_round_trips_and_validates_wire_values() {
+    let legacy = [0x08, 1, 0x10, 1, 0x18, 1];
+    assert_eq!(decode_entry(&legacy).expect("legacy").appearance_id, 0);
+    let mut item = small(1);
+    item.appearance_id = u16::MAX;
+    let mut framed = Vec::new();
+    encode_entry(&mut framed, 1, &item);
+    assert_eq!(decode_entry(&framed[2..]), Ok(item));
+    for suffix in [vec![0x28, 0x80, 0x80, 4], vec![0x28, 0, 0x28, 1]] {
+        let mut invalid = legacy.to_vec();
+        invalid.extend(suffix);
+        assert_eq!(decode_entry(&invalid), Err(ItemViewWireError::Malformed));
+    }
 }

@@ -17,6 +17,7 @@ fn instance(n: u16) -> ItemKey {
 
 fn item(key: ItemKey) -> ViewItem {
     ViewItem {
+        appearance_id: 2854,
         key,
         item_definition_ref: NonZeroU32::new(2854).expect("fixture"),
         count: NonZeroU32::new(1).expect("fixture"),
@@ -77,7 +78,15 @@ fn shown(delta: &ItemViewDelta) -> ContainerViews {
     assert_eq!(delta.domain_id, STATE_DOMAIN_CONTAINER_VIEWS);
     assert_eq!(delta.delta_type, DELTA_TYPE_CONTAINER_VIEWS_V1);
     assert_eq!(delta.to, delta.from + 1);
-    decode_container_views(&delta.payload).expect("domain 14 payload")
+    let views = decode_container_views(&delta.payload).expect("domain 14 payload");
+    assert!(
+        views
+            .views
+            .iter()
+            .flat_map(|view| &view.entries)
+            .all(|item| item.appearance_id == 2854)
+    );
+    views
 }
 
 #[test]
