@@ -25,6 +25,9 @@ use std::path::Path;
 use std::sync::Arc;
 
 mod seasonal;
+#[cfg(test)]
+#[path = "bundle_npcs/test_merchant_tests.rs"]
+mod test_merchant_tests;
 #[path = "bundle_npcs/weekday.rs"]
 mod weekday;
 
@@ -452,7 +455,58 @@ pub(super) fn prepare(
     let loaded = catalogue
         .map(|(catalogue, root)| LoadedNpcCatalogue::from_catalogue(catalogue, root))
         .transpose()?;
-    bind(frame, loaded.as_ref(), production).map(Some)
+    let boot = bind(frame, loaded.as_ref(), production)?;
+    test_merchant_boot(
+        boot,
+        crate::content::npc_catalogue::test_merchant::enabled(),
+    )
+    .map(Some)
+}
+
+fn test_merchant_boot(boot: NpcBoot, enabled: bool) -> Result<NpcBoot, BootError> {
+    if !enabled {
+        return Ok(boot);
+    }
+    match boot {
+        NpcBoot::Place {
+            table,
+            catalogue_sha256,
+            mut admitted,
+            production,
+            talk,
+        } => {
+            admitted.insert(crate::content::npc_catalogue::test_merchant::NPC.into());
+            let talk = Arc::new(
+                (*talk)
+                    .clone()
+                    .with_test_merchant(true)
+                    .map_err(|_| BootError::ContentActivation("test merchant dialogue"))?,
+            );
+            Ok(NpcBoot::Place {
+                table,
+                catalogue_sha256,
+                admitted,
+                production,
+                talk,
+            })
+        }
+        NpcBoot::Skip { .. } => {
+            // Without --npc-data-project a preproduction bundle ordinarily places no NPCs.
+            // Admit only this explicit test pack; never substitute for a production catalogue.
+            let talk = NpcTalkBook::default()
+                .with_test_merchant(true)
+                .map_err(|_| BootError::ContentActivation("test merchant dialogue"))?;
+            Ok(NpcBoot::Place {
+                table: NpcPlacementTable { npcs: Vec::new() },
+                catalogue_sha256: crate::content::npc_catalogue::test_merchant::digest(),
+                admitted: BTreeSet::from(
+                    [crate::content::npc_catalogue::test_merchant::NPC.into()],
+                ),
+                production: false,
+                talk: Arc::new(talk),
+            })
+        }
+    }
 }
 
 /// The verified bundle catalogue digest retained by a successful NPC boot binding.
@@ -460,6 +514,7 @@ pub(super) fn prepare(
 /// This is the NPC-LOAD-1 digest over the compiler's catalogue files. It does not establish
 /// membership in an active Content generation or substitute for the World Project tree digest.
 /// Skipped or absent NPC boot state carries no verified catalogue binding.
+/// An explicitly enabled standalone test merchant instead identifies its embedded pack.
 pub(super) fn catalogue_sha256(boot: Option<&NpcBoot>) -> Option<&str> {
     match boot {
         Some(NpcBoot::Place {
@@ -507,6 +562,20 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
+            if admitted.contains(crate::content::npc_catalogue::test_merchant::NPC) {
+                let pack = crate::content::npc_catalogue::test_merchant::pack()
+                    .map_err(|_| BootError::ContentActivation("test merchant placement"))?;
+                table.npcs.push(NpcPlacements {
+                    key: pack.placement.npc.clone(),
+                    placements: vec![NpcPlacement {
+                        x: pack.placement.x,
+                        y: pack.placement.y,
+                        floor: pack.placement.floor,
+                        direction: MovementFacing::North,
+                    }],
+                });
+                table.npcs.sort_by(|a, b| a.key.cmp(&b.key));
+            }
             let unix_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .ok()

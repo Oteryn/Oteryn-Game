@@ -122,6 +122,9 @@ if [[ "$NODE_BOOT_SPELLS" == 1 || "$NODE_BOOT_WORLD" == 1 ]]; then
   NODE_BOOT_SPELL_MANIFEST_REL="${NODE_BOOT_SPELL_MANIFEST#"$GAME_SOURCE"/}"
   NODE_GAMEPLAY_ENV=("OTERYN_NATIVE_GAMEPLAY_MANIFEST=$BASE/gameplay/$NODE_BOOT_SPELL_MANIFEST_REL")
 fi
+if [[ "${OTERYN_TEST_MERCHANT:-0}" == 1 && "$NODE_BOOT_WORLD" == 1 ]]; then
+  NODE_GAMEPLAY_ENV+=("OTERYN_TEST_MERCHANT=1")
+fi
 # ADMIT-CAP-1: the entry-room seam stages run against a Channel that requires LOGOUT_V1 (21)
 # and prove the owner's capability refusals; the spell scenarios declare no required set.
 NODE_REQUIRED_CAPABILITIES='[21]'

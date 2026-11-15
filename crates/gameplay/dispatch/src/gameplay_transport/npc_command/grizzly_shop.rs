@@ -69,11 +69,17 @@ impl NpcConversations {
             .offers()
             .iter()
             .filter(|offer| {
-                crate::content::npc_catalogue::grizzly_shop::visible(
-                    key,
-                    offer,
-                    state.grizzly_shop_points,
-                ) && super::quest_shop::visible(key, offer, &state.quest_shop_offers)
+                (key != crate::content::npc_catalogue::test_merchant::NPC
+                    || crate::content::npc_catalogue::test_merchant::contains(
+                        state.test_merchant_category.as_deref(),
+                        offer,
+                    ))
+                    && crate::content::npc_catalogue::grizzly_shop::visible(
+                        key,
+                        offer,
+                        state.grizzly_shop_points,
+                    )
+                    && super::quest_shop::visible(key, offer, &state.quest_shop_offers)
                     && (key != crate::content::npc_catalogue::grizzly_shop::NPC
                         || state.grizzly_shop_items.contains(&offer.item.key))
             })
@@ -90,7 +96,10 @@ impl NpcConversations {
         state.window = Some(npc);
         state.window_offers = sources;
         Some(NpcTradeWindow {
-            open: Some((npc, book.catalogue_revision())),
+            open: Some((
+                npc,
+                book.trade_revision(key, state.test_merchant_category.as_deref()),
+            )),
             offers: shown,
         })
     }

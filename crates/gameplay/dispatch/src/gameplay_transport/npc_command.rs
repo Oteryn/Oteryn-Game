@@ -81,6 +81,7 @@ struct SessionNpc {
     window: Option<EntityRef>,
     /// The exact bounded offer list shown in this window, including its rank filter.
     window_offers: Vec<crate::content::ProjectV2ServiceOffer>,
+    test_merchant_category: Option<String>,
     /// Display cache only; the NPC trade writer independently checks quest points.
     grizzly_shop_points: Option<i64>,
     grizzly_shop_items: std::collections::BTreeSet<String>,
@@ -349,6 +350,17 @@ impl NpcConversations {
     ) -> NpcTalkOutcome {
         let mut outcome = self.converse(chat, runtime, actor, session, intent, now);
         let talking_to = chat.engaged(session);
+        if outcome.disposition == NpcIntentDisposition::Ok
+            && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
+            && service_context::live_npc(runtime, actor, session, intent.npc_actor)
+                .is_some_and(|npc| npc.key == crate::content::npc_catalogue::test_merchant::NPC)
+            && let Some(category) =
+                crate::content::npc_catalogue::test_merchant::category(&intent.text)
+            && let Ok(mut sessions) = self.sessions.lock()
+        {
+            sessions.entry(session).or_default().test_merchant_category =
+                Some(category.keyword.clone());
+        }
         let opened = (outcome.disposition == NpcIntentDisposition::Ok
             && talking_to.is_some_and(|npc| npc.placement_identity() == intent.npc_actor.identity)
             && ChatText::parse(&intent.text).is_ok_and(|text| {
@@ -397,14 +409,18 @@ impl NpcConversations {
         {
             return Err(Box::new(NpcTradeRefusal::only(Disposition::NotInRange)));
         }
-        let (shown, shown_offers) = self
+        let (shown, shown_offers, shown_category) = self
             .sessions
             .lock()
             .ok()
             .and_then(|sessions| {
-                sessions
-                    .get(&session)
-                    .map(|state| (state.window, state.window_offers.clone()))
+                sessions.get(&session).map(|state| {
+                    (
+                        state.window,
+                        state.window_offers.clone(),
+                        state.test_merchant_category.clone(),
+                    )
+                })
             })
             .unwrap_or_default();
         if shown != Some(intent.npc_actor) {
@@ -447,7 +463,7 @@ impl NpcConversations {
         if !(1..=MAX_TRADE_QUANTITY).contains(&intent.quantity) {
             return Err(Box::new(rejected()));
         }
-        if intent.catalogue_revision != book.catalogue_revision() {
+        if intent.catalogue_revision != book.trade_revision(npc_key, shown_category.as_deref()) {
             return Err(Box::new(stale()));
         }
         let Some((offer, source)) = usize::try_from(intent.offer_index)

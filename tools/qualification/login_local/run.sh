@@ -501,6 +501,9 @@ PY_STAGE
   sudo install -d -o root -g root -m 0755 "$BASE/world"
   sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
 fi
+if [[ "${OTERYN_TEST_MERCHANT:-0}" == 1 && "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+  LL_GAMEPLAY_ENV+=("OTERYN_TEST_MERCHANT=1")
+fi
 sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
 if [[ "$LL_RUST" == host ]]; then
   OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"

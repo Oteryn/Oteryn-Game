@@ -727,6 +727,26 @@ impl NpcTalkBook {
         self.npcs.values()
     }
 
+    /// Shipped test pack, activated explicitly by the boot owner.
+    pub fn with_test_merchant(
+        mut self,
+        enabled: bool,
+    ) -> Result<Self, crate::content::ProjectError> {
+        if enabled {
+            let entry = test_merchant_entry()?;
+            self.catalogue_revision = revision_of(&format!(
+                "{}|{}",
+                self.catalogue_revision(),
+                crate::content::npc_catalogue::test_merchant::digest()
+            ));
+            self.npcs.insert(
+                crate::content::npc_catalogue::test_merchant::NPC.into(),
+                entry,
+            );
+        }
+        Ok(self)
+    }
+
     pub fn get(&self, key: &str) -> Option<&NpcTalkEntry> {
         self.npcs.get(key)
     }
@@ -742,6 +762,66 @@ impl NpcTalkBook {
     pub fn catalogue_revision(&self) -> u64 {
         self.catalogue_revision.max(1)
     }
+
+    /// A category switch changes offer indices, so old category quotes must become stale.
+    pub fn trade_revision(&self, npc: &str, category: Option<&str>) -> u64 {
+        if npc == crate::content::npc_catalogue::test_merchant::NPC
+            && let Some(category) = category
+        {
+            return revision_of(&format!("{}|{category}", self.catalogue_revision())).max(1);
+        }
+        self.catalogue_revision()
+    }
+}
+
+fn test_merchant_entry() -> Result<NpcTalkEntry, crate::content::ProjectError> {
+    let pack = crate::content::npc_catalogue::test_merchant::pack()?;
+    let categories = pack
+        .categories
+        .iter()
+        .map(|category| category.keyword.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut entry = NpcTalkEntry::new(
+        "Testserver Assistant",
+        Some(&format!("Choose a category: {categories}.")),
+    );
+    entry.greeting_reply =
+        "Hello, |PLAYERNAME|! Ask me for {trade} to see the test item categories.".into();
+    entry.farewell_reply = "Goodbye, and enjoy testing!".into();
+    entry.source_name_templates = true;
+    entry.offers = pack
+        .declarations
+        .iter()
+        .filter_map(|declaration| match declaration {
+            crate::content::ProjectV2Declaration::Service { offers, .. } => Some(offers.as_slice()),
+            _ => None,
+        })
+        .flatten()
+        .cloned()
+        .collect();
+    entry.dialogue_keywords = pack
+        .categories
+        .iter()
+        .rev()
+        .map(|category| crate::content::ProjectV2DialogueKeyword {
+            key: category.keyword.clone(),
+            triggers: vec![category.keyword.clone()],
+            reply: vec![format!(
+                "Here are the {}. Every item costs 1 gold coin.",
+                category.keyword
+            )],
+            fallback: false,
+            links: Vec::new(),
+            only_focus: true,
+            only_unfocus: false,
+            reset: false,
+            ungreet: false,
+            move_up: None,
+            children: Vec::new(),
+        })
+        .collect();
+    Ok(entry)
 }
 
 /// Source-qualified native finale speakers. A script-backed NPC outside this exact
@@ -804,6 +884,9 @@ pub fn asks_to_trade(text: &str) -> bool {
 
 /// Source-specific shop keyword; ordinary merchants retain the standard trade words.
 pub fn asks_to_trade_for(npc_key: &str, text: &str) -> bool {
+    if npc_key == crate::content::npc_catalogue::test_merchant::NPC {
+        return crate::content::npc_catalogue::test_merchant::category(text).is_some();
+    }
     asks_to_trade(text) || (npc_key == YASIR && says_any(&words(text), &["ariki"]))
 }
 
