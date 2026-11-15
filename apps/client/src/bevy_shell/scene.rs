@@ -216,7 +216,7 @@ fn project_quad(
     let uv_end =
         Vec2::new(u0, v0) + Vec2::new(u1 - u0, v1 - v0) * (end - Vec2::new(x, y)) / Vec2::new(w, h);
     let (x, y, w, h) = (start.x, start.y, visible.x, visible.y);
-    let sprite = Sprite {
+    let mut sprite = Sprite {
         image: image.clone(),
         color: Color::linear_rgba(tint[0], tint[1], tint[2], tint[3]),
         rect: Some(Rect::new(
@@ -228,6 +228,29 @@ fn project_quad(
         custom_size: Some(Vec2::new(w / scale, h / scale)),
         ..default()
     };
+    // Palette primitives sample a single texel, independently of their geometry.
+    // Bevy source rectangles need area; use a solid sprite to preserve constant
+    // sampling without stretching neighbouring palette colours into the quad.
+    if u0 == u1 && v0 == v1 {
+        let x = (u0 * atlas.width() as f32)
+            .floor()
+            .clamp(0., atlas.width() as f32 - 1.) as usize;
+        let y = (v0 * atlas.height() as f32)
+            .floor()
+            .clamp(0., atlas.height() as f32 - 1.) as usize;
+        let at = (y * atlas.width() as usize + x) * 4;
+        let rgba = atlas.rgba().get(at..at + 4)?;
+        let color = Color::srgba_u8(rgba[0], rgba[1], rgba[2], rgba[3]).to_linear();
+        sprite = Sprite::from_color(
+            Color::linear_rgba(
+                color.red * tint[0],
+                color.green * tint[1],
+                color.blue * tint[2],
+                color.alpha * tint[3],
+            ),
+            Vec2::new(w / scale, h / scale),
+        );
+    }
     let transform = Transform::from_xyz(
         (x + w / 2. + offset.x - viewport_size.x / 2.) / scale,
         (viewport_size.y / 2. - (y + h / 2. + offset.y)) / scale,
