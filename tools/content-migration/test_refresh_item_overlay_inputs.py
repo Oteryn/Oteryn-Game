@@ -10,6 +10,47 @@ import refresh_item_overlay_inputs as tool
 
 
 class OverlayInputRefreshTests(unittest.TestCase):
+    def test_accept_canonical_weight_changes_only_weight(self):
+        before = {'identity': {'key': 'item'}, 'semantics': {'physical': {
+            'state': 'KNOWN', 'value': {'weight': {'state': 'KNOWN', 'value': 200},
+                                       'movable': {'state': 'KNOWN', 'value': True}}}}}
+        after = copy.deepcopy(before)
+        after['semantics']['physical']['value']['weight']['value'] = 290
+        profile = {'semantics': copy.deepcopy(before['semantics'])}
+        self.assertEqual(tool.accept_canonical_weight(before, after, profile), after)
+        self.assertEqual(profile['semantics']['physical'], after['semantics']['physical'])
+        self.assertEqual(before['semantics']['physical']['value']['weight']['value'], 200)
+        for location in ('identity', 'movable', 'profile'):
+            changed = copy.deepcopy(after)
+            original_profile = {'semantics': copy.deepcopy(before['semantics'])}
+            if location == 'identity':
+                changed['identity']['key'] = 'other'
+            elif location == 'movable':
+                changed['semantics']['physical']['value']['movable']['value'] = False
+            else:
+                original_profile['semantics']['physical']['value']['weight']['value'] = 199
+            saved = copy.deepcopy(original_profile)
+            with self.subTest(location=location), self.assertRaisesRegex(ValueError, 'SELECTED_FACT_DRIFT'):
+                tool.accept_canonical_weight(before, changed, original_profile)
+            self.assertEqual(original_profile, saved)
+
+    def test_accept_canonical_weight_fill_must_equal_profile_weight(self):
+        before = {'identity': {'key': 'item'}, 'semantics': {'physical': {
+            'state': 'KNOWN', 'value': {'weight': {'state': 'UNKNOWN'},
+                                       'movable': {'state': 'UNKNOWN'}}}}}
+        after = copy.deepcopy(before)
+        after['semantics']['physical']['value']['weight'] = {'state': 'KNOWN', 'value': 2100}
+        profile = {'semantics': {'physical': {'state': 'KNOWN', 'value': {
+            'weight': {'state': 'KNOWN', 'value': 2100},
+            'movable': {'state': 'KNOWN', 'value': True}}}}}
+        saved = copy.deepcopy(profile)
+        self.assertEqual(tool.accept_canonical_weight(before, after, profile), after)
+        self.assertEqual(profile, saved)
+        other = copy.deepcopy(profile)
+        other['semantics']['physical']['value']['weight']['value'] = 2000
+        with self.assertRaisesRegex(ValueError, 'SELECTED_FACT_DRIFT'):
+            tool.accept_canonical_weight(before, after, other)
+
     def test_native_core_requires_exact_unchanged_profile_and_preserves_known_facts(self):
         definition = {'identity': {'key': 'item'}, 'materializable': False,
                       'stack_class': 'Unknown', 'semantics': {

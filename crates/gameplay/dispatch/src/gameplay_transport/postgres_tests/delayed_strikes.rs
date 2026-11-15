@@ -799,6 +799,28 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             );
             continue;
         }
+        // Both promoted red-quadrant fixtures include slot 12's 0.25% mana
+        // Leech. Check the paid cast before draining the independent due hit.
+        let mana_leech_rate = if matches!(plan.case, Case::Grenade | Case::Outburst(_)) {
+            25
+        } else {
+            0
+        };
+        let leech_for_damage = |damage: u64| -> TestResult<i64> {
+            Ok(i64::try_from((damage * mana_leech_rate).div_ceil(10_000))?)
+        };
+        let initial_leech = leech_for_damage(u64::try_from(RAT_HEALTH)? - hit)?;
+        let mana_after_cast = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("paid cast vitals")?
+            .1
+            .mana;
+        assert_eq!(
+            i64::from(before) - i64::from(mana_after_cast) + initial_leech,
+            *mana,
+            "{key} exact one-time cast payment before the delayed hit"
+        );
         let expected_echo = if plan.case == Case::Echo {
             let runtime = deps.runtime.lock().await;
             let creature = runtime.companion_snapshot(target).map_err(debug)?;
@@ -918,18 +940,18 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .ok_or("after vitals")?
             .1
             .mana;
-        // This fixture fills red, including monk slot 12's 0.25% mana leech.
-        // Crystal 201189f player_wheel.cpp:2254-2256 and game.cpp:8585-8617,
-        // 8664-8667 refund rounded actual damage; the delayed callback pays no cost.
-        let mana_leech = if matches!(plan.case, Case::Outburst(_)) {
-            i64::try_from(((u64::try_from(RAT_HEALTH)? - hit) * 25 + 5000) / 10000)?
-        } else {
-            0
-        };
+        // A surviving target without Prey makes each physical HP loss the
+        // independent pre-overkill basis. Round each occurrence separately.
+        let delayed_leech = leech_for_damage(hit - echo)?;
         assert_eq!(
-            i64::from(before) - i64::from(after) + mana_leech,
+            i64::from(after),
+            i64::from(mana_after_cast) + delayed_leech,
+            "{key} due hit restores only its exact Leech and pays no second cost"
+        );
+        assert_eq!(
+            i64::from(before) - i64::from(after) + initial_leech + delayed_leech,
             *mana,
-            "{key} mana payment before wheel leech"
+            "{key} total payment with both source occurrences accounted for"
         );
         let costs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts")
             .fetch_one(&h.pool)

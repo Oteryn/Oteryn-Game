@@ -240,7 +240,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 50
             },
             "movable": {
               "state": "KNOWN",
@@ -726,7 +726,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 50
             },
             "movable": {
               "state": "KNOWN",
@@ -2184,7 +2184,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 10
             },
             "movable": {
               "state": "KNOWN",
@@ -2508,7 +2508,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 50
             },
             "movable": {
               "state": "KNOWN",

@@ -308,6 +308,12 @@ def main() -> int:
     apply_encounter_loot_admissions(item_records, ROOT)
     from itemhold_q import apply_admissions as apply_quest_item_holds
     apply_quest_item_holds(item_records, ROOT)
+    # Captured Global client weights win over the legacy package (ITEMGLOB).
+    from import_cyclopedia_global import apply_admissions as apply_client_weights
+    apply_client_weights(item_records, ROOT)
+    # Global healing potion facts win over the legacy package (HEALPAR).
+    from healing_global_overrides import apply_definitions as apply_global_potions
+    apply_global_potions(item_records)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

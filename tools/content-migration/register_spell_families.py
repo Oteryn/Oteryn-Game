@@ -553,6 +553,9 @@ def _outputs(root: Path = ROOT, *, include_prey: bool = True) -> dict[str, bytes
     energy = next(row for row in items["records"]
                   if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
     energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
+    # HEALPAR: Great Mana Potion is for all vocations on Global (TibiaWiki rev 1190635).
+    import healing_global_overrides
+    healing_global_overrides.apply_native_profiles(items)
     # The complete source closure must fit native_gameplay's existing 8 MiB
     # Item-profile input bound. Only the final active serialization is compact;
     # record order/values are unchanged and donor captures stay readable.

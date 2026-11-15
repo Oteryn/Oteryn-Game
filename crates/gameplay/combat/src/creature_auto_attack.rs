@@ -617,10 +617,12 @@ impl AutoAttackOwner {
                 .checked_add(source.interval_micros)
                 .ok_or(AttackError::NumericOverflow)?;
         }
-        self.selections
-            .retain(|s| runtime.contains_live_creature(s.issuer));
-        self.entries
-            .retain(|entry| runtime.contains_live_creature(entry.issuer));
+        let retained = |issuer| {
+            runtime.contains_live_creature(issuer)
+                || runtime.companion_snapshot_including_dead(issuer).is_ok()
+        };
+        self.selections.retain(|s| retained(s.issuer));
+        self.entries.retain(|entry| retained(entry.issuer));
         let mut fingerprints: Vec<_> = sources
             .iter()
             .map(|s| (s.entry_index, s.fingerprint))
@@ -859,8 +861,10 @@ impl AutoAttackOwner {
         if lineage.is_empty() || lineage.len() > 256 {
             return Err(AttackError::InvalidSource);
         }
-        self.entries
-            .retain(|e| runtime.contains_live_creature(e.issuer));
+        self.entries.retain(|e| {
+            runtime.contains_live_creature(e.issuer)
+                || runtime.companion_snapshot_including_dead(e.issuer).is_ok()
+        });
         let ready = now
             .get()
             .checked_add(source.interval_micros)
@@ -1022,7 +1026,17 @@ impl AutoAttackOwner {
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> Result<SwingOutcome, AttackError> {
         require_owner(runtime, fence, stamp)?;
-        validate_source(runtime, facts.issuer, source)?;
+        if !runtime.matches_live_creature_identity(facts.issuer, source.creature_key.as_bytes())
+            && !runtime
+                .companion_snapshot_including_dead(facts.issuer)
+                .is_ok_and(|snapshot| snapshot.state.policy.definition_key == source.creature_key)
+        {
+            return Err(AttackError::StaleIssuer);
+        }
+
+        if runtime.content_pin().server_artifact_digest() != source.content_digest {
+            return Err(AttackError::ContentChanged);
+        }
         if root != &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest())
         {
             return Err(AttackError::InvalidSource);
@@ -1056,6 +1070,7 @@ impl AutoAttackOwner {
                 Err(AttackError::OccurrenceConflict)
             };
         }
+        validate_source(runtime, facts.issuer, source)?;
         if sequence < e.next_sequence {
             return Err(AttackError::OccurrenceSuperseded);
         }
@@ -1241,6 +1256,25 @@ impl AutoAttackOwner {
                 })
                 .transpose()?
         };
+        // Cancel this admitted occurrence before consuming a shield block,
+        // reflecting damage or delivering attached conditions. The swing owner
+        // retains it under the same sequence/replay contract as ordinary hits.
+        if vitals.dodge_source_attack(
+            runtime,
+            facts.issuer,
+            facts.target,
+            facts.session,
+            &occurrence,
+        ) {
+            return Ok(SwingOutcome {
+                occurrence,
+                requested,
+                blocked: requested,
+                damage: None,
+                chance_passed: true,
+                source_critical,
+            });
+        }
         // Source-default bonus is ZERO; preserve actual base requested HP. Dynamic boosts/VFX remain qualified gaps.
         let mut remaining = requested;
         let mut budget_next = None;
@@ -1290,6 +1324,7 @@ impl AutoAttackOwner {
             };
             remaining = remaining.saturating_sub(armor);
         }
+        let base_damage = requested;
         let blocked = requested.saturating_sub(remaining);
         let hazard_draw =
             deterministic_decision_u64(root, id, "hazard_critical", source.entry_index as u64)
@@ -1309,16 +1344,18 @@ impl AutoAttackOwner {
         let requested = remaining
             .checked_add(blocked)
             .ok_or(AttackError::NumericOverflow)?;
-        if !vitals.reflect_equipment_damage(
-            runtime,
-            facts.issuer,
-            facts.target,
-            facts.session,
-            Some("physical"),
-            remaining,
-            format!("melee:{}", source.entry_index).as_bytes(),
-            now,
-        ) {
+        if remaining == 0
+            && !vitals.reflect_equipment_damage(
+                runtime,
+                facts.issuer,
+                facts.target,
+                facts.session,
+                Some("physical"),
+                0,
+                format!("melee:{}", source.entry_index).as_bytes(),
+                now,
+            )
+        {
             return Err(AttackError::MissingVitals);
         }
         let damage = if remaining == 0 {
@@ -1346,15 +1383,24 @@ impl AutoAttackOwner {
             let magnitude = u32::try_from(*magnitude).map_err(|_| AttackError::InvalidPlan)?;
             Some(
                 if source.conditions.is_empty() {
-                    vitals.apply_source_typed_attack_damage(
+                    vitals.apply_source_incoming_hit(
                         runtime,
                         facts.issuer,
                         facts.target,
                         facts.session,
                         magnitude,
+                        base_damage,
+                        None,
                         crate::player_lethal::PlayerHitKind::Physical,
                         &occurrence,
                         now,
+                        None,
+                        Some(crate::player_lethal::SourceHitEquipment {
+                            native_bite: false,
+                            magnitude,
+                            element: Some("physical"),
+                            stream: format!("melee:{}", source.entry_index).as_bytes(),
+                        }),
                     )
                 } else {
                     let policy = condition_policy.ok_or(AttackError::MissingCombatFacts)?;
@@ -1368,19 +1414,30 @@ impl AutoAttackOwner {
                         decision_root: root,
                         occurrence: id,
                     };
-                    vitals.apply_typed_composite_attack_damage(
+                    vitals.apply_source_incoming_hit(
                         runtime,
+                        facts.issuer,
                         facts.target,
                         facts.session,
                         magnitude,
+                        base_damage,
+                        None,
                         crate::player_lethal::PlayerHitKind::Physical,
                         &occurrence,
-                        facts.issuer,
-                        &source.conditions,
-                        &application,
-                        &policy.immunities,
-                        fence,
-                        stamp,
+                        now,
+                        Some(crate::player_lethal::SourceHitConditions {
+                            definitions: &source.conditions,
+                            facts: &application,
+                            immunities: &policy.immunities,
+                            fence: Some(fence),
+                            stamp,
+                        }),
+                        Some(crate::player_lethal::SourceHitEquipment {
+                            native_bite: false,
+                            magnitude,
+                            element: Some("physical"),
+                            stream: format!("melee:{}", source.entry_index).as_bytes(),
+                        }),
                     )
                 }
                 .ok_or(AttackError::MissingVitals)?,
@@ -1663,6 +1720,28 @@ mod canonical_kernel_tests {
         )>,
     }
     impl PlayerLethalVitals for HitAdmissionProbe {
+        #[allow(
+            clippy::too_many_arguments,
+            reason = "implements the source incoming-hit vitals admission seam"
+        )]
+        fn apply_source_incoming_hit(
+            &mut self,
+            _runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            _target: ExactActorRef,
+            _session: GameSessionId,
+            _magnitude: u32,
+            _base_damage: u32,
+            _charm_occurrence: Option<oteryn_simulation_determinism::DecisionOccurrenceId>,
+            kind: crate::player_lethal::PlayerHitKind,
+            _occurrence: &str,
+            _now: SemanticTimeMicros,
+            conditions: Option<crate::player_lethal::SourceHitConditions<'_>>,
+            _equipment: Option<crate::player_lethal::SourceHitEquipment<'_>>,
+        ) -> Option<PlayerDamageReceipt> {
+            self.calls.push((Some(source), kind, conditions.is_some()));
+            None
+        }
         fn apply_attack_damage(
             &mut self,
             _runtime: &mut ChannelRuntimeV1,

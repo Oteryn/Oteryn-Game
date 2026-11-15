@@ -7,6 +7,7 @@ import re
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from event_item_actions import PIN, table
 from compact_record_json import encode
 
@@ -269,6 +270,8 @@ def capture(crystal, canary):
     records = [source.profile(item, xml[item], objects[item], physical[item], bindings, None) for item in sorted(ids)]
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, ids,
                           independent_crystal_source=(PIN, xml_raw))
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     apply_source_beds(bound['records'], xml, bindings)
     # Crystal items.cpp:203-208 and item.hpp:553-555 establish auto-carpet eligibility.
     top = {str(item): next((order for flag, order in (('clip', 1), ('top', 3), ('bottom', 2))

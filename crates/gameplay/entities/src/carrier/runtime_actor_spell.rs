@@ -44,6 +44,7 @@ struct BatchRecord {
     command: CommandRef,
     phase: u16,
     original_batch: OwnerCombatBatch,
+    charm_children: Option<[u8; 32]>,
     receipt: CombatBatchReceipt,
 }
 
@@ -198,6 +199,115 @@ impl QualifiedCompanionTouches {
         Ok(Self {
             snapshots: snapshots.to_vec(),
             binding,
+        })
+    }
+}
+
+/// Requests are immutable values; the physical condition owner supplies all state authority.
+#[derive(Debug, Clone)]
+pub enum SpellCharmChild {
+    Damage(OwnerCombatEffect),
+    Paralysis {
+        target: ExactActorRef,
+        root: [u8; 32],
+        occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+    },
+}
+
+/// A bounded internal leaf sequence retained by the original cast. The source
+/// batch, child values and ordinals are sealed together before any owner reservation.
+#[derive(Debug, Clone)]
+pub struct QualifiedSpellChildren {
+    child_binding: [u8; 32],
+    damage_preimages: Vec<super::runtime_actor_companion::CompanionSnapshot>,
+    children: Vec<SpellCharmChild>,
+    paralysis: Vec<(
+        usize,
+        super::runtime_actor_conditions::SpellParalysisPreimage,
+    )>,
+    batch: OwnerCombatBatch,
+}
+impl QualifiedSpellChildren {
+    pub fn bind(
+        runtime: &ChannelRuntimeV1,
+        batch: &mut OwnerCombatBatch,
+        children: Vec<SpellCharmChild>,
+    ) -> Result<Self, Error> {
+        if (batch.deferred.is_some() && !runtime.qualified_deferred_batch(batch))
+            || children.len() > MAX_EFFECTS
+            || children
+                .iter()
+                .enumerate()
+                .any(|(index, child)| match child {
+                    SpellCharmChild::Damage(child) => {
+                        usize::from(child.sub_ordinal) != MAX_EFFECTS + index
+                            || !matches!(
+                                child.change,
+                                OwnerCombatChange::Damage { magnitude: 1.., .. }
+                            )
+                    }
+                    SpellCharmChild::Paralysis { .. } => false,
+                })
+        {
+            return Err(Error::InvalidBatch);
+        }
+        let mut damage_preimages = Vec::new();
+        for child in &children {
+            if let SpellCharmChild::Damage(effect) = child
+                && !damage_preimages.iter().any(
+                    |before: &super::runtime_actor_companion::CompanionSnapshot| {
+                        before.actor == effect.target
+                    },
+                )
+            {
+                damage_preimages.push(runtime.companion_snapshot(effect.target)?);
+            }
+        }
+        let mut paralysis = Vec::new();
+        let mut projection = None;
+        for (index, child) in children.iter().enumerate() {
+            if let SpellCharmChild::Paralysis {
+                target,
+                root,
+                occurrence,
+            } = child
+            {
+                let preimage = runtime
+                    .stage_spell_charm_paralysis(
+                        projection.get_or_insert_with(|| runtime.carrier.clone()),
+                        batch,
+                        *target,
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(*root),
+                        *occurrence,
+                        None,
+                    )
+                    .map_err(|_| Error::InvalidCondition)?;
+                paralysis.push((index, preimage));
+            }
+        }
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&batch.binding).map_err(|_| Error::InvalidBatch)?;
+        let object = value.as_object_mut().ok_or(Error::InvalidBatch)?;
+        if object.contains_key("source_charm_children") {
+            return Err(Error::InvalidBatch);
+        }
+        object.insert(
+            "source_charm_children".into(),
+            serde_json::Value::String(format!("spell-charm-leaves-v1:{children:?}")),
+        );
+        let binding = serde_json::to_vec(&value).map_err(|_| Error::InvalidBatch)?;
+        if binding.len() > MAX_BINDING_BYTES {
+            return Err(Error::BindingTooLarge);
+        }
+        if batch.deferred.is_none() {
+            batch.binding.clone_from(&binding);
+        }
+        Ok(Self {
+            child_binding: Sha256::digest(&binding).into(),
+            damage_preimages,
+            children,
+            paralysis,
+            batch: batch.clone(),
         })
     }
 }
@@ -511,6 +621,19 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
     Ok(out.bytes)
 }
 
+/// Internal leaves extend physical replay evidence without changing the source
+/// identity captured by magnitude and timer owners. The full record still seals
+/// every child; this projection is accepted only as an unapplied historical replay.
+fn source_spell_batch(batch: &OwnerCombatBatch) -> Result<OwnerCombatBatch, Error> {
+    let mut source = batch.clone();
+    if let Ok(serde_json::Value::Object(mut binding)) = serde_json::from_slice(&source.binding)
+        && binding.remove("source_charm_children").is_some()
+    {
+        source.binding = serde_json::to_vec(&binding).map_err(|_| Error::InvalidBatch)?;
+    }
+    Ok(source)
+}
+
 fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
     if batch
         .now_us
@@ -734,7 +857,7 @@ impl ChannelRuntimeV1 {
             if record.character != character || record.lease != lease_generation {
                 return Err(Error::CommandConflict);
             }
-            return Ok(Some(record.original_batch.clone()));
+            return Ok(Some(source_spell_batch(&record.original_batch)?));
         }
         if let Some((before_character, before_lease, before_session, sequence, _)) =
             owner.high_water
@@ -1033,7 +1156,9 @@ impl ChannelRuntimeV1 {
         if staged.will_apply()
             && serde_json::from_slice::<serde_json::Value>(&batch.binding)
                 .ok()
-                .is_some_and(|v| v.get("source_relocation").is_some())
+                .is_some_and(|v| {
+                    v.get("source_relocation").is_some() || v.get("source_charm_children").is_some()
+                })
         {
             return Err(Error::InvalidBatch);
         }
@@ -1091,7 +1216,8 @@ impl ChannelRuntimeV1 {
         {
             if prior.character != batch.attacker
                 || prior.lease != batch.current_lease_generation
-                || canonical_binding(&prior.original_batch)? != binding
+                || (canonical_binding(&prior.original_batch)? != binding
+                    && canonical_binding(&source_spell_batch(&prior.original_batch)?)? != binding)
                 || prior.original_batch.deferred != batch.deferred
             {
                 return Err(Error::CommandConflict);
