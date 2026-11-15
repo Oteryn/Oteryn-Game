@@ -205,7 +205,7 @@ pub struct QualifiedSpellTiles {
     /// None retains unknown semantics for the existing entry-r1 source.
     tiles: Option<BTreeMap<LogicalCell, QualifiedSpellTile>>,
     unknown_cells: BTreeSet<LogicalCell>,
-    source_bounds: Option<[i32; 6]>,
+    source_bounds: Option<Vec<[i32; 6]>>,
     /// A world bundle's tiles (BUNDLE-TILES-1); when set, every lookup under `scope` reads them.
     bundle: Option<Arc<crate::content::bundle_spell_tiles::BundleSpellTiles>>,
 }
@@ -214,7 +214,7 @@ impl QualifiedSpellTiles {
     pub(super) fn bundle_activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
         self.bundle.as_ref()?;
         let mut view = self.clone();
-        view.source_bounds = Some(bounds);
+        view.source_bounds = Some(vec![bounds]);
         Some(view)
     }
     pub(super) fn from_source_world(
@@ -236,7 +236,7 @@ impl QualifiedSpellTiles {
             scope: world.scope().clone(),
             tiles: Some(tiles),
             unknown_cells,
-            source_bounds: Some(world.native_bounds()),
+            source_bounds: Some(world.captured_regions().to_vec()),
             bundle: None,
         }
     }
@@ -404,16 +404,18 @@ impl QualifiedSpellTiles {
             return Err(SpellTileLookupError::ScopeMismatch);
         }
         if self.unknown_cells.contains(&cell)
-            || self
-                .source_bounds
-                .is_some_and(|[min_x, min_y, max_x, max_y, min_z, max_z]| {
-                    cell.x < min_x
-                        || cell.x > max_x
-                        || cell.y < min_y
-                        || cell.y > max_y
-                        || cell.z < min_z
-                        || cell.z > max_z
-                })
+            || self.source_bounds.as_ref().is_some_and(|regions| {
+                !regions
+                    .iter()
+                    .any(|&[min_x, min_y, max_x, max_y, min_z, max_z]| {
+                        cell.x >= min_x
+                            && cell.x <= max_x
+                            && cell.y >= min_y
+                            && cell.y <= max_y
+                            && cell.z >= min_z
+                            && cell.z <= max_z
+                    })
+            })
         {
             return Err(SpellTileLookupError::Unknown);
         }
