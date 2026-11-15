@@ -7,6 +7,7 @@ import re
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -214,6 +215,8 @@ def capture(canary, crystal):
             raise ValueError(f'EVENT_CAKE_BRIDGE_PHYSICAL_SOURCE_DRIFT:{item_id}')
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                           bindings, native_ids)
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     cosmetic_rules = json.loads((ROOT / COSMETICS).read_bytes())['rules']
     unavailable = [{'item_id': item_id, 'production_key': f'oteryn:item.tibia.i{item_id}',
                     'reason': ('EVENT_ITEM_CANONICAL_IDENTITY_UNAVAILABLE' if item_id in identity_unavailable_ids

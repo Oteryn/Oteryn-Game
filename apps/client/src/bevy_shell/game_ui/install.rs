@@ -44,7 +44,8 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
     app.add_systems(
         Update,
         (
-            projection::missing_item_appearances,
+            projection::prepare_item_appearances.before(super::super::scene::project),
+            projection::item_appearances.after(super::super::scene::project),
             projection::project_regions.after(project),
         ),
     );

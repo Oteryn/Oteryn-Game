@@ -98,6 +98,7 @@ fn e07_real_server_payloads_replay_into_stash_panel() -> Result<(), Error> {
     assert_eq!(panel.feedback, None);
 
     let item = oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::MIN,
         item_definition_ref: std::num::NonZeroU32::MIN,
         count: std::num::NonZeroU32::new(stowed).ok_or("stowed zero")?,

@@ -87,6 +87,38 @@ class RottenItemAdmissionTests(unittest.TestCase):
         self.assertEqual(json.loads(generated[manifest_path])['item_profiles']['sha256'],
                          hashlib.sha256(generated[profile_path]).hexdigest())
 
+    def test_client_weight_overlay_keeps_native_zero_and_refuses_unproved_physical_changes(self):
+        from qualification_inputs import appearance_input_scope
+
+        profile_path, manifest_path = 'profiles', 'manifest'
+        original = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_bytes())
+        keys = {'oteryn:item.tibia.i43899', 'oteryn:item.tibia.i43900'}
+        order = lambda row: row['production_definition']['production_key']
+        canonical = lambda value: (json.dumps(value, sort_keys=True) + '\n').encode()
+        for weight in (450, 449):
+            with self.subTest(weight=weight), appearance_input_scope():
+                document = copy.deepcopy(original)
+                for record in document['records']:
+                    if record['production_definition']['production_key'] in keys:
+                        record['semantics']['physical']['value']['weight'] = {'state': 'KNOWN', 'value': weight}
+                generated = {profile_path: canonical(document), manifest_path: b'{"item_profiles":{}}'}
+                before = dict(generated)
+                if weight == 449:
+                    with self.assertRaisesRegex(ValueError, 'ROTTEN_ITEM_NATIVE_PHYSICAL_SOURCE_CONFLICT'):
+                        tool.admit_native(ROOT, generated, profile_path, manifest_path, order, canonical)
+                    self.assertEqual(generated, before)
+                    continue
+                tool.admit_native(ROOT, generated, profile_path, manifest_path, order, canonical)
+                records = {row['production_definition']['production_key']: row
+                           for row in json.loads(generated[profile_path])['records']}
+                prior = {row['production_definition']['production_key']: row for row in document['records']}
+                self.assertEqual(outside_snapshot(records, keys), outside_snapshot(prior, keys))
+                for key in keys:
+                    self.assertEqual(records[key]['semantics']['physical']['value']['weight'],
+                                     {'state': 'KNOWN', 'value': 0})
+                self.assertEqual(json.loads(generated[manifest_path])['item_profiles']['sha256'],
+                                 hashlib.sha256(generated[profile_path]).hexdigest())
+
     def test_boss_yield_custody_survives_real_rotten_capture(self):
         import boss_reward_yield_profiles as boss
         from qualification_inputs import appearance_input_scope

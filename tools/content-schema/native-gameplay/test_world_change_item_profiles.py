@@ -11,6 +11,7 @@ import build_world_change_item_profiles as builder
 
 sys.path.insert(0, str(builder.ROOT / "tools/content-migration"))
 import world_change_profiles as admission
+from import_cyclopedia_global import load_weights
 
 
 class WorldChangeItemProfiles(unittest.TestCase):
@@ -127,12 +128,15 @@ class WorldChangeItemProfiles(unittest.TestCase):
             21805: ("the orb of Light Undying", 350, True),
             21812: ("orb of Life Everchanging", 350, True),
         }
+        client = load_weights(builder.ROOT)
         for number, (name, weight, portable) in expected.items():
             with self.subTest(number=number):
                 record = records[number]
                 self.assertEqual(rows[number]["xml_name"], name)
+                # The captured source row keeps the donor weight; the profile carries the Global client weight.
+                self.assertEqual(rows[number]["xml_attributes"].get("weight", "0"), str(weight))
                 self.assertEqual(record["semantics"]["physical"]["value"]["weight"],
-                                 {"state": "KNOWN", "value": weight})
+                                 {"state": "KNOWN", "value": client.get(number, weight)})
                 self.assertEqual(record["admission"], {"materializable": True,
                     "stack_class": "StackCapable" if number in {14052,14053,14054} else "NonStackable",
                     "legal_destinations": ["CharacterInventory", "Ground"] if portable else ["Ground"]})

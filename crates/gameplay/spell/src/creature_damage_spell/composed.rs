@@ -433,6 +433,7 @@ enum Request {
     Player {
         session: GameSessionId,
         amount: u32,
+        base_damage: u32,
         heal: bool,
         hazard_critical: bool,
         occurrence: String,
@@ -519,6 +520,9 @@ impl ComposedOwner {
         }
         if !r.matches_live_creature_identity(proposal.issuer, source.caster.key.as_bytes())
             && !source.retained_caster_is_current(r, proposal.issuer)
+            && !r
+                .companion_snapshot_including_dead(proposal.issuer)
+                .is_ok_and(|snapshot| snapshot.state.policy.definition_key == source.caster.key)
         {
             return Err(AttackError::StaleIssuer);
         }
@@ -555,7 +559,9 @@ impl ComposedOwner {
         .into();
         let activation = r.content_pin().activation_sequence();
         self.memos.retain(|m| {
-            (r.contains_live_creature(m.actor) || source.retained_caster_is_current(r, m.actor))
+            (r.contains_live_creature(m.actor)
+                || source.retained_caster_is_current(r, m.actor)
+                || r.companion_snapshot_including_dead(m.actor).is_ok())
                 && m.activation == activation
         });
         let old = self.memos.iter().position(|m| {
@@ -576,6 +582,11 @@ impl ComposedOwner {
                 };
             }
         }
+        if !r.contains_live_creature(proposal.issuer)
+            && !source.retained_caster_is_current(r, proposal.issuer)
+        {
+            return Err(AttackError::StaleIssuer);
+        }
         if old.is_none() {
             if self.memos.len() >= 64 * 16 {
                 return Err(AttackError::LedgerFull);
@@ -585,7 +596,7 @@ impl ComposedOwner {
                 .map_err(|_| AttackError::LedgerFull)?;
         }
         let generic = DamageSpellOwner::default();
-        let prepared = source
+        let mut prepared = source
             .primary
             .as_ref()
             .map(|p| {
@@ -924,12 +935,119 @@ impl ComposedOwner {
                         request: Request::Player {
                             session: *session,
                             amount: hazard.amount,
+                            base_damage: amount,
                             heal: callback.heal,
                             hazard_critical: hazard.critical,
                             occurrence,
                         },
                     });
                 }
+            }
+        }
+        // Health components share the one incoming-hit selection and original summed roll.
+        let mut incoming = Vec::new();
+        incoming
+            .try_reserve(players.len())
+            .map_err(|_| AttackError::LedgerFull)?;
+        for (target, session) in &players {
+            let primary = prepared.as_mut().and_then(|prepared| {
+                prepared
+                    .targets
+                    .iter_mut()
+                    .find(|prepared| prepared.target == *target && prepared.session == *session)
+            });
+            let primary_health = source
+                .primary
+                .as_ref()
+                .is_some_and(|source| source.element.as_deref() != Some("mana_drain"));
+            let mut base_damage = if primary_health {
+                primary.as_ref().map_or(0, |primary| primary.base_damage)
+            } else {
+                0
+            };
+            for task in &tasks {
+                if task.target == *target
+                    && let Request::Player {
+                        session: target_session,
+                        base_damage: amount,
+                        heal: false,
+                        ..
+                    } = task.request
+                    && target_session == *session
+                {
+                    base_damage = base_damage
+                        .checked_add(amount)
+                        .ok_or(AttackError::NumericOverflow)?;
+                }
+            }
+            let handled = if let Some(primary) = primary.filter(|_| primary_health) {
+                primary.base_damage = base_damage;
+                !primary.blocked
+                    && vitals
+                        .source_hit_gate(
+                            r,
+                            *target,
+                            *session,
+                            primary.amount,
+                            crate::player_lethal::PlayerHitKind::from_element(
+                                source
+                                    .primary
+                                    .as_ref()
+                                    .and_then(|primary| primary.element.as_deref()),
+                            ),
+                            now,
+                        )
+                        .ok_or(AttackError::MissingVitals)?
+            } else {
+                false
+            };
+            let text = format!(
+                "{}:target:{}",
+                proposal.occurrence.id().as_str(),
+                hex(&target.placement_identity())
+            );
+            let digest = Sha256::new()
+                .chain_update(b"oteryn.charm.source.v1")
+                .chain_update(text.as_bytes())
+                .finalize();
+            let mut identity = [0; 16];
+            identity.copy_from_slice(&digest[..16]);
+            incoming.push((
+                *target,
+                *session,
+                base_damage,
+                handled,
+                DecisionOccurrenceId::from_bytes(identity),
+            ));
+        }
+        // One target selection cancels every Player branch of this source occurrence,
+        // including callback-only spells. Freeze it before any primary or callback writes.
+        let mut cancelled = Vec::new();
+        cancelled
+            .try_reserve(players.len())
+            .map_err(|_| AttackError::LedgerFull)?;
+        for (target, session) in &players {
+            let harmful = prepared.as_ref().is_some_and(|prepared| prepared.targets.iter().any(|prepared| prepared.target == *target && prepared.session == *session))
+                || tasks.iter().any(|task| task.target == *target && matches!(task.request, Request::Player { session: target_session, heal: false, .. } if target_session == *session));
+            if !harmful {
+                continue;
+            }
+            let occurrence = format!(
+                "{}:target:{}",
+                proposal.occurrence.id().as_str(),
+                hex(&target.placement_identity())
+            );
+            let dodge =
+                vitals.dodge_source_attack(r, proposal.issuer, *target, *session, &occurrence);
+            if let Some(prepared) = &mut prepared {
+                for prepared in &mut prepared.targets {
+                    if prepared.target == *target && prepared.session == *session {
+                        prepared.dodge = Some(dodge);
+                    }
+                }
+            }
+            if dodge {
+                cancelled.push((*target, *session));
             }
         }
         let mut result = ComposedOutcome {
@@ -1012,11 +1130,14 @@ impl ComposedOwner {
                 Request::Player {
                     session,
                     amount,
+                    base_damage: _,
                     heal,
                     hazard_critical,
                     occurrence,
                 } => {
-                    if heal {
+                    if cancelled.contains(&(target, session)) {
+                        Ok(BranchReceipt::Zero)
+                    } else if heal {
                         vitals
                             .apply_source_player_heal(r, target, session, amount, &occurrence, now)
                             .map(BranchReceipt::PlayerHeal)
@@ -1024,8 +1145,44 @@ impl ComposedOwner {
                     } else if amount == 0 {
                         Ok(BranchReceipt::Zero)
                     } else {
-                        vitals
-                            .apply_attack_damage(r, target, session, amount, &occurrence, now)
+                        let selected =
+                            incoming
+                                .iter_mut()
+                                .find(|(actor, target_session, _, _, _)| {
+                                    *actor == target && *target_session == session
+                                });
+                        let receipt = if let Some((_, _, base_damage, handled, identity)) = selected
+                            && !*handled
+                            && vitals
+                                .source_hit_gate(
+                                    r,
+                                    target,
+                                    session,
+                                    amount,
+                                    crate::player_lethal::PlayerHitKind::Mitigated,
+                                    now,
+                                )
+                                .ok_or(AttackError::MissingVitals)?
+                        {
+                            *handled = true;
+                            vitals.apply_source_incoming_hit(
+                                r,
+                                proposal.issuer,
+                                target,
+                                session,
+                                amount,
+                                *base_damage,
+                                Some(*identity),
+                                crate::player_lethal::PlayerHitKind::Mitigated,
+                                &occurrence,
+                                now,
+                                None,
+                                None,
+                            )
+                        } else {
+                            vitals.apply_attack_damage(r, target, session, amount, &occurrence, now)
+                        };
+                        receipt
                             .ok_or(AttackError::MissingVitals)
                             .and_then(|receipt| {
                                 if hazard_critical {

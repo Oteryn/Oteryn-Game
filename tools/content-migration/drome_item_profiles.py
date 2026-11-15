@@ -16,6 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -171,6 +172,8 @@ def capture(crystal: Path, root: Path = ROOT) -> dict:
     # bind_profiles requires qualified XML membership for every materializable item.
     bound = source.bind_profiles({"schema": "OTERYN_NATIVE_ITEM_PROFILES/v1", "records": rows},
                                  bindings, set(index))
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound["records"], root)
     records = bound["records"]
     document = {
         "schema": SCHEMA,

@@ -388,6 +388,9 @@ pub mod action_bar_cooldowns;
 #[path = "features/0462-support-intake/mod.rs"]
 pub mod support_intake;
 
+#[path = "features/0499-item-appearance/protocol.rs"]
+pub mod item_appearance;
+
 #[path = "features/0372-native-creature-icons/mod.rs"]
 pub mod native_creature_icons;
 

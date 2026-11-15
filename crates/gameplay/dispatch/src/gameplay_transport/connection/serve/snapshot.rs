@@ -210,6 +210,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         .domain_selected(STATE_DOMAIN_CHARACTER_INVENTORY)
     {
         let mut view = SessionItemView::resume(admitted.continuity.item_view);
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1)
+        {
+            view = view.with_appearances();
+        }
         if admitted.continuity.selected_capabilities.contains(
             oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
         ) {

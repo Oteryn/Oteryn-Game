@@ -128,6 +128,7 @@ mod tests {
 
     fn item(id: u8) -> ViewItem {
         ViewItem {
+            appearance_id: 0,
             key: ItemKey::Instance([id; 16]),
             item_definition_ref: NonZeroU32::MIN,
             count: NonZeroU32::MIN,

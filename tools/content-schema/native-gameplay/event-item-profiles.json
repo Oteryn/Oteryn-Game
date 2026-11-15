@@ -16429,7 +16429,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 600
+              "value": 1200
             },
             "movable": {
               "state": "KNOWN",
@@ -22255,7 +22255,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 700
+              "value": 500
             },
             "movable": {
               "state": "KNOWN",
@@ -27671,7 +27671,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 200
+              "value": 2700
             },
             "movable": {
               "state": "KNOWN",
@@ -29094,7 +29094,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -29237,7 +29237,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -29380,7 +29380,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -29523,7 +29523,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -29666,7 +29666,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -29809,7 +29809,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 1
             },
             "movable": {
               "state": "KNOWN",
@@ -36337,7 +36337,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 100
+              "value": 3800
             },
             "movable": {
               "state": "KNOWN",
@@ -39234,7 +39234,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -39379,7 +39379,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -39524,7 +39524,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -39669,7 +39669,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -39814,7 +39814,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -39959,7 +39959,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40104,7 +40104,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40249,7 +40249,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40394,7 +40394,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40539,7 +40539,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40684,7 +40684,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40829,7 +40829,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -40974,7 +40974,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41119,7 +41119,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41264,7 +41264,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41409,7 +41409,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41554,7 +41554,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41699,7 +41699,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41844,7 +41844,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -41989,7 +41989,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -42134,7 +42134,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -42279,7 +42279,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 900
             },
             "movable": {
               "state": "KNOWN",
@@ -46115,7 +46115,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46258,7 +46258,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46401,7 +46401,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46544,7 +46544,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46687,7 +46687,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46830,7 +46830,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -46973,7 +46973,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -47116,7 +47116,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -47403,7 +47403,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -47546,7 +47546,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 20
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
@@ -61526,7 +61526,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 450
             },
             "movable": {
               "state": "KNOWN",
@@ -61669,7 +61669,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 0
+              "value": 450
             },
             "movable": {
               "state": "KNOWN",
@@ -61812,7 +61812,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 240
             },
             "movable": {
               "state": "KNOWN",
@@ -61956,7 +61956,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 320
             },
             "movable": {
               "state": "KNOWN",
@@ -62100,7 +62100,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 200
             },
             "movable": {
               "state": "KNOWN",
@@ -62244,7 +62244,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 60
+              "value": 25
             },
             "movable": {
               "state": "KNOWN",

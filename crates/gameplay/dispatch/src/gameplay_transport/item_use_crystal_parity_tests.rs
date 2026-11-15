@@ -309,6 +309,26 @@ fn i14_global_consumables_are_admitted() {
             );
         }
     }
+    // Great Mana Potion rev 1190635 (2026-06-20): all vocations, level 80.
+    let great_mana = policy_of(state, 238).expect("item 238 is admitted");
+    for vocation in [
+        Vocation::None,
+        Vocation::Knight,
+        Vocation::Paladin,
+        Vocation::Monk,
+        Vocation::Druid,
+        Vocation::Sorcerer,
+    ] {
+        let requirements = &great_mana.record().semantics.use_requirements;
+        assert!(
+            requirements_met(requirements, facts_at(vocation, 80)),
+            "238 {vocation:?}"
+        );
+        assert!(
+            !requirements_met(requirements, facts_at(vocation, 79)),
+            "238 {vocation:?} below level"
+        );
+    }
     for (id, seconds) in [
         (3250, 96),   // The Carrot of Doom rev 1016926.
         (23535, 300), // Energy Bar rev 1011115.

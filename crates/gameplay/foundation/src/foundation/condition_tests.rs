@@ -1214,6 +1214,89 @@ fn qualified_curse_seventeen_groups_retain_all_fifty_five_occurrences() {
 }
 
 #[test]
+fn cleanse_hex_removes_and_blocks_reapplication_until_exact_deadline() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let hex = def(
+        "cond.intense_hex",
+        ConditionValues::IntenseHex {
+            duration_ms: 3_000,
+            damage_dealt_percent: 50,
+            healing_received_percent: 50,
+        },
+    );
+    apply(
+        &mut store,
+        &hex,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    let plan = store.prepare_cleanse(&facts(MS, &root)).unwrap();
+    assert!(plan.is_some(), "official Cleanse Hex eligibility");
+    let plan = plan.unwrap();
+    assert!(store.commit_cleanse(plan));
+    assert!(store.instances().is_empty());
+    assert!(!store.commit_cleanse(plan));
+    assert_eq!(
+        store.cleanse_immunity_remaining(ConflictKey::IntenseHex, MS),
+        11_000 * MS
+    );
+    assert_eq!(
+        apply(
+            &mut store,
+            &hex,
+            ConditionSourceKind::Creature,
+            &facts(11_001 * MS - 1, &root)
+        ),
+        Err(ConditionRefusal::Immune)
+    );
+    assert!(
+        apply(
+            &mut store,
+            &hex,
+            ConditionSourceKind::Creature,
+            &facts(11_001 * MS, &root)
+        )
+        .is_ok()
+    );
+    assert!(
+        store
+            .prepare_cleanse(&facts(11_001 * MS, &root))
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[test]
+fn cleanse_hex_exception_does_not_expand_generic_negative_dispels() {
+    let root = root();
+    let mut store = ConditionStore::new();
+    let hex = def(
+        "cond.hex",
+        ConditionValues::IntenseHex {
+            duration_ms: 3_000,
+            damage_dealt_percent: 50,
+            healing_received_percent: 50,
+        },
+    );
+    apply(
+        &mut store,
+        &hex,
+        ConditionSourceKind::Creature,
+        &facts(0, &root),
+    )
+    .unwrap();
+    assert_eq!(store.cleanse_candidate_count(0), 1);
+    assert_eq!(store.cleanse_negative(), 0);
+    assert_eq!(store.cleanse_candidate_count(3_000 * MS), 0);
+    assert_eq!(
+        store.prepare_cleanse_at_index(&facts(0, &root), 1),
+        Ok(None)
+    );
+}
+
+#[test]
 fn cleanse_excludes_drowning_positive_and_expired_speed_conditions() {
     let root = root();
     let mut store = ConditionStore::new();

@@ -192,6 +192,7 @@ fn controls_and_item_origins_never_arm_dialog_movement() -> Result {
             ItemDragSource {
                 generation: 0,
                 item: oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: NonZeroU64::new(1).ok_or("handle")?,
                     item_definition_ref: NonZeroU32::new(1).ok_or("definition")?,
                     count: NonZeroU32::new(1).ok_or("count")?,

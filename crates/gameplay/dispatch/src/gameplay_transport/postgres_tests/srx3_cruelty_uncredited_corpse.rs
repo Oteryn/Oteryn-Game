@@ -304,9 +304,11 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
             .map_err(debug)?;
             let outcome = |step| {
                 let ItemMoveStep::Result(outcome, _) = step else {
-                    panic!("actual pickup command must return a result: {step:?}");
+                    return Err(debug(format!(
+                        "actual pickup command must return a result: {step:?}"
+                    )));
                 };
-                outcome
+                Ok(outcome)
             };
             assert_eq!(
                 outcome(
@@ -314,7 +316,7 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                         &view, player, command, &payload, selection, false, &mut items
                     )
                     .await
-                ),
+                )?,
                 ItemMoveOutcome::Moved
             );
             assert_eq!(
@@ -323,7 +325,7 @@ fn srx3_cruelty_native_eye_uncredited_poor_soul_corpse_is_pickupable_and_replay_
                         &view, player, command, &payload, selection, false, &mut items
                     )
                     .await
-                ),
+                )?,
                 ItemMoveOutcome::Moved,
                 "same actual pickup command replays"
             );

@@ -12,6 +12,7 @@ fn inventory_drop_assigns_current_item_without_move_and_rejects_stale_source()
     let (mut app, _) = tests::fixture()?;
     let (link, mut commands, outbox) = play_channel();
     let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 3.try_into()?,

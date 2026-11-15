@@ -24,7 +24,7 @@ SHARED_NATIVE_WEIGHTS = {
     "oteryn:item.tibia.i283": (100, 160, 503),
     "oteryn:item.tibia.i284": (135, 180, 507),
     "oteryn:item.tibia.i285": (75, 150, 511),
-    "oteryn:item.tibia.i3031": (10, 1, 6818),
+    "oteryn:item.tibia.i3031": (1, 1, 6818),
     "oteryn:item.tibia.i23721": (150, 0, 47233),
 }
 
@@ -123,6 +123,12 @@ def merge_record(existing, source):
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     overlay = json.loads((root / PATH).read_bytes())
     records = overlay["records"]
+    # The captured donor weights stay as proof; outside the decided pairs above,
+    # the captured Global client weight wins (ITEMGLOB).
+    from import_cyclopedia_global import apply_profile_weights
+    decided = SHARED_NATIVE_WEIGHTS.keys() | MERGED_MAIN_NATIVE_WEIGHTS.keys()
+    apply_profile_weights([row for row in records
+                           if row["production_definition"]["production_key"] not in decided], root)
     keys = [row["production_definition"]["production_key"] for row in records]
     expected = {f"oteryn:item.tibia.i{number}" for number in overlay["required_ids"]}
     catalogue = overlay["catalogue"]

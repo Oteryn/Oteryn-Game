@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_CHARM_FIX_QUALIFICATION/v1",
+  "observed_date": "2026-11-13",
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "predecessor_pr_head": "cdccee3b69aec908674c8bd74a136e0f9d512906",
+  "new_source_reads": [
+    {"url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8140", "date": "2024-11-21", "method": "DIRECT_OFFICIAL_BROWSER_UI", "qualification": "Official reset examples directly read; prior fetch403 is a route limitation, no longer the only access method.", "examples": [{"level":100,"gold":100000},{"level":500,"gold":4500000},{"level":1000,"gold":10000000},{"level":2000,"gold":21000000}]},
+    {"url": "https://www.tibia.com/news/?subtopic=newsarchive&id=8960", "date": "2026-09-08", "method": "DIRECT_OFFICIAL_BROWSER_UI", "discovered_via": "https://l.nabbot.xyz/n/8960", "qualification": "Official later correction confirms Cleanse grants immunity to hex spells; read full ticker after redirect."},
+    {"url": "https://discord.com/channels/1431612466818977814/1431633212995670078/1540025997083152406", "date": "2026-08-20 17:53 local UI", "method": "ACTUAL_EXPANDED_ATTACHMENT_VIEW", "qualification": "Gabriel answers Root question with mobile screenshot of TibiaWiki Cleanse page. Screenshot lists Rooted and Feared and excludes skill debuffs. Secondary wiki citation, not own combat experiment; predates official25Aug/8Sep Hex changes."}
+  ],
+  "new_query_windows": [
+    {"server":"Tibia Analysers","literal":"cleanse","filters":[],"count":1,"review":"All one result opened plus full conversation; visually expanded the image reply rather than treating empty message text as no answer."},
+    {"server":"Kusnier","literal":"cleanse","filters":["Contains Link"],"count":6,"review":"All6 rendered matches read: two news items, tom official8935 link, three unrelated wound-cleansing wheel planner posts. News8960 followed to official site."}
+  ],
+  "rows": [
+    {"topic":"full_reset_fee","authority":"OFFICIAL_EXAMPLES_PLUS_ONE_CLIENT_TRANSACTION","source":"crates/gameplay/domain/src/domain/charm.rs:846","decision":"NARROW_FIX_ELIGIBLE","rule":"100000+11000*max(level-100,0)","qualification":"Examples disambiguate prose about per-level cost;757 client payment corroborates75%fee. Preserve free reset and entitlement/discount handling; test boundary100/101 and published examples. Not every entitlement exercised."},
+    {"topic":"Cleanse_Agony","authority":"OFFICIAL_MANUAL_CONSTRAINT_AND_COMPLETE_SOURCE_SELECTOR_TRACE","source":"crates/gameplay/domain/src/domain/condition.rs:137; crates/gameplay/foundation/src/foundation/condition_gate_tests.rs:295","decision":"CLOSED_ALREADY_CORRECT","rule":"Agony cannot be cured, blocked or resisted","qualification":"Domain is_negative excludesAgony before prepare_cleanse selection; existing named test proves never selected by Cleanse/negative dispel and not refused by immunity. Source and assertions independently read; implementation worker reports existing test PASS. Supersedes earlier incomplete prepare_cleanse-only candidate; no patch."},
+    {"topic":"Cleanse_Hex","authority":"CURRENT_OFFICIAL_CHANGELOG_8935_AND_8960","source":"crates/gameplay/foundation/src/foundation/condition.rs:1417-1480","decision":"VERIFY_REPRESENTATION_AND_EXISTING_PATH","rule":"RemoveHex and grant corresponding immunity","qualification":"25Aug addition followed by8Sep immunity correction. Do not equate Hex with IntenseHex or infer current Oteryn lacks support without tracing exact kind. No reproc/replacement algorithm specified."},
+    {"topic":"Cleanse_Root_Fear","authority":"DATED_SECONDARY_WIKI_SCREENSHOT_IN_GLOBAL_COMMUNITY","source":"crates/gameplay/foundation/src/foundation/condition.rs:1417-1480","decision":"CORROBORATION_NOT_NEW_RUNTIME_BUG","qualification":"Actual image answers the question; not an own measured proc, not proof of instance selection or timer semantics."},
+    {"topic":"Cleanse_replacement_reproc","authority":"HISTORICAL_ITEXO2020_AND_DATED_COMMUNITY_DISCUSSION","decision":"NO_CURRENT_RUNTIME_FIX_FROM_THIS_EVIDENCE","qualification":"Historical successful-proc replacement claim conflicts with current per-key storage, but authors warn pre-revamp; modern timer/reproc behavior remains unqualified."},
+    {"topic":"leech_AoE_overkill_rounding","authority":"HISTORICAL_ALYTRETA2022_SELECTED_FRAMES","decision":"NO_CURRENT_RUNTIME_FIX_FROM_THIS_EVIDENCE","qualification":"Four AoE matches and overkill discrepancy are numerical historical cases. No current rates or half-tie proof, no deployed Oteryn test."},
+    {"topic":"Parry_armor_mana","authority":"HISTORICAL_VENICE_HUNT_SAMPLE_AND_COMMUNITY_REPORTS","decision":"UNRESOLVED","qualification":"89/18238 versus56/10227 sample effectiveness does not isolate armor, mitigation or mana-only input."},
+    {"topic":"Dodge_Minor_order","authority":"UPSTREAM_CONFLICT_AND_COMMUNITY_QUESTIONS","decision":"UNRESOLVED","qualification":"No qualified same-hit modern Minor/major observation in the inspected windows."},
+    {"topic":"LowBlow_correlated_AoE","authority":"GLOBAL_COMMUNITY_ASSERTION_PLUS_AGGREGATE_HUNT_TESTS","decision":"UNRESOLVED","qualification":"31Oct assertion is not paired-draw proof. Kusnier/Gabriel aggregate hunts cannot settle shared roll."},
+    {"topic":"Carnage_chain_credit_summons","authority":"COMMUNITY_ANALOGY_AND_GEOMETRY_LEAD","decision":"UNRESOLVED","qualification":"Basic geometry lead and current source no-reentry guard do not establish Global chain or kill attribution."},
+    {"topic":"Wound_weapon_pierce","authority":"FULL_CONTEXT_DISTINCTION_AND_UNANSWERED_WEAPON_QUESTION","decision":"UNRESOLVED","qualification":"Verilo CryptStrike reply must not answer separate weapon physical-pierce question."},
+    {"topic":"Gabriel_hunt_comparison","authority":"CREATOR2026_SELECTED_UI_FRAMES","decision":"PERFORMANCE_EVIDENCE_ONLY","qualification":"Similar checkpoint damage, potion/latency/build qualifiers and unverified stage/assignment prevent isolated formula patch."}
+  ],
+  "runtime_edits_in_this_pr": false,
+  "game_actions_in_this_batch": false,
+  "scope_exhaustive": false
+}

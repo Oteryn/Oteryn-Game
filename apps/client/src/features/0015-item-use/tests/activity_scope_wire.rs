@@ -111,6 +111,7 @@ fn initial_body(stage: u8) -> Result<Vec<InitialDomainBody>, ScopeError> {
     };
     let item = |handle: u64, definition: u32| -> Result<oteryn_session::ItemEntry, ScopeError> {
         Ok(oteryn_session::ItemEntry {
+            appearance_id: 0,
             handle: handle.try_into()?,
             item_definition_ref: definition.try_into()?,
             count: 1.try_into()?,

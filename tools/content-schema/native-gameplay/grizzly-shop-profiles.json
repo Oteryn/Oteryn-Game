@@ -19,7 +19,7 @@
   "canonical_inputs": [
     {
       "path": "content/items/definitions/items-00000-00499.json",
-      "sha256": "c29c94efdfb37a753a3b1a1ce0cdd28c74e0a1c0d5bff461a7e2f86870010d94"
+      "sha256": "01e376a83b78137a1f687fe402570bd71ddfeb73f99154481199e897cac2a1da"
     },
     {
       "path": "content/items/definitions/items-00500-00999.json",
@@ -31,7 +31,7 @@
     },
     {
       "path": "content/items/definitions/items-02000-02499.json",
-      "sha256": "710a635e95b241412b4c9de959b134863e26a7f8a995dd0aa3552a588e814892"
+      "sha256": "fdf980d26b277ad9c8d404467f79f862aa6b0151682428c2b6cdce710252ff5f"
     },
     {
       "path": "content/items/definitions/items-06500-06999.json",
@@ -39,7 +39,7 @@
     },
     {
       "path": "content/items/definitions/items-07000-07499.json",
-      "sha256": "78460c9e61e7d87d3c7111e8a302466308442df8a969d5838efcb716f7da8a4c"
+      "sha256": "332ddc9974b9530caa7246745749d51a3b42bbb028f41d5c3b06e831cf4b64e7"
     },
     {
       "path": "content/items/definitions/items-08000-08499.json",
@@ -47,7 +47,7 @@
     },
     {
       "path": "content/items/definitions/items-11000-11499.json",
-      "sha256": "ada9474aed5c1dba8e31a1c9f3d2a728c0ed987317afd000587cd4585a2b05ff"
+      "sha256": "218551b69e66a09670342a0f621f9b69f80e197fce85c0554bfdb4c1b6e7bd44"
     },
     {
       "path": "content/items/definitions/items-15500-15999.json",
@@ -59,11 +59,11 @@
     },
     {
       "path": "content/items/definitions/items-29500-29999.json",
-      "sha256": "cd0ffa6dde24531c20c491b04d87ae9a37b208f122fd73d7c8581676c594e1f6"
+      "sha256": "451cd0b317380b978b2c93fe7edfb233b362e20520a9302dc96e50029571dc88"
     },
     {
       "path": "content/items/definitions/items-31000-31499.json",
-      "sha256": "78d89f6fb82d0f5b6b8b222feb5e1d6856e03c9bd560a7abb0e9f2d1a81b99a5"
+      "sha256": "63910417edbaa8a1e8a5b93834ed7dbc298ab4f55662084527aa286ee949e630"
     },
     {
       "path": "content/items/definitions/items-33500-33999.json",

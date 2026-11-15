@@ -367,6 +367,40 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
     Ok(())
 }
 
+#[cfg(feature = "bevy-shell")]
+#[test]
+fn item_icons_reuse_loaded_assets_and_packed_cells() -> Result<(), Box<dyn std::error::Error>> {
+    let mut scene = Scene::centered_on(
+        Arc::new(World::builtin()?),
+        None,
+        TileCoord::new(100, 100),
+        StepDir::South,
+        &[],
+    )?;
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    scene.prime_visual_assets(root);
+    let item = oteryn_session::ItemEntry {
+        appearance_id: 3031,
+        handle: 7.try_into()?,
+        item_definition_ref: 17.try_into()?,
+        count: 3.try_into()?,
+        sub_type: 0,
+    };
+    let before = scene.cache.counts();
+    scene.prepare_item_icons(std::iter::once(&item))?;
+    assert!(scene.item_icon(&item).is_some());
+    let prepared = scene.cache.counts();
+    assert_eq!(prepared[0], before[0], "no asset reload");
+    assert_eq!(prepared[1], before[1], "no base atlas unpack");
+    scene.prepare_item_icons(std::iter::once(&item))?;
+    assert_eq!(
+        scene.cache.counts(),
+        prepared,
+        "no repack for the same item"
+    );
+    Ok(())
+}
+
 #[test]
 fn srx3_soul_war_callback_outfits_decode_server_bindings_and_draw_native_sprites()
 -> Result<(), Box<dyn std::error::Error>> {

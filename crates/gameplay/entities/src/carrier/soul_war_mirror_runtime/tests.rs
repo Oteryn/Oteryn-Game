@@ -1703,6 +1703,109 @@ fn srx3_autonomous_reflection_lethal_enqueues_actual_source_death_before_reward(
     Ok(())
 }
 
+#[test]
+fn srx3_source_death_reflection_callbacks_publish_only_after_player_accepts() -> Result<(), String>
+{
+    for batch in [false, true] {
+        let (mut runtime, player, session, image, _) = fixture(10);
+        runtime
+            .remove_encounter_actor(image)
+            .expect("fixture replacement");
+        let key = "oteryn:creature.goshnar_s_megalomania_blue";
+        let policy = runtime.companion_policy(key).expect("native source boss");
+        let target = ExactActorRef(
+            runtime
+                .admit_encounter_fixture_actor(
+                    ActorState(2),
+                    key,
+                    policy.maximum_health,
+                    Some(LocalPosition {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    }),
+                )
+                .expect("native source target"),
+        );
+        runtime
+            .install_creature_policy(target, key)
+            .expect("native death metadata");
+        let damage = u32::try_from(policy.maximum_health).map_err(|error| format!("{error:?}"))?;
+        let stream = b"source.reflection.atomic.queue";
+        for accepted in [false, true] {
+            let receipt = if batch {
+                runtime.commit_source_damage_batch_with_vitals(
+                    &[(target, damage)],
+                    player,
+                    session,
+                    stream,
+                    1,
+                    201_123,
+                    |runtime, results| {
+                        assert_eq!(
+                            runtime.live_creature_health(target),
+                            Some(u64::from(damage))
+                        );
+                        assert_eq!(runtime.next_source_creature_death().expect("queue"), None);
+                        assert_eq!(results[0].health_after, 0);
+                        accepted.then_some(results[0])
+                    },
+                )
+            } else {
+                runtime.commit_source_damage_with_vitals(
+                    target,
+                    player,
+                    session,
+                    stream,
+                    1,
+                    damage,
+                    201_123,
+                    |runtime, result| {
+                        assert_eq!(
+                            runtime.live_creature_health(target),
+                            Some(u64::from(damage))
+                        );
+                        assert_eq!(runtime.next_source_creature_death().expect("queue"), None);
+                        assert_eq!(result.health_after, 0);
+                        accepted.then_some(result)
+                    },
+                )
+            }
+            .map_err(|error| format!("{error:?}"))?;
+            assert_eq!(receipt.is_some(), accepted);
+            if !accepted {
+                assert_eq!(
+                    runtime.live_creature_health(target),
+                    Some(u64::from(damage))
+                );
+                assert_eq!(runtime.next_source_creature_death().expect("queue"), None);
+            }
+        }
+        let notice = runtime
+            .next_source_creature_death()
+            .expect("queue")
+            .expect("accepted lethal notice");
+        assert_eq!(notice.actor(), target);
+        assert_eq!(notice.enqueued_at_us(), Some(201_123));
+        assert_eq!(notice.enqueued_at_ms(), Some(201));
+        assert!(
+            runtime
+                .begin_source_creature_death(&notice)
+                .map_err(|error| format!("{error:?}"))?
+                .has_reward_damage_credit()
+        );
+        let replay = runtime
+            .commit_source_damage(target, player, session, stream, 1, damage, 202)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(!replay.applied);
+        assert_eq!(
+            runtime.next_source_creature_death().expect("queue"),
+            Some(notice)
+        );
+    }
+    Ok(())
+}
+
 #[path = "tests/hatred_periodic.rs"]
 mod hatred_periodic;
 #[path = "tests/spite_expiry.rs"]

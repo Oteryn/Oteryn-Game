@@ -67,6 +67,7 @@ fn deposit_uses_live_inventory_or_container_handles() {
         ..Default::default()
     };
     let item = ItemEntry {
+        appearance_id: 0,
         handle: NonZeroU64::MIN,
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,
@@ -134,6 +135,7 @@ fn container_source_requires_live_handle_capability_and_one_pending_request() {
         ..Default::default()
     };
     let item = ItemEntry {
+        appearance_id: 0,
         handle: NonZeroU64::MIN,
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

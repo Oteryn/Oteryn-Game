@@ -109,6 +109,7 @@ pub(super) async fn observe(
                 return None;
             };
             Some(ViewItem {
+                appearance_id: child.facts.appearance_id,
                 key: source_key(child.placement_key),
                 item_definition_ref: reference,
                 count: NonZeroU32::new(child.facts.count)?,

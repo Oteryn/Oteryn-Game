@@ -32,7 +32,8 @@ message ItemTargetV1 {
   uint64 handle = 1;
 }
 
-// One item in a view. At most 29 encoded bytes (handle 11, definition 6, count 6, sub-type 6).
+// One item in a view. Legacy: at most 29 bytes (11 + 6 + 6 + 6).
+// Negotiated ITEM_APPEARANCE_V1 (499, requires 4) adds field 5, at most 33 bytes.
 message ItemEntryV1 {
   // Non-zero.
   uint64 handle = 1;
@@ -42,13 +43,18 @@ message ItemEntryV1 {
   uint32 count = 3;
   // The item's sub-type (for example a fluid); absent (0) when it has none.
   uint32 sub_type = 4;
+  // Only when capability 499 is selected; otherwise field 5 is forbidden.
+  // Client appearance id, 0 = none (also when absent); bounded to 65535.
+  // Duplicate fields and values above 65535 fail closed, as in WorldMap item entries.
+  uint32 appearance_id = 5;
 }
 
 // StateDomainSnapshot.payload of domain 9, snapshot type 1, and StateDelta.payload of domain 9, delta
 // type 1. A delta carries the whole view after the durable commit that changed it. The main backpack
 // slot and its direct entries in display order; no backpack equipped is an absent main_backpack and no
-// entries. At most 30 items in all (ITEMV0-RL-01) and 930 bytes; under capability 12 the 30 include
-// the equipped items and the bound is 966 bytes (nine 35-byte equipped elements and 21 entries).
+// entries. At most 30 items (ITEMV0-RL-01): 930 bytes, or 966 with capability 12
+// (nine 35-byte equipped elements and 21 31-byte entry elements). Capability 499
+// changes entry elements to 35 bytes: 1050 bytes, or 1086 with capability 12.
 message CharacterInventoryV1 {
   ItemEntryV1 main_backpack = 1;
   repeated ItemEntryV1 entries = 2;
@@ -74,7 +80,8 @@ enum EquipmentSlotV1 {
   EQUIPMENT_SLOT_AMMO = 9;
 }
 
-// Capability 12: one occupied slot. At most 33 encoded bytes (slot 2, item 31).
+// Capability 12: one occupied slot. Legacy at most 33 bytes (slot 2, item element 31);
+// with capability 499, at most 37 bytes (slot 2, item element 35).
 message EquippedItemV1 {
   EquipmentSlotV1 slot = 1;
   // Required.
@@ -84,7 +91,7 @@ message EquippedItemV1 {
 // StateDomainSnapshot.payload of domain 11, snapshot type 1, and StateDelta.payload of domain 11,
 // delta type 1. A delta carries the whole view. The one open corpse, by the handle it has in domain 1,
 // and its entries in display order; an empty payload means nothing is open. At most 30 entries
-// (GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX) and 941 bytes.
+// (GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX), 941 legacy bytes or 1061 with capability 499.
 message OpenContainerV1 {
   uint64 container_handle = 1;
   repeated ItemEntryV1 entries = 2;

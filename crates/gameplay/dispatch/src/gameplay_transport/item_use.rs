@@ -1548,6 +1548,10 @@ mod tests {
 mod crystal_parity_tests;
 
 #[cfg(test)]
+#[path = "item_use_healing_parity_tests.rs"]
+mod healing_parity_tests;
+
+#[cfg(test)]
 #[allow(clippy::expect_used)]
 pub(super) mod item_use_postgres_tests;
 

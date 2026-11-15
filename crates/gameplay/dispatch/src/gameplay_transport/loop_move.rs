@@ -1534,6 +1534,7 @@ async fn observe_container_with_house_capacity_inner(
         .take(usize::from(capacity))
         .map(|entry| {
             Some(ViewItem {
+                appearance_id: super::item_view::appearance_of(&entry.item.definition),
                 key: ItemKey::Instance(entry.item.item_instance_id),
                 item_definition_ref: definition_ref(index, &entry.item.definition)?,
                 count: NonZeroU32::new(entry.item.quantity)?,

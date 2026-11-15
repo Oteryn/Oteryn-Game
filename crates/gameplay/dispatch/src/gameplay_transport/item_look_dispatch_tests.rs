@@ -83,6 +83,7 @@ fn session(selected: &[u32], continuity: SessionContinuity) -> AdmittedSession {
 
 fn view_item(key: [u8; 16], reference: u32, count: u32) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key: ItemKey::Instance(key),
         item_definition_ref: NonZeroU32::new(reference).expect("reference"),
         count: NonZeroU32::new(count).expect("count"),

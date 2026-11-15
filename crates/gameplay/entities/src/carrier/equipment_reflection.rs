@@ -42,7 +42,149 @@ impl ChannelRuntimeV1 {
         magnitude: u32,
         now_ms: u64,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.commit_source_damage_with_clock(
+        let (index, next, result) = self.prepare_source_damage(
+            source, reflector, session, stream, sequence, magnitude, now_ms,
+        )?;
+        if let Some(next) = next {
+            let notice = self
+                .carrier
+                .native_death_notice_for_slot(source, &next, None)?;
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+            self.carrier.slots[index] = next;
+            self.carrier.install_native_death_events(notice);
+        }
+        Ok(result)
+    }
+
+    /// Prepare the existing leaf-damage successor at `now_us` before invoking the player owner.
+    /// The callback has immutable runtime access, so a refused player commit leaves both
+    /// owners unchanged and a successful callback is followed by allocation-free publication.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_with_vitals<R>(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_us: u64,
+        commit: impl FnOnce(&Self, OwnerDamageResult) -> Option<R>,
+    ) -> Result<Option<R>, CarrierError> {
+        let (index, next, result) = self.prepare_source_damage_with_clock(
+            source,
+            reflector,
+            session,
+            stream,
+            sequence,
+            magnitude,
+            now_us / 1_000,
+            Some(now_us),
+        )?;
+        let notice = next
+            .as_ref()
+            .map(|slot| {
+                self.carrier
+                    .native_death_notice_for_slot(source, slot, Some(now_us))
+            })
+            .transpose()?
+            .flatten();
+        if notice.is_some() {
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+        }
+        let Some(receipt) = commit(self, result) else {
+            return Ok(None);
+        };
+        if let Some(next) = next {
+            self.carrier.slots[index] = next;
+        }
+        self.carrier.install_native_death_events(notice);
+        Ok(Some(receipt))
+    }
+
+    /// Compose distinct source owners at `now_us` with one immutable player-owner callback.
+    /// Every receipt and attribution allocation is prepared before the player can write.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage_batch_with_vitals<R>(
+        &mut self,
+        sources: &[(ExactActorRef, u32)],
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        now_us: u64,
+        commit: impl FnOnce(&Self, &[OwnerDamageResult]) -> Option<R>,
+    ) -> Result<Option<R>, CarrierError> {
+        if sources.len() > self.actor_slot_capacity() {
+            return Err(CarrierError::AllocationFailed);
+        }
+        let mut plans = Vec::new();
+        let mut results = Vec::new();
+        plans
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        results
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (source, magnitude) in sources {
+            let (index, next, result) = self.prepare_source_damage_with_clock(
+                *source,
+                reflector,
+                session,
+                stream,
+                sequence,
+                *magnitude,
+                now_us / 1_000,
+                Some(now_us),
+            )?;
+            if plans.iter().any(|(other, _)| *other == index) {
+                return Err(CarrierError::PlanConflict);
+            }
+            plans.push((index, next));
+            results.push(result);
+        }
+        let mut notices = Vec::new();
+        notices
+            .try_reserve(sources.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for ((source, _), (_, next)) in sources.iter().zip(&plans) {
+            if let Some(next) = next
+                && let Some(notice) =
+                    self.carrier
+                        .native_death_notice_for_slot(*source, next, Some(now_us))?
+            {
+                notices.push(notice);
+            }
+        }
+        if !notices.is_empty() {
+            self.carrier.reserve_native_death_capacity(&notices)?;
+        }
+        let Some(receipt) = commit(self, &results) else {
+            return Ok(None);
+        };
+        for (index, next) in plans {
+            if let Some(next) = next {
+                self.carrier.slots[index] = next;
+            }
+        }
+        self.carrier.install_native_death_events(notices);
+        Ok(Some(receipt))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_source_damage(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_ms: u64,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
+        self.prepare_source_damage_with_clock(
             source, reflector, session, stream, sequence, magnitude, now_ms, None,
         )
     }
@@ -58,7 +200,7 @@ impl ChannelRuntimeV1 {
         magnitude: u32,
         now_us: u64,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.commit_source_damage_with_clock(
+        let (index, next, result) = self.prepare_source_damage_with_clock(
             source,
             reflector,
             session,
@@ -67,10 +209,20 @@ impl ChannelRuntimeV1 {
             magnitude,
             now_us / 1_000,
             Some(now_us),
-        )
+        )?;
+        if let Some(next) = next {
+            let notice = self
+                .carrier
+                .native_death_notice_for_slot(source, &next, Some(now_us))?;
+            self.carrier
+                .reserve_native_death_capacity(notice.as_slice())?;
+            self.carrier.slots[index] = next;
+            self.carrier.install_native_death_events(notice);
+        }
+        Ok(result)
     }
     #[allow(clippy::too_many_arguments)]
-    fn commit_source_damage_with_clock(
+    fn prepare_source_damage_with_clock(
         &mut self,
         source: ExactActorRef,
         reflector: ExactActorRef,
@@ -80,7 +232,7 @@ impl ChannelRuntimeV1 {
         magnitude: u32,
         now_ms: u64,
         enqueue_us: Option<u64>,
-    ) -> Result<OwnerDamageResult, CarrierError> {
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let lease = self.bound_attacker_lease(reflector, session)?;
         // The incoming owner may still hit a player held through disconnect. The bound
         // lease/session fence is required; a live client connection is not.
@@ -133,7 +285,7 @@ impl ChannelRuntimeV1 {
         };
         if let Some(mark) = committed.reflection_marks.get(&key) {
             if sequence <= *mark {
-                return committed
+                let result = committed
                     .entries
                     .iter()
                     .find(|record| record.reflection == Some((key, sequence)))
@@ -146,7 +298,8 @@ impl ChannelRuntimeV1 {
                             applied: false,
                             ..record.result
                         })
-                    });
+                    })?;
+                return Ok((index, None, result));
             }
         } else if committed.reflection_marks.len() >= REFLECTION_STREAMS_MAX {
             return Err(CarrierError::DamageReceiptCapacityExceeded);
@@ -180,7 +333,7 @@ impl ChannelRuntimeV1 {
             Some(&source_context),
         )?;
         let Some(mut next) = next else {
-            return Ok(result);
+            return Ok((index, None, result));
         };
         let Slot::CreatureOccupied {
             committed,
@@ -222,17 +375,7 @@ impl ChannelRuntimeV1 {
             Some(&source_context),
             Some(now_ms),
         );
-        // This source stream publishes its prepared Slot directly. Reserve
-        // and append through the SAME canonical death FIFO as other HP owners.
-        let notice = owner
-            .carrier
-            .native_death_notice_for_slot(source, &next, enqueue_us)?;
-        owner
-            .carrier
-            .reserve_native_death_capacity(notice.as_slice())?;
-        owner.carrier.slots[index] = next;
-        owner.carrier.install_native_death_events(notice);
-        Ok(result)
+        Ok((index, Some(next), result))
     }
 }
 
@@ -294,6 +437,45 @@ mod tests {
             )
             .expect("creature");
         (runtime, player, session, creature)
+    }
+
+    #[test]
+    fn incoming_order_reflection_refused_player_commit_preserves_source_and_receipt() {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                let (mut runtime, player, session, creature) = fixture();
+                let refused = runtime
+                    .commit_source_damage_with_vitals(
+                        creature,
+                        player,
+                        session,
+                        b"incoming-refused",
+                        1,
+                        100,
+                        0,
+                        |runtime, result| {
+                            assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                            assert_eq!(result.health_after, 9_900);
+                            None::<()>
+                        },
+                    )
+                    .expect("prepared source successor");
+                assert!(refused.is_none());
+                assert_eq!(runtime.live_creature_health(creature), Some(10_000));
+                let committed = runtime
+                    .commit_source_damage(creature, player, session, b"incoming-refused", 1, 100, 0)
+                    .expect("same occurrence retry");
+                assert!(committed.applied);
+                assert_eq!(runtime.live_creature_health(creature), Some(9_900));
+                let replay = runtime
+                    .commit_source_damage(creature, player, session, b"incoming-refused", 1, 100, 0)
+                    .expect("replay");
+                assert!(!replay.applied);
+            })
+            .expect("thread")
+            .join()
+            .expect("scenario");
     }
 
     #[test]

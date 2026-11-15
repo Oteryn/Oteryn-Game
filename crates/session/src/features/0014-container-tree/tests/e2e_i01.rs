@@ -10,6 +10,7 @@ fn entry(
     count: u32,
 ) -> Result<ItemEntry, Box<dyn std::error::Error>> {
     Ok(ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(handle).ok_or("zero fixture handle")?,
         item_definition_ref: definition.try_into()?,
         count: count.try_into()?,

@@ -32,7 +32,7 @@ pub struct PlayerBatchPreflight {
     )>,
     replacements: Vec<Replacement>,
     wheel_shielding: Vec<(ExactActorRef, u32)>,
-    preprocessed_caster: Option<(ExactActorRef, GameSessionId, PlayerSpellState)>,
+    preprocessed_caster: Option<(usize, ExactActorRef, GameSessionId, PlayerSpellState)>,
     health_receipts: Vec<crate::foundation::runtime_actor_spell_types::EffectReceipt>,
     pub(in crate::gameplay_transport) deaths:
         Vec<(ExactActorRef, GameSessionId, super::PlayerDeath)>,
@@ -100,6 +100,24 @@ impl PlayerBatchPreflight {
         Ok(())
     }
 
+    /// The numerical/player owner has already qualified the original source.
+    /// Join only physical creature leaves; they grant no player vitals or Leech.
+    pub(super) fn join_charm_children(&mut self, batch: &OwnerCombatBatch) -> Result<(), Error> {
+        let mut source = batch.clone();
+        let mut binding: serde_json::Value =
+            serde_json::from_slice(&source.binding).map_err(|_| Error::InvalidBatch)?;
+        binding
+            .as_object_mut()
+            .ok_or(Error::InvalidBatch)?
+            .remove("source_charm_children");
+        source.binding = serde_json::to_vec(&binding).map_err(|_| Error::InvalidBatch)?;
+        if source != self.batch {
+            return Err(Error::CommandConflict);
+        }
+        self.batch = batch.clone();
+        Ok(())
+    }
+
     pub fn matches_batch(&self, batch: &OwnerCombatBatch) -> bool {
         &self.batch == batch
     }
@@ -152,14 +170,17 @@ impl PlayerBatchPreflight {
         })
     }
 
-    /// Item spell leech consumes only actual staged damage, in the same owner install.
+    /// Leech is staged from qualified damage before overkill/Prey, but only an
+    /// applied receipt permits the gain. Both gains join the existing atomic install.
     pub(in crate::gameplay_transport) fn stage_item_spell_leech(
         &mut self,
+        runtime: &ChannelRuntimeV1,
         physical: &StagedSpellBatch,
-        rates: (u32, u32),
+        inputs: &[crate::gameplay_transport::item_spell_augments::leech_projection::Target],
         bounty: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
-        if rates == (0, 0) && bounty.is_empty() {
+        use oteryn_gameplay_combat_rules::resolution::equipped_offence::leech_amount_for_targets;
+        if !physical.will_apply() || inputs.is_empty() {
             return Ok(());
         }
         let damage = self
@@ -172,12 +193,21 @@ impl PlayerBatchPreflight {
                 )
             })
             .collect::<Vec<_>>();
-        let affected = damage.len();
-        if affected == 0 {
-            return Ok(());
+        if damage.len() != inputs.len() {
+            return Err(Error::InvalidBatch);
+        }
+        if inputs.iter().any(|input| {
+            input.affected == 0
+                || input.affected > crate::foundation::runtime_actor_spell_types::MAX_EFFECTS
+        }) {
+            return Err(Error::InvalidBatch);
         }
         let mut gains = (0u32, 0u32);
         for effect in damage {
+            let input = inputs
+                .iter()
+                .find(|input| input.target == effect.target && input.ordinal == effect.sub_ordinal)
+                .ok_or(Error::InvalidBatch)?;
             let receipt = physical
                 .preview_effect_receipts()
                 .iter()
@@ -192,16 +222,30 @@ impl PlayerBatchPreflight {
             if !receipt.applied {
                 continue;
             }
-            let real = receipt
-                .health_before
-                .saturating_sub(receipt.health_after.max(0))
-                .max(0);
+            let damage = match input.damage {
+                Some(damage) => {
+                    let healing = match &effect.change {
+                        OwnerCombatChange::DamageWithHealing { healing, .. } => *healing,
+                        _ => 0,
+                    };
+                    crate::gameplay_transport::item_spell_augments::leech_projection::owner_damage_basis(
+                        runtime, effect.target, damage, receipt.health_before, healing,
+                    )?
+                }
+                None => u32::try_from(
+                    receipt
+                        .health_before
+                        .saturating_sub(receipt.health_after.max(0))
+                        .max(0),
+                )
+                .unwrap_or(u32::MAX),
+            };
             let amount = |rate: u32| {
-                (real as f64 * f64::from(rate.min(u32::from(u16::MAX))) / 10000.0
-                    * (0.1 * affected as f64 + 0.9)
-                    / affected as f64)
-                    .round()
-                    .clamp(0.0, real as f64) as u32
+                leech_amount_for_targets(
+                    damage,
+                    u16::try_from(rate).unwrap_or(u16::MAX),
+                    input.affected,
+                )
             };
             let bonus = bounty
                 .iter()
@@ -209,11 +253,33 @@ impl PlayerBatchPreflight {
                     *target == effect.target && *ordinal == effect.sub_ordinal
                 })
                 .map_or(0, |(_, _, rate)| u32::from(*rate));
-            // Canary's combat callback adds its rate before the shared round/AoE cap.
             gains.0 = gains
                 .0
-                .saturating_add(amount(rates.0.saturating_add(bonus)));
-            gains.1 = gains.1.saturating_add(amount(rates.1));
+                .saturating_add(amount(input.rates.0.saturating_add(bonus)));
+            gains.1 = gains.1.saturating_add(amount(input.rates.1));
+        }
+        if gains == (0, 0) {
+            return Ok(());
+        }
+        if !self
+            .replacements
+            .iter()
+            .any(|r| r.actor == self.batch.caster)
+        {
+            let (index, actor, session, before) = self
+                .preprocessed_caster
+                .as_ref()
+                .ok_or(Error::InvalidBatch)?;
+            let mut next = before.clone();
+            next.advance_batch_revision()
+                .map_err(|_| Error::InvalidBatch)?;
+            self.replacements.push(Replacement {
+                index: *index,
+                actor: *actor,
+                session: *session,
+                before: before.clone(),
+                next,
+            });
         }
         let caster = self
             .replacements
@@ -237,8 +303,9 @@ impl PlayerBatchPreflight {
         if caster.control_loss.is_some() && !runtime.qualified_deferred_batch(&self.batch) {
             return Err(SpellCastDisposition::Rejected);
         }
-        if let Some((actor, session, before)) = &self.preprocessed_caster
-            && states.get(runtime, *actor, *session) != Some(before)
+        if let Some((index, actor, session, before)) = &self.preprocessed_caster
+            && (states.index(*actor, *session) != Some(*index)
+                || states.get(runtime, *actor, *session) != Some(before))
         {
             return Err(SpellCastDisposition::Rejected);
         }
@@ -628,6 +695,9 @@ fn stage_player_batch_inner(
     let preprocessed_caster = if preprocessed {
         let session = batch.command.game_session_id();
         Some((
+            states
+                .index(batch.caster, session)
+                .ok_or(SpellCastDisposition::Rejected)?,
             batch.caster,
             session,
             states
@@ -936,3 +1006,131 @@ pub fn install_owner_batch(
 #[cfg(test)]
 #[path = "actor_spell_commit_tests.rs"]
 mod tests;
+
+/// Current source/catalogue borrows belong to this owner turn, never to a saved timer.
+pub(in crate::gameplay_transport) struct DueCharmCommit<'a> {
+    pub states: &'a mut ChannelSpellStates,
+    pub content: &'a crate::content::native_gameplay::NativeGameplayState,
+    pub catalogue: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+}
+impl crate::spell::delayed_execution::due_commit_seal::Sealed for DueCharmCommit<'_> {}
+impl crate::spell::delayed_execution::DueCombatCommit for DueCharmCommit<'_> {
+    fn commit_due_combat(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        payload: &crate::spell::delayed_execution::TimerPayload,
+        batch: &OwnerCombatBatch,
+    ) -> Result<CombatBatchReceipt, crate::spell::delayed_execution::Error> {
+        use crate::spell::delayed_execution::{Error, TimerPayload};
+        let inputs = match payload {
+            TimerPayload::Strike(saved) => {
+                &saved
+                    .resolved
+                    .as_ref()
+                    .ok_or(Error::InvalidPayload)?
+                    .augments
+            }
+            TimerPayload::OrdinaryCombat(saved) => {
+                &saved
+                    .resolved
+                    .as_ref()
+                    .ok_or(Error::InvalidPayload)?
+                    .augments
+            }
+            _ => return commit_due_batch(runtime, self.states, payload, batch, None),
+        };
+        // A physical replay must not evaluate a new assignment or inspect old live preimages.
+        if !runtime
+            .stage_spell_batch(batch)
+            .map_err(Error::Batch)?
+            .will_apply()
+        {
+            return commit_due_batch(runtime, self.states, payload, batch, inputs.children.get());
+        }
+        if inputs.children.get().is_none() {
+            let prepared = super::native_combat_cast::prepare_due_children(
+                runtime,
+                self.states,
+                self.content,
+                self.catalogue,
+                batch,
+                inputs,
+            )
+            .map_err(Error::Batch)?;
+            inputs
+                .children
+                .set(prepared)
+                .map_err(|_| Error::InvalidPayload)?;
+        }
+        commit_due_batch(runtime, self.states, payload, batch, inputs.children.get())
+    }
+}
+
+pub(in crate::gameplay_transport) fn commit_due_batch(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    payload: &crate::spell::delayed_execution::TimerPayload,
+    batch: &OwnerCombatBatch,
+    children: Option<&crate::spell::delayed_execution::DueSpellChildren>,
+) -> Result<CombatBatchReceipt, crate::spell::delayed_execution::Error> {
+    use crate::spell::delayed_execution::{Error, TimerPayload};
+    let staged = match children.and_then(|children| children.proof.as_ref()) {
+        Some(proof) => runtime.stage_spell_batch_with_children(batch, proof),
+        None => runtime.stage_spell_batch(batch),
+    }
+    .map_err(Error::Batch)?;
+    if !staged.will_apply() {
+        return runtime.commit_spell_batch(staged).map_err(Error::Batch);
+    }
+    let (mut player, inputs, bounty) = match payload {
+        TimerPayload::Strike(saved) => {
+            let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
+            (
+                stage_due_player_batch(runtime, states, batch, &resolved.magnitude)
+                    .map_err(|_| Error::StaleOwner)?,
+                &resolved.augments.leech,
+                &resolved.bounty_leech,
+            )
+        }
+        TimerPayload::OrdinaryCombat(saved) => {
+            let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
+            (
+                stage_player_batch_with_magnitude(
+                    runtime,
+                    states,
+                    batch,
+                    None,
+                    Some(&resolved.magnitude),
+                )
+                .map_err(|_| Error::StaleOwner)?,
+                &resolved.augments.leech,
+                &resolved.bounty_leech,
+            )
+        }
+        _ => return runtime.commit_spell_batch(staged).map_err(Error::Batch),
+    };
+    player
+        .stage_item_spell_leech(runtime, &staged, inputs, bounty)
+        .map_err(Error::Batch)?;
+    if children.is_some_and(|children| {
+        children
+            .fatal_holds
+            .iter()
+            .any(|(actor, _)| states.monster_melee.creature_ai.state(*actor).is_none())
+    }) {
+        return Err(Error::StaleOwner);
+    }
+    let receipt =
+        commit_owner_batch(runtime, states, staged, Some(player)).map_err(Error::Batch)?;
+    if receipt.applied
+        && let Some(children) = children
+    {
+        for (actor, until) in &children.fatal_holds {
+            states
+                .monster_melee
+                .creature_ai
+                .apply_fatal_hold(*actor, *until);
+        }
+    }
+    Ok(receipt)
+}

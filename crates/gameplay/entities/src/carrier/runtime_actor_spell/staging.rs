@@ -75,6 +75,7 @@ impl ChannelRuntimeV1 {
             command: batch.command,
             phase,
             original_batch: batch.clone(),
+            charm_children: None,
             receipt: receipt.clone(),
         });
         let last = batch.effects.last().map_or(0, |e| e.sub_ordinal);
@@ -253,6 +254,9 @@ impl ChannelRuntimeV1 {
                 continue;
             }
             if matches!(next.slots[index], Slot::Occupied { .. }) {
+                if usize::from(effect.sub_ordinal) >= MAX_EFFECTS {
+                    return Err(Error::InvalidBatch);
+                }
                 let Slot::Occupied {
                     game_session_id: Some(_),
                     committed: true,
@@ -353,31 +357,76 @@ impl ChannelRuntimeV1 {
                 target_atom,
                 magnitude,
             } => {
-                let source = health_source()?;
-                let mut hit_binding = digest.to_vec();
-                hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
-                health_receipt = Some(next.commit_creature_damage_inner_limited_source(
-                    &self.continuity,
-                    effect.target.0,
-                    OwnerDamageCommand {
-                        target: target_atom.as_bytes(),
-                        occurrence: &[],
-                        binding: &hit_binding,
-                        damage: *magnitude,
-                    },
-                    Some(AttackerCommand::new(
-                        batch.attacker,
-                        batch.current_lease_generation,
-                        batch.command,
-                        effect.sub_ordinal,
-                    )),
-                    false,
-                    Some(MAX_EFFECTS as u16),
-                    deferred,
-                    Some(batch.now_ms),
-                    Some(&source),
-                    batch.now_us.map(|value| value.get()),
-                )?);
+                if *magnitude == 0 && deferred {
+                    // A qualified immune chain hit still consumes its timer phase, but
+                    // grants no HP change, contributor entry, Leech or charm hit hook.
+                    let Slot::CreatureOccupied {
+                        target_identity,
+                        health,
+                        ..
+                    } = &next.slots[index]
+                    else {
+                        return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature));
+                    };
+                    if target_identity.as_ref() != target_atom.as_bytes() {
+                        return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureTargetMismatch));
+                    }
+                    if *health <= 0 {
+                        return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
+                    }
+                    health_receipt = Some(OwnerDamageResult {
+                        applied: false,
+                        health_before: *health,
+                        health_after: *health,
+                    });
+                } else {
+                    let source = health_source()?;
+                    let (origin_sub_ordinal, origin_limit) =
+                        if usize::from(effect.sub_ordinal) >= MAX_EFFECTS {
+                            // Receipt ordinals stay in the original child range. Only the
+                            // private creature-damage replay key separates admitted phases.
+                            let phase = batch
+                                .deferred
+                                .as_ref()
+                                .map_or(0, |authority| usize::from(authority.phase_ordinal()));
+                            let origin = phase
+                                .checked_add(1)
+                                .and_then(|phase| phase.checked_mul(MAX_EFFECTS))
+                                .and_then(|base| {
+                                    base.checked_add(usize::from(effect.sub_ordinal) - MAX_EFFECTS)
+                                })
+                                .and_then(|origin| u16::try_from(origin).ok())
+                                .filter(|origin| *origin < u16::MAX)
+                                .ok_or(Error::TooManyEffects)?;
+                            (origin, u16::MAX)
+                        } else {
+                            (effect.sub_ordinal, MAX_EFFECTS as u16)
+                        };
+                    let mut hit_binding = digest.to_vec();
+                    hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
+                    health_receipt = Some(next.commit_creature_damage_inner_limited_source(
+                        &self.continuity,
+                        effect.target.0,
+                        OwnerDamageCommand {
+                            target: target_atom.as_bytes(),
+                            occurrence: &[],
+                            binding: &hit_binding,
+                            damage: *magnitude,
+                        },
+                        Some(AttackerCommand::new(
+                            batch.attacker,
+                            batch.current_lease_generation,
+                            batch.command,
+                            origin_sub_ordinal,
+                        )),
+                        false,
+                        Some(origin_limit),
+                        deferred,
+                        Some(batch.now_ms),
+                        Some(&source),
+                        batch.now_us.map(|value| value.get()),
+                    )?);
+                }
             }
             OwnerCombatChange::DamageWithHealing {
                 target_atom,
@@ -525,5 +574,163 @@ impl ChannelRuntimeV1 {
             _ => return Err(Error::InvalidCondition),
         }
         Ok(health_receipt)
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// Join retained physical leaves to the existing source successor and replay
+    /// ledger. No extra client effect budget, namespace or HP owner is created.
+    pub fn stage_spell_batch_with_children(
+        &self,
+        batch: &OwnerCombatBatch,
+        proof: &QualifiedSpellChildren,
+    ) -> Result<StagedSpellBatch, Error> {
+        if batch != &proof.batch
+            || (batch.deferred.is_some() && !self.qualified_deferred_batch(batch))
+        {
+            return Err(Error::CommandConflict);
+        }
+        let mut staged = self.stage_spell_batch_inner(batch)?;
+        if !staged.will_apply() {
+            let caster = self
+                .carrier
+                .validate_ref(&self.continuity, batch.caster.0)?;
+            let phase = batch
+                .deferred
+                .as_ref()
+                .map_or(0, |authority| authority.phase_ordinal());
+            let record = state(&self.carrier.slots[caster])?
+                .records
+                .iter()
+                .find(|record| record.command == batch.command && record.phase == phase)
+                .ok_or(Error::InvalidBatch)?;
+            if record.charm_children.as_ref() != Some(&proof.child_binding) {
+                return Err(Error::CommandConflict);
+            }
+            return Ok(staged);
+        }
+        for before in &proof.damage_preimages {
+            if self.companion_snapshot(before.actor)? != *before {
+                return Err(Error::SnapshotChanged);
+            }
+        }
+        let mut next = self.carrier.clone();
+        for (index, replacement) in &staged.replacements {
+            next.slots[*index] = replacement.clone();
+        }
+        let mut staging = EffectStaging {
+            next,
+            touched: staged.originals.iter().map(|(index, _)| *index).collect(),
+            player_effects: staged.player_effects,
+            effect_receipts: staged.receipt.effects,
+            mirror: staged.mirror,
+            cloak_blood: staged.cloak_blood,
+        };
+        let mut leaves = batch.clone();
+        let binding = canonical_binding(batch)?;
+        for (index, child) in proof.children.iter().enumerate() {
+            match child {
+                SpellCharmChild::Damage(effect) => {
+                    if !self.contains_live_creature(effect.target) {
+                        return Err(Error::InvalidBatch);
+                    }
+                    leaves.effects = vec![effect.clone()];
+                    self.stage_spell_effects(
+                        &leaves,
+                        &binding,
+                        batch.deferred.is_some(),
+                        &mut staging,
+                    )?;
+                }
+                SpellCharmChild::Paralysis {
+                    target,
+                    root,
+                    occurrence,
+                } => {
+                    let slot = self.carrier.validate_ref(&self.continuity, target.0)?;
+                    if self.is_tibiadrome(batch.caster) != self.is_tibiadrome(*target)
+                        || state(&self.carrier.slots[slot])?.pending_source.is_some()
+                        || state(&self.carrier.slots[slot])?
+                            .pending_owner
+                            .as_ref()
+                            .is_some_and(|reservation| !reservation.matches(batch, &binding))
+                    {
+                        return Err(Error::SnapshotChanged);
+                    }
+                    state_mut(&mut staging.next.slots[slot])?.pending_owner = None;
+                    let expected = proof
+                        .paralysis
+                        .iter()
+                        .find(|(ordinal, _)| *ordinal == index)
+                        .ok_or(Error::InvalidCondition)?;
+                    self.stage_spell_charm_paralysis(
+                        &mut staging.next,
+                        batch,
+                        *target,
+                        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(*root),
+                        *occurrence,
+                        Some(&expected.1),
+                    )
+                    .map_err(|_| Error::InvalidCondition)?;
+                    if !staging.touched.contains(&slot) {
+                        staging.touched.push(slot);
+                    }
+                    staging.effect_receipts.push(EffectReceipt {
+                        target: *target,
+                        sub_ordinal: u16::try_from(MAX_EFFECTS + index)
+                            .map_err(|_| Error::TooManyEffects)?,
+                        health: None,
+                    });
+                }
+            }
+        }
+        let caster_index = self
+            .carrier
+            .validate_ref(&self.continuity, batch.caster.0)?;
+        staged.receipt.effects = staging.effect_receipts;
+        let record = state_mut(&mut staging.next.slots[caster_index])?
+            .records
+            .iter_mut()
+            .find(|record| {
+                record.command == batch.command
+                    && record.phase
+                        == batch
+                            .deferred
+                            .as_ref()
+                            .map_or(0, |authority| authority.phase_ordinal())
+            })
+            .ok_or(Error::InvalidBatch)?;
+        record.charm_children = Some(proof.child_binding);
+        record.receipt = staged.receipt.clone();
+        staging.touched.sort_unstable();
+        staged.originals = staging
+            .touched
+            .iter()
+            .map(|index| (*index, self.carrier.slots[*index].clone()))
+            .collect();
+        staged.replacements = staging
+            .touched
+            .iter()
+            .map(|index| (*index, staging.next.slots[*index].clone()))
+            .collect();
+        staging.mirror.finish(&staging.next)?;
+        staging
+            .mirror
+            .add_spare_replacements(&staging.next, &mut staged.replacements)?;
+        for notice in &staging.next.native_deaths {
+            if !self.carrier.native_deaths.contains(notice)
+                && !staged.native_deaths.contains(notice)
+            {
+                staged
+                    .native_deaths
+                    .try_reserve(1)
+                    .map_err(|_| Error::AllocationFailed)?;
+                staged.native_deaths.push(notice.clone());
+            }
+        }
+        staged.mirror = staging.mirror;
+        staged.cloak_blood = staging.cloak_blood;
+        staged.player_effects = staging.player_effects;
+        Ok(staged)
     }
 }

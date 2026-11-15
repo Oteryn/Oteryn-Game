@@ -25,6 +25,8 @@ pub(super) struct PresentationCache {
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
+    #[cfg(feature = "bevy-shell")]
+    items: BTreeMap<(u16, u32, u32), Vec<Draw>>,
     #[cfg(test)]
     counts: [usize; 3], // asset loads, base unpacks, atlas packs
 }
@@ -45,6 +47,8 @@ impl PresentationCache {
         self.glyphs.clear();
         self.outfits.clear();
         self.visuals.clear();
+        #[cfg(feature = "bevy-shell")]
+        self.items.clear();
         self.items.clear();
         self.image = None;
         self.packed_cells = 0;
@@ -264,3 +268,6 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
 }
 
 include!("cache_visuals.rs");
+
+#[cfg(feature = "bevy-shell")]
+include!("cache_items.rs");

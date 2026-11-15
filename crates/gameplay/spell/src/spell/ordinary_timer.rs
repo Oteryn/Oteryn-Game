@@ -63,6 +63,7 @@ impl OrdinaryCastBinding {
 }
 #[derive(Debug, Clone)]
 pub struct ResolvedOrdinaryCombat {
+    pub augments: super::delayed_execution::DueSpellAugments,
     pub batch: OwnerCombatBatch,
     /// Retained beside the numeric batch so retry cannot draw or requalify the bonus.
     pub bounty_leech: Vec<(ExactActorRef, u16, u16)>,

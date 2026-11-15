@@ -395,6 +395,7 @@ fn clipboard_payload_contains_only_accepted_item_information() -> TestResult {
 fn inspect_selected_uses_the_real_inventory_selection_and_bounded_owner_request() -> TestResult {
     let (mut app, link, mut commands, outbox) = app(true)?;
     let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 2.try_into()?,
