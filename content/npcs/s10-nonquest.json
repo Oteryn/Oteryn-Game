@@ -5,6 +5,37 @@
   "decision": "Use pinned Crystal static ambient lines, excluding explicitly unconfirmed Dragon Ancestor Spirit placeholders. Preserve reviewed stationary Omrabas and Flickering Soul behavior. Banks reuse accepted BANK0 operations and existing dialogue; guild banking and quest bonuses are excluded.",
   "voices": [
     {
+      "key": "oteryn:npc.brewster",
+      "fields": [
+        {
+          "field_path": "oteryn:source.npc.voice_chance_percent",
+          "value": {
+            "type": "Integer",
+            "value": 50
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_interval_ms",
+          "value": {
+            "type": "Integer",
+            "value": 15000
+          }
+        },
+        {
+          "field_path": "oteryn:source.npc.voice_lines",
+          "value": {
+            "type": "Text",
+            "value": "[{\"text\":\"Nobody knows the <hicks> trouble I've seen, la la la...\",\"yell\":false},{\"text\":\"<hicks>\",\"yell\":false}]"
+          }
+        }
+      ],
+      "evidence": {
+        "classification": "CIPSOFT_OFFICIAL",
+        "source": "Owner-provided Tibia test server reference-client observation, NPCFX",
+        "decision": "Serve the observed Brewster voices using the existing ambient voice cadence."
+      }
+    },
+    {
       "key": "oteryn:npc.valindara",
       "fields": [
         {
