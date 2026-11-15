@@ -11,28 +11,28 @@
       "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
       "recipe_title": "Mystery of the Valley Quest",
       "role": "Guardian Statue (Quest)",
-      "weight": 1000
+      "weight": 900
     },
     {
       "item": "oteryn:item.tibia.i50336",
       "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
       "recipe_title": "Mystery of the Valley Quest",
       "role": "Fragment of a Statue (1st)",
-      "weight": 1000
+      "weight": 300
     },
     {
       "item": "oteryn:item.tibia.i50337",
       "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
       "recipe_title": "Mystery of the Valley Quest",
       "role": "Fragment of a Statue (2nd)",
-      "weight": 1000
+      "weight": 300
     },
     {
       "item": "oteryn:item.tibia.i50338",
       "quest": "oteryn:quest.authored.mystery_of_the_valley_quest",
       "recipe_title": "Mystery of the Valley Quest",
       "role": "Fragment of a Statue (3rd)",
-      "weight": 1000
+      "weight": 300
     }
   ]
 }

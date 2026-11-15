@@ -1763,7 +1763,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-              "value": 500
+              "value": 100
             },
             "movable": {
               "state": "KNOWN",
