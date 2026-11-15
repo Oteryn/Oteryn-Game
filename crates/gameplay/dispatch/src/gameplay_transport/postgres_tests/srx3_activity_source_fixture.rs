@@ -14,6 +14,96 @@ pub(super) struct SourceScene {
     pub(super) room: QualifiedNativeEntryRoom,
     pub(super) pin: ChannelContentPin,
 }
+
+/// Consume retained source units around one native owner cycle. Each selected
+/// unit must change real owner/Item state: a stalled unit fails immediately,
+/// rather than retrying it or advancing its original deadline.
+pub(super) async fn drive_native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    settle_native_work(owner).await?;
+    native_cycle(owner).await;
+    settle_native_work(owner).await
+}
+
+async fn native_cycle(owner: &ComposedFreshAdmission<'_, '_, '_>) {
+    owner.drain_rotten_movement_callbacks().await;
+    let _ = owner.drain_native_ai_timers().await;
+    owner.drain_monster_melee().await;
+    owner.drain_rotten_movement_callbacks().await;
+    owner.drain_bak_first_think_claims().await;
+    owner.drain_rotten_portal_callbacks().await;
+}
+
+pub(super) async fn settle_native_work(owner: &ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    loop {
+        let (pending, before) = native_work_state(owner).await?;
+        if !pending {
+            return Ok(());
+        }
+        native_cycle(owner).await;
+        let (_, after) = native_work_state(owner).await?;
+        assert_ne!(
+            before, after,
+            "selected native source unit made no progress"
+        );
+    }
+}
+
+async fn native_work_state(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<(bool, String)> {
+    let native = owner
+        .active_generation
+        .and_then(|active| active.native_gameplay())
+        .ok_or("native cycle Content")?;
+    let (pending, state, scope) = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let work =
+            crate::gameplay_transport::source_death::next_source_work(&runtime, &states, native)
+                .map_err(debug)?;
+        let movement = runtime.pending_rotten_movement(16).map_err(debug)?;
+        let vitals: Vec<_> = runtime
+            .positioned_actor_census()
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|(actor, _, session)| {
+                let session = session?;
+                states
+                    .get(&runtime, actor, session)
+                    .map(|state| (actor, state.vitals()))
+            })
+            .collect();
+        let mushroom = states
+            .rotten_blood_callbacks
+            .mushroom_progress_for_test()
+            .map(|progress| {
+                (
+                    progress.actor,
+                    progress.original_due,
+                    progress.cursor,
+                    progress.total,
+                )
+            });
+        (
+            states.native_profile_pass.has_pending()
+                || states.rotten_area.pending()
+                || !movement.is_empty()
+                || work.is_some_and(|(_, due)| due <= owner.owner_now().get()),
+            format!(
+                "{work:?} {:?} {:?} {movement:?} {mushroom:?} {vitals:?} {:?} {:?}",
+                states.native_profile_pass.pending(),
+                states.rotten_area.pending(),
+                runtime.current_live_creature_census().map_err(debug)?,
+                states
+                    .rotten_blood_callbacks
+                    .portal_diagnostics_for_test(&runtime)
+            ),
+            runtime.binding().runtime_scope(),
+        )
+    };
+    let ground = owner.root.read_item_loop_ground_for_scope(scope).await?;
+    Ok((pending, format!("{state} {ground:?}")))
+}
 impl SourceScene {
     pub(super) fn new(
         source: PinnedActivitySourceRoom,

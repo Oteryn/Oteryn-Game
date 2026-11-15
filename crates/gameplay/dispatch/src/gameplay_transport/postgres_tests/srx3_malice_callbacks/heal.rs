@@ -273,6 +273,9 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
                 );
             }
             let view = owner.runtime_view(&registered);
+            // Cage starts outside the entrant's AI visibility. Run the native
+            // owner after the real walk brings it into view, before reading AI.
+            view.drain_monster_melee().await;
             let mut runtime = view.runtime.lock().await;
             let maximum = runtime
                 .companion_snapshot(boss)

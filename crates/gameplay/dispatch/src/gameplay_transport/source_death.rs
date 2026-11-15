@@ -161,7 +161,12 @@ impl PreparedSourceDeathAction {
             None
         };
         let soul_war = SoulWarAction::capture(runtime, attack, begin, index, now_us)?;
-        let megalomania = MegalomaniaDeath::capture(runtime, begin, &begin.events()[index])?;
+        let megalomania = MegalomaniaDeath::capture(
+            runtime,
+            owner.effective_rooms().gate_monster_ai().ok_or(())?,
+            begin,
+            &begin.events()[index],
+        )?;
         let rotten = rotten::RottenDeathAction::capture(runtime, states, native, begin, index)?;
         Ok(Self {
             begin: begin.clone(),

@@ -1330,7 +1330,7 @@ pub(in crate::gameplay_transport) async fn prepare_rotten_massive_reader<'native
 
 /// Crystal 201189f combat.cpp:2337-2375 and tools.cpp:642-684: the area's
 /// visibility origin is one tile from its center toward the actual caster.
-fn area_sight_origin(
+pub(super) fn area_sight_origin(
     caster: MovementLocalPosition,
     center: MovementLocalPosition,
 ) -> Option<MovementLocalPosition> {

@@ -20,7 +20,8 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("actual portal scope")?;
-    owner.runtime_view(&registered).drain_monster_melee().await;
+    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered))
+        .await?;
     // Move the real target away, allowing the native boss to vacate the centre.
     // One real lure step vacates the boss centre without drawing the source
     // Elders beyond the separate two-tile STEP predicate.
@@ -30,6 +31,8 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source approach clock")?;
         let view = owner.runtime_view(&registered);
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -38,7 +41,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "actual source portal approach"
         );
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
     owner.clock_origin = owner
         .clock_origin
@@ -46,7 +49,7 @@ pub(super) async fn exercise(
         .ok_or("source addEvent clock")?;
     {
         let view = owner.runtime_view(&registered);
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
         view.drain_rotten_portal_callbacks().await;
     }
     {
@@ -110,6 +113,8 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source Elder lure clock")?;
         let view = owner.runtime_view(&registered);
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -118,7 +123,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "actual paced Elder lure"
         );
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
     }
     let route = {
         let view = owner.runtime_view(&registered);
@@ -172,6 +177,8 @@ pub(super) async fn exercise(
             .ok_or("source ingress clock")?;
         let view = owner.runtime_view(&registered);
         let started = view.owner_now().get();
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -180,6 +187,7 @@ pub(super) async fn exercise(
             StepDisposition::Moved,
             "real committed STEP into source action50001"
         );
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         step_window = Some((started, view.owner_now().get()));
     }
     let (step_started, step_finished) = step_window.ok_or("actual portal ingress interval")?;
@@ -221,12 +229,33 @@ pub(super) async fn exercise(
     };
     for (phase, seconds, percent) in [(1, 5, 15_u64), (2, 10, 25)] {
         for _ in 0..seconds {
+            {
+                let view = owner.runtime_view(&registered);
+                let runtime = view.runtime.lock().await;
+                let mut states = view.states.spell_states.lock().await;
+                let maximum = states
+                    .get(&runtime, player, admitted.game_session_id)
+                    .ok_or("live massive attack fixture Player")?
+                    .vitals()
+                    .max_health;
+                // Ordinary native attacks continue during the source-global
+                // pause. Keep this witness alive through the existing health
+                // owner; both original callbacks must still inflict their HP hit.
+                states
+                    .apply_health_gain(
+                        &runtime,
+                        player,
+                        admitted.game_session_id,
+                        u64::from(maximum),
+                    )
+                    .ok_or("current massive attack fixture health credit")?;
+            }
             owner.clock_origin = owner
                 .clock_origin
                 .checked_sub(std::time::Duration::from_secs(1))
                 .ok_or("massive attack clock")?;
             let view = owner.runtime_view(&registered);
-            view.drain_monster_melee().await;
+            super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
             let states = view.states.spell_states.lock().await;
             let due = deadlines[usize::from(phase - 1)].1;
             if view.owner_now().get() < due {
@@ -250,7 +279,23 @@ pub(super) async fn exercise(
         let (amount, before, after) = states
             .rotten_blood_callbacks
             .actual_massive_commit_for_test(player, phase)
-            .ok_or("actual source massive attack HP receipt at its retained deadline")?;
+            .ok_or_else(|| {
+                let current = states
+                    .get(&runtime, player, admitted.game_session_id)
+                    .map(|state| state.vitals());
+                let retained = states
+                    .rotten_blood_callbacks
+                    .massive_state_for_test(centre, player);
+                let target = runtime.visible_entities().creatures.into_iter().find_map(|c| {
+                    runtime
+                        .matches_live_creature_identity(c.actor, b"oteryn:creature.vemiath")
+                        .then(|| states.monster_melee.creature_ai.state(c.actor).and_then(|ai| ai.target()))
+                });
+                format!(
+                    "actual source massive attack HP receipt at its retained deadline: phase={phase} now={} vitals={current:?} deadlines={:?} commits={} paused={} target={target:?}",
+                    view.owner_now().get(), retained.deadlines, retained.commits, retained.paused
+                )
+            })?;
         assert_eq!(
             u64::from(amount),
             (u64::from(maximum) * percent).div_ceil(100)
@@ -301,7 +346,7 @@ pub(super) async fn exercise(
     };
     {
         let view = owner.runtime_view(&registered);
-        view.drain_monster_melee().await;
+        super::srx3_activity_source_fixture::drive_native_cycle(&view).await?;
         view.drain_rotten_portal_callbacks().await;
         let runtime = view.runtime.lock().await;
         let states = view.states.spell_states.lock().await;

@@ -369,6 +369,17 @@ pub(in crate::durability) async fn record_source_use_proof(
     };
     let actor_identity = actor.map(|actor| actor.placement_identity());
     let at = target.selected_position;
+    // WP3 permits at most 32 parameters. Keep the exact bounded target tuple
+    // together rather than issuing a 37-parameter provenance INSERT.
+    let selected = serde_json::json!({
+        "kind": target_kind,
+        "family": definition.map(|definition| definition.family.as_str()),
+        "key": definition.map(|definition| definition.production_key.as_str()),
+        "revision": definition.map(|definition| definition.revision_ref.as_str()),
+        "actor": actor_identity.map(|id| id.iter().map(|byte| format!("{byte:02x}")).collect::<String>()),
+        "generation": actor.map(|actor| actor.actor_local_generation().to_string()),
+        "position": [at.x, at.y, i32::from(at.floor)],
+    });
     sqlx::query(
         "INSERT INTO game_soul_war_source_use_proofs (\
           transaction_id,event_id,character_id,game_session_id,command_id,\
@@ -380,8 +391,10 @@ pub(in crate::durability) async fn record_source_use_proof(
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,\
           encode($6,'hex')::uuid,$7,encode($8,'hex')::uuid,$9::text::numeric,$10,$11,$12,$13,$14,$15,\
           encode($16,'hex')::uuid,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19::text::numeric,$20::text::numeric,$21::text::numeric,\
-          encode($22,'hex')::uuid,$23::text::numeric,$24::text::numeric,$25::text::numeric,($26::bytea[])[1],($26::bytea[])[2],($26::bytea[])[3],($26::bytea[])[4],\
-          $27,($28::text[])[1],($28::text[])[2],($28::text[])[3],$29,$30::text::numeric,$31,$32)",
+          encode($22,'hex')::uuid,$23::text::numeric,$24::text::numeric,$25::text::numeric,$26,$27,$28,$29,\
+          ($30::jsonb->>'kind')::smallint,$30::jsonb->>'family',$30::jsonb->>'key',$30::jsonb->>'revision',\
+          decode($30::jsonb->>'actor','hex'),($30::jsonb->>'generation')::numeric,\
+          ARRAY(SELECT value::integer FROM jsonb_array_elements_text($30::jsonb->'position')),$31)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -408,24 +421,11 @@ pub(in crate::durability) async fn record_source_use_proof(
     .bind(node.fact().registration_revision().to_string())
     .bind(target.assignment_revision.to_string())
     .bind(target.activation.to_string())
-    // Keep this closed witness within the runtime WP3 limit of 32 parameters.
-    .bind(vec![
-        target.server.to_vec(),
-        target.client.to_vec(),
-        target.frame.to_vec(),
-        target.map.to_vec(),
-    ])
-    .bind(target_kind)
-    .bind(definition.map(|definition| {
-        vec![
-            definition.family.as_str(),
-            definition.production_key.as_str(),
-            definition.revision_ref.as_str(),
-        ]
-    }))
-    .bind(actor_identity.as_ref().map(|id| id.as_slice()))
-    .bind(actor.map(|actor| actor.actor_local_generation().to_string()))
-    .bind(vec![at.x, at.y, i32::from(at.floor)])
+    .bind(target.server.as_slice())
+    .bind(target.client.as_slice())
+    .bind(target.frame.as_slice())
+    .bind(target.map.as_slice())
+    .bind(sqlx::types::Json(selected))
     .bind(request.occurred_at_unix_ms)
     .execute(connection)
     .await?;

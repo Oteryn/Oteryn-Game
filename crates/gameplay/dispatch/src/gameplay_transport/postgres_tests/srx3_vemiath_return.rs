@@ -18,6 +18,8 @@ pub(super) async fn exercise(
         .activity_runtimes
         .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         .ok_or("real Vemiath runtime")?;
+    super::srx3_activity_source_fixture::drive_native_cycle(&owner.runtime_view(&registered))
+        .await?;
     let (boss, target, route) = {
         let view = owner.runtime_view(&registered);
         let runtime = view.runtime.lock().await;
@@ -62,6 +64,8 @@ pub(super) async fn exercise(
             .checked_sub(std::time::Duration::from_secs(1))
             .ok_or("source pace")?;
         let view = owner.runtime_view(&registered);
+        // The owner clock advance can select an older Item continuation before onMove.
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
         let (step, _) = view
             .ordinary_paced_step(player, admitted.game_session_id, direction, None, None)
             .await;
@@ -69,6 +73,7 @@ pub(super) async fn exercise(
             step.disposition,
             oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
         );
+        super::srx3_activity_source_fixture::settle_native_work(&view).await?;
     }
     let view = owner.runtime_view(&registered);
     {

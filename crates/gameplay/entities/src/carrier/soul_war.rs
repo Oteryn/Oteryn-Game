@@ -355,6 +355,8 @@ impl ChannelRuntimeV1 {
         // force the Sphere/Cage centre; the Greed minions use force=false.
         // Hatred lever source soul_war.lua397-398 and boss_lever.lua228-229
         // likewise creates only its literal Ashes child with force=true.
+        // The live-parent Megalomania lever also forces its initial Aspect;
+        // the retained onDeath API below keeps default, nonforced placement.
         self.admit_native_masterless_with_placement(
             child,
             &revision,
@@ -366,7 +368,14 @@ impl ChannelRuntimeV1 {
                     | "oteryn:creature.soul_cage"
                     | "oteryn:creature.ashes_of_burning_hatred"
                     | "oteryn:creature.a_greedy_eye"
-            ),
+            ) || (snapshot.state.policy.definition_key == MEGALOMANIA_PURPLE
+                && child == "oteryn:creature.aspect_of_power"
+                && at
+                    == (MovementLocalPosition {
+                        x: 33710,
+                        y: 31635,
+                        floor: 14,
+                    })),
             map_admits,
         )
     }
