@@ -20,6 +20,8 @@ impl PlayView {
         #[cfg(windows)]
         link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
+        self.sync_outfit_palette(link)
+            .map_err(|_error| UNAVAILABLE)?;
         while let Some(event) = link.poll() {
             match event {
                 PlayEvent::ActionFeedback(line) => self.action_line = line,

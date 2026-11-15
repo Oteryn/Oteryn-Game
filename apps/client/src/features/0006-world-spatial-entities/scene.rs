@@ -3,6 +3,10 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn set_outfit_palette(&mut self, palette: &[[u8; 3]]) -> bool {
+        self.cache.set_palette(palette)
+    }
+
     pub(crate) fn set_label_scale(&mut self, percentage: u16) {
         self.label_scale = percentage;
     }
