@@ -139,22 +139,26 @@ fn highscores_table_projects_bevy_cells() -> TestResult {
     Ok(())
 }
 #[test]
-fn highscores_shortcut_is_ctrl_shift_f9_without_repeat() -> TestResult {
+fn highscores_routed_shortcut_is_ctrl_h_without_repeat() -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let event = NormalizedInputEvent::Key {
-        code: KeyCode::new(66)?,
+        code: KeyCode::new(11)?,
         state: ButtonState::Pressed,
-        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        modifiers: Modifiers::one(Modifier::Control),
         repeat: false,
     };
-    assert!(shortcut(&event));
-    assert!(!shortcut(&NormalizedInputEvent::DeviceLost));
-    assert!(!shortcut(&NormalizedInputEvent::Key {
-        code: KeyCode::new(66)?,
-        state: ButtonState::Pressed,
-        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
-        repeat: true
-    }));
+    assert!(oteryn_client_ui::highscores::open_key(&[event]));
+    assert!(!oteryn_client_ui::highscores::open_key(&[
+        NormalizedInputEvent::DeviceLost
+    ]));
+    assert!(!oteryn_client_ui::highscores::open_key(&[
+        NormalizedInputEvent::Key {
+            code: KeyCode::new(11)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control),
+            repeat: true
+        }
+    ]));
     Ok(())
 }
 #[test]
@@ -190,7 +194,14 @@ fn highscores_categories_respect_loyalty_capability() -> TestResult {
     Ok(())
 }
 #[test]
-fn highscores_shortcut_dispatch_respects_blocked_input() -> TestResult {
+fn highscores_saved_f9_shortcut_dispatch_respects_blocked_input() -> TestResult {
+    shortcut_dispatch(false)
+}
+#[test]
+fn highscores_rebound_shortcut_dispatch_respects_blocked_input() -> TestResult {
+    shortcut_dispatch(true)
+}
+fn shortcut_dispatch(rebound: bool) -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let mut owner = HostOwner::new(None)?;
     let (link, _commands, _outbox) = crate::play::play_channel();
@@ -198,10 +209,18 @@ fn highscores_shortcut_dispatch_respects_blocked_input() -> TestResult {
         view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
         link,
     });
+    owner.settings.preferences.rebind(
+        "0009-highscores-open",
+        if rebound { "ALT+H" } else { "CTRL+SHIFT+F9" },
+    )?;
     let event = NormalizedInputEvent::Key {
-        code: KeyCode::new(66)?,
+        code: KeyCode::new(if rebound { 11 } else { 66 })?,
         state: ButtonState::Pressed,
-        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        modifiers: if rebound {
+            Modifiers::one(Modifier::Alt)
+        } else {
+            Modifiers::one(Modifier::Control).with(Modifier::Shift)
+        },
         repeat: false,
     };
     owner.route_input(std::slice::from_ref(&event), true);

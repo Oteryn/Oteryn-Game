@@ -147,11 +147,16 @@ fn scenario() -> Result {
             .map_err(|e| e.to_string())?,
         link,
     });
+    owner
+        .settings
+        .preferences
+        .rebind("0009-highscores-open", "ALT+H")
+        .map_err(|e| e.to_string())?;
     owner.route_input(
         &[NormalizedInputEvent::Key {
-            code: KeyCode::new(66).map_err(|e| e.to_string())?,
+            code: KeyCode::new(11).map_err(|e| e.to_string())?,
             state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+            modifiers: Modifiers::one(Modifier::Alt),
             repeat: false,
         }],
         false,

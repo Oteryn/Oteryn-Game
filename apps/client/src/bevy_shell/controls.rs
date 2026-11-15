@@ -102,7 +102,7 @@ impl HostOwner {
         if play.link.prey_input(&routed) {
             return;
         }
-        if routed.iter().any(super::game_ui::highscores::shortcut) {
+        if oteryn_client_ui::highscores::open_key(&routed) {
             self.controls.highscores_generation = Some(generation);
             play.link
                 .highscores_request(oteryn_client_ui::highscores::Action::Refresh);
