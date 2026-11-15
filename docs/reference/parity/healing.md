@@ -10,7 +10,7 @@ Confidence: MEASURED, WIKI, REFERENCE (see README). Audit rows C04, C06, C09, I1
 | item | dimension | Global value | source | measured? | ours | ours file | status |
 |---|---|---|---|---|---|---|---|
 | Spirit Mend (exura gran tio) | stats | base power 250, mana 210, level 80, cd 1 s, group 1 s | TW 1206169 (2026-09-14) | WIKI | base 250, mana 210, cd 1000, group 1000 | content player-spells.json `candidate:spell/spirit_mend` | MATCH |
-| Spirit Mend | heal range at L757 ML54, wheel +16 | 684-849; 1091-1314 under Sustain serene | MEAS | MEASURED | 865-1347 (pre-wheel) | `crates/gameplay/content/src/content/spell_data/formula.rs:17`, formula `candidate:formula/spell/spirit_mend/combat-1` (max lbh+20*ML+125, min lbh+12*ML+75) | MISMATCH (waits for more measurements; constants came from Crystal, base power unused by the formula) |
+| Spirit Mend | heal range at L757 ML54, wheel +16 | ML54: 676-856 (no virtue/Harmony/Justice), 1093-1278 Sustain; ML52: 654-829, 1059-1241 Sustain (Server Log, n=30-35 per cell, see section F) | MEAS 2026-11-15 | MEASURED | 865-1347 (pre-wheel) | `crates/gameplay/content/src/content/spell_data/formula.rs:17`, formula `candidate:formula/spell/spirit_mend/combat-1` (max lbh+20*ML+125, min lbh+12*ML+75) | MISMATCH (waits for more measurements; constants came from Crystal, base power unused by the formula) |
 | Mass Spirit Mend (exura mas nia) | mana, cd | mana 400, cd about 12 s, no refund (not a spender) | MEAS; TW 1191080 (2026-06-23) update says non-spender | MEASURED | mana 400, cd 12000 | player-spells.json `candidate:spell/mass_spirit_mend` | MATCH |
 | Mass Spirit Mend | group cd, base power | page pre-update (TW 1182871): group 2 s, base power 90; post-update values not published | TW 1182871 | REFERENCE | group 1000, base power 800 | same | UNKNOWN |
 | Divine Healing | stats | base 250, mana 160, level 35, cd 1 | TW 1182661 | WIKI | same | player-spells.json | MATCH |
@@ -85,4 +85,17 @@ Confidence: MEASURED, WIKI, REFERENCE (see README). Audit rows C04, C06, C09, I1
 - L757: lbh = floor((757+1000)/6) + 300 - 450 = 142 (`formula.rs:17`).
 - Ours at ML54: min 142+648+75 = 865, max 142+1080+125 = 1347. MEAS 684-849 with wheel +16.
 - Crystal uses the same constants (OTS). Canary gives 585 / 921 without wheel, 679 / 1068 with +16%; neither reproduces MEAS.
-- One observation cannot fix the ML coefficients; the formula stays unchanged until more measurements arrive.
+- Server Log series 2026-11-15 (Invalid Monk L757, wheel +16 D&H, ML 52 = armor and legs off, ML 54 = on):
+
+  | ML | virtue | n | min | max | mean |
+  |---|---|---|---|---|---|
+  | 52 | Justice | 30 | 658 | 829 | 728 |
+  | 52 | Harmony | 30 | 654 | 829 | 758 |
+  | 52 | Sustain | 35 | 1059 | 1241 | 1153 |
+  | 54 | Justice | 31 | 678 | 849 | 749 |
+  | 54 | Harmony | 31 | 676 | 856 | 777 |
+  | 54 | Sustain | 30 | 1093 | 1278 | 1190 |
+
+- +2 ML moves the mean by about +20 (about 10 HP per ML); the spread is about +/-11 % of the mean. Harmony and Justice do not change Spirit Mend; Sustain multiplies it by about 1.54, which matches neither +35 % nor +70 % (serene) and waits for the character's bonus inventory.
+- Saying the same virtue twice turns it off; the earlier "Sustain" samples taken that way were no-virtue samples and are discarded.
+- The ML span 52-54 is too narrow to fix the coefficients; the formula stays unchanged until a wider ML range is measured.
