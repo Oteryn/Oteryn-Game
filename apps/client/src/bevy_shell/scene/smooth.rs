@@ -77,8 +77,9 @@ impl Vertices {
         projection: (&Sprite, Transform, QuadViewport),
     ) {
         let (sprite, transform, viewport) = projection;
-        let start = Vec2::from(quad.position).max(Vec2::ZERO);
-        let end = (Vec2::from(quad.position) + Vec2::from(quad.size)).min(viewport.clip_size);
+        let origin = Vec2::from(quad.position) + viewport.scroll;
+        let start = origin.max(Vec2::ZERO);
+        let end = (origin + Vec2::from(quad.size)).min(viewport.clip_size);
         let size = end - start;
         let columns = (size.x / 8.).ceil() as usize;
         let rows = (size.y / 8.).ceil() as usize;
@@ -89,7 +90,7 @@ impl Vertices {
         for row in 0..=rows {
             for column in 0..=columns {
                 let fraction = Vec2::new(column as f32 / columns as f32, row as f32 / rows as f32);
-                let screen = start + size * fraction;
+                let screen = start + size * fraction - viewport.scroll;
                 let local = (fraction - Vec2::splat(0.5)) * size / viewport.scale;
                 self.positions.push(
                     transform
@@ -140,6 +141,62 @@ mod tests {
     use oteryn_renderer::lighting::PointLight;
 
     #[test]
+    fn scrolled_smooth_mesh_crops_uvs_and_samples_light_in_world_coordinates()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let quad = QuadInstance {
+            position: [-8., 0.],
+            size: [32.; 2],
+            uv: [0., 0., 1., 1.],
+        };
+        let viewport = QuadViewport {
+            scale: 1.,
+            size: Vec2::splat(64.),
+            offset: Vec2::ZERO,
+            clip_size: Vec2::splat(32.),
+            scroll: Vec2::new(16., -8.),
+        };
+        let lighting = SceneLighting {
+            ambient: [0; 3],
+            sources: vec![PointLight {
+                position: [0., 16.],
+                radius: 64.,
+                color: [255; 3],
+            }],
+            ..default()
+        };
+        let atlas = AtlasImage::new(32, 1, 1, vec![255; 32 * 32 * 4])?;
+        let (sprite, transform) =
+            project_quad(&quad, [1.; 4], 0, &Handle::default(), &atlas, viewport)
+                .ok_or("visible quad")?;
+        let mut vertices = Vertices::default();
+        vertices.push(
+            &lighting,
+            &quad,
+            0,
+            QuadLayer::Overlay,
+            (&sprite, transform, viewport),
+        );
+        assert_eq!(vertices.positions.len(), 16);
+        assert_eq!(vertices.uv.first(), Some(&[0., 0.25]));
+        assert_eq!(vertices.uv.last(), Some(&[0.75, 1.]));
+        for (position, color) in vertices.positions.iter().zip(&vertices.colors) {
+            let screen = Vec2::new(position[0] + 32., 32. - position[1]);
+            assert!((8. ..=32.).contains(&screen.x));
+            assert!((0. ..=24.).contains(&screen.y));
+            assert_eq!(
+                *color,
+                lighting.quad_tint_at(
+                    &quad,
+                    0,
+                    QuadLayer::Overlay,
+                    (screen - viewport.scroll).to_array(),
+                )
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn clipped_world_mesh_interpolates_light_and_preserves_uv_order_and_fade()
     -> Result<(), Box<dyn std::error::Error>> {
         let quad = QuadInstance {
@@ -162,6 +219,7 @@ mod tests {
             size: Vec2::splat(64.),
             offset: Vec2::splat(8.),
             clip_size: Vec2::splat(32.),
+            scroll: Vec2::ZERO,
         };
         let atlas = AtlasImage::new(32, 1, 1, vec![255; 32 * 32 * 4])?;
         let (sprite, transform) = project_quad(

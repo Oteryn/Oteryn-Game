@@ -265,6 +265,7 @@ fn current_target_object_hotkey_without_target_arms_cursor()
             entries: vec![oteryn_session::ItemEntry {
                 handle: 77u64.try_into()?,
                 item_definition_ref: 900u32.try_into()?,
+                appearance_id: 0,
                 count: 1u32.try_into()?,
                 sub_type: 7,
             }],

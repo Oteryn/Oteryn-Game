@@ -9,6 +9,8 @@ use bevy::{
 };
 use oteryn_renderer::{AtlasImage, QuadInstance, lighting::QuadLayer};
 
+#[cfg(test)]
+mod palette_tests;
 mod smooth;
 #[cfg(test)]
 mod tests;
@@ -109,6 +111,7 @@ pub(super) fn project(
     }
     let lighting = &scene.sprites().lighting;
     let hud_quads = &scene.native_hud_quads;
+    let shared_frontend = play.link.uses_shared_frontend();
     let SceneCache {
         floor_alpha,
         entities,
@@ -136,7 +139,7 @@ pub(super) fn project(
                 .instances()
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| !hud_quads.contains(i))
+                .filter(|(i, _)| !shared_frontend || !hud_quads.contains(i))
                 .map(|(i, q)| {
                     let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
                     if let Some((_, floor)) = scene
@@ -176,25 +179,21 @@ pub(super) fn project(
                 Vec2::new(scene_size.0 as f32, scene_size.1 as f32),
             )
         };
-        let Some((sprite, transform)) = project_quad(
-            quad,
-            tint,
-            index,
-            &image,
-            scene.atlas(),
-            QuadViewport {
-                scale,
-                size,
-                offset,
-                clip_size,
-                // The camera follows the player's step: the map slides, the player stays.
-                scroll: if minimap || follows_player {
-                    Vec2::ZERO
-                } else {
-                    camera
-                },
+        let viewport = QuadViewport {
+            scale,
+            size,
+            offset,
+            clip_size,
+            // The camera follows the player's step: the map slides, the player stays.
+            scroll: if minimap || follows_player {
+                Vec2::ZERO
+            } else {
+                camera
             },
-        ) else {
+        };
+        let Some((sprite, transform)) =
+            project_quad(quad, tint, index, &image, scene.atlas(), viewport)
+        else {
             continue;
         };
         if smooth_enabled {
@@ -203,16 +202,7 @@ pub(super) fn project(
                 quad,
                 source_index,
                 source_layer,
-                (
-                    &sprite,
-                    transform,
-                    QuadViewport {
-                        scale,
-                        size,
-                        offset,
-                        clip_size,
-                    },
-                ),
+                (&sprite, transform, viewport),
             );
             continue;
         }

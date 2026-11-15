@@ -35,8 +35,8 @@ fn scene_projection_preserves_painter_order_offsets_and_wrapping_anchor() -> Res
         draws.iter().map(|(tile, _)| *tile).collect::<Vec<_>>(),
         [
             (i32::MAX - 1, i32::MAX - 1),
-            (i32::MAX, i32::MAX - 1),
             (i32::MAX - 1, i32::MAX),
+            (i32::MAX, i32::MAX - 1),
             last,
             last,
             last,
@@ -123,17 +123,18 @@ fn scene_visitors_traverse_diagonals_from_south_to_east() -> Result<(), &'static
         },
     )?;
     let mut expected = Vec::new();
-    for diagonal in 0..SCENE_ROWS as i32 + SCENE_COLUMNS as i32 + 2 * SCAN_MARGIN - 1 {
-        for x in 0..SCENE_COLUMNS as i32 + SCAN_MARGIN {
+    // The walking camera scans a guard tile on every edge, in the same painter order.
+    for diagonal in -2..SCENE_ROWS as i32 + SCENE_COLUMNS as i32 + 2 * SCAN_MARGIN + 1 {
+        for x in -1..SCENE_COLUMNS as i32 + SCAN_MARGIN + 1 {
             let y = diagonal - x;
-            if (0..SCENE_ROWS as i32 + SCAN_MARGIN).contains(&y) {
+            if (-1..SCENE_ROWS as i32 + SCAN_MARGIN + 1).contains(&y) {
                 expected.push((x, y));
             }
         }
     }
     assert_eq!(
         &expected[..6],
-        &[(0, 0), (0, 1), (1, 0), (0, 2), (1, 1), (2, 0)]
+        &[(-1, -1), (-1, 0), (0, -1), (-1, 1), (0, 0), (1, -1)]
     );
     assert_eq!(single, expected);
     assert_eq!(entities, expected);

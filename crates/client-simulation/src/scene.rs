@@ -70,7 +70,11 @@ pub fn visit_scene_entities_scrolled<'a, E>(
     });
     let rows = start[1]..(SCENE_ROWS as i32 + SCAN_MARGIN).saturating_add(end[1]);
     let columns = start[0]..(SCENE_COLUMNS as i32 + SCAN_MARGIN).saturating_add(end[0]);
-    for diagonal in rows.start + columns.start..(rows.end - 1).saturating_add(columns.end - 1) {
+    for diagonal in rows.start + columns.start
+        ..(rows.end - 1)
+            .saturating_add(columns.end - 1)
+            .saturating_add(1)
+    {
         for column in columns.start.max(diagonal - (rows.end - 1))
             ..=(columns.end - 1).min(diagonal - rows.start)
         {

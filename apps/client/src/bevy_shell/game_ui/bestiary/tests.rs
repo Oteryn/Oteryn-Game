@@ -153,6 +153,48 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     assert!(labels(&mut app).contains("Health: 20"));
     assert!(labels(&mut app).contains("Stage 1: 10/10 complete"));
     assert!(labels(&mut app).contains("Stage 2: 12/20 in progress"));
+    assert!(!labels(&mut app).contains("Gold coin"));
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .charm_progression_panel()
+            .catalogue
+            .next_loot
+            .is_none()
+    );
+    // Loot pagination becomes available only after confirmed completed discovery.
+    click(&mut app, Kind::Progress)?;
+    let progress = command(&mut receiver)?;
+    outbox.bevy_bestiary_result(
+        &progress,
+        &GatedCommandResult {
+            command_id: 3,
+            server_sequence: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: progression::encode_charm_progression_reply(
+                &progression::CharmProgressionReply {
+                    outcome: progression::CharmProgressionOutcome::Query,
+                    fee_gold: 0,
+                    bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                        race: std::num::NonZeroU32::new(9).ok_or("race")?,
+                        kill_count: 30,
+                        kill_thresholds: [10, 20, 30],
+                    }],
+                    charms: Default::default(),
+                },
+            )
+            .map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.update();
+    click(&mut app, Kind::Select(9))?;
+    publish(&command(&mut receiver)?, &page)?;
+    app.update();
+    assert!(labels(&mut app).contains("Gold coin"));
     click(&mut app, Kind::Catalogue(3))?;
     assert!(
         receiver.try_recv().is_err(),

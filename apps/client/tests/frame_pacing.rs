@@ -19,7 +19,12 @@ fn frame_limits_select_focus_and_reject_zero() -> Result<(), Box<dyn std::error:
     );
     assert_eq!(preferences.frame_interval(false).as_nanos(), 200_000_000);
     let path = std::env::temp_dir().join(format!("frame-limit-{}.json", std::process::id()));
+    // Foreground zero now means unlimited; background zero remains invalid.
     preferences.foreground_fps = 0;
+    preferences.frames.foreground = 0;
+    oteryn_client::play::PreferenceStore::export_to(&preferences, &path)?;
+    std::fs::remove_file(&path)?;
+    preferences.background_fps = 0;
     assert!(oteryn_client::play::PreferenceStore::export_to(&preferences, &path).is_err());
     Ok(())
 }
