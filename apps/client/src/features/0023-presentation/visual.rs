@@ -57,8 +57,8 @@ pub(super) fn missile(
 ) -> Result<(), BatchError> {
     let a = view.tile_to_screen(TileCoord::new(from.x, from.y));
     let b = view.tile_to_screen(TileCoord::new(to.x, to.y));
-    let duration = (a[0] - b[0]).hypot(a[1] - b[1]) / view.tile_px() as f32 * 0.05;
-    let duration = duration.clamp(0.05, 1.0);
+    let distance = ((a[0] - b[0]).hypot(a[1] - b[1]) / view.tile_px() as f32).sqrt();
+    let duration = distance * 0.15;
     if elapsed >= duration {
         return Ok(());
     }
@@ -139,5 +139,24 @@ impl PlayView {
                     .insert(spell, entry.words.chars().take(64).collect());
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod timing_tests {
+    use super::*;
+    #[test]
+    fn missile_uses_square_root_distance_and_zero_paths_vanish() -> Result<(), BatchError> {
+        let world = crate::map::World::builtin()?;
+        let view = TileView::new(TileCoord::new(0, 0), 32, 15, 11)?;
+        let from = ActorPosition { x: 1, y: 1, floor: 0 };
+        for frame in [None, Some(&[Draw { cell: crate::map::MARKER_CELL, offset: [0, 0] }][..])] {
+            for (distance, elapsed, visible) in [(0, 0.0, false), (1, 0.1, true), (1, 0.15, false), (4, 0.25, true), (4, 0.3, false)] {
+                let mut batch = SpriteBatch::new();
+                missile(&mut batch, &view, world.atlas(), from, ActorPosition { x: from.x + distance, ..from }, elapsed, frame)?;
+                assert_eq!(!batch.is_empty(), visible, "distance {distance}, elapsed {elapsed}");
+            }
+        }
+        Ok(())
     }
 }

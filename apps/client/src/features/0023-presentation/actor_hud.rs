@@ -67,15 +67,15 @@ pub(super) fn draw(
         {
             let at = [x + 2.0 * scale, y + view.tile_px() as f32 - 5.0 * scale];
             let width = (view.tile_px() as f32 - 4.0 * scale).max(1.0);
-            pixel(
+            pixel_rgb(
                 batch,
                 view,
                 atlas,
                 at,
                 [width, 3.0 * scale],
-                PresentationColor::DarkRed,
+                [0; 3],
             )?;
-            pixel(
+            pixel_rgb(
                 batch,
                 view,
                 atlas,
@@ -84,7 +84,7 @@ pub(super) fn draw(
                     width * f32::from(health_percent.min(100)) / 100.0,
                     3.0 * scale,
                 ],
-                PresentationColor::LightGreen,
+                health_rgb(health_percent).map(|channel| ((u16::from(channel) + 25) / 51) as u8),
             )?;
         }
         if options.other_marks
@@ -139,4 +139,31 @@ pub(super) fn draw(
         )?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod health_tests {
+    use super::*;
+    #[test]
+    fn creature_health_bar_uses_tibia_thresholds() -> Result<(), BatchError> {
+        let world = crate::map::World::builtin()?;
+        let view = TileView::new(TileCoord::new(0, 0), 32, 15, 11)?;
+        let preferences = crate::play::ReferencePreferences { creature_bars: true, ..Default::default() };
+        for (health, rgb) in [(100,[0,4,0]), (93,[0,4,0]), (92,[2,3,2]), (61,[2,3,2]), (60,[3,3,0]), (31,[3,3,0]), (30,[4,0,0]), (9,[4,0,0]), (8,[3,0,0]), (4,[3,0,0]), (3,[3,0,0]), (1,[3,0,0])] {
+            let entity = WorldSpatialEntity {
+                entity: EntityRef { identity: [1;16], generation: 1 },
+                position: oteryn_session::ActorPosition { x: 1, y: 1, floor: 0 },
+                kind: EntityKind::Creature, display_name: None,
+                detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
+            };
+            let mut batch = SpriteBatch::new();
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO))?;
+            let mut expected = SpriteBatch::new();
+            super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
+            assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));
+            super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], rgb)?;
+            assert_eq!(batch.instances().last().map(|q| q.uv), expected.instances().last().map(|q| q.uv), "health {health}");
+        }
+        Ok(())
+    }
 }

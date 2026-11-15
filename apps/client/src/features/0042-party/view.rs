@@ -95,7 +95,8 @@ impl PlayLink {
                     return false;
                 }
                 if matches!(intent, Intent::Invite(_)) {
-                    panel.open = true;
+                    drop(mailbox);
+                    self.open_shared_party();
                 }
             }
         }

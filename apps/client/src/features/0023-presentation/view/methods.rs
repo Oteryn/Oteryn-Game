@@ -208,10 +208,19 @@ impl PlayView {
                         visual::words(batch, view, atlas, position, words, progress)?;
                     }
                 }
-                PresentationEventKind::Missile { from, to, .. }
+                PresentationEventKind::Missile { from, to, source, .. }
                     if from.floor == self.floor && to.floor == self.floor =>
                 {
+                    let alpha = match source {
+                        oteryn_session::PresentationSource::Own => opacity[0],
+                        oteryn_session::PresentationSource::Others => opacity[1],
+                        oteryn_session::PresentationSource::Creatures => opacity[2],
+                        oteryn_session::PresentationSource::Global => 100,
+                    };
+                    if alpha == 0 { continue; }
+                    let start = batch.len();
                     visual::missile(batch, view, atlas, from, to, progress, frame)?;
+                    batch.lighting.set_opacity(start..batch.len(), alpha)?;
                 }
                 _ => {}
             }
@@ -221,5 +230,17 @@ impl PlayView {
         #[cfg(not(feature = "bevy-shell"))]
         let _ = circle_quads;
         Ok(())
+    }
+}
+
+/// OTClient creature information colours, from highest to lowest health.
+pub(in crate::play) fn health_rgb(percent: u8) -> [u8; 3] {
+    match percent {
+        93..=u8::MAX => [0x00, 0xbc, 0x00],
+        61..=92 => [0x50, 0xa1, 0x50],
+        31..=60 => [0xa1, 0xa1, 0x00],
+        9..=30 => [0xbf, 0x0a, 0x0a],
+        4..=8 => [0x91, 0x0f, 0x0f],
+        0..=3 => [0x85, 0x0c, 0x0c],
     }
 }
