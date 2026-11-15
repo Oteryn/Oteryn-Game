@@ -275,7 +275,7 @@ fn destination_with_lookup<'a>(
     let mut next = shifted(origin, dx, dy, 0)?;
     // game.cpp2048..2079 uses source z8/7 boundaries and height3.
     let origin_tile = lookup(origin)?.ok_or(MovementError::Blocked)?;
-    if origin.floor != -8 && has_height(&origin_tile)? {
+    if (dx == 0 || dy == 0) && origin.floor != -8 && has_height(&origin_tile)? {
         let above = lookup(shifted(origin, 0, 0, 1)?)?;
         if above.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(upper) = lookup(shifted(next, 0, 0, 1)?)?
@@ -286,7 +286,7 @@ fn destination_with_lookup<'a>(
             next = shifted(next, 0, 0, 1)?;
         }
     }
-    if origin.floor != -7 && origin.floor == next.floor {
+    if (dx == 0 || dy == 0) && origin.floor != -7 && origin.floor == next.floor {
         let here = lookup(next)?;
         if here.is_none_or(|t| !t.ground_present() && !t.solid)
             && let Some(lower) = lookup(shifted(next, 0, 0, -1)?)?
@@ -484,6 +484,47 @@ mod tests {
         runtime.initialize_first_entry_position(actor).unwrap();
         (runtime, room, actor, session)
     }
+    #[test]
+    fn diagonal_steps_do_not_climb_or_drop_height_three() {
+        let (_, room, _, _) = owner();
+        let clear = tile(
+            room.movement_cells(),
+            MovementLocalPosition {
+                x: 0,
+                y: 4,
+                floor: -5,
+            },
+        )
+        .unwrap()
+        .unwrap();
+        let p = |x, y, floor| MovementLocalPosition { x, y, floor };
+        for direction in [
+            CardinalStep::NorthEast,
+            CardinalStep::SouthEast,
+            CardinalStep::SouthWest,
+            CardinalStep::NorthWest,
+        ] {
+            let (dx, dy) = direction.delta();
+            for climbing in [true, false] {
+                let origin = p(0, 0, -5);
+                let result = destination_with_lookup(origin, direction, |at| {
+                    let height = if climbing {
+                        at == origin
+                    } else {
+                        at == p(dx, dy, -6)
+                    };
+                    let present = at == origin || at == p(dx, dy, if climbing { -4 } else { -6 });
+                    Ok(present.then_some(TileView {
+                        tile: clear,
+                        solid: false,
+                        height_count: if height { 3 } else { 0 },
+                    }))
+                });
+                assert_eq!(result, Err(MovementError::Blocked));
+            }
+        }
+    }
+
     #[test]
     fn genuine_temple_steps_reach_source_stairs_without_relocation() {
         let (mut runtime, room, actor, session) = owner();

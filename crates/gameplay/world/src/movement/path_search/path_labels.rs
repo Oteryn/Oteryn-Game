@@ -97,7 +97,10 @@ impl SearchLabels {
         let extra = self.tiles[tile].extra?;
         let previous = self.tiles[tile].head;
         let parent = self.get(from);
-        let cost = parent.cost.saturating_add(STEP_COST).saturating_add(extra);
+        let cost = parent
+            .cost
+            .saturating_add(STEP_COST * step.pacing_cost())
+            .saturating_add(extra);
         let steps = parent.steps + 1;
         if self.find(tile, |known| known.cost <= cost && known.steps <= steps) {
             return None;

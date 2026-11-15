@@ -38,6 +38,14 @@ impl ResponseBody {
         if object.len() != 5 + extra.len() || extra.iter().any(|key| !object.contains_key(*key)) {
             return Err(PlatformClientError::InvalidPayload.into());
         }
+        if suffix == "/native-characters"
+            && body
+                .characters
+                .as_ref()
+                .is_none_or(|characters| !super::valid_characters(characters))
+        {
+            return Err(PlatformClientError::InvalidPayload.into());
+        }
         Ok(body)
     }
     fn session(&self) -> Result<DeviceSession, NativeLoginError> {
@@ -163,17 +171,6 @@ impl NativeLoginClient {
         let characters = reply
             .characters
             .ok_or(PlatformClientError::InvalidPayload)?;
-        if characters.len() > 64
-            || characters.iter().any(|c| {
-                parse_uuid_v7(&c.character_id).is_none()
-                    || parse_uuid_v7(&c.world_id).is_none()
-                    || c.name.is_empty()
-                    || c.name.len() > 96
-                    || c.name.chars().any(char::is_control)
-            })
-        {
-            return Err(PlatformClientError::InvalidPayload.into());
-        }
         Ok((successor, characters))
     }
     pub async fn device_ticket(
@@ -183,6 +180,7 @@ impl NativeLoginClient {
     ) -> Result<(DeviceSession, NativeTicket), NativeLoginError> {
         let started = Instant::now();
         let reply = self.rotate_device(session, "/tickets", cancel).await?;
+        let received = Instant::now();
         // The issuer's lifetime starts during rotation; qualify its absolute
         // expiry at receipt while keeping the request-start monotonic budget.
         let utc = now()?;
@@ -208,7 +206,7 @@ impl NativeLoginClient {
             successor,
             NativeTicket {
                 secret: SecretText(ticket),
-                usable_until: started + Duration::from_secs(lifetime.min(expiry - utc)),
+                usable_until: ticket_deadline(started, received, lifetime, expiry - utc),
                 requests_sent: AtomicU32::new(0),
             },
         ))
@@ -260,6 +258,11 @@ impl NativeLoginClient {
             .map_err(|_| PlatformClientError::ClientCreation)?;
         Ok(self)
     }
+}
+
+// Keep the monotonic conversion separate from response decoding.
+fn ticket_deadline(started: Instant, received: Instant, lifetime: u64, remaining: u64) -> Instant {
+    (received + Duration::from_secs(remaining)).min(started + Duration::from_secs(lifetime))
 }
 
 #[cfg(test)]
@@ -342,6 +345,42 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn device_character_responses_reject_invalid_summaries_and_duplicate_identities()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut body: serde_json::Value = serde_json::from_slice(include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/contracts/fixtures/remembered-device-v1/enroll-response.json"
+        )))?;
+        let row = serde_json::json!({
+            "character_id": "01890a5d-ac96-774b-bcce-b302099a8058",
+            "world_id": "01890a5d-ac96-774b-bcce-b302099a8059",
+            "name": "Ari", "availability": "AVAILABLE"
+        });
+        body["characters"] = serde_json::json!([row.clone()]);
+        assert!(ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_ok());
+        for name in ["x".repeat(97), "A\nri".into(), String::new()] {
+            let mut invalid = row.clone();
+            invalid["name"] = name.into();
+            body["characters"] = serde_json::json!([invalid]);
+            assert!(
+                ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_err()
+            );
+        }
+        for world in [
+            "01890a5d-ac96-774b-bcce-b302099a8059",
+            "01890a5d-ac96-774b-bcce-b302099a805a",
+        ] {
+            let mut duplicate = row.clone();
+            duplicate["world_id"] = world.into();
+            body["characters"] = serde_json::json!([row.clone(), duplicate]);
+            assert!(
+                ResponseBody::parse(&serde_json::to_vec(&body)?, "/native-characters").is_err()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn exact_device_response_shapes_reject_null_extras_and_duplicate_members()
     -> Result<(), Box<dyn std::error::Error>> {
         let bytes = include_bytes!(concat!(
@@ -358,5 +397,25 @@ mod tests {
         );
         assert!(ResponseBody::parse(duplicate.as_bytes(), "").is_err());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod deadline_tests {
+    use super::*;
+
+    #[test]
+    fn ticket_deadline_charges_latency_once_and_caps_the_request_budget() {
+        let started = Instant::now();
+        let received = started + Duration::from_secs(12);
+        assert_eq!(
+            ticket_deadline(started, received, 20, 8),
+            started + Duration::from_secs(20)
+        );
+        assert_eq!(
+            ticket_deadline(started, received, 20, 60),
+            started + Duration::from_secs(20)
+        );
+        assert!(ticket_deadline(started, received, 20, 8) > received);
     }
 }
