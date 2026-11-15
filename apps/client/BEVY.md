@@ -76,6 +76,8 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+Shift+S:** coin Store, with category browsing, purchase confirmation,
+  coin gifts/transfers, purchase history and the coin ledger.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
