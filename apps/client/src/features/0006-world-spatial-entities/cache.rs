@@ -17,7 +17,8 @@ pub(super) struct PresentationCache {
     attempted: bool,
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
-    outfits: BTreeMap<(u32, u32), Vec<Draw>>,
+    outfits: BTreeMap<OutfitKey, Vec<Draw>>,
+    palette: Vec<[u8; 3]>,
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
@@ -97,10 +98,15 @@ impl PresentationCache {
         if matches!(look, Some(oteryn_session::Look::EmptyOutfit)) {
             return Vec::new();
         }
-        let Some(oteryn_session::Look::Outfit { look_type, .. }) = look else {
+        let Some(oteryn_session::Look::Outfit {
+            look_type,
+            colours,
+            addons,
+        }) = look
+        else {
             return marker();
         };
-        let key = (*look_type, direction);
+        let key = (*look_type, direction, *colours, *addons);
         if let Some(draws) = self.outfits.get(&key) {
             return draws.clone();
         }
@@ -110,18 +116,11 @@ impl PresentationCache {
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
             let mut assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
-            let Assets { index, sheets } = &mut *assets;
-            let entry = index.resolve_outfit(sheets, *look_type, direction).ok()?;
-            entry
-                .cells
-                .iter()
-                .map(|cell| {
-                    sheets
-                        .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)
-                        .ok()
-                        .map(|rgba| ([cell.offset_x, cell.offset_y], rgba))
-                })
-                .collect::<Option<Vec<_>>>()
+            let colours = match colours.map(|index| self.palette.get(usize::from(index)).copied()) {
+                [Some(head), Some(body), Some(legs), Some(feet)] => Some([head, body, legs, feet]),
+                _ => None,
+            };
+            outfit_cells(&mut assets, *look_type, direction, *addons, colours)
         });
         let draws = resolved
             .and_then(|cells| {
@@ -200,3 +199,57 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
 }
 
 include!("cache_visuals.rs");
+include!("cache_outfits.rs");
+
+#[cfg(test)]
+mod outfit_tests {
+    use super::*;
+    #[test]
+    fn spatial_outfit_cache_composes_colours_addons_and_reuses_exact_looks()
+    -> Result<(), BatchError> {
+        let mut cache = PresentationCache::default();
+        let world = World::builtin()?;
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        cache.begin(world.atlas(), Some(root));
+        cache.set_palette(&[[255, 0, 0], [0, 0, 255]]);
+        let look = |colours, addons| oteryn_session::Look::Outfit {
+            look_type: 128,
+            colours,
+            addons,
+        };
+        let plain = cache.outfit(Some(&look([0; 4], 0)), 2);
+        let coloured = cache.outfit(Some(&look([1; 4], 0)), 2);
+        assert_ne!(
+            plain[0].cell, coloured[0].cell,
+            "colours need distinct atlas cells"
+        );
+        let pixels = |draws: &[Draw]| {
+            draws
+                .iter()
+                .flat_map(|draw| {
+                    let at = usize::from(draw.cell) * 4096;
+                    cache.pixels[at..at + 4096].iter().copied()
+                })
+                .collect::<Vec<_>>()
+        };
+        assert!(
+            pixels(&plain) != pixels(&coloured),
+            "outfit pixels must use the selected palette colours"
+        );
+        let added = cache.outfit(Some(&look([1; 4], 3)), 2);
+        assert!(
+            added.len() > coloured.len(),
+            "selected addons must be drawn"
+        );
+        let count = cache.count();
+        let repeated = cache.outfit(Some(&look([1; 4], 3)), 2);
+        assert_eq!(repeated[0].cell, added[0].cell);
+        assert_eq!(cache.count(), count);
+        assert!(
+            cache
+                .outfit(Some(&oteryn_session::Look::EmptyOutfit), 2)
+                .is_empty()
+        );
+        Ok(())
+    }
+}

@@ -101,6 +101,7 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
         }),
     };
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    scene.set_outfit_palette(&[[255, 0, 0], [0, 0, 255]]);
     scene.set_presentations_from(&[entry.clone()], 0, Some(root))?;
     assert!(
         scene.actor_draws[0]
@@ -109,6 +110,23 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
             .any(|draw| draw.cell > MARKER_CELL)
     );
     assert_eq!(scene.name_count(), 1);
+    let base_cell = scene.actor_draws[0].1[0].cell;
+    entry.look = Some(oteryn_session::Look::Outfit {
+        look_type: 128,
+        colours: [1; 4],
+        addons: 0,
+    });
+    scene.set_presentations_from(&[entry.clone()], 0, None)?;
+    assert_ne!(scene.actor_draws[0].1[0].cell, base_cell);
+    let base_count = scene.actor_draws[0].1.len();
+    entry.look = Some(oteryn_session::Look::Outfit {
+        look_type: 128,
+        colours: [1; 4],
+        addons: 3,
+    });
+    scene.set_presentations_from(&[entry.clone()], 0, None)?;
+    assert!(scene.actor_draws[0].1.len() > base_count);
+
     entry.look = Some(oteryn_session::Look::EmptyOutfit);
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
     assert!(scene.actor_draws[0].1.is_empty());
