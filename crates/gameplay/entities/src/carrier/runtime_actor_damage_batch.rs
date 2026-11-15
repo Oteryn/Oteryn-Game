@@ -21,12 +21,15 @@ impl CurrentOwnerExactActorCommit<'_> {
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::AllocationFailed
         })?;
         for actor in actors {
-            let (index, next, result) = self.carrier.prepare_creature_damage_inner(
+            let (index, next, result) = self.carrier.prepare_creature_damage_inner_bounded(
                 self.continuity,
                 actor.0,
                 command,
                 None,
                 false,
+                Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+                false,
+                self.now_ms,
             )?;
             if prepared.iter().any(|(prior, _)| *prior == index) {
                 return Err(
