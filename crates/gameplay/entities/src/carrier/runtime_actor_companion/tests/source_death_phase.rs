@@ -648,33 +648,47 @@ fn classic_runtime_keeps_main_death_path_while_source_room_death_stays_pending()
     )
     .unwrap();
     classic.use_classic_creature_deaths().unwrap();
-    classic
-        .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
-        .unwrap();
-    let policy = classic.companion_policy(key).unwrap();
-    let actor = ExactActorRef(
+    let channel = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(2)).unwrap(),
+        NodeId::decode(&id(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        8,
+        ChannelContentPin::test(world),
+    )
+    .unwrap();
+    for mut classic in [classic, channel] {
         classic
-            .admit_encounter_fixture_actor(
-                ActorState(1),
-                key,
-                policy.maximum_health,
-                Some(LocalPosition {
-                    x: 33710,
-                    y: 31634,
-                    floor: 14,
-                }),
-            )
-            .unwrap(),
-    );
-    classic.install_creature_policy(actor, key).unwrap();
-    canonical_lethal(&mut classic, actor, key);
-    assert!(!classic.has_pending_source_creature_deaths());
-    assert!(!classic.source_creature_death_pending(actor).unwrap());
-    // The choice is fixed before the first creature is admitted.
-    assert_eq!(
-        classic.use_classic_creature_deaths(),
-        Err(CarrierError::PlanConflict)
-    );
+            .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())
+            .unwrap();
+        let policy = classic.companion_policy(key).unwrap();
+        let actor = ExactActorRef(
+            classic
+                .admit_encounter_fixture_actor(
+                    ActorState(1),
+                    key,
+                    policy.maximum_health,
+                    Some(LocalPosition {
+                        x: 33710,
+                        y: 31634,
+                        floor: 14,
+                    }),
+                )
+                .unwrap(),
+        );
+        classic.install_creature_policy(actor, key).unwrap();
+        canonical_lethal(&mut classic, actor, key);
+        assert!(!classic.has_pending_source_creature_deaths());
+        assert!(!classic.source_creature_death_pending(actor).unwrap());
+        // The choice is fixed before the first creature is admitted.
+        assert_eq!(
+            classic.use_classic_creature_deaths(),
+            Err(CarrierError::PlanConflict)
+        );
+    }
 }
 
 #[test]

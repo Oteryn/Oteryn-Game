@@ -85,6 +85,12 @@ fn registry() -> Result<&'static Registry, String> {
             for rule in super::source_deaths::rules().map_err(str::to_owned)? {
                 add(rule.transition()?, false, false)?;
             }
+            // Death objectives also read NPC-owned predecessor tracks. Preserve
+            // their exact canonical kill operation rather than treating it as
+            // an unregistered alias of the NPC writer.
+            for objective in super::death_objectives::load()? {
+                add(objective.transition(), false, false)?;
+            }
             // Kesar's real final report shares the mission track protected by
             // Fugue's native kill. Only its complete gated operation may finish it.
             add(super::hero_of_bounac::transition(), false, true)?;
@@ -185,6 +191,24 @@ pub fn validate_for_catalogue(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn death_objectives_keep_their_exact_registered_operations() -> Result<(), String> {
+        let source = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|error| format!("{error:?}"))?;
+        for objective in super::super::death_objectives::load()? {
+            let transition = source
+                .catalogue()
+                .transition(&objective.key)
+                .ok_or("canonical death objective")?;
+            assert_eq!(transition, &objective.transition());
+            validate_for_catalogue(source.catalogue(), transition, false)?;
+            let mut stripped = transition.clone();
+            stripped.effects[0].from = super::super::QuestComparison::Any;
+            assert!(validate_for_catalogue(source.catalogue(), &stripped, false).is_err());
+        }
+        Ok(())
+    }
 
     #[test]
     fn embedded_reward_operations_match_their_registered_owners() -> Result<(), String> {

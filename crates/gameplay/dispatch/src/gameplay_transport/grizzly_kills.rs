@@ -668,7 +668,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             for transition in &recipient.objective_actions {
                 let outcome = slot
-                    .commit_quest_transition(
+                    .commit_quest_transition_with_admission(
                         self.root,
                         self.character,
                         self.holder,
@@ -678,6 +678,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             cause,
                         },
                         Arc::clone(catalogue),
+                        &self.premium_coordinator,
                     )
                     .await;
                 match outcome {
