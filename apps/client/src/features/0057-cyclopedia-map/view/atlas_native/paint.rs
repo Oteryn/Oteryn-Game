@@ -59,6 +59,26 @@ pub(super) unsafe fn draw(hwnd: HWND, p: &Panel) {
                 DeleteObject(brush);
             }
         }
+        if let Some([col, row]) = oteryn_client_ui::cyclopedia_map::atlas_player_cell(p) {
+            let brush = CreateSolidBrush(0xffffff);
+            for r in [
+                RECT {
+                    left: 12 + col * 12,
+                    top: 95 + row * 12,
+                    right: 20 + col * 12,
+                    bottom: 97 + row * 12,
+                },
+                RECT {
+                    left: 15 + col * 12,
+                    top: 92 + row * 12,
+                    right: 17 + col * 12,
+                    bottom: 100 + row * 12,
+                },
+            ] {
+                FillRect(dc, &r, brush);
+            }
+            DeleteObject(brush);
+        }
         for (_, brush) in brushes {
             DeleteObject(brush);
         }
@@ -101,6 +121,6 @@ pub(super) fn legend(p: &Panel) -> String {
             );
         }
     }
-    s.push_str("\r\nBlue: NPC | Purple: passage | Yellow: POI\r\nDark: unknown membership. Click the map for its region. Overview cells group nearby map tiles; this map does not show a walking route.");
+    s.push_str("\r\nWhite cross: you | Blue: NPC | Purple: passage | Yellow: POI\r\nDark: unknown membership. Click the map for its region. Overview cells group nearby map tiles; this map does not show a walking route.");
     s
 }

@@ -13,7 +13,8 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         return;
     }
     use crate::play::feature_0115_mail::view::native::{Form, open};
-    lock(&link.mailbox).properties.house.ownership.context=std::sync::Arc::downgrade(&link.mailbox);
+    lock(&link.mailbox).properties.house.ownership.context =
+        std::sync::Arc::downgrade(&link.mailbox);
     open(
         link,
         Form {
@@ -45,9 +46,9 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 for (slot, value) in mailbox.properties.house.fields.iter_mut().zip(fields) {
                     *slot = value;
                 }
-                if matches!(selection,8|9|14) {
-                    let weak=mailbox.properties.house.ownership.context.clone();
-                    ownership_window::open_from_mailbox(mailbox,weak,commands);
+                if matches!(selection, 8 | 9 | 14) {
+                    let weak = mailbox.properties.house.ownership.context.clone();
+                    ownership_window::open_from_mailbox(mailbox, weak, commands);
                 } else if selection == 10 {
                     let panel = &mut mailbox.properties.house;
                     if let Some(index) = panel.fields[2]
@@ -100,14 +101,29 @@ impl PlayLink {
         panel.initialize(true);
         panel.model.world = [1, 1, 1, 1, 1, 1, 0x71, 1, 0x81, 1, 1, 1, 1, 1, 1, 1];
         panel.model.town = "oteryn:content.area.city.thais".into();
-        panel.model.page.rows.push(oteryn_client_runtime::house::Row {
-            house: "oteryn:house.test".into(),
-            acl_revision: 7,
-            owned: true,
-            ..Default::default()
-        });
+        panel
+            .model
+            .page
+            .rows
+            .push(oteryn_client_runtime::house::Row {
+                house: "oteryn:house.test".into(),
+                acl_revision: 7,
+                owned: true,
+                ..Default::default()
+            });
         panel.fields[0] = "01010101-0101-7101-8101-010101010101".into();
         panel.fields[1] = panel.model.town.clone();
         panel.fields[2] = "1".into();
     }
+}
+
+#[cfg(any(windows, test))]
+pub(in crate::play) fn ownership_selection(
+    state: &super::state::ownership::Ownership,
+    displayed: Option<usize>,
+    rows_changed: bool,
+    selection_queued: bool,
+) -> Option<usize> {
+    (rows_changed || (!selection_queued && displayed != Some(state.model.index())))
+        .then_some(state.model.index())
 }

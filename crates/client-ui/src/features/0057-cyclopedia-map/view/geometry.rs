@@ -10,6 +10,7 @@ pub struct Drawing {
     pub caption: String,
     pub rects: Vec<Rect>,
     pub points: Vec<[i32; 2]>,
+    pub player: Option<[i32; 2]>,
 }
 pub fn text(panel: &Panel) -> String {
     let a = &panel.geometry;
@@ -73,6 +74,13 @@ pub fn project(panel: &Panel) -> Drawing {
             oy + (u32::from(y - min_y) * numerator / denominator) as i32,
         ]
     };
+    if let Some((x, y, floor)) = panel.player_position
+        && floor == a.floor
+        && (min_x..=max_x).contains(&x)
+        && (min_y..=max_y).contains(&y)
+    {
+        draw.player = Some(point(x, y));
+    }
     if !a.hide_geometry {
         for run in &a.runs {
             let [x, y] = point(run.begin, run.y);

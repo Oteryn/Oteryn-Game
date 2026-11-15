@@ -6,11 +6,7 @@ use oteryn_client_runtime::stash::StashResponse;
 
 impl Outbox {
     pub(in crate::play) fn stash_publish(&self, session: &impl Stepper) {
-        let sources = oteryn_client_ui::depot::DepotPanel {
-            items: session.depot_items(),
-            ..Default::default()
-        };
-        lock(&self.0).stash.carried = oteryn_client_ui::depot::deposit_items(&sources);
+        lock(&self.0).stash.carried = session.depot_items().inventory.entries;
     }
     pub(in crate::play) fn stash_initialize(&self, selected: bool) {
         lock(&self.0).stash.selected = selected;
@@ -37,5 +33,12 @@ impl Outbox {
     }
     pub(crate) fn bevy_stash_result(&self, response: &StashResponse) {
         self.stash_result(response);
+    }
+}
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_stash_carried(&self, items: Vec<oteryn_client_runtime::depot::ItemEntry>) {
+        lock(&self.0).stash.carried = items;
     }
 }

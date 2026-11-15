@@ -57,6 +57,14 @@ pub(in crate::play) fn reduce(panel: &mut PlayerTradePanel, events: &[SessionEve
                 {
                     panel.show_requested = true;
                 }
+                let was_active = panel
+                    .state
+                    .as_ref()
+                    .is_some_and(|state| matches!(state.phase, 1..=3));
+                if was_active && update.value.phase == 4 {
+                    panel.open = false;
+                    panel.show_requested = false;
+                }
                 panel.state = Some(update.value.clone());
                 panel.feedback = None;
                 if matches!(update.value.phase, 1..=3) {

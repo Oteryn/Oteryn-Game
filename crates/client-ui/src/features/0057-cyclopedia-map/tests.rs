@@ -114,6 +114,8 @@ fn exploration_layers_cycle_confirmed_floors_and_filter_pois() {
         ..Default::default()
     };
     panel.select_floor(false);
+    assert_eq!(panel.floor, 0);
+    panel.select_floor(true);
     assert_eq!(panel.floor, -1);
     assert_eq!(map_points(&panel).len(), 2);
     assert!(!map_text(&panel).contains("10,20,0"));
@@ -121,6 +123,8 @@ fn exploration_layers_cycle_confirmed_floors_and_filter_pois() {
     assert!(map_points(&panel).is_empty());
     assert!(map_text(&panel).contains("POI layer hidden"));
     panel.select_floor(true);
+    assert_eq!(panel.floor, -1);
+    panel.select_floor(false);
     assert_eq!(panel.floor, 0);
     panel.hide_pois = false;
     assert_eq!(map_points(&panel).len(), 1);

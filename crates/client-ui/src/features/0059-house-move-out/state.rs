@@ -11,6 +11,7 @@ pub struct Panel {
     pub pending: bool,
     pub pending_kind: u32,
     pub fields: [String; 2],
+    pub review: Option<[String; 2]>,
     pub feedback: String,
     pub summary: String,
 }

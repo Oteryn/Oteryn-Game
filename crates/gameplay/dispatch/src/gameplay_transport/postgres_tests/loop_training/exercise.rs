@@ -674,6 +674,14 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
             None,
             "IDLEKICK does not accept a stale trainer fence"
         );
+        for kind in [50, 57, 64, 69, 72, 77, 109, 174, 176, 6178] {
+            assert!(owner.training_activity(admitted, kind).await);
+            assert_eq!(
+                owner.idle_training(admitted).await,
+                Some(true),
+                "query {kind}"
+            );
+        }
         // An unavailable checkpoint must retain the run before the session is detached.
         let rates = std::sync::Arc::get_mut(&mut owner.states)
             .expect("W02: isolated fixture state")
@@ -751,7 +759,10 @@ fn scenario(node_boot: bool, terminal_readback: bool) -> TestResult {
         }
         let held = owner.root.try_issue_semantic_pass()?;
         barrier.1.notify_one();
-        assert!(!stopping.await, "busy readback must retain the known receipt");
+        assert!(
+            !stopping.await,
+            "busy readback must retain the known receipt"
+        );
         assert_eq!(owner.idle_training(admitted).await, Some(true));
         held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         let committed: (i64, i64) = sqlx::query_as(

@@ -19,6 +19,7 @@ impl PlayLink {
         {
             panel.search = search.into();
             panel.category = category.into();
+            panel.clear_hidden_selection();
         }
     }
     pub fn item_catalogue_request(&self, action: usize) {
@@ -68,7 +69,8 @@ pub(in crate::play) fn submit(
         panel.catalogue_definition = reference.to_string();
     }
     if action == 9 {
-        let Some(definition) = selected.filter(|n| panel.catalogue.contains_key(n)) else {
+        panel.clear_hidden_selection();
+        let Some(definition) = selected.filter(|n| panel.catalogue_item_visible(*n)) else {
             panel.feedback = "Select a catalogue item before browsing offers".into();
             return;
         };
@@ -90,21 +92,7 @@ pub(in crate::play) fn submit(
         return;
     }
     if action == 4 || action == 5 {
-        let keys: Vec<_> = panel.catalogue.keys().copied().collect();
-        if keys.is_empty() {
-            return;
-        }
-        let current = selected
-            .and_then(|id| keys.iter().position(|key| *key == id))
-            .unwrap_or(0);
-        let index = if action == 4 {
-            (current + keys.len() - 1) % keys.len()
-        } else {
-            (current + 1) % keys.len()
-        };
-        panel.catalogue_definition = keys[index].to_string();
-        panel.catalogue_drop_next = None;
-        panel.catalogue_market = None;
+        panel.select_item(action == 4);
         return;
     }
     let query = match action {
@@ -147,8 +135,15 @@ pub(in crate::play) fn submit(
                 return;
             };
             if action == 6 {
+                panel.search.clear();
+                panel.category.clear();
                 Request::Catalogue(reference)
             } else {
+                if !panel.catalogue_item_visible(reference) {
+                    panel.clear_hidden_selection();
+                    panel.feedback = "Select a visible catalogue item".into();
+                    return;
+                }
                 let after = if action == 8 {
                     let Some(next) = panel.catalogue_drop_next else {
                         panel.feedback = "End of drop sources".into();

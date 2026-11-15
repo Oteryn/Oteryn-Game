@@ -4,40 +4,12 @@ use oteryn_client_runtime::player_trade::ItemEntry;
 pub use oteryn_client_runtime::player_trade::TradeItems;
 
 pub fn rows(items: &TradeItems) -> Vec<(&'static str, ItemEntry)> {
-    let mut rows = Vec::new();
-    rows.extend(
-        items
-            .inventory
-            .main_backpack
-            .map(|item| (tr!("Backpack slot"), item)),
-    );
-    rows.extend(
-        items
-            .inventory
-            .entries
-            .iter()
-            .map(|item| (tr!("Backpack"), *item)),
-    );
-    rows.extend(
-        items
-            .inventory
-            .equipment
-            .iter()
-            .map(|item| (tr!("Equipment"), item.item)),
-    );
-    rows.extend(
-        items
-            .corpse
-            .entries
-            .iter()
-            .map(|item| (tr!("Open container"), *item)),
-    );
-    for view in &items.containers.views {
-        rows.extend(view.entries.iter().map(|item| (tr!("Container"), *item)));
-    }
-    let mut seen = std::collections::BTreeSet::new();
-    rows.retain(|(_, item)| seen.insert(item.handle));
-    rows
+    items
+        .inventory
+        .entries
+        .iter()
+        .map(|item| (tr!("Backpack"), *item))
+        .collect()
 }
 
 pub fn select_partner(panel: &mut PlayerTradePanel, partner: EntityRef) -> bool {
@@ -242,4 +214,32 @@ fn refusal_keeps_partner_so_another_inventory_item_can_be_offered() -> Result<()
         player_trade::Intent::Offer { partner, item: 2 }
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod source_regression {
+    use super::*;
+    #[test]
+    fn trade_picker_only_lists_direct_main_backpack_children() -> Result<(), &'static str> {
+        let item = |handle| -> Result<ItemEntry, &'static str> {
+            Ok(ItemEntry {
+                handle: std::num::NonZeroU64::new(handle).ok_or("handle")?,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU32::MIN,
+                sub_type: 0,
+            })
+        };
+        let mut items = TradeItems::default();
+        items.inventory.main_backpack = Some(item(1)?);
+        items.inventory.entries.push(item(2)?);
+        items.corpse.entries.push(item(3)?);
+        assert_eq!(
+            rows(&items)
+                .iter()
+                .map(|(_, i)| i.handle.get())
+                .collect::<Vec<_>>(),
+            [2]
+        );
+        Ok(())
+    }
 }

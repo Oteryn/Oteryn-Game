@@ -149,6 +149,31 @@ pub(super) fn build(
         ] {
             button(commands, skins, filters, state, kind, &caption, enabled);
         }
+        let carried = commands
+            .spawn((
+                ScrollArea,
+                Node {
+                    max_height: px(100.),
+                    min_height: px(0.),
+                    overflow: Overflow::scroll_y(),
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(3.),
+                    ..default()
+                },
+            ))
+            .id();
+        commands.entity(root).add_child(carried);
+        for (row, item) in panel.carried.iter().enumerate() {
+            button(
+                commands,
+                skins,
+                carried,
+                state,
+                Kind::Stow(row),
+                &format!("Stow item {} × {}", item.item_definition_ref, item.count),
+                enabled,
+            );
+        }
         let list = commands
             .spawn((
                 ScrollArea,
@@ -241,7 +266,7 @@ fn button(
         entity.insert(InteractionDisabled);
     }
     let entity = entity.observe(activate).id();
-    if matches!(kind, Kind::Row(_)) {
+    if matches!(kind, Kind::Row(_) | Kind::Stow(_)) {
         commands.entity(entity).insert(Node {
             width: percent(100.),
             min_height: px(28.),
@@ -255,7 +280,7 @@ fn button(
     let text = commands
         .spawn(source::button_caption(caption, skins.font.clone()))
         .id();
-    if matches!(kind, Kind::Row(_)) {
+    if matches!(kind, Kind::Row(_) | Kind::Stow(_)) {
         commands.entity(text).insert(Node {
             max_width: percent(100.),
             flex_shrink: 1.,

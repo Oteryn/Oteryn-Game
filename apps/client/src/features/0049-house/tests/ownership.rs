@@ -105,3 +105,75 @@ fn house_ownership_menu_and_confirmations_reach_the_real_play_queue()
     assert!(queue.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn ownership_refresh_resynchronizes_combo_with_unchanged_row_keys()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut queue, outbox) = play_channel();
+    crate::play::mailbox::lock(&link.mailbox)
+        .properties
+        .house
+        .initialize(true);
+    link.house_ownership_open();
+    let row = |name: &str| wire::HouseSaleRow {
+        house: format!("oteryn:content.house.{name}"),
+        name: name.into(),
+        revision: 1,
+        owner: "Alice".into(),
+        recipient: String::new(),
+        transfer_state: 0,
+        due_at_unix_ms: 0,
+        price: 0,
+        rent: 1,
+        allowed: 2,
+        move_out_state: 0,
+    };
+    let reply = wire::HouseSaleReply {
+        now_unix_ms: 1_800_000_000_000,
+        has_more: false,
+        rows: vec![row("a"), row("b")],
+    };
+    let payload = wire::encode_reply(&reply).map_err(|e| format!("{e:?}"))?;
+    let PlayCommand::Feature(query) = queue.try_recv()? else {
+        return Err("query".into());
+    };
+    outbox.properties_result(
+        &query,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: payload.clone(),
+        },
+    );
+    link.house_ownership_select(1)?;
+    link.house_ownership_page(0);
+    let PlayCommand::Feature(query) = queue.try_recv()? else {
+        return Err("refresh".into());
+    };
+    outbox.properties_result(
+        &query,
+        &GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+    let current = link.house_ownership_panel();
+    assert_eq!(current.model.index(), 0);
+    assert_eq!(
+        crate::play::feature_0049_house::view::ownership_selection(&current, Some(1), false, false),
+        Some(0)
+    );
+    assert_eq!(
+        crate::play::feature_0049_house::view::ownership_selection(&current, Some(0), false, false),
+        None
+    );
+    assert_eq!(
+        crate::play::feature_0049_house::view::ownership_selection(&current, Some(1), false, true),
+        None,
+        "a queued user selection must be read before projection resets the control"
+    );
+    Ok(())
+}

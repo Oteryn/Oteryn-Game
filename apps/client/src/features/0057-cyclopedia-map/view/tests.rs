@@ -143,3 +143,38 @@ fn cyclopedia_host_navigation_round_trip_uses_the_live_map_protocol()
     assert!(!link.cyclopedia_map_panel().pending);
     Ok(())
 }
+
+#[test]
+fn cyclopedia_start_control_sends_existing_exploration_request()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        combat_input::PlayCommand,
+        play::{mailbox::lock, play_channel},
+    };
+    use oteryn_client_ui::cyclopedia_map::Intent;
+    let intent = super::map_intent(9).ok_or("missing exploration action")?;
+    let (link, mut receiver, _) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.properties.cyclopedia_map.selected = true;
+        super::super::input::submit(&mut mailbox, &link.commands, intent);
+    }
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("missing exploration request".into());
+    };
+    let request =
+        oteryn_client_runtime::cyclopedia_map::decode_request(command.kind, &command.payload)
+            .map_err(|error| format!("{error:?}"))?;
+    assert_eq!(
+        (
+            command.capability,
+            command.kind,
+            request.operation,
+            request.amount
+        ),
+        (57, 73, 1, 0)
+    );
+    assert_eq!(intent, Intent::Start);
+    assert!(link.cyclopedia_map_panel().pending);
+    Ok(())
+}

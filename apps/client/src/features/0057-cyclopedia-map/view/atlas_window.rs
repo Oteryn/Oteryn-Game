@@ -13,7 +13,7 @@ use std::{
 };
 use windows_sys::Win32::{Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*};
 type Commands = tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>;
-type Key = (u64, bool, Vec<(u16, u16, i8)>);
+type Key = (u64, bool, Vec<(u16, u16, i8)>, Option<(u16, u16, i8)>);
 struct Frame {
     key: Key,
     version: u64,
@@ -35,6 +35,7 @@ fn key(panel: &Panel) -> Key {
             .map
             .as_ref()
             .map_or_else(Vec::new, |map| map.visible.clone()),
+        panel.player_position,
     )
 }
 fn wide(value: &str) -> Vec<u16> {
@@ -138,6 +139,24 @@ unsafe fn paint(hwnd: HWND, drawing: &Drawing) {
                 },
                 0x5eddf3,
             );
+        }
+        if let Some([x, y]) = drawing.player {
+            for rect in [
+                RECT {
+                    left: x - 5,
+                    top: y - 1,
+                    right: x + 6,
+                    bottom: y + 2,
+                },
+                RECT {
+                    left: x - 1,
+                    top: y - 5,
+                    right: x + 2,
+                    bottom: y + 6,
+                },
+            ] {
+                fill(dc, rect, 0xffffff);
+            }
         }
         SetBkMode(dc, TRANSPARENT as i32);
         SetTextColor(dc, 0xe7ecee);

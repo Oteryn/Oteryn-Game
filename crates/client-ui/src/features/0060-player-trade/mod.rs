@@ -65,6 +65,17 @@ pub fn request(panel: &mut PlayerTradePanel, intent: Intent) -> Option<PlayerTra
 
 pub fn apply_result(panel: &mut PlayerTradePanel, response: &PlayerTradeResponse) {
     panel.pending = false;
+    if panel
+        .state
+        .as_ref()
+        .is_some_and(|state| matches!(state.phase, 1..=3))
+        && response.state.phase == 4
+    {
+        panel.open = false;
+        panel.show_requested = false;
+        panel.offer = None;
+        panel.partner = None;
+    }
     panel.state = Some(response.state.clone());
     panel.feedback = match response.status {
         CommandStatus::Accepted | CommandStatus::DuplicateReplay => {
@@ -146,3 +157,32 @@ pub mod picker;
 mod protocol;
 mod state;
 mod view;
+
+#[cfg(test)]
+mod terminal_tests {
+    use super::*;
+    #[test]
+    fn terminal_trade_result_closes_only_an_active_presentation() {
+        for active in [false, true] {
+            let mut panel = PlayerTradePanel {
+                open: true,
+                show_requested: true,
+                state: active.then(|| player_trade::State {
+                    phase: 2,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            };
+            apply_result(
+                &mut panel,
+                &PlayerTradeResponse {
+                    status: CommandStatus::Accepted,
+                    result: player_trade::ResultCode::TooFar,
+                    state: player_trade::State::default(),
+                },
+            );
+            assert_eq!(panel.open, !active);
+            assert_eq!(panel.show_requested, !active);
+        }
+    }
+}

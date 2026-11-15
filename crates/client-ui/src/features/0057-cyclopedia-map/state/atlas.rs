@@ -2,6 +2,7 @@ use oteryn_client_runtime::cyclopedia_map::geometry::{Area, Request, Run};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Atlas {
     pub open: bool,
+    pub show_map: bool,
     pub pending: Option<Request>,
     pub parent: u32,
     pub after: u16,
@@ -23,6 +24,7 @@ impl Default for Atlas {
     fn default() -> Self {
         Self {
             open: false,
+            show_map: false,
             pending: None,
             parent: 0,
             after: 0,

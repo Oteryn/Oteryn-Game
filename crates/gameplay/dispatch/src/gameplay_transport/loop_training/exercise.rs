@@ -94,7 +94,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.training_before_save_bound(
             actor,
             admitted.game_session_id,
-            !matches!(kind, 13 | 30 | 67),
+            !matches!(
+                kind,
+                13 | 30 | 50 | 57 | 64 | 67 | 69 | 72 | 77 | 109 | 174 | 176 | 6178
+            ),
             Some(fence),
         )
         .await

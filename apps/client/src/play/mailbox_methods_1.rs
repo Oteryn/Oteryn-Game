@@ -80,6 +80,7 @@ impl Outbox {
             )
         {
             mailbox.hireling.target = Some((x, y, floor));
+            mailbox.properties.cyclopedia_map.player_position = Some((x, y, floor));
         }
     }
 

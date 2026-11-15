@@ -205,8 +205,12 @@ fn run(
             WS_TABSTOP,
         );
         control(
-            hwnd, "BUTTON", tr!("Market"), MARKET,
-            [610, 358, 300, 28], WS_TABSTOP,
+            hwnd,
+            "BUTTON",
+            tr!("Market"),
+            MARKET,
+            [610, 358, 300, 28],
+            WS_TABSTOP,
         );
         let carried_label = control(
             hwnd,
@@ -314,11 +318,21 @@ fn run(
                             continue;
                         }
                         let row = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
+                        if GetWindowTextLengthW(amount) > 10 {
+                            mailbox.stash.feedback = Some(
+                                "Enter a positive withdrawal amount (at most 4294967295)".into(),
+                            );
+                            continue;
+                        }
                         let mut b = [0u16; 11];
                         let n = GetWindowTextW(amount, b.as_mut_ptr(), 11);
-                        let amount = String::from_utf16_lossy(&b[..n as usize]).parse().ok();
-                        row.zip(amount).and_then(|(row, amount)| {
-                            oteryn_client_ui::stash::visible_withdraw(&mailbox.stash, row, amount)
+                        let amount = String::from_utf16_lossy(&b[..n as usize]);
+                        row.and_then(|row| {
+                            oteryn_client_ui::stash::withdrawal_text(
+                                &mut mailbox.stash,
+                                row,
+                                &amount,
+                            )
                         })
                     }
                     _ => None,

@@ -296,3 +296,33 @@ fn catalogue_encodings_switch_without_reusing_the_other_cursor()
     );
     Ok(())
 }
+
+#[test]
+fn item_navigation_cycles_only_the_visible_filtered_catalogue() {
+    let mut p = Panel {
+        selected: true,
+        search: "sword".into(),
+        catalogue_definition: "1".into(),
+        ..Default::default()
+    };
+    for (id, name) in [(1, "Sword"), (2, "Axe"), (3, "Long sword")] {
+        p.catalogue.insert(
+            id,
+            InspectedItem {
+                slot: 0,
+                definition_ref: id,
+                count: 1,
+                tier: 0,
+                name: name.into(),
+                attributes: vec![],
+            },
+        );
+    }
+    assert!(p.select_item(false));
+    assert_eq!(p.catalogue_definition, "3");
+    assert!(p.select_item(false));
+    assert_eq!(p.catalogue_definition, "1");
+    p.search = "absent".into();
+    assert!(!p.select_item(false));
+    assert!(p.catalogue_definition.is_empty());
+}

@@ -148,8 +148,32 @@ impl PlayLink {
     pub(crate) fn house_world(&self, world: &str) {
         lock(&self.mailbox).properties.house.fields[0] = world.into();
     }
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn house_close(&self) {
+        lock(&self.mailbox).properties.house.model.open = false;
+    }
     pub fn house_request(&self, selection: usize) {
-        if matches!(selection,8|9|14) {self.house_ownership_open();return;}
+        if selection == 10 && self.uses_shared_frontend() {
+            let mut mailbox = lock(&self.mailbox);
+            let panel = &mut mailbox.properties.house;
+            if let Some(index) = panel.fields[2]
+                .trim()
+                .parse::<usize>()
+                .ok()
+                .and_then(|row| row.checked_sub(1))
+            {
+                panel.model.index = index;
+            }
+            panel.map_open = !oteryn_client_ui::house::map_houses(&panel.model).is_empty();
+            if !panel.map_open {
+                panel.model.feedback = "Query houses and select a row to view its floor".into();
+            }
+            return;
+        }
+        if matches!(selection, 8 | 9 | 14) {
+            self.house_ownership_open();
+            return;
+        }
         submit(&mut lock(&self.mailbox), &self.commands, selection);
     }
     pub fn house_edit(&self, field: usize, value: String) {

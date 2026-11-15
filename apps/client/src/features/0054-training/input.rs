@@ -82,3 +82,10 @@ pub(in crate::play) fn edit(
         *slot = value;
     }
 }
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl PlayLink {
+    pub(crate) fn bevy_training_fixture(&self) {
+        lock(&self.mailbox).properties.training.selected = true;
+    }
+}

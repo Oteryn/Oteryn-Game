@@ -288,3 +288,47 @@ impl<T, E: std::fmt::Debug> Checked<T> for Result<T, E> {
         self.map_err(|error| format!("{error:?}").into())
     }
 }
+
+#[test]
+fn fallback_notice_requires_frozen_house_and_date_confirmation() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    let (link, mut commands, _outbox) = play_channel();
+    let form = crate::play::feature_0059_house_move_out::view::form();
+    {
+        let mut m = lock(&link.mailbox);
+        m.properties.house_move_out.selected = true;
+        m.properties.house_move_out.open = true;
+    }
+    let original = vec![
+        "oteryn:content.house.test".to_owned(),
+        "2000000000000".to_owned(),
+    ];
+    assert!(form.dispatch(&link, &form.read(&link), 1, original.clone()));
+    assert!(
+        commands.try_recv().is_err(),
+        "notice must be reviewed before sending"
+    );
+    let review = form.read(&link);
+    assert!(review.text.contains(&original[0]));
+    assert!(
+        review
+            .text
+            .contains(&oteryn_client_ui::house::format_ownership_date(
+                2_000_000_000_000
+            ))
+    );
+    assert!(form.dispatch(
+        &link,
+        &review,
+        3,
+        vec!["other-house".into(), "3000000000000".into()]
+    ));
+    let crate::combat_input::PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("notice command".into());
+    };
+    let request =
+        wire::decode_house_move_out_request(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(request.house, original[0]);
+    assert_eq!(request.due_at_unix_ms, 2_000_000_000_000);
+    Ok(())
+}

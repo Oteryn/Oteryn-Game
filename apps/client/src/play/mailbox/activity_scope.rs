@@ -94,6 +94,7 @@ impl Mailbox {
         self.properties.guildhall.pending = Default::default();
         self.properties.house.invalidate();
         self.properties.house_move_out.pending = Default::default();
+        self.properties.house_move_out.review = None;
         self.properties.house_transfer.pending = Default::default();
         self.properties.staff.pending = Default::default();
         self.properties.player_report.pending = Default::default();

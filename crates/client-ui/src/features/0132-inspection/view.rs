@@ -43,14 +43,12 @@ pub fn catalogue_text(panel: &Panel) -> String {
         panel.categories().join(", "),
         panel.feedback
     );
-    let search = panel.search.to_lowercase();
     let mut matched = 0;
-    for item in panel.catalogue.values().filter(|item| {
-        item.name.to_lowercase().contains(&search)
-            && (panel.category.is_empty()
-                || super::state::item_categories(item)
-                    .any(|category| category.eq_ignore_ascii_case(&panel.category)))
-    }) {
+    for item in panel
+        .catalogue
+        .values()
+        .filter(|item| panel.matches_catalogue_item(item))
+    {
         matched += 1;
         if panel.catalogue_definition == item.definition_ref.to_string() {
             text.push_str("> ");

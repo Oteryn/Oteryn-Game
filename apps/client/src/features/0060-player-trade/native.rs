@@ -188,7 +188,9 @@ fn run(
                 break;
             };
             let mut mailbox = lock(&shared);
-            if !mailbox.player_trade.selected {
+            if !mailbox.player_trade.selected
+                || (!mailbox.player_trade.open && !mailbox.player_trade.show_requested)
+            {
                 break;
             }
 

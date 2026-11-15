@@ -18,15 +18,7 @@ use windows_sys::Win32::{
     },
 };
 
-type Snapshot = (bool, bool, Vec<String>, String);
-pub(in crate::play) struct Form {
-    pub title: &'static str,
-    pub labels: &'static [&'static str],
-    pub buttons: &'static [&'static str],
-    pub snapshot: fn(&Mailbox) -> Snapshot,
-    pub set_open: fn(&mut Mailbox, bool),
-    pub submit: fn(&mut Mailbox, &UnboundedSender<PlayCommand>, usize, Vec<String>),
-}
+pub(in crate::play) use super::forms::Form;
 type WeakMailbox = Weak<Mutex<Mailbox>>;
 #[derive(Default)]
 struct Actions(Vec<usize>);

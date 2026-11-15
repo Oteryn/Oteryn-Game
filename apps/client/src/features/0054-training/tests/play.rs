@@ -175,7 +175,10 @@ fn cp01_training_scenario() -> Result<(), Error> {
                         .await
                         .checked()?;
                         assert_eq!(link.training_panel().charges, Some(charges));
-                        assert_eq!(link.training_panel().pool_seconds, Some(pool_seconds));
+                        assert_eq!(
+                            link.training_panel().pool_seconds,
+                            (kind == 66).then_some(pool_seconds)
+                        );
                     }
                     assert!(link.training_panel().feedback.contains("logging you out"));
                     send(

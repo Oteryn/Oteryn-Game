@@ -256,6 +256,7 @@ fn player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_
     })]);
     assert_eq!(link.player_trade_panel().partner, Some(partner));
     assert!(link.player_trade_panel().show_requested);
+    crate::play::mailbox::lock(&link.mailbox).player_trade.open = true;
     assert!(panel_text(&link.player_trade_panel()).contains("wants to trade"));
     outbox.push(vec![SessionEvent::PlayerTrade(AppliedDelta {
         server_sequence: 42,
@@ -267,6 +268,8 @@ fn player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_
         },
     })]);
     assert!(link.player_trade_panel().partner.is_none());
+    assert!(!link.player_trade_panel().open);
+    assert!(!link.player_trade_panel().show_requested);
     assert!(panel_text(&link.player_trade_panel()).contains("Trade cancelled."));
     outbox.end(oteryn_platform_client::native_login::PublicClass::SessionUnavailable);
     assert!(!link.player_trade_panel().selected);
@@ -335,7 +338,10 @@ fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Resul
 fn player_trade_choose_partner_keeps_win32_window_openable() {
     let (link, _commands, outbox) = play_channel();
     outbox.player_trade_initialize(true, None);
-    let partner = EntityRef { identity: [4; 16], generation: 2 };
+    let partner = EntityRef {
+        identity: [4; 16],
+        generation: 2,
+    };
     assert!(!link.uses_shared_frontend());
     assert!(link.player_trade_choose_partner(partner));
     assert!(!link.player_trade_panel().open);

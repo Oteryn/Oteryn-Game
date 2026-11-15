@@ -194,3 +194,47 @@ fn invalid_stash_filter_is_reported_without_sending_a_command() {
             .is_some_and(|message| message.contains("128 UTF-8 bytes"))
     );
 }
+
+#[test]
+fn withdrawal_amount_errors_are_specific_and_never_enqueue() {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    apply_result(&mut panel, &reply(stash::StashOutcome::Opened));
+    assert!(request(&mut panel, Intent::Withdraw { row: 0, amount: 0 }).is_none());
+    assert!(
+        panel
+            .feedback
+            .as_deref()
+            .unwrap_or_default()
+            .contains("amount"),
+        "{:?}",
+        panel.feedback
+    );
+    assert!(!panel.pending);
+}
+
+#[test]
+fn invalid_withdrawal_text_reports_an_amount_error() {
+    let mut panel = StashPanel {
+        selected: true,
+        ..Default::default()
+    };
+    apply_result(&mut panel, &reply(stash::StashOutcome::Opened));
+    for text in ["", "abc", "4294967296", "0"] {
+        panel.feedback = None;
+        assert!(withdrawal_text(&mut panel, 0, text).is_none());
+        assert!(
+            panel
+                .feedback
+                .as_deref()
+                .unwrap_or_default()
+                .contains("amount")
+        );
+    }
+    assert_eq!(
+        withdrawal_text(&mut panel, 0, "3"),
+        Some(Intent::Withdraw { row: 0, amount: 3 })
+    );
+}

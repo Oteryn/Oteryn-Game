@@ -10,19 +10,30 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Default)]
 struct Peer {
+    inventory: oteryn_client_runtime::depot::Items,
     queries: Option<std::sync::Arc<std::sync::Mutex<Vec<stash::StashFilter>>>>,
 }
 impl Stepper for Peer {
+    fn depot_items(&self) -> oteryn_client_runtime::depot::Items {
+        self.inventory.clone()
+    }
     fn stash_selected(&self) -> bool {
         true
     }
     async fn stash(&mut self, command: &StashCommand) -> Result<StashResponse, SessionError> {
         let (intent, filter) = stash::decode_stash_query(&command.payload)
             .map_err(|_| SessionError::SessionUnusable)?;
-        if let Some(queries) = &self.queries && let Some(filter) = &filter {
-            queries.lock().map_err(|_| SessionError::SessionUnusable)?.push(filter.clone());
+        if let Some(queries) = &self.queries
+            && let Some(filter) = &filter
+        {
+            queries
+                .lock()
+                .map_err(|_| SessionError::SessionUnusable)?
+                .push(filter.clone());
         }
-        if let Some(filter) = filter && !filter.search.is_empty() {
+        if let Some(filter) = filter
+            && !filter.search.is_empty()
+        {
             assert_eq!(filter.search, "apple");
             assert_eq!(filter.category, "other");
             assert_eq!(filter.trader, "Sam");
@@ -121,6 +132,7 @@ fn stash_market_round_trip_keeps_context() -> Result<(), Error> {
                 let task = tokio::spawn(run_session(
                     Peer {
                         queries: Some(queries.clone()),
+                        ..Default::default()
                     },
                     incoming,
                     outbox,
@@ -250,4 +262,32 @@ fn stash_sort_is_saved_and_restored_in_a_new_session() -> Result<(), Error> {
         })?
         .join()
         .map_err(|_| "Stash preferences thread panicked")?
+}
+
+#[test]
+fn stash_picker_only_publishes_direct_main_backpack_children() -> Result<(), Error> {
+    use oteryn_client_runtime::depot::ItemEntry;
+    let item = |handle| -> Result<ItemEntry, Error> {
+        Ok(ItemEntry {
+            handle: std::num::NonZeroU64::new(handle).ok_or("handle")?,
+            item_definition_ref: std::num::NonZeroU32::MIN,
+            count: std::num::NonZeroU32::MIN,
+            sub_type: 0,
+        })
+    };
+    let mut peer = Peer::default();
+    peer.inventory.inventory.main_backpack = Some(item(1)?);
+    peer.inventory.inventory.entries.push(item(2)?);
+    peer.inventory.views.push(item(3)?);
+    let (link, _, outbox) = play_channel();
+    outbox.stash_publish(&peer);
+    assert_eq!(
+        link.stash_panel()
+            .carried
+            .iter()
+            .map(|i| i.handle.get())
+            .collect::<Vec<_>>(),
+        [2]
+    );
+    Ok(())
 }

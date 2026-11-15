@@ -326,6 +326,25 @@ fn closing_inactive_sidebar_clears_only_presentation_without_sending_cancel() ->
     terminal.state.as_mut().ok_or("state")?.reason = 2;
     update(&outbox, terminal.clone());
     app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Action>()
+            .iter(app.world())
+            .next()
+            .is_none()
+    );
+    // Terminal publication closes the active presentation. Reopen an inactive
+    // picker explicitly before exercising its local Close action.
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .player_trade_input(&events)
+    );
+    app.update();
     let close = control(&mut app, Kind::Close)?;
     app.world_mut().trigger(Activate { entity: close });
     app.update();

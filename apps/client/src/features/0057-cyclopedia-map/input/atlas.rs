@@ -28,7 +28,8 @@ impl PlayLink {
     pub fn cyclopedia_atlas_pump(&self) {
         let mut mailbox = lock(&self.mailbox);
         let panel = &mut mailbox.properties.cyclopedia_map;
-        if panel.pending || !panel.geometry.open || !panel.geometry.auto_load {
+        if panel.pending || panel.speed_pending || !panel.geometry.open || !panel.geometry.auto_load
+        {
             return;
         }
         let Some(after) = panel.geometry.next_geometry else {
@@ -81,7 +82,7 @@ pub(in crate::play) fn submit(
     action: usize,
 ) {
     let panel = &mut mailbox.properties.cyclopedia_map;
-    if !panel.selected || panel.pending {
+    if !panel.selected || panel.pending || panel.speed_pending {
         return;
     }
     if action == 10 {
@@ -152,19 +153,15 @@ pub(in crate::play) fn submit(
                 panel.geometry.feedback = "Choose an area first".into();
                 return;
             };
+            let old_floor = panel.geometry.floor;
             if action == 6 {
-                panel.geometry.floor = if panel.geometry.floor == 0 {
-                    -15
-                } else {
-                    panel.geometry.floor + 1
-                };
+                panel.geometry.floor = panel.geometry.floor.saturating_add(1).min(0);
             }
             if action == 7 {
-                panel.geometry.floor = if panel.geometry.floor == -15 {
-                    0
-                } else {
-                    panel.geometry.floor - 1
-                };
+                panel.geometry.floor = panel.geometry.floor.saturating_sub(1).max(-15);
+            }
+            if action != 5 && panel.geometry.floor == old_floor {
+                return;
             }
             panel.geometry.clear_geometry();
             panel.geometry.auto_load = true;

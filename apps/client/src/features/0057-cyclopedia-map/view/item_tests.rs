@@ -322,3 +322,70 @@ fn catalogue_scope_change_invalidates_definition_and_source_cursors()
     assert!(receiver.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn pending_item_browse_freezes_submitted_filters_across_host_controls()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        combat_input::PlayCommand,
+        play::{mailbox::lock, play_channel},
+    };
+    let (link, mut receiver, _) = play_channel();
+    let values = |search: &str, category: &str| {
+        vec![
+            String::new(),
+            search.into(),
+            category.into(),
+            String::new(),
+            String::new(),
+        ]
+    };
+    let mut m = lock(&link.mailbox);
+    m.discovery.inspection.selected = true;
+    (super::form().submit)(&mut m, &link.commands, 39, values("sword", "sword"));
+    assert!(matches!(
+        receiver.try_recv()?,
+        PlayCommand::ServerMechanic(_)
+    ));
+    assert!(m.discovery.inspection.pending);
+    (super::form().submit)(&mut m, &link.commands, 39, values("axe", "axe"));
+    assert_eq!(m.discovery.inspection.search, "sword");
+    assert_eq!(m.discovery.inspection.category, "sword");
+    (super::form().submit)(&mut m, &link.commands, 22, values("axe", "axe"));
+    assert_eq!(m.discovery.inspection.search, "sword");
+    assert_eq!(m.discovery.inspection.category, "sword");
+    super::actions::navigate_section(&mut m, 1, &values("axe", "axe"));
+    assert_eq!(m.discovery.inspection.search, "sword");
+    assert!(receiver.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn invisible_catalogue_selection_cannot_open_market_or_loot_sources()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{mailbox::lock, play_channel};
+    use oteryn_client_ui::inspection::InspectedItem;
+    let (link, mut receiver, _) = play_channel();
+    let mut m = lock(&link.mailbox);
+    m.market.selected = true;
+    let p = &mut m.discovery.inspection;
+    p.selected = true;
+    p.search = "sword".into();
+    p.catalogue_definition = "2".into();
+    p.catalogue.insert(
+        2,
+        InspectedItem {
+            slot: 0,
+            definition_ref: 2,
+            count: 1,
+            tier: 0,
+            name: "Axe".into(),
+            attributes: vec![],
+        },
+    );
+    super::actions::item_market(&mut m, &link.commands, false);
+    super::actions::item_sources(&mut m, &link.commands, false);
+    assert!(receiver.try_recv().is_err());
+    assert!(m.discovery.inspection.catalogue_definition.is_empty());
+    Ok(())
+}

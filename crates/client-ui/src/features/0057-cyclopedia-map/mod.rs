@@ -4,7 +4,7 @@ mod atlas;
 pub mod atlas_view;
 #[path = "state/atlas.rs"]
 pub mod geometry;
-pub use atlas::{atlas_action, atlas_color, atlas_detail};
+pub use atlas::{atlas_action, atlas_color, atlas_detail, atlas_player_cell};
 mod input;
 mod state;
 mod view;

@@ -103,10 +103,18 @@ pub(super) fn run(
         else {
             return;
         };
-        control(hwnd, "STATIC", "Account Friends and main character: Ctrl+Alt+F", 205, [10,635,615,20], 0);
+        control(
+            hwnd,
+            "STATIC",
+            "Account Friends and main character: Ctrl+Alt+F",
+            205,
+            [10, 635, 615, 20],
+            0,
+        );
         let mut held: Option<oteryn_client_ui::vip::VipPanel> = None;
+        let mut held_presence = None;
         let mut message: MSG = std::mem::zeroed();
-        loop {
+        'window: loop {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 TranslateMessage(&message);
                 DispatchMessageW(&message);
@@ -121,7 +129,9 @@ pub(super) fn run(
             if commands.is_closed() || !mailbox.vip.open {
                 break;
             }
-            let view = super::management_view(mailbox.vip.view.as_deref()).unwrap_or_default();
+            let view =
+                super::management_presence(mailbox.vip.view.as_deref(), &mailbox.vip_presence)
+                    .unwrap_or_default();
             for action in std::mem::take(&mut actions.0) {
                 let id = action & 0xffff;
                 if (124..=126).contains(&id) {
@@ -131,6 +141,22 @@ pub(super) fn run(
                         _ => oteryn_client_ui::vip::FriendsFilter::All,
                     };
                     continue;
+                }
+                if id == 101 && action >> 16 == LBN_DBLCLK as usize {
+                    if let (Some(displayed), Ok(row)) = (
+                        held.as_ref(),
+                        usize::try_from(SendMessageW(entries, LB_GETCURSEL, 0, 0)),
+                    ) {
+                        let displayed = displayed.clone();
+                        drop(mailbox);
+                        let link = PlayLink {
+                            owns_session: false,
+                            commands: commands.clone(),
+                            mailbox: shared.clone(),
+                        };
+                        link.vip_row_notification(&displayed, row, LBN_DBLCLK as usize);
+                        continue 'window;
+                    }
                 }
                 if id == 101 && action >> 16 == LBN_SELCHANGE as usize {
                     let index = SendMessageW(entries, LB_GETCURSEL, 0, 0);
@@ -224,8 +250,12 @@ pub(super) fn run(
                     mailbox.vip.feedback = Some(tr!("The session has ended").into());
                 }
             }
-            if held.as_ref() != Some(&mailbox.vip) {
-                if held.as_ref().map(|panel| &panel.view) != Some(&mailbox.vip.view) {
+            if held.as_ref() != Some(&mailbox.vip)
+                || held_presence.as_ref() != Some(&mailbox.vip_presence)
+            {
+                if held.as_ref().map(|panel| &panel.view) != Some(&mailbox.vip.view)
+                    || held_presence.as_ref() != Some(&mailbox.vip_presence)
+                {
                     for (hwnd, rows) in [
                         (entries, &view.entries),
                         (groups, &view.groups),
@@ -273,6 +303,7 @@ pub(super) fn run(
                     );
                 }
                 held = Some(mailbox.vip.clone());
+                held_presence = Some(mailbox.vip_presence.clone());
             }
             drop(mailbox);
             std::thread::sleep(std::time::Duration::from_millis(20));

@@ -249,3 +249,56 @@ fn house_list_window_shortcut_save_and_session_cleanup() -> TestResult {
     assert!(receiver.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn shared_training_window_sends_status_and_closes_with_session() -> TestResult {
+    use crate::{
+        combat_input::PlayCommand,
+        play::{PlayView, play_channel},
+    };
+    use bevy::input::keyboard::KeyboardInput;
+    let (link, mut receiver, _) = play_channel();
+    link.use_shared_frontend();
+    link.bevy_training_fixture();
+    link.training_open();
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::super::modal::install(&mut app);
+    super::super::text_window::install(&mut app);
+    app.update();
+    let status = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Status").then_some(parent.parent()))
+        .ok_or("shared training Status control missing")?;
+    app.world_mut().trigger(Activate { entity: status });
+    app.update();
+    let PlayCommand::Feature(command) = receiver.try_recv()? else {
+        return Err("training request".into());
+    };
+    assert_eq!(
+        (command.capability, command.kind, command.payload),
+        (54, 67, vec![8, 2])
+    );
+    app.world_mut().non_send_mut::<HostOwner>().close();
+    app.update();
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Training")
+    );
+    Ok(())
+}

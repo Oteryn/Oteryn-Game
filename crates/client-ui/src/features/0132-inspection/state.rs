@@ -52,6 +52,9 @@ impl Panel {
         categories.into_values().collect()
     }
     pub fn select_category(&mut self, previous: bool) {
+        if self.pending {
+            return;
+        }
         let categories = self.categories();
         let count = categories.len() + 1;
         let current = categories
@@ -68,21 +71,34 @@ impl Panel {
         } else {
             categories[index - 1].to_owned()
         };
+        self.clear_hidden_selection();
     }
 }
 
 impl Panel {
     pub(super) fn clear_sources(&mut self) {
+        self.catalogue_drop_next = None;
+        self.catalogue_market = None;
         self.catalogue_market_requested = None;
         self.catalogue_sources.clear();
         self.catalogue_source_next = None;
         self.catalogue_source_definition = 0;
     }
     pub fn select_item(&mut self, previous: bool) -> bool {
-        if !self.selected || self.pending || self.catalogue.is_empty() {
+        if !self.selected || self.pending {
             return false;
         }
-        let ids: Vec<_> = self.catalogue.keys().copied().collect();
+        let ids: Vec<_> = self
+            .catalogue
+            .keys()
+            .copied()
+            .filter(|id| self.catalogue_item_visible(*id))
+            .collect();
+        if ids.is_empty() {
+            self.catalogue_definition.clear();
+            self.clear_sources();
+            return false;
+        }
         let selected = self.catalogue_definition.parse::<u32>().ok();
         let index = ids
             .iter()
@@ -132,6 +148,33 @@ impl Panel {
         }
         if had_catalogue {
             self.feedback = "The catalogue scope changed; browse again".into();
+        }
+    }
+}
+
+impl Panel {
+    pub(super) fn matches_catalogue_item(&self, item: &InspectedItem) -> bool {
+        item.name
+            .to_lowercase()
+            .contains(&self.search.to_lowercase())
+            && (self.category.is_empty()
+                || item_categories(item)
+                    .any(|category| category.eq_ignore_ascii_case(&self.category)))
+    }
+    pub fn catalogue_item_visible(&self, definition: u32) -> bool {
+        self.catalogue
+            .get(&definition)
+            .is_some_and(|item| self.matches_catalogue_item(item))
+    }
+    pub fn clear_hidden_selection(&mut self) {
+        if !self
+            .catalogue_definition
+            .parse::<u32>()
+            .ok()
+            .is_some_and(|id| self.catalogue_item_visible(id))
+        {
+            self.catalogue_definition.clear();
+            self.clear_sources();
         }
     }
 }

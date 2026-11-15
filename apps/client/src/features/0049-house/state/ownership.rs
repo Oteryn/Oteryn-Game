@@ -4,6 +4,7 @@ use oteryn_client_ui::house::{format_ownership_date, sale::OwnershipPanel};
 use std::sync::{Mutex, Weak};
 #[derive(Clone, Debug, Default)]
 pub struct Ownership {
+    pub(in crate::play) form_review: Option<oteryn_client_ui::house::sale::Confirmation>,
     pub model: OwnershipPanel,
     pub open: bool,
     pub fields: [String; 3],
@@ -17,6 +18,7 @@ impl Ownership {
         if !self.model.accepts(command) {
             return;
         }
+        self.form_review = None;
         self.model.apply(command, result);
         if matches!(
             result.status,
@@ -53,6 +55,7 @@ impl Ownership {
     }
     pub(in crate::play) fn select(&mut self, index: usize) -> Result<(), &'static str> {
         self.model.select(index)?;
+        self.form_review = None;
         self.sync_fields();
         Ok(())
     }
@@ -77,6 +80,7 @@ impl Ownership {
             (String::new(), Vec::new())
         };
         let command = self.model.query(cursor.clone())?;
+        self.form_review = None;
         self.navigation = Some((cursor, history));
         Ok(command)
     }

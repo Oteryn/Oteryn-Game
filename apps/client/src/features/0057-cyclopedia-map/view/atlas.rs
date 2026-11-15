@@ -39,7 +39,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 window::refresh(panel);
                 (
                     panel.geometry.open,
-                    panel.pending,
+                    panel.pending || panel.speed_pending,
                     vec![],
                     oteryn_client_ui::cyclopedia_map::atlas_view::text(panel),
                 )

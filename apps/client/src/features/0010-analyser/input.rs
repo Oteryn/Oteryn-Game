@@ -2,7 +2,7 @@ use crate::combat_input::PlayCommand;
 use crate::play::PlayLink;
 use crate::play::mailbox::{Mailbox, lock};
 use oteryn_input_actions::NormalizedInputEvent;
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "bevy-shell"))]
 pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel, index: usize) {
     if let Some(tool) = oteryn_client_ui::analyser::Tool::CYCLOPEDIA.get(index) {
         panel.tool = *tool;

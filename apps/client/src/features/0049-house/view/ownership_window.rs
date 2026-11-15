@@ -141,7 +141,8 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
                         .collect()
                 })
                 .unwrap_or_default();
-            if rows != fresh {
+            let rows_changed = rows != fresh;
+            if rows_changed {
                 rows = fresh;
                 SendMessageW(choice, CB_RESETCONTENT, 0, 0);
                 if let Some(data) = state.model.data() {
@@ -149,7 +150,12 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>) {
                         SendMessageW(choice, CB_ADDSTRING, 0, wide(&row.name).as_ptr() as LPARAM);
                     }
                 }
-                SendMessageW(choice, CB_SETCURSEL, state.model.index(), 0);
+            }
+            let displayed = usize::try_from(SendMessageW(choice, CB_GETCURSEL, 0, 0)).ok();
+            if let Some(index) =
+                super::ownership_selection(&state, displayed, rows_changed, actions.0.contains(&50))
+            {
+                SendMessageW(choice, CB_SETCURSEL, index, 0);
             }
             if fields != state.fields {
                 fields = state.fields.clone();

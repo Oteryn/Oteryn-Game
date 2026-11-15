@@ -43,11 +43,12 @@ pub fn request_sources(panel: &mut Panel, next: bool) -> Option<ServerMechanicCo
     if !panel.selected || panel.pending {
         return None;
     }
+    panel.clear_hidden_selection();
     let Some(definition) = panel
         .catalogue_definition
         .parse::<u32>()
         .ok()
-        .filter(|id| panel.catalogue.contains_key(id))
+        .filter(|id| panel.catalogue_item_visible(*id))
     else {
         panel.feedback = "Select a catalogue item".into();
         return None;
@@ -185,6 +186,7 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             _ => tr!("Unknown inspection status"),
         }
         .into();
+        panel.clear_hidden_selection();
         panel.reply = Some(reply);
         return;
     }

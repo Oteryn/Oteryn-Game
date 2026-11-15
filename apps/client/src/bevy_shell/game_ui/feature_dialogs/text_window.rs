@@ -29,6 +29,7 @@ struct HouseWindow {
 }
 
 pub(super) fn install(app: &mut App) {
+    super::super::service_forms::install(app);
     app.init_resource::<HouseWindow>()
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
@@ -53,6 +54,9 @@ fn keyboard(
     });
     if close && state.root.is_some_and(|root| guard.allows(root)) {
         state.open = false;
+        if let Some(play) = &owner.play {
+            play.link.house_close();
+        }
         state.request = None;
     }
     if open
@@ -67,6 +71,9 @@ fn keyboard(
             .as_ref()
             .is_some_and(|play| !play.view.gameplay_input_blocked(&play.link))
     {
+        if let Some(play) = &owner.play {
+            play.link.house_open();
+        }
         state.generation = Some(owner.generation());
         state.open = true;
     }
@@ -81,6 +88,13 @@ fn project(
 ) {
     if state.generation != Some(owner.generation()) || owner.play.is_none() {
         state.open = false;
+    }
+    state.open = owner
+        .play
+        .as_ref()
+        .is_some_and(|play| play.link.house_panel().model.open);
+    if state.open {
+        state.generation = Some(owner.generation());
     }
     let projected = owner
         .play
@@ -136,6 +150,9 @@ fn activate(
         state.request = Some(selection);
     } else {
         state.open = false;
+        if let Some(play) = &owner.play {
+            play.link.house_close();
+        }
     }
 }
 fn finish(
@@ -264,6 +281,7 @@ pub(super) fn build(
         (0, "World UUID"),
         (1, "Town key"),
         (2, "House row (1 onwards)"),
+        (3, "Bid amount (gold)"),
         (4, "Enter one name per line."),
         (5, "Door: x y floor"),
         (6, "Type CONFIRM for changes"),
@@ -314,6 +332,10 @@ pub(super) fn build(
     for (selection, caption) in [
         (Some(0), "Query"),
         (Some(1), "Next"),
+        (Some(2), "Bid"),
+        (Some(6), "Kick"),
+        (Some(10), "Show entrance map"),
+        (Some(14), "Ownership and move-out"),
         (Some(11), "Load guests"),
         (Some(12), "Load subowners"),
         (Some(13), "Load door"),

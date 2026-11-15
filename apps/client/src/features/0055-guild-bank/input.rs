@@ -12,6 +12,7 @@ pub(in crate::play) fn submit(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
+    sync_membership(mailbox);
     let panel = &mut mailbox.properties.guild_bank;
     if !panel.selected {
         panel.feedback = tr!("Unavailable in this session").into();
@@ -40,15 +41,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn guild_bank_open(&self) {
-        {
-            let mut mailbox = lock(&self.mailbox);
-            if mailbox.properties.guild_bank.fields[0].is_empty()
-                && let Some(own) = &mailbox.guild.own
-            {
-                let id: String = own.guild.iter().map(|byte| format!("{byte:02x}")).collect();
-                mailbox.properties.guild_bank.fields[0] = id;
-            }
-        }
+        sync_membership(&mut lock(&self.mailbox));
         #[cfg(windows)]
         if !self.uses_shared_frontend() {
             super::view::open_window(self);
@@ -85,5 +78,63 @@ pub(in crate::play) fn edit(
             panel.next_claim = None;
             panel.loaded_guild.clear();
         }
+    }
+}
+
+pub(in crate::play) fn sync_membership(mailbox: &mut Mailbox) {
+    let current = mailbox
+        .guild
+        .own
+        .as_ref()
+        .map(|own| {
+            own.guild
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        })
+        .unwrap_or_default();
+    let panel = &mut mailbox.properties.guild_bank;
+    if current == panel.automatic_guild {
+        return;
+    }
+    if panel.fields[0].is_empty() || panel.fields[0] == panel.automatic_guild {
+        panel.fields[0] = current.clone();
+    }
+    panel.automatic_guild = current;
+    panel.summary.clear();
+    panel.loaded_guild.clear();
+    panel.next = None;
+    panel.next_claim = None;
+    panel.pending = false;
+}
+
+#[cfg(test)]
+mod membership_tests {
+    use super::*;
+    #[test]
+    fn automatic_guild_bank_target_and_balance_follow_membership() {
+        let (link, _, _) = crate::play::play_channel();
+        let summary = |guild| oteryn_client_runtime::guild::guild::GuildSummary {
+            guild,
+            name: "Guild".into(),
+            state: 1,
+            revision: 1,
+            own_rank: 0,
+            title: String::new(),
+            message: String::new(),
+            ranks: vec![],
+        };
+        lock(&link.mailbox).guild.own = Some(summary([1; 16]));
+        link.guild_bank_open();
+        assert_eq!(link.guild_bank_panel().fields[0], "01".repeat(16));
+        lock(&link.mailbox).properties.guild_bank.summary = "Guild A balance: 100".into();
+        lock(&link.mailbox).guild.own = None;
+        link.guild_bank_open();
+        assert!(link.guild_bank_panel().fields[0].is_empty());
+        assert!(link.guild_bank_panel().summary.is_empty());
+        lock(&link.mailbox).guild.own = Some(summary([2; 16]));
+        link.guild_bank_open();
+        assert_eq!(link.guild_bank_panel().fields[0], "02".repeat(16));
+        assert!(link.guild_bank_panel().summary.is_empty());
     }
 }

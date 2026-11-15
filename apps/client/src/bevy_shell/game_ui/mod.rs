@@ -36,6 +36,7 @@ mod quick_loot;
 mod reward_wall;
 pub(super) mod rule_violation;
 pub(super) mod satellite_map;
+mod service_forms;
 mod stash;
 mod store;
 mod task_board;

@@ -28,6 +28,10 @@ pub fn request(panel: &mut StashPanel, intent: Intent) -> Option<StashCommand> {
             (panel.page, stash::StashAction::Stow(handle))
         }
         Intent::Withdraw { row, amount } => {
+            if amount == 0 {
+                panel.feedback = Some("Enter a positive withdrawal amount".into());
+                return None;
+            }
             let row = panel.rows.get(row)?.handle;
             (panel.page, stash::StashAction::Withdraw { row, amount })
         }

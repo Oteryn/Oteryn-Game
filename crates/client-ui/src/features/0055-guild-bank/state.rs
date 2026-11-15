@@ -10,6 +10,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub automatic_guild: String,
     pub selected: bool,
     pub open: bool,
     pub pending: bool,

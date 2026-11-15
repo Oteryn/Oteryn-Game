@@ -209,7 +209,7 @@ where
     if input_permit.is_some()
         && !guard_deferred
         && !authority
-            .training_activity(session.admitted, command.command_type)
+            .training_activity(session.admitted, training_activity_kind(command))
             .await
     {
         return Err(ServeEnd::Disconnected);
@@ -474,4 +474,140 @@ pub(super) async fn guards<A: FreshAdmissionAuthority>(
         command.command_type, command.command_id,
     ));
     Ok(false)
+}
+
+// Mixed read/write commands retain their mutation behaviour. Reads use the existing
+// non-interrupting observation activity, so the training owner still advances cadence.
+fn training_activity_kind(command: oteryn_protocol_oteryn::ClientCommandView<'_>) -> u32 {
+    use oteryn_protocol_oteryn::{house_sale, player_trade, stash, vip};
+    let read = match command.command_type {
+        48 | 49 => {
+            vip::decode_request(command.command_type, command.payload).is_ok_and(|request| {
+                request.operation == vip::Operation::Status || request.operation.is_query()
+            })
+        }
+        house_sale::COMMAND => {
+            house_sale::decode_request(command.payload).is_ok_and(|request| request.action == 0)
+        }
+        78 => player_trade::decode_intent(command.payload)
+            .is_ok_and(|intent| matches!(intent, player_trade::Intent::Look { .. })),
+        79 => stash::decode_stash_query(command.payload)
+            .is_ok_and(|(intent, _)| intent.action == stash::StashAction::Browse),
+        _ => false,
+    };
+    if read { 30 } else { command.command_type }
+}
+
+#[cfg(test)]
+mod training_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::{player_trade, stash, vip};
+
+    #[test]
+    fn mixed_training_activity_preserves_reads_and_interrupts_mutations()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let vip_request = |operation| vip::Request {
+            operation,
+            number: 1,
+            text: String::new(),
+            icon: 0,
+            notify: false,
+            groups: Vec::new(),
+        };
+        let catalogue =
+            oteryn_protocol_oteryn::house_sale::HouseSaleRequest::catalogue(String::new());
+        let move_out = oteryn_protocol_oteryn::house_sale::HouseSaleRequest {
+            action: 1,
+            house: "oteryn:content.house.test".into(),
+            expected_revision: 1,
+            due_at_unix_ms: 2_000_000_000_000,
+            recipient: String::new(),
+            price: 0,
+            after_house: String::new(),
+        };
+        let requests = [
+            (
+                (
+                    oteryn_protocol_oteryn::house_sale::COMMAND,
+                    oteryn_protocol_oteryn::house_sale::encode_request(&catalogue)
+                        .map_err(|error| format!("{error:?}"))?,
+                ),
+                true,
+            ),
+            (
+                (
+                    oteryn_protocol_oteryn::house_sale::COMMAND,
+                    oteryn_protocol_oteryn::house_sale::encode_request(&move_out)
+                        .map_err(|error| format!("{error:?}"))?,
+                ),
+                false,
+            ),
+            (
+                vip::encode_request(&vip_request(vip::Operation::Status))
+                    .map_err(|error| format!("{error:?}"))?,
+                true,
+            ),
+            (
+                vip::encode_request(&vip_request(vip::Operation::Remove))
+                    .map_err(|error| format!("{error:?}"))?,
+                false,
+            ),
+            (
+                (
+                    78,
+                    player_trade::encode_intent(player_trade::Intent::Look {
+                        trade_id: [1; 16],
+                        counter_offer: true,
+                    })
+                    .map_err(|error| format!("{error:?}"))?,
+                ),
+                true,
+            ),
+            (
+                (
+                    78,
+                    player_trade::encode_intent(player_trade::Intent::Cancel)
+                        .map_err(|error| format!("{error:?}"))?,
+                ),
+                false,
+            ),
+            (
+                (
+                    79,
+                    stash::encode_stash_intent(stash::StashIntent {
+                        page: 0,
+                        action: stash::StashAction::Browse,
+                    })
+                    .map_err(|error| format!("{error:?}"))?,
+                ),
+                true,
+            ),
+            (
+                (
+                    79,
+                    stash::encode_stash_intent(stash::StashIntent {
+                        page: 0,
+                        action: stash::StashAction::Withdraw {
+                            row: [1; 16],
+                            amount: 1,
+                        },
+                    })
+                    .map_err(|error| format!("{error:?}"))?,
+                ),
+                false,
+            ),
+        ];
+        for ((command_type, payload), read) in requests {
+            let command = oteryn_protocol_oteryn::ClientCommandView {
+                command_id: 1,
+                command_type,
+                payload: &payload,
+            };
+            assert_eq!(
+                training_activity_kind(command),
+                if read { 30 } else { command_type }
+            );
+        }
+        Ok(())
+    }
 }

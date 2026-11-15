@@ -11,6 +11,7 @@ pub enum Intent {
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Panel {
+    pub player_position: Option<(u16, u16, i8)>,
     pub geometry: super::geometry::Atlas,
     pub atlas: Option<oteryn_client_runtime::cyclopedia_map::atlas::Atlas>,
     pub atlas_query: oteryn_client_runtime::cyclopedia_map::atlas::Query,
@@ -126,9 +127,9 @@ impl Panel {
             .position(|floor| *floor == self.floor)
             .map_or(0, |index| {
                 if previous {
-                    (index + floors.len() - 1) % floors.len()
+                    index.saturating_sub(1)
                 } else {
-                    (index + 1) % floors.len()
+                    (index + 1).min(floors.len() - 1)
                 }
             });
         self.floor = floors[index];
@@ -137,6 +138,7 @@ impl Panel {
 
 impl Panel {
     pub fn invalidate_atlas(&mut self) {
+        self.player_position = None;
         self.geometry = Default::default();
         self.region_atlas = None;
         self.atlas = None;

@@ -308,3 +308,23 @@ fn stash_amount_keys_in_one_frame_confirm_accumulated_amount() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn shared_stash_stow_uses_the_displayed_main_bag_handle() -> TestResult {
+    let (mut app, mut receiver, outbox) = fixture()?;
+    while receiver.try_recv().is_ok() {}
+    let item = oteryn_client_runtime::depot::ItemEntry {
+        handle: std::num::NonZeroU64::new(42).ok_or("handle")?,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    outbox.bevy_stash_carried(vec![item]);
+    app.update();
+    click(&mut app, Kind::Stow(0))?;
+    let PlayCommand::Stash(command) = receiver.try_recv()? else {
+        return Err("stow command".into());
+    };
+    assert_eq!(command.intent.action, stash::StashAction::Stow(item.handle));
+    Ok(())
+}

@@ -1,7 +1,7 @@
 use super::Panel;
 use oteryn_client_runtime::cyclopedia_map::atlas::{HEIGHT, Query, WIDTH};
 pub fn atlas_action(p: &mut Panel, action: usize) -> bool {
-    if p.pending || !p.selected {
+    if p.pending || p.speed_pending || !p.selected {
         return false;
     }
     if (10..=13).contains(&action) {
@@ -23,10 +23,13 @@ pub fn atlas_action(p: &mut Panel, action: usize) -> bool {
                 return false;
             };
             q.floor = floors[if action == 2 {
-                (i + 1) % floors.len()
+                (i + 1).min(floors.len() - 1)
             } else {
-                (i + floors.len() - 1) % floors.len()
+                i.saturating_sub(1)
             }];
+            if q.floor == a.query.floor {
+                return false;
+            }
             q.page = 0;
         }
         4 | 5 => {
@@ -145,4 +148,16 @@ pub fn atlas_color(p: &Panel, id: u32) -> u32 {
     let g = 64 + ((seed >> 8) & 127);
     let b = 64 + ((seed >> 16) & 127);
     r | g << 8 | b << 16
+}
+
+/// Locate the authoritative local player within the confirmed atlas viewport.
+pub fn atlas_player_cell(p: &Panel) -> Option<[i32; 2]> {
+    let a = p.atlas.as_ref()?;
+    let (x, y, floor) = p.player_position?;
+    if floor != a.query.floor {
+        return None;
+    }
+    let col = u32::from(x).checked_sub(u32::from(a.query.x))? >> a.query.zoom;
+    let row = u32::from(y).checked_sub(u32::from(a.query.y))? >> a.query.zoom;
+    (col < WIDTH as u32 && row < HEIGHT as u32).then_some([col as i32, row as i32])
 }

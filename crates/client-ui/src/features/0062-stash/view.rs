@@ -83,3 +83,12 @@ pub fn visible_withdraw(panel: &StashPanel, row: usize, amount: u32) -> Option<I
         .copied()
         .map(|row| Intent::Withdraw { row, amount })
 }
+
+/// Resolve a native amount field against the current displayed row.
+pub fn withdrawal_text(panel: &mut StashPanel, row: usize, text: &str) -> Option<Intent> {
+    let Some(amount) = text.trim().parse::<u32>().ok().filter(|amount| *amount > 0) else {
+        panel.feedback = Some("Enter a positive withdrawal amount (at most 4294967295)".into());
+        return None;
+    };
+    visible_withdraw(panel, row, amount)
+}

@@ -63,6 +63,18 @@ pub(in crate::play) fn apply(
     command: &FeatureCommand,
     result: &GatedCommandResult,
 ) {
+    let target = if command.kind == wire::COMMAND_TYPE_GUILD_BANK_QUERY {
+        wire::decode_guild_bank_query(&command.payload)
+            .ok()
+            .and_then(|query| query.guild)
+    } else {
+        wire::decode_guild_bank_intent(&command.payload)
+            .ok()
+            .map(|intent| intent.guild)
+    };
+    if target.is_some_and(|guild| uuid(&panel.fields[0]).ok() != Some(guild)) {
+        return;
+    }
     if !panel.pending || panel.pending_kind != command.kind {
         return;
     }

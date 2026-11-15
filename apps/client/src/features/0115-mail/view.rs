@@ -56,3 +56,7 @@ pub(in crate::play) mod native;
 #[cfg(any(windows, test))]
 #[path = "view/dialog_preferences.rs"]
 pub(in crate::play) mod dialog_preferences;
+
+#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[path = "view/forms.rs"]
+pub(crate) mod forms;

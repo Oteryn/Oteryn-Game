@@ -266,3 +266,75 @@ impl crate::play::Outbox {
         });
     }
 }
+
+#[test]
+fn native_vip_rows_join_authorized_online_and_offline_presence()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cl25a_protocol::{
+        VipPresenceBatch, VipPresenceEntry, VipPresenceStatus,
+    };
+    let view = Some(r#"{"entries":[{"entry":73,"name":"Alice","confirmed":true}]}"#);
+    let mut presence = oteryn_client_ui::vip_presence::VipPresencePanel {
+        selected: true,
+        ..Default::default()
+    };
+    for (status, label) in [
+        (VipPresenceStatus::Online, "Online"),
+        (VipPresenceStatus::Offline, "Offline"),
+    ] {
+        oteryn_client_ui::vip_presence::replace(
+            &mut presence,
+            VipPresenceBatch {
+                entries: vec![VipPresenceEntry {
+                    entry: 73,
+                    name: "Alice".into(),
+                    status,
+                    announce: false,
+                    confirmed_for_ms: 1000,
+                }],
+            },
+        );
+        let rows = crate::play::feature_0043_vip::view::management_presence(view, &presence)?;
+        assert!(
+            rows.entries[0].label.contains(label),
+            "{}",
+            rows.entries[0].label
+        );
+    }
+    presence.selected = false;
+    assert!(
+        !crate::play::feature_0043_vip::view::management_presence(view, &presence)?.entries[0]
+            .label
+            .contains("Offline")
+    );
+    Ok(())
+}
+
+#[test]
+fn native_vip_double_click_opens_private_chat_and_rejects_stale_rows() {
+    use crate::play::{mailbox::lock, play_channel};
+    use oteryn_client_ui::chat::ChannelTab;
+    let (link, _commands, outbox) = play_channel();
+    outbox.chat_initialize(true);
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.vip.selected = true;
+        mailbox.vip.view =
+            Some(r#"{"entries":[{"entry":1,"name":"Alice","confirmed":true}]}"#.into());
+    }
+    let displayed = link.vip_panel();
+    assert!(!link.vip_row_notification(&displayed, 0, 1));
+    assert!(link.vip_row_notification(&displayed, 0, 2));
+    assert_eq!(
+        link.chat_panel().console.current,
+        Some(ChannelTab::Conversation("Alice".into()))
+    );
+    assert!(link.chat_panel().open);
+    lock(&link.mailbox).vip.view =
+        Some(r#"{"entries":[{"entry":2,"name":"Bob","confirmed":true}]}"#.into());
+    assert!(!link.vip_row_notification(&displayed, 0, 2));
+    assert_eq!(
+        link.chat_panel().console.current,
+        Some(ChannelTab::Conversation("Alice".into()))
+    );
+}

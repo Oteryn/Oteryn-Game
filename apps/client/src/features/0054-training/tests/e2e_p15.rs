@@ -3,8 +3,8 @@
 //! The consumer is `apply` in `apps/client/src/features/0054-training/protocol.rs`; requests are
 //! built by the production `command` so the reducer sees the exact kind the app sends.
 use super::*;
-use oteryn_client_ui::training::panel_text;
 use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+use oteryn_client_ui::training::panel_text;
 
 fn value(expected: &str, key: &str) -> Result<u32, Box<dyn std::error::Error>> {
     expected
@@ -74,7 +74,7 @@ fn pending() -> Panel {
 }
 
 fn summary(charges: u32) -> String {
-    format!("Remaining charges: {charges}\r\nOffline pool: 0 seconds")
+    format!("Remaining charges: {charges}\r\nOffline pool: Unknown seconds")
 }
 
 #[test]
@@ -93,16 +93,27 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     let status_charges = value(&replies.expected, "status_charges")?;
     assert_eq!(value(&replies.expected, "status_disposition")?, 2);
     let mut stopped_status = panel.clone();
-    apply(&mut stopped_status, &status, &result(CommandStatus::Accepted, &replies.status));
-    assert_eq!(stopped_status.feedback, "Exercise training stopped or settled");
+    apply(
+        &mut stopped_status,
+        &status,
+        &result(CommandStatus::Accepted, &replies.status),
+    );
+    assert_eq!(
+        stopped_status.feedback,
+        "Exercise training stopped or settled"
+    );
     assert_eq!(stopped_status.charges, Some(status_charges));
-    assert_eq!(stopped_status.pool_seconds, Some(0));
+    assert_eq!(stopped_status.pool_seconds, None);
     assert_eq!(stopped_status.summary, summary(status_charges));
 
     // START with a missing weapon or dummy is refused and leaves the panel without charges.
     assert_eq!(value(&replies.expected, "refused_disposition")?, 4);
     let mut refused = panel.clone();
-    apply(&mut refused, &start, &result(CommandStatus::Accepted, &replies.refused));
+    apply(
+        &mut refused,
+        &start,
+        &result(CommandStatus::Accepted, &replies.refused),
+    );
     assert!(!refused.pending);
     assert_eq!(refused.feedback, "The server refused the training request");
     assert_eq!((refused.charges, refused.pool_seconds), (None, None));
@@ -112,13 +123,20 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     let running_charges = value(&replies.expected, "running_charges")?;
     assert_eq!(value(&replies.expected, "running_disposition")?, 1);
     let mut running = panel.clone();
-    apply(&mut running, &start, &result(CommandStatus::Accepted, &replies.running));
+    apply(
+        &mut running,
+        &start,
+        &result(CommandStatus::Accepted, &replies.running),
+    );
     assert_eq!(running.feedback, "Exercise training is running");
     assert_eq!(running.charges, Some(running_charges));
     assert_eq!(running.summary, summary(running_charges));
     assert_eq!(
         panel_text(&running),
-        format!("Training\r\n\r\n{}\r\nExercise training is running", summary(running_charges))
+        format!(
+            "Training\r\n\r\n{}\r\nExercise training is running",
+            summary(running_charges)
+        )
     );
 
     // STOP settles the run; the charges never exceed the running count.
@@ -127,7 +145,11 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     assert!(stopped_charges <= running_charges);
     let mut stopped = running.clone();
     stopped.pending = true;
-    apply(&mut stopped, &stop, &result(CommandStatus::Accepted, &replies.stopped));
+    apply(
+        &mut stopped,
+        &stop,
+        &result(CommandStatus::Accepted, &replies.stopped),
+    );
     assert_eq!(stopped.feedback, "Exercise training stopped or settled");
     assert_eq!(stopped.charges, Some(stopped_charges));
     assert_eq!(stopped.summary, summary(stopped_charges));
@@ -135,7 +157,10 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
     // A rejected status and malformed payloads leave the charges and summary as they were.
     for (code, payload) in [
         (CommandStatus::Rejected, replies.running.as_slice()),
-        (CommandStatus::Accepted, &replies.running[..replies.running.len() - 1]),
+        (
+            CommandStatus::Accepted,
+            &replies.running[..replies.running.len() - 1],
+        ),
         (CommandStatus::Accepted, &[]),
     ] {
         let mut invalid = running.clone();
@@ -151,7 +176,42 @@ fn e2e_p15_replays_exercise_training_replies() -> Result<(), Box<dyn std::error:
         ..panel
     };
     let before = other.clone();
-    apply(&mut other, &start, &result(CommandStatus::Accepted, &replies.running));
+    apply(
+        &mut other,
+        &start,
+        &result(CommandStatus::Accepted, &replies.running),
+    );
     assert_eq!(other, before);
+    Ok(())
+}
+
+#[test]
+fn exercise_replies_preserve_the_authoritative_offline_pool()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut panel = pending();
+    panel.pool_seconds = Some(3600);
+    let command = command(&panel, Intent::Status)?;
+    let payload = wire::encode_training_result(wire::TrainingResult {
+        disposition: 2,
+        revision: 1,
+        pool_seconds: 0,
+        charges: 500,
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    let mut unknown = pending();
+    apply(
+        &mut unknown,
+        &command,
+        &result(CommandStatus::Accepted, &payload),
+    );
+    assert_eq!(unknown.pool_seconds, None);
+    apply(
+        &mut panel,
+        &command,
+        &result(CommandStatus::Accepted, &payload),
+    );
+    assert_eq!(panel.pool_seconds, Some(3600));
+    assert_eq!(panel.charges, Some(500));
+    assert!(panel.summary.contains("3600 seconds"));
     Ok(())
 }

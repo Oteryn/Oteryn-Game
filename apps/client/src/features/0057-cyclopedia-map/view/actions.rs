@@ -74,6 +74,8 @@ pub(super) fn load_item_definition(mailbox: &mut Mailbox, commands: &UnboundedSe
         panel.feedback = tr!("Enter a valid item definition reference").into();
         return;
     };
+    panel.search.clear();
+    panel.category.clear();
     if commands.send(PlayCommand::ServerMechanic(command)).is_err() {
         panel.pending = false;
         panel.feedback = tr!("The session has ended").into();
@@ -86,9 +88,10 @@ pub(super) fn navigate_section(mailbox: &mut Mailbox, index: usize, values: &[St
         return false;
     };
     mailbox.properties.cyclopedia_map.navigate(section);
-    if section == Section::Items {
+    if section == Section::Items && !mailbox.discovery.inspection.pending {
         mailbox.discovery.inspection.search = values.get(1).cloned().unwrap_or_default();
         mailbox.discovery.inspection.category = values.get(2).cloned().unwrap_or_default();
+        mailbox.discovery.inspection.clear_hidden_selection();
     }
     true
 }
@@ -128,11 +131,12 @@ pub(super) fn item_market(
 ) {
     use oteryn_client_ui::market::{Intent, MarketView};
     let panel = &mut mailbox.discovery.inspection;
+    panel.clear_hidden_selection();
     let Some(definition) = panel
         .catalogue_definition
         .parse::<u32>()
         .ok()
-        .filter(|id| panel.catalogue.contains_key(id))
+        .filter(|id| panel.catalogue_item_visible(*id))
     else {
         panel.feedback = "Select a catalogue item".into();
         return;

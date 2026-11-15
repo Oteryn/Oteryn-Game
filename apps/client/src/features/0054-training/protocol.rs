@@ -62,11 +62,15 @@ pub(in crate::play) fn apply(
     .into();
     if reply.disposition != 4 {
         panel.charges = Some(reply.charges);
-        panel.pool_seconds = Some(reply.pool_seconds);
+        if command.kind == wire::COMMAND_TYPE_OFFLINE_TRAINING {
+            panel.pool_seconds = Some(reply.pool_seconds);
+        }
         panel.summary = lfmt!(
             "Remaining charges: {}\r\nOffline pool: {} seconds",
             reply.charges,
-            reply.pool_seconds
+            panel
+                .pool_seconds
+                .map_or_else(|| tr!("Unknown").to_owned(), |seconds| seconds.to_string())
         );
     }
 }
