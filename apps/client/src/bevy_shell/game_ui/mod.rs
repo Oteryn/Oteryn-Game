@@ -47,6 +47,7 @@ mod stash;
 mod store;
 mod store_inbox;
 mod task_board;
+mod team_finder;
 mod task_tracker;
 mod trade;
 mod tutorial;

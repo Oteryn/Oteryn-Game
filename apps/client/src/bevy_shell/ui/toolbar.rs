@@ -22,6 +22,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Party", Control::Party),
     ("Quest Log", Control::Quests),
     ("Skills", Control::Skills),
+    ("Social", Control::Social),
     ("Spellbook", Control::Spells),
     ("Store Inbox", Control::StoreInbox),
     ("Unjustified Points", Control::UnjustifiedPoints),
@@ -84,6 +85,11 @@ pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Contro
         Control::Inspection => {
             if let Some(play) = &owner.play {
                 play.link.inspection_set_open(true);
+            }
+        }
+        Control::Social => {
+            if let Some(play) = &owner.play {
+                play.link.discovery_open(232);
             }
         }
         Control::Loot => {
