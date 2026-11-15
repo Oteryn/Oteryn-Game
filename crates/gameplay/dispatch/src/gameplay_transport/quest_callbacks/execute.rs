@@ -1255,6 +1255,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
                 }
+                // A retained legacy World claim keeps main's RewardClaim
+                // chest owner: an already claimed chest is empty
+                // (chest_use_disposition AlreadyClaimed -> NothingToUse).
+                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
+                    if matches!(oteryn_gameplay_quests::quest::world_callbacks::legacy_world_claim(callback), Ok(Some(_))) => {
+                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
+                        pending.remove(&session);
+                    }
+                    return UseDisposition::NothingToUse;
+                }
                 Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|
                         objectives.iter().any(|objective| objective.quest == callback.quest && objective.guardian.is_some()))

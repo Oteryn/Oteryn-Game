@@ -1177,8 +1177,13 @@ impl DurabilityRoot {
         if let Some((_, context, _)) = &context
             && !soul_step
         {
-            let bytes = serde_json::to_vec(&(context, &callback))
-                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            // A legacy World claim keeps main's cold-replay identity.
+            let bytes = if legacy_world_claim.is_some() {
+                serde_json::to_vec(&(context.without_actor_movement(), &callback))
+            } else {
+                serde_json::to_vec(&(context, &callback))
+            }
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
             let digest = Sha256::new()
                 .chain_update(binding)
                 .chain_update(bytes)

@@ -1387,13 +1387,48 @@ fn scenario_case(
                 .bind(&binding.context.declaration).bind(&binding.policy_revision).bind(&binding.reward_revision).execute(&h.pool).await?;
             assert_eq!(inserted.rows_affected(), 1);
             // The live actor is initialized as a Monk; the durable build carries the same
-            // class, so the classed level projection is the one eligibility reads.
+            // class, so the classed level projection is the one eligibility reads. The build
+            // is the receipt-backed `none` -> `monk` choice at r1 -> r2 that the deferred
+            // Character consistency guard accepts (same chain as the atelier fixture).
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
-            let built = sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vocation='monk'")
-                .bind(id(41).as_slice()).bind(id(119).as_slice()).execute(&mut *tx).await?;
+            for advance in [
+                "UPDATE game_character_roots SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+                "UPDATE game_character_progression_state SET character_revision=2 WHERE character_id=encode($1,'hex')::uuid AND character_revision=1",
+            ] {
+                let advanced = sqlx::query(advance)
+                    .bind(id(41).as_slice())
+                    .execute(&mut *tx)
+                    .await?;
+                assert_eq!(advanced.rows_affected(), 1);
+            }
+            let skills = "0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0";
+            let columns = "magic_level{s},mana_spent{s},fist_level{s},fist_tries{s},club_level{s},club_tries{s},sword_level{s},sword_tries{s},axe_level{s},axe_tries{s},distance_level{s},distance_tries{s},shielding_level{s},shielding_tries{s},fishing_level{s},fishing_tries{s}";
+            let receipt = format!(
+                "INSERT INTO game_character_build_receipts(build_occurrence_id,command_binding,policy_digest,character_id,original_character_revision,committed_character_revision,cause,level_before,level_after,experience_before,experience_after,vocation_before,{before},vocation_after,{after},stance_before,stance_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) \
+                 SELECT encode($2,'hex')::uuid,$3,$4,character_id,1,2,'vocation_choice',level,level,total_experience,total_experience,'none',{skills},'monk',{skills},NULL,NULL,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,1 \
+                 FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid",
+                before = columns.replace("{s}", "_before"),
+                after = columns.replace("{s}", "_after"),
+            );
+            let receipted = sqlx::query(sqlx::AssertSqlSafe(receipt))
+                .bind(id(41).as_slice())
+                .bind(id(119).as_slice())
+                .bind([119_u8; 33].as_slice())
+                .bind([119_u8; 32].as_slice())
+                .execute(&mut *tx)
+                .await?;
+            assert_eq!(receipted.rows_affected(), 1);
+            let built = sqlx::query(sqlx::AssertSqlSafe(format!(
+                "INSERT INTO game_character_build_state(character_id,vocation,{plain},committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',{skills},2,encode($2,'hex')::uuid)",
+                plain = columns.replace("{s}", ""),
+            )))
+            .bind(id(41).as_slice())
+            .bind(id(119).as_slice())
+            .execute(&mut *tx)
+            .await?;
             assert_eq!(built.rows_affected(), 1);
             tx.commit().await?;
         }

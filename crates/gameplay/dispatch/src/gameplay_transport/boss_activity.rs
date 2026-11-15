@@ -72,13 +72,21 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         if primal {
             intent.boss_key = super::primal_entry::BOSS.into();
         }
-        let soul_war = super::soul_war_entry::is_soul_war(&intent.boss_key);
+        let mut soul_war = super::soul_war_entry::is_soul_war(&intent.boss_key);
         if let Some(canonical) = soul_war {
             intent.boss_key = canonical.into();
         }
-        let rotten = super::rotten_blood_entry::is_rotten_blood(&intent.boss_key);
+        let mut rotten = super::rotten_blood_entry::is_rotten_blood(&intent.boss_key);
         if let Some(canonical) = rotten {
             intent.boss_key = canonical.into();
+        }
+        // A Soul War or Rotten Blood lever outside its authenticated source
+        // room keeps the generic endgame catalogue path.
+        if soul_war.is_some() && !self.soul_war_source_qualified(&intent.boss_key).await {
+            soul_war = None;
+        }
+        if rotten.is_some() && !self.rotten_blood_source_qualified(&intent.boss_key).await {
+            rotten = None;
         }
         let (Some(actor), Some(fence), Some(_)) = (
             admitted.runtime_actor,

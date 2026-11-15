@@ -234,12 +234,23 @@ fn source_level_scenario(
             .activity_runtimes
             .get(instance, assignment.ownership_generation)
             .ok_or("actual source runtime reached before Level")?;
+        // A published source room resolves only under the carrier's actual
+        // origin pin (boss_room.rs read_definition); unpinned reads are closed.
+        let origin_pin = {
+            let runtime = owner.runtime.lock().await;
+            crate::durability::activity_handoff::ActivityContentPin {
+                coordinate_frame_digest: runtime.content_pin().frame_binding_digest(),
+                map_revision_digest: runtime.map_revision_digest(),
+                server_artifact_digest: runtime.content_pin().server_artifact_digest(),
+            }
+        };
         let definition = ActivityHandoffOwner::new(h.root.clone())
-            .read_boss_room(
+            .read_boss_room_with_pin(
                 owner.character,
                 owner.holder,
                 admitted.item_fence.ok_or("current source fence")?,
                 template.boss_key(),
+                origin_pin,
             )
             .await?
             .ok_or("actual published source definition")?;

@@ -158,7 +158,9 @@ pub(crate) fn lions_flowers() -> Vec<Callback> {
         (33138, 32352, -5, 1), (33140, 32352, -5, 1),
         (33137, 32355, -5, 1), (33139, 32363, -5, 2),
         (33154, 32359, -5, 1), (33153, 32361, -5, 3),
-        (33133, 32359, -6, 2), (33157, 32364, -6, 2),
+        // (33133,32359,-6) and (33157,32364,-6) are already owned by the
+        // authored content/quests/world-callbacks/m07-lion-offerings.json
+        // lion-flower-west/east; a second owner makes their USE ambiguous.
     ].into_iter().enumerate().map(|(index, (x,y,floor,ordinal))| {
         let mut callback = uneasy_crystal();
         callback.key = format!("oteryn:quest-callback/m44-lions-flower-{index}");
@@ -206,7 +208,7 @@ mod tests {
             .iter()
             .filter(|c| c.key.contains("m44-lions-flower-"))
             .collect();
-        assert_eq!(flowers.len(), 8);
+        assert_eq!(flowers.len(), 6);
         for callback in flowers {
             assert!(source_is_ready(callback, 21388));
             assert!(!source_is_ready(callback, 21935));

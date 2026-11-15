@@ -1934,6 +1934,7 @@ pub fn record_creature_kill(
             && !view.state.policy.is_familiar
             && view.state.policy.reward_boss == Some(true)
     });
+    let classic_runtime = runtime.uses_classic_creature_deaths();
     let forge_kind = snapshot
         .as_ref()
         .ok()
@@ -2006,7 +2007,21 @@ pub fn record_creature_kill(
         ),
         None => (lethal, None, true),
     };
-    let full_reward = sink.rewards.row(&creature);
+    // A Soul War or Rotten Blood boss's private loot belongs to its qualified
+    // source room. A runtime outside one keeps main's death path: no personal
+    // chest, and only the empty physical reward-boss corpse.
+    let source_room_reward = personal_rewards
+        && classic_runtime
+        && (super::soul_war_entry::is_soul_war(&creature).is_some()
+            || super::rotten_blood_entry::is_rotten_blood(&creature).is_some());
+    let full_reward = if source_room_reward {
+        sink.rewards
+            .reward_boss_corpse(&creature)
+            .ok_or(crate::content::creature_reward::NoSettlementReason::NoLootBinding)
+    } else {
+        sink.rewards.row(&creature)
+    };
+    let personal_rewards = personal_rewards && !source_room_reward;
     let personal_reward_row = personal_rewards
         .then(|| full_reward.as_ref().ok().cloned())
         .flatten();
@@ -3220,6 +3235,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             let mut taken = match taken {
                 TakeOutcome::Empty => continue,
+                // Crystal settles onDeath and the reward on the death itself:
+                // a held source death task is driven here, then retaken.
+                TakeOutcome::CapacityWait
+                    if self
+                        .runtime
+                        .lock()
+                        .await
+                        .has_pending_source_creature_deaths()
+                        && Box::pin(self.drive_head_source_death()).await =>
+                {
+                    continue;
+                }
                 TakeOutcome::CapacityWait => return DrainOutcome::Deferred,
                 TakeOutcome::Taken(taken) => taken,
             };

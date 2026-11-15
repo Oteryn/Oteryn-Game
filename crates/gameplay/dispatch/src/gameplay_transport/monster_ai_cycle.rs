@@ -103,6 +103,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         trace.set("ai_complete");
     }
 
+    /// Crystal runs a creature's onDeath and its rewards on the death itself.
+    /// Drive the ordered source owner turns until the queued head death task
+    /// completes; its retained predecessors run first, fresh thinks never run.
+    /// Returns whether that head death left the queue.
+    pub(in crate::gameplay_transport) async fn drive_head_source_death(&self) -> bool {
+        const TURNS: usize = 8;
+        let Ok(Some(head)) = self.runtime.lock().await.next_source_creature_death() else {
+            return false;
+        };
+        for _ in 0..TURNS {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return false;
+            };
+            Box::pin(self.drain_monster_melee_with_permit(permit, self.owner_now())).await;
+            match self.runtime.lock().await.next_source_creature_death() {
+                Ok(Some(current)) if current == head => {}
+                Ok(_) => return true,
+                Err(_) => return false,
+            }
+        }
+        false
+    }
+
     async fn drain_monster_melee_with_permit(
         &self,
         permit: crate::durability::spell_owner_commit::SpellLanePermit,

@@ -1,13 +1,17 @@
 -- Replace only the four reviewed source bodies using their ACTUAL installed declarations.
 -- Preserve complete current pg_proc metadata, including every GUC/config and ACL.
 -- Accepted historical migrations remain immutable.
+-- A publication's activation_frame_digest is its pinned source room's own
+-- frame, never the Channel activation frame, so it is not compared with
+-- game_content_activations.frame_binding_digest; the current activation
+-- sequence and artifact digests are.
 
 -- qualified_source_function: game_primal_boss_catalogue_activate
 DO $migration$
 DECLARE signature REGPROCEDURE := 'game_primal_boss_catalogue_activate(UUID,UUID,NUMERIC,UUID,NUMERIC,BYTEA,NUMERIC,BYTEA,BYTEA,TEXT)'::regprocedure;
         before_row JSONB; after_row JSONB; old_source TEXT; definition TEXT;
         next_source TEXT := $source_game_primal_boss_catalogue_activate$
-DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; current_frame BYTEA; scope BYTEA;
+DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; scope BYTEA;
 BEGIN
     IF NOT game_runtime_scope_assignment_history_valid()
         OR NOT game_node_prove_current_incarnation(p_node,p_registration,p_secret)
@@ -20,7 +24,7 @@ BEGIN
             AND a.ownership_generation=p_generation AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration
             AND g.ready AND g.ownership_generation=p_generation FOR SHARE OF a,g;
     IF NOT FOUND THEN RETURN false; END IF;
-    SELECT activation_sequence,server_artifact_digest,client_artifact_digest,frame_binding_digest INTO current_sequence,current_server,current_client,current_frame
+    SELECT activation_sequence,server_artifact_digest,client_artifact_digest INTO current_sequence,current_server,current_client
         FROM game_content_activations WHERE world_id=p_world AND channel_id=p_channel
         ORDER BY activation_sequence DESC LIMIT 1 FOR SHARE;
     IF NOT FOUND OR current_sequence<>p_activation OR current_server<>p_server OR current_client<>p_client THEN RETURN false; END IF;
@@ -35,8 +39,7 @@ BEGIN
     RETURN EXISTS(SELECT 1 FROM game_boss_room_publications p
         WHERE p.world_id=p_world AND p.boss_key='oteryn:boss.the_primal_menace'
             AND p.content_revision=p_content_revision AND p.enabled
-            AND p.server_artifact_digest=p_server
-            AND p.activation_frame_digest=current_frame);
+            AND p.server_artifact_digest=p_server);
 END $source_game_primal_boss_catalogue_activate$;
 BEGIN
     SELECT to_jsonb(p),p.prosrc,pg_get_functiondef(p.oid)
@@ -60,7 +63,7 @@ DO $migration$
 DECLARE signature REGPROCEDURE := 'game_soul_war_boss_catalogue_activate(UUID,UUID,NUMERIC,UUID,NUMERIC,BYTEA,NUMERIC,BYTEA,BYTEA,TEXT,TEXT)'::regprocedure;
         before_row JSONB; after_row JSONB; old_source TEXT; definition TEXT;
         next_source TEXT := $source_game_soul_war_boss_catalogue_activate$
-DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; current_frame BYTEA; scope BYTEA; recipe JSONB;
+DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; scope BYTEA; recipe JSONB;
 BEGIN
     recipe:=CASE p_boss_key
         WHEN 'oteryn:boss.goshnar_s_spite' THEN '{"creature":"oteryn:creature.goshnar_s_spite","cooldown":72000,"levers":[{"x":33774,"y":31634,"floor":14},{"x":33775,"y":31634,"floor":14},{"x":33776,"y":31634,"floor":14},{"x":33777,"y":31634,"floor":14},{"x":33778,"y":31634,"floor":14}],"entries":[{"x":33742,"y":31639,"floor":14},{"x":33742,"y":31639,"floor":14},{"x":33742,"y":31639,"floor":14},{"x":33742,"y":31639,"floor":14},{"x":33742,"y":31639,"floor":14}],"exit":{"x":33621,"y":31427,"floor":10},"boss":{"x":33743,"y":31632,"floor":14},"template":"oteryn:room.soul-war-spite-source"}'::jsonb
@@ -86,7 +89,7 @@ BEGIN
             AND a.ownership_generation=p_generation AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration
             AND g.ready AND g.ownership_generation=p_generation FOR SHARE OF a,g;
     IF NOT FOUND THEN RETURN false; END IF;
-    SELECT activation_sequence,server_artifact_digest,client_artifact_digest,frame_binding_digest INTO current_sequence,current_server,current_client,current_frame
+    SELECT activation_sequence,server_artifact_digest,client_artifact_digest INTO current_sequence,current_server,current_client
         FROM game_content_activations WHERE world_id=p_world AND channel_id=p_channel
         ORDER BY activation_sequence DESC LIMIT 1 FOR SHARE;
     IF NOT FOUND OR current_sequence<>p_activation OR current_server<>p_server OR current_client<>p_client THEN RETURN false; END IF;
@@ -101,8 +104,7 @@ BEGIN
     RETURN EXISTS(SELECT 1 FROM game_boss_room_publications p
         WHERE p.world_id=p_world AND p.boss_key=p_boss_key
             AND p.content_revision=p_content_revision AND p.enabled
-            AND p.server_artifact_digest=p_server
-            AND p.activation_frame_digest=current_frame);
+            AND p.server_artifact_digest=p_server);
 END $source_game_soul_war_boss_catalogue_activate$;
 BEGIN
     SELECT to_jsonb(p),p.prosrc,pg_get_functiondef(p.oid)
@@ -126,7 +128,7 @@ DO $migration$
 DECLARE signature REGPROCEDURE := 'game_rotten_blood_boss_catalogue_activate(TEXT,UUID,UUID,NUMERIC,UUID,NUMERIC,BYTEA,NUMERIC,BYTEA,BYTEA,TEXT)'::regprocedure;
         before_row JSONB; after_row JSONB; old_source TEXT; definition TEXT;
         next_source TEXT := $source_game_rotten_blood_boss_catalogue_activate$
-DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; current_frame BYTEA; scope BYTEA; recipe RECORD;
+DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; scope BYTEA; recipe RECORD;
 BEGIN
     IF NOT game_runtime_scope_assignment_history_valid()
         OR NOT game_node_prove_current_incarnation(p_node,p_registration,p_secret)
@@ -140,7 +142,7 @@ BEGIN
             AND a.ownership_generation=p_generation AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration
             AND g.ready AND g.ownership_generation=p_generation FOR SHARE OF a,g;
     IF NOT FOUND THEN RETURN false; END IF;
-    SELECT activation_sequence,server_artifact_digest,client_artifact_digest,frame_binding_digest INTO current_sequence,current_server,current_client,current_frame
+    SELECT activation_sequence,server_artifact_digest,client_artifact_digest INTO current_sequence,current_server,current_client
         FROM game_content_activations WHERE world_id=p_world AND channel_id=p_channel
         ORDER BY activation_sequence DESC LIMIT 1 FOR SHARE;
     IF NOT FOUND OR current_sequence<>p_activation OR current_server<>p_server OR current_client<>p_client THEN RETURN false; END IF;
@@ -155,8 +157,7 @@ BEGIN
     RETURN EXISTS(SELECT 1 FROM game_boss_room_publications p
         WHERE p.world_id=p_world AND p.boss_key=p_boss
             AND p.content_revision=p_content_revision AND p.enabled
-            AND p.server_artifact_digest=p_server
-            AND p.activation_frame_digest=current_frame);
+            AND p.server_artifact_digest=p_server);
 END $source_game_rotten_blood_boss_catalogue_activate$;
 BEGIN
     SELECT to_jsonb(p),p.prosrc,pg_get_functiondef(p.oid)
@@ -180,7 +181,7 @@ DO $migration$
 DECLARE signature REGPROCEDURE := 'game_outburst_boss_catalogue_activate(TEXT,UUID,UUID,NUMERIC,UUID,NUMERIC,BYTEA,NUMERIC,BYTEA,BYTEA,TEXT)'::regprocedure;
         before_row JSONB; after_row JSONB; old_source TEXT; definition TEXT;
         next_source TEXT := $source_game_outburst_boss_catalogue_activate$
-DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; current_frame BYTEA; scope BYTEA; recipe RECORD;
+DECLARE current_sequence NUMERIC; current_server BYTEA; current_client BYTEA; scope BYTEA; recipe RECORD;
 BEGIN
     IF NOT game_runtime_scope_assignment_history_valid()
         OR NOT game_node_prove_current_incarnation(p_node,p_registration,p_secret)
@@ -194,7 +195,7 @@ BEGIN
             AND a.ownership_generation=p_generation AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration
             AND g.ready AND g.ownership_generation=p_generation FOR SHARE OF a,g;
     IF NOT FOUND THEN RETURN false; END IF;
-    SELECT activation_sequence,server_artifact_digest,client_artifact_digest,frame_binding_digest INTO current_sequence,current_server,current_client,current_frame
+    SELECT activation_sequence,server_artifact_digest,client_artifact_digest INTO current_sequence,current_server,current_client
         FROM game_content_activations WHERE world_id=p_world AND channel_id=p_channel
         ORDER BY activation_sequence DESC LIMIT 1 FOR SHARE;
     IF NOT FOUND OR current_sequence<>p_activation OR current_server<>p_server OR current_client<>p_client THEN RETURN false; END IF;
@@ -209,8 +210,7 @@ BEGIN
     RETURN EXISTS(SELECT 1 FROM game_boss_room_publications p
         WHERE p.world_id=p_world AND p.boss_key=p_boss
             AND p.content_revision=p_content_revision AND p.enabled
-            AND p.server_artifact_digest=p_server
-            AND p.activation_frame_digest=current_frame);
+            AND p.server_artifact_digest=p_server);
 END $source_game_outburst_boss_catalogue_activate$;
 BEGIN
     SELECT to_jsonb(p),p.prosrc,pg_get_functiondef(p.oid)

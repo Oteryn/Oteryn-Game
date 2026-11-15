@@ -138,6 +138,8 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     super::quest_world_callbacks::input_item(owner,fence.item_fence(),&input,71,true).await?;
     assert_eq!(carried(harness,&offer.item).await?,1);
     // A changed remote source must refuse before the exact carried input is charged.
+    // Crystal 201189f8 actions_lions_rock.lua:13-79 handles an already-lit
+    // pagoda as a no-effect USE (timed_passages.rs lion_is_busy; m07_trials.rs).
     {
         let map=owner.bundle_map().ok_or("map")?;
         let changed=map.facts.quest_callback_replacement(pagoda,2075).ok_or("lit pagoda")?;
@@ -145,7 +147,7 @@ pub(super) async fn exercise(owner:&mut ComposedFreshAdmission<'_, '_, '_>,admit
     }
     pace(owner)?;
     let reply=super::quest_world_callbacks::wire(owner,admitted,2,2,payload(0)?).await?;
-    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,UseDisposition::Rejected);
+    assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&reply).map_err(debug)?,UseDisposition::NothingToUse);
     assert_eq!(carried(harness,&offer.item).await?,1);
     assert_eq!(counts(harness).await?,(0,0));
     {

@@ -886,7 +886,11 @@ pub(super) fn scenario_with_definition_ready_claim(
             owner.movement_cells = (&cells).into();
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
-            if quest {
+            // The definition-ready KV claims carry a quest transition
+            // (content/interactions/reward_claims/reward-claims-00000-00099.json,
+            // kv/adoreduh/chest and kv/bloodherb/chest), so their USE resolves it
+            // against the owner's loaded catalogue as production does.
+            if quest || definition_ready {
                 let lowered =
                     oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                         .map_err(debug)?;

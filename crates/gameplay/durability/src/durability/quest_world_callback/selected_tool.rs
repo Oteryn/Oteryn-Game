@@ -25,6 +25,17 @@ impl From<QuestWorldContext> for QuestWorldToolContext {
         }
     }
 }
+impl QuestWorldToolContext {
+    /// The replay identity of a legacy World claim. Like main's RewardClaim
+    /// chest owner, its receipt is keyed by cause and claim; the actor's
+    /// movement proof is re-derived by a rebuilt owner and is checked live.
+    pub(crate) fn without_actor_movement(&self) -> Self {
+        let mut stable = self.clone();
+        stable.world.actor_placement = [0; 16];
+        stable.world.movement_revision = 0;
+        stable
+    }
+}
 impl std::ops::Deref for QuestWorldToolContext {
     type Target = QuestWorldContext;
     fn deref(&self) -> &Self::Target {

@@ -1201,6 +1201,9 @@ pub struct ScopeRuntimeV1 {
     carrier: ChannelActorCarrier,
     content: ChannelContentPin,
     companion_policies: Option<Arc<runtime_actor_companion::CompiledCreaturePolicies>>,
+    /// Set on a runtime outside every qualified source room: its creatures keep
+    /// the classic death path and never queue a native source death task.
+    classic_creature_deaths: bool,
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
@@ -1344,6 +1347,7 @@ impl ChannelRuntimeV1 {
             carrier,
             content,
             companion_policies: None,
+            classic_creature_deaths: false,
             owner_cycle:
                 oteryn_gameplay_foundation::foundation::ScopeRuntimeFence::from_owner_cycle_grant(
                     CommittedAssignmentOwnerCycle {

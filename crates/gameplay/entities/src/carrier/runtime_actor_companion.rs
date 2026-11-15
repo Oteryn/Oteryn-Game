@@ -104,10 +104,15 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::InvalidSpawnDefinition);
         }
-        let death_events = self.companion_policies.as_ref().and_then(|table| {
-            table.native_death_events(&policy.definition_key, &policy.definition_revision)
-        });
-        if oteryn_gameplay_content::content::native_creature_death_events::requires_native_death_events(
+        let death_events = if self.classic_creature_deaths {
+            None
+        } else {
+            self.companion_policies.as_ref().and_then(|table| {
+                table.native_death_events(&policy.definition_key, &policy.definition_revision)
+            })
+        };
+        if !self.classic_creature_deaths
+            && oteryn_gameplay_content::content::native_creature_death_events::requires_native_death_events(
             &policy.definition_key,
         ) && death_events.is_none() {
             return Err(CarrierError::InvalidSpawnDefinition);
@@ -790,6 +795,28 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::InvalidCreatureTarget);
         }
         Ok(policy)
+    }
+    /// Mark a runtime that belongs to no qualified source room. Its creatures
+    /// keep main's classic death path: copied death events are dropped and no
+    /// native source death task or held reward settlement is queued. Refused
+    /// once such a task is already queued.
+    pub fn use_classic_creature_deaths(&mut self) -> Result<(), CarrierError> {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        if !self.carrier.native_deaths.is_empty() {
+            return Err(CarrierError::PlanConflict);
+        }
+        for index in 0..self.carrier.occupied.len() {
+            let slot = self.carrier.occupied[index] as usize;
+            if let Slot::CreatureOccupied { spell_combat, .. } = &mut self.carrier.slots[slot] {
+                spell_combat.native_death_events = None;
+            }
+        }
+        self.classic_creature_deaths = true;
+        Ok(())
+    }
+    /// Whether this runtime belongs to no qualified source room.
+    pub const fn uses_classic_creature_deaths(&self) -> bool {
+        self.classic_creature_deaths
     }
     pub fn install_companion_policies(
         &mut self,
