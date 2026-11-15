@@ -2,15 +2,18 @@
 import copy
 import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 import wheel_gem_item_profiles as wheel
+from import_cyclopedia_global import load_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 PROFILES = 'content/items/definitions/spell-native-profiles.json'
 MANIFEST = 'content/spells.manifest.json'
+CYCLOPEDIA = 'docs/reference/content-prep/item-cyclopedia-capture-1'
 
 
 def encoded(value):
@@ -45,9 +48,11 @@ class WheelGemProfilesTests(unittest.TestCase):
                  if record['production_definition']['production_key'] in wheel.KEYS]
         self.assertEqual(len(added), 17)
         self.assertEqual({row['production_definition']['production_key'] for row in added}, wheel.KEYS)
+        client = load_weights(ROOT)
         for record in added:
             item = int(record['production_definition']['production_key'].rsplit('i', 1)[1])
-            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], wheel.WEIGHTS[item])
+            # The donor weights stay in WEIGHTS for the capture proof; the overlay carries the client weight.
+            self.assertEqual(record['semantics']['physical']['value']['weight']['value'], client[item])
             self.assertEqual(record['semantics']['stack'], wheel.STACK)
             self.assertEqual(record['admission'], wheel.ADMISSION)
             self.assertEqual(record['semantics']['trade_restrictions'], wheel.MARKETABILITY)
@@ -74,7 +79,8 @@ class WheelGemProfilesTests(unittest.TestCase):
                 elif mutation == 'weight':
                     greater = next(row for row in packet['records']
                                    if row['production_definition']['production_key'] == 'oteryn:item.tibia.i46626')
-                    greater['semantics']['physical']['value']['weight']['value'] = 10
+                    # Neither the donor weight (500) nor the client weight (10) is this value.
+                    greater['semantics']['physical']['value']['weight']['value'] = 11
                 elif mutation == 'admission':
                     first['admission']['legal_destinations'].append('Other')
                 elif mutation == 'market_unknown':
@@ -86,6 +92,7 @@ class WheelGemProfilesTests(unittest.TestCase):
                 target = root / wheel.PATH
                 target.parent.mkdir(parents=True)
                 target.write_bytes(encoded(packet))
+                shutil.copytree(ROOT / CYCLOPEDIA, root / CYCLOPEDIA)
                 generated = self.base()
                 before = copy.deepcopy(generated)
                 with self.assertRaises(ValueError):

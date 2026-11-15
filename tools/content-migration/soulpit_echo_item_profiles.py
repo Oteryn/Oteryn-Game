@@ -103,6 +103,9 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         raise ValueError('SOULPIT_ITEM_CAPTURE_DRIFT')
     overlay = json.loads(raw_capture)
     records = overlay['records']
+    # The capture keeps Crystal's default weight; the captured Global client weight wins (ITEMGLOB).
+    from import_cyclopedia_global import apply_profile_weights
+    apply_profile_weights(records, root)
     core_ids = [row['id'] for row in overlay['core_catalogue']]
     source_ids = [int(row['production_binding']['external_id']) for row in records]
     bindings = binding_index((root / 'imports/crystalserver/bindings/items.json').read_bytes())

@@ -1,10 +1,39 @@
-# Parity area files
+# Global parity evidence tables
 
-One JSON file per area (`healing.json` first; damage, defence, progression and
+One table per gameplay area, comparing the live Global game with our content and code. Evidence only: a table grants no authority and changes no behaviour. Fixes land in separate commits that cite the row.
+
+## Format
+
+Each file has a header (area, date, source legend, confidence legend) and rows:
+
+`| item | dimension | Global value | source (TW rev / measurement) | measured? | ours | ours file | status |`
+
+Source legend:
+
+- TW: TibiaWiki (tibia.fandom.com MediaWiki API), with the page revision id.
+- Measurement: an owner-supplied observation on Global, with date and character setup.
+- OTS donor (Crystal, Canary): hypothesis only, never Global evidence.
+
+Confidence (the `measured?` column):
+
+- MEASURED: observed on Global.
+- WIKI: stated by TW at the given revision.
+- REFERENCE: only an OTS donor or an inference.
+
+Status: MATCH, MISMATCH, FIXED (was a mismatch, corrected in the cited commit), UNKNOWN (no Global source found), GAP (we lack the mechanic or its consumer).
+
+When the Crystal re-audit (`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`) marks a mechanic DONE with evidence, a row cites the audit row id instead of re-deriving it.
+
+## Areas
+
+- `healing.md`: healing spells, potions, monk mechanics, leech, regeneration. Machine rows: `healing.json`.
+## Machine rows (`<area>.json`)
+
+Next to each evidence table, one JSON file per area (`healing.json` first; damage, defence, progression and
 regeneration/conditions follow). Test-only data: a lib test loads the file, runs each row
 through the real owner and compares. Nothing in the server reads these files.
 
-## Schema `OTERYN_PARITY_AREA/v1`
+### Schema `OTERYN_PARITY_AREA/v1`
 
 ```json
 { "schema": "OTERYN_PARITY_AREA/v1", "area": "healing", "description": "...", "rows": [ Row ] }
@@ -36,7 +65,7 @@ Status rules (`parity_rows.rs`, shared loader):
 A summary test per area counts the rows by status and fails if the total drops below its
 `MIN_ROWS` floor; raise the floor with the data.
 
-## Adding an area
+### Adding an area
 
 Add `<area>.json` and one adapter: a function that maps `row.case` and `row.inputs` to the real
 owner and returns the observed facts (`BTreeMap<&str, i64>`), then calls `row.judge(&observed)`.
@@ -46,7 +75,7 @@ The healing adapters are `crates/gameplay/spell/src/spell/healing_parity_matrix_
 because the item-use gate is private to dispatch). Both mount the one loader,
 `crates/gameplay/spell/src/spell/parity_rows.rs`.
 
-## Healing facts
+### Healing facts
 
 `spell.cast`: `castable`, `mana`, `cooldown_ms`, `group_cooldown_ms`, `min`, `max` (final heal,
 after the magnitude owner when the row sets `final`), `base_min`, `base_max` (formula bounds),

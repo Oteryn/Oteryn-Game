@@ -85,3 +85,23 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     manifest = json.loads(generated[manifest_path])
     manifest['item_profiles']['sha256'] = hashlib.sha256(data).hexdigest()
     generated[manifest_path] = canonical(manifest)
+
+
+def refresh_qualified_proof(root=ROOT):
+    """Repin only the proof's input digests after a canonical shard change.
+
+    mechanical_rod_policy still requires the qualified 920 weight and the exact
+    wiki observation, so a changed selected fact refuses instead of repinning.
+    """
+    path = root / PATH
+    overlay = json.loads(path.read_bytes())
+    _, _, proof = mechanical_rod_policy(root)
+    old, = overlay['qualified_overrides']
+    if {k: v for k, v in old.items() if k != 'inputs'} != {k: v for k, v in proof.items() if k != 'inputs'}:
+        raise ValueError('GATHERING_MECHANICAL_PROOF_CHANGED')
+    overlay['qualified_overrides'] = [proof]
+    path.write_text(json.dumps(overlay, indent=2, ensure_ascii=False) + '\n')
+
+
+if __name__ == '__main__':
+    refresh_qualified_proof()
