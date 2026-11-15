@@ -5,7 +5,15 @@ use oteryn_input_actions::NormalizedInputEvent;
 impl PlayLink {
     pub fn cyclopedia_character_request(&self, intent: Intent) {
         let mut mailbox = lock(&self.mailbox);
-        if let Some(command) = request(&mut mailbox.cyclopedia_character, intent)
+        let panel = &mut mailbox.cyclopedia_character;
+        let command = if intent == Intent::Next
+            && panel.tab == oteryn_client_runtime::cyclopedia_character::CharacterTab::Achievements
+        {
+            oteryn_client_ui::cyclopedia_character::achievement_next_request(panel)
+        } else {
+            request(panel, intent)
+        };
+        if let Some(command) = command
             && self.commands.send(PlayCommand::Feature(command)).is_err()
         {
             mailbox.cyclopedia_character.pending = false;
