@@ -142,7 +142,7 @@ impl HostOwner {
         if play.link.weapon_proficiency_input(&routed) {
             return;
         }
-        if oteryn_client_ui::store::open_key(&routed) {
+        if crate::input::store_key(&routed) {
             play.link.store_set_open(!play.link.store_panel().open);
             return;
         }

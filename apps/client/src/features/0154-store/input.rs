@@ -86,7 +86,7 @@ impl PlayLink {
     }
 
     pub fn store_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
-        if !oteryn_client_ui::store::open_key(events) {
+        if !crate::input::store_key(events) {
             return false;
         }
         #[cfg(windows)]

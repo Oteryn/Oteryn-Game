@@ -25,7 +25,7 @@ struct Request {
 enum Content {
     Logout,
     Context {
-        menu: Option<Menu>,
+        menu: Option<Box<Menu>>,
         party: Option<Box<party::Target>>,
         inspection: Option<(TileCoord, oteryn_session::EntityRef)>,
         report: Option<Box<rule_violation::Target>>,
@@ -71,7 +71,8 @@ impl HostOwner {
         let menu = self
             .play
             .as_ref()
-            .and_then(|play| play.view.world_context(tile, &play.link));
+            .and_then(|play| play.view.world_context(tile, &play.link))
+            .map(Box::new);
         // Capture the player before opening our own modal, which correctly blocks new world input.
         let party = party::context(self, tile).map(Box::new);
         let report = rule_violation::context(self, tile).map(Box::new);
@@ -506,7 +507,7 @@ mod tests {
         host.dialogs.open(
             host.generation(),
             Content::Context {
-                menu: Some(menu),
+                menu: Some(Box::new(menu)),
                 party: None,
                 inspection: None,
                 report: None,

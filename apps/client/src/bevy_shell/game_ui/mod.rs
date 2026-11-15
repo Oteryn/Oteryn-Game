@@ -13,6 +13,8 @@ pub(super) mod highscores;
 mod hotkeys;
 mod hud;
 mod imbuing;
+mod install;
+pub(super) use install::install;
 mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
@@ -245,49 +247,6 @@ fn region(commands: &mut Commands) -> Entity {
             ..default()
         })
         .id()
-}
-
-pub(super) fn install(app: &mut App) {
-    actions::install(app);
-    bug_report::install(app);
-    chat::install(app);
-    cyclopedia::install(app);
-    analyser::install(app);
-    feature_dialogs::install(app);
-    highscores::install(app);
-    forge::install(app);
-    hotkeys::install(app);
-    hud::install(app);
-    imbuing::install(app);
-    inventory::install(app);
-    item_details::install(app);
-    journal::install(app);
-    market::install(app);
-    minimap::install(app);
-    modal::install(app);
-    npc_shop::install(app);
-    options::install(app);
-    outfit::install(app);
-    party::install(app);
-    prey::install(app);
-    proficiency::install(app);
-    quick_loot::install(app);
-    task_board::install(app);
-    stash::install(app);
-    rule_violation::install(app);
-    store::install(app);
-    satellite_map::install(app);
-    reward_wall::install(app);
-    trade::install(app);
-    wheel::install(app);
-    tutorial::install(app);
-    app.add_systems(
-        Update,
-        (
-            projection::missing_item_appearances,
-            projection::project_regions.after(project),
-        ),
-    );
 }
 
 #[cfg(test)]

@@ -311,3 +311,31 @@ fn store_shortcut_requests_catalogue() -> ResultTest {
     assert_eq!(command(&mut rx)?.command_type, browse::COMMAND_TYPE);
     Ok(())
 }
+
+#[test]
+fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, mut rx, outbox) = play_channel();
+    outbox.bevy_store_initialize();
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+    });
+    for extra in [Modifier::Alt, Modifier::Super] {
+        owner.route_input(
+            &[NormalizedInputEvent::Key {
+                code: KeyCode::new(22)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Control)
+                    .with(Modifier::Shift)
+                    .with(extra),
+                repeat: false,
+            }],
+            false,
+        );
+        assert!(!owner.play.as_ref().ok_or("play")?.link.store_panel().open);
+        assert!(rx.try_recv().is_err());
+    }
+    Ok(())
+}
