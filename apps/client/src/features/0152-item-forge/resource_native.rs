@@ -228,7 +228,7 @@ fn run(
                 let mut message: MSG = std::mem::zeroed();
                 while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                     if message.message == WM_KEYDOWN
-                        && (message.wParam == 13 || message.wParam == 27)
+                        && crate::play::feature_0152_item_forge::protocol::resource_cancel_key(message.wParam)
                     {
                         state.close = true;
                     } else if IsDialogMessageW(hwnd, &message) == 0 {

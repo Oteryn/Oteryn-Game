@@ -13,7 +13,16 @@ impl Outbox {
         &self,
         response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
     ) {
-        oteryn_client_ui::item_forge::apply_result(&mut lock(&self.0).item_forge, response);
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.item_forge;
+        let pair = panel.submitted.is_some_and(|request| request.operation.requires_pair());
+        oteryn_client_ui::item_forge::apply_result(panel, response);
+        if pair && panel.retry.is_none() {
+            panel.preview.items.clear();
+            panel.preview.page = None;
+            panel.preview.refresh = true;
+            panel.tier_effects.clear();
+        }
     }
 }
 
@@ -39,4 +48,14 @@ impl Outbox {
             panel.preview.refresh = true;
         }
     }
+}
+
+#[cfg_attr(not(windows), allow(dead_code, reason = "Native combo state is exercised in play tests"))]
+pub(in crate::play) fn retained_bag(selected: u64, entries: &[(u64, String)]) -> u64 {
+    entries.iter().find(|entry| entry.0 == selected).map_or(0, |entry| entry.0)
+}
+
+#[cfg_attr(not(windows), allow(dead_code, reason = "Native dialog keys are exercised in play tests"))]
+pub(in crate::play) fn resource_cancel_key(key: usize) -> bool {
+    key == 27
 }

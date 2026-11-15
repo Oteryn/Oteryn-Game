@@ -30,6 +30,7 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     .ok_or(tr!("Select a saved preset name"))?
                     .clone();
                 panel.import_build(&code)?;
+                panel.diagram.reset_requested = false;
             }
             2 => {
                 let mut book = panel.preset_book.clone();
@@ -44,7 +45,10 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                 panel.preset_fields[1] =
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
-            5 => panel.import_build(&panel.preset_fields[1].clone())?,
+            5 => {
+                panel.import_build(&panel.preset_fields[1].clone())?;
+                panel.diagram.reset_requested = false;
+            }
             _ => return Err(tr!("Unknown preset action")),
         }
         Ok(())
