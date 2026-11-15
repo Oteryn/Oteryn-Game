@@ -94,8 +94,31 @@ struct State {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .add_systems(Update, project)
+        .add_systems(Update, (keyboard, project).chain())
         .add_systems(PostUpdate, sync.after(bevy::text::EditableTextSystems));
+}
+fn keyboard(
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+    mut focus: ResMut<InputFocus>,
+    fields: Query<Entity, With<Field>>,
+) {
+    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        || owner.modal_active()
+        || state.generation != owner.generation()
+        || !state.root.is_some_and(|root| guard.allows(root))
+    {
+        return;
+    }
+    if let Some(play) = &owner.play {
+        state.send = false;
+        if focus.get().is_some_and(|entity| fields.contains(entity)) {
+            focus.clear();
+        }
+        play.link.rule_violation_close();
+    }
 }
 fn project(
     mut commands: Commands,
@@ -490,6 +513,72 @@ mod tests {
         assert_eq!(report.target, "Other Player");
         assert_eq!(report.comment, "Observed repeated messages");
         assert!(app.world().get::<InteractionDisabled>(send).is_some());
+        Ok(())
+    }
+    #[test]
+    fn cancellation_escape_only_closes_foreground_windows() -> Result<(), Box<dyn std::error::Error>>
+    {
+        for kind in 0..3 {
+            let (link, _, outbox) = crate::play::play_channel();
+            link.use_shared_frontend();
+            outbox.bevy_report_selected(true);
+            outbox.bevy_prey_initialize(true);
+            outbox.bevy_imbue_initialize();
+            match kind {
+                0 => link.prey_set_open(true),
+                1 => link.open_imbue(),
+                _ => link.rule_violation_open("Other Player"),
+            }
+            let mut owner = HostOwner::new(None)?;
+            owner.phase = Phase::Playing;
+            owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+                link,
+                view: crate::play::PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+            });
+            let mut app = App::new();
+            app.insert_non_send(owner)
+                .init_resource::<InputFocus>()
+                .init_resource::<ButtonInput<KeyCode>>()
+                .insert_resource(Skins {
+                    buttons: source::ButtonImages {
+                        up: default(),
+                        down: default(),
+                    },
+                    checked: default(),
+                    unchecked: default(),
+                    frame: default(),
+                    inset: default(),
+                    font: default(),
+                });
+            match kind {
+                0 => super::super::prey::install(&mut app),
+                1 => super::super::imbuing::install(&mut app),
+                _ => install(&mut app),
+            }
+            app.update();
+            let is_open = |app: &App| -> Result<bool, Box<dyn std::error::Error>> {
+                let play = app.world().non_send::<HostOwner>();
+                let link = &play.play.as_ref().ok_or("play")?.link;
+                Ok(match kind {
+                    0 => link.prey_panel().open,
+                    1 => link.imbue_panel().open,
+                    _ => link.player_report_panel().open,
+                })
+            };
+            assert!(is_open(&app)?);
+            let front = app
+                .world_mut()
+                .spawn((GameModal, Node::default(), GlobalZIndex(999)))
+                .id();
+            app.world_mut()
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::Escape);
+            app.update();
+            assert!(is_open(&app)?, "background cancellation: {kind}");
+            app.world_mut().entity_mut(front).despawn();
+            app.update();
+            assert!(!is_open(&app)?, "foreground Escape did not cancel: {kind}");
+        }
         Ok(())
     }
 }

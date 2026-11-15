@@ -28,6 +28,11 @@ struct ChatState {
     focus: bool,
     value: String,
     pending: Option<submission::Pending>,
+    history: SentHistory,
+    history_pending: Option<(u64, Option<String>)>,
+    rows: Vec<widgets::RenderedRow>,
+    row_entities: Vec<Entity>,
+    menu: Option<Entity>,
 }
 impl Default for ChatState {
     fn default() -> Self {
@@ -39,8 +44,116 @@ impl Default for ChatState {
             focus: false,
             value: String::new(),
             pending: None,
+            history: default(),
+            history_pending: None,
+            rows: Vec::new(),
+            row_entities: Vec::new(),
+            menu: None,
         }
     }
+}
+#[derive(Default)]
+struct SentHistory {
+    lines: std::collections::VecDeque<String>,
+    cursor: Option<usize>,
+    draft: String,
+}
+impl SentHistory {
+    fn sent(&mut self, value: String) {
+        if self.lines.back() != Some(&value) {
+            if self.lines.len() == 100 {
+                self.lines.pop_front();
+            }
+            self.lines.push_back(value);
+        }
+        self.cursor = None;
+        self.draft.clear();
+    }
+    fn navigate(&mut self, older: bool, text: &mut EditableText) {
+        if self.lines.is_empty() {
+            return;
+        }
+        if older {
+            let index = match self.cursor {
+                Some(index) => index.saturating_sub(1),
+                None => {
+                    self.draft = text.value().to_string();
+                    self.lines.len() - 1
+                }
+            };
+            self.cursor = Some(index);
+            if let Some(value) = self.lines.get(index) {
+                set_text(text, value);
+            }
+        } else if let Some(index) = self.cursor {
+            if let Some(value) = self.lines.get(index + 1) {
+                self.cursor = Some(index + 1);
+                set_text(text, value);
+            } else {
+                self.cursor = None;
+                set_text(text, &self.draft);
+            }
+        }
+    }
+}
+fn request(
+    owner: &HostOwner,
+    state: &mut ChatState,
+    entity: Entity,
+    field: Field,
+    text: &mut EditableText,
+    focus: bool,
+) -> bool {
+    let value = text.value().to_string();
+    let sent = submission::request(owner, state, entity, field, text, focus);
+    if field == Field::Message {
+        if sent {
+            state.history.sent(value);
+        } else if state.pending.is_some() {
+            state.history_pending = Some((owner.generation(), None));
+        }
+    }
+    sent
+}
+fn capture_history(mut state: ResMut<ChatState>, fields: Query<(&Field, &EditableText)>) {
+    if state.pending.is_none() {
+        return;
+    }
+    if let Some((_, value)) = &mut state.history_pending {
+        for (field, text) in &fields {
+            if *field == Field::Message && text.pending_paste.is_none() {
+                *value = Some(text.value().to_string());
+            }
+        }
+    }
+}
+fn finish_history(
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<ChatState>,
+    fields: Query<(&Field, &EditableText)>,
+) {
+    if state.pending.is_some() {
+        return;
+    }
+    if let Some((generation, Some(value))) = state.history_pending.take()
+        && generation == owner.generation()
+        && state.generation == Some(generation)
+        && !value.is_empty()
+        && fields
+            .iter()
+            .any(|(field, text)| *field == Field::Message && text.value() == "")
+    {
+        state.history.sent(value);
+    }
+}
+fn install_history(app: &mut App) {
+    app.add_systems(
+        PostUpdate,
+        capture_history
+            .after(bevy::text::EditableTextSystems)
+            .before(submission::finish),
+    );
+    app.add_systems(PostUpdate, finish_history.after(submission::finish));
 }
 #[derive(Component)]
 struct ChatRoot;
@@ -79,12 +192,14 @@ struct Control {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<ChatState>()
+        .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))
         .add_systems(Update, (keyboard, project).chain())
         .add_systems(
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
         );
+    install_history(app);
     channels::install(app);
 }
 fn set_text(text: &mut EditableText, value: &str) {
@@ -101,7 +216,23 @@ fn keyboard(
     owner: NonSend<HostOwner>,
     mut state: ResMut<ChatState>,
     guard: ModalGuard,
+    (pressed, mut commands): (Option<Res<ButtonInput<KeyCode>>>, Commands),
 ) {
+    if let Some(menu) = state.menu {
+        if !owner.modal_active() && guard.allows(menu) {
+            if keys.read().any(|key| {
+                key.key_code == KeyCode::Escape
+                    && key.state == bevy::input::ButtonState::Pressed
+                    && !key.repeat
+            }) {
+                commands.entity(menu).despawn();
+                state.menu = None;
+            }
+        } else {
+            keys.clear();
+        }
+        return;
+    }
     if !guard.allows_focus(focus.get()) {
         keys.clear();
         return;
@@ -122,6 +253,7 @@ fn keyboard(
         match key.key_code {
             KeyCode::Escape => {
                 state.pending = None;
+                state.history_pending = None;
                 if focused.is_some_and(|entity| fields.get(entity).is_ok()) {
                     focus.clear();
                 }
@@ -130,7 +262,7 @@ fn keyboard(
             KeyCode::Enter | KeyCode::NumpadEnter => {
                 if let Some(entity) = focused {
                     if let Ok((_, field, mut text)) = fields.get_mut(entity) {
-                        submission::request(&owner, &mut state, entity, *field, &mut text, false);
+                        request(&owner, &mut state, entity, *field, &mut text, false);
                     }
                 } else if play.link.chat_panel().console.can_send() {
                     for (entity, field, _) in &fields {
@@ -139,6 +271,25 @@ fn keyboard(
                             break;
                         }
                     }
+                }
+            }
+            KeyCode::ArrowUp | KeyCode::ArrowDown
+                if pressed.as_ref().is_some_and(|keys| {
+                    keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight)
+                }) =>
+            {
+                if state.pending.is_none()
+                    && let Some(entity) = focused
+                    && let Ok((_, Field::Message, mut text)) = fields.get_mut(entity)
+                    && text.pending_paste.is_none()
+                    && !text
+                        .pending_edits
+                        .iter()
+                        .any(bevy::text::TextEdit::is_destructive)
+                {
+                    state
+                        .history
+                        .navigate(key.key_code == KeyCode::ArrowUp, &mut text);
                 }
             }
             _ => {}
@@ -156,7 +307,7 @@ fn project(
     mut previous: Local<Option<oteryn_client_ui::chat::ChatPanel>>,
     mut fields: Query<(Entity, &Field, &mut EditableText)>,
     mut focus: ResMut<InputFocus>,
-    mut texts: Query<&mut Text, With<Transcript>>,
+    transcripts: Query<Entity, With<Transcript>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
     chat_mode_buttons: Query<&Children, With<ChatModeButton>>,
@@ -167,6 +318,9 @@ fn project(
 ) {
     let Some(play) = &owner.play else {
         *previous = None;
+        if let Some(menu) = state.menu.take() {
+            commands.entity(menu).despawn();
+        }
         if state.generation.take().is_some() {
             for (entity, _, mut text) in &mut fields {
                 set_text(&mut text, "");
@@ -175,6 +329,8 @@ fn project(
                 }
             }
             state.value.clear();
+            state.history = default();
+            state.history_pending = None;
             state.focus = false;
         }
         return;
@@ -185,7 +341,13 @@ fn project(
         state.mode = Mode::Say;
         state.focus = false;
         state.value.clear();
+        state.history = default();
+        state.history_pending = None;
         state.tabs.clear();
+        state.rows.clear();
+        if let Some(menu) = state.menu.take() {
+            commands.entity(menu).despawn();
+        }
         for (entity, _, mut text) in &mut fields {
             set_text(&mut text, "");
             if focus.get() == Some(entity) {
@@ -198,12 +360,26 @@ fn project(
     let mut changed = false;
     // Cache only the last projection; all edits and commands still belong to PlayLink.
     if previous.as_ref() != Some(&panel) {
-        let transcript = oteryn_client_ui::chat::panel_text(&panel);
-        for mut text in &mut texts {
-            if text.0 != transcript {
-                text.0.clone_from(&transcript);
-                changed = true;
+        let rows = widgets::transcript_rows(&panel);
+        if state.rows != rows {
+            if focus
+                .get()
+                .is_some_and(|entity| state.row_entities.contains(&entity))
+            {
+                focus.clear();
             }
+            state.row_entities.clear();
+            for parent in &transcripts {
+                commands.entity(parent).despawn_children();
+                for row in &rows {
+                    let entity =
+                        widgets::message_row(&mut commands, &skins, owner.generation(), row);
+                    commands.entity(parent).add_child(entity);
+                    state.row_entities.push(entity);
+                }
+            }
+            state.rows = rows;
+            changed = true;
         }
     }
     // Follow new messages only when the user was already at the end of the log.

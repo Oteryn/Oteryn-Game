@@ -304,3 +304,263 @@ fn analyser_shortcut_and_stale_reset() -> TestResult {
     assert!(report(&mut app)?.contains("Kills: 23"));
     Ok(())
 }
+
+#[test]
+fn analyser_window_does_not_fence_gameplay() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Loot)?;
+    let overlay_entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Overlay>>()
+        .single(app.world())?;
+    assert!(
+        app.world()
+            .get::<super::super::GameModal>(overlay_entity)
+            .is_none()
+    );
+    let overlay = app
+        .world_mut()
+        .query_filtered::<&Node, With<Overlay>>()
+        .single(app.world())?;
+    assert_ne!(overlay.width, percent(100.));
+    let outside = app.world_mut().spawn_empty().id();
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(outside, bevy::input_focus::FocusCause::Navigated);
+    app.world_mut()
+        .write_message(bevy::input::keyboard::KeyboardInput {
+            key_code: KeyCode::Escape,
+            logical_key: bevy::input::keyboard::Key::Escape,
+            state: bevy::input::ButtonState::Pressed,
+            text: None,
+            repeat: false,
+            window: Entity::PLACEHOLDER,
+        });
+    app.update();
+    assert!(
+        report(&mut app).is_ok(),
+        "a nonmodal analyser must not consume another control's Escape"
+    );
+    Ok(())
+}
+
+#[test]
+fn party_hunt_open_requests_current_accounting() -> TestResult {
+    let (mut app, outbox) = app()?;
+    outbox.bevy_party_selected(true, true, "Leader");
+    select(&mut app, Tool::Party)?;
+    let commands = &mut *app
+        .world_mut()
+        .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>>();
+    assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(command, crate::combat_input::PlayCommand::Feature(command) if command.kind == 735)));
+    Ok(())
+}
+
+#[test]
+fn boss_tracker_query_controls_reach_retained_owner() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Bosses)?;
+    assert!(report(&mut app)?.contains("Personal drop chests"));
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Refresh cooldowns").then_some(parent.parent()))
+        .ok_or("cooldown refresh control missing")?;
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .boss_encounter_panel()
+            .feedback
+            .is_some()
+    );
+    Ok(())
+}
+
+#[test]
+fn analyser_resolves_following_pages_and_new_items() -> TestResult {
+    use oteryn_session::{
+        analyser_catalogue::{ItemInfo, decode_request, encode_reply},
+        analyser_transport::AnalyserItemCount,
+    };
+    use std::num::{NonZeroU16, NonZeroU32};
+    let (mut app, outbox) = app()?;
+    let items = (1000..1100)
+        .map(|id| {
+            Ok(AnalyserItemCount {
+                item_type: NonZeroU32::new(id).ok_or("id")?,
+                count: NonZeroU16::MIN,
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 2,
+        new_revision: 3,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: items,
+            gold: 0,
+        }],
+    })]);
+    select(&mut app, Tool::Loot)?;
+    for _ in 0..10 {
+        let command = {
+            let mut commands = app.world_mut().non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>>();
+            std::iter::from_fn(|| commands.try_recv().ok())
+                .find_map(|command| match command {
+                    crate::combat_input::PlayCommand::Feature(command) if command.kind == 734 => {
+                        Some(command)
+                    }
+                    _ => None,
+                })
+                .ok_or("missing identity page")?
+        };
+        let ids = decode_request(&command.payload)?;
+        let rows = ids
+            .iter()
+            .map(|id| ItemInfo {
+                item_type: *id,
+                name: format!("Item {id}"),
+                coin_worth: 0,
+            })
+            .collect::<Vec<_>>();
+        outbox.bevy_analyser_catalogue_result(&oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: encode_reply(&rows)?,
+        });
+        app.update();
+        let panel = app
+            .world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel();
+        if panel.item_info.len() == 102 {
+            break;
+        }
+    }
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel()
+            .item_info
+            .len(),
+        102
+    );
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 4,
+        base_revision: 3,
+        new_revision: 4,
+        value: vec![AnalyserFact::SupplyUsed(AnalyserItemCount {
+            item_type: NonZeroU32::new(2000).ok_or("id")?,
+            count: NonZeroU16::MIN,
+        })],
+    })]);
+    app.update();
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel()
+            .catalogue_pending,
+        vec![2000]
+    );
+    Ok(())
+}
+
+#[test]
+fn analyser_configuration_reaches_validated_goal_and_price_owners() -> TestResult {
+    use bevy::text::EditableText;
+    let (mut app, outbox) = app()?;
+    select(&mut app, Tool::Session)?;
+    outbox.bevy_analyser_catalogue_result(&oteryn_session::GatedCommandResult {
+        command_id: 1,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: oteryn_session::analyser_catalogue::encode_reply(&[202, 203].map(|item_type| {
+            oteryn_session::analyser_catalogue::ItemInfo {
+                item_type,
+                name: format!("Item {item_type}"),
+                coin_worth: 0,
+            }
+        }))?,
+    });
+    app.update();
+    let find = |app: &mut App, label: &str| -> Result<Entity, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or_else(|| format!("missing {label}").into())
+    };
+    let goal = find(&mut app, "Set XP goal")?;
+    let mut fields = app
+        .world_mut()
+        .query_filtered::<Entity, With<EditableText>>()
+        .iter(app.world())
+        .collect::<Vec<_>>();
+    fields.sort_by_key(|entity| entity.index());
+    assert_eq!(fields.len(), 3);
+    for (entity, value) in fields.iter().zip(["1000", "202", "10"]) {
+        app.world_mut()
+            .get_mut::<EditableText>(*entity)
+            .ok_or("field")?
+            .editor_mut()
+            .set_text(value);
+    }
+    app.world_mut().trigger(Activate { entity: goal });
+    app.update();
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel()
+            .goal_xp,
+        Some(1150)
+    );
+    let price = find(&mut app, "Set loot value")?;
+    app.world_mut().trigger(Activate { entity: price });
+    app.update();
+    app.update();
+    let text = report(&mut app)?;
+    assert!(text.contains("Priced balance: 107 gold"), "{text}");
+    app.world_mut()
+        .get_mut::<EditableText>(fields[0])
+        .ok_or("field")?
+        .editor_mut()
+        .set_text("invalid");
+    app.world_mut().trigger(Activate { entity: goal });
+    app.update();
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .analyser_panel()
+            .goal_xp,
+        Some(1150)
+    );
+    Ok(())
+}

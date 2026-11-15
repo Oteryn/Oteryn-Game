@@ -377,3 +377,41 @@ fn inventory_modal_blocks_prior_action_slot_focus_enter_and_direct_activation() 
     }
     Ok(())
 }
+
+#[test]
+fn side_bars_project_their_dock_and_vertical_capacity() -> TestResult {
+    let (mut app, _) = fixture()?;
+    for (bar, dock) in [
+        (1, crate::play::BarDock::Left),
+        (2, crate::play::BarDock::Right),
+    ] {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .bar_gesture(BarGesture::Configure {
+                bar,
+                dock,
+                enabled: true,
+                locked: true,
+            });
+    }
+    app.update();
+    for (bar, node, parent) in app
+        .world_mut()
+        .query::<(&BarRow, &Node, &ChildOf)>()
+        .iter(app.world())
+    {
+        if bar.0 > 0 {
+            assert_eq!(node.flex_direction, FlexDirection::Column);
+            assert_ne!(
+                parent.parent(),
+                app.world().resource::<super::super::GameRegions>().bars
+            );
+            assert_eq!(node.width, px(SLOT_SIZE));
+        }
+    }
+    Ok(())
+}

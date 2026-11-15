@@ -84,6 +84,7 @@ fn project(
     keys: Res<ButtonInput<KeyCode>>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
+    guard: super::modal::ModalGuard,
 ) {
     let requested = owner.take_satellite_request();
     let Some(play) = owner.play.as_ref() else {
@@ -108,7 +109,8 @@ fn project(
             ..State::at(play.view.satellite_player())
         };
     }
-    if state.open && keys.just_pressed(KeyCode::Escape) {
+    let foreground = !owner.modal_active() && state.panel.is_some_and(|panel| guard.allows(panel));
+    if state.open && foreground && keys.just_pressed(KeyCode::Escape) {
         state.open = false;
     }
     if !state.open {
@@ -119,16 +121,16 @@ fn project(
         return;
     }
     let step = 16 / state.scale.max(1);
-    if keys.pressed(KeyCode::ArrowLeft) {
+    if foreground && keys.pressed(KeyCode::ArrowLeft) {
         state.x = state.x.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowRight) {
+    if foreground && keys.pressed(KeyCode::ArrowRight) {
         state.x = state.x.saturating_add(step);
     }
-    if keys.pressed(KeyCode::ArrowUp) {
+    if foreground && keys.pressed(KeyCode::ArrowUp) {
         state.y = state.y.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowDown) {
+    if foreground && keys.pressed(KeyCode::ArrowDown) {
         state.y = state.y.saturating_add(step);
     }
     use std::hash::{Hash, Hasher};
@@ -423,6 +425,36 @@ mod tests {
         );
         open(&mut app)?;
         assert_eq!(modals(&mut app), base + 1);
+        Ok(())
+    }
+    #[test]
+    fn satellite_keyboard_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(host()?)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[chord()?], false);
+        app.update();
+        let before = app.world().resource::<State>().x;
+        app.world_mut()
+            .spawn((super::super::GameModal, Node::default(), GlobalZIndex(999)));
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ArrowRight);
+        app.update();
+        assert_eq!(app.world().resource::<State>().x, before);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.update();
+        assert!(app.world().resource::<State>().open);
         Ok(())
     }
 }

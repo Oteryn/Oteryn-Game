@@ -471,3 +471,149 @@ fn chat_input_sends_typing() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+
+#[test]
+fn transcript_rows_are_selectable_and_offer_sender_actions()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::{
+        asset::AssetPlugin,
+        picking::{
+            backend::HitData,
+            events::Pointer,
+            pointer::{Location, PointerButton, PointerId},
+        },
+        text::TextReadWriteMode,
+        ui_widgets::Activate,
+    };
+    let (link, _, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Sender".into(),
+            text: "select this message".into(),
+        }],
+    );
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .init_resource::<InputFocus>()
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+        );
+    app.add_message::<bevy::input::keyboard::KeyboardInput>();
+    install(&mut app);
+    app.update();
+    app.world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>()
+        .single_mut(app.world_mut())?
+        .display = Display::Flex;
+    let row = app
+        .world_mut()
+        .query::<(Entity, &EditableText, &TextReadWriteMode)>()
+        .iter(app.world())
+        .find_map(|(entity, text, mode)| {
+            (text.value().to_string().contains("select this message")
+                && *mode == TextReadWriteMode::ReadOnly)
+                .then_some(entity)
+        })
+        .ok_or("selectable message row missing")?;
+    app.world_mut().trigger(PointerClick {
+        entity: row,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    let message = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Message Sender").then_some(parent.parent()))
+        .ok_or("speaker conversation action missing")?;
+    app.world_mut().trigger(Activate { entity: message });
+    app.update();
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Sender".into()
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn speech_colors_survive_message_projection() -> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::asset::AssetPlugin;
+    let panel = oteryn_client_ui::chat::ChatPanel {
+        selected: true,
+        open: true,
+        lines: vec![
+            oteryn_session::ChatLine::Private {
+                speaker_name: "Sender".into(),
+                text: "private-color".into(),
+            },
+            oteryn_session::ChatLine::Room {
+                room: oteryn_session::ChatRoom::Help,
+                speaker_name: "Helper".into(),
+                text: "room-color".into(),
+            },
+        ],
+        ..default()
+    };
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_systems(
+        Startup,
+        (move |mut commands: Commands, skins: Res<Skins>| {
+            for row in widgets::transcript_rows(&panel) {
+                widgets::message_row(&mut commands, &skins, 1, &row);
+            }
+        })
+        .after(crate::bevy_shell::ui::setup),
+    );
+    app.update();
+    let color = |app: &mut App, marker: &str| -> Result<Color, Box<dyn std::error::Error>> {
+        app.world_mut()
+            .query::<(&EditableText, &TextColor)>()
+            .iter(app.world())
+            .find_map(|(text, color)| text.value().to_string().contains(marker).then_some(color.0))
+            .ok_or_else(|| "message color missing".into())
+    };
+    let private = color(&mut app, "private-color")?;
+    let room = color(&mut app, "room-color")?;
+    assert_ne!(private, room);
+    Ok(())
+}

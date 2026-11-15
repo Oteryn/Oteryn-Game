@@ -31,7 +31,29 @@ struct State {
     confirmation: Option<u8>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, (keyboard, project).chain());
+}
+fn keyboard(
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    guard: ModalGuard,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+) {
+    if !keys.is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        || owner.modal_active()
+        || !state.root.is_some_and(|root| guard.allows(root))
+        || !state
+            .seen
+            .as_ref()
+            .is_some_and(|(generation, _, _)| *generation == owner.generation())
+    {
+        return;
+    }
+    if let Some(play) = &owner.play {
+        state.confirmation = None;
+        play.link.prey_set_open(false);
+    }
 }
 fn slot_title(state: u8) -> &'static str {
     match state {
