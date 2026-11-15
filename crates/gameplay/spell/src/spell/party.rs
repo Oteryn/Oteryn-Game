@@ -84,13 +84,12 @@ impl PartyBuffSpecExt for PartyBuffSpec {
         };
         let members = u32::try_from(members).map_err(|_| PartyFailure::CostOverflow)?;
         let exponent = members.saturating_sub(1);
-        let power = |value: u32| u128::from(value).checked_pow(exponent);
-        let top = power(numerator)
-            .and_then(|power| power.checked_mul(u128::from(base)))
-            .and_then(|value| value.checked_mul(u128::from(members)))
-            .ok_or(PartyFailure::CostOverflow)?;
-        let bottom = power(denominator).ok_or(PartyFailure::CostOverflow)?;
-        u32::try_from(top.div_ceil(bottom)).map_err(|_| PartyFailure::CostOverflow)
+        // Only the final rounded cost is bounded by u32. The exact rational's
+        // powers can exceed fixed-width integers even for affordable casts.
+        let top = num_bigint::BigUint::from(numerator).pow(exponent) * base * members;
+        let bottom = num_bigint::BigUint::from(denominator).pow(exponent);
+        let rounded = (&top + &bottom - 1_u32) / bottom;
+        u32::try_from(rounded).map_err(|_| PartyFailure::CostOverflow)
     }
 }
 
