@@ -37,6 +37,7 @@ fn death_blocks_input_and_respawn_does_not_replay_pending_actions() -> Result<()
     assert!(outbox.death_command(&mut commands).is_err());
     outbox.push(vec![event(150)]);
     assert_eq!(view.tick(&link), Ok(()));
+    assert!(view.acknowledge_death(&link));
     assert!(!view.hud_status().contains("You are dead"));
     assert!(commands.try_recv().is_err());
     view.arrow(StepDir::South);
@@ -89,6 +90,7 @@ fn coalesced_death_resets_targets_and_both_input_queues() -> Result<(), String> 
     }
     assert!(outbox.death_command(&mut commands).is_err());
     assert_eq!(view.tick(&link), Ok(()));
+    assert!(view.acknowledge_death(&link));
     assert!(!view.death.dead);
     assert!(!view.in_flight);
     assert!(view.scene.target().is_none());
@@ -167,6 +169,7 @@ fn coalesced_respawn_before_reset_drain_cannot_leave_movement_pending() -> Resul
     }));
     assert!(!crate::play::mailbox::lock(&outbox.0).target_walk.pending);
     assert!(outbox.death_command(&mut commands).is_err());
+    assert!(view.acknowledge_death(&link));
     assert_eq!(view.tick(&link), Ok(()));
     view.arrow(StepDir::East);
     assert_eq!(view.tick(&link), Ok(()));
@@ -266,6 +269,7 @@ fn death_protection_is_requested_at_login_and_after_respawn_and_shown_in_hud() -
     });
     assert!(outbox.death_command(&mut commands).is_err());
     view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(view.acknowledge_death(&link));
     assert!(
         view.hud_status().contains("Twist Of Fate"),
         "malformed reply must not invent consumption"
@@ -329,6 +333,116 @@ fn coalesced_alive_vitals_refreshes_death_receipt_without_query_feedback() -> Re
             .occurrence,
         [8; 16]
     );
+    Ok(())
+}
+
+#[test]
+fn coalesced_death_keeps_acknowledgement_notice_after_server_respawn() -> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    link.request(StepDir::North);
+    assert!(
+        commands.try_recv().is_err(),
+        "movement waits for acknowledgement"
+    );
+    let notice = view
+        .death_modal_notice()
+        .ok_or("death must survive respawn until acknowledgement")?;
+    assert!(notice.contains("Press Enter"));
+    assert!(notice.contains("temple"));
+    Ok(())
+}
+
+#[test]
+fn death_details_use_only_a_fresh_post_death_protection_receipt() -> Result<(), String> {
+    use oteryn_session::death_protection::{DeathProtection, DeathProtectionReply};
+    let (link, mut commands, outbox) = play_channel();
+    outbox.death_protection_initialize(true);
+    assert!(outbox.death_command(&mut commands).is_ok());
+    let receipt = |occurrence, consumed| -> Result<_, String> {
+        Ok(oteryn_session::GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: DeathProtectionReply(Some(DeathProtection {
+                occurrence,
+                consumed,
+            }))
+            .encode()
+            .ok_or("receipt")?,
+        })
+    };
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for health in [0, 150] {
+        outbox.vitals(Some(ActorVitals {
+            health,
+            max_health: 150,
+            ..Default::default()
+        }));
+    }
+    // A login query can finish after death. It must not become this death's details.
+    outbox.death_protection_result(&receipt(
+        [1; 16],
+        vec!["oteryn:blessing.twist_of_fate".into()],
+    )?);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert!(
+        !view
+            .death_modal_notice()
+            .ok_or("notice")?
+            .contains("Twist Of Fate")
+    );
+    assert!(outbox.death_command(&mut commands).is_ok());
+    outbox.death_protection_result(&receipt([2; 16], vec![])?);
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    let notice = view.death_modal_notice().ok_or("notice")?;
+    assert!(notice.contains("No blessings or Twist of Fate"));
+    assert!(notice.contains("Exact experience, skill and item losses are unavailable"));
+    Ok(())
+}
+
+#[test]
+fn death_acknowledgement_refuses_a_newer_unseen_death_and_discards_queued_actions()
+-> Result<(), String> {
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;
+    for _ in 0..2 {
+        link.request(StepDir::North);
+        for health in [0, 150] {
+            outbox.vitals(Some(ActorVitals {
+                health,
+                max_health: 150,
+                ..Default::default()
+            }));
+        }
+        assert!(
+            !view.acknowledge_death(&link),
+            "unseen deaths cannot be acknowledged"
+        );
+        view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    }
+    assert!(outbox.death_command(&mut commands).is_err());
+    assert!(view.acknowledge_death(&link));
+    assert!(
+        !view.acknowledge_death(&link),
+        "acknowledgement is idempotent"
+    );
+    assert!(view.death_modal_notice().is_none());
+    link.request(StepDir::East);
+    assert!(matches!(
+        commands.try_recv(),
+        Ok(crate::combat_input::PlayCommand::Step(StepDir::East))
+    ));
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
 

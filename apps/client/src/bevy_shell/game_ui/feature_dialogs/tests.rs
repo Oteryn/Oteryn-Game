@@ -148,3 +148,94 @@ fn shared_notices_close_preserves_server_owned_history() {
 
 mod text_input;
 mod text_window;
+
+#[test]
+fn death_acknowledgement_enter_waits_for_respawn_and_respects_frontmost_modal() -> Result {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key as LogicalKey, KeyboardInput},
+    };
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    let vitals = |health| {
+        vec![oteryn_session::SessionEvent::ActorVitals(
+            oteryn_session::AppliedDelta {
+                server_sequence: 1,
+                base_revision: 0,
+                new_revision: 1,
+                value: oteryn_session::ActorVitals {
+                    health,
+                    max_health: 150,
+                    ..default()
+                },
+            },
+        )]
+    };
+    outbox.push(vitals(0));
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    owner.play = Some(super::super::super::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_message::<KeyboardInput>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install_notice_input_for_test(&mut app);
+    app.update();
+    let enter = || KeyboardInput {
+        key_code: KeyCode::Enter,
+        logical_key: LogicalKey::Enter,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    };
+    app.world_mut().write_message(enter());
+    app.update();
+    let notice = |app: &App| {
+        app.world()
+            .get_non_send::<HostOwner>()
+            .and_then(|host| host.play.as_ref())
+            .and_then(|play| play.view.death_modal_notice())
+    };
+    assert!(
+        notice(&app).is_some(),
+        "Enter cannot invent a server respawn"
+    );
+    outbox.push(vitals(150));
+    {
+        let mut host = app
+            .world_mut()
+            .get_non_send_mut::<HostOwner>()
+            .ok_or("host")?;
+        let play = host.play.as_mut().ok_or("play")?;
+        play.view.tick(&play.link).map_err(|e| format!("{e:?}"))?;
+    }
+    app.update();
+    assert!(
+        notice(&app).is_some(),
+        "respawn must retain the death notice"
+    );
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(200), Node::default()))
+        .id();
+    app.world_mut().write_message(enter());
+    app.update();
+    assert!(notice(&app).is_some(), "another modal owns Enter");
+    app.world_mut().despawn(higher);
+    app.world_mut().write_message(enter());
+    app.update();
+    assert!(
+        notice(&app).is_none(),
+        "Enter acknowledges the visible death"
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "acknowledgement sends no fake respawn command"
+    );
+    Ok(())
+}

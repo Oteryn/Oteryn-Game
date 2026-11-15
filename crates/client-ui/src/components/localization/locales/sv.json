@@ -1,4 +1,8 @@
 {
+ "You have returned to your temple. Press Enter to acknowledge and continue.": "Du har återvänt till ditt tempel. Tryck på Enter för att bekräfta och fortsätta.",
+ "Waiting for the server to return you to your temple.": "Väntar på att servern ska återföra dig till ditt tempel.",
+ "Protection details are unavailable for this death.": "Skyddsdetaljer för detta dödsfall är inte tillgängliga.",
+ "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.": "Du är död.\n{}\n{}\nExakta förluster av erfarenhet, färdigheter och föremål är inte tillgängliga.",
  "lesser": "mindre",
  "greater": "större",
  "Reshape mod": "Omforma mod.",
