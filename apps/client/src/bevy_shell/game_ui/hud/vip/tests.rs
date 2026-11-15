@@ -464,3 +464,176 @@ fn vip_close_hides_a_saved_visible_sidebar_and_preserves_a_pending_canonical_que
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn vip_presentation_controls_are_reachable_and_icons_are_visible() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Offline);
+    app.update();
+    for id in ["vip.sort", "vip.hide_offline"] {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Name)>()
+            .iter(app.world())
+            .find_map(|(entity, name)| (name.as_str() == id).then_some(entity))
+            .ok_or("VIP presentation control missing")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+    }
+    let alice = app
+        .world_mut()
+        .query::<(&Row, &Node)>()
+        .iter(app.world())
+        .find_map(|(row, node)| (row.entry == 73).then_some(node.display))
+        .ok_or("Alice")?;
+    assert_eq!(alice, Display::None);
+    assert!(
+        app.world_mut()
+            .query::<(&Name, &ImageNode)>()
+            .iter(app.world())
+            .any(|(name, image)| name.as_str() == "vip.icon" && image.rect.is_some())
+    );
+    let icon = app
+        .world_mut()
+        .query::<(&presentation::Icon, &ImageNode)>()
+        .iter(app.world())
+        .find_map(|(icon, image)| (icon.0 == 73).then_some(image.clone()))
+        .ok_or("Alice icon")?;
+    assert_eq!(icon.rect, Some(Rect::new(24., 0., 36., 12.)));
+    let images = app.world().resource::<Assets<Image>>();
+    let rgba = images
+        .get(&icon.image)
+        .and_then(|image| image.data.as_ref())
+        .ok_or("VIP artwork")?;
+    assert!(
+        (0..12).any(|y| (24..36).any(|x| rgba[(y * 240 + x) * 4 + 3] != 0)),
+        "selected icon contains visible pixels"
+    );
+    Ok(())
+}
+fn row_order(app: &mut App) -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+    let list = app
+        .world_mut()
+        .query_filtered::<&Children, With<List>>()
+        .single(app.world())?;
+    Ok(list
+        .iter()
+        .filter_map(|entity| app.world().get::<Row>(entity).map(|row| row.entry))
+        .collect())
+}
+#[test]
+fn vip_sorting_and_hide_offline_follow_live_presence_without_hiding_unknown() -> TestResult {
+    let (mut app, _commands, outbox) = super::super::tests::app()?;
+    publish(
+        &outbox,
+        &CONTACTS.replace("Alice", "Zelda"),
+        4,
+        VipPresenceStatus::Offline,
+    );
+    app.update();
+    assert_eq!(
+        row_order(&mut app)?,
+        vec![91, 73],
+        "unknown precedes confirmed offline"
+    );
+    click(&mut app, |action| matches!(action, Action::Sort))?;
+    assert_eq!(row_order(&mut app)?, vec![73, 91], "icon 2 precedes icon 0");
+    click(&mut app, |action| matches!(action, Action::Sort))?;
+    assert_eq!(row_order(&mut app)?, vec![91, 73], "alphabetical names");
+    click(&mut app, |action| matches!(action, Action::HideOffline))?;
+    let visible = |app: &mut App, entry| {
+        app.world_mut()
+            .query::<(&Row, &Node)>()
+            .iter(app.world())
+            .any(|(row, node)| row.entry == entry && node.display != Display::None)
+    };
+    assert!(!visible(&mut app, 73));
+    assert!(
+        visible(&mut app, 91),
+        "missing presence must not imply offline"
+    );
+    publish(
+        &outbox,
+        &CONTACTS.replace("Alice", "Zelda"),
+        5,
+        VipPresenceStatus::Online,
+    );
+    app.update();
+    assert!(
+        visible(&mut app, 73),
+        "presence updates unhide online contacts"
+    );
+    Ok(())
+}
+#[test]
+fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> TestResult {
+    let (mut app, mut commands, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerClick},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let entity = control(&mut app, |action| matches!(action, Action::Edit(73)))?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+
+    click(&mut app, |action| matches!(action, Action::Message(73)))?;
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "opening a conversation does not send a message"
+    );
+    click(&mut app, |action| matches!(action, Action::Context(73)))?;
+    let stale = control(&mut app, |action| matches!(action, Action::Remove(73)))?;
+    publish(&outbox, CONTACTS, 5, VipPresenceStatus::Online);
+    app.world_mut().trigger(Activate { entity: stale });
+    app.update();
+    assert!(
+        commands.try_recv().is_err(),
+        "old revision cannot remove a contact"
+    );
+    click(&mut app, |action| matches!(action, Action::Context(73)))?;
+    click(&mut app, |action| matches!(action, Action::Remove(73)))?;
+    let remove = request(&mut commands)?;
+    assert_eq!(remove.operation, wire::Operation::Remove);
+    assert_eq!(remove.number, 73);
+    assert!(
+        app.world_mut()
+            .query::<&Row>()
+            .iter(app.world())
+            .any(|row| row.entry == 73),
+        "removal waits for authoritative refresh"
+    );
+    Ok(())
+}

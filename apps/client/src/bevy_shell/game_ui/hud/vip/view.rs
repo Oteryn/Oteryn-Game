@@ -174,6 +174,7 @@ pub(super) fn project(
                     },
                 ))
                 .observe(input::activate)
+                .observe(presentation::click)
                 .id();
             let name = commands
                 .spawn((
@@ -183,14 +184,40 @@ pub(super) fn project(
                     },
                     source::text(&entry.name, source::font(skins.font.clone(), false)),
                     Node {
-                        width: percent(100.),
+                        flex_grow: 1.,
                         min_width: px(0.),
                         overflow: Overflow::clip_x(),
                         ..default()
                     },
                 ))
                 .id();
-            commands.entity(row).add_child(name);
+            let icon = commands
+                .spawn((
+                    presentation::Icon(entry.entry),
+                    ImageNode::default(),
+                    Name::new("vip.icon"),
+                    Node {
+                        width: px(12.),
+                        height: px(12.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                    Pickable::IGNORE,
+                ))
+                .id();
+            let context = button(
+                &mut commands,
+                &skins,
+                Control {
+                    generation,
+                    revision: panel.revision,
+                    command: Action::Context(entry.entry),
+                },
+                "…",
+                18.,
+                "vip.context",
+            );
+            commands.entity(row).add_children(&[icon, name, context]);
             commands.entity(list).add_child(row);
         }
     }
@@ -219,13 +246,18 @@ pub(super) fn project(
     }
     for (entity, mut control) in &mut controls {
         // Retiring rows are already queued for despawn; never queue more component writes.
-        if matches!(control.command,Action::Edit(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
+        if matches!(control.command,Action::Edit(entry) | Action::Context(entry) if control.generation!=generation || !entries.iter().any(|row| row.entry==entry))
         {
             continue;
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort
+                | Action::HideOffline
         ) {
             control.generation = generation;
         } else if control.generation != generation {
@@ -233,7 +265,14 @@ pub(super) fn project(
         }
         if matches!(
             control.command,
-            Action::Add | Action::Refresh | Action::Next(_) | Action::Close | Action::Edit(_)
+            Action::Add
+                | Action::Refresh
+                | Action::Next(_)
+                | Action::Close
+                | Action::Sort
+                | Action::HideOffline
+                | Action::Edit(_)
+                | Action::Context(_)
         ) {
             control.revision = panel.revision;
             if matches!(control.command, Action::Next(_)) {
