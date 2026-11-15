@@ -3257,3 +3257,47 @@ mod quest_obligations {
         })
     }
 }
+
+#[test]
+fn weighted_reward_counts_managed_pouch_once() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+        runtime().map_err(debug)?.block_on(async move {
+            use crate::durability::item_transfer::{ItemWeightLookup, ItemWeightRefused};
+            struct Weights(u32);
+            impl ItemWeightLookup for Weights {
+                fn generation_digest(&self) -> [u8; 32] { [0xD1; 32] }
+                fn weight_of(&self, definition: &TypedDefinitionRef) -> Result<u32, ItemWeightRefused> {
+                    match definition.production_key.as_str() {
+                        BACKPACK => Ok(1),
+                        STONE => Ok(self.0),
+                        "oteryn:item.tibia.i3031" => Ok(1000),
+                        _ => Err(ItemWeightRefused::Unknown),
+                    }
+                }
+            }
+            let harness = Harness::create(admin, "pouch_once").await?;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+            harness.equip_backpack(&authority, 1).await?;
+            let pouch = uuid_text(harness.mint(&authority, STONE, 1).await?);
+            let coin = uuid_text(harness.mint(&authority, COIN, 1).await?);
+            let seed = format!("DELETE FROM game_item_ground_locations WHERE item_instance_id IN ('{pouch}','{coin}'); UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i23721' WHERE item_instance_id='{pouch}'; UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i3031' WHERE item_instance_id='{coin}'; INSERT INTO game_item_character_inbox_locations VALUES ('{pouch}','{}','{}',1); INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,'{pouch}',1,minted_transaction_id FROM game_item_instances WHERE item_instance_id='{coin}'", uuid_text(id(WORLD)), uuid_text(id(CHARACTER)));
+            for statement in seed.split(';') { harness.tamper(statement).await?; }
+            let capacity = oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(50, "none").map_err(debug)?;
+            let weights = Weights(u32::try_from(capacity - 1500)?);
+            let mut request = chest(command(2)?, CLAIM, facts(STONE, ItemStackClass::NonStackable), 1);
+            request.item.weight = Some(weights.0);
+            request.content_revision = format!("sha256:{}", "d1".repeat(32));
+            // The backpack, pouch coins and reward together leave 499 centi-oz free.
+            let result = harness.root.freeze_reward_claim_mint_weighted(&authority, &harness.node, fence()?, request, &weights).await;
+            assert!(result.is_ok(), "valid carried + incoming total refused: {:?}", result.as_ref().err());
+            drop(result);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        }).map_err(debug)
+    })?.join().map_err(|_| "pouch regression thread panicked")?.map_err(Into::into)
+}
