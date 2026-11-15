@@ -107,10 +107,22 @@ With no text field focused, the existing gameplay shortcuts open:
   This protocol has no server event that opens this window.
 - **Ctrl+Shift+H:** house access lists. Query the town catalogue, select a row,
   load guests/subowners/a door, then edit the multiline list and enter CONFIRM
-  before saving. The current server requires member UUIDs; name resolution and
-  book/sign author/date descriptors are not available on the current wire.
+  before saving. The editor identifies the selected house by its server-supplied
+  name (falling back to its house key) and requests one member UUID per line.
+  Empty lists remove all members. Names cannot be resolved by the current server.
   Server modal messages without an input remain read-only; text inputs retain
-  their existing edit and answer path.
+  their existing edit and answer path, including any metadata in the message.
+  **Batch 52: PARTIAL / NEEDS-CONTRACT.** Capability 49's ACL snapshot contains
+  only a revision and member UUIDs. Missing: a World-scoped character-name
+  resolution request/reply (name, canonical name, character UUID, and explicit
+  not-found/ambiguous results), plus canonical member names in ACL snapshots.
+  VIP presence entry numbers are list-local and cannot supply that mapping.
+  Capabilities 450/490 have no book/sign descriptor tied to the dialog ID with
+  item identity/type, writer and written date; those fields need an owning
+  protocol addition before the client can format them independently of body text.
+  No protocol, capability or persistence changes are introduced here.
+  Client reference: [OTClient text windows](https://github.com/edubart/otclient/blob/dab86e610991092fe8b2471f7de55a7c986b3cd2/modules/game_textwindow/textwindow.lua#L25)
+  (structure reference only: explicit writer/time inputs and server-supplied list text).
 - **Ctrl+U:** Cyclopedia character: general and combat stats, recent deaths and PvP
   kills, achievements, item summary, outfits/mounts, store summary, inspection and
   badges. Selecting a tab requests its data; Escape or Close dismisses the window.

@@ -104,13 +104,12 @@ fn project(
     let Some(panel) = projected else {
         return;
     };
-    let message = oteryn_client_ui::house::panel_text(&panel.model);
     state.root = Some(build(
         &mut commands,
         &skin,
         owner.generation(),
         &panel.fields,
-        &message,
+        &panel.model,
     ));
     state.fields = panel.fields;
     state.model = Some(panel.model);
@@ -201,7 +200,7 @@ pub(super) fn build(
     skin: &Skins,
     generation: u64,
     fields: &[String; 7],
-    message: &str,
+    model: &Panel,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -243,7 +242,18 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(panel);
-    source::dialog_caption(commands, panel, "Edit House List", skin.font.clone());
+    let title = model.page.rows.get(model.index).map_or_else(
+        || "Edit House List".to_owned(),
+        |row| {
+            let name = if row.name.is_empty() {
+                &row.house
+            } else {
+                &row.name
+            };
+            format!("Edit House List — {name}")
+        },
+    );
+    source::dialog_caption(commands, panel, &title, skin.font.clone());
     let content = commands
         .spawn((
             ScrollArea,
@@ -259,12 +269,17 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(panel).add_child(content);
-    label(commands, skin, content, message);
+    label(
+        commands,
+        skin,
+        content,
+        &oteryn_client_ui::house::panel_text(model),
+    );
     for (index, prompt) in [
         (0, "World UUID"),
         (1, "Town key"),
         (2, "House row (1 onwards)"),
-        (4, "Enter one name per line."),
+        (4, "Enter one member UUID per line."),
         (5, "Door: x y floor"),
         (6, "Type CONFIRM for changes"),
     ] {
@@ -274,7 +289,7 @@ pub(super) fn build(
                 commands,
                 skin,
                 content,
-                "This server requires member UUIDs; names cannot be resolved.",
+                "Names cannot be resolved by this server. An empty list removes all members.",
             );
         }
         let mut editable = EditableText::new(&fields[index]);
