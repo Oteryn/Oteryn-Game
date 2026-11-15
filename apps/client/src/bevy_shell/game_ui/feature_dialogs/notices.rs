@@ -151,20 +151,37 @@ fn close(
 }
 pub(super) fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     guard: ModalGuard,
     overlays: Query<Entity, With<NoticeOverlay>>,
+    deaths: Query<Entity, With<DeathOverlay>>,
 ) {
     if owner
         .play
         .as_ref()
         .is_some_and(|play| play.link.server_modal_active())
-        || !overlays.single().is_ok_and(|overlay| guard.allows(overlay))
     {
         keys.clear();
         return;
     }
-    if let Some(play) = &owner.play {
+    if let Some(play) = &mut owner.play {
+        if play.view.death_modal_notice().is_some() {
+            if deaths.single().is_ok_and(|entity| guard.allows(entity))
+                && keys.read().any(|event| {
+                    event.state == bevy::input::ButtonState::Pressed
+                        && !event.repeat
+                        && event.key_code == KeyCode::Enter
+                })
+            {
+                play.view.acknowledge_death(&play.link);
+            }
+            keys.clear();
+            return;
+        }
+        if !overlays.single().is_ok_and(|entity| guard.allows(entity)) {
+            keys.clear();
+            return;
+        }
         if keys.read().any(|event| {
             event.state == bevy::input::ButtonState::Pressed
                 && !event.repeat

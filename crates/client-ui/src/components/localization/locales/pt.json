@@ -1,4 +1,8 @@
 {
+ "You have returned to your temple. Press Enter to acknowledge and continue.": "Você retornou ao seu templo. Pressione Enter para confirmar e continuar.",
+ "Waiting for the server to return you to your temple.": "Aguardando o servidor retornar você ao seu templo.",
+ "Protection details are unavailable for this death.": "Os detalhes de proteção desta morte estão indisponíveis.",
+ "You are dead.\n{}\n{}\nExact experience, skill and item losses are unavailable.": "Você morreu.\n{}\n{}\nAs perdas exatas de experiência, habilidades e itens estão indisponíveis.",
  "lesser": "menores",
  "greater": "maiores",
  "Reshape mod": "Remodelar mod.",
