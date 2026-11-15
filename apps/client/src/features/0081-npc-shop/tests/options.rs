@@ -58,7 +58,7 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
     let quotes = panel.live.filtered_quotes(Some(NpcTradeSide::Sell), "");
     assert_eq!(quotes.len(), 1);
     assert_eq!(quotes[0].item, 42);
-    assert!(link.npc_shop_options(ShopOptions {
+    assert!(!link.npc_shop_options(ShopOptions {
         ignore_capacity: false,
         ignore_equipped: false,
         only_owned: true
@@ -68,8 +68,11 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
             .live
             .filtered_quotes(Some(NpcTradeSide::Sell), "")
             .len(),
-        2
+        1
     );
+    assert!(link.npc_shop_options(ShopOptions {
+        ignore_capacity: false, ignore_equipped: true, only_owned: true
+    }));
     link.npc_trade_request(quotes[0], 1);
     let crate::combat_input::PlayCommand::NpcTrade(intent) = commands.try_recv()? else {
         return Err("trade command".into());
@@ -125,5 +128,17 @@ fn npc_shop_options_filter_owned_quotes_and_open_the_live_backpack()
             }
         )
     );
+    Ok(())
+}
+
+#[test]
+fn npc_shop_refuses_equipped_sale_option_without_wire_support()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = play_channel();
+    assert!(!link.npc_shop_options(oteryn_client_ui::npc_shop::ShopOptions {
+        ignore_equipped: false, ..Default::default()
+    }));
+    assert!(link.npc_shop_panel().live.options.ignore_equipped);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

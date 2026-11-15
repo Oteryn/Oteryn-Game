@@ -28,7 +28,7 @@ pub(in crate::play) fn confirm(m: &mut Mailbox, s: &UnboundedSender<PlayCommand>
 }
 #[cfg_attr(not(windows), allow(dead_code, reason = "Windows Gem controls dispatch these borrowed callbacks"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(in crate::play) enum Action {
+pub(crate) enum Action {
     Gem { revision: u64, id: [u8; 16] },
     Modifier { nonce: u64, kind: u8, id: u16 },
     Quality(u8),

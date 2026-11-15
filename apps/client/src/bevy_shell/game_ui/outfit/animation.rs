@@ -66,6 +66,7 @@ pub(super) fn animate(
         playback,
         artwork,
         image: handle,
+        ..
     } = &mut *state;
     let Some((_, panel)) = rendered.as_ref() else {
         *playback = Playback::default();

@@ -18,7 +18,16 @@ pub(super) fn capture_on_key(
     output: Res<AuditOutput>,
     mut owner: NonSendMut<HostOwner>,
     viewport: Res<super::game_ui::viewport::WorldViewport>,
+    mut automatic: Local<super::screenshots::AutomaticState>,
+    captures: Query<&super::screenshots::Capture>,
 ) {
+    super::screenshots::observe(
+        &mut commands,
+        &mut owner,
+        *viewport,
+        &mut automatic,
+        &captures,
+    );
     if !keys.just_pressed(KeyCode::F12) {
         return;
     }

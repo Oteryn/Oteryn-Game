@@ -1,4 +1,5 @@
 //! Task Board presentation over the retained session owner.
+mod extras;
 #[cfg(test)]
 mod tests;
 use super::{
@@ -15,10 +16,14 @@ enum Tab {
     Bounty,
     Weekly,
     Shop,
+    Preferences,
+    Soulseals,
 }
 #[derive(Clone)]
 enum Kind {
     Close,
+    Extra(extras::Action),
+    ConfirmExtra(extras::Action),
     Tab(Tab),
     Refresh,
     OpenBounty,
@@ -57,192 +62,7 @@ fn completed(panel: &TaskBoardPanel) -> bool {
 fn unopened(b: &model::task_board::full::Bounty) -> bool {
     b.selected == 0 && b.offers.is_empty() && b.active.is_none()
 }
-fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
-    let mut rows = Vec::new();
-    let Some(r) = &panel.weekly else {
-        entry(&mut rows, "Refresh to load the Task Board", None);
-        return rows;
-    };
-    match tab {
-        Tab::Bounty => {
-            let b = &r.bounty;
-            entry(
-                &mut rows,
-                format!("Reroll Tokens: {} / {}", b.rerolls, model::REROLL_TOKEN_CAP),
-                None,
-            );
-            entry(
-                &mut rows,
-                "Daily tokens: claim at the Daily Reward Wall",
-                None,
-            );
-            if unopened(b) {
-                entry(&mut rows, "Open bounty", Some(Kind::OpenBounty));
-            }
-            for (index, offer) in b.offers.iter().enumerate() {
-                let active = usize::from(b.selected) == index + 1;
-                let progress = if active { b.current } else { 0 };
-                let state = if active && completed(panel) {
-                    "Completed"
-                } else if active {
-                    "Active"
-                } else {
-                    "Available"
-                };
-                entry(
-                    &mut rows,
-                    format!(
-                        "{}: {}/{} | {} | {}",
-                        model::creature_name(&offer.race),
-                        progress,
-                        offer.required,
-                        model::rarity_name(offer.grade),
-                        state
-                    ),
-                    if b.selected == 0 {
-                        u8::try_from(index).ok().map(Kind::Select)
-                    } else {
-                        None
-                    },
-                );
-            }
-            if let Some(active) = &b.active
-                && b.offers.get(usize::from(b.selected.saturating_sub(1))) != Some(active)
-            {
-                entry(
-                    &mut rows,
-                    format!(
-                        "Active: {}: {}/{} | {} | {}",
-                        model::creature_name(&active.race),
-                        b.current,
-                        active.required,
-                        model::rarity_name(active.grade),
-                        if completed(panel) {
-                            "Completed"
-                        } else {
-                            "Active"
-                        }
-                    ),
-                    None,
-                );
-            }
-            entry(
-                &mut rows,
-                "Claim reward",
-                completed(panel).then_some(Kind::Claim),
-            );
-            entry(
-                &mut rows,
-                format!("Task Difficulty: {}", model::difficulty_name(b.difficulty)),
-                None,
-            );
-            for (i, (name, _)) in model::DIFFICULTIES.iter().enumerate() {
-                entry(&mut rows, *name, Some(Kind::Difficulty(i as u8)));
-            }
-            if confirm {
-                entry(&mut rows, "Reroll these tasks for 1 token?", None);
-                entry(
-                    &mut rows,
-                    "Confirm reroll (1 token)",
-                    Some(Kind::ConfirmReroll),
-                );
-                entry(&mut rows, "Cancel", Some(Kind::Cancel));
-            } else {
-                entry(
-                    &mut rows,
-                    "Reroll (1 token)",
-                    (b.rerolls > 0).then_some(Kind::Reroll),
-                );
-            }
-        }
-        Tab::Weekly => {
-            let w = &r.weekly;
-            entry(
-                &mut rows,
-                format!(
-                    "Week {} | Difficulty {} | Multiplier {}",
-                    r.period, w.difficulty, w.multiplier
-                ),
-                None,
-            );
-            entry(
-                &mut rows,
-                format!(
-                    "Kill XP: {} | Delivery XP: {} | Pending points: {} | Soulseals: {}",
-                    w.kill_experience, w.delivery_experience, w.pending_points, w.pending_soulseals
-                ),
-                None,
-            );
-            for task in &w.kills {
-                entry(
-                    &mut rows,
-                    format!(
-                        "{}: {}/{}",
-                        if task.race.is_empty() {
-                            "Any creature".into()
-                        } else {
-                            model::creature_name(&task.race)
-                        },
-                        task.current,
-                        task.required
-                    ),
-                    None,
-                );
-            }
-            for (i, task) in w.deliveries.iter().enumerate() {
-                entry(
-                    &mut rows,
-                    format!(
-                        "Item {}: {}/{}{}",
-                        task.item,
-                        task.current,
-                        task.required,
-                        if task.delivered { " (delivered)" } else { "" }
-                    ),
-                    (!task.delivered && task.current >= task.required)
-                        .then_some(Kind::Deliver(i as u8)),
-                );
-            }
-            if !w.started {
-                for (i, (name, _)) in model::DIFFICULTIES.iter().enumerate() {
-                    entry(
-                        &mut rows,
-                        format!("Start weekly: {name}"),
-                        Some(Kind::Start(i as u8)),
-                    );
-                }
-            }
-            if let Some(results) = &r.weekly_results {
-                entry(
-                    &mut rows,
-                    format!(
-                        "Week {} rewards already paid: {} points, {} soulseals",
-                        results.period, results.points, results.soulseals
-                    ),
-                    None,
-                );
-            }
-        }
-        Tab::Shop => {
-            entry(
-                &mut rows,
-                format!(
-                    "Points: {} | Bounty points: {} | Soulseals: {}",
-                    r.points, r.bounty_points, r.soulseals
-                ),
-                None,
-            );
-            for offer in &r.shop {
-                entry(
-                    &mut rows,
-                    model::shop_offer_text(offer, r.points),
-                    (!offer.bought).then_some(Kind::Buy(offer.index)),
-                );
-            }
-        }
-    }
-    rows
-}
+include!("task_board/entries.rs");
 fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<FullIntent> {
     if !panel.open || !panel.selected || panel.pending {
         return None;
@@ -307,6 +127,7 @@ struct Action {
 struct State {
     tab: Tab,
     confirm: bool,
+    extra: Option<extras::Action>,
     seen: Option<TaskBoardPanel>,
     generation: u64,
     revision: u64,
@@ -336,6 +157,9 @@ fn project(
     }
     if state.generation != owner.generation() || panel.is_none() {
         *state = State::default();
+    }
+    if state.seen != panel {
+        state.extra = None;
     }
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
@@ -393,6 +217,8 @@ fn project(
         ("Bounty Tasks", Tab::Bounty),
         ("Weekly", Tab::Weekly),
         ("Shop", Tab::Shop),
+        ("Preferred / unwanted", Tab::Preferences),
+        ("Soulseals", Tab::Soulseals),
     ] {
         widget(
             &mut commands,
@@ -401,6 +227,32 @@ fn project(
             &state,
             name,
             Some(Kind::Tab(tab)),
+        );
+    }
+    if let Some(extra) = &state.extra {
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            &extras::summary(panel, extra),
+            None,
+        );
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            "Confirm",
+            Some(Kind::ConfirmExtra(extra.clone())),
+        );
+        widget(
+            &mut commands,
+            &skins,
+            frame,
+            &state,
+            "Cancel",
+            Some(Kind::Cancel),
         );
     }
     for row in entries(panel, state.tab, state.confirm) {
@@ -455,20 +307,20 @@ fn widget(
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 580.),
-                Node {
-                    width: percent(100.),
-                    min_height: px(24.),
-                    height: Val::Auto,
-                    flex_shrink: 0.,
-                    padding: px(3.).all(),
-                    ..default()
-                },
                 Action {
                     generation: state.generation,
                     revision: state.revision,
                     kind,
                 },
             ))
+            .insert(Node {
+                width: percent(100.),
+                min_height: px(24.),
+                height: Val::Auto,
+                flex_shrink: 0.,
+                padding: px(3.).all(),
+                ..default()
+            })
             .observe(activate)
             .id();
         let caption = commands
@@ -512,11 +364,26 @@ fn activate(
             state.confirm = false;
         }
         Kind::Tab(tab) => {
+            if tab == Tab::Soulseals {
+                play.link.soulseal_catalogue_request(0);
+            }
+            state.extra = None;
             state.tab = tab;
             state.confirm = false;
             state.dirty = true;
         }
+        Kind::Extra(ref extra) => {
+            state.extra = Some(extra.clone());
+            state.dirty = true;
+        }
+        Kind::ConfirmExtra(ref extra) if state.extra.as_ref() == Some(extra) => {
+            extras::send(&play.link, &panel, extra);
+            state.extra = None;
+            state.dirty = true;
+        }
+        Kind::Refresh if state.tab == Tab::Soulseals => play.link.soulseal_catalogue_request(0),
         _ => {
+            state.extra = None;
             if let Some(intent) = intent(&panel, &mut state.confirm, &action.kind) {
                 play.link.task_board_full_request(intent);
             }

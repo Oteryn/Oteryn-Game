@@ -545,3 +545,73 @@ fn admitted_bulletin_is_presented_without_losing_play() -> TestResult {
     assert!(host.bulletin.news().contains("Published announcement"));
     Ok(())
 }
+
+#[test]
+fn cardinal_keypad_routes_through_gameplay_focus_gates() -> TestResult {
+    use crate::input::StepDir;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    for (code, direction) in [
+        (96, StepDir::North),
+        (94, StepDir::East),
+        (90, StepDir::South),
+        (92, StepDir::West),
+    ] {
+        let mut host = HostOwner::new(None)?;
+        let (view, _) = admitted_view([9; 16])?;
+        let (link, _, _) = crate::play::play_channel();
+        host.install_play(view, link);
+        let key = NormalizedInputEvent::Key {
+            code: KeyCode::new(code)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        host.open_graphics();
+        host.route_input(std::slice::from_ref(&key), false);
+        assert_eq!(host.play.as_mut().ok_or("play")?.view.next_step(), None);
+        host.cancel();
+        host.route_input(&[key], false);
+        assert_eq!(
+            host.play.as_mut().ok_or("play")?.view.next_step(),
+            Some(direction)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn nearby_loot_shortcut_dispatches_without_opening_panel() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, _) = admitted_view([9; 16])?;
+    let (link, mut commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_quick_loot_selected(true);
+    host.install_play(view, link);
+    let event = NormalizedInputEvent::Key {
+        code: KeyCode::new(20)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Alt),
+        repeat: false,
+    };
+    host.open_graphics();
+    host.route_input(std::slice::from_ref(&event), false);
+    assert!(commands.try_recv().is_err());
+    host.cancel();
+    host.route_input(&[event], false);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("loot command missing".into());
+    };
+    assert_eq!(command.capability, 98);
+    assert!(
+        !host
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .discovery_panel()
+            .loot
+            .open
+    );
+    Ok(())
+}

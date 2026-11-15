@@ -252,19 +252,17 @@ impl HostOwner {
         play.view.observe_bar_pointer(&play.link);
         let mut context = None;
         for click in clicks {
-            if suppress_primary && !click.secondary && !click.look {
+            if let Some(modifier) = click.shortcut {
+                if let Some(tile) = play.view.click_tile(click.x, click.y) {
+                    play.view.modifier_click(tile, &play.link, modifier);
+                }
+                continue;
+            }
+            if suppress_primary && !click.secondary {
                 continue;
             }
             if let Some(tile) = play.view.click_tile(click.x, click.y) {
-                if click.look {
-                    if let Some(menu) = play.view.world_context(tile, &play.link) {
-                        play.view.world_context_choose(
-                            &play.link,
-                            &menu,
-                            oteryn_client_ui::world_interaction::menu::Action::Look,
-                        );
-                    }
-                } else if click.secondary {
+                if click.secondary {
                     if !play.view.gameplay_secondary_click(&play.link) {
                         context = Some(tile);
                         self.controls.mouse.context_closed();

@@ -180,6 +180,21 @@ impl PlayLink {
     }
 }
 
+
+impl PlayLink {
+    pub(crate) fn gem_control_bound(&self, expected: &WheelPanel, action: Option<super::gem_presentation::Action>) -> bool {
+        let mut m = lock(&self.mailbox);
+        if m.world_input_blocked() || m.wheel_shutdown || !m.wheel.open || &m.wheel != expected { return false; }
+        if let Some(action) = action {
+            super::gem_presentation::activate(&mut m, &self.commands, action);
+        } else if m.wheel.gems.last_revision != m.wheel.confirmed_atelier.as_ref().map(|a| a.revision)
+            || m.wheel.gems.review.as_ref().is_some_and(|review| review.expires <= std::time::Instant::now()) {
+            super::gem_presentation::query(&mut m, &self.commands);
+        }
+        true
+    }
+}
+
 #[cfg(test)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_wheel_state(&self, panel: WheelPanel) {

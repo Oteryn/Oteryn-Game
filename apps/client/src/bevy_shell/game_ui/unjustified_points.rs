@@ -16,6 +16,7 @@ struct State {
     root: Option<Entity>,
     content: Option<Entity>,
     refresh: Option<Entity>,
+    last_query: Option<(u64, std::time::Duration)>,
 }
 #[derive(Component)]
 struct Control {
@@ -27,7 +28,39 @@ struct RiskFill;
 #[derive(Component)]
 struct TimerLabel;
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, (observe, project).chain());
+}
+// Read-only polling is bounded and never overlaps the owning query.
+fn observe(owner: NonSend<HostOwner>, time: Res<Time<Real>>, mut state: ResMut<State>) {
+    let Some(play) = owner
+        .play
+        .as_ref()
+        .filter(|_| owner.phase == Phase::Playing)
+    else {
+        state.last_query = None;
+        return;
+    };
+    let panel = play.link.party_skull_panel();
+    if !panel.open {
+        state.last_query = None;
+        return;
+    }
+    let now = time.elapsed();
+    let generation = owner.generation();
+    match state.last_query {
+        Some((old, at)) if old == generation => {
+            if now.saturating_sub(at) >= std::time::Duration::from_secs(2)
+                && !panel.pending
+                && !owner.modal_active()
+                && !play.view.gameplay_input_blocked(&play.link)
+            {
+                play.link.party_skull_request(Intent::PvpStatus);
+                state.last_query = Some((generation, now));
+            }
+        }
+        _ => state.last_query = Some((generation, now)),
+    }
 }
 pub(in crate::bevy_shell) fn open(owner: &HostOwner) {
     if owner.modal_active() {

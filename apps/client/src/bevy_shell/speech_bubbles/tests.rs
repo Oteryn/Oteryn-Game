@@ -319,6 +319,7 @@ fn speech_tracks_the_walk_camera_before_layout() -> Result<(), Box<dyn std::erro
             .ok_or("play")?
             .view
             .apply(&oteryn_session::StepOutcome {
+                step_wait_ms: 0,
                 command_id: 1,
                 status: oteryn_session::CommandStatus::Accepted,
                 disposition: oteryn_session::StepDisposition::Moved,

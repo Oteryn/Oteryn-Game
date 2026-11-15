@@ -370,3 +370,37 @@ fn stash_stow_controls_are_disabled_while_request_pending() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn stash_left_right_adjust_and_confirm_through_keyboard() -> TestResult {
+    let (mut app, mut commands, _) = fixture()?;
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Kind::Row(0))?;
+    for (key, expected) in [
+        (KeyCode::ArrowLeft, 1),
+        (KeyCode::ArrowRight, 2),
+        (KeyCode::ArrowRight, 3),
+        (KeyCode::ArrowLeft, 2),
+        (KeyCode::PageUp, 32),
+        (KeyCode::ArrowRight, 32),
+    ] {
+        press(&mut app, key);
+        let text = app
+            .world_mut()
+            .query_filtered::<&EditableText, With<Quantity>>()
+            .single(app.world())?;
+        assert_eq!(text.value().to_string(), expected.to_string());
+    }
+    press(&mut app, KeyCode::Enter);
+    let PlayCommand::Stash(command) = commands.try_recv()? else {
+        return Err("withdraw missing".into());
+    };
+    assert_eq!(
+        command.intent.action,
+        stash::StashAction::Withdraw {
+            row: [7; 16],
+            amount: 32
+        }
+    );
+    Ok(())
+}

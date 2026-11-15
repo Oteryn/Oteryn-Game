@@ -15,9 +15,12 @@ impl Scene {
         floor: i16,
     ) -> Result<(VisualFrames, bool), BatchError> {
         let visible = |kind| match kind {
-            PresentationEventKind::MagicEffect { position, .. } => position.floor == floor,
+            PresentationEventKind::MagicEffect { position, .. } => {
+                position.floor == floor || self.world.draw_floors().contains(&position.floor)
+            }
             PresentationEventKind::Missile { from, to, .. } => {
-                from.floor == floor && to.floor == floor
+                from.floor == to.floor
+                    && (from.floor == floor || self.world.draw_floors().contains(&from.floor))
             }
             _ => false,
         };
@@ -82,3 +85,5 @@ impl Scene {
         self.cache.begin(self.world.atlas(), Some(root));
     }
 }
+
+include!("scene_lights.rs");

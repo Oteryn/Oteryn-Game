@@ -238,7 +238,8 @@ impl Minimap {
                     tr!("Local exploration limit reached; existing exploration is retained").into();
                 continue;
             }
-            if self.cells.insert(key, 55) != Some(55) {
+            if let std::collections::btree_map::Entry::Vacant(entry) = self.cells.entry(key) {
+                entry.insert(55);
                 self.dirty = true;
             }
         }
@@ -246,6 +247,15 @@ impl Minimap {
             && let Err(error) = self.save()
         {
             self.feedback = lfmt!("Could not save minimap: {error}", error = error);
+        }
+    }
+    pub(in crate::play) fn observe_colours(&mut self, map: &WorldMapViewSnapshot, colours: &BTreeMap<(i16, i32, i32), u8>) {
+        self.observe(map);
+        for (&key, &colour) in colours {
+            if let Some(current) = self.cells.get_mut(&key) && *current != colour {
+                *current = colour;
+                self.dirty = true;
+            }
         }
     }
     pub fn follow(&mut self, x: i32, y: i32, floor: i16) {

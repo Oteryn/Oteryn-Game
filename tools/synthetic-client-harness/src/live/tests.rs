@@ -121,7 +121,8 @@ fn snapshot() -> Result<JoinSnapshot, BoxError> {
 }
 
 fn step_outcome(disposition: StepDisposition, moved_to: Option<(i32, i32)>) -> StepOutcome {
-    CommandOutcome {
+    StepOutcome {
+        step_wait_ms: 0,
         command_id: 7,
         status: CommandStatus::Accepted,
         disposition,

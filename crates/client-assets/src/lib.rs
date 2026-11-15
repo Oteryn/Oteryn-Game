@@ -6,6 +6,7 @@
 //! Decoding happens in memory, on demand; no derived cache is written to disk.
 
 mod appearance;
+pub use appearance::missile_direction;
 mod catalog;
 mod effects;
 mod error;

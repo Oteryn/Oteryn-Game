@@ -111,7 +111,6 @@ pub(super) fn build(commands: &mut Commands, skin: &Skins, generation: u64) -> W
     commands.entity(details).add_child(shop_controls);
     for (kind, caption) in [
         (Kind::IgnoreCapacity, "Ignore capacity"),
-        (Kind::IgnoreEquipped, "Ignore equipped"),
         (Kind::OnlyOwned, "Only owned"),
     ] {
         let button = action(

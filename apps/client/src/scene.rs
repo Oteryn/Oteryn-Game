@@ -29,6 +29,13 @@ const _: () = assert!(
         < MAX_BATCH_QUADS
 );
 
+#[derive(Clone, Debug)]
+struct ActorDraw {
+    floor: i16,
+    tile: TileCoord,
+    draws: Vec<Draw>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Scene {
     minimap: bool,
@@ -63,7 +70,8 @@ pub struct Scene {
     cache: appearance_cache::PresentationCache,
     own_identity: Option<[u8; 16]>,
     own_draws: Option<Vec<Draw>>,
-    actor_draws: Vec<(TileCoord, Vec<Draw>)>,
+    actor_draws: Vec<ActorDraw>,
+    pub(crate) floor_visuals: Vec<(i16, Vec<oteryn_renderer::QuadInstance>, u8)>,
     names: Vec<(TileCoord, Vec<u16>)>,
     #[cfg(feature = "bevy-shell")]
     name_entities: Vec<oteryn_session::EntityRef>,
@@ -150,6 +158,7 @@ impl Scene {
             own_identity: None,
             own_draws: None,
             actor_draws: Vec::new(),
+            floor_visuals: Vec::new(),
             names: Vec::new(),
             #[cfg(feature = "bevy-shell")]
             name_entities: Vec::new(),
@@ -287,8 +296,9 @@ impl Scene {
             }
         }
         self.player_quads = player_quads;
+        let opacity = std::mem::take(&mut sprites.lighting.opacity);
         sprites.lighting.clone_from(&self.sprites.lighting);
-        sprites.lighting.opacity.clear();
+        sprites.lighting.opacity = opacity;
         sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
         #[cfg(feature = "bevy-shell")]

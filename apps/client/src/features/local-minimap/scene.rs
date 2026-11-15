@@ -53,21 +53,11 @@ impl Scene {
                     continue;
                 };
                 let tile = TileCoord::new(tx, ty);
-                let mut live = false;
-                if floor == self.minimap_floor
-                    && map.zoom == 1
-                    && let Some(anchor) = self.anchor
-                    && let (Some(x), Some(y)) =
-                        (tile.x.checked_add(anchor.x), tile.y.checked_add(anchor.y))
-                    && let Some(terrain) = self.world.tile(x, y)
-                    && let Some(draw) = terrain.under.first().or(terrain.over.first())
-                {
-                    self.sprites
-                        .push(&view, self.world.atlas(), cell, draw.cell)?;
-                    live = true;
-                }
-                if !live
-                    && let Some((_, &color)) = cell_tiles(&map.cells, floor, tile, map.zoom).next()
+                if let Some((_, &color)) = cell_tiles(&map.cells, floor, tile, map.zoom)
+                    .next()
+                    .or_else(|| {
+                        cell_tiles(&self.world.minimap_colors, floor, tile, map.zoom).next()
+                    })
                 {
                     self.sprites.push_quad(QuadInstance {
                         position: view.tile_to_screen(cell),

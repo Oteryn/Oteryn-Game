@@ -128,6 +128,40 @@ fn toolbar_pvp_reply_projects_risk_timer_and_controls() -> Result {
             .iter(app.world())
             .any(|text| text.0.contains("Invalid PvP status reply"))
     );
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(3),
+    ));
+    app.update();
+    let crate::combat_input::PlayCommand::Feature(live) = receiver.try_recv()? else {
+        return Err("bounded live PvP query missing".into());
+    };
+    assert_eq!(live.kind, 155);
+    assert!(receiver.try_recv().is_err());
+    let mut refreshed = status;
+    refreshed.points_milli = [0; 3];
+    refreshed.skull = 0;
+    refreshed.remaining_ms = 0;
+    refreshed.situations.clear();
+    outbox.bevy_pvp_result(
+        &live,
+        &GatedCommandResult {
+            command_id: 3,
+            status: oteryn_session::CommandStatus::Accepted,
+            server_sequence: 3,
+            payload: refreshed.encode().map_err(|e| format!("{e:?}"))?,
+        },
+    );
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
+    app.update();
+    assert_eq!(risk_count(&mut app), 6);
+    assert!(
+        app.world_mut()
+            .query::<(&RiskFill, &Node)>()
+            .iter(app.world())
+            .all(|(_, n)| n.width == percent(0.))
+    );
     let close = app
         .world_mut()
         .query::<(Entity, &Control)>()

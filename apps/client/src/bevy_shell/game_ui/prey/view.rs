@@ -22,7 +22,7 @@ pub(super) fn project(
     if state
         .seen
         .as_ref()
-        .is_some_and(|(old, old_panel, _, _)| *old != generation || old_panel != &panel)
+        .is_some_and(|(old, old_panel, _, _, _)| *old != generation || old_panel != &panel)
     {
         state.confirmation = None;
         state.wildcard = None;
@@ -36,6 +36,7 @@ pub(super) fn project(
         panel.clone(),
         state.confirmation,
         state.wildcard.clone(),
+        state.candidate,
     );
     if state.seen.as_ref() == Some(&seen) {
         return;
@@ -134,27 +135,55 @@ pub(super) fn project(
             Kind::Refresh,
             "Refresh",
         );
-        if let Some(Intent::SelectAny { slot, creature }) = &state.wildcard {
-            label(
-                &mut commands,
-                &skin,
-                root,
-                &format!(
+        if let Some(intent) = &state.wildcard {
+            let prompt = match intent {
+                Intent::SelectAny { slot, creature } => format!(
                     "Use 5 Prey wildcard cards for {} in slot {slot}?",
                     creature_label(creature)
                 ),
-            );
+                Intent::Select { slot } => {
+                    let creature = state
+                        .candidate
+                        .and_then(|(_, index)| {
+                            panel.slot(*slot)?.creatures.get(usize::from(index - 1))
+                        })
+                        .map_or_else(String::new, |key| creature_label(key));
+                    format!(
+                        "Choose {creature} in slot {slot}? Select another candidate or confirm Choose."
+                    )
+                }
+                Intent::BonusReroll { slot } => {
+                    format!("Reroll bonus in slot {slot} for 1 Wildcard?")
+                }
+                Intent::SetOption { slot, option } => format!(
+                    "Enable {} in slot {slot}? Costs {} Wildcards per renewal.",
+                    if *option == 1 {
+                        "automatic bonus reroll"
+                    } else {
+                        "locked bonus"
+                    },
+                    if *option == 1 { 1 } else { 5 }
+                ),
+                _ => String::new(),
+            };
+            label(&mut commands, &skin, root, &prompt);
             let confirm = button(
                 &mut commands,
                 &skin,
                 root,
                 generation,
                 &panel,
-                Kind::ConfirmAny(Intent::SelectAny {
-                    slot: *slot,
-                    creature: creature.clone(),
-                }),
-                "Confirm wildcard selection",
+                match intent {
+                    Intent::Select { slot } => {
+                        Kind::Choose(*slot, state.candidate.map_or(0, |(_, i)| i))
+                    }
+                    _ => Kind::ConfirmAny(intent.clone()),
+                },
+                if matches!(intent, Intent::Select { .. }) {
+                    "Choose"
+                } else {
+                    "Confirm wildcard selection"
+                },
             );
             commands
                 .entity(confirm)
@@ -168,6 +197,23 @@ pub(super) fn project(
                 Kind::Cancel,
                 "Cancel",
             );
+            if let Intent::Select { slot } = intent
+                && let Some(data) = panel.slot(*slot)
+            {
+                for (index, creature) in data.creatures.iter().enumerate() {
+                    if let Ok(index) = u8::try_from(index + 1) {
+                        button(
+                            &mut commands,
+                            &skin,
+                            root,
+                            generation,
+                            &panel,
+                            Kind::Select(*slot, index),
+                            &format!("Select {}", creature_label(creature)),
+                        );
+                    }
+                }
+            }
         } else if let Some(slot) = state.confirmation {
             label(
                 &mut commands,

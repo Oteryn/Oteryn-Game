@@ -7,8 +7,8 @@ use oteryn_client_ui_bevy as source;
 
 pub(super) struct Widgets {
     pub overlay: Entity,
-    window: Entity,
-    content: Option<Entity>,
+    pub(super) window: Entity,
+    pub(super) content: Option<Entity>,
 }
 pub(super) fn build(commands: &mut Commands, skin: &Skins) -> Widgets {
     let overlay = commands
@@ -361,6 +361,11 @@ fn control_identity(control: &Control) -> (u8, usize, usize) {
         Kind::Refresh => (1, 0, 0),
         Kind::Weapon(row) => (2, row, 0),
         Kind::Perk(level, perk) => (3, level, perk),
+        Kind::Apply => (4, 0, 0),
+        Kind::Reset => (5, 0, 0),
+        Kind::SaveClose => (6, 0, 0),
+        Kind::DiscardClose => (7, 0, 0),
+        Kind::CancelClose => (8, 0, 0),
     }
 }
 fn same_role(world: &World, target: Entity, source: Entity) -> bool {

@@ -204,6 +204,9 @@ fn prey_active_slot_controls_send_intents() -> TestResult {
     ] {
         let (mut app, mut commands) = fixture()?;
         click(&mut app, Kind::Send(intent.clone()))?;
+        assert!(commands.try_recv().is_err());
+        app.update();
+        click(&mut app, Kind::ConfirmAny(intent.clone()))?;
         let PlayCommand::Prey(request) = commands.try_recv()? else {
             return Err("wrong command".into());
         };
@@ -223,6 +226,9 @@ fn prey_active_slot_controls_send_intents() -> TestResult {
     }
     let (mut app, mut commands) = fixture()?;
     click(&mut app, Kind::Select(2, 1))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, Kind::Choose(2, 1))?;
     assert!(matches!(
         commands.try_recv()?,
         PlayCommand::Prey(prey::Request::Select { slot: 2, index: 1 })

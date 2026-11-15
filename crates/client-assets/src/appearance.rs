@@ -87,6 +87,8 @@ struct FlagsMsg {
     bottom: Option<bool>,
     #[prost(bool, optional, tag = "4")]
     top: Option<bool>,
+    #[prost(bool, optional, tag = "9")]
+    multiuse: Option<bool>,
     #[prost(bool, optional, tag = "6")]
     cumulative: Option<bool>,
     #[prost(bool, optional, tag = "12")]
@@ -97,10 +99,27 @@ struct FlagsMsg {
     hang: Option<bool>,
     #[prost(message, optional, tag = "21")]
     hook: Option<HookMsg>,
+    #[prost(message, optional, tag = "23")]
+    light: Option<LightMsg>,
+    #[prost(message, optional, tag = "30")]
+    automap: Option<AutomapMsg>,
     #[prost(message, optional, tag = "26")]
     shift: Option<ShiftMsg>,
     #[prost(message, optional, tag = "27")]
     height: Option<HeightMsg>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+struct LightMsg {
+    #[prost(uint32, optional, tag = "1")]
+    brightness: Option<u32>,
+    #[prost(uint32, optional, tag = "2")]
+    color: Option<u32>,
+}
+#[derive(Clone, PartialEq, Message)]
+struct AutomapMsg {
+    #[prost(uint32, optional, tag = "1")]
+    color: Option<u32>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -131,6 +150,10 @@ struct HeightMsg {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Appearance {
     pub id: u32,
+    /// Official appearance light intensity and palette colour.
+    pub light: Option<(u8, u8)>,
+    pub minimap_color: Option<u8>,
+    pub multi_use: bool,
     pub pattern_width: u32,
     pub pattern_height: u32,
     pub pattern_depth: u32,
@@ -334,6 +357,14 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     }
     Some(Appearance {
         id,
+        light: flags.light.and_then(|light| {
+            Some((
+                u8::try_from(light.brightness?).ok()?,
+                u8::try_from(light.color?).ok()?,
+            ))
+        }),
+        minimap_color: flags.automap.and_then(|map| u8::try_from(map.color?).ok()),
+        multi_use: flags.multiuse.unwrap_or(false),
         pattern_width: width,
         pattern_height: height,
         pattern_depth: depth,

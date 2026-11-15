@@ -59,10 +59,7 @@ fn parity_a_shift_world_click_uses_existing_look_command() -> Result<(), Box<dyn
             ],
             false,
         );
-        assert!(
-            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command) if command.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target) && command.action == oteryn_client_ui::world_interaction::menu::Action::Look)
-        );
-        // Releasing Look must not queue a second action.
+        assert!(commands.try_recv().is_err());
         owner.route_input(
             &[NormalizedInputEvent::MouseButton {
                 button,
@@ -70,6 +67,9 @@ fn parity_a_shift_world_click_uses_existing_look_command() -> Result<(), Box<dyn
                 modifiers: Modifiers::one(Modifier::Shift),
             }],
             false,
+        );
+        assert!(
+            matches!(commands.try_recv()?, crate::combat_input::PlayCommand::WorldContext(command) if command.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target) && command.action == oteryn_client_ui::world_interaction::menu::Action::Look)
         );
         assert!(commands.try_recv().is_err());
     }

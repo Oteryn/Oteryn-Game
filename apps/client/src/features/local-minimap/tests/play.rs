@@ -491,3 +491,21 @@ fn zoomed_cells_retain_exploration_between_sampled_coordinates() -> Result<(), B
     }
     Ok(())
 }
+
+#[test]
+fn live_minimap_uses_the_same_palette_cell_at_every_zoom() -> Result<(), BatchError> {
+    let mut play = minimap_view()?;
+    play.set_live_map(&snapshot(101))?;
+    let at = [64., 48.];
+    let color = mini(&play).into_iter().rfind(|quad| quad.position == at).ok_or(BatchError::InvalidView)?;
+    assert_eq!(color.uv[0], color.uv[2]);
+    assert_eq!(color.uv[1], color.uv[3]);
+    {
+        let mut map = crate::play::feature_local_minimap::state::lock(&play.minimap);
+        map.zoom = 2;
+        map.x = 101;
+    }
+    play.rebuild()?;
+    assert!(mini(&play).iter().any(|q| q.uv == color.uv));
+    Ok(())
+}

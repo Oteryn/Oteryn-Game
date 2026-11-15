@@ -183,6 +183,9 @@ fn proficiency_perk_select_guard() -> Result {
         "locked level must never send an intent"
     );
     click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Apply))?;
     let sent = command(&mut commands)?;
     assert_eq!((sent.capability, sent.kind), (195, 378));
     let selection = SelectPerkRequest::decode(&sent.payload).ok_or("perk request")?;
@@ -338,6 +341,93 @@ fn proficiency_poll_preserves_panes_scroll_and_focused_control() -> Result {
         texts(&mut app)
             .iter()
             .any(|text| text.contains("175 / 400 XP"))
+    );
+    Ok(())
+}
+
+#[test]
+fn proficiency_preview_does_not_commit_and_close_offers_discard() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    app.update();
+    let label = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(e, t)| (t.0 == "Discard draft and close").then_some(e))
+        .ok_or("discard action missing")?;
+    let entity = app.world().get::<ChildOf>(label).ok_or("parent")?.parent();
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    assert!(commands.try_recv().is_err());
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .weapon_proficiency_is_open()
+    );
+    Ok(())
+}
+
+#[test]
+fn proficiency_applies_a_reviewed_build_only_after_each_server_confirmation() -> Result {
+    use oteryn_client_runtime::weapon_proficiency::{SelectPerkReply, SelectPerkResult};
+    let (mut app, mut commands, outbox) = app()?;
+    publish(&outbox, &catalogue(300))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(0, 1)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Perk(1, 0)))?;
+    app.update();
+    assert!(commands.try_recv().is_err());
+    click(&mut app, |kind| matches!(kind, Kind::Apply))?;
+    let first = command(&mut commands)?;
+    assert_eq!(
+        SelectPerkRequest::decode(&first.payload)
+            .ok_or("first perk")?
+            .level,
+        0
+    );
+    assert!(commands.try_recv().is_err());
+    for (id, selections) in [(2, vec![Some(1), None]), (3, vec![Some(1), Some(0)])] {
+        outbox.bevy_proficiency_result(&GatedCommandResult {
+            command_id: id,
+            server_sequence: id,
+            status: CommandStatus::Accepted,
+            payload: SelectPerkReply {
+                result: SelectPerkResult::Accepted,
+                selections,
+            }
+            .encode()
+            .ok_or("perk reply")?,
+        });
+        app.update();
+        if id == 2 {
+            let next = command(&mut commands)?;
+            assert_eq!(
+                SelectPerkRequest::decode(&next.payload)
+                    .ok_or("next perk")?
+                    .level,
+                1
+            );
+        }
+        assert!(commands.try_recv().is_err());
+    }
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0 == "Draft confirmed by the server.")
     );
     Ok(())
 }

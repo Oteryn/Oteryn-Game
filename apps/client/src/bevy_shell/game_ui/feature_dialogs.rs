@@ -60,6 +60,7 @@ struct State {
 
 pub(super) fn install(app: &mut App) {
     houses::install(app);
+    notices::install(app);
     banner_queue::install(app);
     app.init_resource::<guide::State>();
     app.init_resource::<State>()

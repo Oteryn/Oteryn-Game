@@ -76,9 +76,8 @@ pub struct PlayView {
     scene: Scene,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
-    /// Own walk glide, last landing and held arrows.
+    /// Own walk glide and held arrows.
     walk: Option<(oteryn_client_simulation::walk::Glide, std::time::Instant)>,
-    walk_landed: Option<std::time::Instant>,
     chord: oteryn_client_ui::diagonal_movement::ArrowChord,
     /// Arrow, hotkey and click input not yet sent, in the order it was given.
     inputs: VecDeque<Input>,
@@ -143,6 +142,8 @@ use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
+#[cfg(feature = "bevy-shell")]
+pub(crate) use feature_0148_wheel_allocation::input::gem_presentation::Action as GemControl;
 #[cfg(feature = "bevy-shell")]
 pub use feature_0148_wheel_allocation::input::shared::WheelControl;
 pub use feature_0450_server_modal::protocol::ServerModalPanel;

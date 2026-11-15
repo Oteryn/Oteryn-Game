@@ -240,7 +240,12 @@ fn keyboard(
                 key => {
                     if matches!(
                         key,
-                        KeyCode::ArrowUp | KeyCode::ArrowDown | KeyCode::PageUp | KeyCode::PageDown
+                        KeyCode::ArrowLeft
+                            | KeyCode::ArrowRight
+                            | KeyCode::ArrowUp
+                            | KeyCode::ArrowDown
+                            | KeyCode::PageUp
+                            | KeyCode::PageDown
                     ) {
                         amount_key(&mut state, key);
                         if let Some(amount) = &state.amount
@@ -261,6 +266,8 @@ fn amount_key(state: &mut State, key: KeyCode) {
         return;
     };
     amount.value = match key {
+        KeyCode::ArrowRight => amount.value.saturating_add(1).min(amount.max),
+        KeyCode::ArrowLeft => amount.value.saturating_sub(1).max(1),
         KeyCode::ArrowUp => amount.value.saturating_add(10).min(amount.max),
         KeyCode::ArrowDown => amount.value.saturating_sub(10).max(1),
         KeyCode::PageUp => amount.max,

@@ -2,7 +2,7 @@ use crate::input::StepDir;
 use crate::play::PlayView;
 use oteryn_renderer::BatchError;
 use oteryn_client_simulation::movement::{DEFAULT_GROUND_SPEED, StepSpeedTable};
-use oteryn_client_simulation::walk::{Glide, glide_duration};
+use oteryn_client_simulation::walk::Glide;
 use oteryn_session::{StepDirection, StepDisposition, StepOutcome};
 use std::time::{Duration, Instant};
 
@@ -63,8 +63,12 @@ impl PlayView {
             let (from, floor) = (self.own, self.floor);
             self.place(delta.value.actor_position);
             if moved && floor == self.floor {
-                let gap = self.walk_landed.map(|landed| now.duration_since(landed));
-                let duration = glide_duration(gap, default_step_duration());
+                // Arrival gaps contain transport jitter, not the server's movement clock.
+                let duration = if outcome.step_wait_ms == 0 {
+                    default_step_duration()
+                } else {
+                    Duration::from_millis(u64::from(outcome.step_wait_ms))
+                };
                 self.walk = Glide::new(from, self.own, duration).map(|glide| {
                     let glide = previous.map_or(glide, |(old, start)| {
                         glide.continuing(old, now.saturating_duration_since(start))
@@ -73,7 +77,6 @@ impl PlayView {
                 });
             }
         }
-        self.walk_landed = moved.then_some(now);
         if let Some(delta) = &outcome.world_object_overlay_delta {
             self.set_marker(&delta.value);
         }

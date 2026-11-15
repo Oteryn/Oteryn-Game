@@ -108,31 +108,31 @@ fn live_outfit_uses_server_look_and_empty_outfit_suppresses_pixels() -> Result<(
     scene.set_presentations_from(&[entry.clone()], 0, Some(root))?;
     assert!(
         scene.actor_draws[0]
-            .1
+            .draws
             .iter()
             .any(|draw| draw.cell > MARKER_CELL)
     );
     assert_eq!(scene.name_count(), 1);
-    let base_cell = scene.actor_draws[0].1[0].cell;
+    let base_cell = scene.actor_draws[0].draws[0].cell;
     entry.look = Some(oteryn_session::Look::Outfit {
         look_type: 128,
         colours: [1; 4],
         addons: 0,
     });
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
-    assert_ne!(scene.actor_draws[0].1[0].cell, base_cell);
-    let base_count = scene.actor_draws[0].1.len();
+    assert_ne!(scene.actor_draws[0].draws[0].cell, base_cell);
+    let base_count = scene.actor_draws[0].draws.len();
     entry.look = Some(oteryn_session::Look::Outfit {
         look_type: 128,
         colours: [1; 4],
         addons: 3,
     });
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
-    assert!(scene.actor_draws[0].1.len() > base_count);
+    assert!(scene.actor_draws[0].draws.len() > base_count);
 
     entry.look = Some(oteryn_session::Look::EmptyOutfit);
     scene.set_presentations_from(&[entry.clone()], 0, None)?;
-    assert!(scene.actor_draws[0].1.is_empty());
+    assert!(scene.actor_draws[0].draws.is_empty());
     entry.entity.position.floor = -1;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert_eq!(scene.name_count(), 0);

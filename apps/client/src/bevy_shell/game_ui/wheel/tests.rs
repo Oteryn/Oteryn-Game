@@ -385,3 +385,75 @@ fn wheel_preset_shortcut_opens_closed_panel() -> TestResult {
 }
 #[path = "presets_tests.rs"]
 mod presets_tests;
+
+#[test]
+fn wheel_has_a_reachable_gem_atelier_entry() -> TestResult {
+    let (mut app, _, _) = fixture(model())?;
+    let label = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find_map(|(e, t)| (t.0 == "Gem Atelier / Workshop").then_some(e))
+        .ok_or("atelier entry missing")?;
+    let button = app.world().get::<ChildOf>(label).ok_or("button")?.parent();
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Gem Atelier and fragment workshop"))
+    );
+    Ok(())
+}
+
+#[test]
+fn atelier_reveal_uses_review_cancel_and_one_shot_confirm_through_bevy() -> TestResult {
+    let mut p = model();
+    p.confirmed_atelier
+        .as_mut()
+        .ok_or("atelier")?
+        .quality_quotes = vec![atelier::QualityQuote {
+        quality: 0,
+        reveal_gold: 25000,
+        switch_gold: 5000,
+        fragment_kind: 0,
+        fragment_min: 10,
+        fragment_max: 20,
+    }];
+    let (mut app, mut commands, _) = fixture(p)?;
+    let activate_label = |app: &mut App, label: &str| -> TestResult {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find_map(|(e, t)| (t.0 == label).then_some(e))
+            .ok_or("atelier action missing")?;
+        let entity = app.world().get::<ChildOf>(entity).ok_or("button")?.parent();
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    activate_label(&mut app, "Gem Atelier / Workshop")?;
+    activate_label(&mut app, "Reveal gem")?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("25000 gold"))
+    );
+    activate_label(&mut app, "Cancel review")?;
+    assert!(commands.try_recv().is_err());
+    activate_label(&mut app, "Reveal gem")?;
+    activate_label(&mut app, "Confirm reviewed operation")?;
+    let PlayCommand::Wheel(command) = commands.try_recv()? else {
+        return Err("reviewed atelier command".into());
+    };
+    assert_eq!(command.kind, atelier::COMMAND_TYPE_ATELIER_MUTATE);
+    let mutation = atelier::decode_mutate(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(mutation.expected_revision, 3);
+    assert_eq!(mutation.mutation, atelier::Mutation::Reveal { quality: 0 });
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

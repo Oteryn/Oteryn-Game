@@ -32,6 +32,7 @@ fn entry(placement: Vec<u8>) -> WorldObjectOverlayEntry {
 
 fn moved_to(x: i32, y: i32, floor: i16) -> StepOutcome {
     StepOutcome {
+        step_wait_ms: 0,
         command_id: 1,
         status: CommandStatus::Accepted,
         disposition: StepDisposition::Moved,

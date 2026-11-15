@@ -31,6 +31,7 @@ impl Stepper for Peer {
             .pop_front()
             .ok_or(SessionError::SessionUnusable)?;
         Ok(StepOutcome {
+            step_wait_ms: 0,
             command_id: 1,
             status: CommandStatus::Accepted,
             disposition: if self.detail.is_some() {

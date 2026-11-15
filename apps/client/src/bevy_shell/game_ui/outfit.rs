@@ -8,6 +8,7 @@ use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
 mod animation;
+mod search;
 const PARTS: [&str; 4] = ["Head", "Primary", "Secondary", "Detail"];
 #[derive(Component)]
 struct Window;
@@ -29,14 +30,20 @@ enum Kind {
 #[derive(Resource, Default)]
 struct State {
     rendered: Option<(u64, Panel)>,
+    search: String,
+    dirty: bool,
     playback: animation::Playback,
     artwork: Option<preview::Assets>,
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
     super::install::install_scroll_memory(app);
-    app.init_resource::<State>()
-        .add_systems(Update, (project, animation::animate).chain());
+    app.init_resource::<bevy::input_focus::InputFocus>()
+        .init_resource::<State>()
+        .add_systems(
+            Update,
+            (search::update, project, animation::animate).chain(),
+        );
 }
 fn outfits(panel: &Panel) -> Vec<&str> {
     panel.catalogue.as_ref().map_or_else(Vec::new, |c| {
@@ -204,15 +211,24 @@ fn button(
     commands.entity(parent).add_child(entity);
     entity
 }
+type ProjectQueries<'w, 's> = (
+    Res<'w, ButtonInput<KeyCode>>,
+    Query<'w, 's, Entity, With<Window>>,
+    Query<'w, 's, Entity, With<search::Field>>,
+);
 fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
-    (keys, windows): (Res<ButtonInput<KeyCode>>, Query<Entity, With<Window>>),
-    skin: Res<Skins>,
+    (keys, windows, searches): ProjectQueries,
+    resources: (
+        Res<Skins>,
+        ResMut<Assets<Image>>,
+        ResMut<bevy::input_focus::InputFocus>,
+    ),
     mut state: ResMut<State>,
-    mut images: ResMut<Assets<Image>>,
     guard: ModalGuard,
 ) {
+    let (skin, mut images, mut focus) = resources;
     let Some(play) = &owner.play else {
         for entity in &windows {
             commands.entity(entity).despawn();
@@ -238,9 +254,10 @@ fn project(
         return;
     }
     let generation = owner.generation();
-    if state.rendered.as_ref() == Some(&(generation, panel.clone())) {
+    if !state.dirty && state.rendered.as_ref() == Some(&(generation, panel.clone())) {
         return;
     }
+    let searching = focus.get().is_some_and(|entity| searches.contains(entity));
     for entity in &windows {
         commands.entity(entity).despawn();
     }
@@ -269,7 +286,18 @@ fn project(
         .spawn(source::button_caption("Outfit", skin.font.clone()))
         .id();
     commands.entity(root).add_child(title);
-    for key in outfits(&panel) {
+    search::build(
+        &mut commands,
+        &skin,
+        root,
+        &state.search,
+        searching,
+        &mut focus,
+    );
+    for key in outfits(&panel)
+        .into_iter()
+        .filter(|key| search::matches(key, &state.search))
+    {
         button(
             &mut commands,
             &skin,
@@ -336,7 +364,11 @@ fn project(
             Kind::Mount(String::new()),
             "No mount",
         );
-        for key in &catalogue.mounts {
+        for key in catalogue
+            .mounts
+            .iter()
+            .filter(|key| search::matches(key, &state.search))
+        {
             button(
                 &mut commands,
                 &skin,
@@ -432,6 +464,7 @@ fn project(
         Kind::Close,
         "Cancel",
     );
+    state.dirty = false;
     state.playback.invalidate();
     state.rendered = Some((generation, panel));
 }

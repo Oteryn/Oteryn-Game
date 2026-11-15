@@ -222,21 +222,9 @@ impl Application {
             };
             let mut render_failed = false;
             for click in clicks {
-                if click.look {
-                    if let Some(tile) = play.view.click_tile(click.x, click.y)
-                        && let Some(menu) = play.view.world_context(tile, &play.link)
-                    {
-                        play.view.world_context_choose(
-                            &play.link,
-                            &menu,
-                            oteryn_client_ui::world_interaction::menu::Action::Look,
-                        );
-                    }
-                    continue;
-                }
-                if click.toggle_attack {
+                if let Some(modifier) = click.shortcut {
                     if let Some(tile) = play.view.click_tile(click.x, click.y) {
-                        play.view.attack_toggle_click(tile, &play.link);
+                        play.view.modifier_click(tile, &play.link, modifier);
                     }
                     continue;
                 }

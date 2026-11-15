@@ -241,3 +241,16 @@ fn tooltip_picks_the_displayed_creature_during_a_walk() -> Result<(), Box<dyn st
     );
     Ok(())
 }
+
+#[test]
+fn committed_step_timing_controls_first_and_continuous_visual_glides()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut view = view()?;
+    for (x, y, duration) in [(101, 200, 150), (102, 200, 900), (103, 201, 1350)] {
+        let mut outcome = moved_to(x, y, 0);
+        outcome.step_wait_ms = duration;
+        view.apply(&outcome)?;
+        assert_eq!(view.walk_duration(), Some(std::time::Duration::from_millis(u64::from(duration))));
+    }
+    Ok(())
+}

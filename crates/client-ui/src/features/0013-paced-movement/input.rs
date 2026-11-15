@@ -15,7 +15,13 @@ pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
             KeyCode::ARROW_RIGHT => Some(StepDir::East),
             KeyCode::ARROW_DOWN => Some(StepDir::South),
             KeyCode::ARROW_LEFT => Some(StepDir::West),
-            _ => None,
+            _ => match code.get() {
+                96 => Some(StepDir::North),
+                94 => Some(StepDir::East),
+                90 => Some(StepDir::South),
+                92 => Some(StepDir::West),
+                _ => None,
+            },
         },
         _ => None,
     })

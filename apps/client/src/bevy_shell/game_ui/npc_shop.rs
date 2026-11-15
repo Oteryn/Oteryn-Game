@@ -33,7 +33,6 @@ enum Kind {
     SellAll,
     Close,
     IgnoreCapacity,
-    IgnoreEquipped,
     OnlyOwned,
     OpenBackpack,
 }
@@ -101,11 +100,10 @@ fn perform(owner: &mut HostOwner, state: &mut State, action: Action, amount: &st
             state.feedback.clear();
             true
         }
-        Kind::IgnoreCapacity | Kind::IgnoreEquipped | Kind::OnlyOwned => {
+        Kind::IgnoreCapacity | Kind::OnlyOwned => {
             let mut options = panel.live.options;
             match action.kind {
                 Kind::IgnoreCapacity => options.ignore_capacity = !options.ignore_capacity,
-                Kind::IgnoreEquipped => options.ignore_equipped = !options.ignore_equipped,
                 Kind::OnlyOwned => options.only_owned = !options.only_owned,
                 _ => {}
             }
@@ -256,7 +254,6 @@ fn project(
     for (caption, mut text) in &mut options {
         let checked = match caption.0 {
             Kind::IgnoreCapacity => panel.live.options.ignore_capacity,
-            Kind::IgnoreEquipped => panel.live.options.ignore_equipped,
             Kind::OnlyOwned => panel.live.options.only_owned,
             _ => false,
         };

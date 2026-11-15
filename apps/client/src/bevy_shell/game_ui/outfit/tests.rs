@@ -664,3 +664,47 @@ fn outfit_cancel_and_escape_restore_confirmed_selection() -> Result<(), Box<dyn 
     }
     Ok(())
 }
+
+#[test]
+fn outfit_search_filters_names_without_changing_draft() -> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, _) = editor_app()?;
+    let before = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .appearance_panel();
+    let mut fields = app.world_mut().query::<&mut bevy::text::EditableText>();
+    {
+        let mut text = fields.single_mut(app.world_mut())?;
+        *text = bevy::text::EditableText::new(" MaGe ");
+    }
+    app.update();
+    let actions: Vec<_> = app
+        .world_mut()
+        .query::<&Action>()
+        .iter(app.world())
+        .filter_map(|a| {
+            if let Kind::Outfit(key) = &a.kind {
+                Some(key.clone())
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert_eq!(actions, ["mage"]);
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .fields,
+        before.fields
+    );
+    Ok(())
+}

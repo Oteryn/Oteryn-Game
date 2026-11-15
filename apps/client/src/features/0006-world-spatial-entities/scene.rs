@@ -3,6 +3,14 @@ use super::*;
 use oteryn_session::{EntityDetail, VisibleAppearance};
 
 impl Scene {
+    pub(crate) fn item_multi_use(&mut self, id: u16) -> bool {
+        self.cache.begin(
+            self.world.atlas(),
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+        );
+        self.cache.item_multi_use(id)
+    }
+
     pub(crate) fn set_outfit_palette(&mut self, palette: &[[u8; 3]]) -> bool {
         self.cache.set_palette(palette)
     }
@@ -103,13 +111,25 @@ impl Scene {
                 continue;
             }
             let is_own = self.own_identity == Some(entity.entity.identity);
-            if !is_own && entity.position.floor != floor {
+            let draw_floor = self
+                .world
+                .center()
+                .2
+                .saturating_add(entity.position.floor.saturating_sub(floor));
+            if !is_own
+                && entity.position.floor != floor
+                && !self.world.draw_floors().contains(&draw_floor)
+            {
                 continue;
             }
             let tile = if is_own {
                 self.own
             } else {
-                TileCoord::new(entity.position.x, entity.position.y)
+                let shift = i32::from(entity.position.floor) - i32::from(floor);
+                TileCoord::new(
+                    entity.position.x.saturating_sub(shift),
+                    entity.position.y.saturating_sub(shift),
+                )
             };
             let direction = if is_own {
                 match self.facing {
@@ -133,7 +153,14 @@ impl Scene {
             if is_own {
                 self.own_draws = Some(draws);
             } else {
-                self.actor_draws.push((tile, draws));
+                self.actor_draws.push(ActorDraw {
+                    floor: draw_floor,
+                    tile,
+                    draws,
+                });
+            }
+            if entity.position.floor != floor {
+                continue;
             }
             let name_group = if is_own {
                 0

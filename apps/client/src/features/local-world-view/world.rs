@@ -16,6 +16,9 @@ impl World {
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
+            world
+                .minimap_colors
+                .insert((tile.position.floor, tile.position.x, tile.position.y), 55);
             world.insert_floor_tile(
                 tile.position,
                 MapTile {
@@ -51,11 +54,28 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
+        let mut item_lights = Vec::new();
+        let mut minimap_colors = BTreeMap::new();
         for tile in map
             .tiles
             .iter()
             .filter(|tile| in_draw_window(map, tile.position))
         {
+            let mut color = 0;
+            for item in &tile.items {
+                if let Some(appearance) = index.get(u32::from(item.appearance_id)) {
+                    if let Some((level, color)) = appearance.light.filter(|(level, _)| *level > 0) {
+                        item_lights.push((tile.position, level, color));
+                    }
+                    if let Some(value) = appearance.minimap_color.filter(|value| *value != 0) {
+                        color = value;
+                    }
+                }
+            }
+            minimap_colors.insert(
+                (tile.position.floor, tile.position.x, tile.position.y),
+                color,
+            );
             let hook = tile
                 .items
                 .iter()
@@ -189,6 +209,8 @@ impl World {
         });
         let mut world = Self {
             effects: Default::default(),
+            item_lights,
+            minimap_colors,
             center: (origin.x, origin.y, origin.floor),
             first_visible_floor: map.header.first_visible_floor,
             tiles: HashMap::new(),
@@ -203,6 +225,12 @@ impl World {
         .with_effect_catalog(effects);
         for (position, tile) in tiles {
             world.insert_floor_tile(position, tile);
+        }
+        // Establish the shared clock before a caller captures its first sample time.
+        // Initializing it during that sample can place the epoch after the supplied time,
+        // leaving an exact full-cycle sample one millisecond short after truncation.
+        if !world.animations.is_empty() {
+            Self::animation_epoch(std::time::Instant::now());
         }
         Ok(world)
     }
@@ -509,3 +537,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "world_light_tests.rs"]
+mod light_tests;

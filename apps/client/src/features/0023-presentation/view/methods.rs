@@ -6,7 +6,7 @@ impl PlayView {
     ) {
         self.visuals
             .retain(|cue| now.saturating_duration_since(cue.received) < VISUAL_LIFETIME);
-        self.visuals.extend(events.iter().map(|&kind| {
+        for &kind in events {
             // The presentation codec owns z=0..15; all scene consumers use native floors.
             let mut kind = kind;
             match &mut kind {
@@ -22,8 +22,10 @@ impl PlayView {
                 }
                 PresentationEventKind::AmbientSound { .. } => {}
             }
-            VisualCue { kind, received: now }
-        }));
+            if !numbers::merge(&mut self.visuals, kind, now) {
+                self.visuals.push(VisualCue { kind, received: now });
+            }
+        }
         let excess = self.visuals.len().saturating_sub(MAX_VISUAL_CUES);
         self.visuals.drain(..excess);
     }
@@ -61,8 +63,9 @@ impl PlayView {
         };
         if changed {
             self.weather_scene();
-            self.light_scene()?;
         }
+        self.scene.floor_visuals = floors::project(self, &frames, now)?;
+        self.light_scene_at(now)?;
         let game_window = self.preferences().game_window;
         let opacity = self.preferences().effect_opacity;
         let boss_opacity = self.preferences().boss_area_opacity;
@@ -85,7 +88,6 @@ impl PlayView {
         );
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
-        batch.lighting.opacity.clear();
         let resource_start = batch.len();
         let hud_quads = resources::draw(
             batch,
@@ -154,9 +156,14 @@ impl PlayView {
                     let line = lines.entry((position.x, position.y)).or_insert(0_u32);
                     let top = y - progress * 32.0 - 12.0 * *line as f32;
                     *line += 1 + u32::from(secondary.is_some());
+                    let start = batch.len();
                     number(batch, view, atlas, [center, top], primary)?;
                     if let Some(value) = secondary {
                         number(batch, view, atlas, [center, top - 12.0], value)?;
+                    }
+                    if progress > 1. / 1.2 && batch.len() > start {
+                        let alpha = ((1. - progress) * 6. * 100.).clamp(0., 100.) as u8;
+                        batch.lighting.set_opacity(start..batch.len(), alpha)?;
                     }
                 }
                 PresentationEventKind::MagicEffect {

@@ -12,6 +12,10 @@ mod icons;
 mod resources;
 #[path = "visual.rs"]
 mod visual;
+#[path = "view/numbers.rs"]
+mod numbers;
+#[path = "view/floors.rs"]
+mod floors;
 #[cfg(any(windows, feature = "bevy-shell"))]
 pub(crate) use actor_hud::health_rgb;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};

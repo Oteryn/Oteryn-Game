@@ -84,7 +84,8 @@ impl PlayView {
         next.anchor = TileCoord::new(0, 0);
         next.local.set_world(Arc::new(world));
         next.live_map = true;
-        super::super::feature_local_minimap::state::lock(&next.minimap).observe(map);
+        super::super::feature_local_minimap::state::lock(&next.minimap)
+            .observe_colours(map, &next.local.world().minimap_colors);
         next.remember_minimap(map);
         next.rebuild()?;
         *self = next;
@@ -155,7 +156,6 @@ impl PlayView {
             self.server_messages.clear();
             self.message_namespace = self.message_namespace.wrapping_add(1);
             self.walk = None;
-            self.walk_landed = None;
             self.party_icons.clear();
             self.party_icons_refresh = None;
             self.inputs.clear();

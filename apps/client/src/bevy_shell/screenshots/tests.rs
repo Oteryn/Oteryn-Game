@@ -104,3 +104,72 @@ fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn death_event_captures_without_f12_and_deduplicates() -> TestResult {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(format!(".audit-screenshots-auto-{}", std::process::id()));
+    let mut app = app(&root, true)?;
+    let (link, _, outbox) = crate::play::play_channel();
+    {
+        let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+        owner.settings.preferences.screenshots.on_death = true;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 0, &[])?,
+        });
+    }
+    outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+        oteryn_session::AppliedDelta {
+            server_sequence: 1,
+            base_revision: 0,
+            new_revision: 1,
+            value: oteryn_session::ActorVitals {
+                health: 100,
+                max_health: 100,
+                ..default()
+            },
+        },
+    )]);
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Screenshot>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    outbox.push(vec![oteryn_session::SessionEvent::ActorVitals(
+        oteryn_session::AppliedDelta {
+            server_sequence: 2,
+            base_revision: 1,
+            new_revision: 2,
+            value: oteryn_session::ActorVitals {
+                health: 0,
+                max_health: 100,
+                ..default()
+            },
+        },
+    )]);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Screenshot>>()
+        .single(app.world())?;
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity,
+        image: frame(),
+    });
+    app.world_mut().despawn(entity);
+    app.update();
+    assert_eq!(std::fs::read_dir(&root)?.count(), 1);
+    assert_eq!(
+        app.world_mut()
+            .query::<&Screenshot>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

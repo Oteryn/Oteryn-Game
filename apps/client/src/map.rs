@@ -31,6 +31,8 @@ pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 #[derive(Debug, Clone)]
 pub struct World {
     effects: oteryn_client_assets::EffectCatalog,
+    pub(crate) item_lights: Vec<(oteryn_session::ActorPosition, u8, u8)>,
+    pub(crate) minimap_colors: BTreeMap<(i16, i32, i32), u8>,
     center: (i32, i32, i16),
     pub(crate) first_visible_floor: i16,
     // Phase updates share immutable pixels while replacing projected tile draws.
@@ -59,6 +61,8 @@ impl World {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             effects: Default::default(),
+            item_lights: Vec::new(),
+            minimap_colors: BTreeMap::new(),
             center: (START.0, START.1, i16::from(START_FLOOR)),
             first_visible_floor: i16::from(START_FLOOR),
             atlas: std::sync::Arc::new(atlas),
@@ -131,6 +135,8 @@ impl World {
         let atlas = atlas.into_image();
         Ok(Self {
             effects: Default::default(),
+            item_lights: Vec::new(),
+            minimap_colors: BTreeMap::new(),
             center,
             first_visible_floor: center.2,
             atlas: std::sync::Arc::new(atlas),

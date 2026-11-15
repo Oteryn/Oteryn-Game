@@ -410,6 +410,7 @@ fn help_lens_picks_the_displayed_creature_during_camera_glide() -> TestResult {
         play.view.arrow(crate::input::StepDir::East);
         assert!(play.view.next_step().is_some());
         play.view.apply(&oteryn_session::StepOutcome {
+            step_wait_ms: 0,
             command_id: 1,
             status: oteryn_session::CommandStatus::Accepted,
             disposition: oteryn_session::StepDisposition::Moved,

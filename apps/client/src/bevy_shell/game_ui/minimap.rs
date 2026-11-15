@@ -1,4 +1,5 @@
 //! Sidebar projection of the existing Scene minimap, rendered through an upstream image target.
+mod markers;
 mod mouse;
 use super::{
     super::{owner::HostOwner, ui::Skins},
@@ -29,6 +30,7 @@ struct State {
 #[derive(Component)]
 struct MiniImage(u64);
 pub(super) fn install(app: &mut App) {
+    markers::install(app);
     app.add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (project, shortcuts, camera_label).chain());
 }
@@ -106,6 +108,7 @@ fn project(
             },
         ))
         .observe(click)
+        .observe(markers::click)
         .observe(mouse::press)
         .observe(mouse::drag)
         .observe(mouse::scroll)

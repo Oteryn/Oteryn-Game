@@ -17,9 +17,16 @@ pub(super) struct NoticeText;
 #[derive(Component)]
 pub(super) struct CloseNotice(u64);
 
+#[path = "death_controls.rs"]
+mod death_controls;
+pub(super) fn install(app: &mut App) {
+    app.add_systems(Update, death_controls::project.after(project));
+}
+
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let death = overlay(&mut commands, 175, DeathOverlay);
     let panel = notice_panel(&mut commands, &skins, death, "You are dead");
+    commands.entity(panel).insert(death_controls::Panel);
     let text = commands
         .spawn((
             source::text("", source::font(skins.font.clone(), false)),
@@ -167,14 +174,22 @@ pub(super) fn keyboard(
     }
     if let Some(play) = &mut owner.play {
         if play.view.death_modal_notice().is_some() {
-            if deaths.single().is_ok_and(|entity| guard.allows(entity))
-                && keys.read().any(|event| {
-                    event.state == bevy::input::ButtonState::Pressed
-                        && !event.repeat
-                        && event.key_code == KeyCode::Enter
-                })
-            {
-                play.view.acknowledge_death(&play.link);
+            if deaths.single().is_ok_and(|entity| guard.allows(entity)) {
+                for event in keys.read().filter(|event| {
+                    event.state == bevy::input::ButtonState::Pressed && !event.repeat
+                }) {
+                    match event.key_code {
+                        KeyCode::Enter | KeyCode::NumpadEnter => {
+                            play.view.acknowledge_death(&play.link);
+                            break;
+                        }
+                        KeyCode::Escape => {
+                            play.view.logout();
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
             }
             keys.clear();
             return;
@@ -292,3 +307,7 @@ pub(super) fn project(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "notices_death_tests.rs"]
+mod tests;

@@ -281,6 +281,7 @@ pub(super) fn render(
     }
     presets::render(commands, skins, presets, key, panel, fields, ready);
     let buttons = row(commands, content);
+    atelier::entry(commands, skins, buttons, key, panel);
     for (kind, caption, enabled) in [
         (
             Kind::Save,

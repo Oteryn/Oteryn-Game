@@ -169,7 +169,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
             control(
                 hwnd,
                 "BUTTON",
-                "Exclude equipped counts",
+                "Sales: backpack only",
                 108,
                 (205, 375, 190, 28),
                 BS_AUTOCHECKBOX as u32,
@@ -225,13 +225,11 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 if actions.contains(&107) {
                     options.ignore_capacity = !options.ignore_capacity;
                 }
-                if actions.contains(&108) {
-                    options.ignore_equipped = !options.ignore_equipped;
-                }
                 if actions.contains(&109) {
                     options.only_owned = !options.only_owned;
                 }
             }
+            windows_sys::Win32::UI::Input::KeyboardAndMouse::EnableWindow(option_controls[1], 0);
             let shop = &mailbox.npc_shop.live;
             for (control, checked) in option_controls.iter().zip([
                 shop.options.ignore_capacity,

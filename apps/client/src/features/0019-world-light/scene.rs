@@ -92,16 +92,18 @@ impl Scene {
                     |x, y| self.world.floor_tile(floor, x, y),
                     |x, y| {
                         let tile = TileCoord::new(x, y);
-                        if !own_floor {
-                            return Vec::new();
-                        }
-                        let has_actor = self.actor_draws.iter().any(|(at, _)| *at == tile);
+                        let has_actor = self
+                            .actor_draws
+                            .iter()
+                            .any(|actor| actor.floor == floor && actor.tile == tile);
                         // Object markers remain below actors. Entity fallback glyphs are replaced.
-                        let marker = self.visible.iter().any(|v| {
-                            v.tile == tile
-                                && ((v.kind == TargetKind::Object && (v.glyph || v.item.is_none()))
-                                    || (v.glyph && !has_actor))
-                        });
+                        let marker = own_floor
+                            && self.visible.iter().any(|v| {
+                                v.tile == tile
+                                    && ((v.kind == TargetKind::Object
+                                        && (v.glyph || v.item.is_none()))
+                                        || (v.glyph && !has_actor))
+                            });
                         marker
                             .then_some(Draw {
                                 cell: MARKER_CELL,
@@ -111,14 +113,24 @@ impl Scene {
                             .chain(
                                 self.actor_draws
                                     .iter()
-                                    .filter(|(at, _)| *at == tile)
-                                    .flat_map(|(_, draws)| draws.iter().copied()),
+                                    .filter(|actor| actor.floor == floor && actor.tile == tile)
+                                    .flat_map(|actor| actor.draws.iter().copied()),
                             )
                             .collect()
                     },
                     self.scroll.map(|v| v / self.view.tile_px() as f32),
                     &mut *emit,
                 )?;
+            }
+            for (_, quads, alpha) in self.floor_visuals.iter().filter(|(at, _, _)| *at == floor) {
+                let start = sprites.len();
+                for quad in quads {
+                    if sprites.len() >= limit {
+                        break;
+                    }
+                    sprites.push_quad(*quad)?;
+                }
+                sprites.lighting.set_opacity(start..sprites.len(), *alpha)?;
             }
             floor_quads.push((start..sprites.len(), floor));
             if floor < self.world.center().2 && self.floor_separator > 0 && sprites.len() > start {

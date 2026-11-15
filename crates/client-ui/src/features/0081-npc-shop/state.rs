@@ -68,19 +68,6 @@ impl LiveShop {
             inventory
                 .entries
                 .iter()
-                .chain(
-                    inventory
-                        .main_backpack
-                        .iter()
-                        .filter(|_| !self.options.ignore_equipped),
-                )
-                .chain(
-                    inventory
-                        .equipment
-                        .iter()
-                        .filter(|_| !self.options.ignore_equipped)
-                        .map(|entry| &entry.item),
-                )
                 .filter(|entry| entry.item_definition_ref.get() == item)
                 .map(|entry| u64::from(entry.count.get()))
                 .sum()

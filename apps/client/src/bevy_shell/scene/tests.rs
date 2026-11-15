@@ -413,6 +413,7 @@ fn walking_projection_keeps_touch_controls_fixed_and_moves_world_quads() -> Test
     let mut view = PlayView::new(TileCoord::new(100, 100), 7, &[])?;
     view.enable_touch_controls();
     view.apply(&StepOutcome {
+        step_wait_ms: 0,
         command_id: 1,
         status: CommandStatus::Accepted,
         disposition: StepDisposition::Moved,

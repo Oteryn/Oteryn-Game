@@ -216,6 +216,69 @@ mod foreground_click {
 }
 
 #[test]
+fn secondary_minimap_click_edits_the_viewed_coordinate() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let mut app = fixture()?;
+    activate(&mut app, "E")?;
+    activate(&mut app, "Floor up")?;
+    let image = app
+        .world_mut()
+        .query_filtered::<Entity, With<MiniImage>>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(image)
+        .insert(RelativeCursorPosition {
+            normalized: Some(Vec2::new(0.5, 0.5)),
+            ..default()
+        });
+    app.world_mut().trigger(PointerClick {
+        entity: image,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 124,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    for mut text in app
+        .world_mut()
+        .query::<&mut bevy::text::EditableText>()
+        .iter_mut(app.world_mut())
+    {
+        *text = bevy::text::EditableText::new("Cave entrance");
+    }
+    activate(&mut app, "Save mark")?;
+    let owner = app.world().non_send::<HostOwner>();
+    let play = owner.play.as_ref().ok_or("play")?;
+    assert!(play.view.satellite_map(|_, marks| marks.iter().any(|m| (
+        m.x,
+        m.y,
+        m.floor,
+        m.label.as_str()
+    ) == (
+        105,
+        200,
+        -6,
+        "Cave entrance"
+    ))));
+    assert_eq!(play.view.satellite_player(), (100, 200, -7));
+    Ok(())
+}
+
+#[test]
 fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult {
     use bevy::picking::{
         backend::HitData,

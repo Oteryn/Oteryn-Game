@@ -14,7 +14,7 @@ fn combat_review_overflow_keeps_newest_in_mailbox_and_view()
                     .map(|ordinal| PresentationEvent {
                         decision_ordinal: 1,
                         emission_ordinal: ordinal as u32,
-                        kind: numbered_value(
+                        kind: separate_number(
                             (sequence - 1) * (MAX_VISUAL_CUES as u64 + 1) + ordinal as u64,
                         ),
                     })
@@ -27,20 +27,20 @@ fn combat_review_overflow_keeps_newest_in_mailbox_and_view()
     assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
     assert_eq!(
         view.visuals[0].kind,
-        numbered_value(MAX_VISUAL_CUES as u64 + 3)
+        separate_number(MAX_VISUAL_CUES as u64 + 3)
     );
     assert_eq!(
         view.visuals[MAX_VISUAL_CUES - 1].kind,
-        numbered_value(2 * (MAX_VISUAL_CUES as u64 + 1))
+        separate_number(2 * (MAX_VISUAL_CUES as u64 + 1))
     );
     let now = std::time::Instant::now();
-    view.receive_presentation(&[numbered_value(999)], now);
+    view.receive_presentation(&[separate_number(999)], now);
     assert_eq!(view.visuals.len(), MAX_VISUAL_CUES);
     assert_eq!(
         view.visuals[0].kind,
-        numbered_value(MAX_VISUAL_CUES as u64 + 4)
+        separate_number(MAX_VISUAL_CUES as u64 + 4)
     );
-    assert_eq!(view.visuals[MAX_VISUAL_CUES - 1].kind, numbered_value(999));
+    assert_eq!(view.visuals[MAX_VISUAL_CUES - 1].kind, separate_number(999));
     Ok(())
 }
 
@@ -61,7 +61,11 @@ fn combat_review_same_tile_values_reserve_separate_lines_in_order()
     {
         *secondary = Some(*primary);
     }
-    view.receive_presentation(&[middle, numbered_value(8)], now);
+    let mut different_color = numbered_value(8);
+    if let PresentationEventKind::ValueText { primary, .. } = &mut different_color {
+        primary.color = oteryn_session::PresentationColor::Yellow;
+    }
+    view.receive_presentation(&[middle, different_color], now);
     view.project_presentation(now)?;
     let quads = &view.scene().sprites().instances()[base..];
     assert_eq!(quads.len(), first.len() * 4);
@@ -133,4 +137,32 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
         }
     }
     Ok(())
+}
+
+#[test]
+fn presentation_bursts_merge_matching_values_and_fade_before_expiry()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, _, outbox) = crate::play::play_channel();
+    outbox.push(vec![oteryn_session::SessionEvent::Presentation(AppliedDelta {
+        server_sequence: 1, base_revision: 0, new_revision: 1,
+        value: [8, 16].into_iter().enumerate().map(|(i, value)| PresentationEvent {
+            decision_ordinal: 1, emission_ordinal: i as u32 + 1, kind: numbered_value(value)
+        }).collect(),
+    })]);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0,0), 0, &[])?;
+    view.tick(&link).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(view.visuals.len(), 1);
+    assert_eq!(view.visuals[0].kind, numbered_value(24));
+    let now = view.visuals[0].received;
+    view.project_presentation(now + std::time::Duration::from_millis(900))?;
+    assert!(view.scene().sprites().lighting.opacity.iter().any(|(_, alpha)| *alpha > 0 && *alpha < 100));
+    view.project_presentation(now + std::time::Duration::from_secs(1))?;
+    assert!(view.scene().sprites().lighting.opacity.is_empty());
+    Ok(())
+}
+
+pub(super) fn separate_number(value: u64) -> PresentationEventKind {
+    let mut kind = numbered_value(value);
+    if let PresentationEventKind::ValueText { position, .. } = &mut kind { position.x = value as i32; }
+    kind
 }

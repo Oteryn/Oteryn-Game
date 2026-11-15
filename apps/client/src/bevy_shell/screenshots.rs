@@ -6,6 +6,8 @@ use bevy::{
     render::view::screenshot::{Screenshot, ScreenshotCaptured},
 };
 use std::{io, path::PathBuf};
+mod automatic;
+pub(super) use automatic::{Capture, State as AutomaticState, observe};
 
 pub(super) fn request(commands: &mut Commands, owner: &mut HostOwner, viewport: WorldViewport) {
     let preferences = owner.settings.preferences.screenshots.effective();

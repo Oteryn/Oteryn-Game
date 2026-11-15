@@ -280,3 +280,50 @@ fn tileless_context_revalidates_carried_items() -> Result<(), Box<dyn std::error
     }
     Ok(())
 }
+
+#[test]
+fn modifier_mouse_release_reaches_authoritative_look_use_and_attack_callers()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::*;
+    use oteryn_client_runtime::world_interaction::Action;
+    use crate::combat_input::PlayCommand;
+    for button in [MouseButton::PRIMARY, MouseButton::SECONDARY] {
+        for modifier in [Modifier::Shift, Modifier::Control, Modifier::Alt] {
+            let (link, mut commands, outbox) = crate::play::play_channel();
+            outbox.world_context_initialize(true,false);
+            let mut view = view()?;
+            let tile = if modifier == Modifier::Alt {
+                let tile = TileCoord::new(101,200);
+                view = view.with_entities(vec![WorldSpatialEntity {
+                    entity: EntityRef { identity: [4;16], generation: 1 }, kind: EntityKind::Creature,
+                    position: ActorPosition {x:tile.x,y:tile.y,floor:0}, display_name: None,
+                    detail: oteryn_session::EntityDetail::Actor { direction: StepDirection::South, appearance_ref: 1, health_percent: 100 }
+                }])?;
+                tile
+            } else {
+                let mut map = super::feature_local_world_view::live_snapshot(101);
+                map.tiles[0].items[0].origin = oteryn_session::world_map::MapOrigin::BaseOrdinal { ordinal: 2, object_revision: 7 };
+                view.set_live_map(&map)?;
+                TileCoord::new(101,200)
+            };
+            let at = view.scene().view().tile_to_screen(tile);
+            let mut router = crate::input::MouseActions::new()?;
+            let moved = NormalizedInputEvent::PointerMoved {
+                position: PointerPosition::new(PointerCoordinate::new(at[0] as i32 + 24)?,PointerCoordinate::new(at[1] as i32 + 24)?),
+                motion: PointerMotion::new(PointerDelta::new(0)?,PointerDelta::new(0)?) };
+            let event = |state| NormalizedInputEvent::MouseButton {button,state,modifiers:Modifiers::one(modifier)};
+            assert!(router.route(&[moved,event(ButtonState::Pressed)]).is_empty());
+            for click in router.route(&[event(ButtonState::Released)]) {
+                let tile = view.click_tile(click.x,click.y).ok_or("tile")?;
+                assert!(view.modifier_click(tile,&link,click.shortcut.ok_or("shortcut")?), "modifier {modifier:?}, button {button:?}, tile {tile:?}");
+            }
+            match (modifier,commands.try_recv()?) {
+                (Modifier::Shift,PlayCommand::WorldContext(command)) => assert_eq!(command.action,Action::Look),
+                (Modifier::Control,PlayCommand::WorldContext(command)) => assert_eq!(command.action,Action::Use),
+                (Modifier::Alt,PlayCommand::Combat(_)) => {}
+                _ => return Err("modifier command did not reach owner".into()),
+            }
+        }
+    }
+    Ok(())
+}

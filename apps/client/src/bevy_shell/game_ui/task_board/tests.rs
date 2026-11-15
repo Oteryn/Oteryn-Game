@@ -279,3 +279,140 @@ fn taskboard_open_bounty_when_no_offers() -> Result<(), &'static str> {
     assert!(intent(&offered, &mut confirm, &Kind::OpenBounty).is_none());
     Ok(())
 }
+
+type ExtraFixture = (
+    App,
+    tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    crate::play::Outbox,
+);
+fn extra_fixture(mut value: TaskBoardPanel) -> Result<ExtraFixture, Box<dyn std::error::Error>> {
+    value.open = true;
+    let (link, commands, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_task_board_fixture(value);
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), -7, &[])?,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    Ok((app, commands, outbox))
+}
+fn extra_click(
+    app: &mut App,
+    test: impl Fn(&Kind) -> bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| test(&a.kind).then_some(e))
+        .ok_or("task-board action missing")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
+#[test]
+fn taskboard_preference_panels_confirm_both_assignments_through_owner()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    for preferred in [true, false] {
+        let mut p = panel();
+        p.weekly.as_mut().ok_or("board")?.weekly.kills[0].race = "oteryn:creature.rat".into();
+        p.weekly.as_mut().ok_or("board")?.bounty.lists = vec![ListSlot {
+            unlocked: true,
+            preferred: String::new(),
+            unwanted: String::new(),
+        }];
+        let (mut app, mut commands, _) = extra_fixture(p)?;
+        extra_click(&mut app, |kind| matches!(kind, Kind::Tab(Tab::Preferences)))?;
+        extra_click(&mut app, |kind| match kind {
+            Kind::Extra(extras::Action::Preferred(0, race)) if preferred => {
+                race == "oteryn:creature.rat"
+            }
+            Kind::Extra(extras::Action::Unwanted(0, race)) if !preferred => {
+                race == "oteryn:creature.rat"
+            }
+            _ => false,
+        })?;
+        assert!(commands.try_recv().is_err());
+        extra_click(&mut app, |kind| matches!(kind, Kind::ConfirmExtra(_)))?;
+        let PlayCommand::Feature(command) = commands.try_recv()? else {
+            return Err("preference command".into());
+        };
+        let request = decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(request.action, if preferred { 13 } else { 14 });
+        assert_eq!(request.selection, 0);
+        assert_eq!(request.race, "oteryn:creature.rat");
+    }
+    Ok(())
+}
+#[test]
+fn taskboard_soulseal_panel_reviews_cost_then_enters_exact_authorized_fight()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use model::task_board::soulpit as wire;
+    let mut p = panel();
+    p.fights.reply = Some(wire::Reply {
+        status: wire::Status::Catalogue,
+        balance: Some(37),
+        authorization: Some([7; 16]),
+        next: None,
+        total: 1,
+        rules: wire::EntryRules {
+            required_level: 8,
+            time_limit_seconds: 600,
+            authorization_ms: 10000,
+        },
+        entries: vec![wire::Fight {
+            race: 5,
+            name: "Grove watcher".into(),
+            stars: 2,
+            cost: 30,
+        }],
+        reason: String::new(),
+    });
+    p.fights.received_at = Some(std::time::Instant::now());
+    let (mut app, mut commands, outbox) = extra_fixture(p.clone())?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::Tab(Tab::Soulseals)))?;
+    let PlayCommand::Feature(query) = commands.try_recv()? else {
+        return Err("catalogue query".into());
+    };
+    assert_eq!(
+        wire::Request::decode(&query.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::Catalogue { after: 0 }
+    );
+    outbox.bevy_task_board_fixture(p);
+    app.update();
+    extra_click(&mut app, |kind| {
+        matches!(kind, Kind::Extra(extras::Action::Fight(5)))
+    })?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("30 Soulseals?"))
+    );
+    extra_click(&mut app, |kind| matches!(kind, Kind::ConfirmExtra(_)))?;
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("fight command".into());
+    };
+    assert_eq!(
+        wire::Request::decode(&command.payload).map_err(|e| format!("{e:?}"))?,
+        wire::Request::Enter {
+            authorization: [7; 16],
+            race: 5
+        }
+    );
+    Ok(())
+}

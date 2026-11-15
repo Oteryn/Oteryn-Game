@@ -371,6 +371,7 @@ fn step_receipt_requires_an_actual_reply_and_resets_with_the_play_view() -> Test
         crate::play::audit_step_reply(
             &outbox,
             StepOutcome {
+                step_wait_ms: 0,
                 command_id: 40 + index as u64,
                 status,
                 disposition,

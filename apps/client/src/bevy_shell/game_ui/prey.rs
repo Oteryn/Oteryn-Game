@@ -27,6 +27,7 @@ enum Kind {
     Send(Intent),
     ChooseAny(u8),
     ConfirmAny(Intent),
+    Choose(u8, u8),
 }
 #[derive(Component)]
 struct Wildcard(u8);
@@ -38,12 +39,14 @@ struct Action {
     panel: PreyPanel,
     kind: Kind,
 }
+type Seen = (u64, PreyPanel, Option<u8>, Option<Intent>, Option<(u8, u8)>);
 #[derive(Resource, Default)]
 struct State {
-    seen: Option<(u64, PreyPanel, Option<u8>, Option<Intent>)>,
+    seen: Option<Seen>,
     root: Option<Entity>,
     confirmation: Option<u8>,
     wildcard: Option<Intent>,
+    candidate: Option<(u8, u8)>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>().add_systems(
@@ -120,10 +123,12 @@ fn resolve(kind: Kind, confirmation: &mut Option<u8>) -> Option<Intent> {
 // These fixed Wildcard costs are the admitted Prey rules; gold quotes are not on the wire.
 fn affordable(panel: &PreyPanel, kind: &Kind) -> bool {
     let cost = match kind {
-        Kind::Send(Intent::BonusReroll { .. } | Intent::SetOption { option: 1, .. }) => 1,
+        Kind::Send(Intent::BonusReroll { .. } | Intent::SetOption { option: 1, .. })
+        | Kind::ConfirmAny(Intent::BonusReroll { .. } | Intent::SetOption { option: 1, .. }) => 1,
         Kind::ChooseAny(_)
-        | Kind::ConfirmAny(_)
-        | Kind::Send(Intent::SetOption { option: 2, .. }) => 5,
+        | Kind::ConfirmAny(Intent::SelectAny { .. })
+        | Kind::Send(Intent::SetOption { option: 2, .. })
+        | Kind::ConfirmAny(Intent::SetOption { option: 2, .. }) => 5,
         _ => 0,
     };
     cost == 0
@@ -242,6 +247,23 @@ fn activate(
                 && let Some(intent) = state.wildcard.take()
             {
                 play.link.prey_request(intent);
+            } else if state.wildcard.as_ref() == Some(expected)
+                && matches!(
+                    expected,
+                    Intent::BonusReroll { .. } | Intent::SetOption { option: 1..=2, .. }
+                )
+            {
+                state.wildcard = None;
+                play.link.prey_request(expected.clone());
+            }
+        }
+        Kind::Choose(slot, index) => {
+            if state.candidate == Some((slot, index))
+                && state.wildcard == Some(Intent::Select { slot })
+            {
+                state.candidate = None;
+                state.wildcard = None;
+                play.link.prey_select(slot, index);
             }
         }
         Kind::Cancel => {
@@ -253,7 +275,27 @@ fn activate(
             state.confirmation = None;
             play.link.store_set_open(true);
         }
-        Kind::Select(slot, index) => play.link.prey_select(slot, index),
+        Kind::Select(slot, index) => {
+            if action
+                .panel
+                .slot(slot)
+                .is_some_and(|s| s.state == 1 && usize::from(index) <= s.creatures.len())
+                && index > 0
+                && action.panel.unlocked(slot)
+                && action.panel.pending.is_none()
+            {
+                state.candidate = Some((slot, index));
+                state.wildcard = Some(Intent::Select { slot });
+                state.confirmation = None;
+            }
+        }
+        Kind::Send(
+            ref intent @ (Intent::BonusReroll { .. } | Intent::SetOption { option: 1..=2, .. }),
+        ) => {
+            state.confirmation = None;
+            state.candidate = None;
+            state.wildcard = Some(intent.clone());
+        }
         _ => {
             if let Some(intent) = resolve(action.kind.clone(), &mut state.confirmation) {
                 play.link.prey_request(intent);

@@ -96,14 +96,13 @@ impl SettingsState {
         }
         let mut paths = Vec::new();
         if self.screenshot_requested {
+            // An asynchronous renderer may not have supplied this frame yet. Do not save
+            // or consume retained frames until capture succeeds.
+            let current = source.capture(preferences.game_only)?;
             for (_, frame) in &runtime.frames {
                 paths.push(frame.save(&preferences.folder)?);
             }
-            paths.push(
-                source
-                    .capture(preferences.game_only)?
-                    .save(&preferences.folder)?,
-            );
+            paths.push(current.save(&preferences.folder)?);
             runtime.frames.clear();
             runtime.last_frame = Some(now);
             self.screenshot_requested = false;
@@ -113,8 +112,8 @@ impl SettingsState {
                 .last_frame
                 .is_none_or(|last| now.saturating_duration_since(last) >= Duration::from_secs(1))
         {
-            runtime.last_frame = Some(now);
             let pixels = source.capture(preferences.game_only)?;
+            runtime.last_frame = Some(now);
             runtime.frames.push_back((now, pixels));
             while runtime.frames.len() > limit
                 || runtime
