@@ -15,9 +15,9 @@ pub fn request(panel: &mut ChatPanel, spell: MovementSpell) -> Option<&'static s
     panel.pending = true;
     panel.feedback = None;
     Some(match spell {
-        MovementSpell::LevitateUp => tr!("exani hur \"up"),
-        MovementSpell::LevitateDown => tr!("exani hur \"down"),
-        MovementSpell::MagicRope => tr!("exani tera"),
+        MovementSpell::LevitateUp => "exani hur \"up",
+        MovementSpell::LevitateDown => "exani hur \"down",
+        MovementSpell::MagicRope => "exani tera",
     })
 }
 
@@ -26,6 +26,30 @@ mod tests {
     use super::*;
     use crate::chat_public_channels::apply_result;
     use oteryn_client_runtime::chat_public_channels::{ChatDisposition, ChatOutcome};
+
+    #[test]
+    fn movement_spell_commands_are_canonical_in_every_language() {
+        use crate::localization::{Language, with_language};
+        for language in Language::ALL {
+            with_language(language, || {
+                for (spell, words) in [
+                    (MovementSpell::LevitateUp, "exani hur \"up"),
+                    (MovementSpell::LevitateDown, "exani hur \"down"),
+                    (MovementSpell::MagicRope, "exani tera"),
+                ] {
+                    let mut panel = ChatPanel {
+                        speech_selected: true,
+                        ..ChatPanel::default()
+                    };
+                    assert_eq!(
+                        request(&mut panel, spell),
+                        Some(words),
+                        "{language:?} {spell:?}"
+                    );
+                }
+            });
+        }
+    }
 
     #[test]
     fn movement_spells_use_local_speech_and_wait_for_the_server() {
