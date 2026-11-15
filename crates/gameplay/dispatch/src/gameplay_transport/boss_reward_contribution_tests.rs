@@ -139,6 +139,122 @@ fn frozen(f: &Fixture) -> Vec<FrozenBossParticipant> {
 }
 
 #[test]
+fn scheduled_source_damage_receipts_credit_boss_participation_once() {
+    use crate::foundation::owner_timer::SemanticTimeMicros;
+    use crate::player_lethal::{PlayerHitKind, PlayerLethalVitals};
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let mut f = fixture(true);
+    let (actor, session, character) = f.players[0];
+    let mut states = crate::gameplay_transport::actor_spell::ChannelSpellStates::default();
+    let mut attack = crate::gameplay_transport::attack::ChannelAttackStates::default();
+    let now = SemanticTimeMicros::from_micros(10);
+    let player = crate::gameplay_transport::actor_spell::tests::FACTS;
+    states
+        .initialize(
+            &f.runtime,
+            actor,
+            session,
+            player,
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get()),
+        )
+        .expect("current player vitals");
+    attack
+        .kills()
+        .boss_targets(&f.runtime, f.boss, [(actor, session)].into_iter());
+    let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()
+        .expect("canonical charm catalogue");
+    let digest = f.runtime.content_pin().server_artifact_digest();
+    let root = GameplayDecisionRoot::from_bytes(digest);
+    let facts = crate::foundation::ApplicationFacts {
+        now: now.get(),
+        base_speed: states
+            .get(&f.runtime, actor, session)
+            .expect("current player")
+            .owned_base_speed()
+            .try_into()
+            .expect("player base speed"),
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes(actor.placement_identity()),
+    };
+    let secondary = {
+        let mut vitals =
+            crate::gameplay_transport::monster_profile_cycle::physical_spell::source_vitals(
+                &mut states,
+                &mut attack,
+                &catalogue,
+                GameplayDecisionRoot::from_bytes(digest),
+            );
+        let secondary = vitals
+            .apply_source_typed_attack_damage(
+                &mut f.runtime,
+                f.boss,
+                actor,
+                session,
+                12,
+                PlayerHitKind::Physical,
+                "fixture:boss-secondary:1",
+                now,
+            )
+            .expect("real secondary HP receipt");
+        assert_eq!(secondary.applied, 12);
+        let stamp = f.runtime.issue_owner_work().expect("current chain work");
+        let chain = vitals
+            .apply_typed_composite_attack_damage_current(
+                &mut f.runtime,
+                actor,
+                session,
+                7,
+                PlayerHitKind::Physical,
+                "fixture:boss-chain:1",
+                f.boss,
+                &[],
+                &facts,
+                &[],
+                stamp,
+            )
+            .expect("real delayed HP receipt");
+        assert_eq!(chain.applied, 7);
+        secondary
+    };
+    assert_eq!(
+        states
+            .get(&f.runtime, actor, session)
+            .expect("player")
+            .vitals()
+            .health,
+        player.max_health - 19,
+        "both real HP commits applied only once"
+    );
+    // The existing immediate/cached-outcome observer can see an older receipt
+    // after a delayed hit. Re-observing that real receipt must not add it again.
+    for _ in 0..2 {
+        attack.kills().boss_damage_received(
+            &f.runtime,
+            f.boss,
+            actor,
+            session,
+            u64::from(secondary.applied),
+            secondary.vitals_revision,
+        );
+    }
+    let participants = attack
+        .kills()
+        .freeze_boss_participation(f.boss, &[])
+        .expect("boss participation");
+    let participant = participants
+        .iter()
+        .find(|participant| participant.character == character)
+        .expect("current boss participant");
+    assert_eq!(participant.contribution.damage_received, 19);
+}
+
+#[test]
 fn boss_contribution_counts_new_received_damage_only_and_rejects_foreign_session() {
     let f = fixture(true);
     let (actor, session, character) = f.players[0];

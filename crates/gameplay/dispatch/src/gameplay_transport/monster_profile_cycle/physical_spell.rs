@@ -3,12 +3,248 @@
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, CurrentConditionPolicy, ProfileAbilityProposal};
 use crate::creature_damage_spell::{SpellCombatFacts, SpellSource, SpellWorldReader};
+use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeWorkStamp};
+use crate::player_lethal::*;
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use std::collections::BTreeMap;
 
 mod composed;
 mod timers;
+
+pub(in crate::gameplay_transport) fn source_vitals<'a>(
+    states: &'a mut ChannelSpellStates,
+    attack: &'a mut ChannelAttackStates,
+    catalogue: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+    root: GameplayDecisionRoot,
+) -> impl crate::player_lethal::PlayerLethalVitals + 'a {
+    ProfileSourceVitals {
+        inner: super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+            states,
+            attack,
+            catalogue,
+            root,
+        },
+    }
+}
+
+// These callers retain the caster at the HP receipt boundary, before timer and
+// callback result types discard it. Existing observers deduplicate vitals revisions.
+struct ProfileSourceVitals<'a> {
+    inner: super::super::attack::charm_combat::source_vitals::CharmSourceVitals<'a>,
+}
+
+macro_rules! forward_profile_vitals {
+    (@call $this:ident, $name:ident, ($($arg:ident),*);) => {
+        PlayerLethalVitals::$name(&mut $this.inner, $($arg),*)
+    };
+    (@call $this:ident, $name:ident, ($($arg:ident),*);
+        credit($source:ident, $runtime:ident, $target:ident, $session:ident)) => {{
+        let receipt = PlayerLethalVitals::$name(&mut $this.inner, $($arg),*)?;
+        $this.inner.attack.kills().boss_damage_received(
+            $runtime, $source, $target, $session,
+            u64::from(receipt.applied), receipt.vitals_revision,
+        );
+        Some(receipt)
+    }};
+    ($(fn $name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
+        $(credit($source:ident, $runtime:ident, $target:ident, $session:ident);)?
+    )*) => {$(
+        #[allow(clippy::too_many_arguments, reason = "forward the existing native vitals ABI unchanged")]
+        fn $name(&mut self, $($arg: $ty),*) -> $ret {
+            forward_profile_vitals!(@call self, $name, ($($arg),*);
+                $(credit($source, $runtime, $target, $session))?)
+        }
+    )*};
+}
+
+impl PlayerLethalVitals for ProfileSourceVitals<'_> {
+    forward_profile_vitals! {
+        fn reflect_equipment_damage(
+            runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            target: ExactActorRef,
+            session: GameSessionId,
+            element: Option<&str>,
+            magnitude: u32,
+            stream: &[u8],
+            now: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> bool;
+        fn apply_source_appearance_batch(
+            runtime: &mut ChannelRuntimeV1,
+            fence: &crate::foundation::ScopeRuntimeFence,
+            stamp: crate::foundation::RuntimeWorkStamp,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            targets: &[SourceAppearanceTarget<'_>],
+        ) -> Option<Vec<SourceAppearanceReceipt>>;
+        fn apply_source_appearance_batch_current(
+            runtime: &mut ChannelRuntimeV1,
+            stamp: crate::foundation::RuntimeWorkStamp,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            targets: &[SourceAppearanceTarget<'_>],
+        ) -> Option<Vec<SourceAppearanceReceipt>>;
+        fn apply_source_player_heal(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            now: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> Option<PlayerHealReceipt>;
+        fn remove_attack_invisibility(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            source: ExactActorRef,
+            now: u64,
+            fence: &crate::foundation::ScopeRuntimeFence,
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> bool;
+        fn apply_attack_mana_drain(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            now: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> Option<PlayerManaDrainReceipt>;
+        fn apply_attack_conditions(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            fence: &crate::foundation::ScopeRuntimeFence,
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> bool;
+        fn apply_composite_attack_damage(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            fence: &crate::foundation::ScopeRuntimeFence,
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt>;
+        credit(source, runtime, target, session);
+        fn apply_typed_attack_damage(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            kind: PlayerHitKind,
+            occurrence: &str,
+            now: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> Option<PlayerDamageReceipt>;
+        fn apply_typed_composite_attack_damage(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            kind: PlayerHitKind,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            fence: &crate::foundation::ScopeRuntimeFence,
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt>;
+        credit(source, runtime, target, session);
+        fn apply_typed_composite_attack_damage_current(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            kind: PlayerHitKind,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt>;
+        credit(source, runtime, target, session);
+        fn apply_attack_conditions_current(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> bool;
+        fn apply_composite_attack_damage_current(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            source: ExactActorRef,
+            definitions: &[crate::foundation::ConditionDefinition],
+            facts: &crate::foundation::ApplicationFacts<'_>,
+            immunities: &[crate::foundation::ConditionType],
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> Option<PlayerDamageReceipt>;
+        credit(source, runtime, target, session);
+        fn remove_attack_invisibility_current(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            source: ExactActorRef,
+            now: u64,
+            stamp: crate::foundation::RuntimeWorkStamp,
+        ) -> bool;
+        fn apply_attack_damage(
+            runtime: &mut ChannelRuntimeV1,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            now: crate::foundation::owner_timer::SemanticTimeMicros,
+        ) -> Option<PlayerDamageReceipt>;
+        fn apply_source_mana_drain(
+            runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            occurrence: &str,
+            now: SemanticTimeMicros,
+        ) -> Option<PlayerManaDrainReceipt>;
+        fn apply_source_typed_attack_damage(
+            runtime: &mut ChannelRuntimeV1,
+            source: ExactActorRef,
+            target: ExactActorRef,
+            session: GameSessionId,
+            magnitude: u32,
+            kind: PlayerHitKind,
+            occurrence: &str,
+            now: SemanticTimeMicros,
+        ) -> Option<PlayerDamageReceipt>;
+        credit(source, runtime, target, session);
+    }
+
+    fn source_player_health(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        PlayerLethalVitals::source_player_health(&self.inner, runtime, target, session)
+    }
+}
 
 struct CurrentTarget<'native> {
     native: &'native NativeGameplayState,
@@ -264,12 +500,12 @@ pub(super) async fn execute(
                 &mut spells,
                 runtime,
                 stamp,
-                &mut super::super::attack::charm_combat::source_vitals::CharmSourceVitals {
+                &mut source_vitals(
                     states,
                     attack,
-                    catalogue: charms,
-                    root: GameplayDecisionRoot::from_bytes(native.source_digest()),
-                },
+                    charms,
+                    GameplayDecisionRoot::from_bytes(native.source_digest()),
+                ),
                 &parent_source,
                 proposal,
                 &mut reader,
