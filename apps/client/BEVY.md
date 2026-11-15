@@ -126,6 +126,17 @@ binding use neutral unavailable labels/icons. A definition reference is not an
 appearance ID. The existing Look/inspection commands remain the source of item
 details; the client does not guess a mapping.
 
+## Hotkeys
+
+Open Options (Ctrl+Shift+O), enable Advanced, and select Controls. The hotkey manager
+lists key chords, actions and text. Select a row to edit it, or New to add a
+binding. Action cycles between text, use on self, use on target, use with
+crosshair, and ordinary object use. Object actions take the existing item
+definition id and subtype. Send automatically sends a text macro immediately;
+when disabled it fills the chat draft. Add / Save updates the draft; Remove
+removes the selected binding. Apply or OK persists through the existing scoped
+settings store; Cancel discards edits.
+
 ## Floor visibility
 
 The world view consumes the map header's authoritative `first_visible_floor`.

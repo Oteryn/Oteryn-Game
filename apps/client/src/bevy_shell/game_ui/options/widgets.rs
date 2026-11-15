@@ -305,6 +305,9 @@ pub(super) fn page(
             .id();
         commands.entity(parent).add_child(status);
     }
+    if page == Page::Controls {
+        super::super::hotkeys::build(commands, parent, skins);
+    }
     for row in metadata::rows(page) {
         let entity = match row.editor {
             Editor::Check { read, .. } => checkbox(

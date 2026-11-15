@@ -3,6 +3,7 @@ mod actions;
 mod analyser;
 mod chat;
 mod feature_dialogs;
+mod hotkeys;
 mod hud;
 mod imbuing;
 mod inventory;
@@ -241,6 +242,7 @@ pub(super) fn install(app: &mut App) {
     actions::install(app);
     analyser::install(app);
     feature_dialogs::install(app);
+    hotkeys::install(app);
     hud::install(app);
     imbuing::install(app);
     inventory::install(app);
