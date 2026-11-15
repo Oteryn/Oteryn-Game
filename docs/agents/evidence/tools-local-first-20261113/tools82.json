@@ -1,0 +1,5889 @@
+{
+  "schema": "OTERYN_TOOLS_LOCAL_FIRST/v1",
+  "appearance_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "records": [
+    {
+      "appearance_object_id": 646,
+      "record_sha256": "7bb4bfc35c255ef21a5f2afd3b47c575847f75fff9dd343d98ff57e6e5e9c835",
+      "name": "elvenhair rope",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 646,
+        "show_as_object_id": 646
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        201354
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 650,
+      "record_sha256": "3fe18a06cf456cd2acee880cea09e85f446eeb1f6cd64b38a51e2093777c0ad2",
+      "name": "watering can",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 650,
+        "show_as_object_id": 650
+      },
+      "npc_rows": [
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Talila",
+          "location": "Fae Village",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Valindara",
+          "location": "Fae Village",
+          "sale_price": 50,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        201358
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2906,
+      "record_sha256": "59f6d5617ea34f4a25e56b4c9288ac79496a64bd1d863b258a8b344ae0ec4496",
+      "name": "watch",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2906,
+        "show_as_object_id": 2906
+      },
+      "npc_rows": [
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 20,
+          "buy_price": 6
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 20,
+          "buy_price": 6
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        200475
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2911,
+      "record_sha256": "f5bbff228f0aa48791fce6169a318970223039d21591774bbbf1406eb5fcaebb",
+      "name": "candelabrum",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2911,
+        "show_as_object_id": 2911
+      },
+      "npc_rows": [
+        {
+          "name": "Nienna",
+          "location": "Meluna",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 8,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        26,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203639
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2914,
+      "record_sha256": "bc685a3490d004fccdcb49af0898af016c864741189b7678b3c37344b430b5c8",
+      "name": "lamp",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2914,
+        "show_as_object_id": 2914
+      },
+      "npc_rows": [
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 8,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 8,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        26,
+        34,
+        36,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203645
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2917,
+      "record_sha256": "087d7eee8ee44be6f82266f626f954340ee22969a2a0507f534a162a2f9b676d",
+      "name": "candlestick",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2917,
+        "show_as_object_id": 2917
+      },
+      "npc_rows": [
+        {
+          "name": "Nienna",
+          "location": "Meluna",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 2,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        26,
+        34,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203650
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2920,
+      "record_sha256": "04b4cb5c2e8811c7ae85944a32d1a17aed0eb44c8d705171d390ea56a8e5209c",
+      "name": "torch",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2920,
+        "show_as_object_id": 2920
+      },
+      "npc_rows": [
+        {
+          "name": "Al Dee",
+          "location": "Rookgaard",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "John",
+          "location": "Treasure Island",
+          "sale_price": 5,
+          "buy_price": 0
+        },
+        {
+          "name": "Lee'Delle",
+          "location": "Rookgaard",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Raffael",
+          "location": "Isle of Destiny",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Richard",
+          "location": "Dawnport Centre",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Zethra",
+          "location": "Adventurers' Guild",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Kiru",
+          "location": "Oskayaat",
+          "sale_price": 2,
+          "buy_price": 0
+        },
+        {
+          "name": "Hector the Mentor",
+          "location": "Thais Peninsula",
+          "sale_price": 2,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        34,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203654
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2932,
+      "record_sha256": "49562c55f8b92dcdfd7369080f597ada76589adc0551018c2918a5d610de248c",
+      "name": "oil lamp",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2932,
+        "show_as_object_id": 2932
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        23,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203663
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 2933,
+      "record_sha256": "678d8671b0566d08e4908f695ad80e2a4c75193cea422da45556334e2252b2fd",
+      "name": "small oil lamp",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 2933,
+        "show_as_object_id": 2933
+      },
+      "npc_rows": [
+        {
+          "name": "Yasir",
+          "location": "Southern Darama",
+          "sale_price": 0,
+          "buy_price": 150
+        },
+        {
+          "name": "Yasir",
+          "location": "Carlin",
+          "sale_price": 0,
+          "buy_price": 150
+        },
+        {
+          "name": "Yasir",
+          "location": "Liberty Bay City",
+          "sale_price": 0,
+          "buy_price": 150
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        23,
+        36,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203664
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3003,
+      "record_sha256": "1e476ea8f1e1085b8a26fa08c40cf8155dbf004040cff814304ed24bd060cf1e",
+      "name": "rope",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3003,
+        "show_as_object_id": 3003
+      },
+      "npc_rows": [
+        {
+          "name": "Al Dee",
+          "location": "Rookgaard",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "John",
+          "location": "Treasure Island",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Larek",
+          "location": "Ogre Village",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Lee'Delle",
+          "location": "Rookgaard",
+          "sale_price": 45,
+          "buy_price": 8
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Raffael",
+          "location": "Isle of Destiny",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Richard",
+          "location": "Dawnport Centre",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Zethra",
+          "location": "Adventurers' Guild",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Hector the Mentor",
+          "location": "Thais Peninsula",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Avriel",
+          "location": "Newhaven",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Aurelia",
+          "location": "Targuna",
+          "sale_price": 50,
+          "buy_price": 8
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203726
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3101,
+      "record_sha256": "243818f4d4af11d3771e50ad6388d9a088434332fafb1d1c2d19c05889b2587e",
+      "name": "spellbook",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3101,
+        "show_as_object_id": 3101
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203958
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3243,
+      "record_sha256": "663577e55628dcaca82001e656bade41f051aee723da5ba682ac7e6f00341565",
+      "name": "gemmed lamp",
+      "description": "It is the djinn leader's sleeping lamp",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3243,
+        "show_as_object_id": 3243
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204097
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3247,
+      "record_sha256": "83aa51f5c84861b8192443140c6c2e99711b1ff40ce55890f27fa18622f84586",
+      "name": "djinn's lamp",
+      "description": "(This item has 2 charges left)",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3247,
+        "show_as_object_id": 3247
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        203664
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3249,
+      "record_sha256": "9414d81c19e529af7c24a2393dc79d1b4ea16893a27390aa1f308effcd2c8c02",
+      "name": "frozen starlight",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3249,
+        "show_as_object_id": 3249
+      },
+      "npc_rows": [
+        {
+          "name": "Gnomission",
+          "location": "Gnomegate",
+          "sale_price": 0,
+          "buy_price": 20000
+        }
+      ],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        23,
+        34,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204112
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3451,
+      "record_sha256": "0dc77504286afe34aee46dadba4c580702dceed94e77c47840af6e6cf4c2e7c8",
+      "name": "pitchfork",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3451,
+        "show_as_object_id": 3451
+      },
+      "npc_rows": [
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 25,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204361
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3452,
+      "record_sha256": "1e00885429f09a3e85cdb2b17a2cdf494a948f75f493256a177d0576b0d7c003",
+      "name": "rake",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3452,
+        "show_as_object_id": 3452
+      },
+      "npc_rows": [
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 20,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204362
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3454,
+      "record_sha256": "255e8d944a713e308f52485bad2d85014bedd68502686ccdda2f6363fad3c6b3",
+      "name": "broom",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3454,
+        "show_as_object_id": 3454
+      },
+      "npc_rows": [
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 12,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204064
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3455,
+      "record_sha256": "8d3267f33579b15f5cb68edaacab5d5f8bbc85595e49c4bdbce7e1d16ebb5c20",
+      "name": "hoe",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3455,
+        "show_as_object_id": 3455
+      },
+      "npc_rows": [
+        {
+          "name": "Larek",
+          "location": "Ogre Village",
+          "sale_price": 15,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 15,
+          "buy_price": 0
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 15,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204364
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3456,
+      "record_sha256": "41d9ab742b6f65df2bbf1b99dde32f1fae16f2eee112ef4409a14f58fe3684e4",
+      "name": "pick",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3456,
+        "show_as_object_id": 3456
+      },
+      "npc_rows": [
+        {
+          "name": "John",
+          "location": "Treasure Island",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Richard",
+          "location": "Dawnport Centre",
+          "sale_price": 15,
+          "buy_price": 0
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 50,
+          "buy_price": 15
+        },
+        {
+          "name": "Hector the Mentor",
+          "location": "Thais Peninsula",
+          "sale_price": 50,
+          "buy_price": 15
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204365
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3457,
+      "record_sha256": "b1faa60af84893da3a7c6b207ef1f6ac44b710f59eb3c489d44d5e482d79c55f",
+      "name": "shovel",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3457,
+        "show_as_object_id": 3457
+      },
+      "npc_rows": [
+        {
+          "name": "Al Dee",
+          "location": "Rookgaard",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "John",
+          "location": "Treasure Island",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Larek",
+          "location": "Ogre Village",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Lee'Delle",
+          "location": "Rookgaard",
+          "sale_price": 9,
+          "buy_price": 2
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Raffael",
+          "location": "Isle of Destiny",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "Richard",
+          "location": "Dawnport Centre",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "Simon The Beggar",
+          "location": "Fibula",
+          "sale_price": 50,
+          "buy_price": 0
+        },
+        {
+          "name": "Zethra",
+          "location": "Adventurers' Guild",
+          "sale_price": 10,
+          "buy_price": 2
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Hector the Mentor",
+          "location": "Thais Peninsula",
+          "sale_price": 50,
+          "buy_price": 8
+        },
+        {
+          "name": "Aurelia",
+          "location": "Targuna",
+          "sale_price": 10,
+          "buy_price": 2
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204366
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3459,
+      "record_sha256": "a4acbaba8776da33f0d397be3667b6a1fd51ceaba7c6fb8f893ae217e691f224",
+      "name": "wooden hammer",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3459,
+        "show_as_object_id": 3459
+      },
+      "npc_rows": [
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 0,
+          "buy_price": 15
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 0,
+          "buy_price": 15
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204368
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3460,
+      "record_sha256": "56c27a0eea11ac85d3be9b2309f728c03523289ae59723b4492f1191f89d9114",
+      "name": "hammer",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3460,
+        "show_as_object_id": 3460
+      },
+      "npc_rows": [
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 80,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204369
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3461,
+      "record_sha256": "468064f9de2e22672984696a282daaac632d17834e4a6714bdcc75a917401729",
+      "name": "saw",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3461,
+        "show_as_object_id": 3461
+      },
+      "npc_rows": [
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 95,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204370
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3462,
+      "record_sha256": "e5cd4fdfb7cbc64b22f4ff2cde132bc19e5f788c32e9fe7bd09d84ca8e0e7127",
+      "name": "small axe",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3462,
+        "show_as_object_id": 3462
+      },
+      "npc_rows": [
+        {
+          "name": "Aldo",
+          "location": "Venore City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Azil",
+          "location": "Darashia City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Baltim",
+          "location": "Tyrsung",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Brengus",
+          "location": "Port Hope City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Cedrik",
+          "location": "Liberty Bay City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Cornelia",
+          "location": "Carlin City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Esrik",
+          "location": "Farmine City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Flint",
+          "location": "Rathleton City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Gamel",
+          "location": "Thais City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Habdel",
+          "location": "Darashia City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Hardek",
+          "location": "Thais Surroundings",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Kroox",
+          "location": "Kazordoon City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Memech",
+          "location": "Ankrahmun City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Morpel",
+          "location": "Yalahar Centre",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Robert",
+          "location": "Svargrond City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Romella",
+          "location": "Venore City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Rowenna",
+          "location": "Carlin City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Sam",
+          "location": "Thais City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Shanar",
+          "location": "Ab'Dendriel City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Turvy",
+          "location": "Thais City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Ulrik",
+          "location": "Greenshore",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Uzgod",
+          "location": "Kazordoon City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Willard",
+          "location": "Edron Castle",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Yanni",
+          "location": "Venore City",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Avriel",
+          "location": "Newhaven",
+          "sale_price": 0,
+          "buy_price": 5
+        },
+        {
+          "name": "Aurelia",
+          "location": "Targuna",
+          "sale_price": 0,
+          "buy_price": 5
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204371
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3463,
+      "record_sha256": "63a78ef8aa09b755c89d29d2da8a8a32f67935e9112e2800e51fec55925d1732",
+      "name": "mirror",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3463,
+        "show_as_object_id": 3463
+      },
+      "npc_rows": [
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 0,
+          "buy_price": 10
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 0,
+          "buy_price": 10
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 0,
+          "buy_price": 10
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204372
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3464,
+      "record_sha256": "38b693e0aee782f7e93a98fd05a427cf2e9e1a8e535284135e329c46eade69a9",
+      "name": "baking tray",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3464,
+        "show_as_object_id": 3464
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 20,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204373
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3466,
+      "record_sha256": "865a1c9ee2bec00e89ff370b3c6abda464c50f6de5f2f8fac90e842429440ca7",
+      "name": "pan",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3466,
+        "show_as_object_id": 3466
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 20,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204385
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3467,
+      "record_sha256": "2d1f86ee07824bd69e546df2dd8ba5400ab2f001dd5ae66b0901589fc7ecc967",
+      "name": "fork",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3467,
+        "show_as_object_id": 3467
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 10,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 10,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204386
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3468,
+      "record_sha256": "ed36bcbd8aa7a451059b1c78746c77f00aa2708cd6e88093c1f7dfbf4eeb9212",
+      "name": "spoon",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3468,
+        "show_as_object_id": 3468
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 10,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 10,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204387
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3469,
+      "record_sha256": "af341f3839b78f0e6d1c89ad0bcafada1e404fd1816369ea595ce712c30d80ed",
+      "name": "kitchen knife",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3469,
+        "show_as_object_id": 3469
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 10,
+          "buy_price": 0
+        },
+        {
+          "name": "Larek",
+          "location": "Ogre Village",
+          "sale_price": 20,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 10,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204388
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3470,
+      "record_sha256": "1c751bf6b9fa3145f08ef24a27c213bb675c9f9a5173ddd622a8dd52f7fbc1f3",
+      "name": "wooden spoon",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3470,
+        "show_as_object_id": 3470
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 5,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 5,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204389
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3471,
+      "record_sha256": "d5037ca94c0af1c8b4190a3ee492f28d2c9c2005cdf569355bccc54d37ccdde9",
+      "name": "cleaver",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3471,
+        "show_as_object_id": 3471
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 15,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 15,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204390
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3472,
+      "record_sha256": "e21419b306de79c0a6e7a52db7149ce4ec7d85cad818012a4f1f929e11ca7d8f",
+      "name": "oven spatula",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3472,
+        "show_as_object_id": 3472
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 12,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204391
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3473,
+      "record_sha256": "27ac5fee675d126fb021091c48ee85ae7ffaccefe86d45c3f731e5c5536d8802",
+      "name": "rolling pin",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3473,
+        "show_as_object_id": 3473
+      },
+      "npc_rows": [
+        {
+          "name": "Chephan",
+          "location": "Venore City",
+          "sale_price": 12,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204392
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3474,
+      "record_sha256": "bc0e3df4db851376c0f42be55f4d42f207288a9144c9a390b50bde535bb20dd5",
+      "name": "bowl",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3474,
+        "show_as_object_id": 3474
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204393
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3475,
+      "record_sha256": "5c049117823fea8ce0d7b2f28608a954150ec7a4dab29aef8b9f5824fc37a1c5",
+      "name": "bowl",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3475,
+        "show_as_object_id": 3475
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204394
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3476,
+      "record_sha256": "a39424f59efde2957379e5bd2f68d1a433aa8a86a38dff07153c812ebd6d3440",
+      "name": "bowl",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3476,
+        "show_as_object_id": 3476
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204395
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3481,
+      "record_sha256": "a7a4898a12d74935fa7d96611b7d2b85bcd47d84df8f451c78f40b71f29a8c03",
+      "name": "closed trap",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3481,
+        "show_as_object_id": 3482
+      },
+      "npc_rows": [
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 280,
+          "buy_price": 75
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 280,
+          "buy_price": 75
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204400
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3482,
+      "record_sha256": "57327cfb3473f00141ae731ed5a6453e06ff1831adbc8529d90045df7f969670",
+      "name": "trap",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3481,
+        "show_as_object_id": 3482
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204401
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3483,
+      "record_sha256": "1a2f3d416dd15f57670de3ceeb6623600a45b4cc0f1da3a125c6f04afd44163c",
+      "name": "fishing rod",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3483,
+        "show_as_object_id": 3483
+      },
+      "npc_rows": [
+        {
+          "name": "Al Dee",
+          "location": "Rookgaard",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Iriana",
+          "location": "Yalahar Trade Quarter",
+          "sale_price": 150,
+          "buy_price": 0
+        },
+        {
+          "name": "John",
+          "location": "Treasure Island",
+          "sale_price": 300,
+          "buy_price": 0
+        },
+        {
+          "name": "Lee'Delle",
+          "location": "Rookgaard",
+          "sale_price": 140,
+          "buy_price": 30
+        },
+        {
+          "name": "Nelliem",
+          "location": "Venore City",
+          "sale_price": 150,
+          "buy_price": 0
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Raffael",
+          "location": "Isle of Destiny",
+          "sale_price": 150,
+          "buy_price": 0
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Rafzan",
+          "location": "Venore Surroundings",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Richard",
+          "location": "Dawnport Centre",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Zethra",
+          "location": "Adventurers' Guild",
+          "sale_price": 150,
+          "buy_price": 30
+        },
+        {
+          "name": "Hireling",
+          "location": "Secret Subarea",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 150,
+          "buy_price": 40
+        },
+        {
+          "name": "Hector the Mentor",
+          "location": "Thais Peninsula",
+          "sale_price": 150,
+          "buy_price": 30
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204402
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 3509,
+      "record_sha256": "c4ac7aa90d826142ccee5af766a60be14a91b556fc1c21af30a5320bfb3b38ba",
+      "name": "inkwell",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 3509,
+        "show_as_object_id": 3509
+      },
+      "npc_rows": [
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 0,
+          "buy_price": 8
+        },
+        {
+          "name": "Fyodor",
+          "location": "Rathleton City",
+          "sale_price": 10,
+          "buy_price": 8
+        },
+        {
+          "name": "The Librarian",
+          "location": "Issavi",
+          "sale_price": 20,
+          "buy_price": 9
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 0,
+          "buy_price": 8
+        },
+        {
+          "name": "Pompan",
+          "location": "Farmine City",
+          "sale_price": 0,
+          "buy_price": 8
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 10,
+          "buy_price": 8
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 10,
+          "buy_price": 8
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 10,
+          "buy_price": 8
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 10,
+          "buy_price": 8
+        },
+        {
+          "name": "Thomas",
+          "location": "Edron Castle",
+          "sale_price": 10,
+          "buy_price": 8
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        200499
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 4835,
+      "record_sha256": "cea5dc388f0ff5efbfa89c0a74366b0315287b51501a82dfc7112799be396e10",
+      "name": "snake destroyer",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 4835,
+        "show_as_object_id": 4835
+      },
+      "npc_rows": [
+        {
+          "name": "Black Bert",
+          "location": "Thais City",
+          "sale_price": 8000,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204179
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 4872,
+      "record_sha256": "d14bbffa76b19ba5acd726923938cb9c9ba6765e4df25f2e4757a92073afbf33",
+      "name": "ice pick",
+      "description": "It might come in handy in cold regions",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 4872,
+        "show_as_object_id": 4872
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206000
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5467,
+      "record_sha256": "65f3490d8fd3456994cc45bb819931a8a7aa3351a7cf940e47aad97d647846b4",
+      "name": "fire bug",
+      "description": "This strange creature has the tendency to set certain things on fire",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5467,
+        "show_as_object_id": 5467
+      },
+      "npc_rows": [
+        {
+          "name": "Evan",
+          "location": "Liberty Bay City",
+          "sale_price": 100,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        23,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206340,
+        206341,
+        206342
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5710,
+      "record_sha256": "7e1016ac85ccc087898628e0fda1d4b1287a3127905e1b89cce4b5916745bde2",
+      "name": "light shovel",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5710,
+        "show_as_object_id": 5710
+      },
+      "npc_rows": [
+        {
+          "name": "Rashid",
+          "location": "Darashia City",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Svargrond City",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Edron Castle",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Carlin City",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Ankrahmun City",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Liberty Bay City",
+          "sale_price": 0,
+          "buy_price": 300
+        },
+        {
+          "name": "Rashid",
+          "location": "Port Hope City",
+          "sale_price": 0,
+          "buy_price": 300
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206525
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5865,
+      "record_sha256": "076c04dc82c5c9064934d5ab7b7018c5f0fb838f97bd832fa02240e96a6ca6c0",
+      "name": "juice squeezer",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5865,
+        "show_as_object_id": 5865
+      },
+      "npc_rows": [
+        {
+          "name": "Ariella",
+          "location": "Meriana",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Brasith",
+          "location": "Ab'Dendriel City",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Larek",
+          "location": "Ogre Village",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Livielle",
+          "location": "Venore City",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Serafin",
+          "location": "Yalahar Centre",
+          "sale_price": 100,
+          "buy_price": 0
+        },
+        {
+          "name": "Sessek",
+          "location": "Moonfall",
+          "sale_price": 100,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206725
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5908,
+      "record_sha256": "7dd2a4265f04bcbe172d5fdbe127ceeb3f8b0100a1f4abf2c1dfa262fa0b5b82",
+      "name": "obsidian knife",
+      "description": "Sharp and light, this is a useful tool for tanners, doctors and assassins",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5908,
+        "show_as_object_id": 5908
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206759
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5941,
+      "record_sha256": "2622087b851c061a199b8666d3fd73518f285a7af56e79824a482fad864e5c4a",
+      "name": "wooden stake",
+      "description": "It is a simple wooden stake",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5941,
+        "show_as_object_id": 5941
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206792
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5942,
+      "record_sha256": "74c76d80f1a59e951837a30162ad2cc93329d4a463a022d90072e14f56c53baa",
+      "name": "blessed wooden stake",
+      "description": "Many mighty priests of Tibia have blessed this stake",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5942,
+        "show_as_object_id": 5942
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206793,
+        206794,
+        206795
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 5946,
+      "record_sha256": "dc2763db8690bd0706af724563cd2f90898987bcb81ed6112004cd078e852692",
+      "name": "comb",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 5946,
+        "show_as_object_id": 5946
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        206799
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 6561,
+      "record_sha256": "5d2ec8d733eb916b7bd0e2cf7de3a1b2ec1760a68de389e2f07290c3769e29ee",
+      "name": "ceremonial ankh",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 6561,
+        "show_as_object_id": 6561
+      },
+      "npc_rows": [
+        {
+          "name": "Gnomission",
+          "location": "Gnomegate",
+          "sale_price": 0,
+          "buy_price": 20000
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204108
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 7785,
+      "record_sha256": "8a741be7779515aea50fa081c73e0e524f8a484236efcdda5684054d9a59aae8",
+      "name": "bricklayers' kit",
+      "description": "Use it on destroyed brick walls to repair them",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 7785,
+        "show_as_object_id": 7785
+      },
+      "npc_rows": [
+        {
+          "name": "Baxter",
+          "location": "Thais City",
+          "sale_price": 100,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        273834
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 7889,
+      "record_sha256": "d784fa22c91702143702d394b2ef4f19e385896af40925bea04ed185e8405da4",
+      "name": "lock pick",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 7889,
+        "show_as_object_id": 7889
+      },
+      "npc_rows": [
+        {
+          "name": "Dorian",
+          "location": "Thais City",
+          "sale_price": 50,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        208978
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9234,
+      "record_sha256": "5a2d8fd28554eca41d45223f36c33b92f0674ced3f8980353e0993f3da7ff612",
+      "name": "worm punisher",
+      "description": "The hammer would be more effective when heated",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9234,
+        "show_as_object_id": 9234
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209815
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9235,
+      "record_sha256": "736111865f5fdbab17748764cab5078dd34181c15659f1e6ac43e957bf1fb146",
+      "name": "golem disassembler",
+      "description": "It looks suspiciously similar to a crowbar",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9235,
+        "show_as_object_id": 9235
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204174
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9306,
+      "record_sha256": "44f1e246023ae435f44dcc35e228520dce841d1ec560a236cd2dc4188ca41294",
+      "name": "mechanical fishing rod",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9306,
+        "show_as_object_id": 9306
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209825
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9594,
+      "record_sha256": "14b69d9fcc3bc3115fa2d7ea840bc3c61edabab50f2f132256f6e1d913d9da27",
+      "name": "sneaky stabber of eliteness",
+      "description": "This nifty gadget can be used for many vital and less vital purposes. If it's not jammed, that is",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9594,
+        "show_as_object_id": 9594
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209912
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9595,
+      "record_sha256": "4c39f50895ad468c6bc7c3d3a12b05568a3af8f725bf243c894fc7586f118f1d",
+      "name": "sneaky stabber of eliteness",
+      "description": "Argh! It's jammed right now! Should hopefully work again within a short time though",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9594,
+        "show_as_object_id": 9594
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209912
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9596,
+      "record_sha256": "a87a8f17e69f978738d593315c05d5d0d65ce7903c29fd6ef531aed747196615",
+      "name": "squeezing gear of girlpower",
+      "description": "This nifty gadget can be used for many vital and less vital purposes. If it's not jammed, that is",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9596,
+        "show_as_object_id": 9596
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209913
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9597,
+      "record_sha256": "e81b0e6b5b7963dd67cd25a696612c70c7225d9e10c3093ae302c8fb8d84a504",
+      "name": "squeezing gear of girlpower",
+      "description": "Argh! It's jammed right now! Should hopefully work again within a short time though",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9596,
+        "show_as_object_id": 9596
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209913
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9598,
+      "record_sha256": "33e41401c00fbc540dbdfee2708a711a76e9c5ec9cacb2e4702e3f6bd6286600",
+      "name": "whacking driller of fate",
+      "description": "This nifty gadget can be used for many vital and less vital purposes. If it's not jammed, that is",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9598,
+        "show_as_object_id": 9598
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209914
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 9599,
+      "record_sha256": "c0614c1e6d24d857c485e764096ee01a15a67ef2b752d4d87a6a075d1434fd18",
+      "name": "whacking driller of fate",
+      "description": "Argh! It's jammed right now! Should hopefully work again within a short time though",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 9598,
+        "show_as_object_id": 9598
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        209914
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21217,
+      "record_sha256": "c120b493c10e2582cb970c8e51e34db4ff2c093e3e966f2b64c5f3345ffafd63",
+      "name": "green light",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21217,
+        "show_as_object_id": 21217
+      },
+      "npc_rows": [],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        18,
+        23,
+        34,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217512
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21755,
+      "record_sha256": "f8c2c407513ac4a8b238e81a2a3e543e3e830d9be95cf748ae322b9c73eddfca",
+      "name": "bronze gear wheel",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21755,
+        "show_as_object_id": 21755
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217733,
+        217734,
+        217735,
+        217736,
+        217737,
+        217738
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21757,
+      "record_sha256": "7ffaadf482ec8d8f2f7f36d03c8d64467653425489202a1778670a2b1d7e3288",
+      "name": "calibrated indicator gauge",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21757,
+        "show_as_object_id": 21757
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217739
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21758,
+      "record_sha256": "e79e238dc18d5fc4e764f84f3c16f7bf4fb884db13935cb9102cf20492da07e8",
+      "name": "copper valve",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21758,
+        "show_as_object_id": 21758
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217740
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21766,
+      "record_sha256": "e4f024630fa91204ad90488310227aa178003cfb01705f78ddcc0e5ba3005458",
+      "name": "glass tube",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21766,
+        "show_as_object_id": 21766
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217743
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21814,
+      "record_sha256": "97daef48fb5f0aceb85819ac6316314c1a88bde67eb932e3af77d0478b339f53",
+      "name": "glooth capsule",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21814,
+        "show_as_object_id": 21814
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217801
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 21816,
+      "record_sha256": "baa561b248d3c61092c66a9099602f028b1c6fafc190602c0c2e9c7dc54235f2",
+      "name": "tainted glooth capsule",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 21816,
+        "show_as_object_id": 21816
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        217806
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 29950,
+      "record_sha256": "a99263a790ce23d703b04ac9cf349fca245cef05b572bf6e8e269b8f008be8d7",
+      "name": "acid resistant fishing rod",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 29950,
+        "show_as_object_id": 29950
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        204402
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 31327,
+      "record_sha256": "f21bd8b3530bf007847023256f9c7840c660c1719d92b55b040dc4c48bba6b98",
+      "name": "ritual scissors",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 31327,
+        "show_as_object_id": 31327
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        223552
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 31328,
+      "record_sha256": "3328816b579da89d826cc232845366f1bbf7e78e6a1c7af6e34ee262b4822964",
+      "name": "bark peeler",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 31328,
+        "show_as_object_id": 31328
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        223553
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 31334,
+      "record_sha256": "dd1abb4e270c4f7d3bf75c68ae57370baf229b707f400c85d65c7a47158d0b19",
+      "name": "hand auger",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 31334,
+        "show_as_object_id": 31334
+      },
+      "npc_rows": [
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 25,
+          "buy_price": 0
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 25,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        223559
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 31913,
+      "record_sha256": "67a797825cf0b63dfba3b6c217d40da2bf5785806a9514d20fd095f203de2928",
+      "name": "baking tray",
+      "description": "There is reed flour dough on it",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 31913,
+        "show_as_object_id": 31913
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        223885
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 36543,
+      "record_sha256": "ab6ebe13e78accbc5a04def41c6ba9b99eee78e4a50805fde363d4de4e7fcc22",
+      "name": "chisel",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 36543,
+        "show_as_object_id": 36543
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        227890
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 36544,
+      "record_sha256": "67c8c602e369d7aeda8902c6a8371217dca694e14450ee31270ee9ca6741d0bd",
+      "name": "brush",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 36544,
+        "show_as_object_id": 36544
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        227891
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 36545,
+      "record_sha256": "318738251dfeaffd879446969f93ed1dd50a410c18a1b57295f4a94c86d9d0b2",
+      "name": "replacement marble",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 36545,
+        "show_as_object_id": 36545
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        6,
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        227892,
+        227893,
+        227894,
+        227895,
+        227896,
+        227897,
+        227898
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 39697,
+      "record_sha256": "9c229e78e26d3ed2d40f61cb3566b9fa2c7b41c02f462e1b004446e05916eaae",
+      "name": "rainbow torch",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 39697,
+        "show_as_object_id": 39698
+      },
+      "npc_rows": [
+        {
+          "name": "Theodora",
+          "location": "Thais City",
+          "sale_price": 10000,
+          "buy_price": 0,
+          "currency_quest_flag_display_name": "Theons"
+        }
+      ],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        34,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        236147
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 39698,
+      "record_sha256": "4e588ea9723c2d341c205d07f385ae981df25b1e75ca0668efe2e272136be07b",
+      "name": "lit rainbow torch",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 39697,
+        "show_as_object_id": 39698
+      },
+      "npc_rows": [],
+      "clothes_slot": 10,
+      "present_flag_numbers": [
+        7,
+        18,
+        23,
+        34,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        236148,
+        236149,
+        236150,
+        236151,
+        236152,
+        236153,
+        236154,
+        236155,
+        236156,
+        236157,
+        236158,
+        236159
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "SOURCE_CLOTHES_SLOT_PRESENT",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 46627,
+      "record_sha256": "05033809b11d29dd4077f1e62eccaa4165bc218cd7455d818a7d3f24b01b6cd3",
+      "name": "crusher",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 46627,
+        "show_as_object_id": 46627
+      },
+      "npc_rows": [
+        {
+          "name": "Ahmet",
+          "location": "Ankrahmun City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Bashira",
+          "location": "Ab'Dendriel City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Beatrice",
+          "location": "Edron Castle",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Bertha",
+          "location": "Svargrond City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Bezil",
+          "location": "Kazordoon City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Gladys",
+          "location": "Grimvale",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Gorn",
+          "location": "Thais City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Gree Dee",
+          "location": "Yalahar Centre",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Halif",
+          "location": "Darashia City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Lubo",
+          "location": "Thais Surroundings",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Maro",
+          "location": "Rathleton City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Maun",
+          "location": "Lower Roshamuul",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Nezil",
+          "location": "Kazordoon City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Perod",
+          "location": "Port Hope City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Red Lilly",
+          "location": "Liberty Bay City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Sarina",
+          "location": "Carlin City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Shiantis",
+          "location": "Venore City",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Rock in a Hard Place",
+          "location": "Gray Beach",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Tefrit",
+          "location": "Kilmaresh Mountains",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Timur",
+          "location": "Fibula",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Zora",
+          "location": "Tyrsung",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Asphota",
+          "location": "Silvertides",
+          "sale_price": 500,
+          "buy_price": 0
+        },
+        {
+          "name": "Tamru",
+          "location": "Oskayaat",
+          "sale_price": 500,
+          "buy_price": 0
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        44,
+        53
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        239760
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 46628,
+      "record_sha256": "14066308aada9a3738593040306eced4c580f891e857d16757ab6e78009a40c6",
+      "name": "amber crusher",
+      "description": null,
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 46628,
+        "show_as_object_id": 46628
+      },
+      "npc_rows": [],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        239761
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "ABSENT_IN_THIS_RECORD_NOT_UI_PROOF",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    },
+    {
+      "appearance_object_id": 53287,
+      "record_sha256": "dff6bf7ab5c0524d89ab2084db67f3e60a1d3986d683c4cfd4607bd15253c976",
+      "name": "mariner's fishing rod",
+      "description": "This legendary fishing rod is said to have caught a giant creature from the darkest of depths once, strong enough to even reel the ancient being in",
+      "market": {
+        "category": 14,
+        "trade_as_object_id": 53287,
+        "show_as_object_id": 53287
+      },
+      "npc_rows": [
+        {
+          "name": "Proprietor Piers",
+          "location": "Great Expedition Wharf",
+          "sale_price": 30,
+          "buy_price": 0,
+          "currency_quest_flag_display_name": "Event Points"
+        }
+      ],
+      "clothes_slot": null,
+      "present_flag_numbers": [
+        7,
+        9,
+        18,
+        36,
+        40,
+        44
+      ],
+      "unmapped_flag_numbers": [],
+      "sprite_ids": [
+        243648
+      ],
+      "frame_record_source": "Existing Atlas structural decoder; icon reference, not visual parity",
+      "weight": {
+        "status": "UNKNOWN_NOT_IN_APPEARANCE_SCHEMA",
+        "value": null
+      },
+      "description_presence": "PRESENT",
+      "body_position_presence": "ABSENT_SOURCE_FLAG_NOT_UI_PROOF",
+      "canonical_item_binding": "UNQUALIFIED_APPEARANCE_ID_NOT_SERVER_ID"
+    }
+  ]
+}

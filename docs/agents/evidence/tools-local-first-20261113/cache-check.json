@@ -1,0 +1,64 @@
+{
+  "package_version": "15.33.dd0955",
+  "cache": [
+    {
+      "path": "/home/lab/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/cache/boostedcreature.json",
+      "bytes": 92,
+      "sha256": "804de937fa461afc8859327a5b6bfffdf779a7462235a95c168ff2fbfe3823c4",
+      "top_keys": [
+        "bossraceid",
+        "creatureraceid",
+        "lastupdatetimestamp"
+      ],
+      "item_weight_keys": [],
+      "contains_baking_tray": false
+    },
+    {
+      "path": "/home/lab/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/cache/eventschedule.json",
+      "bytes": 3732,
+      "sha256": "3836a55588f114ab7a3ad0d05f98364184dde0affb7eef20d55ca4944128869b",
+      "top_keys": [
+        "eventlist",
+        "lastupdatetimestamp"
+      ],
+      "item_weight_keys": [],
+      "contains_baking_tray": false
+    },
+    {
+      "path": "/home/lab/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/cache/onlinenumbers.json",
+      "bytes": 185,
+      "sha256": "0bdbf09840c3c75addcc5e95bb4f9538cbf3040d041e9657b604e21109209ba9",
+      "top_keys": [
+        "gamingyoutubestreams",
+        "gamingyoutubeviewer",
+        "lastupdatetimestamp",
+        "playersonline",
+        "twitchstreams",
+        "twitchviewer"
+      ],
+      "item_weight_keys": [],
+      "contains_baking_tray": false
+    },
+    {
+      "path": "/home/lab/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/cache/compendium.json",
+      "bytes": 269821,
+      "sha256": "0e1e0ae7ca814e6e00d0ad29d0352467401525afe7f1f7e4fb96c1d6a0080b2e",
+      "top_keys": [
+        "gamenews",
+        "isreturner",
+        "lastupdatetimestamp",
+        "maxeditdate",
+        "showrewardnews"
+      ],
+      "item_weight_keys": [],
+      "contains_baking_tray": false
+    }
+  ],
+  "characterdata_filename_inventory": [
+    "cyclopediaMapConfiguration.json",
+    "itemtracking.json",
+    "itemprices.json"
+  ],
+  "schema": "OTERYN_BOUNDED_CLIENT_CACHE_CHECK/v1",
+  "scope": "Package/cache4JSON and2Qtshadercache trees; account/login/config/credentials and browser cache content excluded. Characterdata filenames only; no universal filesystem absence claim."
+}
