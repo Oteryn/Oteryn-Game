@@ -188,7 +188,7 @@ async fn advance_jobs(
     tx: &mut Transaction<'_, Postgres>,
     world: crate::foundation::WorldId,
 ) -> Result<bool> {
-    let rows=sqlx::query("SELECT o.offer_id::text,o.state,o.definition_key,o.matching_pending,o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS expired FROM game_market_offers o LEFT JOIN game_account_bank_balances b ON b.account_id=o.account_id AND b.world_id=o.world_id WHERE o.world_id=encode($1,'hex')::uuid AND ((o.state=1 AND o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint) OR (o.state=5 AND (o.held_credit_gold+coalesce(b.balance,0)<=9000000000000000 OR EXISTS(SELECT 1 FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id))) OR (o.state=1 AND o.matching_pending)) ORDER BY o.expires_at_us,o.offer_id LIMIT 100")
+    let rows=sqlx::query("SELECT o.offer_id::text,o.state,o.definition_key,o.matching_pending,o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS expired FROM game_market_offers o LEFT JOIN game_account_bank_balances b ON b.account_id=o.account_id AND b.world_id=o.world_id WHERE o.world_id=encode($1,'hex')::uuid AND ((o.state=1 AND o.expires_at_us<=floor(extract(epoch FROM clock_timestamp())*1000000)::bigint) OR (o.state=5 AND NOT EXISTS(SELECT 1 FROM game_market_operations attempted WHERE attempted.occurrence=decode('0102','hex')||uuid_send(o.offer_id)||decode('03','hex')||int8send(floor(extract(epoch FROM clock_timestamp())/86400)::bigint)) AND (o.held_credit_gold+coalesce(b.balance,0)<=9000000000000000 OR EXISTS(SELECT 1 FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id))) OR (o.state=1 AND o.matching_pending)) ORDER BY o.expires_at_us,o.offer_id LIMIT 100")
         .bind(world.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     for row in rows {
         let offer = uuid_text(row.try_get("offer_id")?)?;
@@ -198,13 +198,18 @@ async fn advance_jobs(
             continue;
         }
 
-        if row.try_get::<bool, _>("matching_pending")? && !row.try_get::<bool, _>("expired")? {
+        // The book serializes native writers. Compare the current state under that lock,
+        // since a candidate selected earlier can have become a no-op while waiting.
+        let snapshot = "SELECT state,remaining,held_credit_gold::text,matching_pending,(SELECT count(*) FROM game_item_market_escrow_locations e WHERE e.offer_id=o.offer_id) FROM game_market_offers o WHERE offer_id=encode($1,'hex')::uuid";
+        let before: (i16, i32, String, bool, i64) = sqlx::query_as(snapshot)
+            .bind(offer.as_slice()).fetch_one(&mut **tx).await?;
+        if before.3 && !row.try_get::<bool, _>("expired")? {
             sqlx::query("SELECT game_market_match(encode($1,'hex')::uuid,encode($2,'hex')::uuid)")
                 .bind(world.as_bytes().as_slice())
                 .bind(offer.as_slice())
                 .execute(&mut **tx)
                 .await?;
-        } else if row.try_get::<i16, _>("state")? == 5 {
+        } else if before.0 == 5 {
             sqlx::query(
                 "SELECT game_market_release(encode($1,'hex')::uuid,encode($2,'hex')::uuid)",
             )
@@ -212,10 +217,16 @@ async fn advance_jobs(
             .bind(offer.as_slice())
             .execute(&mut **tx)
             .await?;
-        } else {
+        } else if before.0 == 1 && row.try_get::<bool, _>("expired")? {
             expire_offer(tx, world, offer).await?;
+        } else {
+            continue;
         }
-        return Ok(true);
+        let after: (i16, i32, String, bool, i64) = sqlx::query_as(snapshot)
+            .bind(offer.as_slice()).fetch_one(&mut **tx).await?;
+        if before != after {
+            return Ok(true);
+        }
     }
     Ok(false)
 }
@@ -296,5 +307,44 @@ mod tests {
         assert_eq!(visible_offset(2, 44), None);
         assert_eq!(visible_offset(3, 62), Some(1_984));
         assert_eq!(visible_offset(3, 63), None);
+    }
+    #[test]
+    fn daily_release_receipt_does_not_starve_later_market_jobs()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{
+            self as harness, CHARACTER, Harness, TestResult, WORLD, id,
+        };
+        let Some(admin) = harness::configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || {
+            (|| -> TestResult {
+                harness::runtime()?.block_on(async move {
+                    let h = Harness::create(admin, "marketreleasejobs", false).await?;
+                    let mut tx = h.pool.begin().await?;
+                    // Administrative fixture: an earlier release returned the items but left
+                    // held credit. The balance now permits credit, while today's receipt remains.
+                    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_market_books(world_id,definition_key) VALUES(encode($1,'hex')::uuid,'fixture:release.jobs')")
+                        .bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,created_at_us,expires_at_us,state,ended_as,escrow_gold,held_credit_gold,ended_at_us,end_sequence) SELECT encode($1,'hex')::uuid,world_id,'fixture:release.jobs','definition-r1',2,account_id,character_id,100,10,10,0,2592000000000,5,3,0,1000,1,1 FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+                        .bind(id(70).as_slice()).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_market_operations VALUES(encode($1,'hex')::uuid,decode('0102','hex')||$2||decode('03','hex')||int8send(floor(extract(epoch FROM clock_timestamp())/86400)::bigint),encode($3,'hex')::uuid,6,NULL,sha256($2),decode('01','hex')||$2)")
+                        .bind(id(WORLD).as_slice()).bind(id(70).as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+                    sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,created_at_us,expires_at_us,state,escrow_gold,held_credit_gold,matching_pending) SELECT encode($1,'hex')::uuid,world_id,'fixture:release.jobs','definition-r1',2,account_id,character_id,100,10,10,n,n+2592000000000,1,0,0,true FROM game_character_roots CROSS JOIN LATERAL (SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint AS n) clock WHERE character_id=encode($2,'hex')::uuid")
+                        .bind(id(72).as_slice()).bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+                    tx.commit().await?;
+                    let mut tx = h.pool.begin().await?;
+                    let world = crate::foundation::WorldId::decode(&id(WORLD))?;
+                    assert!(advance_jobs(&mut tx, world).await?);
+                    let pending: bool = sqlx::query_scalar("SELECT matching_pending FROM game_market_offers WHERE offer_id=encode($1,'hex')::uuid")
+                        .bind(id(72).as_slice()).fetch_one(&mut *tx).await?;
+                    assert!(!pending, "a receipted held-credit retry starved the later job");
+                    assert!(!advance_jobs(&mut tx, world).await?, "an already receipted retry is not progress");
+                    tx.rollback().await?;
+                    h.cleanup().await
+                })
+            })().map_err(|error| error.to_string())
+        })?.join().map_err(|_| "market job test thread failed")?.map_err(Into::into)
     }
 }

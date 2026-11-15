@@ -151,6 +151,7 @@ pub fn check_map_item_mint(value: &OneItemMapItemMintV1) -> Result<(), AuditErro
     check_definition(after.definition.as_ref())?;
     check_uuid_v7(&ground.world_id)?;
     check_uuid_v7(&ground.channel_id)?;
+    ground.runtime_scope()?;
     check_technical_bytes(&ground.spatial_position)?;
     check_technical_bytes(&ground.corpse_ref)?;
     check_content_key(&ground.map_revision)?;
@@ -165,6 +166,7 @@ pub fn check_map_item_mint(value: &OneItemMapItemMintV1) -> Result<(), AuditErro
     check_uuid_v7(&entry.channel_id)?;
     // A map-authored key is never materializable (WORLD-INTERACTION-0 §4.4).
     if !value.before_semantically_absent
+        || ground.instance_id.is_some()
         || after.key_number != 0
         || after.lifecycle != ITEM_LIFECYCLE_LIVE
         || after.quantity == 0
@@ -612,6 +614,30 @@ mod tests {
         assert!(check_map_item_mint(&surface).is_ok());
     }
 
+    #[test]
+    fn map_item_mint_rejects_mixed_ground_scope_in_payload_and_envelope() {
+        let wire = encode_map_item_mint_event(identity(), minted(), mint::Type2EventTuple::V1).unwrap();
+        let (envelope, _) = decode_map_item_mint_envelope(&wire).unwrap();
+        for instance in [uuid(7), Vec::new()] {
+            let mut value = minted();
+            ground(&mut value).instance_id = Some(instance);
+            let payload = OneItemTransactionV1 {
+                interpretation_revision: mint::INTERPRETATION_REVISION,
+                operation: Some(OneItemOperationV1::MapItemMint(value)),
+            }
+            .encode_to_vec();
+            assert_eq!(
+                decode_map_item_mint_payload(&payload),
+                Err(AuditError::InvalidInput)
+            );
+            let mut envelope = envelope.clone();
+            envelope.payload = payload;
+            assert_eq!(
+                decode_map_item_mint_envelope(&envelope.encode_to_vec()),
+                Err(AuditError::InvalidInput)
+            );
+        }
+    }
     #[test]
     fn map_item_mint_envelope_binds_the_materialization_scope() {
         let wire =
