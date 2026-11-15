@@ -72,6 +72,13 @@ With no text field focused, the existing gameplay shortcuts open:
 
 - **Ctrl+Shift+X:** greet the selected, visible NPC. Its real replies, keywords and
   text input share one window with the trade addon when the server opens a shop.
+- **Ctrl+J:** Quest Log. Search by quest ID or known mission name/text, cycle
+  numeric/status sorting, and toggle completed quests. Selecting a mission shows
+  its journal text; Track / Untrack quest updates the existing quest tracker after
+  server confirmation. The tracker remains visible beside the journal entry.
+  **Ctrl+Alt+Shift+Q** also opens the quest tracker in the journal.
+  Quest names and independent mission tracking are not supplied by the current
+  protocol, so alphabetical quest sorting and mission-level tracking are unavailable.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
