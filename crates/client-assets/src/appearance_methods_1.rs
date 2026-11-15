@@ -23,7 +23,16 @@ impl AppearanceIndex {
             }
             Ok(converted)
         };
+        let moving_outfits = message
+            .outfit
+            .iter()
+            .filter_map(|entry| {
+                let id = entry.id?;
+                convert_movement(id, entry).map(|outfit| (id, outfit))
+            })
+            .collect();
         Ok(Self {
+            moving_outfits,
             objects: convert_all(message.object)?,
             outfits: convert_all(message.outfit)?,
             effects: convert_all(message.effect)?,
@@ -59,6 +68,18 @@ impl AppearanceIndex {
     #[must_use]
     pub fn outfit(&self, look_type: u32) -> Option<&Appearance> {
         self.outfits.get(&look_type)
+    }
+
+    /// Walking frame group when present; single-group outfits retain their existing frames.
+    #[must_use]
+    pub fn outfit_preview(&self, look_type: u32, moving: bool) -> Option<&Appearance> {
+        if moving {
+            self.moving_outfits
+                .get(&look_type)
+                .or_else(|| self.outfit(look_type))
+        } else {
+            self.outfit(look_type)
+        }
     }
 
     /// The cells of an outfit's base layer, standing, facing `direction` (0 north, 1 east,

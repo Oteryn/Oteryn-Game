@@ -41,6 +41,8 @@ struct AppearanceMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct FrameGroupMsg {
+    #[prost(uint32, optional, tag = "1")]
+    fixed_frame_group: Option<u32>,
     #[prost(message, optional, tag = "3")]
     sprite_info: Option<SpriteInfoMsg>,
 }
@@ -222,6 +224,7 @@ pub struct ResolvedEntry {
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
     outfits: HashMap<u32, Appearance>,
+    moving_outfits: HashMap<u32, Appearance>,
     effects: HashMap<u32, Appearance>,
     missiles: HashMap<u32, Appearance>,
 }
@@ -277,6 +280,21 @@ fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
 }
 
 include!("appearance_entry.rs");
+
+fn convert_movement(id: u32, object: &AppearanceMsg) -> Option<Appearance> {
+    let moving = object
+        .frame_group
+        .iter()
+        .find(|group| group.fixed_frame_group == Some(1))?;
+    convert(
+        id,
+        AppearanceMsg {
+            id: Some(id),
+            frame_group: vec![moving.clone()],
+            flags: object.flags.clone(),
+        },
+    )
+}
 
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
     let info = object.frame_group.into_iter().next()?.sprite_info?;

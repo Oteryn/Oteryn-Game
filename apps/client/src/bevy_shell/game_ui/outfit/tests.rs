@@ -146,6 +146,162 @@ fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
 }
 
 #[test]
+fn outfit_preview_rotates_verified_artwork() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut assets = preview::Assets::load(&root)?;
+    let selection = panel();
+    let south = assets.draw_panel(&selection, 2, 0, false)?;
+    let east = assets.draw_panel(&selection, 1, 0, false)?;
+    assert!(south != east, "rotation must change the displayed sprite");
+    Ok(())
+}
+
+#[test]
+fn outfit_preview_buttons_animate_the_retained_image_without_sending_a_change()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::owner::ActivePlay;
+    use std::time::Duration;
+    let mut owner = HostOwner::new(None)?;
+    let generation = owner.generation();
+    let (link, mut receiver, _) = crate::play::play_channel();
+    owner.play = Some(ActivePlay {
+        link,
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+    });
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let artwork = preview::Assets::load(&root)?;
+    let mut images = Assets::<Image>::default();
+    let handle = images.add(Image::default());
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .insert_resource(images)
+        .insert_resource(Time::<Real>::default())
+        .insert_resource(State {
+            rendered: Some((generation, panel())),
+            artwork: Some(artwork),
+            image: Some(handle.clone()),
+            ..default()
+        })
+        .add_systems(Update, animation::animate);
+    let mut control = |kind| {
+        app.world_mut()
+            .spawn((
+                Node::default(),
+                Action {
+                    generation,
+                    kind: Kind::Preview(kind),
+                },
+            ))
+            .observe(activate)
+            .id()
+    };
+    let right = control(animation::Control::Right);
+    let left = control(animation::Control::Left);
+    let stop = control(animation::Control::Movement(false));
+    let walk = control(animation::Control::Movement(true));
+    let pixels = |app: &App| -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        app.world()
+            .resource::<Assets<Image>>()
+            .get(&handle)
+            .and_then(|image| image.data.clone())
+            .ok_or_else(|| "image".into())
+    };
+    app.update();
+    let south = pixels(&app)?;
+    app.world_mut().trigger(Activate { entity: right });
+    app.update();
+    assert!(pixels(&app)? != south);
+    app.world_mut().trigger(Activate { entity: left });
+    app.update();
+    assert_eq!(pixels(&app)?, south);
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .advance_by(Duration::from_millis(300));
+    app.update();
+    assert!(
+        pixels(&app)? != south,
+        "walking must advance the rendered frame"
+    );
+    app.world_mut().trigger(Activate { entity: stop });
+    app.update();
+    let standing = pixels(&app)?;
+    app.world_mut()
+        .resource_mut::<Time<Real>>()
+        .advance_by(Duration::from_secs(1));
+    app.update();
+    assert_eq!(pixels(&app)?, standing);
+    app.world_mut().trigger(Activate { entity: walk });
+    assert!(app.world().resource::<State>().playback.moving);
+    assert_eq!(
+        app.world().resource::<State>().image.as_ref(),
+        Some(&handle)
+    );
+    assert_eq!(
+        app.world().resource::<State>().rendered,
+        Some((generation, panel()))
+    );
+    assert!(
+        receiver.try_recv().is_err(),
+        "preview controls must stay local"
+    );
+    app.world_mut().resource_mut::<State>().rendered = None;
+    app.update();
+    assert_eq!(app.world().resource::<State>().playback.direction, 2);
+    Ok(())
+}
+
+#[test]
+fn outfit_mount_composition_requires_owned_key_and_matching_metadata_digest()
+-> Result<(), Box<dyn std::error::Error>> {
+    use sha2::{Digest, Sha256};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut assets = preview::Assets::load(&root)?;
+    let mut document: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        root.join("content/cosmetics/outfits/authoring.json"),
+    )?)?;
+    document["document"]["schema"] = "OTERYN_CHARACTER_COSMETICS_CANDIDATE/v1".into();
+    let digest = Sha256::digest(serde_json::to_vec(&document["document"])?).into();
+    let mut p = panel();
+    let catalogue = p.catalogue.as_mut().ok_or("catalogue")?;
+    catalogue.context.cosmetics_digest = digest;
+    catalogue.mounts.push("oteryn:content.mount.haze".into());
+    let plain = assets.draw_panel(&p, 2, 0, true)?;
+    p.fields[2] = "oteryn:content.mount.haze".into();
+    let mounted = assets.draw_panel(&p, 2, 0, true)?;
+    assert!(
+        mounted != plain,
+        "the verified mount must be composed beneath the rider"
+    );
+    assert!(assets.draw_panel(&p, 1, 0, true)? != mounted);
+    assert!(assets.draw_panel(&p, 2, 300, true)? != mounted);
+    p.catalogue
+        .as_mut()
+        .ok_or("catalogue")?
+        .context
+        .cosmetics_digest = [0; 32];
+    assert_eq!(
+        assets.draw_panel(&p, 2, 0, true).err().as_deref(),
+        Some("Mount artwork needs updating")
+    );
+    p.catalogue
+        .as_mut()
+        .ok_or("catalogue")?
+        .context
+        .cosmetics_digest = digest;
+    p.fields[2] = "horse".into();
+    assert_eq!(
+        assets.draw_panel(&p, 2, 0, true).err().as_deref(),
+        Some("Mount artwork unavailable")
+    );
+    p.fields[2] = "not-owned".into();
+    assert_eq!(
+        assets.draw_panel(&p, 2, 0, true).err().as_deref(),
+        Some("Choose an owned mount")
+    );
+    Ok(())
+}
+
+#[test]
 fn outfit_escape_respects_foreground_modal() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
