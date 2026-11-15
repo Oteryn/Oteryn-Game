@@ -1,0 +1,98 @@
+{
+  "schema": "OTERYN_BESTIARY_INITIAL_CLIENT_GAP_AUDIT/v1",
+  "classification": "SOURCE_OBSERVATIONS_AND_DERIVED_CANDIDATES_ONLY",
+  "source_class": "CIPSOFT_CLIENT_LOCAL_FILES_AND_OWNER_AUTHORIZED_TEST_CLIENT_UI",
+  "created_utc": "2026-11-13T10:32:49.219336+00:00",
+  "repository": "Oteryn/Oteryn-Game",
+  "comparison_commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "client_build": "15.33.dd0955",
+  "staticdata_sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+  "appearances_sha256": "aa086346daa9234d721e4170848095ad83f3ee9d28ea9e62c1bd06216016174e",
+  "private_snapshot": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-publication-snapshot-initial-20261113",
+  "source_snapshot_files": [
+    {
+      "path": "summary.json",
+      "sha256": "7730e39fa7af4b692120136577fa750705027d1005a18f982297de6d95c86703",
+      "bytes": 5931
+    },
+    {
+      "path": "client1533-creatures.json",
+      "sha256": "7cde63e5a79a91453b3b5533e659a6e262b4230d26f0a67d03dd1ce740b4e9d9",
+      "bytes": 286892
+    },
+    {
+      "path": "staticdata-delta.json",
+      "sha256": "c9a486a1ab4b706e3ccc3b5e47bc20fe31d64c904b450224c2b825eba0c8e93e",
+      "bytes": 4270
+    },
+    {
+      "path": "client-name-outfit-candidates.json",
+      "sha256": "c881a385bc08b78c566726fb81cbaf287a48ee92fec03ac7822dfb50fafba127",
+      "bytes": 1450305
+    },
+    {
+      "path": "client-outfit-frame-metadata.json",
+      "sha256": "306ff516a0d352300abb398d8513e28527f9ee1e0e20c8a4ac30bf677651ecde",
+      "bytes": 3004919
+    },
+    {
+      "path": "bestiary-824-field-presence.json",
+      "sha256": "301942aadbd699c13e1fbd615c5244cd1c64805a6a4fbe72a3a426e13bb0482e",
+      "bytes": 366
+    },
+    {
+      "path": "source-receipts.json",
+      "sha256": "ec34a96aef6e7b91261c3026afa342d56a63ee87bbf79ffc39dda6ce95e9f543",
+      "bytes": 6622
+    },
+    {
+      "path": "ui-class-counts.json",
+      "sha256": "4b9de5549433d6da3894977a33e266f787a483c0445e4c6038a92860fa5624fc",
+      "bytes": 4710
+    },
+    {
+      "path": "ui-rat-control-observation.json",
+      "sha256": "481eeb2cc9ff14cdde7d55a6e2a55501649609c22ccb671142f92647b3068a87",
+      "bytes": 1862
+    },
+    {
+      "path": "rat-repo-context.json",
+      "sha256": "71b1b708eeb35deb7d34804db8704512b252829bb981f3fdba303c318f53ba02",
+      "bytes": 2713
+    },
+    {
+      "path": "gap-queue.json",
+      "sha256": "14867d65da683875859dd6ebcb9bfba020366f7d56aaff40d252c71f8938026e",
+      "bytes": 13132
+    },
+    {
+      "path": "image-manifest.json",
+      "sha256": "222ef64605769dd725581204d408e56905711a2e46bca486484b24269c03afc0",
+      "bytes": 7611
+    },
+    {
+      "path": "ubuntu-running-client-source-readback.json",
+      "sha256": "c7a2d551d0b34ca23f8cf13026b812a81c21a83178b8337d98336397eb9f5e88",
+      "bytes": 522
+    }
+  ],
+  "client_readback": {
+    "device": "a7037f94-ac2b-43f4-bb22-d173061b6583",
+    "pid_at_read": 110145,
+    "exe": "/home/mole/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/bin/client",
+    "staticdata_file": "/home/mole/.local/share/CipSoft GmbH/Tibia/packages/TibiaExternal/assets/staticdata-bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02.dat",
+    "bytes": 180818,
+    "sha256": "bd1f4c30c3e03268a315caf14050ea584aca8c241831422c41f4e7f264dcaa02",
+    "verification": "Live Ubuntu readback matches locally parsed copy"
+  },
+  "runtime_activation": false,
+  "server_identity_mapping_verified": false,
+  "all_845_cards_ui_audited": false,
+  "pixel_or_animation_parity_verified": false,
+  "final_reader_checkpoint": {
+    "private_directory": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\checkpoint-20261113T103500Z",
+    "sha256": "2db758ea9ddb094185b3af7bd6ccf6ba7cd5b718b0102708f80129c215298f6f",
+    "private_image_manifest_sha256": "ee72e081f7fbb06057078e7df7a2c48dd2303a58a1303b2acd7d0b44e3002c15",
+    "status": "BESTIARY_PAUSED_OWNER_SWITCHED_TO_CHARMS"
+  }
+}

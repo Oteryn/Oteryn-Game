@@ -1,0 +1,388 @@
+{
+  "scope": "DIFFERENCE_FIRST_UI_QUEUE",
+  "new_staticdata_rows": [
+    {
+      "source_id": 2883,
+      "source_index": 833,
+      "name": "omega bulwark",
+      "look": {
+        "hex": "08c40f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "4ac25a232cad90f34fa19844ea1198c12aab25fafb2abfe09266854f0ea550c7"
+    },
+    {
+      "source_id": 2884,
+      "source_index": 834,
+      "name": "omega bastion",
+      "look": {
+        "hex": "08c50f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "0fd02a186866d6023bef585129462ddfe4715d6b9e097835ebacb97ee847f644"
+    },
+    {
+      "source_id": 2885,
+      "source_index": 835,
+      "name": "omega battler",
+      "look": {
+        "hex": "08c60f120808001000180020001802"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "34e43a0cbef272ebc15067e01d7fec6a783bb9a7abf09a88e6b5d7624eb1b00a"
+    },
+    {
+      "source_id": 2886,
+      "source_index": 836,
+      "name": "omega moonbreaker",
+      "look": {
+        "hex": "08c40f1208080a100a180a200a1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "da1d53a168080ef3163f91f81caa369dbe8bbdfd3960e9704e3b5d573107ba7f"
+    },
+    {
+      "source_id": 2887,
+      "source_index": 837,
+      "name": "omega cinderflayer",
+      "look": {
+        "hex": "08c50f1208084d104d184d204d1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "4a73bbf3676f46aade296dafaf769122c897085e2a0fe7586dfca5f1d33e0878"
+    },
+    {
+      "source_id": 2888,
+      "source_index": 838,
+      "name": "omega rampart",
+      "look": {
+        "hex": "08c60f12080856105b185b205b1803"
+      },
+      "f4": 5,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "2023d4f33bc2edc4bc73194586a0e73214e20e92443c38979762c08b4cb3a521"
+    },
+    {
+      "source_id": 2896,
+      "source_index": 839,
+      "name": "giant rat",
+      "look": {
+        "hex": "08c90f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "a4f08fadc8ae747140af620b357c36c28d67905d8e36d94a3146838363173de0"
+    },
+    {
+      "source_id": 2897,
+      "source_index": 840,
+      "name": "greedcarrier rat",
+      "look": {
+        "hex": "08ca0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "38fd555eb9a9e5b947041ab9cea1365aef0d54c997ff76ec6aebbf3fdf3a9f00"
+    },
+    {
+      "source_id": 2898,
+      "source_index": 841,
+      "name": "hoarder rat",
+      "look": {
+        "hex": "08cb0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "900f4a24426db88b734a2eacafa97680a7b0d78e739292ab1729a91fbd9b8842"
+    },
+    {
+      "source_id": 2899,
+      "source_index": 842,
+      "name": "greed elemental",
+      "look": {
+        "hex": "08ce0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "49176b9bc84618fa808f84d6572f915a786efb892458439e5f29e6ccb8f9d0bb"
+    },
+    {
+      "source_id": 2900,
+      "source_index": 843,
+      "name": "greedweaver",
+      "look": {
+        "hex": "08cf0f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "6d09401ed01b8b49ac0db72cf16e1ffd4c84689cfe9296462b7df6d90731223c"
+    },
+    {
+      "source_id": 2901,
+      "source_index": 844,
+      "name": "greater greed",
+      "look": {
+        "hex": "08d00f120808001000180020001800"
+      },
+      "f4": 4,
+      "f5": 0,
+      "f6": 1,
+      "f7": 1,
+      "staticdata_sha256": "b2b0102f91b34801e25d9cc65b4f9ceab7b26dd9ebb68ff0c66acb9578de1187"
+    }
+  ],
+  "binding_review": [
+    {
+      "client_source_id": 213,
+      "name": "butterfly",
+      "candidate_count": 6,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 227,
+      "name": "butterfly",
+      "candidate_count": 6,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 310,
+      "name": "nomad",
+      "candidate_count": 3,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 388,
+      "name": "undead jester",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 579,
+      "name": "nightslayer",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 680,
+      "name": "cake golem",
+      "candidate_count": 1,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 691,
+      "name": "berrypest",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 776,
+      "name": "nomad",
+      "candidate_count": 3,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1000,
+      "name": "furious fire elemental",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1157,
+      "name": "elder forest fury",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1841,
+      "name": "orger",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1855,
+      "name": "roast pork",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1856,
+      "name": "cow",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1857,
+      "name": "loricate orger",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 1858,
+      "name": "bellicose orger",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2416,
+      "name": "albino dragon",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2417,
+      "name": "rabid wolf",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2418,
+      "name": "ragged rabid wolf",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2544,
+      "name": "wafer paper butterfly",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2764,
+      "name": "night harpy",
+      "candidate_count": 2,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2883,
+      "name": "omega bulwark",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2884,
+      "name": "omega bastion",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2885,
+      "name": "omega battler",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2886,
+      "name": "omega moonbreaker",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2887,
+      "name": "omega cinderflayer",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2888,
+      "name": "omega rampart",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2896,
+      "name": "giant rat",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2897,
+      "name": "greedcarrier rat",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2898,
+      "name": "hoarder rat",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2899,
+      "name": "greed elemental",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2900,
+      "name": "greedweaver",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    },
+    {
+      "client_source_id": 2901,
+      "name": "greater greed",
+      "candidate_count": 0,
+      "reason": "Name/outfit join not unique or no matching canonical Bestiary; palette, object looks and aliases still require review"
+    }
+  ],
+  "fields": [
+    {
+      "priority": 1,
+      "field": "locations",
+      "action": "Compare detailed client location lists only where source text is missing/different; Rat difference observed"
+    },
+    {
+      "priority": 1,
+      "field": "new12 stats, category, loot, thresholds",
+      "action": "Read only if visible/unlocked; omega searches did not produce a card and are not evidence of absence"
+    },
+    {
+      "priority": 2,
+      "field": "appearance and animation",
+      "action": "Reuse existing outfit frame metadata; obtain missing pixels/timing evidence without retyping names"
+    },
+    {
+      "priority": 2,
+      "field": "tooltips, stage gates and loot rarity",
+      "action": "Check UI meaning, not raw numeric comparison against gameplay probability"
+    }
+  ],
+  "historical_ui_checkpoint": {
+    "status": "PAUSED_ON_UNEXPECTED_ITEMS_SCREEN",
+    "proof": "nomad-search.png",
+    "reason": "Expected Bestiary after navigation; actual screenshot is Items with nomad item results. Do not count as Bestiary reading; no further input until exclusive UI control is established. Cause is unconfirmed."
+  },
+  "ui_checkpoint": {
+    "status": "BESTIARY_PAUSED_OWNER_SWITCHED_TO_CHARMS",
+    "reader_checkpoint": "qualified-reader-checkpoint.json",
+    "next_scope": "Charms",
+    "root_cause_of_earlier_navigation_mismatch": "UNCONFIRMED"
+  }
+}

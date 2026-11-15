@@ -1,0 +1,152 @@
+[
+  {
+    "path": "tools/content-census/stage_staticdata_houses_achievements.py",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "9aad75c873435a3fc681edcedc4c849ec17e1402ae782d73e40f86115fbe6e67"
+  },
+  {
+    "path": "tools/content-census/stage_staticdata_creatures_bosses_quests.py",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "be04de9a913c004bb262f4ba111439e89e28590c5edabe1328fce7f3f07262e3"
+  },
+  {
+    "path": "imports/cipsoft-staticdata/creatures/manifest.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "a6b5aed22da5d5dd3bc6549a2856e670471cb6979d9649c5e0a6e0bb206ddacd"
+  },
+  {
+    "path": "imports/cipsoft-staticdata/creatures/creatures-00000-00249.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "3da6a83a2c3ce3e3b9551379e2dd6c22693365a20059dfba3209d0f2255cef6e"
+  },
+  {
+    "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "8bda35e885f85779ecec50eaec6d65ea2077f76505b2b4a5fb86938a47b06e75"
+  },
+  {
+    "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "2c81949301abe20b4867220decc7195182c43470e0d976d6b46e13c0b062b04b"
+  },
+  {
+    "path": "imports/cipsoft-staticdata/creatures/creatures-00750-00832.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "eed18ff5ae82fcefdf6893ff2078ac893451a7fee849c9416b87db594b0044f6"
+  },
+  {
+    "path": "content/creatures/definitions/index.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "b9ca86ed117ef598acc856629fecc885632257340d1f1a107552133391246dca"
+  },
+  {
+    "path": "content/creatures/definitions/creatures-00000-00499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "c97dea235b2c2747caee660f41295b36901d209d5c1b22f8300ccd8eed431ea7"
+  },
+  {
+    "path": "content/creatures/definitions/creatures-00500-00999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "a2d1a07ffe6ae51700f0e626934c888f225e9f8210d873eb2b1f1d97f5f5e1e2"
+  },
+  {
+    "path": "content/creatures/definitions/creatures-01000-01499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "5cf0b10aa112e6a604c3b88e7696ace51cfe3a1cdf8be99c6b46627c475e44db"
+  },
+  {
+    "path": "content/creatures/definitions/creatures-01500-01864.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "dec4eda66edb472a346d8caaf954322626232e486ec3a003016e843e234bd75f"
+  },
+  {
+    "path": "content/presentations/definitions/index.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "d1b1e7a16c809e02039f5571c2ab73e073cbac7b3a9b9caab7715c2c9e9c892a"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-00000-00499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "9239828be19c88319f13f4b739fdebfaba8018592fac39fa214a922a5a571ae1"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-00500-00999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "74be82e270be6e556b0598ac0acca46af0c8a84f15f9e93e86ccc06cea9cca36"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-01000-01499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "b195275a405a05c93ae2af352cbf13307e587829ddaddea93aaf062114cde306"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-01500-01999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "2e5ecb7cc126a49a061de0f51bf491ee0568a7035fd3d4d32f359690f9ecb5ef"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-02000-02499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "c037c853bf83e7fc42379b2f00c272a4121d3ed8ce0f248e05b3d5f5a9659e24"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-02500-02999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "66994cfc46ad6ac981b273bb46cc8d47d64818cc81585437510f277551d327d9"
+  },
+  {
+    "path": "content/presentations/definitions/presentations-03000-03146.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "1e3915acf06a5a07f635066a9779b16444fbc915ee86d152046afb6308054830"
+  },
+  {
+    "path": "tools/game-atlas-appearances/export.py",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "6b63350e37279d15e1ba09be021ec61be3977758b586217813606123998fca58"
+  },
+  {
+    "path": "content/documents/index.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "e80a14f8515ea95a172147ce80634fa05b0c6bce6292513363f85b20e026503c"
+  },
+  {
+    "path": "content/documents/documents-00000-00499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "c6a5af1f9a4c2c8021c2eac6108d27046ebd812892e76694e5ad2629e2f33eb0"
+  },
+  {
+    "path": "content/documents/documents-00500-00999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "335b1827ab3715f3f499a5cf91e28924265f7dd5eaa95fabae62f3f162a234e2"
+  },
+  {
+    "path": "content/documents/documents-01000-01499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "33853d1a44be2d44d9223086683e5de139137d162e54960226a420791979a978"
+  },
+  {
+    "path": "content/documents/documents-01500-01608.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "ca467e33d4ba41e3e9dc4294a7a0beab7de33a3e9c56c704efb7db47cf22880f"
+  },
+  {
+    "path": "content/loot/index.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "833bb4143f6fadbc422b3860c525fa2e157c52cb8c7851f05016d2296aa74283"
+  },
+  {
+    "path": "content/loot/loot-00000-00499.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "8cda4cd5677901cb0d45ed29c1c2d589e611512c098ba764669f42040123d2ac"
+  },
+  {
+    "path": "content/loot/loot-00500-00999.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "7acddf9bdec23b46b003e1a4a7ce0d9d17d986c8fe53d9d549d208fd598b39af"
+  },
+  {
+    "path": "content/loot/loot-01000-01291.json",
+    "commit": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+    "sha256": "94df8115d8aa7420179207437e5d454a926480d34ca6575f07f3919ca2c24e40"
+  }
+]
