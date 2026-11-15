@@ -351,3 +351,61 @@ fn process_session_uses_bound_enrollment_keeps_no_vault_secret_and_quick_login_r
         Ok(())
     })
 }
+
+#[test]
+fn credential_lock_wait_has_a_deadline_and_observes_cancellation() -> TestResult {
+    on_large_stack(|| {
+        tokio::runtime::Runtime::new()?.block_on(async {
+            use std::{future::Future, task::Poll, time::Duration};
+            let server = Server::start(vec![]).await?;
+            let path = folder("lock-deadline")?;
+            let held = std::fs::OpenOptions::new()
+                .create(true)
+                .truncate(false)
+                .write(true)
+                .open(path.join("credential.lock"))?;
+            held.lock()?;
+            let login = manager(Arc::new(MemoryVault::default()), path.clone());
+            let cancel = CancellationToken::new();
+            let mut begin = Box::pin(login.begin(&server.client, options(), cancel.clone()));
+            std::future::poll_fn(|cx| {
+                assert!(begin.as_mut().poll(cx).is_pending());
+                Poll::Ready(())
+            })
+            .await;
+            cancel.cancel();
+            let cancelled = tokio::time::timeout(Duration::from_millis(250), begin).await;
+            // Release the fixture lock even when the assertion fails on the old blocking path.
+            drop(held);
+            assert!(
+                matches!(cancelled, Ok(Err(_))),
+                "cancellation must stop waiting for another process"
+            );
+            let held = std::fs::OpenOptions::new()
+                .write(true)
+                .open(path.join("credential.lock"))?;
+            held.lock()?;
+            let deadline = tokio::time::timeout(
+                Duration::from_secs(6),
+                login.begin(&server.client, options(), CancellationToken::new()),
+            )
+            .await;
+            drop(held);
+            assert!(
+                matches!(deadline, Ok(Err(_))),
+                "lock admission must have a bounded deadline"
+            );
+            let attempt = login
+                .begin(&server.client, options(), CancellationToken::new())
+                .await?;
+            assert!(
+                attempt.is_some(),
+                "a cancelled wait must release the in-process mutex"
+            );
+            drop(attempt);
+            server.finish().await?;
+            std::fs::remove_dir_all(path)?;
+            Ok(())
+        })
+    })
+}

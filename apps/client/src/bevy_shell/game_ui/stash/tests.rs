@@ -308,3 +308,105 @@ fn stash_amount_keys_in_one_frame_confirm_accumulated_amount() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn stash_carried_items_and_container_contents_have_bound_stow_controls() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    while commands.try_recv().is_ok() {}
+    let entries = [7_u64, 8]
+        .into_iter()
+        .map(|handle| {
+            Ok(oteryn_session::ItemEntry {
+                handle: handle.try_into()?,
+                item_definition_ref: 42.try_into()?,
+                count: 3.try_into()?,
+                sub_type: 0,
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    outbox.c04_stash_carried(entries.clone());
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .filter(|text| text.0.contains("Stow item 42"))
+            .count(),
+        2
+    );
+    {
+        let item = entries[0];
+        let label = format!("Stow item {}", item.item_definition_ref);
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Text)>()
+            .iter(app.world())
+            .find(|(_, text)| text.0.contains(&label))
+            .map(|(e, _)| e)
+            .ok_or("carried stow control missing")?;
+        let parent = app
+            .world()
+            .get::<ChildOf>(entity)
+            .ok_or("stow button")?
+            .parent();
+        app.world_mut().trigger(Activate { entity: parent });
+        let PlayCommand::Stash(command) = commands.try_recv()? else {
+            return Err("stow command".into());
+        };
+        assert_eq!(
+            stash::decode_stash_query(&command.payload)
+                .map_err(|e| format!("{e:?}"))?
+                .0
+                .action,
+            stash::StashAction::Stow(item.handle)
+        );
+        outbox.bevy_stash_result(&reply());
+        app.update();
+        click(&mut app, Kind::Stow(1))?;
+        let PlayCommand::Stash(second) = commands.try_recv()? else {
+            return Err("second stow command".into());
+        };
+        assert_eq!(
+            stash::decode_stash_query(&second.payload)
+                .map_err(|e| format!("{e:?}"))?
+                .0
+                .action,
+            stash::StashAction::Stow(entries[1].handle)
+        );
+        outbox.bevy_stash_result(&reply());
+        outbox.c04_stash_carried(vec![]);
+        app.update();
+        app.world_mut().trigger(Activate { entity: parent });
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+fn stash_frame(app: &mut App) -> Result<Entity, Box<dyn std::error::Error>> {
+    let root = app.world().resource::<State>().root.ok_or("stash root")?;
+    app.world_mut().query_filtered::<(Entity, &ChildOf), With<crate::bevy_shell::window_drag::DraggableDialog>>()
+        .iter(app.world()).find(|(_, parent)| parent.parent() == root).map(|(entity, _)| entity).ok_or_else(|| "stash frame".into())
+}
+#[test]
+fn stash_projection_keeps_dragged_position_for_amount_and_server_updates() -> TestResult {
+    let (mut app, _, outbox) = fixture()?;
+    let position = UiTransform::from_translation(Val2::px(37., 29.));
+    let frame = stash_frame(&mut app)?;
+    app.world_mut().entity_mut(frame).insert(position);
+    click(&mut app, Kind::Row(0))?;
+    let frame = stash_frame(&mut app)?;
+    assert_eq!(
+        *app.world().get::<UiTransform>(frame).ok_or("position")?,
+        position
+    );
+    let mut updated = reply();
+    updated.reply.rows[0].quantity += 1;
+    outbox.bevy_stash_result(&updated);
+    app.update();
+    let frame = stash_frame(&mut app)?;
+    assert_eq!(
+        *app.world().get::<UiTransform>(frame).ok_or("position")?,
+        position
+    );
+    Ok(())
+}

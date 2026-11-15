@@ -118,9 +118,13 @@ impl Scene {
                 match entity.detail {
                     EntityDetail::Actor { direction, .. } => match direction {
                         oteryn_session::StepDirection::North => 0,
-                        oteryn_session::StepDirection::East => 1,
+                        oteryn_session::StepDirection::East
+                        | oteryn_session::StepDirection::NorthEast
+                        | oteryn_session::StepDirection::SouthEast => 1,
                         oteryn_session::StepDirection::South => 2,
-                        _ => 3,
+                        oteryn_session::StepDirection::West
+                        | oteryn_session::StepDirection::NorthWest
+                        | oteryn_session::StepDirection::SouthWest => 3,
                     },
                     _ => 0,
                 }

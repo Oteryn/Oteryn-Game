@@ -251,3 +251,10 @@ fn stash_sort_is_saved_and_restored_in_a_new_session() -> Result<(), Error> {
         .join()
         .map_err(|_| "Stash preferences thread panicked")?
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn c04_stash_carried(&self, entries: Vec<oteryn_session::ItemEntry>) {
+        crate::play::mailbox::lock(&self.0).stash.carried = entries;
+    }
+}

@@ -30,6 +30,7 @@ enum Kind {
     Next,
     Refresh,
     Row(usize),
+    Stow(usize),
     Confirm,
     Cancel,
 }
@@ -58,7 +59,10 @@ struct State {
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(
+            Update,
+            (keyboard, project, restore_position, carried).chain(),
+        )
         .add_systems(
             PostUpdate,
             (finish_filter, finish_confirm).after(bevy::text::EditableTextSystems),
@@ -117,6 +121,14 @@ fn perform(owner: &HostOwner, state: &mut State, kind: Kind) {
             {
                 play.link.stash_request_bound(panel, intent);
                 state.dirty = true;
+            }
+        }
+        Kind::Stow(row) if state.amount.is_none() => {
+            if let Some(panel) = &state.panel
+                && let Some(intent) =
+                    oteryn_client_ui::stash::carried_intent(panel, &panel.carried, row)
+            {
+                play.link.stash_request_bound(panel, intent);
             }
         }
         Kind::Sort if state.amount.is_none() => play.link.stash_sort(),
@@ -267,6 +279,7 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
     fields: Query<(), StashFields>,
+    frames: Query<(&ChildOf, &UiTransform), With<crate::bevy_shell::window_drag::DraggableDialog>>,
 ) {
     let panel = owner
         .play
@@ -277,6 +290,14 @@ fn project(
     if !changed && !state.dirty {
         return;
     }
+    let position = (state.generation == owner.generation())
+        .then(|| {
+            frames
+                .iter()
+                .find(|(parent, _)| Some(parent.parent()) == state.root)
+                .map(|(_, transform)| *transform)
+        })
+        .flatten();
     if let Some(root) = state.root.take() {
         if focus.get().is_some_and(|entity| fields.contains(entity)) {
             focus.clear();
@@ -293,13 +314,11 @@ fn project(
     state.panel = panel;
     state.dirty = false;
     if let Some(panel) = &state.panel {
-        state.root = Some(widgets::build(
-            &mut commands,
-            &skins,
-            &state,
-            panel,
-            &mut focus,
-        ));
+        let root = widgets::build(&mut commands, &skins, &state, panel, &mut focus);
+        if let Some(position) = position {
+            commands.entity(root).insert(SavedPosition(position));
+        }
+        state.root = Some(root);
     }
 }
 
@@ -337,4 +356,89 @@ fn finish_confirm(
     }
     state.confirm = None;
     perform(&owner, &mut state, Kind::Confirm);
+}
+
+#[derive(Component)]
+struct Carried;
+fn carried(
+    mut commands: Commands,
+    skins: Res<Skins>,
+    state: Res<State>,
+    frames: Query<(Entity, &ChildOf), With<crate::bevy_shell::window_drag::DraggableDialog>>,
+    rendered: Query<&ChildOf, With<Carried>>,
+) {
+    let Some(root) = state.root.filter(|_| state.amount.is_none()) else {
+        return;
+    };
+    let Some((frame, _)) = frames.iter().find(|(_, parent)| parent.parent() == root) else {
+        return;
+    };
+    if rendered.iter().any(|parent| parent.parent() == frame) {
+        return;
+    }
+    let Some(panel) = &state.panel else {
+        return;
+    };
+    let section = commands
+        .spawn((
+            Carried,
+            Node {
+                flex_direction: FlexDirection::Column,
+                row_gap: px(3.),
+                flex_shrink: 0.,
+                ..default()
+            },
+        ))
+        .id();
+    commands.entity(frame).add_child(section);
+    let label = commands
+        .spawn(source::text(
+            "Stow carried supplies or supported container contents",
+            source::font(skins.font.clone(), false),
+        ))
+        .id();
+    commands.entity(section).add_child(label);
+    for (row, item) in panel.carried.iter().enumerate() {
+        let mut button = commands.spawn((
+            source::button(skins.buttons.clone(), 540.),
+            Control {
+                generation: state.generation,
+                revision: state.revision,
+                kind: Kind::Stow(row),
+            },
+        ));
+        if !panel.selected || panel.pending {
+            button.insert(bevy::ui::InteractionDisabled);
+        }
+        let button = button.observe(activate).id();
+        let caption = commands
+            .spawn(source::button_caption(
+                format!("Stow item {} × {}", item.item_definition_ref, item.count),
+                skins.font.clone(),
+            ))
+            .id();
+        commands.entity(button).add_child(caption);
+        commands.entity(section).add_child(button);
+    }
+}
+
+#[derive(Component)]
+struct SavedPosition(UiTransform);
+fn restore_position(
+    mut commands: Commands,
+    overlays: Query<(Entity, &SavedPosition)>,
+    mut frames: Query<
+        (&ChildOf, &mut UiTransform),
+        With<crate::bevy_shell::window_drag::DraggableDialog>,
+    >,
+) {
+    for (overlay, saved) in &overlays {
+        if let Some((_, mut transform)) = frames
+            .iter_mut()
+            .find(|(parent, _)| parent.parent() == overlay)
+        {
+            *transform = saved.0;
+            commands.entity(overlay).remove::<SavedPosition>();
+        }
+    }
 }

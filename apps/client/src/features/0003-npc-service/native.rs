@@ -1,5 +1,6 @@
 //! Native dialogue controls stay on their creating thread.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::{
     combat_input::PlayCommand,
     play::{
@@ -7,25 +8,32 @@ use crate::{
         mailbox::{Mailbox, lock},
     },
 };
+#[cfg(windows)]
 use std::{
     ptr::{null, null_mut},
     sync::{Arc, Mutex, Weak},
     time::Duration,
 };
+#[cfg(windows)]
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(windows)]
 use windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT;
+#[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
     UI::WindowsAndMessaging::*,
 };
+#[cfg(windows)]
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")
         .encode_utf16()
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 #[derive(Default)]
 struct Actions(Vec<usize>);
+#[cfg(windows)]
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     // SAFETY: userdata belongs to this window thread until destruction.
     unsafe {
@@ -39,6 +47,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(windows)]
 pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::EntityRef) {
     if link.uses_shared_frontend() {
         return;
@@ -70,6 +79,7 @@ pub(in crate::play) fn context_menu(link: &PlayLink, npc: oteryn_session::Entity
         }
     }
 }
+#[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
         return;
@@ -92,11 +102,13 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         close(&fallback);
     }
 }
+#[cfg(windows)]
 fn close(weak: &Weak<Mutex<Mailbox>>) {
     if let Some(shared) = weak.upgrade() {
         lock(&shared).dialogue_window = false;
     }
 }
+#[cfg(windows)]
 fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
     // SAFETY: all HWNDs and their userdata are created, used and destroyed on this thread.
     unsafe {
@@ -213,8 +225,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
                 } else {
                     continue;
                 };
-                if let Some(npc) = panel.target
-                    && let Some(intent) = oteryn_client_ui::npc_dialogue::request(panel, npc, &text)
+                if let Some(intent) = displayed_reply(panel, held.as_ref(), &text)
                 {
                     if commands.send(PlayCommand::NpcTalk(intent)).is_err() {
                         panel.open = false;
@@ -282,6 +293,7 @@ fn run(weak: Weak<Mutex<Mailbox>>, commands: UnboundedSender<PlayCommand>) {
         close(&weak);
     }
 }
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -306,5 +318,42 @@ unsafe fn control(
             null_mut(),
             null(),
         )
+    }
+}
+
+fn displayed_reply(
+    panel: &mut oteryn_client_ui::npc_dialogue::DialoguePanel,
+    displayed: Option<&oteryn_client_ui::npc_dialogue::DialoguePanel>,
+    text: &str,
+) -> Option<oteryn_client_ui::npc_dialogue::npc_service::NpcTalkIntent> {
+    let displayed = displayed?;
+    if !panel.open || panel.target != displayed.target || panel.lines != displayed.lines {
+        return None;
+    }
+    let npc = displayed.target?;
+    oteryn_client_ui::npc_dialogue::request(panel, npc, text)
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oteryn_client_ui::npc_dialogue::DialoguePanel;
+    #[test]
+    fn native_reply_rejects_replaced_target_and_lines() {
+        let shown = DialoguePanel {
+            selected: true, open: true,
+            target: Some(oteryn_session::EntityRef { identity: [1; 16], generation: 1 }),
+            lines: vec!["Buy {yes}?".into()], ..Default::default()
+        };
+        let mut current = shown.clone();
+        current.lines = vec!["Sell {yes}?".into()];
+        assert!(displayed_reply(&mut current, Some(&shown), "yes").is_none());
+        assert!(!current.pending);
+        current = shown.clone();
+        current.target = Some(oteryn_session::EntityRef { identity: [2; 16], generation: 1 });
+        assert!(displayed_reply(&mut current, Some(&shown), "typed answer").is_none());
+        assert!(displayed_reply(&mut current, None, "trade").is_none());
+        current = shown.clone();
+        assert!(displayed_reply(&mut current, Some(&shown), "yes").is_some());
+        assert!(current.pending);
     }
 }

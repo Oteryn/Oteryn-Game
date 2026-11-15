@@ -188,3 +188,7 @@ fn npc_reply_lines_reach_the_npc_channel_tab_and_survive_the_close() {
         "Welcome, traveller.\n"
     );
 }
+
+#[cfg(not(windows))]
+#[path = "../native.rs"]
+mod native_reply;

@@ -366,3 +366,66 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
     assert_eq!(scene.name_count(), 0);
     Ok(())
 }
+
+#[test]
+fn diagonal_actor_presentations_use_the_matching_cardinal_pixels() -> Result<(), BatchError> {
+    use oteryn_session::StepDirection as D;
+    let mut scene = Scene::centered_on(
+        Arc::new(World::builtin()?),
+        None,
+        TileCoord::new(100, 200),
+        StepDir::South,
+        &[],
+    )?;
+    let mut entry = VisibleAppearance {
+        entity: oteryn_session::WorldSpatialEntity {
+            entity: oteryn_session::EntityRef {
+                identity: [8; 16],
+                generation: 1,
+            },
+            kind: oteryn_session::EntityKind::Creature,
+            position: oteryn_session::ActorPosition {
+                x: 101,
+                y: 200,
+                floor: 0,
+            },
+            display_name: None,
+            detail: EntityDetail::Actor {
+                direction: D::East,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: Some(oteryn_session::Look::Outfit {
+            look_type: 128,
+            colours: [0; 4],
+            addons: 0,
+        }),
+        light: None,
+        forge_stacks: None,
+    };
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (cardinal, diagonals) in [
+        (D::East, [D::NorthEast, D::SouthEast]),
+        (D::West, [D::NorthWest, D::SouthWest]),
+    ] {
+        entry.entity.detail = EntityDetail::Actor {
+            direction: cardinal,
+            appearance_ref: 1,
+            health_percent: 100,
+        };
+        scene.set_presentations_from(&[entry.clone()], 0, Some(root.clone()))?;
+        let expected = scene.actor_draws[0].1.clone();
+        assert!(expected.iter().any(|draw| draw.cell > MARKER_CELL));
+        for direction in diagonals {
+            entry.entity.detail = EntityDetail::Actor {
+                direction,
+                appearance_ref: 1,
+                health_percent: 100,
+            };
+            scene.set_presentations_from(&[entry.clone()], 0, None)?;
+            assert_eq!(scene.actor_draws[0].1, expected, "{direction:?}");
+        }
+    }
+    Ok(())
+}

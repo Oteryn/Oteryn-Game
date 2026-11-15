@@ -133,3 +133,7 @@ fn drag_projection_requires_live_handle_and_follows_map_removals() -> Result<(),
     assert_eq!(view.item_drag_source(tile), None);
     Ok(())
 }
+
+#[cfg(not(windows))]
+#[path = "../view/drag.rs"]
+mod native_drag;

@@ -60,7 +60,13 @@ impl DeviceLogin {
         if !self.enabled {
             return Ok(None);
         }
-        let mut state = self.state.clone().lock_owned().await;
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+        let mut state = tokio::select! {
+            biased;
+            () = cancel.cancelled() => return Err(storage_error()),
+            state = tokio::time::timeout_at(deadline, self.state.clone().lock_owned()) =>
+                state.map_err(|_| storage_error())?,
+        };
         let lock = if let Some(folder) = &self.folder {
             std::fs::create_dir_all(folder).map_err(|_| storage_error())?;
             let file = std::fs::OpenOptions::new()
@@ -69,10 +75,24 @@ impl DeviceLogin {
                 .write(true)
                 .open(folder.join("credential.lock"))
                 .map_err(|_| storage_error())?;
-            let file = tokio::task::spawn_blocking(move || file.lock().map(|()| file))
-                .await
-                .map_err(|_| storage_error())?
-                .map_err(|_| storage_error())?;
+            loop {
+                if cancel.is_cancelled() || tokio::time::Instant::now() >= deadline {
+                    return Err(storage_error());
+                }
+                match file.try_lock() {
+                    Ok(()) => break,
+                    Err(std::fs::TryLockError::WouldBlock) => {
+                        tokio::select! {
+                            biased;
+                            () = cancel.cancelled() => return Err(storage_error()),
+                            () = tokio::time::sleep_until(deadline.min(
+                                tokio::time::Instant::now() + std::time::Duration::from_millis(25)
+                            )) => continue,
+                        }
+                    }
+                    Err(_) => return Err(storage_error()),
+                }
+            }
             Some(file)
         } else {
             None

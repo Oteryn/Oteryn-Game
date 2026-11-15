@@ -31,6 +31,9 @@ enum Kind {
     Deliver(u8),
     Start(u8),
     Buy(u16),
+    Talisman(model::talisman::Intent),
+    Full(FullIntent),
+    ConfirmAction,
 }
 struct Entry {
     text: String,
@@ -60,24 +63,90 @@ fn unopened(b: &model::task_board::full::Bounty) -> bool {
 fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
     let mut rows = Vec::new();
     let Some(r) = &panel.weekly else {
-        entry(&mut rows, "Refresh to load the Task Board", None);
+        label(&mut rows, "Refresh to load the Task Board");
         return rows;
     };
     match tab {
         Tab::Bounty => {
             let b = &r.bounty;
-            entry(
+            for node in model::tree_nodes(panel) {
+                let action = if let Some(path) = node.path.filter(|_| {
+                    node.label.contains("— level") || node.label.starts_with("Next level")
+                }) {
+                    r.talisman
+                        .get(usize::from(path))
+                        .filter(|v| v.level < 355)
+                        .map(|_| Kind::Talisman(model::talisman::Intent::Upgrade(path)))
+                } else if node.label.starts_with("Purchase: 5000 gold") {
+                    Some(Kind::Talisman(model::talisman::Intent::Buy))
+                } else {
+                    None
+                };
+                entry(&mut rows, node.label, action);
+            }
+            for (index, slot) in b.lists.iter().enumerate() {
+                let Ok(index) = u8::try_from(index) else {
+                    continue;
+                };
+                if !slot.unlocked {
+                    button(&mut rows, "Unlock list", Kind::Full(FullIntent::UnlockList));
+                    continue;
+                }
+                for (title, verb, preferred, current) in [
+                    ("Preferred", "Prefer", true, &slot.preferred),
+                    ("Unwanted", "Avoid", false, &slot.unwanted),
+                ] {
+                    let action = |race| {
+                        Kind::Full(if preferred {
+                            FullIntent::Preferred(index, race)
+                        } else {
+                            FullIntent::Unwanted(index, race)
+                        })
+                    };
+                    let clear = if preferred {
+                        "Clear preferred"
+                    } else {
+                        "Clear unwanted"
+                    };
+                    button(
+                        &mut rows,
+                        format!(
+                            "List {} — {title}: {} — {clear}",
+                            index + 1,
+                            model::creature_name(current)
+                        ),
+                        action(String::new()),
+                    );
+                    for race in model::creature_choices(panel)
+                        .into_iter()
+                        .filter(|r| !r.is_empty())
+                    {
+                        button(
+                            &mut rows,
+                            format!("{verb} {}", model::creature_name(&race)),
+                            action(race),
+                        );
+                    }
+                }
+            }
+            if panel.weekly_results_selected {
+                button(
+                    &mut rows,
+                    if b.elite {
+                        "Elite mode: enabled — disable"
+                    } else {
+                        "Elite mode: disabled — enable"
+                    },
+                    Kind::Full(FullIntent::Elite(!b.elite)),
+                );
+            }
+            label(
                 &mut rows,
                 format!("Reroll Tokens: {} / {}", b.rerolls, model::REROLL_TOKEN_CAP),
-                None,
             );
-            entry(
-                &mut rows,
-                "Daily tokens: claim at the Daily Reward Wall",
-                None,
-            );
+            label(&mut rows, "Daily tokens: claim at the Daily Reward Wall");
             if unopened(b) {
-                entry(&mut rows, "Open bounty", Some(Kind::OpenBounty));
+                button(&mut rows, "Open bounty", Kind::OpenBounty);
             }
             for (index, offer) in b.offers.iter().enumerate() {
                 let active = usize::from(b.selected) == index + 1;
@@ -91,14 +160,7 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 };
                 entry(
                     &mut rows,
-                    format!(
-                        "{}: {}/{} | {} | {}",
-                        model::creature_name(&offer.race),
-                        progress,
-                        offer.required,
-                        model::rarity_name(offer.grade),
-                        state
-                    ),
+                    reward_text(offer, progress, state, ""),
                     if b.selected == 0 {
                         u8::try_from(index).ok().map(Kind::Select)
                     } else {
@@ -109,21 +171,18 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
             if let Some(active) = &b.active
                 && b.offers.get(usize::from(b.selected.saturating_sub(1))) != Some(active)
             {
-                entry(
+                label(
                     &mut rows,
-                    format!(
-                        "Active: {}: {}/{} | {} | {}",
-                        model::creature_name(&active.race),
+                    reward_text(
+                        active,
                         b.current,
-                        active.required,
-                        model::rarity_name(active.grade),
                         if completed(panel) {
                             "Completed"
                         } else {
                             "Active"
-                        }
+                        },
+                        "Active: ",
                     ),
-                    None,
                 );
             }
             entry(
@@ -131,22 +190,17 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                 "Claim reward",
                 completed(panel).then_some(Kind::Claim),
             );
-            entry(
+            label(
                 &mut rows,
                 format!("Task Difficulty: {}", model::difficulty_name(b.difficulty)),
-                None,
             );
             for (i, (name, _)) in model::DIFFICULTIES.iter().enumerate() {
-                entry(&mut rows, *name, Some(Kind::Difficulty(i as u8)));
+                button(&mut rows, *name, Kind::Difficulty(i as u8));
             }
             if confirm {
-                entry(&mut rows, "Reroll these tasks for 1 token?", None);
-                entry(
-                    &mut rows,
-                    "Confirm reroll (1 token)",
-                    Some(Kind::ConfirmReroll),
-                );
-                entry(&mut rows, "Cancel", Some(Kind::Cancel));
+                label(&mut rows, "Reroll these tasks for 1 token?");
+                button(&mut rows, "Confirm reroll (1 token)", Kind::ConfirmReroll);
+                button(&mut rows, "Cancel", Kind::Cancel);
             } else {
                 entry(
                     &mut rows,
@@ -157,24 +211,22 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
         }
         Tab::Weekly => {
             let w = &r.weekly;
-            entry(
+            label(
                 &mut rows,
                 format!(
                     "Week {} | Difficulty {} | Multiplier {}",
                     r.period, w.difficulty, w.multiplier
                 ),
-                None,
             );
-            entry(
+            label(
                 &mut rows,
                 format!(
                     "Kill XP: {} | Delivery XP: {} | Pending points: {} | Soulseals: {}",
                     w.kill_experience, w.delivery_experience, w.pending_points, w.pending_soulseals
                 ),
-                None,
             );
             for task in &w.kills {
-                entry(
+                label(
                     &mut rows,
                     format!(
                         "{}: {}/{}",
@@ -186,7 +238,6 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
                         task.current,
                         task.required
                     ),
-                    None,
                 );
             }
             for (i, task) in w.deliveries.iter().enumerate() {
@@ -205,32 +256,30 @@ fn entries(panel: &TaskBoardPanel, tab: Tab, confirm: bool) -> Vec<Entry> {
             }
             if !w.started {
                 for (i, (name, _)) in model::DIFFICULTIES.iter().enumerate() {
-                    entry(
+                    button(
                         &mut rows,
                         format!("Start weekly: {name}"),
-                        Some(Kind::Start(i as u8)),
+                        Kind::Start(i as u8),
                     );
                 }
             }
             if let Some(results) = &r.weekly_results {
-                entry(
+                label(
                     &mut rows,
                     format!(
                         "Week {} rewards already paid: {} points, {} soulseals",
                         results.period, results.points, results.soulseals
                     ),
-                    None,
                 );
             }
         }
         Tab::Shop => {
-            entry(
+            label(
                 &mut rows,
                 format!(
                     "Points: {} | Bounty points: {} | Soulseals: {}",
                     r.points, r.bounty_points, r.soulseals
                 ),
-                None,
             );
             for offer in &r.shop {
                 entry(
@@ -258,6 +307,8 @@ fn intent(panel: &TaskBoardPanel, confirm: &mut bool, kind: &Kind) -> Option<Ful
         {
             Some(FullIntent::SelectBounty(*slot))
         }
+        // These intents are created only from the displayed, snapshot-bound choices above.
+        Kind::Full(intent) => Some(intent.clone()),
         Kind::Claim if completed(panel) => Some(FullIntent::ClaimBounty),
         Kind::Difficulty(value) if usize::from(*value) < model::DIFFICULTIES.len() => {
             Some(FullIntent::BountyDifficulty(*value))
@@ -307,6 +358,7 @@ struct Action {
 struct State {
     tab: Tab,
     confirm: bool,
+    confirmation: Option<Kind>,
     seen: Option<TaskBoardPanel>,
     generation: u64,
     revision: u64,
@@ -322,6 +374,7 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     roots: Query<Entity, With<Root>>,
+    frames: Query<(&ChildOf, &UiTransform), With<crate::bevy_shell::window_drag::DraggableDialog>>,
 ) {
     let panel = owner
         .play
@@ -331,11 +384,22 @@ fn project(
     if state.seen == panel && state.generation == owner.generation() && !state.dirty {
         return;
     }
+    let position = (state.generation == owner.generation())
+        .then(|| {
+            frames
+                .iter()
+                .find(|(parent, _)| roots.contains(parent.parent()))
+                .map(|(_, transform)| *transform)
+        })
+        .flatten();
     for root in &roots {
         commands.entity(root).despawn();
     }
     if state.generation != owner.generation() || panel.is_none() {
         *state = State::default();
+    }
+    if state.seen != panel {
+        state.confirmation = None;
     }
     state.generation = owner.generation();
     state.revision = state.revision.wrapping_add(1);
@@ -363,6 +427,7 @@ fn project(
     let frame = commands
         .spawn((
             crate::bevy_shell::window_drag::DraggableDialog,
+            position.unwrap_or_default(),
             bevy::input_focus::tab_navigation::TabGroup {
                 order: 3,
                 modal: true,
@@ -388,59 +453,46 @@ fn project(
         .id();
     commands.entity(root).add_child(frame);
     source::dialog_caption(&mut commands, frame, "Task Board", skins.font.clone());
+    let mut rows = Vec::new();
+    if let Some(kind) = &state.confirmation
+        && let Some(text) = confirmation_text(panel, kind)
+    {
+        label(&mut rows, text);
+        button(&mut rows, "Confirm", Kind::ConfirmAction);
+        button(&mut rows, "Cancel", Kind::Cancel);
+    }
     for (name, tab) in [
         ("Bounty Tasks", Tab::Bounty),
         ("Weekly", Tab::Weekly),
         ("Shop", Tab::Shop),
     ] {
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            name,
-            Some(Kind::Tab(tab)),
-        );
+        button(&mut rows, name, Kind::Tab(tab));
     }
-    for row in entries(panel, state.tab, state.confirm) {
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            &row.text,
-            row.action.filter(|_| panel.selected && !panel.pending),
-        );
-    }
+    rows.extend(
+        entries(panel, state.tab, state.confirm)
+            .into_iter()
+            .map(|mut row| {
+                row.action = row
+                    .action
+                    .filter(|_| panel.selected && !panel.pending && state.confirmation.is_none());
+                row
+            }),
+    );
     if let Some(feedback) = panel.feedback {
-        widget(&mut commands, &skins, frame, &state, feedback, None);
+        label(&mut rows, feedback);
     }
     if panel.pending {
-        widget(
-            &mut commands,
-            &skins,
-            frame,
-            &state,
-            "Waiting for the server",
-            None,
-        );
+        label(&mut rows, "Waiting for the server");
     }
-    widget(
-        &mut commands,
-        &skins,
-        frame,
-        &state,
+    entry(
+        &mut rows,
         "Refresh",
         (!panel.pending && panel.selected).then_some(Kind::Refresh),
     );
-    widget(
-        &mut commands,
-        &skins,
-        frame,
-        &state,
-        "Close",
-        Some(Kind::Close),
-    );
+    button(&mut rows, "Close", Kind::Close);
+    for row in rows {
+        widget(&mut commands, &skins, frame, &state, &row.text, row.action);
+    }
 }
 fn widget(
     commands: &mut Commands,
@@ -454,20 +506,20 @@ fn widget(
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 580.),
-                Node {
-                    width: percent(100.),
-                    min_height: px(24.),
-                    height: Val::Auto,
-                    flex_shrink: 0.,
-                    padding: px(3.).all(),
-                    ..default()
-                },
                 Action {
                     generation: state.generation,
                     revision: state.revision,
                     kind,
                 },
             ))
+            .insert(Node {
+                width: percent(100.),
+                min_height: px(24.),
+                height: Val::Auto,
+                flex_shrink: 0.,
+                padding: px(3.).all(),
+                ..default()
+            })
             .observe(activate)
             .id();
         let caption = commands
@@ -505,12 +557,47 @@ fn activate(
     if !panel.open || state.seen.as_ref() != Some(&panel) {
         return;
     }
+    if play.view.gameplay_input_blocked(&play.link)
+        || (state.confirmation.is_some()
+            && !matches!(
+                action.kind,
+                Kind::ConfirmAction | Kind::Cancel | Kind::Close | Kind::Tab(_)
+            ))
+    {
+        return;
+    }
     match action.kind {
+        Kind::Talisman(_) if panel.selected && !panel.pending => {
+            state.confirmation = Some(action.kind.clone());
+            state.dirty = true;
+        }
+        Kind::Buy(_) | Kind::Deliver(_) | Kind::Claim => {
+            if intent(&panel, &mut state.confirm, &action.kind).is_some() {
+                state.confirmation = Some(action.kind.clone());
+                state.dirty = true;
+            }
+        }
+        Kind::ConfirmAction => {
+            if let Some(kind) = state.confirmation.take() {
+                if let Kind::Talisman(intent) = kind {
+                    play.link.task_board_talisman_request(intent);
+                } else if let Some(intent) = intent(&panel, &mut state.confirm, &kind) {
+                    play.link.task_board_full_request(intent);
+                }
+            }
+            state.dirty = true;
+        }
+        Kind::Cancel => {
+            state.confirmation = None;
+            state.confirm = false;
+            state.dirty = true;
+        }
         Kind::Close => {
             play.link.task_board_set_open(false);
             state.confirm = false;
         }
         Kind::Tab(tab) => {
+            state.confirmation = None;
             state.tab = tab;
             state.confirm = false;
             state.dirty = true;
@@ -541,4 +628,72 @@ fn keyboard(
             play.link.task_board_set_open(false);
         }
     }
+}
+
+fn confirmation_text(panel: &TaskBoardPanel, kind: &Kind) -> Option<String> {
+    let reply = panel.weekly.as_ref()?;
+    Some(match kind {
+        Kind::Talisman(model::talisman::Intent::Buy) => {
+            "Purchase Bounty Talisman for 5000 gold?".into()
+        }
+        Kind::Talisman(model::talisman::Intent::Upgrade(path)) => {
+            let level = reply.talisman.get(usize::from(*path))?;
+            let name = ["Damage", "Life leech", "Loot", "Double Bestiary chance"]
+                .get(usize::from(*path))?;
+            format!(
+                "Upgrade {name} to level {} for {} bounty points?",
+                level.level + 1,
+                level.next_cost
+            )
+        }
+        Kind::Buy(index) => format!(
+            "Confirm purchase: {}",
+            model::shop_offer_text(reply.shop.iter().find(|o| o.index == *index)?, reply.points)
+        ),
+        Kind::Deliver(slot) => {
+            let task = reply.weekly.deliveries.get(usize::from(*slot))?;
+            format!("Deliver {} of item {}?", task.required, task.item)
+        }
+        Kind::Claim => {
+            let offer = reply.bounty.active.as_ref().or_else(|| {
+                reply
+                    .bounty
+                    .offers
+                    .get(usize::from(reply.bounty.selected.saturating_sub(1)))
+            })?;
+            format!(
+                "Claim {} XP and {} bounty points?",
+                offer.experience, offer.points
+            )
+        }
+        _ => return None,
+    })
+}
+
+fn label(rows: &mut Vec<Entry>, text: impl Into<String>) {
+    entry(rows, text, None);
+}
+fn button(rows: &mut Vec<Entry>, text: impl Into<String>, action: Kind) {
+    entry(rows, text, Some(action));
+}
+
+fn reward_text(
+    offer: &model::task_board::full::BountyOffer,
+    progress: u32,
+    state: &str,
+    prefix: &str,
+) -> String {
+    let model::task_board::full::BountyOffer {
+        race,
+        required,
+        experience,
+        points,
+        grade,
+        ..
+    } = offer;
+    let name = model::creature_name(race);
+    let rarity = model::rarity_name(*grade);
+    format!(
+        "{prefix}{name}: {progress}/{required} | {rarity} | {state} | {experience} XP | {points} bounty points"
+    )
 }

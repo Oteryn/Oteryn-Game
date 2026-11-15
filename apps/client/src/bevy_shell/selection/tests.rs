@@ -113,9 +113,32 @@ fn picker_buttons_return_server_channel_through_existing_callback()
             .is_some(),
         "quit Escape must not cancel the underlying selector callback"
     );
+    let position = UiTransform::from_translation(Val2::px(23., 41.));
+    let picker = app
+        .world_mut()
+        .query_filtered::<Entity, With<Picker>>()
+        .single(app.world())?;
+    let find_frame = |app: &mut App| -> Result<Entity, &'static str> {
+        app.world_mut()
+            .query_filtered::<(Entity, &ChildOf), With<super::super::window_drag::DraggableDialog>>(
+            )
+            .iter(app.world())
+            .find(|(_, parent)| parent.parent() == picker)
+            .map(|(entity, _)| entity)
+            .ok_or("picker frame")
+    };
+    let frame = find_frame(&mut app)?;
+    app.world_mut().entity_mut(frame).insert(position);
     let channel = find(&mut app, true)?;
     app.world_mut().trigger(Activate { entity: channel });
     app.update();
+    let frame = find_frame(&mut app)?;
+    assert_eq!(
+        *app.world()
+            .get::<UiTransform>(frame)
+            .ok_or("picker position")?,
+        position
+    );
     let play = find(&mut app, false)?;
     assert_eq!(app.world().resource::<InputFocus>().get(), Some(play));
     app.world_mut().trigger(Activate { entity: play });

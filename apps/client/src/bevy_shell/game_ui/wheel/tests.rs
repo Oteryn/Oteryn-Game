@@ -383,3 +383,40 @@ fn wheel_preset_shortcut_opens_closed_panel() -> TestResult {
     assert_eq!(request.action, 0);
     Ok(())
 }
+
+#[test]
+fn wheel_supplied_effects_and_current_draft_preview_are_visible() -> TestResult {
+    let mut p = model();
+    let reply = p.diagram.reply.as_mut().ok_or("preview")?;
+    reply.nodes[35].per_point = vec!["per-point sentinel".into()];
+    reply.nodes[35].full_slot = vec!["full-slot sentinel".into()];
+    reply.revelations = vec![wire::Revelation {
+        domain: 3,
+        name: "revelation sentinel".into(),
+        stages: vec![wire::Stage {
+            minimum_points: 50,
+            effects: vec!["stage effect sentinel".into()],
+        }],
+    }];
+    reply.current = vec!["current effect sentinel".into()];
+    reply.draft = vec!["draft effect sentinel".into()];
+    let (mut app, _, _) = fixture(p)?;
+    let labels = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for supplied in [
+        "per-point sentinel",
+        "full-slot sentinel",
+        "revelation sentinel",
+        "stage effect sentinel",
+        "current effect sentinel",
+        "draft effect sentinel",
+    ] {
+        assert!(labels.contains(supplied), "{supplied}");
+    }
+    Ok(())
+}

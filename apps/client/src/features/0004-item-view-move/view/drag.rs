@@ -1,12 +1,16 @@
 //! Screen-space bridge across the three native windows. Only the shell polls button edges.
 // SAFETY: window handles are observed as integers; all control messages run on their owner thread.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::play::{
     PlayLink, PlayView,
     mailbox::{Mailbox, lock},
 };
+#[cfg(windows)]
 use oteryn_client_ui::inventory::movement::DragItem;
+#[cfg(windows)]
 use oteryn_session::{ItemEntry, ItemMoveDestination, item_movement::WorldTilePosition};
+#[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::{HWND, POINT, RECT},
     System::Threading::GetCurrentProcessId,
@@ -15,14 +19,17 @@ use windows_sys::Win32::{
         WindowsAndMessaging::*,
     },
 };
+#[cfg(windows)]
 use winit::{
     raw_window_handle::{HasWindowHandle, RawWindowHandle},
     window::Window,
 };
 
+#[cfg(windows)]
 #[path = "count.rs"]
 mod count;
 
+#[cfg(windows)]
 #[derive(Debug, Clone)]
 struct Surface {
     hwnd: usize,
@@ -30,6 +37,7 @@ struct Surface {
     rows: Vec<([i32; 4], DragItem)>,
     destination: ItemMoveDestination,
 }
+#[cfg(windows)]
 #[derive(Debug, Default)]
 pub(in crate::play) struct DragNative {
     surfaces: Vec<Surface>,
@@ -39,10 +47,12 @@ pub(in crate::play) struct DragNative {
     start: Option<(i32, i32)>,
     prompt_open: bool,
 }
+#[cfg(windows)]
 fn contains(bounds: [i32; 4], point: POINT) -> bool {
     point.x >= bounds[0] && point.y >= bounds[1] && point.x < bounds[2] && point.y < bounds[3]
 }
 /// Called on the list's creating thread, after its displayed snapshot changes.
+#[cfg(windows)]
 pub(in crate::play) fn list_surface(
     mailbox: &mut Mailbox,
     hwnd: HWND,
@@ -90,6 +100,7 @@ pub(in crate::play) fn list_surface(
         surfaces.push(surface);
     }
 }
+#[cfg(windows)]
 impl PlayLink {
     /// Called by the production shell between native input and redraw, including while a panel has focus.
     pub fn item_drag_tick(&self, view: &PlayView, window: &Window) {
@@ -132,6 +143,13 @@ impl PlayLink {
                 primary_button,
             )
         };
+        if !gesture_eligible(self, view) {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.item_drag_native.down = down;
+            mailbox.item_drag_native.start = None;
+            mailbox.item_drag_native.escape_down = escape;
+            return;
+        }
         let tile = (unsafe { GetAncestor(under, GA_ROOT) } == main)
             .then(|| {
                 crate::input::click_tile(
@@ -227,6 +245,7 @@ impl PlayLink {
     }
 }
 /// Every open-view header is a drop destination, so another container need not be active.
+#[cfg(windows)]
 pub(in crate::play) fn view_surfaces(
     mailbox: &mut Mailbox,
     hwnd: HWND,
@@ -265,9 +284,51 @@ pub(in crate::play) fn view_surfaces(
     }
 }
 
+#[cfg(windows)]
 pub(in crate::play) fn clear_surfaces(mailbox: &mut Mailbox, handles: &[HWND]) {
     mailbox
         .item_drag_native
         .surfaces
         .retain(|s| !handles.iter().any(|h| *h as usize == s.hwnd));
+}
+
+fn gesture_eligible(link: &crate::play::PlayLink, view: &crate::play::PlayView) -> bool {
+    if view.item_world_gesture_eligible(link) {
+        return true;
+    }
+    let state = link.item_movement();
+    if state.dragged.is_some() || state.prompt.is_some() {
+        link.item_move_confirm(None);
+    }
+    false
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn native_drag_gate_cancels_capture_and_count_when_gameplay_owns_input()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, mut commands, _) = crate::play::play_channel();
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 200), 0, &[])?;
+        let item = oteryn_client_ui::inventory::movement::DragItem {
+            equipped: false, handle: 9.try_into()?, count: 20,
+        };
+        assert!(gesture_eligible(&link, &view));
+        assert!(link.item_drag_begin(item));
+        view.cursor_spell = Some(std::num::NonZeroU32::MIN);
+        assert!(!gesture_eligible(&link, &view));
+        assert!(link.item_movement().dragged.is_none());
+        view.cursor_spell = None;
+        assert!(link.item_drag_begin(item));
+        {
+            let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
+            mailbox.item_movement.drop_on(Some(oteryn_session::ItemMoveDestination::MainBackpack), true);
+            mailbox.world_context.pending = true;
+        }
+        assert!(link.item_movement().prompt.is_some());
+        assert!(!gesture_eligible(&link, &view));
+        assert!(link.item_movement().prompt.is_none());
+        assert!(commands.try_recv().is_err());
+        Ok(())
+    }
 }

@@ -133,6 +133,38 @@ pub(super) fn render(
     if let Some(reply) = diagram::current(panel).filter(|r| !r.draft_valid) {
         label(commands, skins, content, &reply.reason);
     }
+    label(commands, skins, content, diagram::view::text(panel));
+    if let Some(reply) = metadata {
+        for node in &reply.nodes {
+            label(
+                commands,
+                skins,
+                content,
+                format!(
+                    "{}\nPer point:\n{}\nFull slot:\n{}",
+                    node.name,
+                    node.per_point.join("\n"),
+                    node.full_slot.join("\n")
+                ),
+            );
+        }
+        for revelation in &reply.revelations {
+            label(commands, skins, content, &revelation.name);
+            for (index, stage) in revelation.stages.iter().enumerate() {
+                label(
+                    commands,
+                    skins,
+                    content,
+                    format!(
+                        "Stage {} at {} domain points:\n{}",
+                        index + 1,
+                        stage.minimum_points,
+                        stage.effects.join("\n")
+                    ),
+                );
+            }
+        }
+    }
     let ready = panel.ready()
         && panel.diagram.pending.is_none()
         && panel.gems.pending.is_none()

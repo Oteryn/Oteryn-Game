@@ -279,3 +279,365 @@ fn taskboard_open_bounty_when_no_offers() -> Result<(), &'static str> {
     assert!(intent(&offered, &mut confirm, &Kind::OpenBounty).is_none());
     Ok(())
 }
+
+#[test]
+fn taskboard_talisman_paths_and_purchase_are_reachable() {
+    let p = panel();
+    let rows = entries(&p, Tab::Bounty, false);
+    for path in ["Damage", "Life leech", "Loot", "Double Bestiary chance"] {
+        assert!(
+            rows.iter()
+                .any(|r| r.text.contains(path) && r.text.contains("level") && r.action.is_some()),
+            "{path}"
+        );
+    }
+    assert!(
+        rows.iter()
+            .any(|r| r.text.contains("Purchase: 5000 gold") && r.action.is_some())
+    );
+    assert!(
+        rows.iter()
+            .any(|r| r.text.contains("bounty points") && r.text.contains("Next level"))
+    );
+}
+
+#[test]
+fn taskboard_lists_expose_values_and_edit_choices() -> Result<(), &'static str> {
+    let mut p = panel();
+    p.weekly.as_mut().ok_or("reply")?.bounty.lists = vec![
+        ListSlot {
+            unlocked: true,
+            preferred: "rat".into(),
+            unwanted: "spider".into(),
+        },
+        ListSlot {
+            unlocked: false,
+            preferred: String::new(),
+            unwanted: String::new(),
+        },
+    ];
+    let rows = entries(&p, Tab::Bounty, false);
+    for text in [
+        "Preferred: rat",
+        "Unwanted: spider",
+        "Unlock list",
+        "Prefer monster0",
+        "Avoid monster0",
+        "Clear preferred",
+        "Clear unwanted",
+    ] {
+        assert!(
+            rows.iter()
+                .any(|r| r.text.contains(text) && r.action.is_some()),
+            "{text}"
+        );
+    }
+    Ok(())
+}
+#[test]
+fn taskboard_elite_mode_is_authoritative_and_capability_gated() -> Result<(), &'static str> {
+    let mut p = panel();
+    assert!(
+        !entries(&p, Tab::Bounty, false)
+            .iter()
+            .any(|r| r.text.starts_with("Elite mode:"))
+    );
+    p.weekly_results_selected = true;
+    assert!(
+        entries(&p, Tab::Bounty, false)
+            .iter()
+            .any(|r| r.text == "Elite mode: disabled — enable" && r.action.is_some())
+    );
+    p.weekly.as_mut().ok_or("reply")?.bounty.elite = true;
+    assert!(
+        entries(&p, Tab::Bounty, false)
+            .iter()
+            .any(|r| r.text == "Elite mode: enabled — disable" && r.action.is_some())
+    );
+    Ok(())
+}
+#[test]
+fn taskboard_every_offer_and_separate_active_offer_show_both_rewards() -> Result<(), &'static str> {
+    let mut p = panel();
+    let reply = p.weekly.as_mut().ok_or("reply")?;
+    reply.bounty.active = Some(BountyOffer {
+        race: "separate".into(),
+        experience: 777,
+        points: 13,
+        ..reply.bounty.offers[0].clone()
+    });
+    let rows = entries(&p, Tab::Bounty, false);
+    for name in ["monster0", "monster1", "monster2", "separate"] {
+        let row = rows
+            .iter()
+            .find(|r| r.text.contains(name))
+            .ok_or("offer row")?;
+        let (xp, points) = if name == "separate" {
+            (777, 13)
+        } else {
+            (100, 5)
+        };
+        assert!(
+            row.text.contains(&format!("{xp} XP"))
+                && row.text.contains(&format!("{points} bounty points")),
+            "{}",
+            row.text
+        );
+    }
+    Ok(())
+}
+fn spending_click(kind: Kind, stale: bool) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PlayView, play_channel};
+    let mut p = panel();
+    p.weekly
+        .as_mut()
+        .ok_or("reply")?
+        .weekly
+        .deliveries
+        .push(DeliveryTask {
+            item: 1,
+            required: 5,
+            current: 5,
+            delivered: false,
+        });
+    let expected = intent(&p, &mut false, &kind).ok_or("spending intent")?;
+    let (link, mut commands, outbox) = play_channel();
+    outbox.bevy_task_board_fixture(p.clone());
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 0, &[])?,
+    });
+    let generation = owner.generation();
+    let mut app = App::new();
+    app.insert_non_send(owner).insert_resource(State {
+        generation,
+        revision: 1,
+        seen: Some(p.clone()),
+        ..default()
+    });
+    let root = app.world_mut().spawn((GameModal, Node::default())).id();
+    let button = app
+        .world_mut()
+        .spawn((
+            Node::default(),
+            Action {
+                generation,
+                revision: 1,
+                kind,
+            },
+        ))
+        .observe(activate)
+        .id();
+    app.world_mut().entity_mut(root).add_child(button);
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(
+        commands.try_recv().is_err(),
+        "spending requires displayed confirmation"
+    );
+    let confirm = app
+        .world_mut()
+        .spawn((
+            Node::default(),
+            Action {
+                generation,
+                revision: 1,
+                kind: Kind::ConfirmAction,
+            },
+        ))
+        .observe(activate)
+        .id();
+    app.world_mut().entity_mut(root).add_child(confirm);
+    if stale {
+        let mut updated = p.clone();
+        updated.weekly.as_mut().ok_or("reply")?.points += 1;
+        outbox.bevy_task_board_fixture(updated);
+    }
+    app.world_mut().trigger(Activate { entity: confirm });
+    if stale {
+        assert!(
+            commands.try_recv().is_err(),
+            "a replacement board invalidates consent"
+        );
+    } else {
+        let crate::combat_input::PlayCommand::Feature(actual) = commands.try_recv()? else {
+            return Err("feature command".into());
+        };
+        let expected = model::full_request(&mut p, expected).ok_or("expected command")?;
+        assert_eq!(actual.payload, expected.payload);
+        app.world_mut().trigger(Activate { entity: confirm });
+        assert!(commands.try_recv().is_err(), "confirmation dispatches once");
+    }
+    Ok(())
+}
+#[test]
+fn taskboard_purchase_requires_confirmation() -> Result<(), Box<dyn std::error::Error>> {
+    spending_click(Kind::Buy(7), true)?;
+    spending_click(Kind::Buy(7), false)
+}
+#[test]
+fn taskboard_delivery_requires_confirmation() -> Result<(), Box<dyn std::error::Error>> {
+    spending_click(Kind::Deliver(0), true)?;
+    spending_click(Kind::Deliver(0), false)
+}
+#[test]
+fn taskboard_claim_requires_confirmation() -> Result<(), Box<dyn std::error::Error>> {
+    spending_click(Kind::Claim, true)?;
+    spending_click(Kind::Claim, false)
+}
+
+#[test]
+fn taskboard_projection_preserves_dragged_position_on_reply()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PlayView, play_channel};
+    let (link, _, outbox) = play_channel();
+    outbox.bevy_task_board_fixture(panel());
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        link,
+        view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 0, &[])?,
+    });
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .init_resource::<State>()
+        .insert_resource(Skins {
+            buttons: source::ButtonImages {
+                up: Handle::default(),
+                down: Handle::default(),
+            },
+            checked: Handle::default(),
+            unchecked: Handle::default(),
+            frame: Handle::default(),
+            inset: Handle::default(),
+            font: Handle::default(),
+        })
+        .add_systems(Update, project);
+    app.update();
+    let position = UiTransform::from_translation(Val2::px(31., 47.));
+    *app.world_mut()
+        .query_filtered::<&mut UiTransform, With<crate::bevy_shell::window_drag::DraggableDialog>>()
+        .single_mut(app.world_mut())? = position;
+    let mut updated = panel();
+    updated.weekly.as_mut().ok_or("reply")?.points += 1;
+    outbox.bevy_task_board_fixture(updated);
+    app.update();
+    assert_eq!(
+        *app.world_mut()
+            .query_filtered::<&UiTransform, With<crate::bevy_shell::window_drag::DraggableDialog>>()
+            .single(app.world())?,
+        position
+    );
+    Ok(())
+}
+
+#[test]
+fn taskboard_new_controls_dispatch_the_existing_owners_and_reject_replaced_board()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{PlayView, play_channel};
+    let mut p = panel();
+    p.weekly_results_selected = true;
+    for offer in &mut p.weekly.as_mut().ok_or("reply")?.bounty.offers {
+        offer.race = format!("oteryn:creature.{}", offer.race);
+    }
+    p.weekly.as_mut().ok_or("reply")?.bounty.lists = vec![
+        ListSlot {
+            unlocked: true,
+            preferred: "rat".into(),
+            unwanted: "spider".into(),
+        },
+        ListSlot {
+            unlocked: false,
+            preferred: String::new(),
+            unwanted: String::new(),
+        },
+    ];
+    for (label, action, selection) in [
+        ("Purchase: 5000 gold", 17, 0),
+        ("Damage — level", 18, 0),
+        ("Life leech — level", 18, 1),
+        ("Loot — level", 18, 2),
+        ("Double Bestiary chance — level", 18, 3),
+        ("Prefer monster0", 13, 0),
+        ("Avoid monster0", 14, 0),
+        ("Unlock list", 15, 0),
+        ("Elite mode:", 19, 1),
+    ] {
+        let kind = entries(&p, Tab::Bounty, false)
+            .into_iter()
+            .find(|r| r.text.contains(label))
+            .and_then(|r| r.action)
+            .ok_or_else(|| format!("missing {label}"))?;
+        let (link, mut commands, outbox) = play_channel();
+        outbox.bevy_task_board_fixture(p.clone());
+        let mut owner = HostOwner::new(None)?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 0, &[])?,
+        });
+        let generation = owner.generation();
+        let mut app = App::new();
+        app.insert_non_send(owner).insert_resource(State {
+            generation,
+            revision: 1,
+            seen: Some(p.clone()),
+            ..default()
+        });
+        let root = app.world_mut().spawn((GameModal, Node::default())).id();
+        let button = app
+            .world_mut()
+            .spawn((
+                Node::default(),
+                Action {
+                    generation,
+                    revision: 1,
+                    kind,
+                },
+            ))
+            .observe(activate)
+            .id();
+        app.world_mut().entity_mut(root).add_child(button);
+        let mut replaced = p.clone();
+        replaced.weekly.as_mut().ok_or("reply")?.points += 1;
+        outbox.bevy_task_board_fixture(replaced);
+        app.world_mut().trigger(Activate { entity: button });
+        assert!(
+            commands.try_recv().is_err(),
+            "{label} must bind to displayed board"
+        );
+        outbox.bevy_task_board_fixture(p.clone());
+        app.world_mut().trigger(Activate { entity: button });
+        if action == 17 || action == 18 {
+            assert!(
+                commands.try_recv().is_err(),
+                "talisman spending requires confirmation"
+            );
+            let confirm = app
+                .world_mut()
+                .spawn((
+                    Node::default(),
+                    Action {
+                        generation,
+                        revision: 1,
+                        kind: Kind::ConfirmAction,
+                    },
+                ))
+                .observe(activate)
+                .id();
+            app.world_mut().entity_mut(root).add_child(confirm);
+            app.world_mut().trigger(Activate { entity: confirm });
+        }
+        let crate::combat_input::PlayCommand::Feature(command) = commands
+            .try_recv()
+            .map_err(|error| format!("{label}: {error}"))?
+        else {
+            return Err("feature command".into());
+        };
+        let request = decode_request(&command.payload).map_err(|e| format!("{e:?}"))?;
+        assert_eq!(
+            (request.action, request.selection),
+            (action, selection),
+            "{label}"
+        );
+    }
+    Ok(())
+}

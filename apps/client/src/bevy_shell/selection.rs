@@ -86,6 +86,8 @@ pub(super) fn poll(mut owner: NonSendMut<HostOwner>) {
     owner.selection.poll();
 }
 
+// The picker needs both its controls and its prior frame offset during projection.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn project(
     mut commands: Commands,
     owner: NonSend<HostOwner>,
@@ -94,6 +96,7 @@ pub(super) fn project(
     mut roots: Query<(Entity, &mut Node, &ComputedNode), With<Picker>>,
     mut focus: ResMut<InputFocus>,
     controls: Query<&PickerControl>,
+    frames: Query<(&ChildOf, &UiTransform), With<super::window_drag::DraggableDialog>>,
 ) {
     let Some(request) = owner.selection.pending() else {
         if focus
@@ -111,7 +114,8 @@ pub(super) fn project(
         *state = PickerState::default();
         return;
     };
-    if state.request != Some(request.id) {
+    let same_request = state.request == Some(request.id);
+    if !same_request {
         state.request = Some(request.id);
         state.selected = request
             .rows
@@ -142,10 +146,19 @@ pub(super) fn project(
     }
     for (root, mut node, _) in &mut roots {
         node.display = Display::Flex;
+        let position = same_request
+            .then(|| {
+                frames
+                    .iter()
+                    .find(|(parent, _)| parent.parent() == root)
+                    .map(|(_, transform)| *transform)
+            })
+            .flatten();
         commands.entity(root).despawn_children();
         let panel = commands
             .spawn((
                 super::window_drag::DraggableDialog,
+                position.unwrap_or_default(),
                 TabGroup {
                     order: 5,
                     modal: true,
