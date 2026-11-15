@@ -67,9 +67,7 @@ pub(super) fn render(
     key: Key,
     panel: &WeaponProficiencyPanel,
 ) {
-    if let Some(content) = widgets.content.take() {
-        commands.entity(content).despawn();
-    }
+    let previous = widgets.content;
     let window = commands
         .spawn(Node {
             width: percent(100.),
@@ -223,23 +221,20 @@ pub(super) fn render(
     } else {
         text(commands, skin, tree, "Select a weapon to view its perks");
     }
+    let mut status = Vec::new();
     if !panel.selected {
-        text(
-            commands,
-            skin,
-            window,
-            "Weapon proficiency is unavailable in this session",
-        );
+        status.push("Weapon proficiency is unavailable in this session");
     }
     if panel.pending {
-        text(commands, skin, window, "Waiting for the server…");
+        status.push("Waiting for the server…");
     }
     if let Some(feedback) = panel.feedback {
-        text(commands, skin, window, feedback);
+        status.push(feedback);
     }
     if let Some(result) = &panel.result {
-        text(commands, skin, window, result);
+        status.push(result);
     }
+    text(commands, skin, window, &status.join("\n"));
     let footer = commands
         .spawn(Node {
             width: percent(100.),
@@ -272,6 +267,14 @@ pub(super) fn render(
         "Close",
         true,
     );
+    if let Some(previous) = previous {
+        // Polls update text, progress and action fences without replacing pane/control identities.
+        commands.queue(move |world: &mut World| {
+            update_tree(world, previous, window);
+            world.despawn(window);
+        });
+        widgets.content = Some(previous);
+    }
 }
 fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val) -> Entity {
     let entity = commands
@@ -344,4 +347,63 @@ fn button(
         .id();
     commands.entity(entity).add_child(caption);
     commands.entity(parent).add_child(entity);
+}
+
+fn copy_component<T: Component + Clone>(world: &mut World, target: Entity, source: Entity) {
+    if let Some(value) = world.get::<T>(source).cloned() {
+        world.entity_mut(target).insert(value);
+    }
+}
+fn control_identity(control: &Control) -> (u8, usize, usize) {
+    match control.kind {
+        Kind::Close => (0, 0, 0),
+        Kind::Refresh => (1, 0, 0),
+        Kind::Weapon(row) => (2, row, 0),
+        Kind::Perk(level, perk) => (3, level, perk),
+    }
+}
+fn same_role(world: &World, target: Entity, source: Entity) -> bool {
+    world.get::<Control>(target).map(control_identity)
+        == world.get::<Control>(source).map(control_identity)
+        && world.get::<Text>(target).is_some() == world.get::<Text>(source).is_some()
+        && world.get::<ScrollArea>(target).is_some() == world.get::<ScrollArea>(source).is_some()
+}
+fn update_tree(world: &mut World, target: Entity, source: Entity) {
+    copy_component::<Node>(world, target, source);
+    copy_component::<Text>(world, target, source);
+    copy_component::<Control>(world, target, source);
+    copy_component::<BackgroundColor>(world, target, source);
+    if world.get::<InteractionDisabled>(source).is_some() {
+        world.entity_mut(target).insert(InteractionDisabled);
+    } else {
+        world.entity_mut(target).remove::<InteractionDisabled>();
+    }
+    let before = world
+        .get::<Children>(target)
+        .map(|children| children.to_vec())
+        .unwrap_or_default();
+    let after = world
+        .get::<Children>(source)
+        .map(|children| children.to_vec())
+        .unwrap_or_default();
+    let mut retained = Vec::with_capacity(after.len());
+    for (index, child) in after.into_iter().enumerate() {
+        if let Some(old) = before
+            .get(index)
+            .copied()
+            .filter(|old| same_role(world, *old, child))
+        {
+            update_tree(world, old, child);
+            retained.push(old);
+        } else {
+            world.entity_mut(child).remove::<ChildOf>();
+            retained.push(child);
+        }
+    }
+    world.entity_mut(target).replace_children(&retained);
+    for old in before {
+        if !retained.contains(&old) {
+            world.despawn(old);
+        }
+    }
 }

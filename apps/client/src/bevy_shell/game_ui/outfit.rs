@@ -109,7 +109,7 @@ fn activate(
     let Ok(action) = actions.get(event.entity) else {
         return;
     };
-    if action.generation != owner.generation() {
+    if action.generation != owner.generation() || owner.modal_active() {
         return;
     }
     let Some(play) = &owner.play else {

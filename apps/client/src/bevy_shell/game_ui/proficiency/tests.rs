@@ -288,3 +288,56 @@ fn proficiency_reopen_restarts_catalogue_after_all_pages() -> Result {
     );
     Ok(())
 }
+
+#[test]
+fn proficiency_poll_preserves_panes_scroll_and_focused_control() -> Result {
+    use bevy::{
+        input_focus::{FocusCause, InputFocus},
+        ui::ScrollPosition,
+        ui_widgets::ScrollArea,
+    };
+    let (mut app, _commands, outbox) = app()?;
+    app.init_resource::<InputFocus>();
+    let panes: Vec<_> = app
+        .world_mut()
+        .query_filtered::<Entity, With<ScrollArea>>()
+        .iter(app.world())
+        .collect();
+    let weapon = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(id, c)| matches!(c.kind, Kind::Weapon(0)).then_some(id))
+        .ok_or("weapon")?;
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(weapon, FocusCause::Navigated);
+    for pane in &panes {
+        app.world_mut()
+            .entity_mut(*pane)
+            .insert(ScrollPosition(Vec2::new(0., 50.)));
+    }
+    publish(&outbox, &catalogue(175))?;
+    app.update();
+    for pane in panes {
+        assert_eq!(
+            app.world()
+                .get::<ScrollPosition>(pane)
+                .ok_or("pane replaced")?
+                .0
+                .y,
+            50.
+        );
+    }
+    assert!(
+        app.world().get::<Control>(weapon).is_some(),
+        "focused control replaced"
+    );
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(weapon));
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|text| text.contains("175 / 400 XP"))
+    );
+    Ok(())
+}

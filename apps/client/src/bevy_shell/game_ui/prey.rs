@@ -3,7 +3,12 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use bevy::{prelude::*, ui::InteractionDisabled, ui_widgets::Activate};
+use bevy::{
+    prelude::*,
+    text::EditableText,
+    ui::InteractionDisabled,
+    ui_widgets::{Activate, TextInput},
+};
 use oteryn_client_ui::prey::{Intent, PreyPanel, creature_label};
 use oteryn_client_ui_bevy as source;
 #[cfg(test)]
@@ -18,7 +23,13 @@ enum Kind {
     Cancel,
     Select(u8, u8),
     Send(Intent),
+    ChooseAny(u8),
+    ConfirmAny(Intent),
 }
+#[derive(Component)]
+struct Wildcard(u8);
+#[derive(Component)]
+struct FreeReroll(u64);
 #[derive(Component)]
 struct Action {
     generation: u64,
@@ -27,13 +38,14 @@ struct Action {
 }
 #[derive(Resource, Default)]
 struct State {
-    seen: Option<(u64, PreyPanel, Option<u8>, u64)>,
+    seen: Option<(u64, PreyPanel, Option<u8>, Option<Intent>)>,
     root: Option<Entity>,
     confirmation: Option<u8>,
+    wildcard: Option<Intent>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
-        .add_systems(Update, (keyboard, project).chain());
+        .add_systems(Update, (keyboard, project, refresh_rerolls).chain());
 }
 fn keyboard(
     keys: Option<Res<ButtonInput<KeyCode>>>,
@@ -47,12 +59,13 @@ fn keyboard(
         || !state
             .seen
             .as_ref()
-            .is_some_and(|(generation, _, _)| *generation == owner.generation())
+            .is_some_and(|(generation, _, _, _)| *generation == owner.generation())
     {
         return;
     }
     if let Some(play) = &owner.play {
         state.confirmation = None;
+        state.wildcard = None;
         play.link.prey_set_open(false);
     }
 }
@@ -121,6 +134,7 @@ fn reroll_time(free_at: u64, now: u64) -> String {
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
+    fields: Query<(&Wildcard, &EditableText)>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<State>,
     guard: ModalGuard,
@@ -134,7 +148,8 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    if action.generation != owner.generation()
+    if owner.modal_active()
+        || action.generation != owner.generation()
         || action.panel != play.link.prey_panel()
         || !affordable(&action.panel, &action.kind)
     {
@@ -144,6 +159,63 @@ fn activate(
         Kind::Close => {
             play.link.prey_set_open(false);
             state.confirmation = None;
+            state.wildcard = None;
+        }
+        Kind::ChooseAny(slot) => {
+            let Some((_, text)) = fields.iter().find(|(field, _)| field.0 == slot) else {
+                return;
+            };
+            if text.pending_paste.is_some()
+                || text
+                    .pending_edits
+                    .iter()
+                    .any(bevy::text::TextEdit::is_destructive)
+            {
+                return;
+            }
+            let entered = text.value().to_string();
+            let creature = action
+                .panel
+                .confirmed
+                .iter()
+                .flat_map(|reply| &reply.slots)
+                .flat_map(|slot| slot.creatures.iter().chain(std::iter::once(&slot.selected)))
+                .chain(
+                    action
+                        .panel
+                        .offered_today
+                        .iter()
+                        .map(|offer| &offer.creature),
+                )
+                .find(|key| {
+                    key.eq_ignore_ascii_case(entered.trim())
+                        || creature_label(key).eq_ignore_ascii_case(entered.trim())
+                })
+                .cloned()
+                .unwrap_or_else(|| entered.trim().to_owned());
+            let request = oteryn_client_ui::prey::prey::Request::SelectAny {
+                slot,
+                creature: creature.clone(),
+            };
+            if !action.panel.unlocked(slot)
+                || action.panel.pending.is_some()
+                || oteryn_client_ui::prey::prey::encode_request(&request).is_err()
+            {
+                return;
+            }
+            state.confirmation = None;
+            state.wildcard = Some(Intent::SelectAny { slot, creature });
+        }
+        Kind::ConfirmAny(ref expected) => {
+            if state.wildcard.as_ref() == Some(expected)
+                && let Some(intent) = state.wildcard.take()
+            {
+                play.link.prey_request(intent);
+            }
+        }
+        Kind::Cancel => {
+            state.confirmation = None;
+            state.wildcard = None;
         }
         Kind::Store => {
             play.link.prey_set_open(false);
@@ -158,11 +230,12 @@ fn activate(
         }
     }
 }
-fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) {
+fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> Entity {
     let child = commands
         .spawn(source::button_caption(text, skin.font.clone()))
         .id();
     commands.entity(parent).add_child(child);
+    child
 }
 fn button(
     commands: &mut Commands,
@@ -172,7 +245,7 @@ fn button(
     panel: &PreyPanel,
     kind: Kind,
     text: &str,
-) {
+) -> Entity {
     let disabled = !affordable(panel, &kind);
     let child = commands
         .spawn((
@@ -190,6 +263,7 @@ fn button(
     }
     label(commands, skin, child, text);
     commands.entity(parent).add_child(child);
+    child
 }
 fn project(
     mut commands: Commands,
@@ -216,13 +290,18 @@ fn project(
         .is_some_and(|(old, old_panel, _, _)| *old != generation || old_panel != &panel)
     {
         state.confirmation = None;
+        state.wildcard = None;
     }
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    // Refresh cooldown labels once per minute even without another server reply.
-    let seen = (generation, panel.clone(), state.confirmation, now / 60);
+    let seen = (
+        generation,
+        panel.clone(),
+        state.confirmation,
+        state.wildcard.clone(),
+    );
     if state.seen.as_ref() == Some(&seen) {
         return;
     }
@@ -259,6 +338,14 @@ fn project(
         Kind::Close,
         "Close",
     );
+    if let Some(confirmed) = &panel.confirmed {
+        label(
+            &mut commands,
+            &skin,
+            root,
+            &format!("Wildcards: {}", confirmed.wildcard_balance),
+        );
+    }
     if let Some(reply) = &panel.confirmed {
         label(
             &mut commands,
@@ -311,7 +398,41 @@ fn project(
             Kind::Refresh,
             "Refresh",
         );
-        if let Some(slot) = state.confirmation {
+        if let Some(Intent::SelectAny { slot, creature }) = &state.wildcard {
+            label(
+                &mut commands,
+                &skin,
+                root,
+                &format!(
+                    "Use a wildcard for {} in slot {slot}?",
+                    creature_label(creature)
+                ),
+            );
+            let confirm = button(
+                &mut commands,
+                &skin,
+                root,
+                generation,
+                &panel,
+                Kind::ConfirmAny(Intent::SelectAny {
+                    slot: *slot,
+                    creature: creature.clone(),
+                }),
+                "Confirm wildcard selection",
+            );
+            commands
+                .entity(confirm)
+                .insert(Name::new("prey.wildcard.confirm"));
+            button(
+                &mut commands,
+                &skin,
+                root,
+                generation,
+                &panel,
+                Kind::Cancel,
+                "Cancel",
+            );
+        } else if let Some(slot) = state.confirmation {
             label(
                 &mut commands,
                 &skin,
@@ -349,6 +470,15 @@ fn project(
                     root,
                     &format!("Slot {id} · {}", slot_title(slot.state)),
                 );
+                let availability = label(
+                    &mut commands,
+                    &skin,
+                    root,
+                    &reroll_time(slot.free_reroll_at, now),
+                );
+                commands
+                    .entity(availability)
+                    .insert(FreeReroll(slot.free_reroll_at));
                 if slot.state == 0 && id >= 2 {
                     label(
                         &mut commands,
@@ -374,14 +504,6 @@ fn project(
                         &skin,
                         root,
                         "After a purchase, reopen Prey and Refresh to check access.",
-                    );
-                }
-                if slot.state != 0 {
-                    label(
-                        &mut commands,
-                        &skin,
-                        root,
-                        &reroll_time(slot.free_reroll_at, now),
                     );
                 }
                 if slot.state == 2 {
@@ -417,6 +539,42 @@ fn project(
                             );
                         }
                     }
+                }
+                if slot.state != 0 {
+                    label(&mut commands, &skin, root, "Wildcard creature name");
+                    let mut editor = EditableText::new("");
+                    editor.max_characters = Some(256);
+                    let field = commands
+                        .spawn((
+                            Wildcard(id),
+                            TextInput,
+                            editor,
+                            Name::new(format!("prey.wildcard.creature.{id}")),
+                            source::font(skin.font.clone(), false),
+                            TextColor(source::TEXT_COLOR),
+                            bevy::text::TextCursorStyle::default(),
+                            bevy::input_focus::tab_navigation::TabIndex(0),
+                            source::frame(skin.inset.clone(), [1.; 4]),
+                            Node {
+                                width: px(300.),
+                                min_height: px(25.),
+                                ..default()
+                            },
+                        ))
+                        .id();
+                    commands.entity(root).add_child(field);
+                    let choose = button(
+                        &mut commands,
+                        &skin,
+                        root,
+                        generation,
+                        &panel,
+                        Kind::ChooseAny(id),
+                        "Choose creature",
+                    );
+                    commands
+                        .entity(choose)
+                        .insert(Name::new(format!("prey.wildcard.choose.{id}")));
                 }
                 for kind in slot_actions(slot.state) {
                     let (kind, text) = match kind {
@@ -461,4 +619,17 @@ fn project(
     }
     state.root = Some(root);
     state.seen = Some(seen);
+}
+
+fn refresh_rerolls(mut labels: Query<(&FreeReroll, &mut Text)>) {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    for (deadline, mut text) in &mut labels {
+        let value = reroll_time(deadline.0, now);
+        if text.0 != value {
+            text.0 = value;
+        }
+    }
 }
