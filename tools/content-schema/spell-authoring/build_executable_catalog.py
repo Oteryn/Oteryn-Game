@@ -89,7 +89,36 @@ def apply_owner_decisions(catalog):
     }
     if resolution not in entry["manifest"]["entries"]:
         entry["manifest"]["entries"].append(resolution)
+    apply_rune_cooldowns(catalog)
     return catalog
+
+
+# HEALPAR: Global rune use cooldown 2 s and group cooldown 2 s, keyed by the revision of the
+# TibiaWiki page of each rune (Ultimate Healing Rune 1186610, Intense Healing Rune 1186611).
+RUNE_COOLDOWNS = {"candidate:spell/rune/intense_healing_rune": 1186611,
+                  "candidate:spell/rune/ultimate_healing_rune": 1186610}
+
+
+def apply_rune_cooldowns(catalog):
+    for entry in catalog["bundles"]:
+        key = entry["bundle"]["spell"]["identity"]["key"]
+        if key not in RUNE_COOLDOWNS:
+            continue
+        spell = entry["bundle"]["spell"]
+        groups = spell["groups"]
+        if spell["cooldown_ms"] not in (1000, 2000) or len(groups) != 1 or groups[0]["cooldown_ms"] not in (1000, 2000):
+            raise ValueError(f"unexpected donor rune cooldown: {key}")
+        spell["cooldown_ms"] = 2000
+        groups[0]["cooldown_ms"] = 2000
+        for destination in ("/spell/spell/cooldown_ms", "/spell/spell/groups/0/cooldown_ms"):
+            resolution = {
+                "destination": destination, "kind": "field", "source_field": "cooldown",
+                "source_file": "tibia.fandom.com", "source_index": 0, "source_line": 1,
+                "status": "resolved_native_behavior",
+                "resolution": f"HEALPAR: Global rune cooldown and group cooldown are 2 s; TibiaWiki rev {RUNE_COOLDOWNS[key]} over the donor's 1 s",
+            }
+            if resolution not in entry["manifest"]["entries"]:
+                entry["manifest"]["entries"].append(resolution)
 
 
 def build(root):

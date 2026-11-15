@@ -909,10 +909,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "f6372601a2fa1af0d6ca549d49b898d69eb3bee71d05df0dc335b3dd78b6aae5",
+          "sha256": "338cd6617316c09aaa171e5586b82c450685e57f8dbeace0e5d1cd314f6cdcfd",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "486f541f0a8c011b63fc46f27647c4db1dcaab29c2680b471b1b14f79ee3ca4f"
+            "sha256": "987d440d2103c04140cfb5f5dc1fd3b330d7b405c3f4c75ac59bcf166641b274"
           }
         },
         {
@@ -1042,7 +1042,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "95fbd5f853216ae1cb7c88789ff42c5c91995a7838b32b380b57c136d5ad41b3"
+          "sha256": "25c76ad9f91c4fdfd13851f12020fcd99383b16fc1a29d208d3f6b5894b89494"
         },
         {
           "creates_canonical_identities": false,
