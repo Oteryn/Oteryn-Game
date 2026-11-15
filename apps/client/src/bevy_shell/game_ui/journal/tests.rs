@@ -274,7 +274,12 @@ fn spell_list_filters() -> Result {
         );
         outbox.bevy_journal_spellbook_result(&refusal);
     }
-    let modal = host.play.as_ref().ok_or("play")?.link.bevy_server_modal_fixture();
+    let modal = host
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_server_modal_fixture();
     assert!(!actions::perform(
         &mut host,
         &mut state,
