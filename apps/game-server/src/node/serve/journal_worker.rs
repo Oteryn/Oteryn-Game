@@ -62,12 +62,14 @@ fn configured(
         platform
             .public_projections
             .as_ref()
+            .filter(|c| c.enabled)
             .map(|c| &c.client_certificate_file),
     );
     paths.extend(
         platform
             .world_event_outcomes
             .as_ref()
+            .filter(|c| c.enabled)
             .map(|c| &c.client_certificate_file),
     );
     let other = paths

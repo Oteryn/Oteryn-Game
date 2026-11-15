@@ -146,6 +146,35 @@ pub(super) async fn capture(
     {
         return;
     }
+    let mut ticks = tokio::time::interval(Duration::from_secs(5));
+    ticks.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    loop {
+        ticks.tick().await;
+        if capture_once(
+            root,
+            authority,
+            node,
+            material,
+            assignment,
+            reset_epoch,
+            bundle,
+        )
+        .await
+        {
+            return;
+        }
+    }
+}
+
+async fn capture_once(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    material: &Material,
+    assignment: &RuntimeScopeAssignment,
+    reset_epoch: u64,
+    bundle: Option<&crate::map::boot::BundleWorld>,
+) -> bool {
     let update = |houses| PublicHouseCatalogue {
         world: material.world,
         channel: material.channel,
@@ -154,33 +183,154 @@ pub(super) async fn capture(
         map_revision: bundle.map_or_else(String::new, |b| b.map_revision().to_owned()),
         houses,
     };
-    if root
-        .sync_public_house_catalogue(authority, node, update(None))
-        .await
-        .is_err()
+    if root.await_ready().await.is_err()
+        || root
+            .sync_public_house_catalogue(authority, node, update(None))
+            .await
+            .is_err()
     {
         event("event=public_projections family=house source=catalogue result=unavailable");
-        return;
+        return false;
     }
     let records = match bundle.map(metadata).transpose() {
         Ok(Some(rows)) => rows,
         Ok(None) => Vec::new(),
         Err(()) => {
             event("event=public_projections family=house source=catalogue result=unavailable");
-            return;
+            return false;
         }
     };
-    if root
-        .sync_public_house_catalogue(authority, node, update(Some(records)))
-        .await
-        .is_err()
+    if root.await_ready().await.is_err()
+        || root
+            .sync_public_house_catalogue(authority, node, update(Some(records)))
+            .await
+            .is_err()
     {
         event("event=public_projections family=house source=catalogue result=unavailable");
+        return false;
     }
+    true
 }
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn catalogue_material() -> crate::bestiary_postgres_harness::TestResult<Material> {
+        use crate::bestiary_postgres_harness::{CHANNEL, WORLD, debug, id};
+        let document = format!(
+            r#"{}
+[platform.public_projections]
+enabled = true
+client_certificate_file = "/missing/public.crt"
+client_key_file = "/missing/public.key"
+source_authority = "public"
+epoch_fence_file = "/missing/public.fence"
+"#,
+            super::super::super::config::tests::NODE
+        );
+        let config = NodeConfig::parse(document.as_bytes())?;
+        let pair = rcgen::generate_simple_self_signed(vec!["localhost".to_owned()])?;
+        let chain = vec![pair.cert.der().clone()];
+        let key = PrivateKeyDer::Pkcs8(rustls::pki_types::PrivatePkcs8KeyDer::from(
+            pair.signing_key.serialize_der(),
+        ));
+        let producer = ProducerDescriptor::new(
+            config.platform.source_authority.clone(),
+            ("127.0.0.1".into(), 8443),
+            "localhost".into(),
+            "localhost".into(),
+            chain.clone(),
+            chain.clone(),
+            key.clone_key(),
+        )
+        .map_err(debug)?;
+        Ok(Material {
+            config,
+            gameplay_chain: chain,
+            gameplay_key: key,
+            evidence: FreshEvidenceSource::new(producer.clone()),
+            intents: producer.clone(),
+            store: producer,
+            runtime_status: None,
+            account_characters: std::sync::Mutex::new(None),
+            character_commands: std::sync::Mutex::new(None),
+            bazaar: std::sync::Mutex::new(None),
+            public_projections: std::sync::Mutex::new(None),
+            world_event_outcomes: std::sync::Mutex::new(None),
+            descriptor: DescriptorRegistration {
+                revision: 1,
+                facts: Vec::new(),
+                installed_at: 1,
+            },
+            launch: LaunchAuthorizationFile {
+                version: 1,
+                secret: "01".repeat(32),
+                launch_binding: "fixture".into(),
+                supersedes: None,
+            },
+            s2: None,
+            world: WorldId::decode(&id(WORLD)).map_err(debug)?,
+            channel: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        })
+    }
+
+    fn catalogue_recovery_case(fail_capture: bool) -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{
+            Harness, TestResult, configured_admin, debug, runtime, scope,
+        };
+        use sqlx::Executor;
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+            runtime().map_err(debug)?.block_on(async {
+                let h = Harness::create(admin, if fail_capture { "catalogue_capture" } else { "catalogue_pending" }, false).await?;
+                let result: TestResult = async {
+                    let material = catalogue_material()?;
+                    sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,to_timestamp(123),'1970-01')")
+                        .bind(material.world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
+                    sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+                        .bind(material.world.as_bytes().as_slice()).execute(&h.pool).await?;
+                    if fail_capture {
+                        h.pool.execute("CREATE SEQUENCE catalogue_failure; CREATE FUNCTION catalogue_fail_once() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.ready AND nextval('catalogue_failure')=1 THEN RAISE EXCEPTION 'transient capture failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER catalogue_fail_once BEFORE UPDATE ON game_public_house_catalogue_state FOR EACH ROW EXECUTE FUNCTION catalogue_fail_once() ").await?;
+                    }
+                    let seal = h.recovery.seal_current().map_err(debug)?;
+                    let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+                    let assignment = h.root.read_runtime_scope_assignment(scope()?).await.map_err(debug)?.ok_or("assignment")?;
+                    let held = if fail_capture { None } else { Some(h.root.try_issue_semantic_pass()?) };
+                    let mut worker = Box::pin(capture(&h.root, &authority, &h.node, &material, &assignment, 0, None));
+                    // Poll the real capture while the initial publication is contended.
+                    let completed = poll_fn(|cx| Poll::Ready(worker.as_mut().poll(cx).is_ready())).await;
+                    drop(held);
+                    if !completed {
+                        tokio::time::timeout(Duration::from_secs(20), worker).await?;
+                    }
+                    let ready: Option<bool> = sqlx::query_scalar("SELECT ready FROM game_public_house_catalogue_state WHERE world_id=encode($1,'hex')::uuid")
+                        .bind(material.world.as_bytes().as_slice()).fetch_optional(&h.pool).await?;
+                    assert_eq!(ready, Some(true), "both catalogue stages must recover without restart");
+                    if fail_capture {
+                        let attempts: i64 = sqlx::query_scalar("SELECT last_value FROM catalogue_failure").fetch_one(&h.pool).await?;
+                        assert_eq!(attempts, 2);
+                    }
+                    Ok(())
+                }.await;
+                h.cleanup().await?;
+                result
+            }).map_err(debug)
+        })?.join().map_err(|_| "catalogue thread failed")?.map_err(Into::into)
+    }
+
+    #[test]
+    fn catalogue_retries_initial_publication_after_root_contention()
+    -> crate::bestiary_postgres_harness::TestResult {
+        catalogue_recovery_case(false)
+    }
+
+    #[test]
+    fn catalogue_retries_capture_after_pending_publication()
+    -> crate::bestiary_postgres_harness::TestResult {
+        catalogue_recovery_case(true)
+    }
 
     #[test]
     fn public_house_catalogue_all_995_records_parse_with_source_identity_and_tiles()
