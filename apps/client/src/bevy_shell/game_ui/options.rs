@@ -17,6 +17,7 @@ mod metadata;
 #[cfg(test)]
 mod navigation_tests;
 mod projection;
+mod screenshots;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -71,7 +72,10 @@ pub(super) fn install(app: &mut App) {
     app.insert_resource(Installed)
         .init_resource::<OptionsState>()
         .add_systems(Startup, widgets::setup.after(super::super::ui::setup))
-        .add_systems(Update, (keyboard, projection::project).chain())
+        .add_systems(
+            Update,
+            (keyboard, projection::project, screenshots::project).chain(),
+        )
         .add_systems(Update, audio_feedback::project.after(projection::project));
 }
 fn top_server_dialog(owner: &HostOwner) -> bool {
@@ -143,6 +147,9 @@ fn activate(
         Control::Reset => {
             let defaults = crate::play::ReferencePreferences::default();
             owner.edit_preferences(|draft| {
+                if state.page == Page::Screenshots {
+                    draft.screenshots = defaults.screenshots.clone();
+                }
                 for row in metadata::rows(state.page) {
                     row.reset(draft, &defaults);
                 }

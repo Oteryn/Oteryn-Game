@@ -1,0 +1,106 @@
+use super::*;
+use bevy::{
+    asset::RenderAssetUsages,
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+};
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+fn frame() -> Image {
+    Image::new_fill(
+        Extent3d {
+            width: 4,
+            height: 3,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &[20, 40, 60, 255],
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    )
+}
+fn app(folder: &std::path::Path, game_only: bool) -> Result<App, Box<dyn std::error::Error>> {
+    let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.screenshots.directory = folder.to_string_lossy().into_owned();
+    owner.settings.preferences.screenshots.game_only = game_only;
+    let mut app = App::new();
+    app.insert_non_send(owner)
+        .insert_resource(super::super::audit::AuditOutput::new(None))
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_resource(WorldViewport {
+            origin: UVec2::ONE,
+            size: UVec2::new(2, 1),
+        })
+        .add_systems(Update, super::super::audit::capture_on_key);
+    Ok(app)
+}
+fn capture(app: &mut App) -> TestResult {
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::F12);
+    app.update();
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Screenshot>>()
+        .single(app.world())?;
+    app.world_mut().trigger(ScreenshotCaptured {
+        entity,
+        image: frame(),
+    });
+    app.world_mut().despawn(entity);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    Ok(())
+}
+#[test]
+fn f12_completion_saves_distinct_bmps_in_configured_destination() -> TestResult {
+    let root = std::env::temp_dir().join(format!("gap60-captures-{}", std::process::id()));
+    let mut app = app(&root, false)?;
+    capture(&mut app)?;
+    capture(&mut app)?;
+    let files = std::fs::read_dir(&root)?.collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(files.len(), 2);
+    for file in files {
+        let bytes = std::fs::read(file.path())?;
+        assert_eq!(&bytes[..2], b"BM");
+        assert_eq!(i32::from_le_bytes(bytes[18..22].try_into()?), 4);
+        assert_eq!(i32::from_le_bytes(bytes[22..26].try_into()?), 3);
+        assert_eq!(&bytes[54..57], &[60, 40, 20]);
+    }
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .status
+            .starts_with("Screenshot saved:")
+    );
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
+#[test]
+fn game_only_crops_rendered_pixels_and_write_errors_reach_player() -> TestResult {
+    let root = std::env::temp_dir().join(format!("gap60-crop-{}", std::process::id()));
+    let mut app = app(&root, true)?;
+    capture(&mut app)?;
+    let path = std::fs::read_dir(&root)?.next().ok_or("capture")??.path();
+    let bytes = std::fs::read(path)?;
+    assert_eq!(i32::from_le_bytes(bytes[18..22].try_into()?), 2);
+    assert_eq!(i32::from_le_bytes(bytes[22..26].try_into()?), 1);
+    let blocked = root.join("file");
+    std::fs::write(&blocked, b"occupied")?;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .preferences
+        .screenshots
+        .directory = blocked.to_string_lossy().into_owned();
+    capture(&mut app)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .status
+            .starts_with("Screenshot failed:")
+    );
+    assert_eq!(std::fs::read(blocked)?, b"occupied");
+    assert!(save(&frame(), &root, Some(WorldViewport::default())).is_err());
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}
