@@ -78,6 +78,8 @@ const INTERPRETATION: [&str; 4] = [
     "s3b-content-1",
     "s3b-starter-1",
 ];
+/// The content revision the node serves (`readiness.content_revision`).
+const SERVED_CONTENT_REVISION: &str = INTERPRETATION[2];
 const RUNTIME_AUTHORITY: &str = "game:wp5-seam-runtime";
 /// First readiness publication of the served Channel.
 const RUNTIME_OBSERVATION: &str = "runtime-1";
@@ -89,6 +91,68 @@ fn required(name: &str) -> Result<String, io::Error> {
 fn evidence(line: &str) {
     if let Some(line) = client_world::verdict::indexed_evidence(e2e_result_line(line)) {
         println!("SEAM_EVIDENCE {line}");
+    }
+}
+
+/// Domain 14 under the schema the session negotiated, as `oteryn_session::container_tree`
+/// decodes it: browse field (230), house capacity (446) and item appearances (499) each
+/// change the wire, so a fixed-schema decode refuses a valid delta as malformed.
+fn selected_container_views(
+    selected: &[u32],
+    payload: &[u8],
+) -> Result<oteryn_protocol_oteryn::container_tree::ContainerViews, impl std::fmt::Debug> {
+    oteryn_protocol_oteryn::container_tree::decode_container_views_with_appearances(
+        payload,
+        selected.contains(&oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1),
+        selected.contains(
+            &oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
+        ),
+        selected.contains(&oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+    )
+}
+
+#[cfg(test)]
+mod selected_container_views_tests {
+    use super::selected_container_views;
+    use oteryn_protocol_oteryn::container_tree::{
+        ContainerView, ContainerViews, decode_container_views,
+        encode_container_views_with_appearances,
+    };
+    use oteryn_protocol_oteryn::item_view::{CAPABILITY_ITEM_APPEARANCE_V1, ItemEntry};
+    use std::num::{NonZeroU32, NonZeroU64};
+
+    fn views() -> Option<ContainerViews> {
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: NonZeroU64::new(1)?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![ItemEntry {
+                    appearance_id: 2854,
+                    handle: NonZeroU64::new(2)?,
+                    item_definition_ref: NonZeroU32::new(2854)?,
+                    count: NonZeroU32::new(1)?,
+                    sub_type: 0,
+                }],
+                browse: None,
+            }],
+        })
+    }
+
+    /// Node boot run 72: the starter backpack delta under capability 499 failed the fixed
+    /// v1 decode with `Malformed`; the negotiated decode reads it back exactly.
+    #[test]
+    fn container_delta_decodes_under_the_negotiated_appearance_schema() -> Result<(), String> {
+        let views = views().ok_or("non-zero literals")?;
+        let payload = encode_container_views_with_appearances(&views, false, false, true)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(decode_container_views(&payload).is_err());
+        assert_eq!(
+            selected_container_views(&[14, CAPABILITY_ITEM_APPEARANCE_V1], &payload).ok(),
+            Some(views)
+        );
+        Ok(())
     }
 }
 
@@ -445,7 +509,7 @@ async fn publish_readiness(
             protocol_major: 1,
             transport_profile: 1,
             ruleset_revision: "rules-s3b-1".into(),
-            content_revision: "content-s3b-1".into(),
+            content_revision: SERVED_CONTENT_REVISION.into(),
             map_revision: "map-s3b-1".into(),
             world_policy_revision: "policy-s3b-1".into(),
             offer_revision: "offer-s3b-1".into(),
@@ -507,7 +571,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
@@ -1870,7 +1934,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let shutdown = CancellationToken::new();
     let (quest_catalogue, quest_log_content, _) = crate::node::serve::load_quest_catalogue(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
-        "content-s3b-1",
+        SERVED_CONTENT_REVISION,
     )
     .map_err(|error| format!("quest catalogue: {error:?}"))?;
     let serve = serve_gameplay(
@@ -2678,7 +2742,7 @@ fn sign_recovery(
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
     });
@@ -3033,4 +3097,28 @@ fn seam_qualification_pins_are_closed() {
     assert_eq!(PLATFORM_SOURCE.len(), 40);
     assert!(PLATFORM_SOURCE.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let _ = CharacterId::decode(&v7(1, 1));
+}
+
+/// The node serves the Character's content revision (D634): the quest and task board
+/// catalogues load under `readiness.content_revision` and refuse a Character root whose
+/// interpretation names another one (`ProgressionContextMismatch`, node boot run 73).
+#[test]
+fn node_boot_readiness_serves_the_interpreted_content_revision() {
+    let script = include_str!("../../../tools/qualification/node_boot/run.sh");
+    let interpretation = script
+        .lines()
+        .find_map(|line| line.strip_prefix("readonly INTERPRETATION=("))
+        .and_then(|rest| rest.split_whitespace().nth(2));
+    let readiness = script
+        .split("[readiness]")
+        .nth(1)
+        .and_then(|section| {
+            section
+                .lines()
+                .find_map(|line| line.strip_prefix("content_revision = "))
+        })
+        .map(|value| value.trim_matches('"'));
+    assert_eq!(interpretation, Some(INTERPRETATION[2]));
+    assert_eq!(readiness, Some(INTERPRETATION[2]));
+    assert_eq!(SERVED_CONTENT_REVISION, INTERPRETATION[2]);
 }

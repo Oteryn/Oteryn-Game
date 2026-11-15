@@ -71,6 +71,7 @@ fn corpse(n: u8) -> ItemKey {
 
 fn item(key: ItemKey) -> ViewItem {
     ViewItem {
+        appearance_id: 0,
         key,
         item_definition_ref: NonZeroU32::new(2854).expect("fixture"),
         count: NonZeroU32::MIN,

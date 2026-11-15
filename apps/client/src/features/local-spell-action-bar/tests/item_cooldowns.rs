@@ -41,6 +41,7 @@ fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     outbox.inventory_initialize(
         Some(oteryn_session::CharacterInventory {
             entries: vec![oteryn_session::ItemEntry {
+                appearance_id: 0,
                 handle: NonZeroU64::MIN,
                 item_definition_ref: definition,
                 count: NonZeroU32::MIN,

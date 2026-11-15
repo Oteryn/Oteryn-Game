@@ -50,6 +50,7 @@ fn fixture() -> Result<(Vec<u8>, u64, String), BoxError> {
         ));
     }
     let backpack = ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(3).unwrap_or(ItemHandle::MIN),
         item_definition_ref: std::num::NonZeroU32::new(2854).unwrap_or(std::num::NonZeroU32::MIN),
         count: std::num::NonZeroU32::MIN,

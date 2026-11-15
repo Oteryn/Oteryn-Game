@@ -177,3 +177,48 @@ impl Scene {
 #[cfg(test)]
 #[path = "tests/scene.rs"]
 mod tests;
+
+#[cfg(feature = "bevy-shell")]
+impl Scene {
+    pub(crate) fn item_icon(&self, item: &oteryn_session::ItemEntry) -> Option<&[Draw]> {
+        self.cache.item(item)
+    }
+
+    pub(crate) fn prepare_item_icons<'a>(
+        &mut self,
+        items: impl Iterator<Item = &'a oteryn_session::ItemEntry>,
+    ) -> Result<bool, BatchError> {
+        let mut items = items.filter(|item| item.appearance_id != 0).peekable();
+        if items.peek().is_none() {
+            return Ok(false);
+        }
+        // begin retains the already loaded asset index and sprite sheets.
+        self.cache.begin(
+            self.world.atlas(),
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+        );
+        for item in items {
+            self.cache.prepare_item(item);
+        }
+        let image = self.cache.image()?;
+        if self
+            .presentation_atlas
+            .as_ref()
+            .is_none_or(|old| !Arc::ptr_eq(old, &image))
+        {
+            self.presentation_atlas = Some(image);
+            self.lit_atlas = None;
+            self.tiles = oteryn_renderer::TileBatch::from_cells(
+                &self.view,
+                self.atlas(),
+                &vec![
+                    crate::map::BLACK_CELL;
+                    (crate::scene::SCENE_COLUMNS * crate::scene::SCENE_ROWS) as usize
+                ],
+            )?;
+            self.rebuild_sprites()?;
+            return Ok(true);
+        }
+        Ok(false)
+    }
+}

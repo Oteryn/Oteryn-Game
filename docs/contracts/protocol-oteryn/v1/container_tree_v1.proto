@@ -27,7 +27,9 @@ import "item_view_v1.proto";
 // a browse view is at most 965 bytes (30 entries, no parent and up to 20 bytes of metadata).
 // With authenticated HOUSE_CONTAINER_CAPACITY_V2 (446, requires 14 and 49), an actual
 // named-House container may instead have 25 entries and at most 801 encoded bytes.
-// Legacy ordinary views and every carried container retain the 20-entry bound.
+// Capability 499 increases the respective body bounds to 726, 1085 and 901 bytes
+// by adding at most four bytes per ItemEntry. Legacy ordinary views and every
+// carried container retain the 20-entry bound.
 message ContainerViewV1 {
   // 0 to 15 (BAGS0-RL-03), unique within the domain.
   uint32 view_id = 1;
@@ -61,8 +63,9 @@ message BrowseFieldPageV1 {
 // delta type 1. A delta carries every open view. Views in strictly ascending view id, at most 16
 // (BAGS0-RL-03). The whole payload is at most 10,384 bytes in legacy ordinary mode,
 // at most 12,862 bytes with 446 and no 230, and at most 15,488 bytes with 230 (including
-// mixed House views). The existing domain 14 type 1 registry ceiling 15,488 covers
-// all three negotiated modes; no legacy decoder accepts 25 merely from that ceiling.
+// mixed House views). With capability 499 these bounds are 11,664, 14,462 and
+// 17,408 respectively. The registry ceiling covers negotiated modes only;
+// unselected decoders retain their legacy bounds and reject ItemEntry field 5.
 // Within a view the container, the parent and the entries hold distinct handles. Ordinary
 // containers appear in one view only. With capability 230, views may share a browse container
 // handle only when their position and total agree; their page indexes remain independent.

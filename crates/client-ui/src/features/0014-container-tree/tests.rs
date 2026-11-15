@@ -10,6 +10,7 @@ fn handle(value: u64) -> ItemHandle {
 }
 fn entry(value: u64) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: handle(value),
         item_definition_ref: NonZeroU32::MIN,
         count: NonZeroU32::MIN,

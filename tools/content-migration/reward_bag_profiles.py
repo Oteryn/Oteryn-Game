@@ -14,6 +14,7 @@ import sys
 from decimal import Decimal
 from pathlib import Path
 
+from import_cyclopedia_global import apply_profile_weights
 from native_profile_composition import encode_native_profile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -127,6 +128,8 @@ def capture(canary, crystal):
                      'excluded_reason': reason, 'rewards': rewards})
     records = [profiles[i] for i in sorted(admitted)]
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records}, bindings, admitted)
+    # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+    apply_profile_weights(bound['records'], ROOT)
     return {'schema': 'OTERYN_NATIVE_REWARD_BAG_PROFILES/v1',
             'producer': 'tools/content-migration/reward_bag_profiles.py',
             'weight_scale': int(WEIGHT_SCALE),

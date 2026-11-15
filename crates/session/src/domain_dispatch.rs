@@ -326,9 +326,10 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     self.inventory_revision,
                 )?;
-                let value = item_view::decode_character_inventory_with_equip_drop(
+                let value = item_view::decode_character_inventory_with_appearances(
                     delta.payload,
                     self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
                 )
                 .map_err(SessionError::ItemView)?;
                 self.inventory = Some(value.clone());
@@ -346,8 +347,11 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_OPEN_CONTAINER_V1,
                     self.container_revision,
                 )?;
-                let value = item_view::decode_open_container(delta.payload)
-                    .map_err(SessionError::ItemView)?;
+                let value = item_view::decode_open_container_with_appearances(
+                    delta.payload,
+                    self.is_selected(item_view::CAPABILITY_ITEM_APPEARANCE_V1),
+                )
+                .map_err(SessionError::ItemView)?;
                 self.open_container = Some(value.clone());
                 self.container_revision = new_revision;
                 Ok(SessionEvent::OpenContainer(applied(

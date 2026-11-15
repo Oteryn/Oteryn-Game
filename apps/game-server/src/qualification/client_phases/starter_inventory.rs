@@ -41,6 +41,7 @@ mod tests {
             NonZeroU32::new(3).ok_or("shovel definition")?,
         ];
         let bag = items::ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
             item_definition_ref: definition,
             count: NonZeroU32::new(1).ok_or("count")?,

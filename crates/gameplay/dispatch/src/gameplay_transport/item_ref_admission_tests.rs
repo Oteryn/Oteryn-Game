@@ -429,7 +429,8 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
     let not_found = |definition: TypedDefinitionRef| {
         generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
     };
-    // Every coin of the closed D176 table resolves to its stack maximum.
+    // Every coin of the closed D176 table resolves to its stack maximum and its Global client
+    // weight (gold, platinum and crystal 0.10 oz, in hundredths of an ounce).
     for coin in Coin::ALL {
         let definition = item(coin.production_key());
         assert_eq!(

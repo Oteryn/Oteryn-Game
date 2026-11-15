@@ -28,10 +28,11 @@ pub fn items<S: SessionStream>(session: &Session<S>) -> Items {
         views: session
             .gated_snapshot(14)
             .and_then(|s| {
-                container_tree::decode_container_views_with_house_capacity(
+                container_tree::decode_container_views_with_appearances(
                     &s.payload,
                     session.is_selected(230),
                     session.is_selected(446),
+                    session.is_selected(499),
                 )
                 .ok()
             })

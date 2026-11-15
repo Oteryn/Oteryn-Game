@@ -1412,26 +1412,59 @@ impl<S: Clone> ConditionStore<S> {
             .map_or(0, |immunity| immunity.until.saturating_sub(now))
     }
 
-    /// Chooses one eligible negative instance without changing the store. Drowning and
+    fn cleanse_candidate(instance: &ConditionInstance<S>, now: u64) -> bool {
+        let kind = instance.definition.condition_type();
+        // Tibia news #8935/#8960 (2026): Cleanse removes Hex and grants immunity.
+        // Keep this exception local to Cleanse; other negative dispels do not gain Hex.
+        (instance.definition.is_negative() || kind == ConditionType::IntenseHex)
+            && kind != ConditionType::DamageOverTime(DotElement::Drown)
+            && instance.ends_at.is_none_or(|end| end > now)
+            && (!matches!(kind, ConditionType::DamageOverTime(_)) || instance.remaining_total > 0)
+    }
+
+    /// Eligible live instances for an owner's single draw across its condition stores.
+    pub fn cleanse_candidate_count(&self, now: u64) -> usize {
+        self.instances
+            .iter()
+            .filter(|instance| Self::cleanse_candidate(instance, now))
+            .count()
+    }
+
+    /// Prepares a selection already drawn by the composed owner, without another draw.
+    /// The index follows live instance sequence order. The owner must retain its preimage
+    /// fence when publishing this plan, just as for `prepare_cleanse`.
+    pub fn prepare_cleanse_at_index(
+        &self,
+        facts: &ApplicationFacts<'_>,
+        index: usize,
+    ) -> Result<Option<CleansePlan>, ConditionRefusal> {
+        let mut candidates: Vec<_> = self
+            .instances
+            .iter()
+            .filter(|instance| Self::cleanse_candidate(instance, facts.now))
+            .collect();
+        candidates.sort_by_key(|instance| instance.sequence);
+        let Some(instance) = candidates.get(index) else {
+            return Ok(None);
+        };
+        let immune_until = facts
+            .now
+            .checked_add(u64::from(CLEANSE_IMMUNITY_MS) * MICROS_PER_MS)
+            .ok_or(ConditionRefusal::TimeOverflow)?;
+        Ok(Some(CleansePlan {
+            sequence: instance.sequence,
+            key: shared_mutation_slot(instance.definition.condition_type().conflict_key()),
+            immune_until,
+        }))
+    }
+
+    /// Chooses one eligible negative or Hex instance without changing the store. Drowning and
     /// already expired conditions are excluded; selection is stable in instance sequence order.
     pub fn prepare_cleanse(
         &self,
         facts: &ApplicationFacts<'_>,
     ) -> Result<Option<CleansePlan>, ConditionRefusal> {
-        let mut candidates: Vec<_> = self
-            .instances
-            .iter()
-            .filter(|instance| {
-                let kind = instance.definition.condition_type();
-                instance.definition.is_negative()
-                    && kind != ConditionType::DamageOverTime(DotElement::Drown)
-                    && instance.ends_at.is_none_or(|end| end > facts.now)
-                    && (!matches!(kind, ConditionType::DamageOverTime(_))
-                        || instance.remaining_total > 0)
-            })
-            .collect();
-        candidates.sort_by_key(|instance| instance.sequence);
-        let index = match candidates.len() {
+        let index = match self.cleanse_candidate_count(facts.now) {
             0 => return Ok(None),
             1 => 0,
             count => {
@@ -1446,16 +1479,7 @@ impl<S: Clone> ConditionStore<S> {
                 usize::try_from(draw % count).map_err(|_| ConditionRefusal::DrawFailed)?
             }
         };
-        let instance = candidates[index];
-        let immune_until = facts
-            .now
-            .checked_add(u64::from(CLEANSE_IMMUNITY_MS) * MICROS_PER_MS)
-            .ok_or(ConditionRefusal::TimeOverflow)?;
-        Ok(Some(CleansePlan {
-            sequence: instance.sequence,
-            key: shared_mutation_slot(instance.definition.condition_type().conflict_key()),
-            immune_until,
-        }))
+        self.prepare_cleanse_at_index(facts, index)
     }
 
     /// Applies the retained plan once. A removed or replaced instance is never substituted
