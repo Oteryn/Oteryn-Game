@@ -30,6 +30,8 @@ enum Choice {
     Previous,
     Next,
     Play,
+    Train,
+    TrainMany,
     Refresh,
     Create,
     Cancel,
@@ -127,12 +129,12 @@ pub(super) fn project(
         state.revision = 0;
         state.rendered = None;
     }
-    // Reserve the existing 29/16px padding, two 13px text lines, three 20px
-    // control strips and their 5px gaps. Each character row consumes 20 + 5px.
+    // Reserve the existing 29/16px padding, one 13px heading and four 20px
+    // control strips with their 5px gaps. Each character row consumes 20 + 5px.
     // ComputedNode converts the real target/DPI/UI scale back to logical pixels.
     let page_rows = roots.iter().next().map_or(1, |(_, _, node)| {
         let logical_height = node.size().y * node.inverse_scale_factor;
-        let fixed_height = 29. + 16. + 13. * 2. + 20. * 3. + 5. * 4.;
+        let fixed_height = 29. + 16. + 13. + 20. * 4. + 5. * 5.;
         (((logical_height * 0.95 - fixed_height) / 25.).floor() as usize).clamp(1, PAGE_ROWS)
     });
     if state.page_rows != page_rows {
@@ -275,14 +277,37 @@ pub(super) fn project(
             row.is_none_or(|row| row.channels.is_empty()),
         );
         commands.entity(panel).add_child(channel);
-        let unavailable = commands
-            .spawn(source::text(
-                "Training and account services are unavailable in this frontend.",
-                source::font(skin.font.clone(), false),
-            ))
-            .insert(TextColor(source::DISABLED_TEXT_COLOR))
+        let training = commands
+            .spawn(Node {
+                column_gap: px(5.),
+                flex_shrink: 0.,
+                ..default()
+            })
             .id();
-        commands.entity(panel).add_child(unavailable);
+        commands.entity(panel).add_child(training);
+        for (choice, caption, disabled) in [
+            (
+                Choice::Train,
+                "Train selected",
+                row.is_none_or(|row| !row.available),
+            ),
+            (
+                Choice::TrainMany,
+                "Train all available",
+                !request.rows.iter().any(|row| row.available),
+            ),
+        ] {
+            let button = add_button(
+                &mut commands,
+                &skin,
+                request.id,
+                choice,
+                caption,
+                140.,
+                disabled,
+            );
+            commands.entity(training).add_child(button);
+        }
         let footer = commands
             .spawn(Node {
                 column_gap: px(5.),
@@ -336,6 +361,8 @@ fn add_button(
         Choice::Previous => "selection.previous".into(),
         Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
+        Choice::Train => "selection.train".into(),
+        Choice::TrainMany => "selection.train_many".into(),
         Choice::Refresh => "selection.refresh".into(),
         Choice::Create => "selection.create".into(),
         Choice::Cancel => "selection.cancel".into(),
@@ -421,6 +448,28 @@ fn activate(
                     .and_then(|index| row.channels.get(index))
                     .map(|channel| channel.0.clone()),
             }),
+        Choice::Train => state
+            .selected
+            .and_then(|index| request.rows.get(index))
+            .filter(|row| row.available)
+            .map(|row| SelectionAction::Train {
+                character_id: row.character.character_id.clone(),
+                channel_id: state
+                    .channel
+                    .and_then(|index| row.channels.get(index))
+                    .map(|channel| channel.0.clone()),
+            }),
+        Choice::TrainMany => Some(SelectionAction::TrainMany {
+            characters: request
+                .rows
+                .iter()
+                .filter(|row| row.available)
+                .map(|row| crate::character_selection::TrainingSelection {
+                    character_id: row.character.character_id.clone(),
+                    channel_id: None,
+                })
+                .collect(),
+        }),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),
         Choice::Cancel => Some(SelectionAction::Cancel),

@@ -309,6 +309,7 @@ pub(super) fn render(
             format!("Selected: {}", panel.preset_fields[0]),
         );
     }
+    super::tools::render(commands, skins, content, key, panel);
     let buttons = row(commands, content);
     for (kind, caption, enabled) in [
         (

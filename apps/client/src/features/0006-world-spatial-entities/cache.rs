@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
 
+type MotionKey = ([u8; 16], u64);
+type MotionState = (oteryn_session::ActorPosition, Option<std::time::Instant>);
+type OutfitKey = (u32, u32, [u16; 4], u8, bool, u32);
+
 struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
@@ -17,7 +21,10 @@ pub(super) struct PresentationCache {
     attempted: bool,
     pixels: Vec<u8>,
     glyphs: BTreeMap<char, u16>,
-    outfits: BTreeMap<(u32, u32), Vec<Draw>>,
+    outfits: BTreeMap<OutfitKey, Vec<Draw>>,
+    palette: Vec<[u8; 3]>,
+    epoch: Option<std::time::Instant>,
+    motion: BTreeMap<MotionKey, MotionState>,
     image: Option<Arc<AtlasImage>>,
     visuals: BTreeMap<(u32, bool, u32, [i32; 2]), Vec<Draw>>,
     packed_cells: usize,
@@ -89,39 +96,72 @@ impl PresentationCache {
         Some(count as u16)
     }
 
+    #[cfg(test)]
     pub(super) fn outfit(
         &mut self,
         look: Option<&oteryn_session::Look>,
         direction: u32,
     ) -> Vec<Draw> {
+        self.outfit_at(look, direction, false, 0)
+    }
+    pub(super) fn outfit_at(
+        &mut self,
+        look: Option<&oteryn_session::Look>,
+        direction: u32,
+        moving: bool,
+        elapsed: u64,
+    ) -> Vec<Draw> {
         if matches!(look, Some(oteryn_session::Look::EmptyOutfit)) {
             return Vec::new();
         }
-        let Some(oteryn_session::Look::Outfit { look_type, .. }) = look else {
+        let Some(oteryn_session::Look::Outfit {
+            look_type,
+            colours,
+            addons,
+        }) = look
+        else {
             return marker();
         };
-        let key = (*look_type, direction);
+        let phase = self
+            .assets
+            .as_ref()
+            .and_then(|assets| {
+                let assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
+                assets
+                    .index
+                    .outfit_frame(*look_type, moving, elapsed)
+                    .map(|(_, phase)| phase)
+            })
+            .unwrap_or(0);
+        let key = (*look_type, direction, *colours, *addons, moving, phase);
         if let Some(draws) = self.outfits.get(&key) {
             return draws.clone();
         }
-        // Bound even negative cache entries when appearances change over a long session.
         if self.outfits.len() >= 1024 {
             return marker();
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
             let mut assets = assets.lock().unwrap_or_else(PoisonError::into_inner);
             let Assets { index, sheets } = &mut *assets;
-            let entry = index.resolve_outfit(sheets, *look_type, direction).ok()?;
-            entry
-                .cells
-                .iter()
-                .map(|cell| {
-                    sheets
-                        .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)
-                        .ok()
-                        .map(|rgba| ([cell.offset_x, cell.offset_y], rgba))
-                })
-                .collect::<Option<Vec<_>>>()
+            let (appearance, phase) = index.outfit_frame(*look_type, moving, elapsed)?;
+            outfit_pixels::resolve(
+                outfit_pixels::Outfit {
+                    pattern: [
+                        appearance.pattern_width,
+                        appearance.pattern_height,
+                        appearance.pattern_depth,
+                        appearance.layers,
+                    ],
+                    displacement: [appearance.displacement_x, appearance.displacement_y],
+                    sprites: &appearance.sprite_ids,
+                },
+                sheets,
+                direction,
+                phase,
+                *colours,
+                *addons,
+                &self.palette,
+            )
         });
         let draws = resolved
             .and_then(|cells| {
@@ -137,7 +177,44 @@ impl PresentationCache {
         self.outfits.insert(key, draws.clone());
         draws
     }
-
+    pub(super) fn palette(&mut self, palette: &[[u8; 3]]) {
+        if self.palette != palette {
+            self.palette = palette.to_vec();
+            self.reset_atlas();
+        }
+    }
+    pub(super) fn retain_actors(&mut self, entries: &[oteryn_session::VisibleAppearance]) {
+        let live: std::collections::BTreeSet<_> = entries
+            .iter()
+            .map(|entry| (entry.entity.entity.identity, entry.entity.entity.generation))
+            .collect();
+        self.motion.retain(|key, _| live.contains(key));
+    }
+    pub(super) fn animation(
+        &mut self,
+        entity: oteryn_session::EntityRef,
+        position: oteryn_session::ActorPosition,
+        now: std::time::Instant,
+    ) -> (bool, u64) {
+        let epoch = *self.epoch.get_or_insert(now);
+        let motion = self
+            .motion
+            .entry((entity.identity, entity.generation))
+            .or_insert((position, None));
+        if motion.0 != position {
+            *motion = (position, Some(now));
+        }
+        // Spatial receipts do not carry animation phase; keep walking briefly after the last accepted displacement.
+        let moving = motion.1.is_some_and(|moved| {
+            now.saturating_duration_since(moved) < std::time::Duration::from_millis(250)
+        });
+        (
+            moving,
+            now.saturating_duration_since(epoch)
+                .as_millis()
+                .min(u128::from(u64::MAX)) as u64,
+        )
+    }
     pub(super) fn name(&mut self, name: &str) -> Vec<u16> {
         let mut cells = Vec::new();
         for character in name.chars() {
@@ -200,3 +277,10 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
 }
 
 include!("cache_visuals.rs");
+
+#[cfg(test)]
+#[path = "tests/outfit_cache.rs"]
+mod outfit_tests;
+
+#[path = "outfit_pixels.rs"]
+mod outfit_pixels;

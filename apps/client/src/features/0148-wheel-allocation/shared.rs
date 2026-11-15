@@ -91,6 +91,19 @@ impl PlayLink {
         {
             wheel_presentation::query(&mut m, &self.commands);
         }
+        if m.shared_frontend
+            && m.wheel.gems.open
+            && m.wheel.gems.selected
+            && !m.wheel_shutdown
+            && !m.world_input_blocked()
+            && !m.server_modal.is_active()
+            && m.wheel
+                .confirmed_atelier
+                .as_ref()
+                .is_some_and(|a| Some(a.revision) != m.wheel.gems.last_revision)
+        {
+            super::gem_presentation::query(&mut m, &self.commands);
+        }
     }
 
     pub(crate) fn wheel_control_bound(
@@ -164,5 +177,57 @@ impl PlayLink {
 impl crate::play::Outbox {
     pub(crate) fn bevy_wheel_state(&self, panel: WheelPanel) {
         lock(&self.0).wheel = panel;
+    }
+}
+
+impl PlayLink {
+    pub(crate) fn wheel_preset_control_bound(
+        &self,
+        expected: &WheelPanel,
+        action: usize,
+        fields: [String; 2],
+    ) -> bool {
+        let mut m = lock(&self.mailbox);
+        if !m.shared_frontend
+            || m.wheel_shutdown
+            || m.wheel != *expected
+            || !m.wheel.open
+            || !editable(&m.wheel)
+            || m.world_input_blocked()
+            || m.server_modal.is_active()
+        {
+            return false;
+        }
+        m.wheel.preset_fields = fields;
+        if action == 6 {
+            m.wheel.preset_fields[1] = expected.preset_fields[0].clone();
+        }
+        match super::super::view::presets::path() {
+            Ok(path) => super::super::view::presets::submit(&mut m, action, &path),
+            Err(message) => m.wheel.preset_feedback = message,
+        }
+        true
+    }
+    pub(crate) fn wheel_gem_control_bound(
+        &self,
+        expected: &WheelPanel,
+        action: Option<super::gem_presentation::Action>,
+    ) -> bool {
+        let mut m = lock(&self.mailbox);
+        if !m.shared_frontend
+            || m.wheel_shutdown
+            || m.wheel != *expected
+            || !m.wheel.open
+            || !m.wheel.gems.selected
+            || m.world_input_blocked()
+            || m.server_modal.is_active()
+        {
+            return false;
+        }
+        m.wheel.gems.open = true;
+        if let Some(action) = action {
+            super::gem_presentation::activate(&mut m, &self.commands, action);
+        }
+        true
     }
 }

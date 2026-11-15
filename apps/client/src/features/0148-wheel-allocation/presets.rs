@@ -9,7 +9,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use tokio::sync::mpsc::UnboundedSender;
-fn path() -> Result<std::path::PathBuf, String> {
+pub(in crate::play) fn path() -> Result<std::path::PathBuf, String> {
     Ok(crate::native_login::settings_path()?.with_file_name("wheel-presets.json"))
 }
 pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path) {
@@ -45,6 +45,25 @@ pub(in crate::play) fn submit(mailbox: &mut Mailbox, action: usize, path: &Path)
                     panel.build_code().replacen("OW1:", "oteryn://wheel/v1/", 1)
             }
             5 => panel.import_build(&panel.preset_fields[1].clone())?,
+            6 => {
+                let old = panel.preset_fields[1].trim();
+                let name = panel.preset_fields[0].trim();
+                let mut book = panel.preset_book.clone();
+                let code = book
+                    .0
+                    .get(old)
+                    .cloned()
+                    .ok_or("Select a saved preset to rename")?;
+                if old != name && book.0.contains_key(name) {
+                    return Err("That preset name already exists");
+                }
+                if old != name {
+                    book.0.remove(old);
+                }
+                book.insert(name, &code)?;
+                book.save(path)?;
+                panel.preset_book = book;
+            }
             _ => return Err(tr!("Unknown preset action")),
         }
         Ok(())

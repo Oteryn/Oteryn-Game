@@ -42,7 +42,7 @@ pub(super) fn perform(
     owner: &HostOwner,
     state: &mut State,
     action: Action,
-    values: [String; 3],
+    values: [String; 5],
 ) -> bool {
     if owner.modal_active()
         || state.key != Some(action.key)
@@ -85,7 +85,7 @@ pub(super) fn perform(
             };
             state.confirmation = Some(Confirmation {
                 quote,
-                fields: state.fields.clone(),
+                fields: std::array::from_fn(|i| state.fields[i].clone()),
             });
             true
         }
@@ -108,19 +108,36 @@ pub(super) fn perform(
             else {
                 return false;
             };
-            link.store_browse(&category.key, "", 0, 0);
+            let Ok(sort) = sort_value(&state.fields[4]) else {
+                return false;
+            };
+            if sort > 4 {
+                return false;
+            }
+            link.store_browse(&category.key, &state.fields[3], sort, 0);
             true
         }
         Kind::Product(index) => link.store_select_product(index),
         Kind::Products => {
             state.page = Page::Products;
-            state.fields = Default::default();
+            state.fields[..3].fill(String::new());
             link.store_browse(
                 &panel.browser.category,
                 &panel.browser.search,
                 panel.browser.sort,
                 0,
             );
+            true
+        }
+        Kind::Sort => {
+            state.fields[4] = ((sort_value(&state.fields[4]).unwrap_or(0) + 1) % 5).to_string();
+            true
+        }
+        Kind::Browse => {
+            let Ok(sort) = sort_value(&state.fields[4]) else {
+                return false;
+            };
+            link.store_browse(&panel.browser.category, &state.fields[3], sort, 0);
             true
         }
         Kind::Page(step) => {
@@ -138,11 +155,11 @@ pub(super) fn perform(
             } else {
                 Page::Transfer
             };
-            state.fields = [
+            state.fields[..3].clone_from_slice(&[
                 panel.gift_fields[0].clone(),
                 panel.gift_fields[1].clone(),
                 String::new(),
-            ];
+            ]);
             link.store_gift_open();
             true
         }
@@ -168,4 +185,16 @@ pub(super) fn perform(
     };
     state.dirty = true;
     success
+}
+
+fn sort_value(value: &str) -> Result<u8, ()> {
+    if value.trim().is_empty() {
+        return Ok(0);
+    }
+    value
+        .trim()
+        .parse::<u8>()
+        .ok()
+        .filter(|sort| *sort <= 4)
+        .ok_or(())
 }

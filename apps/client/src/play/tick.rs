@@ -48,6 +48,8 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(PlayEnd::Ended(class)),
             }
         }
+        self.animate_actors(link, std::time::Instant::now())
+            .map_err(|_| UNAVAILABLE)?;
         link.cyclopedia_atlas_pump();
         self.present_cyclopedia_discovery(link);
         self.apply_target_turn(link).map_err(|_error| UNAVAILABLE)?;

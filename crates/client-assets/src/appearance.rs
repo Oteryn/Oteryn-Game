@@ -41,6 +41,8 @@ struct AppearanceMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct FrameGroupMsg {
+    #[prost(uint32, optional, tag = "1")]
+    fixed_frame_group: Option<u32>,
     #[prost(message, optional, tag = "3")]
     sprite_info: Option<SpriteInfoMsg>,
 }
@@ -222,6 +224,7 @@ pub struct ResolvedEntry {
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
     outfits: HashMap<u32, Appearance>,
+    walking: HashMap<u32, Appearance>,
     effects: HashMap<u32, Appearance>,
     missiles: HashMap<u32, Appearance>,
 }
@@ -346,3 +349,7 @@ include!("appearance_tests_1.rs");
 include!("visual_tests.rs");
 
 include!("visual.rs");
+
+#[cfg(test)]
+#[path = "outfit_animation_tests.rs"]
+mod outfit_animation_tests;

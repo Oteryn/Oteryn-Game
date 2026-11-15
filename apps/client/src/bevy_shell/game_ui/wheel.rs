@@ -1,6 +1,7 @@
 //! Wheel of Destiny allocation and point presets over the retained model and intents.
 #[cfg(test)]
 mod tests;
+mod tools;
 mod widgets;
 use super::{
     super::{owner::HostOwner, ui::Skins},
@@ -35,6 +36,7 @@ struct State {
     widgets: Option<widgets::Widgets>,
 }
 pub(super) fn install(app: &mut App) {
+    tools::install(app);
     app.init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain());

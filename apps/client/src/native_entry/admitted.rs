@@ -51,6 +51,15 @@ impl AdmittedSession {
         if let Some(map) = self.session.world_map_snapshot() {
             view.set_live_map(&map)?;
         }
+        if let Some(snapshot) = self
+            .session
+            .gated_snapshot(oteryn_client_runtime::appearance::STATE_DOMAIN_APPEARANCE)
+            .and_then(|snapshot| {
+                oteryn_client_runtime::appearance::Snapshot::decode(&snapshot.payload).ok()
+            })
+        {
+            view.set_appearance_palette(&snapshot.catalogue.palette);
+        }
         view.set_presentations(self.session.visible_appearances())?;
         view.with_entities(
             self.session

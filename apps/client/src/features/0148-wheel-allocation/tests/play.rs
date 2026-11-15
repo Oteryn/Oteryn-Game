@@ -452,3 +452,80 @@ fn reshape_native_stage_confirm_dispatches_6214_and_displays_rerolled_mods() -> 
     assert!(link.wheel_panel().gems.review.is_none());
     Ok(())
 }
+
+#[test]
+fn preset_owner_creates_imports_exports_renames_and_deletes()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{feature_0148_wheel_allocation::view::presets, mailbox::lock};
+    let path = std::env::temp_dir().join(format!("oteryn-c04-preset-{}.json", std::process::id()));
+    let (link, _, _) = play_channel();
+    let mut mailbox = lock(&link.mailbox);
+    mailbox.wheel.selected = true;
+    mailbox.wheel.synchronized = true;
+    mailbox.wheel.confirmed_wheel = Some(wheel::WheelAllocationReply {
+        refused: false,
+        revision: 1,
+        points: [0; 36],
+        vessels: None,
+    });
+    mailbox.wheel.confirmed_atelier = Some(atelier::AtelierReply {
+        refused: false,
+        revision: 1,
+        gems: vec![],
+        grades: vec![],
+        quality_quotes: vec![],
+        grade_quotes: vec![],
+    });
+    mailbox.wheel.points[0] = 7;
+    mailbox.wheel.preset_fields[0] = "Hunt".into();
+    presets::submit(&mut mailbox, 0, &path);
+    assert!(mailbox.wheel.preset_book.0.contains_key("Hunt"));
+    presets::submit(&mut mailbox, 3, &path);
+    let exported = mailbox.wheel.preset_fields[1].clone();
+    assert!(exported.starts_with("OW1:"));
+    mailbox.wheel.points = [0; 36];
+    presets::submit(&mut mailbox, 5, &path);
+    assert_eq!(mailbox.wheel.points[0], 7);
+    mailbox.wheel.preset_fields = ["Boss".into(), "Hunt".into()];
+    presets::submit(&mut mailbox, 6, &path);
+    assert!(!mailbox.wheel.preset_book.0.contains_key("Hunt"));
+    assert!(mailbox.wheel.preset_book.0.contains_key("Boss"));
+    presets::submit(&mut mailbox, 2, &path);
+    assert!(mailbox.wheel.preset_book.0.is_empty());
+    let saved = oteryn_client_ui::wheel_allocation::presets::PresetBook::load(&path)?;
+    assert!(saved.0.is_empty());
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn preset_rename_at_capacity_preserves_all_other_builds() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::{feature_0148_wheel_allocation::view::presets, mailbox::lock};
+    let (link, _, _) = play_channel();
+    let mut mailbox = lock(&link.mailbox);
+    let code = mailbox.wheel.build_code();
+    for index in 0..32 {
+        mailbox
+            .wheel
+            .preset_book
+            .insert(&format!("preset{index}"), &code)?;
+    }
+    mailbox.wheel.preset_fields = ["Renamed".into(), "preset0".into()];
+    let path = std::env::temp_dir().join(format!(
+        "oteryn-c04-preset-capacity-{}.json",
+        std::process::id()
+    ));
+    presets::submit(&mut mailbox, 6, &path);
+    assert!(mailbox.wheel.preset_book.0.contains_key("Renamed"));
+    assert_eq!(mailbox.wheel.preset_book.0.len(), 32);
+    assert!(!mailbox.wheel.preset_book.0.contains_key("preset0"));
+    for index in 1..32 {
+        assert_eq!(
+            mailbox.wheel.preset_book.0.get(&format!("preset{index}")),
+            Some(&code)
+        );
+    }
+    std::fs::remove_file(path)?;
+    Ok(())
+}

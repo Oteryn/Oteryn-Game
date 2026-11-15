@@ -339,3 +339,45 @@ fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
     }
     Ok(())
 }
+
+#[test]
+fn store_search_and_sort_inputs_are_captured_for_category_and_navigation() -> ResultTest {
+    let (mut app, mut rx, outbox) = fixture(250)?;
+    assert!(text(&mut app).contains("Search products"));
+    assert!(text(&mut app).contains("Sort"));
+    for (field, mut value) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 3 {
+            *value = EditableText::new("knight");
+        }
+    }
+    for _ in 0..3 {
+        click(&mut app, Kind::Sort)?;
+    }
+    assert!(text(&mut app).contains("Sort: Price low–high"));
+    assert!(rx.try_recv().is_err(), "sort selection is a local draft");
+    click(&mut app, Kind::Category(2))?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.category.as_str(), query.search.as_str(), query.sort),
+        ("cosmetics.outfits", "knight", 3)
+    );
+    let mut next = page(250);
+    next.next = "next-page".into();
+    reply(
+        &outbox,
+        next.encode().map_err(|e| format!("{e:?}"))?,
+        CommandStatus::Accepted,
+    );
+    app.update();
+    click(&mut app, Kind::Page(1))?;
+    let query = browse::Query::decode(&command(&mut rx)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.search.as_str(), query.sort, query.cursor.as_str()),
+        ("knight", 3, "next-page")
+    );
+    Ok(())
+}

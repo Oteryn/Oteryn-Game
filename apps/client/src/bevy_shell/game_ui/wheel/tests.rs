@@ -420,3 +420,108 @@ fn wheel_supplied_effects_and_current_draft_preview_are_visible() -> TestResult 
     }
     Ok(())
 }
+
+#[test]
+fn wheel_fresh_player_has_preset_management_controls() -> TestResult {
+    let (mut app, _, _) = fixture(model())?;
+    let text = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for label in [
+        "Preset name",
+        "Build code or URL",
+        "Create preset",
+        "Import code",
+        "Rename preset",
+        "Export code",
+        "Delete preset",
+    ] {
+        assert!(text.contains(label), "{label}");
+    }
+    Ok(())
+}
+#[test]
+fn wheel_negotiated_gems_expose_atelier_and_workshop_controls() -> TestResult {
+    let mut p = model();
+    p.gems.selected = true;
+    let (mut app, _, _) = fixture(p)?;
+    let text = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|t| t.0.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    for label in [
+        "Gem Atelier",
+        "Fragment Workshop",
+        "Reveal gem",
+        "Assign gem to vessel",
+        "Refine gem",
+        "Upgrade modifier grade",
+    ] {
+        assert!(text.contains(label), "{label}");
+    }
+    Ok(())
+}
+
+#[test]
+fn wheel_gem_controls_bind_selection_and_stage_review_before_spending() -> TestResult {
+    use crate::play::GemControl;
+    let mut p = model();
+    p.gems.selected = true;
+    let atelier = p.confirmed_atelier.as_mut().ok_or("atelier")?;
+    atelier.gems.push(atelier::GemView {
+        id: [17; 16],
+        quality: 0,
+        domain: 0,
+        locked: false,
+        vessel: false,
+        modifiers: vec![1],
+    });
+    atelier.quality_quotes.push(atelier::QualityQuote {
+        quality: 0,
+        reveal_gold: 100,
+        switch_gold: 0,
+        fragment_kind: 0,
+        fragment_min: 1,
+        fragment_max: 2,
+    });
+    let (app, mut commands, _) = fixture(p)?;
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    let shown = link.wheel_panel();
+    assert!(link.wheel_gem_control_bound(
+        &shown,
+        Some(GemControl::Gem {
+            revision: 3,
+            id: [17; 16]
+        })
+    ));
+    assert_eq!(link.wheel_panel().gem, Some([17; 16]));
+    assert!(!link.wheel_gem_control_bound(&shown, Some(GemControl::Quality(2))));
+    let shown = link.wheel_panel();
+    assert!(link.wheel_gem_control_bound(
+        &shown,
+        Some(GemControl::Stage(
+            oteryn_client_ui::wheel_allocation::Intent::Reveal
+        ))
+    ));
+    assert!(link.wheel_panel().gems.review.is_some());
+    assert!(commands.try_recv().is_err(), "staging must not spend");
+    let shown = link.wheel_panel();
+    assert!(link.wheel_gem_control_bound(&shown, Some(GemControl::Confirm)));
+    assert!(matches!(commands.try_recv()?, PlayCommand::Wheel(_)));
+    assert!(!link.wheel_gem_control_bound(&shown, Some(GemControl::Confirm)));
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}

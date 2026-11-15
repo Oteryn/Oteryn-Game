@@ -374,3 +374,89 @@ fn scaled_picker_keeps_footer_inside_frame_and_selected_row_on_resize()
     );
     Ok(())
 }
+
+#[test]
+fn picker_training_controls_dispatch_selected_character() -> Result<(), Box<dyn std::error::Error>>
+{
+    let (bridge, callback) = SelectionBridge::new();
+    let mut owner = HostOwner::new(None)?;
+    owner.settings.preferences.miscellaneous.confirm_exit = true;
+    owner.selection = bridge;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .insert_non_send(owner)
+        .add_systems(Startup, setup)
+        .add_systems(Update, (poll, project).chain());
+    app.add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup)
+        .add_systems(Update, keyboard);
+    crate::bevy_shell::game_ui::modal::install(&mut app);
+    crate::bevy_shell::exit::install(&mut app);
+    let window = app
+        .world_mut()
+        .spawn((Window::default(), bevy::window::PrimaryWindow))
+        .id();
+    app.update();
+    let worker = thread::spawn(move || {
+        callback(
+            &[crate::character_selection::CharacterRow {
+                character: OwnerCharacter {
+                    character_id: "server-character".into(),
+                    world_id: "server-world".into(),
+                    name: "Server character".into(),
+                    availability: CharacterAvailability::Available,
+                },
+                world_name: "Server world".into(),
+                channels: vec![("server-channel".into(), "Server channel".into())],
+                available: true,
+            }],
+            "server-character",
+            CancellationToken::new(),
+        )
+    });
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while app
+        .world()
+        .non_send::<HostOwner>()
+        .selection
+        .pending()
+        .is_none()
+        && Instant::now() < deadline
+    {
+        app.update();
+        thread::yield_now();
+    }
+    app.update();
+
+    assert!(app.world().get::<Window>(window).is_some());
+    let train = app
+        .world_mut()
+        .query::<(Entity, &Text)>()
+        .iter(app.world())
+        .find(|(_, text)| text.0 == "Train selected")
+        .map(|(e, _)| e)
+        .ok_or("training control missing")?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Train all available")
+    );
+    let button = app
+        .world()
+        .get::<ChildOf>(train)
+        .ok_or("training button")?
+        .parent();
+    app.world_mut().trigger(Activate { entity: button });
+    assert_eq!(
+        worker.join().map_err(|_| "selector thread")?,
+        SelectionAction::Train {
+            character_id: "server-character".into(),
+            channel_id: None
+        }
+    );
+    Ok(())
+}

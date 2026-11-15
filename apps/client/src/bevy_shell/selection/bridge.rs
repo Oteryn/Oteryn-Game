@@ -165,6 +165,10 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
         SelectionAction::Play {
             character_id,
             channel_id,
+        }
+        | SelectionAction::Train {
+            character_id,
+            channel_id,
         } => request.rows.iter().any(|row| {
             row.available
                 && &row.character.character_id == character_id
@@ -173,9 +177,22 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
                     .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
         }),
         SelectionAction::Cancel | SelectionAction::Refresh | SelectionAction::Create => true,
-        SelectionAction::Train { .. }
-        | SelectionAction::TrainMany { .. }
-        | SelectionAction::AccountServices => false,
+        SelectionAction::TrainMany { characters } => {
+            let mut seen = std::collections::HashSet::new();
+            !characters.is_empty()
+                && characters.len() <= request.rows.len()
+                && characters.iter().all(|selection| {
+                    seen.insert(&selection.character_id)
+                        && allowed(
+                            request,
+                            &SelectionAction::Train {
+                                character_id: selection.character_id.clone(),
+                                channel_id: selection.channel_id.clone(),
+                            },
+                        )
+                })
+        }
+        SelectionAction::AccountServices => false,
     }
 }
 
@@ -321,6 +338,51 @@ mod tests {
             handle.join().map_err(|_| "worker")?,
             SelectionAction::Refresh
         );
+        Ok(())
+    }
+
+    #[test]
+    fn bridge_delivers_valid_training_and_rejects_invalid_batches() -> TestResult {
+        use crate::character_selection::TrainingSelection;
+        for action in [
+            SelectionAction::Train {
+                character_id: "character".into(),
+                channel_id: Some("channel".into()),
+            },
+            SelectionAction::TrainMany {
+                characters: vec![TrainingSelection {
+                    character_id: "character".into(),
+                    channel_id: None,
+                }],
+            },
+        ] {
+            let (mut bridge, callback) = SelectionBridge::new();
+            let worker =
+                thread::spawn(move || callback(&rows(), "character", CancellationToken::new()));
+            let id = wait(&mut bridge)?;
+            let invalid = SelectionAction::Train {
+                character_id: "character".into(),
+                channel_id: Some("wrong-channel".into()),
+            };
+            assert!(!bridge.respond(id, invalid));
+            let duplicate = TrainingSelection {
+                character_id: "character".into(),
+                channel_id: None,
+            };
+            assert!(!bridge.respond(
+                id,
+                SelectionAction::TrainMany {
+                    characters: vec![duplicate.clone(), duplicate]
+                }
+            ));
+            let accepted = bridge.respond(id, action.clone());
+            if !accepted {
+                bridge.respond(id, SelectionAction::Cancel);
+            }
+            let delivered = worker.join().map_err(|_| "selector thread")?;
+            assert!(accepted, "valid training must pass the selector bridge");
+            assert_eq!(delivered, action);
+        }
         Ok(())
     }
 }

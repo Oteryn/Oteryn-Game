@@ -23,7 +23,25 @@ impl AppearanceIndex {
             }
             Ok(converted)
         };
+        let walking = message
+            .outfit
+            .iter()
+            .filter_map(|outfit| {
+                let group = outfit
+                    .frame_group
+                    .iter()
+                    .find(|group| group.fixed_frame_group == Some(1))?;
+                let id = outfit.id?;
+                let selected = AppearanceMsg {
+                    id: Some(id),
+                    frame_group: vec![group.clone()],
+                    flags: outfit.flags.clone(),
+                };
+                convert(id, selected).map(|appearance| (id, appearance))
+            })
+            .collect();
         Ok(Self {
+            walking,
             objects: convert_all(message.object)?,
             outfits: convert_all(message.outfit)?,
             effects: convert_all(message.effect)?,
@@ -105,6 +123,60 @@ impl AppearanceIndex {
             (pattern_x, pattern_y, pattern_z),
             0..appearance.layers,
             0,
+        )
+    }
+}
+
+impl AppearanceIndex {
+    /// Existing outfit groups and timing; a moving-only outfit also supplies its idle fallback.
+    pub fn outfit_frame(
+        &self,
+        look_type: u32,
+        moving: bool,
+        elapsed_ms: u64,
+    ) -> Option<(&Appearance, u32)> {
+        let appearance = if moving {
+            self.walking
+                .get(&look_type)
+                .or_else(|| self.outfit(look_type))?
+        } else {
+            self.outfit(look_type)?
+        };
+        let cycle = (0..appearance.phases)
+            .map(|phase| {
+                u64::from(
+                    appearance
+                        .phase_ms
+                        .get(phase as usize)
+                        .copied()
+                        .unwrap_or(100),
+                )
+            })
+            .sum::<u64>()
+            .max(1);
+        Some((
+            appearance,
+            appearance.phase_at(elapsed_ms % cycle).unwrap_or(0),
+        ))
+    }
+    /// Resolve the base layer of the current idle or walking animation phase.
+    pub fn resolve_outfit_at(
+        &self,
+        sheets: &SpriteSheets,
+        look_type: u32,
+        direction: u32,
+        moving: bool,
+        elapsed_ms: u64,
+    ) -> Result<ResolvedEntry, AssetError> {
+        let (appearance, phase) = self
+            .outfit_frame(look_type, moving, elapsed_ms)
+            .ok_or(AssetError::UnknownAppearance { id: look_type })?;
+        entry(
+            appearance,
+            sheets,
+            (direction % appearance.pattern_width, 0, 0),
+            0..1,
+            phase,
         )
     }
 }

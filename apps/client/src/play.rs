@@ -160,3 +160,6 @@ mod screenshots_live_tests;
 pub(crate) fn audit_step_reply(outbox: &Outbox, outcome: oteryn_session::StepOutcome) {
     outbox.stepped(outcome);
 }
+
+#[cfg(feature = "bevy-shell")]
+pub(crate) use feature_0148_wheel_allocation::input::gem_presentation::Action as GemControl;

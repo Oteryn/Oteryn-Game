@@ -6,6 +6,7 @@ mod tests {
         AppearanceMsg {
             id: Some(1),
             frame_group: vec![FrameGroupMsg {
+                fixed_frame_group: None,
                 sprite_info: Some(SpriteInfoMsg {
                     sprite_id: vec![1],
                     ..SpriteInfoMsg::default()
@@ -36,6 +37,7 @@ mod tests {
         let message = AppearanceMsg {
             id: Some(1),
             frame_group: vec![FrameGroupMsg {
+                fixed_frame_group: None,
                 sprite_info: Some(SpriteInfoMsg {
                     pattern_width: Some(width),
                     sprite_id: vec![1; width as usize],

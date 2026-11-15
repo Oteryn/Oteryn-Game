@@ -42,6 +42,8 @@ enum Kind {
     Page(i8),
     Product(usize),
     Products,
+    Browse,
+    Sort,
     TokenPayment,
     Transfer,
 }
@@ -83,7 +85,7 @@ struct State {
     body: Option<Entity>,
     page: Page,
     confirmation: Option<Confirmation>,
-    fields: [String; 3],
+    fields: [String; 5],
     dirty: bool,
     pending: Option<(Action, Entity)>,
 }
@@ -244,12 +246,7 @@ fn keyboard(
             } else {
                 Kind::Close
             };
-            actions::perform(
-                &owner,
-                &mut state,
-                Action { key, kind },
-                [String::new(), String::new(), String::new()],
-            );
+            actions::perform(&owner, &mut state, Action { key, kind }, Default::default());
         }
     }
 }

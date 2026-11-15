@@ -11,6 +11,8 @@ use oteryn_session::world_map::{VIEW_HEIGHT, VIEW_LEFT, VIEW_TOP, VIEW_WIDTH};
 use std::{path::Path, time::Instant};
 pub(super) struct Assets {
     source: Option<(AppearanceIndex, SpriteSheets)>,
+    epoch: Instant,
+    motion: std::collections::BTreeMap<u32, ((u16, u16), Option<Instant>)>,
 }
 pub(super) struct Drawn {
     pub atlas: AtlasImage,
@@ -20,6 +22,8 @@ pub(super) struct Drawn {
 impl Assets {
     pub fn new() -> Self {
         Self {
+            epoch: Instant::now(),
+            motion: Default::default(),
             source: std::env::var_os(crate::map::ASSET_DIR_ENV)
                 .and_then(|root| Self::load(Path::new(&root)).ok()),
         }
@@ -77,14 +81,31 @@ impl Assets {
                     draws.push((at, cells));
                 }
             }
-            for &(_, x, y, look, _) in &picture.actors {
+            self.motion
+                .retain(|id, _| picture.actors.iter().any(|actor| actor.0 == *id));
+            for &(id, x, y, look, _) in &picture.actors {
+                let motion = self.motion.entry(id).or_insert(((x, y), None));
+                if motion.0 != (x, y) {
+                    *motion = ((x, y), Some(now));
+                }
+                let moving = motion.1.is_some_and(|moved| {
+                    now.saturating_duration_since(moved) < std::time::Duration::from_millis(250)
+                });
+                let elapsed = now
+                    .saturating_duration_since(self.epoch)
+                    .as_millis()
+                    .min(u128::from(u64::MAX)) as u64;
                 let floor = i16::try_from(y / 32).map_err(|_| tr!("Invalid display floor"))? - 15;
                 let at = projected(i32::from(x), i32::from(y % 32), floor);
                 let look = if look == 1 { 128 } else { u32::from(look) };
                 let cells = self
                     .source
                     .as_ref()
-                    .and_then(|(index, sheets)| index.resolve_outfit(sheets, look, 2).ok())
+                    .and_then(|(index, sheets)| {
+                        index
+                            .resolve_outfit_at(sheets, look, 2, moving, elapsed)
+                            .ok()
+                    })
                     .map(|entry| entry.cells)
                     .unwrap_or_default();
                 if cells.is_empty() {
@@ -201,7 +222,12 @@ mod tests {
                 },
             },
         ));
-        let drawn = Assets { source: None }.draw(&picture, now)?;
+        let drawn = Assets {
+            source: None,
+            epoch: now,
+            motion: Default::default(),
+        }
+        .draw(&picture, now)?;
         assert_eq!(
             drawn.sprites.len(),
             6,
@@ -216,6 +242,42 @@ mod tests {
         for corner in [[0.0, 0.0], [544.0, 0.0], [0.0, 416.0], [544.0, 416.0]] {
             assert!(positions.contains(&corner), "public corner {corner:?}");
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod animation_tests {
+    use super::*;
+    #[test]
+    fn cast_actor_walks_through_frames_and_returns_to_standing() -> Result<(), String> {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let now = Instant::now();
+        let mut assets = Assets {
+            source: Some(Assets::load(&root)?),
+            epoch: now,
+            motion: Default::default(),
+        };
+        let mut picture = Picture::default();
+        picture.floor = Some(0);
+        picture.actors = vec![(1, 1, 480, 128, 100)];
+        let standing = assets.draw(&picture, now)?.atlas;
+        picture.actors[0].1 += 1;
+        let frames = (100..350)
+            .step_by(50)
+            .map(|ms| {
+                assets
+                    .draw(&picture, now + std::time::Duration::from_millis(ms))
+                    .map(|drawn| drawn.atlas)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        assert!(frames.windows(2).any(|pair| pair[0] != pair[1]));
+        assert_eq!(
+            assets
+                .draw(&picture, now + std::time::Duration::from_millis(500))?
+                .atlas,
+            standing
+        );
         Ok(())
     }
 }

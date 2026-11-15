@@ -236,8 +236,35 @@ fn products(
     root: Entity,
     key: Key,
     panel: &StorePanel,
-    fields: &[String; 3],
+    fields: &[String; 5],
 ) {
+    field(commands, skin, root, 3, "Search products", &fields[3]);
+    let sort = fields[4].parse::<usize>().unwrap_or(0).min(4);
+    let title = [
+        "Featured",
+        "Name A–Z",
+        "Name Z–A",
+        "Price low–high",
+        "Price high–low",
+    ][sort];
+    button(
+        commands,
+        skin,
+        root,
+        key,
+        Kind::Sort,
+        &format!("Sort: {title}"),
+        panel.selected && !panel.pending,
+    );
+    button(
+        commands,
+        skin,
+        root,
+        key,
+        Kind::Browse,
+        "Apply search and sort",
+        panel.selected && !panel.pending,
+    );
     let content = row(commands, root);
     commands.entity(content).insert(Node {
         flex_grow: 1.,
@@ -503,7 +530,7 @@ fn field(
 ) {
     label(commands, skin, parent, title);
     let mut text = EditableText::new(value);
-    text.max_characters = Some(64);
+    text.max_characters = Some(if index == 3 { 128 } else { 64 });
     let entity = commands
         .spawn((
             Field(index),

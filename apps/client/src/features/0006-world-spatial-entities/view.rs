@@ -49,3 +49,29 @@ impl PlayView {
         self.rebuild()
     }
 }
+
+impl PlayView {
+    pub(crate) fn set_appearance_palette(&mut self, palette: &[[u8; 3]]) {
+        self.scene.set_appearance_palette(palette);
+    }
+    pub(in crate::play) fn animate_actors(
+        &mut self,
+        link: &crate::play::PlayLink,
+        now: std::time::Instant,
+    ) -> Result<(), BatchError> {
+        {
+            let mailbox = crate::play::mailbox::lock(&link.mailbox);
+            if let Some(catalogue) = &mailbox.properties.appearance.catalogue {
+                self.scene.set_appearance_palette(&catalogue.palette);
+            }
+        }
+        let changed = self
+            .scene
+            .set_presentations_at(&self.appearances, self.floor, now)?;
+        self.light_scene()?;
+        if changed {
+            self.weather_scene();
+        }
+        Ok(())
+    }
+}

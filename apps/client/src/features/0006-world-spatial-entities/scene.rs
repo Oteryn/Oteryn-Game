@@ -85,6 +85,44 @@ impl Scene {
         floor: i16,
         root: Option<std::path::PathBuf>,
     ) -> Result<(), BatchError> {
+        self.set_presentations_from_at(entries, floor, root, std::time::Instant::now())
+    }
+    pub(crate) fn set_presentations_at(
+        &mut self,
+        entries: &[VisibleAppearance],
+        floor: i16,
+        now: std::time::Instant,
+    ) -> Result<bool, BatchError> {
+        let lit = self.lit_atlas.take();
+        let before = self.presentation_atlas.clone();
+        self.set_presentations_from_at(
+            entries,
+            floor,
+            std::env::var_os(crate::map::ASSET_DIR_ENV).map(std::path::PathBuf::from),
+            now,
+        )?;
+        let changed = match (&before, &self.presentation_atlas) {
+            (Some(before), Some(after)) => !Arc::ptr_eq(before, after),
+            (None, None) => false,
+            _ => true,
+        };
+        if !changed {
+            self.lit_atlas = lit;
+        }
+        Ok(changed)
+    }
+    pub(crate) fn set_appearance_palette(&mut self, palette: &[[u8; 3]]) {
+        self.cache.palette(palette);
+    }
+    fn set_presentations_from_at(
+        &mut self,
+        entries: &[VisibleAppearance],
+        floor: i16,
+        root: Option<std::path::PathBuf>,
+        now: std::time::Instant,
+    ) -> Result<(), BatchError> {
+        self.lit_atlas = None;
+        self.cache.retain_actors(entries);
         self.actor_draws.clear();
         self.own_draws = None;
         self.names.clear();
@@ -129,7 +167,11 @@ impl Scene {
                     _ => 0,
                 }
             };
-            let draws = self.cache.outfit(entry.look.as_ref(), direction);
+            // Recentring the camera is not an accepted actor displacement.
+            let (moving, elapsed) = self.cache.animation(entity.entity, entity.position, now);
+            let draws = self
+                .cache
+                .outfit_at(entry.look.as_ref(), direction, moving, elapsed);
             if is_own {
                 self.own_draws = Some(draws);
             } else {
