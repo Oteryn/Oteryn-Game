@@ -2725,11 +2725,11 @@ fn accept_encounter_kill(
     super::quest_death_loot::capture(&mut entry);
     if entry.creature == "oteryn:creature.the_corruptor" {
         entry.tutorial_loot = queue.freeze_tutorial_loot(runtime, entry.target);
-        if let Some(states) = states {
-            states
-                .encounter_phases
-                .capture_terminal(runtime, states, &mut entry);
-        }
+    }
+    if let Some(states) = states {
+        states
+            .encounter_phases
+            .capture_terminal(runtime, states, &mut entry);
     }
 
     let target = entry.target;

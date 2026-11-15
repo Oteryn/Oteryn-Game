@@ -34,6 +34,10 @@ impl Registry {
         active.retain(|phase| {
             phase.fight.is_current(runtime)
                 && phase
+                    .fight
+                    .victors(runtime)
+                    .is_ok_and(|victors| victors.is_none())
+                && phase
                     .frozen
                     .as_ref()
                     .is_none_or(|(actor, _)| runtime.retains_corpse_projection(*actor))
@@ -61,13 +65,9 @@ impl Registry {
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
             }
         }
-        // Terminal victory releases the lever key independently of corpse lifetime.
-        active.retain(|phase| {
-            phase
-                .fight
-                .victors(runtime)
-                .is_ok_and(|victors| victors.is_none())
-        });
+        // Keep terminal admission credit until the same lethal turn captures it.
+        // The next reservation releases a completed lever key independently of
+        // corpse lifetime, after this synchronous death publication finishes.
     }
 
     pub(super) fn capture_terminal(
