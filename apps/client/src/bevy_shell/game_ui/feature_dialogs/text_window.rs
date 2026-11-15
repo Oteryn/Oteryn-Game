@@ -39,7 +39,7 @@ fn keyboard(
     focus: Res<InputFocus>,
     editors: Query<(), With<EditableText>>,
     guard: ModalGuard,
-    owner: NonSend<HostOwner>,
+    mut owner: NonSendMut<HostOwner>,
     mut state: ResMut<HouseWindow>,
 ) {
     let mut close = false;
@@ -55,9 +55,11 @@ fn keyboard(
         state.open = false;
         state.request = None;
     }
-    if open
-        && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-        && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+    let requested = owner.take_house_request();
+    if (requested
+        || (open
+            && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
+            && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])))
         && !state.open
         && !owner.modal_active()
         && guard.allows_focus(focus.get())

@@ -74,6 +74,9 @@ impl ReferencePreferences {
         }
         self.validate_profiles()?;
         self.validate_status_order()?;
+        if self.toolbar_order.as_ref().is_some_and(|ids| ids.len() > 64 || ids.iter().enumerate().any(|(i, id)| id.len() > 128 || ids[..i].contains(id))) {
+            return Err(PreferenceError);
+        }
         if self.shortcut_order.len() > WINDOW_ACTIONS.len()
             || self.shortcut_order.iter().enumerate().any(|(i, id)| {
                 !WINDOW_ACTIONS.iter().any(|(key, _)| key == id)

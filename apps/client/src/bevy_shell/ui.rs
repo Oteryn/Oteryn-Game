@@ -43,6 +43,8 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    ManageButtons,
+    Shortcut(&'static str),
     Panel(&'static str),
     Analysers,
     Inspection,
@@ -63,12 +65,13 @@ pub(super) enum Control {
     Cancel,
 }
 mod toolbar;
-pub(super) use toolbar::project_toolbar;
 use toolbar::{TOOLBAR, open_toolbar};
+pub(super) use toolbar::{project_manager, project_toolbar};
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
-            Self::Panel(id) => id,
+            Self::Panel(id) | Self::Shortcut(id) => id,
+            Self::ManageButtons => "shell.manage_buttons",
             Self::Analysers => "shell.analysers",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",
@@ -112,6 +115,7 @@ pub(super) struct ScopeLabel;
 pub(super) struct Indicator(Entity);
 
 pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
+    commands.init_resource::<toolbar::Manager>();
     commands.spawn((
         Camera2d,
         Camera {
@@ -187,6 +191,14 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
         let button = action_button(&mut commands, &skins, control, caption, 100.);
         commands.entity(toolbar).add_child(button);
     }
+    let manage = action_button(
+        &mut commands,
+        &skins,
+        Control::ManageButtons,
+        "Manage Buttons",
+        120.,
+    );
+    commands.entity(toolbar).add_child(manage);
     // Full-window modal scrim blocks world pointer input while settings are open.
     let modal = commands
         .spawn((
@@ -377,6 +389,7 @@ fn activate(
     controls: Query<&Control>,
     mut owner: NonSendMut<HostOwner>,
     modal: super::game_ui::modal::ModalGuard,
+    mut manager: ResMut<toolbar::Manager>,
 ) {
     if !modal.allows(event.entity) {
         return;
@@ -397,6 +410,9 @@ fn activate(
             return;
         }
         match control {
+            Control::ManageButtons if !owner.modal_active() && owner.play.is_some() => {
+                manager.open = true;
+            }
             control if TOOLBAR.iter().any(|entry| entry.1.id() == control.id()) => {
                 let _ = open_toolbar(&mut owner, *control);
             }

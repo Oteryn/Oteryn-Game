@@ -144,6 +144,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             ui::keyboard,
             ui::project,
             ui::project_toolbar,
+            ui::project_manager,
             project_window,
             game_ui::project,
             scene::project,

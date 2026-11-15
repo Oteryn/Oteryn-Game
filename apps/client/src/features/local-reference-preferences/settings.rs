@@ -271,6 +271,9 @@ pub struct ReferencePreferences {
     pub ui_scale: u16,
     #[serde(default = "default_panels")]
     pub visible_panels: Vec<String>,
+    /// Ordered Bevy toolbar buttons; None uses the complete built-in registry.
+    #[serde(default)]
+    pub toolbar_order: Option<Vec<String>>,
 }
 impl Default for ReferencePreferences {
     fn default() -> Self {
@@ -357,6 +360,7 @@ impl Default for ReferencePreferences {
             english: false,
             ui_scale: default_scale(),
             visible_panels: default_panels(),
+            toolbar_order: None,
         }
     }
 }

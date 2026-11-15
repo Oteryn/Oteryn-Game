@@ -141,11 +141,14 @@ types; legacy OTClient moderation penalties are not report actions in this proto
 Escape or Close dismisses it. F10 stays audio mute and Ctrl+Alt+Shift+F10 notice banners.
 Like every shortcut it is ignored while a modal window or text field has focus.
 
-Market and Party also have buttons on the gameplay toolbar.
-The gameplay toolbar lists windows alphabetically: Analysers, Battle, Chat,
-Inspection, Inventory, Loot Containers, Market, Minimap, Notices, Options, Party,
-Quest Log, Skills, Spellbook and VIP. Buttons open the existing retained window
-owners or reveal their HUD panel; Skills refreshes its always-visible panel.
+The gameplay toolbar opens the retained window owners or reveals their HUD panels;
+Skills refreshes its panel. Manage Buttons shows/hides shortcuts, moves displayed
+buttons up/down, and restores the alphabetical default. Changes save immediately
+in the current local preference scope and do not change keyboard bindings.
+The manager remains available when all shortcuts are hidden. Existing keyboard
+windows (including Action Bars, Map Overview, Houses, Cyclopedia, Rewards, Forge, Highscores, Imbuing, NPC dialogue,
+Outfit, Prey, reports, Stash, Store, Tasks, Proficiency and Wheel) have toolbar entries.
+NPC Trade uses the selected NPC, exactly like Ctrl+Shift+X.
 The label/action registry is `TOOLBAR` in `src/bevy_shell/ui/toolbar.rs`.
 
 Achievement notices appear in arrival order, one banner at a time. Each fades in

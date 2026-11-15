@@ -7,6 +7,7 @@ pub(super) struct Controls {
     mouse: MouseActions,
     spells: SpellHotkeys,
     satellite: bool,
+    house: Option<u64>,
 }
 impl Controls {
     pub fn new() -> Result<Self, InputError> {
@@ -15,6 +16,7 @@ impl Controls {
             mouse: MouseActions::new()?,
             spells: SpellHotkeys::new()?,
             satellite: false,
+            house: None,
         })
     }
 }
@@ -187,6 +189,16 @@ impl HostOwner {
         if let Some(tile) = context {
             self.request_world_context(tile);
         }
+    }
+
+    pub(super) fn request_toolbar_map(&mut self) {
+        self.controls.satellite = true;
+    }
+    pub(super) fn request_toolbar_house(&mut self) {
+        self.controls.house = Some(self.generation());
+    }
+    pub(super) fn take_house_request(&mut self) -> bool {
+        self.controls.house.take() == Some(self.generation())
     }
 
     /// True once per Ctrl+Alt+Z that reached the world unblocked and unfocused.
