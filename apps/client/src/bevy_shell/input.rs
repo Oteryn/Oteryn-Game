@@ -167,6 +167,11 @@ impl Default for NativeInput {
     }
 }
 
+/// F10 toggles the explored-world overview.
+pub(super) fn satellite_shortcut(keys: &ButtonInput<KeyCode>) -> bool {
+    keys.just_pressed(KeyCode::F10)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
