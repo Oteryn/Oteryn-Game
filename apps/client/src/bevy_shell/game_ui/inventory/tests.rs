@@ -218,6 +218,12 @@ fn live_inventory_delta_updates_visible_cells_without_inventing_items() -> TestR
         .map(|icon| icon.0)
         .collect();
     assert_eq!(visible, vec![item]);
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Count: 12\nRight-click for Look and item actions")
+    );
     let changed = entry(11, 4)?;
     inventory(&outbox, vec![changed]);
     app.update();
@@ -379,3 +385,206 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
 
 #[path = "tests/amount.rs"]
 mod amount;
+#[test]
+fn inventory_tooltip_obeys_delay_preferences_and_current_stack() -> TestResult {
+    use bevy::{asset::AssetPlugin, math::DVec2, picking::hover::Hovered, window::PrimaryWindow};
+    use std::time::Duration;
+    let (link, mut commands, outbox) = play_channel();
+    let item = entry(71, 12)?;
+    inventory(&outbox, vec![item]);
+    let mut owner = host(link)?;
+    let mut preferences = owner.settings.preferences.clone();
+    preferences.tooltips_enabled = true;
+    preferences.tooltip_delay_ms = 100;
+    owner.settings.apply(preferences);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<ButtonInput<KeyCode>>()
+    .init_resource::<ButtonInput<MouseButton>>()
+    .insert_non_send(owner)
+    .add_systems(
+        Startup,
+        (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+    );
+    let mut window = Window {
+        focused: true,
+        ..default()
+    };
+    window.set_physical_cursor_position(Some(DVec2::new(40., 40.)));
+    app.world_mut().spawn((window, PrimaryWindow));
+    install(&mut app);
+    app.add_systems(
+        Update,
+        super::super::projection::project.before(super::tooltips::hover),
+    );
+    app.update();
+    let cell = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .find(|(_, slot)| slot.item == Some(item))
+        .map(|(entity, _)| entity)
+        .ok_or("cell")?;
+    app.world_mut().entity_mut(cell).insert(Hovered(true));
+    app.update();
+    let visible = |app: &mut App| {
+        app.world_mut()
+            .query_filtered::<&Node, With<super::tooltips::Tooltip>>()
+            .iter(app.world())
+            .any(|node| node.display == Display::Flex)
+    };
+    assert!(!visible(&mut app));
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        Duration::from_millis(101),
+    ));
+    app.update();
+    assert!(visible(&mut app));
+    assert!(commands.try_recv().is_err(), "hover must not send commands");
+    assert!(
+        app.world_mut()
+            .query_filtered::<Option<&ChildOf>, With<super::tooltips::Tooltip>>()
+            .iter(app.world())
+            .all(|parent| parent.is_none()),
+        "tooltip must escape sidebar clipping"
+    );
+    let modal = app
+        .world_mut()
+        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(200)))
+        .id();
+    app.update();
+    assert!(!visible(&mut app));
+    app.world_mut().entity_mut(modal).despawn();
+    app.update();
+    app.update();
+    assert!(visible(&mut app));
+
+    {
+        use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+        use oteryn_client_ui::inspection::{InspectedItem, Reply, Request};
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.bevy_item_details_selected(true);
+        assert!(link.inspect(Request::Catalogue(42)));
+        let _ = commands.try_recv()?;
+        let reply = Reply {
+            status: 1,
+            requests: vec![],
+            catalogue: None,
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 42,
+                count: 1,
+                tier: 0,
+                name: "Silver sword".into(),
+                attributes: vec![("Attack".into(), "25".into())],
+            }],
+        };
+        link.bevy_item_details_response(&ServerMechanicResponse {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: oteryn_client_ui::inspection::encode_reply(&reply).map_err(|_| "reply")?,
+        });
+    }
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0
+                == "Silver sword\nAttack: 25\nCount: 12\nRight-click for Look and item actions")
+    );
+    let mut preferences = app
+        .world()
+        .non_send::<HostOwner>()
+        .settings
+        .preferences
+        .clone();
+    preferences.tooltips_enabled = false;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .settings
+        .apply(preferences);
+    app.update();
+    assert!(!visible(&mut app));
+    inventory(&outbox, vec![entry(71, 4)?]);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Count: 4\nRight-click for Look and item actions")
+    );
+    inventory(&outbox, vec![]);
+    app.update();
+    assert!(!visible(&mut app));
+    Ok(())
+}
+
+#[test]
+fn equipment_and_open_container_cells_receive_tooltips() -> TestResult {
+    use bevy::asset::AssetPlugin;
+    use oteryn_session::container_tree::{ContainerView, ContainerViews};
+    let (link, _commands, outbox) = play_channel();
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(CharacterInventory {
+            main_backpack: None,
+            entries: vec![],
+            equipment: vec![oteryn_session::item_movement::EquippedItem {
+                slot: EquipmentSlot::Head,
+                item: entry(91, 2)?,
+            }],
+        }),
+        Some(ContainerViews {
+            views: vec![ContainerView {
+                view_id: 0,
+                container_handle: 90.try_into()?,
+                parent_handle: None,
+                capacity: 20,
+                entries: vec![entry(92, 3)?],
+                browse: None,
+            }],
+        }),
+        true,
+        true,
+    );
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Font>()
+    .init_asset::<Image>()
+    .init_resource::<ButtonInput<KeyCode>>()
+    .init_resource::<ButtonInput<MouseButton>>()
+    .insert_non_send(host(link)?)
+    .add_systems(
+        Startup,
+        (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+    );
+    install(&mut app);
+    app.update();
+    let mut texts = app
+        .world_mut()
+        .query_filtered::<&Text, With<super::tooltips::Tooltip>>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect::<Vec<_>>();
+    texts.sort();
+    assert_eq!(
+        texts,
+        vec![
+            "Count: 2\nRight-click for Look and item actions",
+            "Count: 3\nRight-click for Look and item actions",
+        ]
+    );
+    Ok(())
+}
