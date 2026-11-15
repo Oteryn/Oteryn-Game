@@ -364,6 +364,22 @@ async fn write_with_skinning<C: ItemLoopContent>(
     let retires_source = consumes_source && quantity == consumed_quantity;
     let frees_output_slot = retires_source && nested_source.is_none();
     let parent: Vec<u8> = source.try_get("parent")?;
+    // Every operand consumed below participates in admission, including its exact
+    // carried parent and whether its last unit frees a node/direct slot.
+    let ingredient = if let Some(id) = request.ingredient {
+        if id == request.source {
+            return Ok(UseDisposition::Rejected);
+        }
+        let row = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+            .bind(id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+        let Some(row) = row else { return Ok(UseDisposition::StaleState); };
+        Some(row)
+    } else { None };
+    let retires_ingredient_in_bag = match &ingredient {
+        Some(row) => row.try_get::<i64, _>("quantity")? == 1
+            && row.try_get::<Vec<u8>, _>("parent")? == parent,
+        None => false,
+    };
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let tree_count: i64 = sqlx::query_scalar(
         "WITH RECURSIVE tree(item_instance_id,depth) AS ( \
@@ -376,6 +392,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
         - i64::from(retires_source)
+        - i64::from(retires_ingredient_in_bag)
         > 500
     {
         return Ok(UseDisposition::NoRoom);
@@ -396,6 +413,7 @@ async fn write_with_skinning<C: ItemLoopContent>(
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
         - i64::from(frees_output_slot)
+        - i64::from(retires_ingredient_in_bag)
         > i64::from(capacity)
     {
         return Ok(UseDisposition::NoRoom);
@@ -436,15 +454,24 @@ async fn write_with_skinning<C: ItemLoopContent>(
         }
         output_weight += u64::from(weight) * u64::from(*count);
     }
+    let ingredient_weight = if let Some(row) = &ingredient {
+        let definition = TypedDefinitionRef {
+            family: row.try_get("definition_family")?,
+            production_key: row.try_get("definition_production_key")?,
+            revision_ref: row.try_get("definition_revision_ref")?,
+        };
+        let Some(weight) = content.loop_facts(&definition).and_then(|facts| facts.weight) else {
+            return Ok(UseDisposition::NotPossible);
+        };
+        u64::from(weight)
+    } else { 0 };
+    let consumed_weight = (if consumes_source {
+        u64::from(used_weight) * u64::try_from(consumed_quantity)
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+    } else { 0 }).checked_add(ingredient_weight).ok_or(DurabilityError::InvalidStoredState)?;
     let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     if carried
-        .checked_sub(if consumes_source {
-            u64::from(used_weight)
-                * u64::try_from(consumed_quantity)
-                    .map_err(|_| DurabilityError::InvalidStoredState)?
-        } else {
-            0
-        })
+        .checked_sub(consumed_weight)
         .and_then(|w| w.checked_add(output_weight))
         .is_none_or(|w| w > capacity)
     {
@@ -609,3 +636,6 @@ mod fluid_ingredient_tests {
         assert_eq!(ingredient_fluid_subtype(Some(-1)), None);
     }
 }
+
+#[cfg(test)]
+mod tests;

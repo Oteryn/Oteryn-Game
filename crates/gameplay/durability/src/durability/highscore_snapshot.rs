@@ -19,7 +19,7 @@ use crate::foundation::{CharacterId, WorldId};
 use ranking::{RankingRow, ranked_lists};
 use sqlx::{Connection, Postgres, Row, Transaction, pool::PoolConnection, postgres::PgRow};
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 
 /// The stored `filter` of `game_world_highscore_rows`: 0 all, otherwise the base vocation by its
@@ -100,11 +100,33 @@ pub trait AchievementPoints: Send + Sync {
     fn total_points(&self, earned: &[EarnedAchievement]) -> Option<u32>;
 }
 
-/// HIGHSCORES0 §3 category 11 source: the activated per-race Charm point catalogue. CHARM-6 has
-/// activated none yet, so this server withholds category 11: the job publishes no category 11
-/// snapshot and a query for it is `NOT_SUPPORTED`, never a ranking of fabricated zero points.
+// The same validated Creature source and evidence bounds as production Charm progression.
+static ACTIVATED_CHARM_POINTS: LazyLock<Option<Vec<BestiaryCharmEntry>>> = LazyLock::new(|| {
+    let rows = crate::content::canonical_bestiary_rows(crate::content::ProjectEvidenceLimits {
+        max_documents: 5,
+        max_document_bytes: 2_500_000,
+        max_total_bytes: 8_000_000,
+        max_json_depth: 10,
+        max_decoded_fields: 65_000,
+        max_string_bytes: 1_000_000,
+        max_locator_bytes: 128,
+        max_locator_segments: 5,
+        max_reference_records: 4096,
+        max_import_records: 1,
+        max_reimport_states: 1,
+    })
+    .ok()?;
+    let entries: Vec<_> = rows
+        .into_iter()
+        .map(|(race, charm_points)| BestiaryCharmEntry { race, charm_points })
+        .collect();
+    BestiaryCharmFacts::new(entries.clone()).ok()?;
+    Some(entries)
+});
+
+/// HIGHSCORES0 §3 category 11 uses the owning Bestiary completion points, independent of spending.
 pub fn activated_charm_points() -> Option<Vec<BestiaryCharmEntry>> {
-    None
+    ACTIVATED_CHARM_POINTS.clone()
 }
 
 /// HIGHSCORES0 §3 row 12 and Crystal `game.cpp:434`: Boss Points.
@@ -131,7 +153,7 @@ pub fn served_category(category: u8) -> bool {
                 | PHOSPHORUS_RECORD_CATEGORY
                 | TIBIADROME_ROTATION_CATEGORY
         )
-        || (category == 11 && activated_charm_points().is_some())
+        || (category == 11 && ACTIVATED_CHARM_POINTS.is_some())
 }
 
 /// Actual owning catalogues from the activated content generation, never caller-provided scores.
@@ -1144,11 +1166,21 @@ mod category_set_tests {
     }
 
     #[test]
-    fn served_category_admits_boss_points_and_withholds_unsourced_charm_points() {
+    fn activated_bestiary_points_back_category_eleven() -> Result<(), String> {
+        let entries = super::activated_charm_points().ok_or("activated Charm catalogue missing")?;
+        assert_eq!(entries.len(), 824);
+        assert!(entries.iter().any(|entry| entry.charm_points > 0));
+        super::BestiaryCharmFacts::new(entries).map_err(|e| format!("{e:?}"))?;
+        assert!(served_category(11));
+        Ok(())
+    }
+
+    #[test]
+    fn served_category_admits_boss_and_activated_charm_points() {
         assert!(served_category(12));
         assert!(served_category(1));
         assert!(served_category(10));
-        assert!(!served_category(11));
+        assert!(served_category(11));
         assert!(!served_category(0));
         assert!(served_category(13));
         assert!(served_category(14));

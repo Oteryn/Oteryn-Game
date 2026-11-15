@@ -499,24 +499,37 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseHandoffError::AuthorityRejected)?;
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    match reconcile_house_entries_in_transaction(&mut tx, &node, character).await {
-                        Ok(report) => {
-                            commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(report))
+        let mut report = HouseReconcileReport::default();
+        loop {
+            let recovery = recovery.clone();
+            let node = node.clone();
+            let batch = self
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        match reconcile_house_entries_in_transaction(&mut tx, &node, character)
+                            .await
+                        {
+                            Ok(report) => {
+                                commit_semantic_transaction(tx, deadline).await?;
+                                Ok(Ok(report))
+                            }
+                            Err(HouseHandoffError::Unavailable(error)) => Err(error),
+                            Err(error) => Ok(Err(error)),
                         }
-                        Err(HouseHandoffError::Unavailable(error)) => Err(error),
-                        Err(error) => Ok(Err(error)),
-                    }
+                    })
                 })
-            })
-            .await?
+                .await??;
+            let empty = batch.aborted.is_empty();
+            report.aborted.extend(batch.aborted);
+            if empty {
+                report.aborted.sort_unstable();
+                return Ok(report);
+            }
+        }
     }
 
     /// Release the entry tile of a COMMITTED handoff once the destination placed the Character
@@ -580,26 +593,43 @@ impl DurabilityRoot {
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseHandoffError::AuthorityRejected)?;
-        let node = node.clone();
-        self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
-                Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    assert_recovery_fence(&mut tx, &recovery).await?;
-                    lock_admission_relations(&mut tx).await?;
-                    match recover_stale_house_entries_in_transaction(&mut tx, &node, released_at)
+        let mut report = HouseRecoveryReport::default();
+        loop {
+            let recovery = recovery.clone();
+            let node = node.clone();
+            let batch = self
+                .try_issue_semantic_pass()?
+                .run(move |holder, deadline| {
+                    Box::pin(async move {
+                        let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                        assert_recovery_fence(&mut tx, &recovery).await?;
+                        lock_admission_relations(&mut tx).await?;
+                        match recover_stale_house_entries_in_transaction(
+                            &mut tx,
+                            &node,
+                            released_at,
+                        )
                         .await
-                    {
-                        Ok(report) => {
-                            commit_semantic_transaction(tx, deadline).await?;
-                            Ok(Ok(report))
+                        {
+                            Ok(report) => {
+                                commit_semantic_transaction(tx, deadline).await?;
+                                Ok(Ok(report))
+                            }
+                            Err(HouseHandoffError::Unavailable(error)) => Err(error),
+                            Err(error) => Ok(Err(error)),
                         }
-                        Err(HouseHandoffError::Unavailable(error)) => Err(error),
-                        Err(error) => Ok(Err(error)),
-                    }
+                    })
                 })
-            })
-            .await?
+                .await??;
+            let empty = batch.aborted.is_empty() && batch.released.is_empty();
+            report.aborted.extend(batch.aborted);
+            report.released.extend(batch.released);
+            if empty {
+                report.aborted.sort_unstable();
+                report.released.sort_unstable();
+                return Ok(report);
+            }
+        }
     }
 }
 
@@ -1334,7 +1364,10 @@ pub async fn release_house_entry_tile_in_transaction(
     Ok(HouseReleaseOutcome::Released(record))
 }
 
-/// Stale-scope recovery inside a fenced transaction. Never commits.
+// One transaction handles at most this many rows of each recovery kind.
+const HOUSE_RECOVERY_BATCH_ROWS: i64 = 100;
+
+/// One bounded stale-scope recovery batch inside a fenced transaction. Never commits.
 pub async fn recover_stale_house_entries_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
@@ -1354,11 +1387,13 @@ pub async fn recover_stale_house_entries_in_transaction(
                                 || uuid_send(h.origin_channel_id) \
             WHERE h.state = 1 \
               AND NOT (a.state = 1 AND a.ownership_generation = h.source_scope_ownership_generation) \
-              FOR SHARE OF a) \
+              ORDER BY h.handoff_id LIMIT $1 \
+              FOR SHARE OF a FOR UPDATE OF h SKIP LOCKED) \
          DELETE FROM game_house_scope_handoffs h USING stale s \
           WHERE h.handoff_id = s.handoff_id AND h.state = 1 \
           RETURNING uuid_send(h.handoff_id)",
     )
+    .bind(HOUSE_RECOVERY_BATCH_ROWS)
     .fetch_all(&mut **tx)
     .await?;
     let released: Vec<Vec<u8>> = sqlx::query_scalar(
@@ -1369,12 +1404,14 @@ pub async fn recover_stale_house_entries_in_transaction(
             WHERE h.state = 2 AND h.committed_at <= $1 \
               AND NOT (a.state = 1 \
                        AND a.ownership_generation = h.destination_scope_ownership_generation) \
-              FOR SHARE OF a) \
+              ORDER BY h.handoff_id LIMIT $2 \
+              FOR SHARE OF a FOR UPDATE OF h SKIP LOCKED) \
          UPDATE game_house_scope_handoffs h SET state = 3, released_at = $1 FROM stale s \
           WHERE h.handoff_id = s.handoff_id AND h.state = 2 \
           RETURNING uuid_send(h.handoff_id)",
     )
     .bind(released_at)
+    .bind(HOUSE_RECOVERY_BATCH_ROWS)
     .fetch_all(&mut **tx)
     .await?;
     let ids = |rows: Vec<Vec<u8>>| {
@@ -1391,7 +1428,7 @@ pub async fn recover_stale_house_entries_in_transaction(
     })
 }
 
-/// Reconcile inside a fenced transaction. Never commits.
+/// One bounded reconcile batch inside a fenced transaction. Never commits.
 pub async fn reconcile_house_entries_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
@@ -1415,7 +1452,8 @@ pub async fn reconcile_house_entries_in_transaction(
               AND a.holder_registration_revision = $3::text::numeric(20,0) \
             WHERE h.state = 1 \
               AND ($1::bytea IS NULL OR h.character_id = encode($1,'hex')::uuid) \
-              FOR SHARE OF a) \
+              ORDER BY h.handoff_id LIMIT $4 \
+              FOR SHARE OF a FOR UPDATE OF h SKIP LOCKED) \
          DELETE FROM game_house_scope_handoffs h USING owned o \
           WHERE h.handoff_id = o.handoff_id AND h.state = 1 \
           RETURNING uuid_send(h.handoff_id)",
@@ -1423,6 +1461,7 @@ pub async fn reconcile_house_entries_in_transaction(
     .bind(character.map(|character| character.as_bytes().to_vec()))
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
+    .bind(HOUSE_RECOVERY_BATCH_ROWS)
     .fetch_all(&mut **tx)
     .await?;
     let mut aborted = rows
@@ -1729,3 +1768,6 @@ mod tests {
     }
 
 }
+
+#[cfg(test)]
+mod recovery_tests;

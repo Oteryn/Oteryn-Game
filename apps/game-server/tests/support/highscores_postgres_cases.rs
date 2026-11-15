@@ -1435,14 +1435,43 @@ fn experience_gain_reaches_the_client_through_the_snapshot_job() -> TestResult {
     })
 }
 
-/// HIGHSCORES0 §3: with no activated per-race Charm point source (CHARM-6) the serve job's
-/// catalogues publish categories 1 to 10, 12, 13, 14, 16 and 17, and the client's category 11 query through the
-/// dispatched handler is `NOT_SUPPORTED` rather than a ranking of zero points.
+/// The real serve job publishes the same completed Bestiary points as the Charm owner.
 #[test]
-fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> TestResult {
+fn category_eleven_uses_activated_completion_points_in_the_real_job() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| activated_completion_job().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "highscore source thread")?
+        .map_err(Into::into)
+}
+
+fn activated_completion_job() -> TestResult {
     run("hscharmsource", async |h| {
-        assert!(activated_charm_points().is_none());
-        assert!(!served_category(11) && served_category(12));
+        let entries = activated_charm_points().ok_or("activated Bestiary catalogue")?;
+        assert_eq!(entries.len(), 824);
+        assert!(served_category(11) && served_category(12));
+        let entry = entries
+            .iter()
+            .filter(|entry| entry.charm_points > 0)
+            .min_by_key(|entry| entry.race.final_kill_threshold())
+            .ok_or("completion points")?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        for index in 0..entry.race.final_kill_threshold() {
+            h.root.commit_bestiary_kill(
+                &authority, &h.node, harness::fence(u64::from(index) + 2)?,
+                crate::durability::bestiary_progress::BestiaryKillRequest {
+                    occurrence: crate::durability::bestiary_progress::BestiaryKillOccurrence::from_bytes(id(u8::try_from(80 + index)?)).map_err(debug)?,
+                    race: entry.race.clone(), context: harness::context(),
+                    policy_revision: "policy-1".into(), reward_revision: "reward-1".into(),
+                },
+            ).await.map_err(debug)?;
+        }
         let root = DurabilityRoot::connect_test_runtime(&h.database.url)?;
         assert!(root.maintain_ready_once().await?);
         let catalogues =
@@ -1454,18 +1483,21 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
             wait_for_passes(&job, 1).await;
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
-                SNAPSHOTS_PER_CUT - 1
+                SNAPSHOTS_PER_CUT
             );
             let charm_heads: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_world_highscore_heads WHERE category=11",
             )
             .fetch_one(&h.pool)
             .await?;
-            assert_eq!(charm_heads, 0);
-            assert_eq!(
-                client_reply(h, 11, 0, 1, 0).await?,
-                HighscoresReply::Terminal(FoundationProtocolError::NotSupported)
-            );
+            assert_eq!(charm_heads, 1);
+            let HighscoresReply::Result(payload) = client_reply(h, 11, 0, 1, 0).await? else {
+                return Err("category 11 query was not accepted".into());
+            };
+            let charms = decode_highscores_result(&payload).map_err(debug)?;
+            assert_eq!(charms.category, 11);
+            assert_eq!(charms.rows.len(), 1);
+            assert_eq!(charms.rows[0].value, u64::from(entry.charm_points));
             let HighscoresReply::Result(accounts) = client_reply(h, 10, 0, 1, 0).await? else {
                 return Err("category 10 query was not accepted".into());
             };
@@ -1473,12 +1505,12 @@ fn category_eleven_is_withheld_without_an_activated_charm_point_source() -> Test
                 decode_highscores_result(&accounts).map_err(debug)?.category,
                 10
             );
-            // Withholding Charm removes exactly one category from each complete cut.
+            // A scheduled reset retains the activated category and completion score.
             planned_resets.send(()).await?;
             wait_for_passes(&job, 2).await;
             assert_eq!(
                 h.count("game_world_highscore_snapshots").await?,
-                2 * (SNAPSHOTS_PER_CUT - 1)
+                2 * SNAPSHOTS_PER_CUT
             );
             drop(planned_resets);
             Ok(())
