@@ -116,17 +116,15 @@ pub fn shared_experience_share<Scope: Copy + Eq>(
             vocations.insert(member.vocation);
         }
     }
-    let bonus = match vocations.len() {
-        0 | 1 => {
-            if base_xp >= 20 {
-                20
-            } else {
-                0
-            }
+    let bonus = if base_xp < 20 {
+        0
+    } else {
+        match vocations.len() {
+            0 | 1 => 20,
+            2 => 30,
+            3 => 60,
+            _ => 100,
         }
-        2 => 30,
-        3 => 60,
-        _ => 100,
     };
     // Keep the party bonus rational until the final equal-share rounding. A summon is
     // deducted from the boosted pool before any Character's equal share is formed.
