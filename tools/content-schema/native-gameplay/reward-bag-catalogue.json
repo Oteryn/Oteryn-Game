@@ -3,7 +3,7 @@
   "sources": [
     {
       "path": "tools/content-schema/native-gameplay/reward-bag-profiles.json",
-      "sha256": "5ea341b80a22c34746116c2922c8e78871fb57f278f92c1d7223c1002f012b1b"
+      "sha256": "1e280a856c32dd8393b59b0fdef15942b800f0ab383b81a032429cac3bdc9941"
     },
     {
       "path": "tools/content-schema/native-gameplay/event-item-actions.json",

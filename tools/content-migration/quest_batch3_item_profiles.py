@@ -15,6 +15,7 @@ from pathlib import Path
 from xml.parsers import expat
 
 import grizzly_shop_profiles as grizzly
+from import_cyclopedia_global import apply_profile_weights
 import quest_reward_item_semantics as reward
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -223,6 +224,8 @@ def capture(source_root, root=ROOT):
                 raise ValueError('MISSING_SOURCE_OR_CANONICAL_ITEM')
             profile = qualify(item_id, xml[item_id], appearances[item_id], physical[item_id],
                               bindings, definition, hold_reasons=row['holds'])
+            # The donor weight stays in the capture; the Global client weight wins (ITEMGLOB).
+            apply_profile_weights([profile], root)
             existing = native.get(key)
             if existing is not None and (
                 any(existing[field] != profile[field] for field in

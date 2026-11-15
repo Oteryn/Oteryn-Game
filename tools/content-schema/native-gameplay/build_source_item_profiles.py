@@ -153,6 +153,10 @@ def build(canary,crystal,bundles,out):
  records.append({'authoring':{'item':{'family':'Item','key':'candidate:item/40450','revision':'spell-p2-r21'}},'semantics':sem,
   'attributes':{'speed_bonus':0,'blocks_movement':False,'blocks_projectile':False,'immovable_block_solid':False,'has_height':False,'field_replaceable':None,'field_condition':None,'rune_consumption':None},'admission':{k:p[k] for k in ['materializable','stack_class','legal_destinations']}})
  result=bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ordinary,generic)
+ # The donor weight stays in the proof rows; the Global client weight wins (ITEMGLOB).
+ sys.path.insert(0,str(ROOT/'tools/content-migration'))
+ from import_cyclopedia_global import apply_profile_weights
+ apply_profile_weights(result['records'],ROOT)
  out.mkdir(parents=True,exist_ok=True);raw=(json.dumps(result,indent=2,ensure_ascii=False)+'\n').encode();(out/'item-profiles.json').write_bytes(raw)
  coins=[r for r in result['records'] if r['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in COIN_IDS}]
  for r in coins:
