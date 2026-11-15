@@ -836,6 +836,7 @@ async fn prepare_source_reader_checked<'native>(
     ) else {
         return Err(PreparationError::Refused);
     };
+    let area = source.has_area();
     if chain_candidates {
         let chain = source
             .spell()
@@ -855,8 +856,18 @@ async fn prepare_source_reader_checked<'native>(
                     .then_some((position.x, position.y, position.floor))
             })
             .collect();
+    } else if area && callback.is_none() {
+        // Ordinary damage/condition areas affect the current player census.
+        // Empty tiles do not receive a hit: requiring their mutable metadata
+        // can retain an entire cast forever at a usable door or map boundary.
+        // Each actual target and its sight path are still read below.
+        cast_tiles.retain(|&(x, y, floor)| {
+            census.iter().any(|(_, position, session)| {
+                let at = position.position();
+                session.is_some() && (at.x, at.y, at.floor) == (x, y, floor)
+            })
+        });
     }
-    let area = source.has_area();
     // Crystal combat.cpp:2337-2375 casts area sight from the cell next to
     // the chosen center in the direction of the caster, including diagonals.
     let sight_origin = (if area {
