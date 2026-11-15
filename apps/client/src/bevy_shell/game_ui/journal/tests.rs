@@ -165,7 +165,7 @@ fn journal_quest_launcher_selection_and_tracking_reach_existing_owner() -> Resul
     Ok(())
 }
 #[test]
-fn journal_spellbook_launcher_and_filters_use_typed_query_and_confirmed_page() -> Result {
+fn spell_list_filters() -> Result {
     let (mut host, mut commands, outbox) = host()?;
     outbox.bevy_journal_spellbook_select();
     open_spells(&mut host);
@@ -250,7 +250,31 @@ fn journal_spellbook_launcher_and_filters_use_typed_query_and_confirmed_page() -
     );
     assert!(projection.rows[0].label.contains("Mending"));
     assert!(projection.detail.contains("mend"));
-    let modal = link.bevy_server_modal_fixture();
+    let mut refusal = result(Vec::new());
+    refusal.status = CommandStatus::Rejected;
+    outbox.bevy_journal_spellbook_result(&refusal);
+    for (kind, vocation, premium, group) in [
+        (Kind::Vocation, 1, 0, 0),
+        (Kind::Premium, 1, 1, 0),
+        (Kind::Group, 1, 1, 1),
+    ] {
+        assert!(actions::perform(
+            &mut host,
+            &mut state,
+            Action { key, kind },
+            &values
+        ));
+        let PlayCommand::Feature(command) = commands.try_recv()? else {
+            return Err("filter query missing".into());
+        };
+        let query = SpellQuery::decode(&command.payload).ok_or("filter query")?;
+        assert_eq!(
+            (query.vocation, query.premium, query.group),
+            (vocation, premium, group)
+        );
+        outbox.bevy_journal_spellbook_result(&refusal);
+    }
+    let modal = host.play.as_ref().ok_or("play")?.link.bevy_server_modal_fixture();
     assert!(!actions::perform(
         &mut host,
         &mut state,
@@ -510,3 +534,222 @@ fn journal_builds_both_source_shaped_windows_with_real_text_controls() -> Result
 }
 
 mod text_input;
+
+#[test]
+fn spell_list_cast_sends_intent() -> Result {
+    let (mut host, mut commands, outbox) = host()?;
+    outbox.bevy_journal_spellbook_select();
+    open_spells(&mut host);
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("spellbook query missing".into());
+    };
+    assert_eq!(command.capability, 449);
+    assert_eq!(command.kind, 733);
+    assert_eq!(
+        SpellQuery::decode(&command.payload),
+        Some(SpellQuery::default())
+    );
+    let page = Page {
+        page: 0,
+        total: 1,
+        entries: vec![DetailedSpell {
+            spell: oteryn_session::spell_catalog::SpellCatalogEntry {
+                cast_index: 19,
+                name: "Mending".into(),
+                words: "mend".into(),
+                level: 20,
+                mana: 15,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![2],
+                rune_item: None,
+            },
+            vocations: 1 << 9,
+            premium: true,
+            magic_level: 0,
+        }],
+    };
+    outbox.bevy_journal_spellbook_result(&result(page.encode().ok_or("page encoding")?));
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Spells,
+    };
+    let mut state = State {
+        key: Some(key),
+        ..default()
+    };
+    let values = actions::Values {
+        search: "mend".into(),
+        minimum: "20".into(),
+        maximum: "200".into(),
+    };
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Search
+        },
+        &values
+    ));
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("filtered query missing".into());
+    };
+    let query = SpellQuery::decode(&command.payload).ok_or("query")?;
+    assert_eq!(query.search, "mend");
+    assert_eq!(query.min_level, 20);
+    assert_eq!(query.max_level, 200);
+    assert_eq!(
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spellbook_state()
+            .page,
+        Some(page.clone())
+    );
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    let projection = model::project(
+        Tab::Spells,
+        &link.quest_panel(),
+        &link.spellbook_state(),
+        &link.spell_catalog_panel(),
+        None,
+        0,
+    );
+    assert!(projection.rows[0].label.contains("Mending"));
+    assert!(projection.detail.contains("mend"));
+    state.selected_spell = Some(19);
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Cast
+        },
+        &values
+    ));
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 19)
+    );
+    Ok(())
+}
+
+#[test]
+fn spell_list_filters_missing_actor_level() -> Result {
+    let (host, _, _) = host()?;
+    assert_eq!(
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spellbook_actor_level(),
+        None
+    );
+    Ok(())
+}
+
+#[test]
+fn spell_detail_fields() -> Result {
+    let (mut host, mut commands, outbox) = host()?;
+    outbox.bevy_journal_spellbook_select();
+    open_spells(&mut host);
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("spellbook query missing".into());
+    };
+    assert_eq!(command.capability, 449);
+    assert_eq!(command.kind, 733);
+    assert_eq!(
+        SpellQuery::decode(&command.payload),
+        Some(SpellQuery::default())
+    );
+    let page = Page {
+        page: 0,
+        total: 1,
+        entries: vec![DetailedSpell {
+            spell: oteryn_session::spell_catalog::SpellCatalogEntry {
+                cast_index: 19,
+                name: "Mending".into(),
+                words: "mend".into(),
+                level: 20,
+                mana: 15,
+                mana_percent: false,
+                soul: 0,
+                learned: true,
+                available: true,
+                cooldown_groups: vec![2],
+                rune_item: None,
+            },
+            vocations: 1 << 9,
+            premium: true,
+            magic_level: 0,
+        }],
+    };
+    outbox.bevy_journal_spellbook_result(&result(page.encode().ok_or("page encoding")?));
+    let key = Key {
+        generation: host.generation(),
+        tab: Tab::Spells,
+    };
+    let mut state = State {
+        key: Some(key),
+        ..default()
+    };
+    let values = actions::Values {
+        search: "mend".into(),
+        minimum: "20".into(),
+        maximum: "200".into(),
+    };
+    assert!(actions::perform(
+        &mut host,
+        &mut state,
+        Action {
+            key,
+            kind: Kind::Search
+        },
+        &values
+    ));
+    let PlayCommand::Feature(command) = commands.try_recv()? else {
+        return Err("filtered query missing".into());
+    };
+    let query = SpellQuery::decode(&command.payload).ok_or("query")?;
+    assert_eq!(query.search, "mend");
+    assert_eq!(query.min_level, 20);
+    assert_eq!(query.max_level, 200);
+    assert_eq!(
+        host.play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .spellbook_state()
+            .page,
+        Some(page.clone())
+    );
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    let projection = model::project(
+        Tab::Spells,
+        &link.quest_panel(),
+        &link.spellbook_state(),
+        &link.spell_catalog_panel(),
+        None,
+        0,
+    );
+    assert!(projection.rows[0].label.contains("Mending"));
+    assert!(projection.detail.contains("mend"));
+    for field in [
+        "mend",
+        "Level 20",
+        "Mana 15",
+        "Soul 0",
+        "Premium required: true",
+        "Healing",
+    ] {
+        assert!(
+            projection.detail.contains(field),
+            "missing {field}: {}",
+            projection.detail
+        );
+    }
+    Ok(())
+}

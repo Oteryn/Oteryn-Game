@@ -113,7 +113,7 @@ pub(super) fn build(
         .id();
     commands.entity(left).add_child(title);
     if key.tab == Tab::Spells && book.selected {
-        for kind in [Kind::Vocation, Kind::Premium, Kind::Group] {
+        for kind in [Kind::Vocation, Kind::Premium, Kind::Group, Kind::Castable] {
             let button = action(commands, skin, left, key, kind, "", 320.);
             let caption = commands
                 .spawn((
@@ -242,6 +242,7 @@ pub(super) fn build(
             130.,
         );
     } else {
+        action(commands, skin, controls, key, Kind::Cast, "Cast", 64.);
         for slot in 0..4 {
             action(
                 commands,

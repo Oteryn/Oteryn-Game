@@ -20,6 +20,11 @@ pub use book::{SpellbookFilter, SpellbookState};
 mod book_native;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
+    /// Current actor level from the confirmed skills snapshot.
+    pub fn spellbook_actor_level(&self) -> Option<u32> {
+        lock(&self.mailbox).skill_progress.complete.as_ref().map(|snapshot| snapshot.level)
+    }
+
     #[must_use]
     pub fn spellbook_window_open(&self) -> bool {
         let mailbox = lock(&self.mailbox);

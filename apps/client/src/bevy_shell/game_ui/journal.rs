@@ -37,6 +37,8 @@ struct Action {
 enum Kind {
     Quests,
     Spells,
+    Cast,
+    Castable,
     Close,
     Refresh,
     Search,
@@ -352,6 +354,7 @@ fn refresh_labels(owner: NonSend<HostOwner>, mut labels: Query<(&FilterCaption, 
             Kind::Sort => {
                 oteryn_client_ui::quest_log::QUEST_SORT_LABELS[quest.list_sort.selection()].into()
             }
+            Kind::Castable => "Only castable level".into(),
             Kind::Vocation => {
                 crate::play::feature_0287_actor_spell_catalog::view::SPELLBOOK_VOCATIONS
                     .get(usize::from(book.filter.vocation))
