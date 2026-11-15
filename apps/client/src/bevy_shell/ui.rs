@@ -43,6 +43,12 @@ pub(super) struct Skins {
 #[derive(Component, Clone, Copy, Debug)]
 pub(super) enum Control {
     Options,
+    Panel(&'static str),
+    Analysers,
+    Inspection,
+    Loot,
+    Notices,
+    Skills,
     Market,
     Party,
     Quests,
@@ -56,9 +62,85 @@ pub(super) enum Control {
     Ok,
     Cancel,
 }
+// Label text doubles as the button caption; entries are ordered by label.
+const TOOLBAR: &[(&str, Control)] = &[
+    ("Analysers", Control::Analysers),
+    ("Battle", Control::Panel("battle")),
+    ("Chat", Control::Panel("chat")),
+    ("Inspection", Control::Inspection),
+    ("Inventory", Control::Panel("inventory")),
+    ("Loot Containers", Control::Loot),
+    ("Market", Control::Market),
+    ("Minimap", Control::Panel("minimap")),
+    ("Notices", Control::Notices),
+    ("Options", Control::Options),
+    ("Party", Control::Party),
+    ("Quest Log", Control::Quests),
+    ("Skills", Control::Skills),
+    ("Spellbook", Control::Spells),
+    ("VIP", Control::Panel("vip")),
+];
+fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
+    if owner.modal_active() {
+        return false;
+    }
+    match control {
+        Control::Options => owner.open_graphics(),
+        Control::Market => super::game_ui::open_market(owner),
+        Control::Party => super::game_ui::open_party(owner),
+        Control::Quests => super::game_ui::open_quests(owner),
+        Control::Spells => super::game_ui::open_spells(owner),
+        Control::Panel(id) => {
+            if let Some(play) = &owner.play {
+                let mut preferences = owner.settings.preferences.clone();
+                if !preferences.panel_visible(id) {
+                    preferences.visible_panels.push(id.into());
+                    owner.settings.apply(preferences);
+                }
+                if id == "vip" {
+                    play.link
+                        .vip_request(oteryn_client_ui::vip::Intent::Query(0));
+                }
+            }
+        }
+        Control::Analysers => {
+            if let Some(play) = &owner.play {
+                play.link.analyser_open();
+            }
+        }
+        Control::Inspection => {
+            if let Some(play) = &owner.play {
+                play.link.inspection_set_open(true);
+            }
+        }
+        Control::Loot => {
+            if let Some(play) = &owner.play {
+                play.link.discovery_open(98);
+            }
+        }
+        Control::Notices => {
+            if let Some(play) = &owner.play {
+                play.link.notices_set_open(true);
+            }
+        }
+        Control::Skills => {
+            if let Some(play) = &owner.play {
+                play.link.skills_widget_request();
+            }
+        }
+        _ => return false,
+    }
+    true
+}
 impl Control {
     pub fn id(self) -> &'static str {
         match self {
+            Self::Panel(id) => id,
+            Self::Analysers => "shell.analysers",
+            Self::Inspection => "shell.inspection",
+            Self::Loot => "shell.loot",
+            Self::Notices => "shell.notices",
+            Self::Skills => "shell.skills",
             Self::Options => "shell.options",
             Self::Market => "shell.market",
             Self::Party => "shell.party",
@@ -164,13 +246,12 @@ pub(super) fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     for (control, caption, width) in [
         (Control::Login, "Sign in", 80.),
         (Control::CancelLogin, "Cancel sign-in", 100.),
-        (Control::Options, "Options", 80.),
-        (Control::Market, "Market", 80.),
-        (Control::Party, "Party", 80.),
-        (Control::Quests, "Quest Log", 80.),
-        (Control::Spells, "Spellbook", 80.),
     ] {
         let button = action_button(&mut commands, &skins, control, caption, width);
+        commands.entity(toolbar).add_child(button);
+    }
+    for &(caption, control) in TOOLBAR {
+        let button = action_button(&mut commands, &skins, control, caption, 100.);
         commands.entity(toolbar).add_child(button);
     }
     // Full-window modal scrim blocks world pointer input while settings are open.
@@ -383,11 +464,9 @@ fn activate(
             return;
         }
         match control {
-            Control::Options => owner.open_graphics(),
-            Control::Market => super::game_ui::open_market(&mut owner),
-            Control::Party => super::game_ui::open_party(&mut owner),
-            Control::Quests => super::game_ui::open_quests(&mut owner),
-            Control::Spells => super::game_ui::open_spells(&mut owner),
+            control if TOOLBAR.iter().any(|entry| entry.1.id() == control.id()) => {
+                let _ = open_toolbar(&mut owner, *control);
+            }
             Control::Login => owner.request_login(),
             Control::CancelLogin => owner.cancel_login(),
             Control::Apply => owner.apply(false),
@@ -572,7 +651,7 @@ pub(super) fn project_toolbar(
             }
         } else if matches!(
             control,
-            Some(Control::Market | Control::Party | Control::Quests | Control::Spells)
+            Some(control) if !matches!(control, Control::Options) && TOOLBAR.iter().any(|entry| entry.1.id() == control.id())
         ) {
             node.display = if playing {
                 Display::Flex
@@ -586,5 +665,115 @@ pub(super) fn project_toolbar(
                 Display::Flex
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod toolbar_tests {
+    use super::*;
+    #[test]
+    fn toolbar_registry_sorted() {
+        assert!(TOOLBAR.windows(2).all(|pair| pair[0].0 < pair[1].0));
+    }
+    #[test]
+    fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
+        for label in [
+            "Analysers",
+            "Battle",
+            "Chat",
+            "Inspection",
+            "Inventory",
+            "Loot Containers",
+            "Market",
+            "Minimap",
+            "Notices",
+            "Options",
+            "Party",
+            "Quest Log",
+            "Skills",
+            "Spellbook",
+            "VIP",
+        ] {
+            let mut owner = HostOwner::new(None)?;
+            owner.settings.preferences.visible_panels.clear();
+            let (link, mut commands, outbox) = crate::play::play_channel();
+            outbox.bevy_hud_skills_fixture()?;
+            owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+                view: crate::play::PlayView::new(
+                    oteryn_renderer::TileCoord::new(100, 100),
+                    7,
+                    &[],
+                )?,
+                link,
+            });
+            let entry = TOOLBAR
+                .iter()
+                .find(|entry| entry.0 == label)
+                .ok_or("missing toolbar entry")?;
+            let mut app = App::new();
+            app.insert_non_send(owner);
+            let button = app
+                .world_mut()
+                .spawn((entry.1, Node::default()))
+                .observe(activate)
+                .id();
+            app.world_mut().trigger(Activate { entity: button });
+            let owner = app.world().non_send::<HostOwner>();
+            match entry.1 {
+                Control::Panel(id) => assert!(owner.settings.preferences.panel_visible(id)),
+                Control::Options => assert!(owner.draft().is_some()),
+                Control::Analysers => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.analyser_panel().open)
+                ),
+                Control::Skills => assert!(commands.try_recv().is_ok()),
+                Control::Inspection => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.inspection_panel().open)
+                ),
+                Control::Loot => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.discovery_panel().loot.open)
+                ),
+                Control::Notices => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.notices_panel().open)
+                ),
+                Control::Market => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.market_panel().open)
+                ),
+                Control::Party => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.party_is_open())
+                ),
+                Control::Quests => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.quest_window_open())
+                ),
+                Control::Spells => assert!(
+                    owner
+                        .play
+                        .as_ref()
+                        .is_some_and(|play| play.link.spellbook_window_open())
+                ),
+                _ => return Err("unexpected toolbar action".into()),
+            }
+        }
+        Ok(())
     }
 }

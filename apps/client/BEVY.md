@@ -80,7 +80,11 @@ With no text field focused, the existing gameplay shortcuts open:
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
 
-Market and Party also have buttons on the gameplay toolbar.
+The gameplay toolbar lists windows alphabetically: Analysers, Battle, Chat,
+Inspection, Inventory, Loot Containers, Market, Minimap, Notices, Options, Party,
+Quest Log, Skills, Spellbook and VIP. Buttons open the existing retained window
+owners or reveal their HUD panel; Skills refreshes its always-visible panel.
+The label/action registry is `TOOLBAR` in `src/bevy_shell/ui.rs`.
 
 Ctrl+V in a focused text field remains the native paste action. Click an exposed
 world area to leave a text field before using a gameplay shortcut. Map/item drag
