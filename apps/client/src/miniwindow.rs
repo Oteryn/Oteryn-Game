@@ -71,27 +71,67 @@ impl Layout {
         let [rw, rh] = root.map(|size| size.max(1));
         let width = pane.bounds[2].min(rw).max(1);
         let height = pane.bounds[3].min(rh).max(1);
-        let y = self
+        if pane.dock == Dock::Floating {
+            return Some([
+                pane.bounds[0].clamp(0, rw - width),
+                pane.bounds[1].clamp(0, rh - height),
+                width,
+                height,
+            ]);
+        }
+        // Fit the visible column together. Collapse trailing panes when even one
+        // pixel each cannot fit; returning None would leave native windows in place.
+        let column: Vec<_> = self
             .order
             .iter()
-            .take_while(|entry| entry.as_str() != id)
             .filter(|entry| visible.contains(entry))
-            .filter_map(|entry| self.panes.get(entry))
-            .filter(|other| other.dock == pane.dock)
-            .fold(0_i32, |sum, other| {
-                sum.saturating_add(other.bounds[3]).saturating_add(4)
-            });
-        let (x, y) = match pane.dock {
-            Dock::Left => (0, y),
-            Dock::Right => (rw - width, y),
-            Dock::Floating => (pane.bounds[0], pane.bounds[1]),
-        };
-        Some([
-            x.clamp(0, rw - width),
-            y.clamp(0, rh - height),
-            width,
-            height,
-        ])
+            .filter_map(|entry| self.panes.get(entry).map(|other| (entry, other)))
+            .filter(|(_, other)| other.dock == pane.dock)
+            .take(usize::try_from(rh).ok()?)
+            .collect();
+        let count = i32::try_from(column.len()).ok()?;
+        if count == 0 {
+            return None;
+        }
+        let gap = 4.min((rh - count) / (count - 1).max(1));
+        let budget = rh - gap * (count - 1);
+        let weight: i128 = column
+            .iter()
+            .map(|(_, other)| i128::from(other.bounds[3].clamp(1, rh) - 1))
+            .sum();
+        let extra = i128::from(budget - count);
+        let mut prefix = 0;
+        let mut y = 0_i32;
+        for (entry, other) in column {
+            let requested = other.bounds[3].clamp(1, rh);
+            let next = prefix + i128::from(requested - 1);
+            let height = if weight > extra {
+                // Reserve one pixel each, then apportion the remaining height.
+                1 + i32::try_from(next * extra / weight - prefix * extra / weight).ok()?
+            } else {
+                requested
+            };
+            if entry == id {
+                let x = if pane.dock == Dock::Left {
+                    0
+                } else {
+                    rw - width
+                };
+                return Some([x, y, width, height]);
+            }
+            prefix = next;
+            y = y.saturating_add(height).saturating_add(gap);
+        }
+        if visible.iter().any(|entry| entry == id) {
+            let x = if pane.dock == Dock::Left {
+                0
+            } else {
+                rw - width
+            };
+            Some([x, rh, width, 0])
+        } else {
+            None
+        }
     }
     pub fn load(path: &Path) -> io::Result<Self> {
         use io::Read;
@@ -140,6 +180,63 @@ pub mod native;
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn dock_fitting_handles_tiny_and_extreme_columns_and_hidden_panes() -> io::Result<()> {
+        let mut layout = Layout::default();
+        let visible: Vec<String> = (0..128).map(|i| i.to_string()).collect();
+        for id in &visible {
+            layout.open(id, [0, 0, 300, i32::MAX]);
+            layout.dock(id, Dock::Right);
+        }
+        for height in [1, 2, 100, 300, i32::MAX] {
+            let mut bottom = 0;
+            let mut shown = 0;
+            for id in &visible {
+                let rect = layout
+                    .rect(id, [1200, height], &visible)
+                    .ok_or_else(|| io::Error::other("missing native placement"))?;
+                assert!(rect[1] >= bottom);
+                if rect[3] == 0 {
+                    assert_eq!(rect, [900, height, 300, 0]);
+                } else {
+                    assert!(rect[3] > 0);
+                    shown += 1;
+                }
+                bottom = rect[1] + rect[3];
+                assert!(bottom <= height);
+            }
+            assert_eq!(shown, height.min(128));
+        }
+        let rect = layout
+            .rect("0", [1200, 300], &visible[..1])
+            .ok_or_else(|| io::Error::other("visible pane"))?;
+        assert_eq!(rect, [900, 0, 300, 300]);
+        Ok(())
+    }
+    #[test]
+    fn overflowing_dock_columns_fit_without_overlap_after_resize() -> io::Result<()> {
+        for dock in [Dock::Left, Dock::Right] {
+            let mut layout = Layout::default();
+            let visible: Vec<String> = vec!["Inventory".into(), "Battle".into()];
+            for id in &visible {
+                layout.open(id, [0, 0, 300, 200]);
+                layout.dock(id, dock);
+            }
+            for height in [900, 300, 100] {
+                let first = layout
+                    .rect("Inventory", [1200, height], &visible)
+                    .ok_or_else(|| io::Error::other("first pane"))?;
+                let second = layout
+                    .rect("Battle", [1200, height], &visible)
+                    .ok_or_else(|| io::Error::other("second pane"))?;
+                assert!(first[1] + first[3] <= second[1]);
+                assert!(second[1] + second[3] <= height);
+                assert!(first[3] > 0 && second[3] > 0);
+                assert_eq!(first[0], if dock == Dock::Left { 0 } else { 900 });
+            }
+        }
+        Ok(())
+    }
     #[test]
     fn o033_miniwindow_drag_resize_dock_order_and_restart() -> io::Result<()> {
         let mut layout = Layout::default();
