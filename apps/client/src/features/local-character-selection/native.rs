@@ -1,12 +1,18 @@
 //! The selector owns its HWNDs on the blocking form thread.
 // Native controls require Win32 FFI, confined to this module.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use super::{CharacterRow, SelectionAction};
+#[cfg(windows)]
 use oteryn_foundation::CancellationToken;
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[cfg(windows)]
 fn wide(value: &str) -> Vec<u16> {
     value
         .replace('\0', "\u{fffd}")
@@ -14,6 +20,7 @@ fn wide(value: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if message == WM_CLOSE {
@@ -27,6 +34,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, message: u32, w: WPARAM, l: LPAR
         DefWindowProcW(hwnd, message, w, l)
     }
 }
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -53,6 +61,7 @@ unsafe fn control(
     }
 }
 
+#[cfg(windows)]
 pub(super) fn select(
     rows: &[CharacterRow],
     preselect: &str,
@@ -191,7 +200,9 @@ pub(super) fn select(
             .iter()
             .position(|row| row.character.character_id == preselect)
         {
-            SendMessageW(list, LB_SETSEL, 1, index as LPARAM);
+            set_preselection(index, |message, w, l| {
+                SendMessageW(list, message, w, l);
+            });
         }
         let mut previous = -2;
         let mut message: MSG = std::mem::zeroed();
@@ -239,15 +250,9 @@ pub(super) fn select(
             SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
             match command {
                 6 => {
-                    let characters: Vec<_> = rows
-                        .iter()
-                        .enumerate()
-                        .filter(|(index, _)| SendMessageW(list, LB_GETSEL, *index, 0) > 0)
-                        .map(|(_, row)| super::TrainingSelection {
-                            character_id: row.character.character_id.clone(),
-                            channel_id: None,
-                        })
-                        .collect();
+                    let characters = training_selections(rows, |index| {
+                        SendMessageW(list, LB_GETSEL, index, 0) > 0
+                    });
                     if !characters.is_empty() {
                         break SelectionAction::TrainMany { characters };
                     }
@@ -277,5 +282,76 @@ pub(super) fn select(
         };
         DestroyWindow(hwnd);
         action
+    }
+}
+
+// Win32 list-box messages, kept at the native control seam for headless tests.
+fn set_preselection(index: usize, mut send: impl FnMut(u32, usize, isize)) {
+    send(0x0185, 1, index as isize); // LB_SETSEL
+    send(0x019e, index, 0); // LB_SETCARETINDEX
+    send(0x0197, index, 0); // LB_SETTOPINDEX
+}
+
+fn training_selections(
+    rows: &[super::CharacterRow],
+    mut selected: impl FnMut(usize) -> bool,
+) -> Vec<super::TrainingSelection> {
+    rows.iter()
+        .enumerate()
+        .filter(|(index, row)| row.available && selected(*index))
+        .map(|(_, row)| super::TrainingSelection {
+            character_id: row.character.character_id.clone(),
+            channel_id: None,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn preselection_sets_selection_caret_and_scroll_to_the_same_row() {
+        let mut messages = Vec::new();
+        set_preselection(4, |message, w, l| messages.push((message, w, l)));
+        assert_eq!(messages, [(0x0185, 1, 4), (0x019e, 4, 0), (0x0197, 4, 0)]);
+    }
+}
+
+#[cfg(test)]
+mod training_tests {
+    use super::training_selections;
+    use crate::character_selection::{CharacterRow, TrainingQueue};
+    use oteryn_platform_client::native_login::{CharacterAvailability, OwnerCharacter};
+
+    #[test]
+    fn mixed_training_selection_starts_only_available_selected_characters() -> Result<(), String> {
+        let rows: Vec<_> = [true, false, true]
+            .into_iter()
+            .enumerate()
+            .map(|(index, available)| CharacterRow {
+                character: OwnerCharacter {
+                    character_id: format!("character-{index}"),
+                    world_id: "world".into(),
+                    name: format!("Character {index}"),
+                    availability: if available {
+                        CharacterAvailability::Available
+                    } else {
+                        CharacterAvailability::Unavailable
+                    },
+                },
+                world_name: "World".into(),
+                channels: Vec::new(),
+                available,
+            })
+            .collect();
+        let selections = training_selections(&rows, |index| index < 2);
+        let queue = TrainingQueue::default();
+        let first = queue
+            .start(&rows, selections.clone())
+            .ok_or("mixed selection rejected")?;
+        assert_eq!(first.character_id, "character-0");
+        assert_eq!(selections, [first]);
+        assert!(training_selections(&rows, |index| index == 1).is_empty());
+        Ok(())
     }
 }

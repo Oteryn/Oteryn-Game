@@ -5,7 +5,7 @@ use oteryn_platform_contracts::DirectorySnapshot;
 mod training;
 pub use training::{TrainingQueue, TrainingSelection};
 
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 mod native;
 
 #[derive(Debug, Clone)]

@@ -60,7 +60,7 @@ pub(super) fn assign(mailbox: &mut crate::play::mailbox::Mailbox, slot: usize) -
     else {
         return false;
     };
-    if !mailbox.spell_bar.bar.bind(slot, Some(spell)) {
+    if !super::view::assign_cast_index(mailbox, slot, Some(spell.get())) {
         return false;
     }
     mailbox.spell_bar.feedback = format!("Selected spell assigned to slot {}", slot + 1);

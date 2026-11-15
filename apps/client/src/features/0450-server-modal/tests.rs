@@ -409,3 +409,6 @@ fn c0490_driver_sends_the_entered_value_and_the_remember_choice()
             Ok::<(), Box<dyn std::error::Error>>(())
         })
 }
+
+#[path = "view/native.rs"]
+mod native_controls;
