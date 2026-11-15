@@ -37,6 +37,7 @@ fn displaced_first_tile_does_not_draw_in_noninteractive_letterbox() -> TestResul
             size: map.size.as_vec2(),
             offset,
             clip_size: size.as_vec2(),
+            scroll: Vec2::ZERO,
         },
     );
     let (sprite, transform) = projected.ok_or("partially visible quad")?;
@@ -188,6 +189,7 @@ fn clipping_crops_both_uv_axes_without_changing_tint_order_or_dpi() -> TestResul
         size: Vec2::splat(128.),
         offset: Vec2::splat(32.),
         clip_size: Vec2::new(16., 8.),
+        scroll: Vec2::ZERO,
     };
     let (sprite, transform) = project_quad(&quad, tint, 13, &Handle::default(), &atlas, viewport)
         .ok_or("visible intersection")?;
@@ -210,6 +212,7 @@ fn minimap_labels_clip_to_their_own_target_and_discard_invisible_glyphs() -> Tes
         size,
         offset: Vec2::ZERO,
         clip_size: size,
+        scroll: Vec2::ZERO,
     };
     let mut labels = SpriteBatch::new();
     oteryn_renderer::name_text::label_quad_scaled(
@@ -249,6 +252,42 @@ fn minimap_labels_clip_to_their_own_target_and_discard_invisible_glyphs() -> Tes
         )
         .is_none()
     );
+    Ok(())
+}
+
+#[test]
+fn a_camera_scroll_moves_a_projected_quad_before_clipping() -> TestResult {
+    let atlas = AtlasImage::new(32, 1, 1, vec![255; 32 * 32 * 4])?;
+    let quad = QuadInstance {
+        position: [16., 16.],
+        size: [32., 32.],
+        uv: [0., 0., 1., 1.],
+    };
+    let at = |scroll| {
+        project_quad(
+            &quad,
+            [1.; 4],
+            0,
+            &Handle::default(),
+            &atlas,
+            QuadViewport {
+                scale: 1.,
+                size: Vec2::splat(96.),
+                offset: Vec2::ZERO,
+                clip_size: Vec2::splat(96.),
+                scroll,
+            },
+        )
+    };
+    let (_, rest) = at(Vec2::ZERO).ok_or("visible")?;
+    let (_, scrolled) = at(Vec2::new(-12., 6.)).ok_or("visible")?;
+    assert_eq!(
+        scrolled.translation - rest.translation,
+        Vec3::new(-12., -6., 0.)
+    );
+    // Scrolled past the left edge, the quad is cropped rather than drawn outside the view.
+    let (cropped, _) = at(Vec2::new(-24., 0.)).ok_or("partly visible")?;
+    assert_eq!(cropped.custom_size, Some(Vec2::new(24., 32.)));
     Ok(())
 }
 

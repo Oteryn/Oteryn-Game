@@ -32,6 +32,8 @@ pub struct Scene {
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
+    /// Sprite quads that stay put while a walking camera scrolls: the own outfit and name.
+    player_quads: Vec<std::ops::Range<usize>>,
     /// Retained corner gauges and circles omitted by the Bevy HUD.
     #[cfg(feature = "bevy-shell")]
     pub(crate) native_hud_quads: std::ops::Range<usize>,
@@ -118,6 +120,7 @@ impl Scene {
             minimap: false,
             #[cfg(feature = "bevy-shell")]
             minimap_quads: 0..0,
+            player_quads: Vec::new(),
             #[cfg(feature = "bevy-shell")]
             native_hud_quads: 0..0,
             floor_separator: 0,
@@ -251,7 +254,7 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let (mut sprites, dimmed, floor_quads) = self.world_sprites()?;
+        let (mut sprites, dimmed, floor_quads, player_quads) = self.world_sprites()?;
         #[cfg(feature = "bevy-shell")]
         {
             self.floor_quads = floor_quads;
@@ -259,8 +262,10 @@ impl Scene {
         #[cfg(not(feature = "bevy-shell"))]
         let _ = floor_quads;
         let atlas = self.atlas();
+        let mut player_quads: Vec<_> = player_quads.into_iter().collect();
         for (tile, cells) in &self.names {
             let [x, y] = self.view.tile_to_screen(*tile);
+            let name_start = sprites.len();
             let scale = f32::from(self.label_scale) / 100.0;
             let left =
                 (x + self.view.tile_px() as f32 / 2.0 - cells.len() as f32 * 4.0 * scale).max(0.0);
@@ -276,7 +281,11 @@ impl Scene {
                     self.label_scale,
                 )?;
             }
+            if *tile == self.own {
+                player_quads.push(name_start..sprites.len());
+            }
         }
+        self.player_quads = player_quads;
         sprites.lighting.clone_from(&self.sprites.lighting);
         sprites.lighting.opacity.clear();
         sprites.lighting.dimmed = dimmed;
@@ -320,6 +329,12 @@ impl Scene {
     #[must_use]
     pub const fn tiles(&self) -> &TileBatch {
         &self.tiles
+    }
+
+    /// Sprite-batch quad ranges that stay put while the camera scrolls with a walk.
+    #[must_use]
+    pub fn player_quads(&self) -> &[std::ops::Range<usize>] {
+        &self.player_quads
     }
 
     /// Exact overlay partition for frontends which place the minimap in a sidebar.

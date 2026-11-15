@@ -32,6 +32,12 @@ impl PlayView {
         &self.scene
     }
 
+    /// The floor the camera shows.
+    #[must_use]
+    pub const fn floor(&self) -> i16 {
+        self.floor
+    }
+
     #[cfg(feature = "bevy-shell")]
     pub(crate) fn prepare_item_icons<'a>(
         &mut self,

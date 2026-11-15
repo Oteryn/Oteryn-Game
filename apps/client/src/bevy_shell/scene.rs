@@ -87,6 +87,12 @@ pub(super) fn project(
     };
     let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
     let minimap_range = scene.minimap_quad_range();
+    let tile_count = scene.tiles().instances().len();
+    let camera = play
+        .view
+        .camera_offset(std::time::Instant::now())
+        .map_or(Vec2::ZERO, Vec2::from);
+    let player_quads = scene.player_quads();
     cache.floor_alpha.retain(|floor, _| {
         scene
             .floor_quad_ranges()
@@ -147,6 +153,10 @@ pub(super) fn project(
     let mut count = 0;
     for (index, (quad, tint, minimap, source_index, source_layer)) in ordered.enumerate() {
         let layer = RenderLayers::layer(if minimap { 2 } else { 1 });
+        let follows_player = index >= tile_count
+            && player_quads
+                .iter()
+                .any(|range| range.contains(&(index - tile_count)));
         let (scale, size, offset, clip_size) = if minimap {
             let size = super::game_ui::minimap::SIZE.as_vec2();
             (1., size, Vec2::ZERO, size)
@@ -169,6 +179,12 @@ pub(super) fn project(
                 size,
                 offset,
                 clip_size,
+                // The camera follows the player's step: the map slides, the player stays.
+                scroll: if minimap || follows_player {
+                    Vec2::ZERO
+                } else {
+                    camera
+                },
             },
         ) else {
             continue;
@@ -222,6 +238,7 @@ struct QuadViewport {
     size: Vec2,
     offset: Vec2,
     clip_size: Vec2,
+    scroll: Vec2,
 }
 fn project_quad(
     quad: &QuadInstance,
@@ -236,8 +253,9 @@ fn project_quad(
         size: viewport_size,
         offset,
         clip_size,
+        scroll,
     } = viewport;
-    let [x, y] = quad.position;
+    let [x, y] = (Vec2::from(quad.position) + scroll).into();
     let [w, h] = quad.size;
     let [u0, v0, u1, v1] = quad.uv;
     let start = Vec2::new(x, y).max(Vec2::ZERO);

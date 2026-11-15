@@ -32,6 +32,11 @@ pub(in crate::bevy_shell) fn project(
             size,
             offset: ((size - clip_size) * 0.5).floor(),
             clip_size,
+            // Typing dots sit beside other creatures' names, which slide with the walking camera.
+            scroll: play
+                .view
+                .camera_offset(std::time::Instant::now())
+                .map_or(Vec2::ZERO, Vec2::from),
         };
         for indicator in &play.link.player_typing_panel().indicators {
             let Some([x, y]) = scene.typing_position(indicator) else {

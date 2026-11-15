@@ -168,7 +168,9 @@ impl HostOwner {
             return;
         }
         play.view.cursor_spell_input(&routed);
-        if let Some(direction) = crate::input::arrow_step(&routed) {
+        if !play.view.diagonal_movement_input(&play.link, &routed)
+            && let Some(direction) = crate::input::arrow_step(&routed)
+        {
             play.view.arrow(direction);
         }
         for spell in spells {
