@@ -89,3 +89,67 @@ fn live_minimap_reopens_exploration_edits_markers_and_isolates_invalid_world_bin
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("minimap-editor-session-{}", std::process::id()));
+    let world = "11111111-1111-4111-8111-111111111111";
+    let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    {
+        let mut map = lock(&play.minimap);
+        map.root = Some(root.clone());
+        map.bind_world(world);
+        map.binding = Some(([1; 32], [2; 32], 1));
+    }
+    let shared = play.minimap.clone();
+    let old_map = shared.clone();
+    let (ready, started) = std::sync::mpsc::channel();
+    let (finished, saved) = std::sync::mpsc::channel();
+    open_editor(&shared, move |stopped| {
+        let _ = ready.send(());
+        while !stopped.load(std::sync::atomic::Ordering::Acquire) {
+            std::thread::park();
+        }
+        let mut map = lock(&old_map);
+        let result = map.edit_marker(100, 200, -7, "Old session final save".into(), 0);
+        map.editor_open = false;
+        let _ = finished.send(result);
+    });
+    started.recv()?;
+    drop(play);
+    let closed = lock(&shared).editor.is_none();
+    let finished_before_replacement = saved.try_recv();
+    // Always release the worker, including on the unfixed tree.
+    close_editor(&shared);
+    assert!(closed, "ending play must release its editor thread");
+    finished_before_replacement??;
+
+    play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    {
+        let mut map = lock(&play.minimap);
+        map.root = Some(root.clone());
+        map.bind_world(world);
+        map.binding = Some(([1; 32], [2; 32], 1));
+        map.load()?;
+        assert_eq!(map.markers[0].label, "Old session final save");
+        map.edit_marker(101, 200, -7, "New session".into(), 1)?;
+    }
+    drop(shared);
+    let mut restored = Minimap::default();
+    restored.root = Some(root.clone());
+    restored.bind_world(world);
+    restored.binding = Some(([1; 32], [2; 32], 1));
+    restored.load()?;
+    assert_eq!(restored.markers.len(), 2);
+    assert!(
+        restored
+            .markers
+            .iter()
+            .any(|marker| marker.label == "New session")
+    );
+    drop(play);
+    drop(restored);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

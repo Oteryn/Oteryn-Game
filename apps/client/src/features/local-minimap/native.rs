@@ -1,49 +1,62 @@
 //! Local marker editor. Window handles and action storage remain on the creating thread.
 #![allow(unsafe_code)]
-use crate::play::feature_local_minimap::state::{SharedMinimap, lock};
+#[cfg(windows)]
+use crate::play::feature_local_minimap::state::{SharedMinimap, lock, open_editor};
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::*,
     UI::{Controls::EM_SETLIMITTEXT, WindowsAndMessaging::*},
 };
 #[derive(Default)]
-struct Actions(Vec<(usize, usize)>);
+struct Actions(std::cell::RefCell<Vec<(usize, usize)>>);
+impl Actions {
+    fn dispatch(&self, mut action: impl FnMut(usize, usize)) {
+        // Window procedures can enqueue notifications synchronously during dispatch.
+        let pending = std::mem::take(&mut *self.0.borrow_mut());
+        for (id, notification) in pending {
+            action(id, notification);
+        }
+    }
+}
+#[cfg(test)]
+#[path = "tests/native_actions.rs"]
+mod tests;
+#[cfg(windows)]
 fn wide(s: &str) -> Vec<u16> {
     s.replace('\0', "\u{fffd}")
         .encode_utf16()
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND {
             let actions = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !actions.is_null() && (*actions).0.len() < 64 {
-                (*actions).0.push((w & 0xffff, (w >> 16) & 0xffff));
+            if !actions.is_null() && (*actions).0.borrow().len() < 64 {
+                (*actions)
+                    .0
+                    .borrow_mut()
+                    .push((w & 0xffff, (w >> 16) & 0xffff));
             }
             return 0;
         }
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(windows)]
 pub(super) fn open(shared: SharedMinimap, own: (i32, i32, i16)) {
-    {
-        let mut map = lock(&shared);
-        if map.editor_open {
-            return;
-        }
-        map.editor_open = true;
-    }
-    let failed = shared.clone();
-    if std::thread::Builder::new()
-        .name("minimap-marker-editor".into())
-        .spawn(move || run(shared, own))
-        .is_err()
-    {
-        lock(&failed).editor_open = false;
-    }
+    let editor_map = shared.clone();
+    open_editor(&shared, move |stopped| run(editor_map, own, stopped));
 }
-fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
+#[cfg(windows)]
+fn run(
+    shared: SharedMinimap,
+    own: (i32, i32, i16),
+    stopped: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) {
     // SAFETY: controls copy strings; Actions outlives the HWND and all dispatch stays here.
     unsafe {
         let h = CreateWindowExW(
@@ -163,7 +176,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
             return;
         }
         let mut held: Vec<crate::play::feature_local_minimap::state::Marker> = Vec::new();
-        loop {
+        while !stopped.load(std::sync::atomic::Ordering::Acquire) {
             let mut msg: MSG = std::mem::zeroed();
             while PeekMessageW(&mut msg, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 if IsDialogMessageW(h, &msg) == 0 {
@@ -181,7 +194,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
             let values: Vec<_> = fields.iter().map(|h| text(*h)).collect();
             let selected_color = u8::try_from(SendMessageW(color, CB_GETCURSEL, 0, 0)).unwrap_or(0);
             let mut map = lock(&shared);
-            for (id, notification) in actions.0.drain(..) {
+            actions.dispatch(|id, notification| {
                 if id == 207 && notification == LBN_SELCHANGE as usize {
                     if let Some(marker) = &chosen {
                         for (field, value) in fields.iter().zip([
@@ -194,10 +207,10 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                         }
                         SendMessageW(color, CB_SETCURSEL, usize::from(marker.color), 0);
                     }
-                    continue;
+                    return;
                 }
                 if notification != BN_CLICKED as usize {
-                    continue;
+                    return;
                 }
                 match id {
                     100 => map.zoom = oteryn_client_ui::minimap::zoom_in(map.zoom),
@@ -263,7 +276,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                     }
                     _ => {}
                 }
-            }
+            });
             SetWindowTextW(status, wide(&lfmt!("Map centre: {}, {} · Floor {} · {} tiles per cell\r\nGreen: remembered ground. Select a marker to edit its label.", map.x, map.y, map.floor, map.zoom)).as_ptr());
             SetWindowTextW(feedback, wide(&map.feedback).as_ptr());
             if held != map.markers {
@@ -286,7 +299,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
                 held = map.markers.clone();
             }
             drop(map);
-            std::thread::sleep(std::time::Duration::from_millis(30));
+            std::thread::park_timeout(std::time::Duration::from_millis(30));
         }
         if IsWindow(h) != 0 {
             DestroyWindow(h);
@@ -298,6 +311,7 @@ fn run(shared: SharedMinimap, own: (i32, i32, i16)) {
         }
     }
 }
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -323,6 +337,7 @@ unsafe fn control(
         )
     }
 }
+#[cfg(windows)]
 unsafe fn text(h: HWND) -> String {
     unsafe {
         let n = GetWindowTextLengthW(h).max(0);
