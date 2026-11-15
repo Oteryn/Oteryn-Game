@@ -68,9 +68,9 @@ macro_rules! authority_methods {
             _catalyst: $crate::gameplay_transport::item_view::ItemKey,
             _weapon: $crate::gameplay_transport::item_view::ItemKey,
         ) -> impl std::future::Future<
-            Output = Option<$crate::gameplay_transport::connection::UseOutcome>,
+            Output = Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()>,
         > {
-            async { None }
+            async { Ok(None) }
         }
 
         /// P08: one perk modification command (PROFICIENCY-1B §11.1).
@@ -156,11 +156,12 @@ macro_rules! composed_methods {
             command: $crate::gameplay_transport::connection::UseCommand,
             catalyst: $crate::gameplay_transport::item_view::ItemKey,
             weapon: $crate::gameplay_transport::item_view::ItemKey,
-        ) -> Option<$crate::gameplay_transport::connection::UseOutcome> {
+        ) -> Result<Option<$crate::gameplay_transport::connection::UseOutcome>, ()> {
             $crate::gameplay_transport::weapon_proficiency_select::catalyst::use_catalyst(
                 self, actor, command, catalyst, weapon,
             )
             .await
+            .transpose()
         }
 
         async fn weapon_proficiency_modify(
