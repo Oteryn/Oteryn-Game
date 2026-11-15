@@ -456,6 +456,7 @@ pub(in crate::gameplay_transport) async fn resume_one_due(
                         current,
                         parties,
                         due,
+                        execution_now,
                         native_health_names,
                     )
                     .await?;
