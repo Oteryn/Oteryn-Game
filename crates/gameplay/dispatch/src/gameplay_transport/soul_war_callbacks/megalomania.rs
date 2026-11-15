@@ -51,6 +51,22 @@ impl MegalomaniaCallbacks {
         {
             return Err(());
         }
+        // Crystal soul_war.lua:455-456 and boss_lever.lua:228-229:
+        // the lever creates its literal Aspect with force=true at entry.
+        runtime
+            .spawn_soul_war_child(
+                boss,
+                "oteryn:creature.aspect_of_power",
+                MovementLocalPosition {
+                    x: 33710,
+                    y: 31635,
+                    floor: 14,
+                },
+                |_, position| {
+                    super::super::soul_war_scene::current_ground(room, position).map(|_| true)
+                },
+            )
+            .map_err(|_| ())?;
         Ok(Self {
             boss,
             source: Arc::new(

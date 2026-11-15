@@ -416,7 +416,9 @@ async fn late_soulsnatcher_health(
             states
                 .native_profile_pass
                 .pending()
-                .is_some_and(|current| Arc::ptr_eq(&pass, &current))
+                .is_some_and(|current| Arc::ptr_eq(&pass, &current)),
+            "retained={:?}",
+            states.soul_war_callbacks.greed_pending_for_test()
         );
         let pending = states
             .soul_war_callbacks

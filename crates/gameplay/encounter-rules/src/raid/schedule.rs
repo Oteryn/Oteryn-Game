@@ -95,6 +95,15 @@ impl RaidTransition {
 
 impl RaidSchedule {
     pub fn initial(reset_epoch: u64, now_ms: i64) -> Result<Self, RaidError> {
+        if reset_epoch == 0 {
+            return Err(RaidError::InvalidState);
+        }
+        Self::initial_at_world_epoch(reset_epoch, now_ms)
+    }
+
+    /// Source STEP raids also run in the canonical initial World epoch, zero.
+    /// The durable writer independently proves that exact current reset.
+    pub fn initial_at_world_epoch(reset_epoch: u64, now_ms: i64) -> Result<Self, RaidError> {
         let state = Self {
             revision: 1,
             reset_epoch,
@@ -118,7 +127,6 @@ impl RaidSchedule {
     /// Used on database decode as well as at every transition boundary.
     pub fn validate(&self) -> Result<(), RaidError> {
         if self.revision == 0
-            || self.reset_epoch == 0
             || self.next_firing_ordinal == 0
             || self.next_check_at_ms < CHECK_INTERVAL_MS
             || self
@@ -137,7 +145,6 @@ impl RaidSchedule {
             Some(firing)
                 if firing.ordinal == 0
                     || firing.ordinal.checked_add(1) != Some(self.next_firing_ordinal)
-                    || firing.reset_epoch == 0
                     || firing.reset_epoch > self.reset_epoch
                     || firing.fired_at_ms < 0
                     || firing.deadline_ms < firing.fired_at_ms

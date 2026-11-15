@@ -55,7 +55,20 @@ fn srx3_weeping_actual_death_step_outfit_and_later_item_replay_postgres() -> Tes
             install_scene(&mut owner, &scene, PinnedActivitySourceRoom::GoshnarsSpite)?;
             // Actual public runtime uses BundleWorld, while content activation
             // owns ENTRY; exercise the production compatibility proof too.
-            super::boss_activity::issue_content_and_reset(&h, &activation_pin).await?;
+            let map_revision = crate::map::overlay::map_revision(
+                owner
+                    .bundle_map()
+                    .ok_or("actual source bundle map")?
+                    .overlay
+                    .base(),
+            );
+            super::boss_activity::issue_content_and_reset_with_runtime_pin(
+                &h,
+                &activation_pin,
+                &scene.pin,
+                &map_revision,
+            )
+            .await?;
             let mut admitted = deps.admitted;
             prepare_player(&h, &owner, &mut admitted, 500).await?;
             let actor = admitted.runtime_actor.ok_or("actual source Player")?;

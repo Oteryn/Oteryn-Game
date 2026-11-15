@@ -80,6 +80,19 @@ fn omrafir_attachment_case(
                 origin).map_err(debug)?;
             let caster = runtime.spawn_arena_opponent("oteryn:creature.omrafir",
                 caster_at, |_,_|Some(true)).map_err(debug)?;
+            if exact_wall == Some(true) {
+                // Omrafir can walk. Keep this exact-item precondition stable
+                // with real stationary, nonpushable, nonattackable native actors;
+                // an initial wall position alone does not keep him on that Item.
+                for (dx, dy) in [(-1,-1), (0,-1), (1,-1), (-1,0), (1,0), (-1,1), (0,1), (1,1)] {
+                    let at = MovementLocalPosition { x: caster_at.x + dx, y: caster_at.y + dy, floor: caster_at.floor };
+                    if at == origin || cells.index().lookup(cells.scope(), crate::content::LogicalCell {
+                        x: at.x, y: at.y, z: i32::from(at.floor),
+                    }) != Ok(crate::content::CollisionClass::Walkable) { continue; }
+                    runtime.spawn_arena_opponent("oteryn:creature.freshwater_turtle", at,
+                        |runtime, at| Some(runtime.native_summon_cell_free(at))).map_err(debug)?;
+                }
+            }
             if explode {
                 let maximum=runtime.companion_snapshot(caster).map_err(debug)?.maximum_health;
                 runtime.set_test_creature_health(caster,if terminal {maximum*3/100} else {maximum/2}).map_err(debug)?;
@@ -124,7 +137,7 @@ fn omrafir_attachment_case(
                     owner.clock_origin-=std::time::Duration::from_secs(2);
                 }
                 assert!(selected,"actual restored native defense must select its exact-item healing callback");
-                assert_eq!(literal_say,expected,"only actual1487/1492/1500 stack qualifies; Rosha ordinary ground never substitutes fire");
+                assert_eq!(literal_say,expected,"only actual1487/1492/1500 stack qualifies; Rosha ordinary ground never substitutes fire; current={:?}", owner.runtime.lock().await.read_actor_position(caster).map_err(debug)?);
             } else if !review_declared_event {
                 {
                     let mut runtime = owner.runtime.lock().await;

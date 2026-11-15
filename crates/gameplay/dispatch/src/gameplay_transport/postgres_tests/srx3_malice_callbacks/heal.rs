@@ -207,6 +207,8 @@ fn srx3_heal_malice_native_defense_heals_named_boss_and_dispels_nearby_player_po
                 .ok_or("owner clock")?;
             let view = owner.runtime_view(&registered);
             view.drain_monster_melee().await;
+            // The detached spawn ends its owner turn before Cage's first AI pass.
+            view.drain_monster_melee().await;
             let runtime = view.runtime.lock().await;
             let creatures = runtime.visible_entities().creatures;
             let boss = creatures
