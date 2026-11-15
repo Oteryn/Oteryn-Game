@@ -587,7 +587,7 @@ pub fn prepare_bundle_step<'a>(
         pz_blocked,
         closed,
     )?;
-    Ok(BundleStepProof {
+    let proof = BundleStepProof {
         cells,
         table,
         actor,
@@ -598,7 +598,9 @@ pub fn prepare_bundle_step<'a>(
         closed,
         destination,
         starts_stairhop,
-    })
+    };
+    proof.validate(runtime)?;
+    Ok(proof)
 }
 
 fn qualify_origin(
@@ -700,6 +702,12 @@ impl BundleStepProof<'_> {
             self.pz_blocked,
             self.closed,
         )?;
+        if runtime
+            .position_occupied_by_other(self.actor, self.destination)
+            .map_err(MovementError::Actor)?
+        {
+            return Err(MovementError::Blocked);
+        }
         if observed != (self.destination, self.starts_stairhop) {
             return Err(MovementError::SnapshotMismatch);
         }
