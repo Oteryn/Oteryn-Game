@@ -9,8 +9,13 @@ impl World {
         let mut world = Self::builtin()?;
         let origin = map.header.origin;
         world.center = (origin.x, origin.y, origin.floor);
+        world.first_visible_floor = map.header.first_visible_floor;
         // A missing appearance remains visibly present without inventing local geometry.
-        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
+        for tile in map
+            .tiles
+            .iter()
+            .filter(|tile| in_draw_window(map, tile.position))
+        {
             world.insert_floor_tile(
                 tile.position,
                 MapTile {
@@ -43,7 +48,11 @@ impl World {
         let mut sheets = SpriteSheets::new(store, catalog);
         let origin = map.header.origin;
         let mut entries = Vec::new();
-        for tile in map.tiles.iter().filter(|tile| visible(map, tile.position)) {
+        for tile in map
+            .tiles
+            .iter()
+            .filter(|tile| in_draw_window(map, tile.position))
+        {
             let hook = tile
                 .items
                 .iter()
@@ -130,6 +139,7 @@ impl World {
         let mut world = Self {
             effects: Default::default(),
             center: (origin.x, origin.y, origin.floor),
+            first_visible_floor: map.header.first_visible_floor,
             tiles: HashMap::new(),
             layers: BTreeMap::new(),
             player,
@@ -143,9 +153,10 @@ impl World {
     }
 }
 
-/// Native floors increase upwards. The server's boundary hides everything above it.
-fn visible(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPosition) -> bool {
-    position.floor <= map.header.first_visible_floor
+/// Retain the bounded supplied geometry, including floors needed during a fade.
+fn in_draw_window(map: &WorldMapViewSnapshot, position: oteryn_session::ActorPosition) -> bool {
+    oteryn_session::world_map::floors_in_view(map.header.origin.floor)
+        .is_some_and(|floors| floors.contains(&position.floor))
         && oteryn_session::world_map::in_window(map.header.origin, position)
 }
 
@@ -165,6 +176,13 @@ impl World {
 
     /// Painter order: the deepest floor first, the highest visible floor last.
     pub(crate) fn draw_floors(&self) -> Vec<i16> {
+        self.all_draw_floors()
+            .into_iter()
+            .filter(|floor| *floor <= self.first_visible_floor)
+            .collect()
+    }
+
+    pub(crate) fn all_draw_floors(&self) -> Vec<i16> {
         let mut floors: Vec<_> = self.layers.keys().copied().chain([self.center.2]).collect();
         floors.sort_unstable();
         floors

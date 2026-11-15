@@ -17,6 +17,7 @@ pub(super) struct SceneCache {
     atlas: Option<AtlasImage>,
     image: Option<Handle<Image>>,
     entities: Vec<Entity>,
+    floor_alpha: std::collections::BTreeMap<i16, f32>,
 }
 #[derive(Component)]
 pub(super) struct WorldQuad;
@@ -26,7 +27,7 @@ pub(super) fn project(
     owner: NonSend<HostOwner>,
     window: Query<&Window, With<PrimaryWindow>>,
     mut cache: ResMut<SceneCache>,
-    viewport: Res<WorldViewport>,
+    (viewport, time): (Res<WorldViewport>, Res<Time>),
     mut images: ResMut<Assets<Image>>,
     mut quads: Query<(&mut Sprite, &mut Transform, &mut RenderLayers), With<WorldQuad>>,
 ) {
@@ -34,6 +35,7 @@ pub(super) fn project(
         for entity in cache.entities.drain(..) {
             commands.entity(entity).despawn();
         }
+        cache.floor_alpha.clear();
         return;
     };
     let Ok(window) = window.single() else {
@@ -76,7 +78,26 @@ pub(super) fn project(
     };
     let offset = ((size - Vec2::new(scene_size.0 as f32, scene_size.1 as f32)) * 0.5).floor();
     let minimap_range = scene.minimap_quad_range();
+    cache.floor_alpha.retain(|floor, _| {
+        scene
+            .floor_quad_ranges()
+            .iter()
+            .any(|(_, current)| current == floor)
+    });
+    for (_, floor) in scene.floor_quad_ranges() {
+        let visible = *floor <= scene.first_visible_floor();
+        let alpha = cache
+            .floor_alpha
+            .entry(*floor)
+            .or_insert(if visible { 1.0 } else { 0.0 });
+        *alpha = crate::scene::floor_lighting::fade_alpha(*alpha, visible, time.delta_secs());
+    }
     let lighting = &scene.sprites().lighting;
+    let SceneCache {
+        floor_alpha,
+        entities,
+        ..
+    } = &mut *cache;
     let ordered = scene
         .tiles()
         .instances()
@@ -90,11 +111,15 @@ pub(super) fn project(
                 .iter()
                 .enumerate()
                 .map(|(i, q)| {
-                    (
-                        q,
-                        lighting.quad_tint(q, i, QuadLayer::Overlay),
-                        minimap_range.contains(&i),
-                    )
+                    let mut tint = lighting.quad_tint(q, i, QuadLayer::Overlay);
+                    if let Some((_, floor)) = scene
+                        .floor_quad_ranges()
+                        .iter()
+                        .find(|(range, _)| range.contains(&i))
+                    {
+                        tint[3] *= floor_alpha.get(floor).copied().unwrap_or(1.0);
+                    }
+                    (q, tint, minimap_range.contains(&i))
                 }),
         );
     let mut count = 0;
@@ -126,7 +151,7 @@ pub(super) fn project(
         ) else {
             continue;
         };
-        if let Some(entity) = cache.entities.get(count) {
+        if let Some(entity) = entities.get(count) {
             if let Ok((mut old_sprite, mut old_transform, mut old_layer)) = quads.get_mut(*entity) {
                 if *old_layer != layer {
                     *old_layer = layer.clone();
@@ -139,13 +164,11 @@ pub(super) fn project(
                 }
             }
         } else {
-            cache
-                .entities
-                .push(commands.spawn((sprite, transform, WorldQuad, layer)).id());
+            entities.push(commands.spawn((sprite, transform, WorldQuad, layer)).id());
         }
         count += 1;
     }
-    for entity in cache.entities.drain(count..) {
+    for entity in entities.drain(count..) {
         commands.entity(entity).despawn();
     }
 }

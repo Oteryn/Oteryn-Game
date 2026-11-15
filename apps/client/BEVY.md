@@ -114,6 +114,16 @@ binding use neutral unavailable labels/icons. A definition reference is not an
 appearance ID. The existing Look/inspection commands remain the source of item
 details; the client does not guess a mapping.
 
+## Floor visibility
+
+The world view consumes the map header's authoritative `first_visible_floor`.
+Floors above that boundary fade out over 500 ms; returning floors fade back in,
+and reversing a transition preserves its current opacity. Minimap and HUD quads
+are unaffected. The client retains supplied floor geometry for these transitions.
+It does not infer roofs from sprite presence: the wire does not expose the full
+stack's terrain kind and projectile blocking facts needed to recompute OTClient's
+covered-tile visibility rule locally.
+
 ## Outfit editor
 
 Press Ctrl+Alt+A while playing to open Outfit. Select a granted outfit, owned
