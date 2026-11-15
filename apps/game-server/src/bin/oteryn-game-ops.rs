@@ -486,7 +486,10 @@ async fn record_s2_file(operator: &Operator, file: &S2AuthorizationFile) -> Outc
 }
 
 fn decode_facts(text: &str) -> Result<Vec<u8>, Failure> {
-    if !text.len().is_multiple_of(2) || text.len() > 8192 {
+    if !text.len().is_multiple_of(2)
+        || text.len() > 8192
+        || !text.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
         return Err(Failure::Input("descriptor facts".into()));
     }
     (0..text.len() / 2)
@@ -1759,6 +1762,38 @@ fn main() -> ExitCode {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn retained_s2_unicode_descriptor_facts_return_input_error() {
+        for facts in ["€a", "a€", "é", "😀", "00€a"] {
+            let bytes = serde_json::to_vec(&serde_json::json!({
+                "version": 1,
+                "namespace": "namespace",
+                "authorization": "authorization",
+                "source_authority": "source",
+                "initialized_at": 1,
+                "descriptor_revision": 1,
+                "installed_at": 1,
+                "descriptor_facts": facts,
+            }))
+            .unwrap();
+            let file = S2AuthorizationFile::decode(&bytes).unwrap();
+            assert!(matches!(
+                decode_facts(&file.descriptor_facts),
+                Err(Failure::Input(detail)) if detail == "descriptor facts"
+            ));
+        }
+    }
+
+    #[test]
+    fn descriptor_facts_keep_hexadecimal_validation_and_bounds() {
+        assert_eq!(decode_facts("").unwrap(), Vec::<u8>::new());
+        assert_eq!(decode_facts("000f80ff").unwrap(), [0, 15, 128, 255]);
+        assert_eq!(decode_facts(&"ff".repeat(4096)).unwrap(), vec![255; 4096]);
+        for facts in ["0", "gg", "FF", &"00".repeat(4097)] {
+            assert!(matches!(decode_facts(facts), Err(Failure::Input(_))));
+        }
+    }
 
     #[test]
     #[allow(clippy::expect_used)]
