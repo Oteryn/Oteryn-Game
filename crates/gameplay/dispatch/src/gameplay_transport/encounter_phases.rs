@@ -92,7 +92,10 @@ impl Registry {
             return;
         };
         let target = entry.target;
-        if let Some(phase) = active.iter_mut().find(|p| p.fight.contains(target)) {
+        if let Some(phase) = active
+            .iter_mut()
+            .find(|p| p.fight.contains_terminal(target))
+        {
             if phase.fight.victors(runtime).ok().flatten().is_none() {
                 return;
             }

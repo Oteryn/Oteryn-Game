@@ -116,6 +116,9 @@ impl CultsEncounter {
     pub fn contains(&self, actor: ExactActorRef) -> bool {
         self.phase.actors.contains(&Some(actor))
     }
+    pub fn contains_terminal(&self, actor: ExactActorRef) -> bool {
+        self.phase.actors[10] == Some(actor)
+    }
     pub fn projected_death(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
