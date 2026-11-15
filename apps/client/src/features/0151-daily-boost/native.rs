@@ -5,8 +5,23 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::daily_boost::{panel_text, xp_boost_lines};
 use std::ptr::{null, null_mut};
 use std::sync::{Arc, Weak};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
+
+unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
+    // SAFETY: userdata points at this window thread's live refresh flag.
+    unsafe {
+        if msg == WM_COMMAND && w & 0xffff == 1 && (w >> 16) & 0xffff == BN_CLICKED as usize {
+            let refresh = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut bool;
+            if !refresh.is_null() {
+                *refresh = true;
+            }
+            return 0;
+        }
+        DefWindowProcW(hwnd, msg, w, l)
+    }
+}
 
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 
@@ -38,13 +53,23 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                     CW_USEDEFAULT,
                     CW_USEDEFAULT,
                     480,
-                    220,
+                    260,
                     null_mut(),
                     null_mut(),
                     null_mut(),
                     null(),
                 );
                 if hwnd.is_null() {
+                    close(&weak);
+                    return;
+                }
+                let mut refresh_requested = Box::new(false);
+                SetWindowLongPtrW(hwnd, GWLP_USERDATA, (&mut *refresh_requested as *mut bool) as isize);
+                SetWindowLongPtrW(hwnd, GWLP_WNDPROC, procedure as *const () as isize);
+                let button = CreateWindowExW(0, wide("BUTTON").as_ptr(), wide("Refresh").as_ptr(),
+                    WS_CHILD | WS_VISIBLE | WS_TABSTOP, 16, 175, 120, 30, hwnd, 1 as _, null_mut(), null());
+                if button.is_null() {
+                    DestroyWindow(hwnd);
                     close(&weak);
                     return;
                 }
@@ -64,6 +89,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                 );
                 if !label.is_null() {
                     let mut previous = String::new();
+                    let mut refreshed = Instant::now();
                     let mut message: MSG = std::mem::zeroed();
                     while IsWindow(hwnd) != 0 && !commands.is_closed() {
                         while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
@@ -77,7 +103,16 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                             break;
                         };
                         let text = {
-                            let mailbox = lock(&shared);
+                            let mut mailbox = lock(&shared);
+                            if !super::super::input::window_open(&mailbox) {
+                                break;
+                            }
+                            // Open observations also pick up grants made while this window is visible.
+                            if *refresh_requested || refreshed.elapsed() >= Duration::from_secs(5) {
+                                super::super::input::refresh(&mut mailbox, &commands);
+                                *refresh_requested = false;
+                                refreshed = Instant::now();
+                            }
                             let mut text = panel_text(&mailbox.daily_boost);
                             let potions = &mailbox.potion_durations;
                             if let (Some(snapshot), Some(at)) =

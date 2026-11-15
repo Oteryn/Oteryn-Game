@@ -260,7 +260,23 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     None
                 };
                 if let Some(intent) = intent {
-                    super::super::input::enqueue(&mut mailbox, &commands, intent);
+                    let panel = mailbox.prey.clone();
+                    drop(mailbox);
+                    let confirmed = super::super::protocol::confirm_action(intent, |cost| {
+                        MessageBoxW(
+                            hwnd,
+                            wide(cost).as_ptr(),
+                            wide("Confirm Prey purchase").as_ptr(),
+                            MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2,
+                        ) == IDYES
+                    });
+                    mailbox = lock(&shared);
+                    if !mailbox.prey_shutdown
+                        && mailbox.prey == panel
+                        && let Some(intent) = confirmed
+                    {
+                        super::super::input::enqueue(&mut mailbox, &commands, intent);
+                    }
                 }
             }
             if mailbox.prey.offered_slot.is_some() && offers.is_none() {

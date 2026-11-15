@@ -338,3 +338,30 @@ mod existing_actions {
             .map_err(|_| "Prey UI test thread panicked")?
     }
 }
+
+use crate::play::feature_0140_prey::protocol as native_actions;
+
+#[test]
+fn native_paid_prey_actions_require_confirmation() {
+    for (intent, price) in [
+        (Intent::ListReroll { slot: 1 }, "200 gold"),
+        (Intent::BonusReroll { slot: 1 }, "1 Prey wildcard card"),
+        (Intent::SelectAny { slot: 1, creature: "oteryn:creature.rat".into() }, "5 Prey wildcard cards"),
+    ] {
+        let mut prompted = false;
+        assert!(native_actions::confirm_action(intent.clone(), |cost| {
+            prompted = true;
+            assert!(!cost.is_empty());
+            assert!(cost.contains(price));
+            false
+        }).is_none());
+        assert!(prompted);
+        assert_eq!(native_actions::confirm_action(intent.clone(), |_| true), Some(intent));
+    }
+    let mut prompted = false;
+    assert_eq!(native_actions::confirm_action(Intent::Refresh, |_| {
+        prompted = true;
+        false
+    }), Some(Intent::Refresh));
+    assert!(!prompted);
+}

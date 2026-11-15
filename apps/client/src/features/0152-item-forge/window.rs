@@ -194,11 +194,14 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
                         }
                         let panel = lock(&shared).item_forge.clone();
                         if held.as_ref() != Some(&panel) {
+                            let selected_bag = usize::try_from(SendMessageW(bags, CB_GETCURSEL, 0, 0))
+                                .ok().and_then(|index| containers.get(index)).map_or(0, |entry| entry.0);
                             items = choices(&panel, false);
                             containers = choices(&panel, true);
                             populate(first, &items, panel.first_item);
                             populate(second, &items, panel.second_item);
-                            populate(bags, &containers, 0);
+                            populate(bags, &containers,
+                                crate::play::feature_0152_item_forge::protocol::retained_bag(selected_bag, &containers));
                             SendMessageW(
                                 operation,
                                 CB_SETCURSEL,

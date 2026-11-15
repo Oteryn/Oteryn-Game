@@ -198,3 +198,28 @@ fn e2e_n02_named_build_export_import_and_malformed_code() -> Result<(), Error> {
     std::fs::remove_file(path)?;
     Ok(())
 }
+
+#[test]
+fn loading_build_clears_pending_reset_for_both_import_paths() -> Result<(), Error> {
+    let captured = captured()?;
+    let (link, _receiver, _outbox) = play_channel();
+    let mut mailbox = lock(&link.mailbox);
+    synchronised(&mut mailbox.wheel, &captured.query)?;
+    let code = mailbox.wheel.build_code();
+    mailbox.wheel.preset_fields[0] = "Saved".into();
+    mailbox.wheel.preset_fields[1] = code.clone();
+    mailbox.wheel.preset_book.0.insert("Saved".into(), code);
+    for action in [1, 5] {
+        mailbox.wheel.diagram.reset_requested = true;
+        mailbox.wheel.points = [0; 36];
+        submit(&mut mailbox, action, std::path::Path::new("unused"));
+        assert_eq!(mailbox.wheel.preset_feedback, PRESET_OK);
+        assert_eq!(mailbox.wheel.points, captured.initial);
+        assert!(!mailbox.wheel.diagram.reset_requested);
+    }
+    mailbox.wheel.diagram.reset_requested = true;
+    mailbox.wheel.preset_fields[1] = "invalid".into();
+    submit(&mut mailbox, 5, std::path::Path::new("unused"));
+    assert!(mailbox.wheel.diagram.reset_requested);
+    Ok(())
+}
