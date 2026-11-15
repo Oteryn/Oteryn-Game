@@ -19,11 +19,10 @@ pub(super) async fn serve_watching_reset(
     let drain = GameplayDrain::at_reset_epoch(reset_epoch);
     let root = owners.root;
     let world = owners.world_id;
+    let achievements = owners.achievements;
     let watch = async {
         loop {
-            if let Ok(Some(reset)) = root.retiring_world_reset(world).await {
-                state.requested.store(true, Ordering::Release);
-                drain.request(reset);
+            if observe_reset(root, world, state, &drain, achievements).await {
                 std::future::pending::<()>().await;
             }
             if first(
@@ -43,6 +42,39 @@ pub(super) async fn serve_watching_reset(
         Some(result) => result,
         None => unreachable!("reset watch parks after requesting the sealed drain"),
     }
+}
+
+async fn observe_reset(
+    root: &DurabilityRoot,
+    world: WorldId,
+    state: &ResetWatch,
+    drain: &GameplayDrain,
+    achievements: &crate::achievement_catalogue::AchievementCatalogue,
+) -> bool {
+    if let Ok(Some(reset)) = root.retiring_world_reset(world).await {
+        use crate::durability::highscore_snapshot::SnapshotCatalogues;
+        let Ok(catalogues) =
+            SnapshotCatalogues::activated(std::sync::Arc::new(achievements.clone()))
+        else {
+            event("event=highscores state=refused reason=catalogues");
+            return false;
+        };
+        // Await the complete forced cut before the drain can end the serving future
+        // and cancel its background jobs. A busy/failed pass is retried by the watch.
+        if root.await_ready().await.is_err()
+            || root
+                .refresh_highscore_schedule(world, catalogues, true)
+                .await
+                .is_err()
+        {
+            event("event=highscores state=retry reason=planned_reset");
+            return false;
+        }
+        state.requested.store(true, Ordering::Release);
+        drain.request(reset);
+        return true;
+    }
+    false
 }
 
 pub(super) fn classify_exit(
