@@ -85,7 +85,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
             wire::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    let views = wire::decode_container_views(&update.payload)
+    let views = selected_container_views(client.selected_capabilities(), &update.payload)
         .map_err(|error| format!("I01 container update decode: {error:?}"))?;
     let expected = visible(&views);
     capture(
