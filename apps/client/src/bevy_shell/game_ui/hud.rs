@@ -12,6 +12,8 @@ mod battle;
 mod blessings;
 #[path = "hud/skills.rs"]
 mod skills;
+#[path = "hud/status_icons.rs"]
+mod status_icons;
 #[path = "hud/vip.rs"]
 mod vip;
 #[derive(Clone, Copy, Component)]
@@ -46,10 +48,29 @@ pub(super) fn install(app: &mut App) {
         Startup,
         setup.after(super::setup).after(super::super::ui::setup),
     )
-    .add_systems(Update, (project, battle::project).chain())
+    .add_systems(
+        Update,
+        (project, battle::project, status_icons::project).chain(),
+    )
     .add_observer(activate);
 }
 fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Skins>) {
+    commands.entity(regions.vitals).insert(Node {
+        width: percent(100.),
+        min_height: px(28.),
+        flex_shrink: 0.,
+        flex_direction: FlexDirection::Column,
+        ..default()
+    });
+    let vitals = commands
+        .spawn(Node {
+            width: percent(100.),
+            min_height: px(28.),
+            flex_shrink: 0.,
+            ..default()
+        })
+        .id();
+    commands.entity(regions.vitals).add_child(vitals);
     for (mana, color) in [
         (false, Color::srgb_u8(0, 160, 0)),
         (true, Color::srgb_u8(0, 70, 180)),
@@ -100,8 +121,9 @@ fn setup(mut commands: Commands, regions: Res<super::GameRegions>, skins: Res<Sk
             ))
             .id();
         commands.entity(track).add_children(&[fill, label]);
-        commands.entity(regions.vitals).add_child(track);
+        commands.entity(vitals).add_child(track);
     }
+    status_icons::setup(&mut commands, regions.vitals);
     let header = commands
         .spawn(Node {
             width: percent(100.),

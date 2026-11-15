@@ -1,6 +1,6 @@
 //! Generation-bound Bevy presentation for existing logout and world-context owners.
 use super::{
-    game_ui::{party, rule_violation},
+    game_ui::{item_details, party, rule_violation},
     owner::{HostOwner, Phase},
 };
 use bevy::{
@@ -27,6 +27,7 @@ enum Content {
     Context {
         menu: Option<Menu>,
         party: Option<Box<party::Target>>,
+        inspection: Option<(TileCoord, oteryn_session::EntityRef)>,
         report: Option<Box<rule_violation::Target>>,
     },
 }
@@ -35,6 +36,7 @@ enum Choice {
     Cancel,
     Logout,
     Context(usize),
+    Inspect,
     Invite,
     Party,
     Report,
@@ -73,12 +75,16 @@ impl HostOwner {
         // Capture the player before opening our own modal, which correctly blocks new world input.
         let party = party::context(self, tile).map(Box::new);
         let report = rule_violation::context(self, tile).map(Box::new);
-        if self.phase == Phase::Playing && (menu.is_some() || party.is_some() || report.is_some()) {
+        let inspection = item_details::player_context(self, tile).map(|entity| (tile, entity));
+        if self.phase == Phase::Playing
+            && (menu.is_some() || party.is_some() || report.is_some() || inspection.is_some())
+        {
             self.dialogs.open(
                 self.generation(),
                 Content::Context {
                     menu,
                     party,
+                    inspection,
                     report,
                 },
             );
@@ -104,6 +110,13 @@ impl HostOwner {
             return false;
         }
         match (request.content, choice) {
+            (
+                Content::Context {
+                    inspection: Some((tile, entity)),
+                    ..
+                },
+                Choice::Inspect,
+            ) => item_details::inspect_player(self, tile, entity),
             (_, Choice::Cancel) => true,
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
@@ -309,6 +322,7 @@ fn project(
         Content::Context {
             menu,
             party,
+            inspection,
             report,
         } => {
             if report.is_some() {
@@ -330,6 +344,16 @@ fn project(
                     request.id,
                     label,
                     Choice::Context(index),
+                );
+            }
+            if inspection.is_some() {
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Inspect",
+                    Choice::Inspect,
                 );
             }
             if let Some(target) = party {
@@ -484,6 +508,7 @@ mod tests {
             Content::Context {
                 menu: Some(menu),
                 party: None,
+                inspection: None,
                 report: None,
             },
         );

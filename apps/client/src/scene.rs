@@ -32,6 +32,9 @@ pub struct Scene {
     minimap: bool,
     #[cfg(feature = "bevy-shell")]
     minimap_quads: std::ops::Range<usize>,
+    /// Retained circle quads replaced by the Bevy circle renderer.
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) health_circle_quads: std::ops::Range<usize>,
     floor_separator: u8,
     #[cfg(feature = "bevy-shell")]
     floor_quads: Vec<(std::ops::Range<usize>, i16)>,
@@ -115,6 +118,8 @@ impl Scene {
             minimap: false,
             #[cfg(feature = "bevy-shell")]
             minimap_quads: 0..0,
+            #[cfg(feature = "bevy-shell")]
+            health_circle_quads: 0..0,
             floor_separator: 0,
             #[cfg(feature = "bevy-shell")]
             floor_quads: Vec::new(),
@@ -284,6 +289,7 @@ impl Scene {
         #[cfg(feature = "bevy-shell")]
         {
             self.minimap_quads = start..self.sprites.instances().len();
+            self.health_circle_quads = 0..0;
         }
         Ok(())
     }
@@ -320,6 +326,13 @@ impl Scene {
     #[cfg(feature = "bevy-shell")]
     pub(crate) fn minimap_quad_range(&self) -> std::ops::Range<usize> {
         self.minimap_quads.clone()
+    }
+
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn health_circle_center(&self) -> [f32; 2] {
+        let [x, y] = self.view.tile_to_screen(self.own);
+        let half = self.view.tile_px() as f32 / 2.;
+        [x + half, y + half]
     }
 
     #[must_use]

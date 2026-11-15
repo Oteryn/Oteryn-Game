@@ -1,12 +1,15 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod analyser;
+mod bug_report;
 mod chat;
 mod cyclopedia;
 #[cfg(test)]
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;
 mod feature_dialogs;
+mod forge;
+pub(super) mod highscores;
 mod hotkeys;
 mod hud;
 mod imbuing;
@@ -14,7 +17,7 @@ mod inventory;
 pub(super) use inventory::ItemPointerCapture;
 #[cfg(test)]
 pub(super) use inventory::initialize_item_pointer_test_state;
-mod item_details;
+pub(super) mod item_details;
 mod journal;
 mod market;
 pub(super) mod minimap;
@@ -23,6 +26,7 @@ mod npc_shop;
 pub(super) mod options;
 mod outfit;
 pub(super) mod party;
+mod prey;
 mod proficiency;
 mod projection;
 pub(super) use projection::project;
@@ -30,9 +34,13 @@ mod quick_loot;
 mod reward_wall;
 pub(super) mod rule_violation;
 pub(super) mod satellite_map;
+mod stash;
 mod store;
+mod task_board;
 mod trade;
+mod tutorial;
 pub(super) mod viewport;
+mod wheel;
 use super::{owner::HostOwner, ui::Skins};
 use bevy::prelude::*;
 use oteryn_client_ui_bevy as source;
@@ -241,10 +249,13 @@ fn region(commands: &mut Commands) -> Entity {
 
 pub(super) fn install(app: &mut App) {
     actions::install(app);
+    bug_report::install(app);
     chat::install(app);
     cyclopedia::install(app);
     analyser::install(app);
     feature_dialogs::install(app);
+    highscores::install(app);
+    forge::install(app);
     hotkeys::install(app);
     hud::install(app);
     imbuing::install(app);
@@ -258,13 +269,18 @@ pub(super) fn install(app: &mut App) {
     options::install(app);
     outfit::install(app);
     party::install(app);
+    prey::install(app);
     proficiency::install(app);
     quick_loot::install(app);
+    task_board::install(app);
+    stash::install(app);
     rule_violation::install(app);
     store::install(app);
     satellite_map::install(app);
     reward_wall::install(app);
     trade::install(app);
+    wheel::install(app);
+    tutorial::install(app);
     app.add_systems(
         Update,
         (

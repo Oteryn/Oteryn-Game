@@ -84,6 +84,83 @@ fn choose(app: &mut App, caption: &str) -> Result {
     Ok(())
 }
 #[test]
+fn inspect_player_context_requests_equipment_and_opens_window() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    choose(&mut app, "Inspect")?;
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("inspection command".into());
+    };
+    assert_eq!(command.capability, 132);
+    assert_eq!(
+        command.payload,
+        oteryn_client_ui::inspection::encode_request(
+            oteryn_client_ui::inspection::Request::Player(player().entity)
+        )
+        .map_err(|error| format!("request: {error:?}"))?
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .inspection_panel()
+            .open
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn inspect_player_context_rejects_changed_generation() -> Result {
+    let (mut app, mut commands, _) = app()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_selected(true);
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .request_world_context(TileCoord::new(101, 100));
+    app.update();
+    let mut changed = player();
+    changed.entity.generation += 1;
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .view = PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(vec![changed])?;
+    choose(&mut app, "Inspect")?;
+    assert!(commands.try_recv().is_err());
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .inspection_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
 fn party_context_without_look_opens_query_from_actual_choice() -> Result {
     let (mut app, mut commands, _) = app()?;
     app.world_mut()
@@ -197,6 +274,7 @@ fn combined_menu_preserves_base_look_and_real_name_and_old_choices_cannot_replac
             Content::Context {
                 menu: Some(menu),
                 party: Some(Box::new(target)),
+                inspection: None,
                 report: None,
             },
         );
