@@ -18,7 +18,9 @@ const WORLD: u8 = 42;
 const CHANNEL: u8 = 43;
 
 #[test]
-fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> TestResult {
+fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> TestResult { run_characters_regression(0) }
+
+fn run_characters_regression(regression: u8) -> TestResult {
     let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
         return Ok(());
     };
@@ -27,7 +29,7 @@ fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> T
             tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async move{
                 let started=std::time::Instant::now();
                 let database=Database::create(admin,"bazaar_characters").await?;
-                let result=characters_flow(&database,false).await;
+                let result=characters_flow(&database,false, regression).await;
                 database.cleanup().await?;
                 eprintln!("GPROD_BAZAAR_PG_EXECUTED character_lock_bind_transfer_unlock elapsed_ms={} outcome={}",started.elapsed().as_millis(),if result.is_ok(){"PASS"}else{"FAIL"});
                 result
@@ -35,6 +37,36 @@ fn bazaar_characters_postgres_lock_bind_transfer_unlock_replay_and_fences() -> T
         })().map_err(|error|error.to_string())
     })?.join().map_err(|_|"Bazaar Character PostgreSQL worker failed")?.map_err(Into::into)
 }
+#[test]
+fn bazaar_cancel_untransferred_resale_ignores_previous_generation() -> TestResult { run_characters_regression(1) }
+
+#[test]
+fn bazaar_publication_deferred_subject_does_not_starve_followers() -> TestResult { run_characters_regression(3) }
+
+#[test]
+fn bazaar_capture_uses_key_preloaded_before_admission_lock() -> TestResult {
+    run_characters_regression(4)
+}
+
+async fn remove_key_after_admission_wait(
+    pool: &sqlx::PgPool,
+    blocker: sqlx::Transaction<'_, sqlx::Postgres>,
+    key: &std::path::Path,
+) -> TestResult {
+    // Allow the existing ten-second preload bound before the deciding pass waits.
+    tokio::time::timeout(std::time::Duration::from_secs(12), async {
+        loop {
+            let waiting: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE database=(SELECT oid FROM pg_database WHERE datname=current_database()) AND relation='game_durability_admission_account_guards'::regclass AND NOT granted)")
+                .fetch_one(pool).await?;
+            if waiting { return Ok::<(), sqlx::Error>(()); }
+            tokio::task::yield_now().await;
+        }
+    }).await??;
+    std::fs::remove_file(key)?;
+    blocker.commit().await?;
+    Ok(())
+}
+
 fn u(tag: u8) -> String {
     uuid(id(tag))
 }
@@ -106,7 +138,7 @@ fn receipt(decision: &Decision, code: &str) -> TestResult<Value> {
     Ok(serde_json::from_slice(receipt)?)
 }
 
-async fn characters_flow(database: &Database, projection_checks:bool) -> TestResult {
+async fn characters_flow(database: &Database, projection_checks:bool, regression: u8) -> TestResult {
     let root = DurabilityRoot::connect_test_runtime(&database.url)?;
     assert!(root.maintain_ready_once().await?);
     let pool = sqlx::PgPool::connect(&database.url).await?;
@@ -319,8 +351,25 @@ async fn characters_flow(database: &Database, projection_checks:bool) -> TestRes
         .bind(serde_json::to_value(&policy)?)
         .execute(&pool)
         .await?;
-    let locked = decide("LockBazaarCharacter", 70, &lock_wire).await;
+    let locked = if regression == 4 {
+        let mut blocker = pool.begin().await?;
+        sqlx::query("LOCK TABLE game_durability_admission_account_guards IN SHARE MODE")
+            .execute(&mut *blocker).await?;
+        let (decision, released) = tokio::join!(
+            decide("LockBazaarCharacter", 70, &lock_wire),
+            remove_key_after_admission_wait(&pool, blocker, &key_path),
+        );
+        released?;
+        decision
+    } else {
+        decide("LockBazaarCharacter", 70, &lock_wire).await
+    };
     let facts = receipt(&locked, "CHAR_CMD_OK")?;
+    if regression == 4 {
+        pool.close().await;
+        std::fs::remove_dir_all(&directory)?;
+        return Ok(());
+    }
     assert_bazaar_admission_refused(&pool, &character, 31, WORLD).await?;
     let lock = facts["result_data"]["lock_id"].as_str().ok_or("lock id")?;
     assert_eq!(
@@ -384,6 +433,48 @@ async fn characters_flow(database: &Database, projection_checks:bool) -> TestRes
         delivered_lock.body
     );
     drain_transport!(&authority, &node, 1);
+
+    if regression == 3 {
+        sqlx::query("INSERT INTO game_bazaar_publication_outbox(subject,epoch,revision,body,committed_at,operation,enumeration_version) SELECT 'listing:00000000-0000-0000-0000-000000000000',epoch,1,convert_to('{}','UTF8'),started_at,'PublishBazaarListingStatusV1',version FROM game_bazaar_projection_state WHERE singleton")
+            .execute(&pool).await?;
+        sqlx::query("UPDATE game_bazaar_publication_outbox SET acknowledged=false WHERE subject=$1")
+            .bind(format!("listing:{}", u(201))).execute(&pool).await?;
+        let first = root.bazaar_transport_snapshot(&authority, &node, SNAPSHOT_SOURCE, 1).await?;
+        assert!(first.publications.is_empty());
+        let next = root.bazaar_transport_snapshot(&authority, &node, SNAPSHOT_SOURCE, 1).await?;
+        assert_eq!(next.publications.len(), 1, "deferred subject must not monopolize the batch");
+        assert_eq!(next.publications[0].subject, format!("listing:{}", u(201)));
+        assert!(next.watermark.is_none(), "deferred subject remains outstanding");
+        // A missing historical signing provenance must defer that receipt while
+        // the later, independently valid unlock receipt continues to drain.
+        let cancel = v2("UnlockBazaarCharacter", 91, &character,
+            &format!(r#""lock_id":"{lock}","expected_lock_revision":"1""#), now_secs()?);
+        receipt(&decide("UnlockBazaarCharacter", 91, &cancel).await, "CHAR_CMD_OK")?;
+        let ready = root.bazaar_transport_snapshot(&authority, &node, SNAPSHOT_SOURCE, 24).await?;
+        assert!(ready.receipts.iter().any(|delivery| delivery.operation == u(91)));
+        let mut fault = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *fault).await?;
+        sqlx::query("DELETE FROM game_bazaar_signing_keys WHERE kid='bazaar-pg-current'")
+            .execute(&mut *fault).await?;
+        fault.commit().await?;
+        sqlx::query("UPDATE game_bazaar_outbox SET receipt_acknowledged=false WHERE operation_id=$1::uuid")
+            .bind(u(70)).execute(&pool).await?;
+        let deferred = root.bazaar_transport_snapshot(&authority, &node, SNAPSHOT_SOURCE, 1).await?;
+        assert!(deferred.receipts.is_empty());
+        let next = root.bazaar_transport_snapshot(&authority, &node, SNAPSHOT_SOURCE, 1).await?;
+        assert_eq!(next.receipts.len(), 1, "deferred receipt must not monopolize the batch");
+        assert_eq!(next.receipts[0].operation, u(91));
+        assert!(next.watermark.is_none(), "unverifiable history stays outstanding");
+        assert!(sqlx::query_scalar::<_, bool>("SELECT NOT acknowledged FROM game_bazaar_publication_outbox WHERE subject='listing:00000000-0000-0000-0000-000000000000'")
+            .fetch_one(&pool).await?);
+        assert!(sqlx::query_scalar::<_, bool>("SELECT NOT receipt_acknowledged AND NOT stopped FROM game_bazaar_outbox WHERE operation_id=$1::uuid")
+            .bind(u(70)).fetch_one(&pool).await?);
+        pool.close().await;
+        std::fs::remove_dir_all(&directory)?;
+        return Ok(());
+    }
+
+
     let stale = v2(
         "UnlockBazaarCharacter",
         74,
@@ -543,6 +634,27 @@ async fn characters_flow(database: &Database, projection_checks:bool) -> TestRes
                 &format!(r#""listing_id":"{}""#, u(205)),
             )
     };
+    if regression == 1 {
+        // Historical sale evidence from a preceding recovery generation must not
+        // prevent cancelling this listing, which has never transferred.
+        drop(authority);
+        drop(fence);
+        let transition = recovery.begin_recovery(1, id(12), 200)
+            .map_err(|error| format!("{error:?}"))?;
+        root.reconcile_character_recovery(&transition).await
+            .map_err(|error| format!("{error:?}"))?;
+        drop(transition);
+        let fence = recovery.seal_current().map_err(|error| format!("{error:?}"))?;
+        let authority = root.open_character_authority(&fence).await
+            .map_err(|error| format!("{error:?}"))?;
+        let cancel = resale_wire("UnlockBazaarCharacter", 90,
+            &format!(r#""lock_id":"{resale_lock_id}","expected_lock_revision":"1""#));
+        receipt(&root.decide_bazaar_command(&authority, &node, SOURCE,
+            "UnlockBazaarCharacter", &u(90), cancel.as_bytes()).await, "CHAR_CMD_OK")?;
+        pool.close().await;
+        std::fs::remove_dir_all(&directory)?;
+        return Ok(());
+    }
     let resale_escrow = v1(83, &character, 32, 33, "BAZAAR_LISTING_ESCROW", resale_now);
     let resale_bind = resale_wire(
         "BindBazaarCharacterTransfer",
@@ -749,7 +861,7 @@ fn public_v2_achievements_real_bazaar_transfer_same_cut() -> TestResult {
  std::thread::Builder::new().stack_size(64<<20).spawn(move||->Result<(),String>{
  tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e|e.to_string())?.block_on(async {
  let database=Database::create(admin,"p3_bazaar").await?;
- let result=characters_flow(&database,true).await;
+ let result=characters_flow(&database,true, 0).await;
  database.cleanup().await?;
  result
  }).map_err(|e|e.to_string())

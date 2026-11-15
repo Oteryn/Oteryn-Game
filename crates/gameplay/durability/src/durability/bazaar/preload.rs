@@ -4,7 +4,7 @@ use super::*;
 use std::sync::Arc;
 use std::time::Duration;
 
-// A stalled local artifact read cannot accumulate blocking workers or prevent
+// A stalled artifact or signing-key read cannot accumulate blocking workers or prevent
 // the command consumer from returning PENDING and draining retained receipts.
 static ARTIFACT_READ: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
@@ -13,6 +13,9 @@ pub(super) struct PreparedContent {
     path: String,
     digest: String,
     artifact: Arc<items::PreparedArtifact>,
+    signing_path: Option<String>,
+    signing_kid: Option<String>,
+    signing_key: Option<Arc<ed25519_dalek::SigningKey>>,
 }
 impl PreparedContent {
     pub(super) fn bind(&self, policy: &mut Policy) {
@@ -20,6 +23,11 @@ impl PreparedContent {
             && policy.content_artifact_sha256.as_deref() == Some(&self.digest)
         {
             policy.preloaded_artifact = Some(self.artifact.clone());
+            if policy.signing_key_file == self.signing_path
+                && policy.signing_kid == self.signing_kid
+            {
+                policy.preloaded_signing_key = self.signing_key.clone();
+            }
         }
     }
 }
@@ -28,6 +36,7 @@ impl DurabilityRoot {
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         proof: &NodeIncarnationProof,
+        needs_signing_key: bool,
     ) -> Option<PreparedContent> {
         let recovery = authority.record_for(self).ok()?;
         let proof = proof.clone();
@@ -56,6 +65,8 @@ impl DurabilityRoot {
             .ok()?;
         let path = policy.content_artifact_file.clone()?;
         let digest = policy.content_artifact_sha256.clone()?;
+        let signing_path = policy.signing_key_file.clone();
+        let signing_kid = policy.signing_kid.clone();
         let read = async move {
             let permit = ARTIFACT_READ.acquire().await.ok()?;
             oteryn_task_supervisor::spawn_blocking_lifecycle_supervised(
@@ -63,19 +74,32 @@ impl DurabilityRoot {
                 None,
                 move || {
                     let _permit = permit;
-                    items::preload_artifact(&policy)
+                    let artifact = items::preload_artifact(&policy)?;
+                    let key = if needs_signing_key {
+                        policy
+                            .signing_key_file
+                            .as_deref()
+                            .and_then(characters::private_seed)
+                            .map(|seed| Arc::new(ed25519_dalek::SigningKey::from_bytes(&seed)))
+                    } else {
+                        None
+                    };
+                    Some((artifact, key))
                 },
             )
             .await
             .ok()?
         };
-        let artifact = tokio::time::timeout(Duration::from_secs(10), read)
+        let (artifact, signing_key) = tokio::time::timeout(Duration::from_secs(10), read)
             .await
             .ok()??;
         Some(PreparedContent {
             path,
             digest,
             artifact,
+            signing_path,
+            signing_kid,
+            signing_key,
         })
     }
 }

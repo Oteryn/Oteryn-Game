@@ -177,6 +177,37 @@ impl DurabilityRoot {
     where
         C: AppearanceContent<String> + Send + Sync + 'static,
     {
+        self.commit_character_appearance_in_scope(authority, node, fence, request, validation, current_appearance::ReadScope::Channel).await
+    }
+
+    /// Commit under the current named-House session, lease and access fence.
+    pub(super) async fn commit_house_character_appearance<C>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: AppearanceChangeRequest,
+        validation: AppearanceValidationContext<C>,
+        origin_channel: [u8;16],
+    ) -> Result<AppearanceChangeOutcome, AppearanceWriteError>
+    where
+        C: AppearanceContent<String> + Send + Sync + 'static,
+    {
+        self.commit_character_appearance_in_scope(authority, node, fence, request, validation, current_appearance::ReadScope::House { origin_channel }).await
+    }
+
+    async fn commit_character_appearance_in_scope<C>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: AppearanceChangeRequest,
+        validation: AppearanceValidationContext<C>,
+        scope: current_appearance::ReadScope,
+    ) -> Result<AppearanceChangeOutcome, AppearanceWriteError>
+    where
+        C: AppearanceContent<String> + Send + Sync + 'static,
+    {
         let AppearanceValidationContext {
             sex,
             content,
@@ -184,7 +215,9 @@ impl DurabilityRoot {
         } = validation;
         request.validate()?;
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || !matches!((scope, fence.runtime_scope),
+                (current_appearance::ReadScope::Channel, RuntimeScopeRefV1::Channel { .. })
+                | (current_appearance::ReadScope::House { .. }, RuntimeScopeRefV1::Instance { .. }))
         {
             return Err(AppearanceWriteError::InvalidInput);
         }
@@ -208,7 +241,7 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx, deadline).await?;
                 return Ok(Ok(AppearanceChangeOutcome::AlreadyCommitted(receipt)));
             }
-            let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
+            let root = match current_appearance::assert_read_fence(&mut tx, &fence, &node, scope).await? {
                 Ok(root) => root, Err(error) => return Ok(Err(error.into())),
             };
             match character_sex::read(&mut tx, fence.character_id).await {

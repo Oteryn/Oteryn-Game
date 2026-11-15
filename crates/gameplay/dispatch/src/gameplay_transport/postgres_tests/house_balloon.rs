@@ -121,6 +121,7 @@ enum Case {
     Foreign,
     Decoration(u32, u32),
     StaticWindow,
+    Appearance,
     StaticAqueduct,
     TimedRotation,
     TimedNearExpiry,
@@ -147,6 +148,11 @@ fn w19_house_balloon_nested_uses_actual_container_command_and_replays() -> TestR
 #[test]
 fn w19_house_balloon_outside_house_and_changed_character_custody_refuse() -> TestResult {
     run_case(Case::Foreign)
+}
+
+#[test]
+fn appearance_change_accepts_named_house_session() -> TestResult {
+    run_case(Case::Appearance)
 }
 
 #[test]
@@ -235,8 +241,11 @@ fn run_case(case: Case) -> TestResult {
         .spawn(move || {
             run(async |admin| {
                 let started = std::time::Instant::now();
-                let h = Harness::create_with_admission_seed(admin, "house_balloon", true, false)
-                    .await?;
+                let h = if case == Case::Appearance {
+                    Harness::create_appearance(admin, "house_appearance").await?
+                } else {
+                    Harness::create_with_admission_seed(admin, "house_balloon", true, false).await?
+                };
                 let result = scenario(&h, case).await;
                 h.cleanup().await?;
                 eprintln!("W18_PG_CASE {case:?} elapsed={:?}", started.elapsed());

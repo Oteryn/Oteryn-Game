@@ -37,6 +37,38 @@ impl RevisionSlot {
         )
         .await
     }
+    #[allow(clippy::too_many_arguments, reason = "the named House fence includes its independently supplied origin Channel")]
+    pub async fn commit_house_appearance<C: AppearanceContent<String> + Send + Sync + Clone + 'static>(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: AppearanceChangeRequest,
+        validation: AppearanceValidationContext<C>,
+        origin_channel: [u8;16],
+    ) -> Result<AppearanceChangeOutcome, AppearanceWriteError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Replay(fence.expected_character_revision),
+            |fence| {
+                root.commit_house_character_appearance(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    AppearanceValidationContext {
+                        sex: validation.sex,
+                        content: validation.content.clone(),
+                        content_revision: validation.content_revision.clone(),
+                    },
+                    origin_channel,
+                )
+            },
+        )
+        .await
+    }
 }
 impl SequencedOutcome for AppearanceChangeOutcome {
     fn committed_revision(&self) -> Option<CharacterRevision> {

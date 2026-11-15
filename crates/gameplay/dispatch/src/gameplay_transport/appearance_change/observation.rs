@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppearance;
 #[path = "observation/house.rs"]
-mod house;
+pub(super) mod house;
 
 #[derive(Debug, Clone)]
 pub struct Observation {

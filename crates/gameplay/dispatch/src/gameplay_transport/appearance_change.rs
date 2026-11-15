@@ -50,6 +50,13 @@ impl AppearanceCommands {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn read_appearance_for_scope(&self, fence: CurrentCharacterGameplayFence, grant_keys: Vec<String>) -> Result<CurrentCharacterAppearance, AppearanceWriteError> {
+        match fence.runtime_scope {
+            RuntimeScopeRefV1::Channel { .. } => self.root.read_current_character_appearance_state(self.character, self.holder, fence, grant_keys).await,
+            RuntimeScopeRefV1::Instance { .. } => self.root.read_current_house_character_appearance_state(self.character, self.holder, fence, *self.channel_id.as_bytes(), grant_keys).await,
+        }
+    }
+
     pub(super) async fn current_mount(
         &self,
         actor: ExactActorRef,
@@ -60,10 +67,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (_, content) = self.appearance_context()?;
         let fence = super::character_gameplay_fence::current(self, session, false).await?;
         let state = self
-            .root
-            .read_current_character_appearance_state(
-                self.character,
-                self.holder,
+            .read_appearance_for_scope(
                 fence,
                 content.earned_grant_keys(),
             )
@@ -172,10 +176,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return Some(wire::ChangeResult::Rejected);
             }
             let state = match self
-                    .root
-                    .read_current_character_appearance_state(
-                        self.character,
-                        self.holder,
+                    .read_appearance_for_scope(
                         fence,
                         content.earned_grant_keys(),
                     )
@@ -236,20 +237,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let outcome = slot
-            .commit_appearance(
-                self.root,
-                self.character,
-                self.holder,
-                fence,
-                request,
-                AppearanceValidationContext {
-                    sex,
-                    content: content.clone(),
-                    content_revision: content.content_revision().to_owned(),
-                },
-            )
-            .await;
+        let outcome = if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+            slot
+                .commit_house_appearance(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    AppearanceValidationContext {
+                        sex,
+                        content: content.clone(),
+                        content_revision: content.content_revision().to_owned(),
+                    },
+                    *self.channel_id.as_bytes(),
+                )
+                .await
+        } else {
+            slot
+                .commit_appearance(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    AppearanceValidationContext {
+                        sex,
+                        content: content.clone(),
+                        content_revision: content.content_revision().to_owned(),
+                    },
+                )
+                .await
+        };
         let result = match outcome {
             Ok(
                 AppearanceChangeOutcome::Committed(receipt)
@@ -286,6 +305,9 @@ fn current_runtime(
     fence: &CurrentCharacterGameplayFence,
     content: &NativeCosmeticsView,
 ) -> bool {
+    if matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+        return observation::house::current_runtime_for_read(runtime, actor, session, fence, content);
+    }
     runtime.owner_fence().is_ok()
         && runtime
             .player_control_facts(actor, session)

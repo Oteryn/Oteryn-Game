@@ -2,7 +2,7 @@
 //! and unsupported derived facts stay PENDING; no field is filled from a caller.
 use super::*;
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, VerifyingKey};
 use oteryn_gameplay_domain::domain::character_build::BuildFormula;
 use serde_json::Value;
 
@@ -324,7 +324,9 @@ async fn unlock(tx: &mut Tx<'_>, r: &Request, v: &Value) -> Result<Effect, Durab
     }
     // The escrow allocation is never a terminal owner. A listing-escrow commit
     // alone cannot authorize unlock; settlement/return must be its last leg.
-    let last=sqlx::query("SELECT d.intent,d.recovery_generation::text FROM game_bazaar_character_transitions t JOIN game_bazaar_decisions d USING(issuer,operation_id) WHERE t.character_id=$1::uuid AND d.command='TransferCharacterOwnership' AND d.result_code='CHAR_CMD_OK' ORDER BY t.new_revision DESC LIMIT 1").bind(character).fetch_optional(&mut **tx).await?;
+    // The immutable capture revision starts this lock's lifecycle. Earlier
+    // listings cannot supply terminal-transfer evidence for a fresh lock.
+    let last=sqlx::query("SELECT d.intent,d.recovery_generation::text FROM game_bazaar_character_transitions t JOIN game_bazaar_decisions d USING(issuer,operation_id) WHERE t.character_id=$1::uuid AND t.new_revision>(SELECT (convert_from(snapshot,'UTF8')::jsonb->>'character_revision')::numeric FROM game_bazaar_locks WHERE lock_id=$2::uuid) AND d.command='TransferCharacterOwnership' AND d.result_code='CHAR_CMD_OK' ORDER BY t.new_revision DESC LIMIT 1").bind(character).bind(lock_id).fetch_optional(&mut **tx).await?;
     if let Some(last) = last {
         if last.try_get::<String, _>("recovery_generation")? != r.generation.to_string() {
             return Ok(Effect::Pending);
@@ -633,7 +635,7 @@ async fn sign(
     p: &Policy,
     snapshot: &[u8],
 ) -> Result<Option<Vec<u8>>, DurabilityError> {
-    let (Some(path), Some(kid)) = (p.signing_key_file.as_deref(), p.signing_kid.as_deref()) else {
+    let (Some(_path), Some(kid)) = (p.signing_key_file.as_deref(), p.signing_kid.as_deref()) else {
         return Ok(None);
     };
     if !key_valid(kid, 64) || !register_trust(tx, p).await? {
@@ -646,10 +648,9 @@ async fn sign(
     else {
         return Ok(None);
     };
-    let Some(seed) = private_seed(path) else {
+    let Some(signing) = p.preloaded_signing_key.as_ref() else {
         return Ok(None);
     };
-    let signing = SigningKey::from_bytes(&seed);
     if signing.verifying_key().to_bytes() != public {
         return Ok(None);
     }
@@ -893,7 +894,7 @@ async fn register_trust(tx: &mut Tx<'_>, p: &Policy) -> Result<bool, DurabilityE
 }
 
 #[cfg(unix)]
-fn private_seed(path: &str) -> Option<[u8; 32]> {
+pub(super) fn private_seed(path: &str) -> Option<[u8; 32]> {
     use std::io::Read;
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
     let path = std::path::Path::new(path);
@@ -927,7 +928,7 @@ fn private_seed(path: &str) -> Option<[u8; 32]> {
 }
 
 #[cfg(not(unix))]
-fn private_seed(_path: &str) -> Option<[u8; 32]> {
+pub(super) fn private_seed(_path: &str) -> Option<[u8; 32]> {
     None
 }
 
@@ -1023,5 +1024,42 @@ mod key_file_tests {
         })();
         std::fs::remove_dir_all(directory)?;
         result
+    }
+}
+
+#[cfg(test)]
+mod signing_preload_tests {
+    use super::*;
+
+    #[test]
+    fn signing_uses_preloaded_key_without_reopening_file() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+            return Ok(());
+        };
+        std::thread::Builder::new().stack_size(64 << 20).spawn(move || -> Result<(), String> {
+            let run = || -> Result<(), Box<dyn std::error::Error>> {
+                tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+                    let pool = sqlx::PgPool::connect(&admin).await?;
+                    let mut tx = pool.begin().await?;
+                    for sql in [
+                        "CREATE TEMP TABLE game_character_recovery_admissions(recovery_generation numeric)",
+                        "INSERT INTO game_character_recovery_admissions VALUES(1)",
+                        "CREATE TEMP TABLE game_bazaar_signing_keys(kid text PRIMARY KEY,public_key bytea,revoked bool)",
+                        "CREATE TEMP TABLE game_durability_admission_signing_trust_guards(public_key bytea)",
+                    ] { sqlx::query(sql).execute(&mut *tx).await?; }
+                    let key = ed25519_dalek::SigningKey::from_bytes(&[37;32]);
+                    let mut policy = Policy { signing_key_file: Some("/nonexistent/bazaar-signing-key".into()),
+                        signing_kid: Some("test-key".into()),
+                        preloaded_signing_key: Some(std::sync::Arc::new(key.clone())), ..Policy::default() };
+                    policy.signing_public_keys.insert("test-key".into(), hex(&key.verifying_key().to_bytes()));
+                    assert!(sign(&mut tx, &policy, b"{}").await?.is_some(), "a prepared key must not be reopened under the semantic transaction");
+                    tx.rollback().await?;
+                    pool.close().await;
+                    Ok(())
+                })
+            };
+            run().map_err(|error| error.to_string())
+        })?.join().map_err(|_| "signing worker failed")?.map_err(Into::into)
     }
 }

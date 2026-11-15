@@ -50,6 +50,8 @@ pub struct Policy {
     pub gold_fee_bps: Option<u16>,
     pub reserve_incoming_headroom: bool,
     pub common_restore_scope: bool,
+    #[serde(skip)]
+    preloaded_signing_key: Option<std::sync::Arc<ed25519_dalek::SigningKey>>,
     pub signing_key_file: Option<String>,
     pub signing_kid: Option<String>,
     pub signing_trust_generation: Option<u64>,
@@ -80,6 +82,7 @@ impl Default for Policy {
             gold_fee_bps: Some(250),
             reserve_incoming_headroom: true,
             common_restore_scope: true,
+            preloaded_signing_key: None,
             signing_key_file: None,
             signing_kid: None,
             signing_trust_generation: Some(1),
@@ -215,7 +218,8 @@ impl DurabilityRoot {
             command,
             "LockBazaarCharacter" | "EscrowBazaarItem" | "DeliverBazaarItem"
         ) {
-            self.prepare_bazaar_content(authority, proof).await
+            self.prepare_bazaar_content(authority, proof, command == "LockBazaarCharacter")
+                .await
         } else {
             None
         };

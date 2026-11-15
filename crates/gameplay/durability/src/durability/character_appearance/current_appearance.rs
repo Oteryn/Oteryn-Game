@@ -2,10 +2,10 @@
 use super::*;
 #[path = "current_appearance/house_fence.rs"]
 mod house_fence;
-use house_fence::assert_read_fence;
+pub(super) use house_fence::assert_read_fence;
 
 #[derive(Clone, Copy)]
-enum ReadScope {
+pub(super) enum ReadScope {
     Channel,
     House { origin_channel: [u8; 16] },
 }

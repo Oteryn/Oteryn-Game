@@ -1266,6 +1266,7 @@ impl RootRuntime {
 #[derive(Clone)]
 pub struct DurabilityRoot {
     pool: PgPool,
+    pub(super) bazaar_publication_cursor: Arc<StdMutex<(String, String, String)>>,
     runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
     /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
@@ -1435,6 +1436,7 @@ impl DurabilityRoot {
             relay_options: Some(Box::new(relay_options)),
             _root_i_charge: root_i_charge,
             staff_trust: Arc::default(),
+            bazaar_publication_cursor: Arc::default(),
         })
     }
 
@@ -1477,6 +1479,7 @@ impl DurabilityRoot {
                 .map(Box::new),
             _root_i_charge: None,
             staff_trust: Arc::default(),
+            bazaar_publication_cursor: Arc::default(),
         })
     }
 

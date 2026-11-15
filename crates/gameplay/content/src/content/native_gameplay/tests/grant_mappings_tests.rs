@@ -91,3 +91,68 @@ fn appearance_grant_mappings_require_promotion_and_valid_unique_targets() {
         assert!(native_cosmetics::decode(&serde_json::to_vec(&packet).unwrap()).is_err());
     }
 }
+
+#[test]
+fn marriage_grant_resolves_through_sex_qualified_authorization() {
+    use crate::domain::appearance::Sex;
+    let mut packet = cosmetics_test_packet();
+    let shards = packet["source_shards"].as_array().unwrap().clone();
+    for (sex, id) in [("female", 329), ("male", 328)] {
+        let record = shards
+            .iter()
+            .flat_map(|shard| {
+                serde_json::from_str::<Value>(shard["json"].as_str().unwrap()).unwrap()["records"]
+                    .as_array()
+                    .unwrap()
+                    .clone()
+            })
+            .find(|record| record["source_id"] == id)
+            .unwrap();
+        packet["authoring"]["document"]["outfits"][0][sex] = serde_json::json!({
+            "id":id,"source_record_sha256":record["source_record_sha256"]});
+    }
+    let outfit = packet["authoring"]["document"]["outfits"][0].clone();
+    for promotion in packet["authoring"]["promotions"].as_array_mut().unwrap() {
+        if promotion["path"] == "/outfits/0" {
+            promotion["value"] = outfit.clone();
+        }
+        for sex in ["female", "male"] {
+            if promotion["path"] == format!("/outfits/0/{sex}") {
+                promotion["value"] = outfit[sex].clone();
+            }
+        }
+    }
+    let view = native_cosmetics::decode(&serde_json::to_vec(&packet).unwrap())
+        .unwrap()
+        .unwrap();
+    let key = view.outfit_keys().next().unwrap();
+    for sex in [Sex::Female, Sex::Male] {
+        assert_eq!(
+            view.earned_unlock_for_sex(
+                MARRIAGE_GRANT_KEY,
+                MARRIAGE_PROVENANCE,
+                EarnedCosmetic::Outfit(key),
+                sex
+            ),
+            UnlockFact::Compatible
+        );
+        assert_eq!(
+            view.earned_unlock_for_sex(
+                MARRIAGE_GRANT_KEY,
+                "wrong-provenance",
+                EarnedCosmetic::Outfit(key),
+                sex
+            ),
+            UnlockFact::Incompatible
+        );
+        assert_eq!(
+            view.earned_unlock_for_sex(
+                MARRIAGE_GRANT_KEY,
+                MARRIAGE_PROVENANCE,
+                EarnedCosmetic::Addon(key, 1),
+                sex
+            ),
+            UnlockFact::Incompatible
+        );
+    }
+}

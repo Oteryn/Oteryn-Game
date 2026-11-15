@@ -47,6 +47,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::Placed
             | Case::Decoration(_, _)
             | Case::NativeNoop(_)
+            | Case::Appearance
             | Case::StaticWindow
             | Case::StaticAqueduct
             | Case::TimedRotation
@@ -75,7 +76,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
             base.admitted.world_id,
             base.admitted.channel_id,
         )?
-    } else if case == Case::StaticWindow {
+    } else if matches!(case, Case::StaticWindow | Case::Appearance) {
         super::super::house_wrap::static_decoration_bundle(
             base.admitted.world_id,
             base.admitted.channel_id,
@@ -83,11 +84,14 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else {
         super::super::house_wrap::wrap_bundle(base.admitted.world_id, base.admitted.channel_id)?
     };
-    let (controller, native_pin) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
-            base.admitted.world_id,
-            None,
-        );
+    let (controller, native_pin) = if case == Case::Appearance {
+        use crate::content::native_gameplay::test_support::cosmetics_fixture::{cosmetics_test_packet, activated_with_optional_cosmetics};
+        let mut packet = cosmetics_test_packet();
+        packet["authoring"]["document"]["content_revision"] = "content-1".into();
+        activated_with_optional_cosmetics(base.admitted.world_id, None, Some(&serde_json::to_vec(&packet)?))
+    } else {
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(base.admitted.world_id, None)
+    };
     // Cell collision and gameplay must use the same activated artifact. Native
     // House exit independently checks this generation before admitting a tile.
     let room = native_pin.qualified_room().clone();
@@ -229,7 +233,7 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::Container => &[4, 6, 11, 12, 14, 15, 18, 49, 86],
         Case::ContainerCapacity => &[4, 6, 11, 12, 14, 15, 18, 49, 86, 446],
         Case::BedKit(_) => &[4, 6, 11, 15, 18, 49, 86],
-        Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::CarpetTile { .. } => {
+        Case::Placed | Case::Decoration(_, _) | Case::StaticWindow | Case::Appearance | Case::CarpetTile { .. } => {
             &[4, 6, 11, 15, 18, 49, 86]
         }
         Case::Nested => &[4, 6, 12, 14, 15, 49, 86],
@@ -435,6 +439,36 @@ pub(super) async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if case == Case::StaticWindow {
         return super::super::house_base_decorations::window_scenario(&owner, h, admitted).await;
+    }
+    if case == Case::Appearance {
+        use oteryn_protocol_oteryn::appearance;
+        use crate::gameplay_transport::connection::UseCommand;
+        let actor = admitted.runtime_actor.ok_or("House actor")?;
+        let (_, content) = owner.appearance_context().ok_or("House cosmetics")?;
+        let root_revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+            .bind(admitted.item_fence.ok_or("House item fence")?.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        let change = appearance::Change {
+            context: owner.appearance_context().ok_or("appearance context")?.0,
+            expected_root_revision: root_revision.parse()?, prior: None,
+            selection: appearance::Selection {
+                outfit_key: content.outfit_keys().next().ok_or("starter")?.into(),
+                colours: [1,2,3,4], addons: 0, mount_key: None,
+            }, content_revision: content.content_revision().into(),
+        };
+        for command_id in [899, 900] {
+            let mut invalid = change.clone();
+            if command_id == 899 { invalid.selection.colours[0] = 133; }
+            else { invalid.selection.addons = 4; }
+            let refused = crate::gameplay_transport::connection::appearance_change::dispatch(
+                &owner, actor, UseCommand { game_session_id: admitted.game_session_id,
+                    command_id, item_fence: admitted.item_fence }, &invalid.encode().map_err(debug)?).await;
+            assert_eq!(refused, Some(appearance::ChangeResult::Rejected));
+        }
+        let result = crate::gameplay_transport::connection::appearance_change::dispatch(
+            &owner, actor, UseCommand { game_session_id: admitted.game_session_id,
+                command_id: 901, item_fence: admitted.item_fence }, &change.encode().map_err(debug)?).await;
+        assert_eq!(result, Some(appearance::ChangeResult::Committed(root_revision.parse::<u64>()? + 1)));
+        return Ok(());
     }
     let original_custody = custody(h).await?;
     if case == Case::Nested {

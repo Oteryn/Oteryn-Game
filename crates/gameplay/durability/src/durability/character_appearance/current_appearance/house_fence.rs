@@ -1,8 +1,8 @@
-//! Narrow observation adapter. No Character appearance write accepts this House proof.
+//! Shared appearance fence for Channel sessions and named-House custody.
 use super::*;
 use crate::durability::character_progression::FencedCharacterRoot;
 
-pub(super) async fn assert_read_fence(
+pub(in crate::durability::character_appearance) async fn assert_read_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CurrentCharacterGameplayFence,
     node: &NodeIncarnationProof,

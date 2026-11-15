@@ -212,7 +212,8 @@ impl DurabilityRoot {
         if limit == 0 || limit > TRANSPORT_BATCH_LIMIT || !source_authority_valid(source) {
             return Err(DurabilityError::Unavailable);
         }
-        let content = self.prepare_bazaar_content(authority, proof).await;
+        let content = self.prepare_bazaar_content(authority, proof, false).await;
+        let scheduling = self.bazaar_publication_cursor.clone();
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -252,8 +253,18 @@ impl DurabilityRoot {
                 sqlx::query("UPDATE game_bazaar_projection_state SET enumeration_cursor=$1,enumeration_done=$2 WHERE singleton").bind(subjects.last().unwrap_or(&cursor)).bind(subjects.len()<usize::from(limit)).execute(&mut *tx).await?;
             }
             sqlx::query("UPDATE game_bazaar_projection_state SET last_observed=$1 WHERE singleton").bind(now).execute(&mut *tx).await?;
+            let (mut receipt_issuer, mut receipt_operation, mut publication_subject) = scheduling.lock().map_err(|_| DurabilityError::Unavailable)?.clone();
             let mut receipts=Vec::new();
-            for row in sqlx::query("SELECT d.issuer,d.operation_id::text,d.command,d.receipt FROM game_bazaar_outbox o JOIN game_bazaar_decisions d USING(issuer,operation_id) WHERE NOT o.receipt_acknowledged AND NOT o.stopped ORDER BY d.decided_at,d.issuer,d.operation_id LIMIT $1 FOR UPDATE OF o SKIP LOCKED").bind(i64::from(limit)).fetch_all(&mut *tx).await?{
+            // Two bounded index ranges wrap the cursor without sorting the whole backlog.
+            let receipt_after = if receipt_operation.is_empty() { "00000000-0000-0000-0000-000000000000" } else { receipt_operation.as_str() };
+            let mut receipt_rows = sqlx::query("SELECT d.issuer,d.operation_id::text,d.command,d.receipt FROM game_bazaar_outbox o JOIN game_bazaar_decisions d USING(issuer,operation_id) WHERE NOT o.receipt_acknowledged AND NOT o.stopped AND (o.issuer,o.operation_id)>($2,$3::uuid) ORDER BY o.issuer,o.operation_id LIMIT $1 FOR UPDATE OF o SKIP LOCKED").bind(i64::from(limit)).bind(&receipt_issuer).bind(receipt_after).fetch_all(&mut *tx).await?;
+            let remaining = i64::from(limit) - i64::try_from(receipt_rows.len()).map_err(|_| DurabilityError::InvalidStoredState)?;
+            if remaining > 0 {
+                receipt_rows.extend(sqlx::query("SELECT d.issuer,d.operation_id::text,d.command,d.receipt FROM game_bazaar_outbox o JOIN game_bazaar_decisions d USING(issuer,operation_id) WHERE NOT o.receipt_acknowledged AND NOT o.stopped AND (o.issuer,o.operation_id)<=($2,$3::uuid) ORDER BY o.issuer,o.operation_id LIMIT $1 FOR UPDATE OF o SKIP LOCKED").bind(remaining).bind(&receipt_issuer).bind(receipt_after).fetch_all(&mut *tx).await?);
+            }
+            for row in receipt_rows {
+                receipt_issuer = row.try_get("issuer")?;
+                receipt_operation = row.try_get("operation_id")?;
                 let receipt:Vec<u8>=row.try_get("receipt")?;
                 let command:String=row.try_get("command")?;
                 if command=="LockBazaarCharacter"
@@ -264,8 +275,14 @@ impl DurabilityRoot {
                 receipts.push(ReceiptDelivery{issuer:row.try_get("issuer")?,operation:row.try_get("operation_id")?,command,body:String::from_utf8(receipt).map_err(|_|DurabilityError::InvalidStoredState)?});
             }
             let mut publications=Vec::new();
-            for row in sqlx::query("SELECT subject,epoch::text,revision::text,body,committed_at,operation FROM game_bazaar_publication_outbox WHERE NOT acknowledged AND enumeration_version=$2 ORDER BY subject LIMIT $1 FOR UPDATE SKIP LOCKED").bind(i64::from(limit)).bind(version).fetch_all(&mut *tx).await?{
+            let mut publication_rows = sqlx::query("SELECT subject,epoch::text,revision::text,body,committed_at,operation FROM game_bazaar_publication_outbox WHERE NOT acknowledged AND enumeration_version=$2 AND subject>$3 ORDER BY subject LIMIT $1 FOR UPDATE SKIP LOCKED").bind(i64::from(limit)).bind(version).bind(&publication_subject).fetch_all(&mut *tx).await?;
+            let remaining = i64::from(limit) - i64::try_from(publication_rows.len()).map_err(|_| DurabilityError::InvalidStoredState)?;
+            if remaining > 0 {
+                publication_rows.extend(sqlx::query("SELECT subject,epoch::text,revision::text,body,committed_at,operation FROM game_bazaar_publication_outbox WHERE NOT acknowledged AND enumeration_version=$2 AND subject<=$3 ORDER BY subject LIMIT $1 FOR UPDATE SKIP LOCKED").bind(remaining).bind(version).bind(&publication_subject).fetch_all(&mut *tx).await?);
+            }
+            for row in publication_rows {
                 let subject:String=row.try_get("subject")?;let mut revision:String=row.try_get("revision")?;
+                publication_subject = subject.clone();
                 let old:Vec<u8>=row.try_get("body")?;
                 let Some(mut body)=build(&mut tx,&policy,&source,&subject,epoch,&revision,row.try_get("committed_at")?).await? else {continue;};
                 if old!=b"{}" && old!=body {
@@ -282,7 +299,9 @@ impl DurabilityRoot {
                 Some(serde_json::to_string(&Watermark{contract_version:2,operation:"PublishBazaarWatermarkV1",source_authority:&source,projection_epoch:epoch.to_string(),complete_through:(now-2).to_string(),observed_at:now.to_string()}).map_err(|_|DurabilityError::Unavailable)?)
             }else{None};
             let batch=TransportBatch{enabled:config.try_get("enabled")?,receipts,publications,watermark};
-            commit_semantic_transaction(tx,deadline).await?;Ok(batch)
+            commit_semantic_transaction(tx,deadline).await?;
+            *scheduling.lock().map_err(|_| DurabilityError::Unavailable)? = (receipt_issuer, receipt_operation, publication_subject);
+            Ok(batch)
         })).await
     }
 
