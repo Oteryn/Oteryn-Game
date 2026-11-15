@@ -62,10 +62,10 @@ impl FreshAdmissionStore {
             }
             let mut rows = Vec::with_capacity(2);
             for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
-            if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
+            if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { nbhold_unavailable("release_successor_history", None); return Err(DurabilityError::Unavailable); }
             let encoded_successors = evidence.transition.successors.iter().map(|row| encode_guard(row, store.guards.maximum_guard_bytes)).collect::<Result<Vec<_>>>()?;
             let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint").fetch_one(&mut *tx).await?;
-            let successors = transition.validate_locked(&rows, current, decided_at).map_err(|_| DurabilityError::Unavailable)?;
+            let successors = transition.validate_locked(&rows, current, decided_at).map_err(|error| { nbhold_unavailable("release_validate_locked", Some(&format!("{error:?}"))); DurabilityError::Unavailable })?;
             let slept = if let Some(bed) = bed {
                 let outcome = bed.apply(&mut tx).await?;
                 if outcome != super::super::bed_sleep::BedSleepOutcome::Slept {
@@ -80,13 +80,13 @@ impl FreshAdmissionStore {
             Box::pin(super::super::journal::capture::capture(&mut tx, current, store.journal_catalogue.as_deref(), decided_at)).await?;
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
-            if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
+            if updated.rows_affected() != 1 { nbhold_unavailable("release_session_update", None); return Err(DurabilityError::Unavailable); }
             if let Some(node) = &store.house_release_node {
                 super::super::character_last_position::release_terminal_house_entry(&mut tx, node,
                     session_id, current.current_character_lease().character_id(), decided_at).await?;
             }
             super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
-                .await.map_err(|_| DurabilityError::Unavailable)?;
+                .await.map_err(|error| { nbhold_unavailable("release_party_member", Some(&nbhold_party_error(&error))); DurabilityError::Unavailable })?;
             sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
                 .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
             store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;
@@ -134,7 +134,10 @@ impl FreshAdmissionStore {
             .await?
             .into_iter()
             .collect::<Option<Vec<_>>>()
-            .ok_or(DurabilityError::Unavailable)?;
+            .ok_or_else(|| {
+                nbhold_unavailable("prepare_guard_missing", None);
+                DurabilityError::Unavailable
+            })?;
         // Successor source times never precede a predecessor's (a row last
         // published on a faster host clock): until the durable clock catches
         // up, the fenced release refuses and a later attempt retries.
@@ -188,8 +191,31 @@ impl FreshAdmissionStore {
             Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
                 return Ok(None);
             }
-            Err(_) => return Err(DurabilityError::Unavailable),
+            Err(error) => {
+                nbhold_unavailable("prepare_transition", Some(&format!("{error:?}")));
+                return Err(DurabilityError::Unavailable);
+            }
         };
         Ok(Some(transition))
+    }
+}
+
+/// [DBG-NBHOLD] Temporary: name which terminal-release check returned `Unavailable`.
+fn nbhold_unavailable(site: &str, error: Option<&str>) {
+    eprintln!(
+        "[DBG-NBHOLD] event=terminal_release_unavailable site={site} error={}",
+        error.unwrap_or("-")
+    );
+}
+
+/// [DBG-NBHOLD] Variant and database message only; never bound parameters.
+fn nbhold_party_error(error: &super::super::spell_item_transaction::SpellItemError) -> String {
+    use super::super::spell_item_transaction::SpellItemError;
+    match error {
+        SpellItemError::Rejected(reason) => format!("rejected:{reason}"),
+        SpellItemError::FieldCapabilityRefused => "field_capability_refused".into(),
+        SpellItemError::Durability(error) => format!("durability:{error}"),
+        SpellItemError::Database(error) => format!("database:{error}"),
+        SpellItemError::Training(_) => "training".into(),
     }
 }
