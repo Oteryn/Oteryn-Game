@@ -100,7 +100,14 @@ impl UpdateClient {
         .map_err(|_| UpdateError::Verification)?;
         let verified_root =
             serde_json::to_vec(repository.root()).map_err(|_| UpdateError::Verification)?;
-        std::fs::write(&anchor_path, &config.root).map_err(|_| UpdateError::Storage)?;
+        if !anchor_path.exists()
+            || std::fs::read(&anchor_path).map_err(|_| UpdateError::Storage)? != config.root
+        {
+            std::fs::write(state.join("anchor.next"), &config.root)
+                .map_err(|_| UpdateError::Storage)?;
+            std::fs::rename(state.join("anchor.next"), &anchor_path)
+                .map_err(|_| UpdateError::Storage)?;
+        }
         std::fs::write(state.join("root.next"), verified_root).map_err(|_| UpdateError::Storage)?;
         std::fs::rename(state.join("root.next"), root_path).map_err(|_| UpdateError::Storage)?;
         if !repository.root().signed.consistent_snapshot {
