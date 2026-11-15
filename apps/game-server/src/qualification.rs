@@ -78,6 +78,8 @@ const INTERPRETATION: [&str; 4] = [
     "s3b-content-1",
     "s3b-starter-1",
 ];
+/// The content revision the node serves (`readiness.content_revision`).
+const SERVED_CONTENT_REVISION: &str = INTERPRETATION[2];
 const RUNTIME_AUTHORITY: &str = "game:wp5-seam-runtime";
 /// First readiness publication of the served Channel.
 const RUNTIME_OBSERVATION: &str = "runtime-1";
@@ -507,7 +509,7 @@ async fn publish_readiness(
             protocol_major: 1,
             transport_profile: 1,
             ruleset_revision: "rules-s3b-1".into(),
-            content_revision: "content-s3b-1".into(),
+            content_revision: SERVED_CONTENT_REVISION.into(),
             map_revision: "map-s3b-1".into(),
             world_policy_revision: "policy-s3b-1".into(),
             offer_revision: "offer-s3b-1".into(),
@@ -569,7 +571,7 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
         "offer_revision": "offer-s3b-1",
@@ -1932,7 +1934,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let shutdown = CancellationToken::new();
     let (quest_catalogue, quest_log_content, _) = crate::node::serve::load_quest_catalogue(
         oteryn_gameplay_quests::quest::loader::load_embedded_quest_state,
-        "content-s3b-1",
+        SERVED_CONTENT_REVISION,
     )
     .map_err(|error| format!("quest catalogue: {error:?}"))?;
     let serve = serve_gameplay(
@@ -2740,7 +2742,7 @@ fn sign_recovery(
         "protocol_major": 1,
         "transport_profile": 1,
         "ruleset_revision": "rules-s3b-1",
-        "content_revision": "content-s3b-1",
+        "content_revision": SERVED_CONTENT_REVISION,
         "map_revision": std::env::var("NODE_BOOT_MAP_REVISION").unwrap_or_else(|_| "map-s3b-1".into()),
         "world_policy_revision": "policy-s3b-1",
     });
@@ -3095,4 +3097,28 @@ fn seam_qualification_pins_are_closed() {
     assert_eq!(PLATFORM_SOURCE.len(), 40);
     assert!(PLATFORM_SOURCE.bytes().all(|byte| byte.is_ascii_hexdigit()));
     let _ = CharacterId::decode(&v7(1, 1));
+}
+
+/// The node serves the Character's content revision (D634): the quest and task board
+/// catalogues load under `readiness.content_revision` and refuse a Character root whose
+/// interpretation names another one (`ProgressionContextMismatch`, node boot run 73).
+#[test]
+fn node_boot_readiness_serves_the_interpreted_content_revision() {
+    let script = include_str!("../../../tools/qualification/node_boot/run.sh");
+    let interpretation = script
+        .lines()
+        .find_map(|line| line.strip_prefix("readonly INTERPRETATION=("))
+        .and_then(|rest| rest.split_whitespace().nth(2));
+    let readiness = script
+        .split("[readiness]")
+        .nth(1)
+        .and_then(|section| {
+            section
+                .lines()
+                .find_map(|line| line.strip_prefix("content_revision = "))
+        })
+        .map(|value| value.trim_matches('"'));
+    assert_eq!(interpretation, Some(INTERPRETATION[2]));
+    assert_eq!(readiness, Some(INTERPRETATION[2]));
+    assert_eq!(SERVED_CONTENT_REVISION, INTERPRETATION[2]);
 }
