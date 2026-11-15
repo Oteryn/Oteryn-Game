@@ -522,3 +522,100 @@ fn all_sixteen_sources_missing_map_stale_fence_and_provenance_never_spawn() {
         ));
     }
 }
+
+#[test]
+fn devourer_callbacks_replace_removed_encounter_children() {
+    for case in fixture().expect("fixture").cases {
+        if !matches!(
+            case.caster.as_str(),
+            "oteryn:creature.the_destruction"
+                | "oteryn:creature.the_hunger"
+                | "oteryn:creature.the_rage"
+                | "oteryn:creature.world_devourer"
+        ) {
+            continue;
+        }
+        let (mut r, _, _) = runtime_with_player(0x88);
+        r.install_companion_policies(policies(&r))
+            .expect("policies");
+        let parent = r
+            .admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                &case.caster,
+                300000,
+            )
+            .expect("parent");
+        let source = SourceCallbackSpawn::qualify(
+            &draft(&r),
+            &Ref {
+                family: Family::Creature,
+                key: case.caster,
+                revision: "definition-r1".into(),
+            },
+            case.index,
+            if case.phase == "attacks" {
+                ScheduleList::Attack
+            } else {
+                ScheduleList::Defence
+            },
+            r.content_pin().server_artifact_digest(),
+        )
+        .expect("source")
+        .expect("callback");
+        let (mut f, stamp) = fence(&r, 1);
+        let mut owner = CallbackSpawnOwner::new(&r, &f).expect("owner");
+        let mut map = Map {
+            present: true,
+            allowed: true,
+            anchor: true,
+            next: 0,
+        };
+        for sequence in 0..5 {
+            let now = SemanticTimeMicros::from_micros(sequence * 30_000_000);
+            owner
+                .schedule(
+                    &r,
+                    &f,
+                    stamp,
+                    &source,
+                    &plan(parent, &source, sequence),
+                    now,
+                )
+                .expect("schedule");
+            let receipts = owner
+                .drain(
+                    &mut r,
+                    &mut f,
+                    stamp,
+                    &mut map,
+                    &VirtualOwnerClock::new(now),
+                )
+                .expect("drain");
+            assert_eq!(receipts.len(), 1);
+            let receipt = receipts
+                .into_iter()
+                .next()
+                .expect("receipt")
+                .expect("spawn");
+            assert_eq!(
+                receipt.requested, 1,
+                "replacement for {:?}, round {sequence}",
+                source.kind
+            );
+            for child in receipt.children {
+                r.remove_native_encounter_subject(
+                    &f,
+                    stamp,
+                    child.result.expect("child"),
+                    &child.creature.key,
+                    source.content,
+                )
+                .expect("remove child");
+            }
+        }
+    }
+}

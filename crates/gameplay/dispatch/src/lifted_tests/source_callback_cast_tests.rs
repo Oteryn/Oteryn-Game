@@ -481,3 +481,104 @@ fn every_source_callback_missing_facts_provenance_scope_dead_parent_refuses() {
         ));
     }
 }
+
+#[test]
+fn plagirath_delayed_bog_keeps_captured_target_and_checks_source_distance() {
+    for distance in [10, 19, 20] {
+        let (mut r, player, session) = runtime_with_player(0x79);
+        r.initialize_movement_test_position(
+            player,
+            MovementLocalPosition {
+                x: 100 + distance,
+                y: 100,
+                floor: 7,
+            },
+        )
+        .expect("target position");
+        let actor = r
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                "oteryn:creature.plagirath",
+                300000,
+            )
+            .expect("caster");
+        let source = SourceCallbackCast::qualify(
+            &draft(&r),
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key: "oteryn:creature.plagirath".into(),
+                revision: "definition-r1".into(),
+            },
+            6,
+            r.content_pin().server_artifact_digest(),
+        )
+        .expect("qualify")
+        .expect("source");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &r,
+                player,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    max_health: 100000,
+                    ..FACTS
+                },
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("vitals");
+        let before =
+            crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session);
+        let (mut f, stamp) = fence(&r);
+        let mut owner = CallbackCastOwner::new(&r, &f).expect("owner");
+        let mut p = proposal(actor, &source, 0);
+        p.target = player;
+        p.intent = crate::ability::AiAbilityAdapter::normalize(
+            &format!("actor:{}", hex(&actor.placement_identity())),
+            &[&format!("actor:{}", hex(&player.placement_identity()))],
+        )
+        .expect("intent");
+        owner
+            .schedule(
+                &r,
+                &f,
+                stamp,
+                &source,
+                &p,
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("schedule");
+        let mut reader = Reader {
+            player,
+            session,
+            facts: true,
+            pz: false,
+        };
+        let results = owner
+            .drain(
+                &mut r,
+                &mut f,
+                stamp,
+                &mut states,
+                &DamageSpellOwner::default(),
+                &mut reader,
+                &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(10_000_000)),
+            )
+            .expect("drain");
+        assert_eq!(results.len(), 1);
+        let after =
+            crate::gameplay_transport::actor_spell::observe_vitals(&r, &states, player, session);
+        if distance < 20 {
+            assert!(results[0].3.is_ok());
+            assert_ne!(before, after, "captured target at distance {distance}");
+        } else {
+            assert!(matches!(results[0].3, Err(AttackError::OutOfRange)));
+            assert_eq!(before, after);
+        }
+    }
+}

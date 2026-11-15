@@ -630,3 +630,86 @@ impl EncounterHooks for ScopedKeyHook {
         unreachable!("hook qualification does not heal actors");
     }
 }
+
+#[test]
+fn bound_live_corpses_survive_death_replay_eviction() {
+    let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant(scopes()[0], 1));
+    let mut carrier =
+        ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1).expect("carrier");
+    let mut pending = Vec::new();
+    for seed in 1..=66 {
+        let actor = carrier
+            .admit_creature(&owner, ActorState(7), "boss:kernel", 10)
+            .expect("actor");
+        carrier
+            .initialize_position(
+                &owner,
+                actor,
+                context(&owner),
+                LocalPosition {
+                    x: seed.into(),
+                    y: 20,
+                    floor: 7,
+                },
+            )
+            .expect("position");
+        carrier
+            .commit_creature_damage_inner(
+                &owner,
+                actor,
+                OwnerDamageCommand {
+                    target: b"boss:kernel",
+                    occurrence: b"death",
+                    binding: b"death\0kernel",
+                    damage: 10,
+                },
+                None,
+                false,
+            )
+            .expect("damage");
+        let receipt = carrier
+            .committed_lethal_receipt_inner(&owner, actor)
+            .expect("receipt");
+        carrier
+            .project_committed_lethal_inner(&owner, receipt, false, false)
+            .expect("projection");
+        let item = RuntimeCorpseItem {
+            item_instance_id: id(seed),
+            family: "Item".into(),
+            production_key: "fixture:corpse".into(),
+            revision_ref: "r1".into(),
+        };
+        if seed <= 3 {
+            pending.push((ExactActorRef(actor), item));
+            if seed == 3 {
+                for index in [2, 0, 1] {
+                    carrier
+                        .bind_corpse_item_inner(pending[index].0, pending[index].1.clone())
+                        .expect("out-of-order binding");
+                }
+            }
+        } else {
+            carrier
+                .bind_corpse_item_inner(ExactActorRef(actor), item)
+                .expect("binding");
+        }
+        carrier.remove(&owner, actor).expect("remove");
+    }
+    let visible = carrier.bound_corpses(None);
+    assert_eq!(visible.len(), 66);
+    assert_eq!(visible[0].item.item_instance_id, id(1));
+    assert_eq!(visible[0].position.x, 1);
+    assert_eq!(visible[1].item.item_instance_id, id(2));
+    assert_eq!(visible[2].item.item_instance_id, id(3));
+    assert_eq!(carrier.corpse_projections.len(), 64);
+    assert_eq!(
+        carrier.bind_corpse_item_inner(pending[0].0, pending[0].1.clone()),
+        Ok(())
+    );
+    let mut stale = pending[0].0;
+    stale.0.actor_local_generation = ActorLocalGeneration(u64::MAX);
+    assert_eq!(
+        carrier.bind_corpse_item_inner(stale, pending[0].1.clone()),
+        Err(CarrierError::CommittedLethalUnavailable)
+    );
+}

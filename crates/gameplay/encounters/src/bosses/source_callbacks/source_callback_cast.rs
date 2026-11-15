@@ -60,6 +60,42 @@ pub struct SourceCallbackCast {
     pub content: [u8; 32],
     stages: Vec<(u64, SpellSource)>,
 }
+
+// Canary 47df: outburst_explode/eruption_of_destruction_explosion/gaz'haragoth_death,
+// tenebris_ultimate and plagirath_bog use explicit matrices, not numeric circle levels.
+fn callback_explosion_area(creature: &str) -> Result<ProjectV2AbilityArea, AttackError> {
+    let widths: &[usize] = match creature {
+        "oteryn:creature.charging_outburst"
+        | "oteryn:creature.eruption_of_destruction"
+        | "oteryn:creature.gaz_haragoth" => &[1, 5, 7, 9, 11, 11, 13, 11, 11, 9, 7, 5, 1],
+        "oteryn:creature.lady_tenebris" => &[1, 3, 5, 7, 9, 11, 13, 15, 13, 11, 9, 7, 5, 3, 1],
+        "oteryn:creature.plagirath" => &[1, 3, 5, 7, 9, 7, 5, 3, 1],
+        _ => return Err(AttackError::InvalidSource),
+    };
+    let center = widths.len() / 2;
+    let north = widths
+        .iter()
+        .enumerate()
+        .map(|(y, width)| {
+            (0..widths.len())
+                .map(|x| {
+                    if x == center && y == center {
+                        'C'
+                    } else if (center - width / 2..=center + width / 2).contains(&x) {
+                        'x'
+                    } else {
+                        '.'
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    Ok(ProjectV2AbilityArea::Matrix {
+        north,
+        diagonal: Vec::new(),
+    })
+}
+
 impl SourceCallbackCast {
     pub fn parent(&self) -> &Ref {
         &self.parent
@@ -254,10 +290,7 @@ impl SourceCallbackCast {
                     a.damage.min,
                     a.damage.max,
                     a.damage.damage_type.clone(),
-                    Some(ProjectV2AbilityArea::Circle {
-                        radius_tiles: u16::try_from(a.area.radius)
-                            .map_err(|_| AttackError::NumericOverflow)?,
-                    }),
+                    Some(callback_explosion_area(&creature.key)?),
                     false,
                     None,
                     false,
@@ -304,7 +337,12 @@ impl SourceCallbackCast {
                     content_digest: content,
                     element: Some(element),
                     armor,
-                    range: 0,
+                    // Canary plagirath_bog.lua revalidates the captured target at distance < 20.
+                    range: if creature.key == "oteryn:creature.plagirath" {
+                        19
+                    } else {
+                        0
+                    },
                     magnitude: None,
                     area,
                     chain: None,
@@ -316,7 +354,7 @@ impl SourceCallbackCast {
                     variants: Vec::new(),
                     variant_child: None,
                     windup: None,
-                    needs_target: false,
+                    needs_target: creature.key == "oteryn:creature.plagirath",
                     needs_direction: direction,
                 },
             ));
@@ -635,7 +673,9 @@ impl CallbackCastOwner {
                 Err(AttackError::StaleIssuer)
             } else {
                 let mut p = c.proposal.clone();
-                p.target = p.issuer;
+                if !c.source.stages[stage].1.needs_target {
+                    p.target = p.issuer;
+                }
                 p.occurrence = crate::ability::AbilityOccurrence::new(
                     &format!("callback:{}:stage:{}", p.occurrence.id().as_str(), stage),
                     p.occurrence.revisions().clone(),
@@ -675,5 +715,100 @@ impl CallbackCastOwner {
             out.push((c.proposal.issuer, c.proposal.ability.clone(), stage, result));
         }
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    #![allow(
+        clippy::expect_used,
+        reason = "pinned regression fixtures must be valid"
+    )]
+    use super::*;
+
+    fn draft() -> ProjectV2Draft {
+        let v: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../apps/game-server/src/source_callback_native_fixture.json"
+        ))
+        .expect("fixture");
+        ProjectV2Draft {
+            core: crate::content::ProjectDraft {
+                project_revision: "g4-npc-wave-a-r9".into(),
+                package_key: "oteryn:content.world-project".into(),
+                semantic_schema_version: "reference-schema-v1".into(),
+                licensing_metadata: "PENDING".into(),
+                world_id: "00000000-0000-7000-8000-000000000001".into(),
+                coordinate_frame: "global-target-2026-09-27".into(),
+                records: serde_json::from_value(v["records"].clone()).expect("records"),
+                imports: vec![],
+                metadata: vec![],
+            },
+            state: crate::content::ProjectV2State {
+                authoring_profiles: serde_json::from_value(v["authoring_profiles"].clone())
+                    .expect("profiles"),
+                source_identity_bindings: serde_json::from_value(
+                    v["source_identity_bindings"].clone(),
+                )
+                .expect("bindings"),
+                sources: serde_json::from_value(v["sources"].clone()).expect("sources"),
+                ..Default::default()
+            },
+        }
+    }
+
+    #[test]
+    fn callback_explosions_preserve_complete_source_matrices() {
+        let w: Witness = serde_json::from_str(include_str!(
+            "../../../../../../apps/game-server/src/source_callback_cast_fixture.json"
+        ))
+        .expect("witness");
+        for c in w.cases.values() {
+            let (radius, widths): (i32, &[i32]) = match c.caster.as_str() {
+                "oteryn:creature.charging_outburst"
+                | "oteryn:creature.eruption_of_destruction"
+                | "oteryn:creature.gaz_haragoth" => {
+                    (6, &[1, 5, 7, 9, 11, 11, 13, 11, 11, 9, 7, 5, 1])
+                }
+                "oteryn:creature.lady_tenebris" => {
+                    (7, &[1, 3, 5, 7, 9, 11, 13, 15, 13, 11, 9, 7, 5, 3, 1])
+                }
+                "oteryn:creature.plagirath" => (4, &[1, 3, 5, 7, 9, 7, 5, 3, 1]),
+                _ => continue,
+            };
+            let s = SourceCallbackCast::qualify(
+                &draft(),
+                &Ref {
+                    family: ProjectV2Family::Creature,
+                    key: c.caster.clone(),
+                    revision: "definition-r1".into(),
+                },
+                c.index,
+                [1; 32],
+            )
+            .expect("qualify")
+            .expect("source");
+            let at = oteryn_gameplay_entities::MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            };
+            let mut expected: Vec<_> = widths
+                .iter()
+                .enumerate()
+                .flat_map(|(y, width)| {
+                    (-width / 2..=width / 2).map(move |x| (100 + x, 100 + y as i32 - radius, 7))
+                })
+                .collect();
+            // A coincident caster/centre selects South in the native matrix owner.
+            expected.reverse();
+            for (_, stage) in &s.stages {
+                assert_eq!(
+                    stage.target_tiles(at, at, None).expect("tiles"),
+                    expected,
+                    "{}",
+                    c.caster
+                );
+            }
+        }
     }
 }

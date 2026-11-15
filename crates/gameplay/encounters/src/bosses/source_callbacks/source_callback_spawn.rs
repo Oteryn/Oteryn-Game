@@ -454,7 +454,7 @@ pub struct Memo {
     sequence: u64,
     at: u64,
     proposal: ProfileAbilityProposal,
-    counter: u32,
+    children: Vec<ExactActorRef>,
     next_allowed: u64,
 }
 #[derive(Debug)]
@@ -626,7 +626,7 @@ impl CallbackSpawnOwner {
                 sequence,
                 at: now.get(),
                 proposal: p.clone(),
-                counter: 0,
+                children: Vec::new(),
                 next_allowed: 0,
             })
         }
@@ -682,7 +682,14 @@ impl CallbackSpawnOwner {
             .iter()
             .position(|m| m.actor == actor && m.ability == s.parent)
             .ok_or(AttackError::InvalidPlan)?;
-        let counter = self.memos[memo_index].counter;
+        self.memos[memo_index]
+            .children
+            .retain(|child| r.contains_live_creature(*child));
+        let counter = self.memos[memo_index].children.len();
+        let tracks_children = matches!(
+            s.kind,
+            Kind::Destruction | Kind::Hunger | Kind::Rage | Kind::Devourer
+        );
         let available = self.memos[memo_index].next_allowed <= now.get();
         let mut requests: Vec<(&str, u32, bool, SourceSpawnPlacement, u32)> = Vec::new();
         match s.kind {
@@ -887,6 +894,12 @@ impl CallbackSpawnOwner {
                 placements.push((child.clone(), *intrinsic, spec, at, allowed));
             }
         }
+        if tracks_children {
+            self.memos[memo_index]
+                .children
+                .try_reserve(requested as usize)
+                .map_err(|_| AttackError::LedgerFull)?;
+        }
         // Preallocate fixed-source speech/errors before any physical admission; no late allocation refusal can erase committed child receipts.
         if self.speech.len() + placements.len() + 1 > 512 {
             return Err(AttackError::LedgerFull);
@@ -950,16 +963,16 @@ impl CallbackSpawnOwner {
                 cleanup,
             });
         }
-        // Source counters measure successful source casts; failed current-map admissions do not
-        // fabricate successful counts. This per-exact-actor project projection is explicit above.
-        if output.children.iter().any(|c| c.result.is_ok())
-            && matches!(
-                s.kind,
-                Kind::Destruction | Kind::Hunger | Kind::Rage | Kind::Devourer
-            )
-        {
+        // Count outstanding children of this exact encounter actor, not lifetime casts.
+        // Death and administrative removal are reconciled before the next request above.
+        if output.children.iter().any(|c| c.result.is_ok()) && tracks_children {
             let m = &mut self.memos[memo_index];
-            m.counter = m.counter.saturating_add(1);
+            m.children.extend(
+                output
+                    .children
+                    .iter()
+                    .filter_map(|child| child.result.as_ref().ok().copied()),
+            );
             if matches!(s.kind, Kind::Destruction | Kind::Hunger) {
                 m.next_allowed = now.get().saturating_add(15000000);
             }

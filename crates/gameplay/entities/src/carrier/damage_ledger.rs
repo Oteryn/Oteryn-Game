@@ -468,6 +468,7 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         let Slot::CreatureOccupied {
+            generation,
             committed,
             damage_contributors,
             ..
@@ -475,6 +476,9 @@ impl ChannelActorCarrier {
         else {
             return Err(CarrierError::NotCreature);
         };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
         if committed
             .entries
             .iter()
@@ -1190,10 +1194,23 @@ impl ChannelActorCarrier {
 }
 
 impl CurrentOwnerCombatDeath<'_> {
+    fn exact_creature_index(&self, actor: ExactActorRef) -> Result<usize, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { generation, .. }
+                if *generation != actor.0.actor_local_generation.0 =>
+            {
+                Err(CarrierError::StaleActorGeneration)
+            }
+            Slot::CreatureOccupied { .. } => Ok(index),
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
+
     // Insert inside existing impl CurrentOwnerCombatDeath<'_>.
     // Actual carrier-owned data; neither method mints mutation authority or accepts caller facts.
     pub fn creature_target_identity(&self, actor: ExactActorRef) -> Result<&[u8], CarrierError> {
-        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        let index = self.exact_creature_index(actor)?;
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied {
                 target_identity, ..
@@ -1215,7 +1232,7 @@ impl CurrentOwnerCombatDeath<'_> {
         &self,
         actor: ExactActorRef,
     ) -> Result<Vec<RewardDamageShare>, CarrierError> {
-        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        let index = self.exact_creature_index(actor)?;
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied {
                 damage_contributors,
@@ -1241,7 +1258,7 @@ impl CurrentOwnerCombatDeath<'_> {
         &self,
         actor: ExactActorRef,
     ) -> Result<Vec<RewardDamageShare>, CarrierError> {
-        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        let index = self.exact_creature_index(actor)?;
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied {
                 damage_contributors,
@@ -1268,7 +1285,7 @@ impl CurrentOwnerCombatDeath<'_> {
         &self,
         actor: ExactActorRef,
     ) -> Result<Vec<CharacterId>, CarrierError> {
-        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        let index = self.exact_creature_index(actor)?;
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied {
                 damage_contributors,

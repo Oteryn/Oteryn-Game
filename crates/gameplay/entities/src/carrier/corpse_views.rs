@@ -26,6 +26,7 @@ pub struct VisibleRuntimeCorpse {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct CorpseItemBinding {
     actor: ExactActorRef,
+    position: VersionedPosition,
     // Original MINT binding stays immutable when the displayed Item transforms.
     minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
@@ -43,10 +44,6 @@ impl ChannelActorCarrier {
         // scope, generation and retained lethal occurrence below, including Instance.
         if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
-            || !self
-                .corpse_projections
-                .iter()
-                .any(|projection| projection.occurrence.actor == actor)
         {
             return Err(CarrierError::CommittedLethalUnavailable);
         }
@@ -61,6 +58,11 @@ impl ChannelActorCarrier {
                 Err(CarrierError::CorpseProjectionConflict)
             };
         }
+        let projection_index = self
+            .corpse_projections
+            .iter()
+            .position(|projection| projection.occurrence.actor == actor)
+            .ok_or(CarrierError::CommittedLethalUnavailable)?;
         if self
             .corpse_item_bindings
             .iter()
@@ -68,20 +70,28 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::CorpseProjectionConflict);
         }
-        let projections = &self.corpse_projections;
-        self.corpse_item_bindings.retain(|binding| {
-            projections
-                .iter()
-                .any(|projection| projection.occurrence.actor == binding.actor)
-        });
+        let position = self.corpse_projections[projection_index].position;
+        let binding_index = self
+            .corpse_item_bindings
+            .iter()
+            .position(|binding| {
+                self.corpse_projections[projection_index + 1..]
+                    .iter()
+                    .any(|projection| projection.occurrence.actor == binding.actor)
+            })
+            .unwrap_or(self.corpse_item_bindings.len());
         self.corpse_item_bindings
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        self.corpse_item_bindings.push(CorpseItemBinding {
-            actor,
-            minted_item: item.clone(),
-            item,
-        });
+        self.corpse_item_bindings.insert(
+            binding_index,
+            CorpseItemBinding {
+                actor,
+                position,
+                minted_item: item.clone(),
+                item,
+            },
+        );
         Ok(())
     }
 
@@ -89,23 +99,18 @@ impl ChannelActorCarrier {
         &self,
         context: Option<PreProductionPositionContext>,
     ) -> Vec<VisibleRuntimeCorpse> {
-        self.corpse_projections
+        self.corpse_item_bindings
             .iter()
-            .filter(|projection| {
-                context.is_none_or(|context| projection.position.context == context)
-            })
-            .filter_map(|projection| {
-                let actor = projection.occurrence.actor;
-                let binding = self
-                    .corpse_item_bindings
-                    .iter()
-                    .find(|binding| binding.actor == actor)?;
-                Some(VisibleRuntimeCorpse {
-                    identity: actor.corpse_identity(),
-                    position: projection.position(),
-                    revision: projection.position_revision(),
-                    item: binding.item.clone(),
-                })
+            .filter(|binding| context.is_none_or(|context| binding.position.context == context))
+            .map(|binding| VisibleRuntimeCorpse {
+                identity: binding.actor.corpse_identity(),
+                position: MovementLocalPosition {
+                    x: binding.position.position.x,
+                    y: binding.position.position.y,
+                    floor: binding.position.position.floor,
+                },
+                revision: binding.position.revision,
+                item: binding.item.clone(),
             })
             .collect()
     }
@@ -114,10 +119,10 @@ impl ChannelActorCarrier {
 impl ChannelRuntimeV1 {
     /// MAP-ITEM-REF-1 Part B: bind `actor`'s projected corpse to the corpse Item its committed
     /// MINT created (`item_instance_id` and the typed definition `commit_corpse_mint` was given).
-    /// The projection must be retained in this generation (`CommittedLethalUnavailable`
+    /// A first binding requires a retained projection in this generation (`CommittedLethalUnavailable`
     /// otherwise); binding the same Item again is a no-op and another Item, or an Item bound to
-    /// another corpse, is `CorpseProjectionConflict`. Bindings whose projection was evicted are
-    /// dropped here, so there is at most one per retained projection.
+    /// another corpse, is `CorpseProjectionConflict`. Bound positions survive replay eviction
+    /// until the complete durable live-corpse read removes the binding.
     #[allow(
         dead_code,
         reason = "the interface KILL-REWARD part B calls after commit_corpse_mint"
@@ -177,8 +182,7 @@ impl ChannelRuntimeV1 {
     }
 
     /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
-    /// context, in projection order. A corpse without a binding, or whose projection is gone, is
-    /// left out. Read-only.
+    /// context, in projection order. A corpse without a live Item binding is left out. Read-only.
     pub fn visible_corpses(&self) -> Vec<VisibleRuntimeCorpse> {
         self.carrier
             .bound_corpses(Some(self.pinned_position_context()))

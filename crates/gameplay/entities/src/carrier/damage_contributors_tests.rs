@@ -666,3 +666,34 @@ fn eviction_never_resets_the_ordinal_or_the_attackers_high_water_mark() {
     );
     assert_eq!(top(&mut carrier, &owner, actor), Some(character(1)));
 }
+
+#[test]
+fn exact_damage_readers_reject_replacement_slot_generations() {
+    let (continuity, mut carrier, old) = ordinal_fixture(304, 100);
+    carrier.remove(&continuity, old).expect("remove");
+    let replacement = carrier
+        .admit_creature(&continuity, ActorState(2), "fixture:replacement", 100)
+        .expect("replacement");
+    assert_ne!(
+        old.actor_local_generation,
+        replacement.actor_local_generation
+    );
+    let results = {
+        let owner = carrier.current_owner_combat_death(&continuity);
+        let old = ExactActorRef(old);
+        assert_eq!(
+            owner.creature_target_identity(ExactActorRef(replacement)),
+            Ok(b"fixture:replacement".as_slice())
+        );
+        [
+            owner.creature_target_identity(old).map(|_| ()),
+            owner.reward_damage_shares(old).map(|_| ()),
+            owner.current_session_damage_shares(old).map(|_| ()),
+            owner.damage_contributing_characters(old).map(|_| ()),
+        ]
+    };
+    let swing = carrier.swing_lineage_admission(&continuity, old, attack(1, 1, 1, 0));
+    for result in results.into_iter().chain([swing]) {
+        assert_eq!(result, Err(CarrierError::StaleActorGeneration));
+    }
+}
