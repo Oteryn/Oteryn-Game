@@ -802,7 +802,10 @@ impl ChannelRuntimeV1 {
     pub fn use_classic_creature_deaths(&mut self) -> Result<(), CarrierError> {
         self.carrier.validate_current_continuity(&self.continuity)?;
         if self.carrier.occupied.iter().any(|&slot| {
-            matches!(self.carrier.slots[slot as usize], Slot::CreatureOccupied { .. })
+            matches!(
+                self.carrier.slots[slot as usize],
+                Slot::CreatureOccupied { .. }
+            )
         }) {
             return Err(CarrierError::PlanConflict);
         }
