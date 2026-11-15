@@ -79,8 +79,9 @@ With no text field focused, the existing gameplay shortcuts open:
   the protocol has no unsolicited open event, balance, or protection charm.
 - **Ctrl+D:** Daily Reward wall, free/premium catalogue, streak and account/World
   history. Collect uses the server-confirmed shrine availability.
-- **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
-  is read-only; creating or accepting offers is not yet exposed.
+- **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
+  and Offer History. Create buy/sell offers, cancel selected own offers, and accept
+  buy/sell offers with bounded quantities through the existing server intents.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
