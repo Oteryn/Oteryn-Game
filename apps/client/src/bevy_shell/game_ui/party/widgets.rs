@@ -11,6 +11,7 @@ pub(super) fn build(
     generation: u64,
     serial: u64,
     panel: &PartyPanel,
+    portraits: &std::collections::BTreeMap<EntityRef, Handle<Image>>,
 ) -> Entity {
     // TibiaStyle.sidebarWidth176; Party is an ordinary battle-list sidebar, not a modal.
     let root = commands
@@ -78,17 +79,39 @@ pub(super) fn build(
                 "Shared experience: disabled"
             },
         );
+        combat::controls(commands, skin, root, generation, serial, panel);
         label(commands, skin, root, "Members");
         let members = list(commands, root);
-        for member in &state.members {
-            let selected = panel.selected_member == Some(member.handle);
+        let rows = panel.list_rows();
+        let entries = rows
+            .iter()
+            .map(|(handle, row)| {
+                (
+                    *handle,
+                    row.name.as_str(),
+                    state
+                        .members
+                        .iter()
+                        .any(|m| m.handle == *handle && m.leader),
+                    Some(*row),
+                )
+            })
+            .chain(
+                state
+                    .members
+                    .iter()
+                    .filter(|m| m.list.is_empty())
+                    .map(|m| (m.handle, m.name.as_str(), m.leader, None)),
+            );
+        for (handle, member_name, leader, combat_row) in entries {
+            let selected = panel.selected_member == Some(handle);
             let button = commands
                 .spawn((
                     Button,
                     Control {
                         generation,
                         serial,
-                        kind: Kind::Member(member.handle),
+                        kind: Kind::Member(handle),
                     },
                     Name::new("party.member"),
                     bevy::input_focus::tab_navigation::TabIndex(0),
@@ -111,16 +134,20 @@ pub(super) fn build(
             if pending {
                 commands.entity(button).insert(InteractionDisabled);
             }
-            let name = label(commands, skin, button, &member.name);
-            if member.leader {
+            let name = if let Some(row) = combat_row {
+                combat::row(commands, skin, button, row, portraits.get(&row.entity))
+            } else {
+                label(commands, skin, button, member_name)
+            };
+            if leader {
                 commands
                     .entity(name)
                     .insert(TextColor(Color::srgb_u8(248, 219, 56)));
             }
             commands.entity(members).add_child(button);
         }
-        if state.members.is_empty() {
-            label(commands, skin, members, "No members");
+        if rows.is_empty() && state.members.iter().all(|m| !m.list.is_empty()) {
+            label(commands, skin, members, "No visible members");
         }
         if !state.invitations.is_empty() {
             label(commands, skin, root, "Invitations");
@@ -225,7 +252,7 @@ pub(super) fn build(
     }
     root
 }
-fn row(commands: &mut Commands, parent: Entity) -> Entity {
+pub(super) fn row(commands: &mut Commands, parent: Entity) -> Entity {
     let entity = commands
         .spawn(Node {
             width: percent(100.),
@@ -254,7 +281,7 @@ fn list(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> Entity {
+pub(super) fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> Entity {
     let entity = commands
         .spawn(source::text(text, source::font(skin.font.clone(), false)))
         .insert((
@@ -269,7 +296,7 @@ fn label(commands: &mut Commands, skin: &Skins, parent: Entity, text: &str) -> E
     commands.entity(parent).add_child(entity);
     entity
 }
-fn button(
+pub(super) fn button(
     commands: &mut Commands,
     skin: &Skins,
     parent: Entity,

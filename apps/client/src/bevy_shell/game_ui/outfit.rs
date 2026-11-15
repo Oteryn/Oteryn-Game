@@ -420,6 +420,6 @@ fn project(
     state.rendered = Some((generation, panel));
 }
 #[path = "../../features/0025-appearance/preview.rs"]
-mod preview;
+pub(super) mod preview;
 #[cfg(test)]
 mod tests;

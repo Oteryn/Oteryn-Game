@@ -139,6 +139,10 @@ fn app() -> std::result::Result<
     super::super::modal::install(&mut app);
     install(&mut app);
     app.world_mut().spawn((PartyDock, Node::default()));
+    // Command tests advance the clock only when exercising live refresh.
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::ZERO,
+    ));
     app.update();
     Ok((app, commands, outbox))
 }
@@ -317,3 +321,210 @@ fn stale_revision_selection_pending_capability_and_top_modal_never_dispatch() ->
     Ok(())
 }
 mod context;
+
+#[test]
+fn party_combat_rows_show_wire_vitals_summons_and_reachable_filters() -> Result {
+    let (mut app, mut commands, outbox) = app()?;
+    let mut result = state();
+    let row = |id, name: &str, summon, distance| party::PartyListEntity {
+        entity: EntityRef {
+            identity: [id; 16],
+            generation: 1,
+        },
+        name: name.into(),
+        vocation: 1,
+        summon,
+        distance,
+        health_percent: (distance <= 30).then_some(42),
+        mana_percent: (distance <= 30).then_some(65),
+        skull: (distance <= 30).then_some(3),
+        portrait: None,
+        portrait_colours: [[0; 3]; 4],
+    };
+    result.members[0].list = vec![row(1, "Zed", false, 30), row(3, "Summon", true, 30)];
+    result.members[1].list = vec![row(2, "Amy", false, 31)];
+    click(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    let _ = command(&mut commands)?;
+    publish(&outbox, &result, party::PartyDisposition::Ok)?;
+    app.update();
+    let count = |app: &mut App, tag: &str| {
+        app.world_mut()
+            .query::<&Name>()
+            .iter(app.world())
+            .filter(|name| name.as_str() == tag)
+            .count()
+    };
+    assert_eq!(count(&mut app, "party.combat-row"), 3);
+    assert_eq!(count(&mut app, "party.health"), 2);
+    assert_eq!(count(&mut app, "party.mana"), 2);
+    assert_eq!(count(&mut app, "party.skull"), 2);
+    let fills: Vec<_> = app
+        .world_mut()
+        .query::<(&Name, &Node)>()
+        .iter(app.world())
+        .filter(|(name, _)| name.as_str() == "party.health.fill")
+        .map(|(_, node)| node.width)
+        .collect();
+    assert_eq!(fills, vec![percent(42.); 2]);
+    // Drive the actual button observer, rather than changing the retained model directly.
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find(|(text, _)| text.0 == "Summons")
+        .map(|(_, parent)| parent.parent())
+        .ok_or("summon filter")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert_eq!(count(&mut app, "party.combat-row"), 2);
+    assert_eq!(count(&mut app, "party.health"), 1);
+    click(&mut app, |kind| {
+        matches!(kind, Kind::Sort(oteryn_client_ui::party::ListSort::Name))
+    })?;
+    app.update();
+    let parent = app
+        .world_mut()
+        .query::<(&Name, &ChildOf)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "party.combat-row")
+        .map(|(_, parent)| parent.parent())
+        .ok_or("combat list")?;
+    let order: Vec<_> = app
+        .world()
+        .get::<Children>(parent)
+        .ok_or("rows")?
+        .iter()
+        .filter_map(|entity| app.world().get::<Control>(entity))
+        .filter_map(|control| {
+            if let Kind::Member(handle) = control.kind {
+                Some(handle)
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert_eq!(
+        order,
+        [2, 1],
+        "Name sorting must reorder the actual rendered rows"
+    );
+    click(&mut app, |kind| matches!(kind, Kind::Filter(1)))?;
+    app.update();
+    assert_eq!(count(&mut app, "party.combat-row"), 0);
+
+    assert!(
+        commands.try_recv().is_err(),
+        "local filtering must not send membership commands"
+    );
+    Ok(())
+}
+
+#[test]
+fn party_portrait_projects_pinned_outfit_artwork_into_bevy_image() -> Result {
+    use oteryn_client_runtime::appearance::{Binding, Context, Look};
+    let (mut app, mut commands, outbox) = app()?;
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let assets = super::super::outfit::preview::Assets::load(&root)?;
+    *app.world_mut().resource_mut::<combat::Artwork>() = combat::Artwork {
+        assets: Some(assets),
+        attempted: true,
+    };
+    let entity = EntityRef {
+        identity: [1; 16],
+        generation: 1,
+    };
+    let mut result = state();
+    result.members[0].list.push(party::PartyListEntity {
+        entity,
+        name: "Leader".into(),
+        vocation: 1,
+        summon: false,
+        distance: 0,
+        health_percent: Some(100),
+        mana_percent: Some(100),
+        skull: None,
+        portrait: Some(Binding {
+            context: Context {
+                content_generation: [1; 32],
+                cosmetics_digest: [2; 32],
+            },
+            appearance_ref: 1,
+            entity,
+            root_revision: 1,
+            condition_revision: 0,
+            owner_time_us: 1,
+            look: Look::Outfit {
+                look_type: 128,
+                addons: 3,
+                colours: [0; 4],
+            },
+            selection_revision: None,
+            forge_stacks: None,
+        }),
+        portrait_colours: [[255, 100, 50]; 4],
+    });
+    click(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    let _ = command(&mut commands)?;
+    publish(&outbox, &result, party::PartyDisposition::Ok)?;
+    app.update();
+    let portrait = app
+        .world_mut()
+        .query::<(&Name, &ImageNode)>()
+        .iter(app.world())
+        .find(|(name, _)| name.as_str() == "party.portrait")
+        .map(|(_, image)| image.clone())
+        .ok_or("portrait image")?;
+    assert_eq!(portrait.rect, Some(Rect::new(32., 32., 96., 96.)));
+    let image = app
+        .world()
+        .resource::<Assets<Image>>()
+        .get(&portrait.image)
+        .ok_or("image asset")?;
+    assert_eq!(image.size(), UVec2::splat(96));
+    assert!(
+        image
+            .data
+            .as_ref()
+            .ok_or("pixel data")?
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|pixel| pixel[..3] != [32, 32, 32]),
+        "portrait must contain verified outfit pixels"
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn open_party_refreshes_live_vitals_without_overlapping_requests_or_polling_when_closed() -> Result
+{
+    let (mut app, mut commands, outbox) = app()?;
+    app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+        std::time::Duration::from_secs(1),
+    ));
+    app.world_mut()
+        .resource_mut::<Time<Virtual>>()
+        .set_max_delta(std::time::Duration::from_secs(2));
+    app.update();
+    app.update();
+    assert_eq!(
+        command(&mut commands)?.kind,
+        party::COMMAND_TYPE_PARTY_QUERY
+    );
+    for _ in 0..3 {
+        app.update();
+    }
+    assert!(
+        commands.try_recv().is_err(),
+        "a pending query must not overlap"
+    );
+    publish(&outbox, &state(), party::PartyDisposition::Ok)?;
+    // A closed dock must stop the refresh stream immediately.
+    click(&mut app, |kind| matches!(kind, Kind::Close))?;
+    for _ in 0..3 {
+        app.update();
+    }
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
