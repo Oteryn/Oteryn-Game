@@ -14,13 +14,16 @@ impl PlayLink {
 
     pub fn wheel_input(&self, events: &[NormalizedInputEvent]) -> bool {
         use oteryn_input_actions::{ButtonState, Modifier, Modifiers};
-        if events.iter().any(|event| matches!(event, NormalizedInputEvent::Key {
+        let presets = events.iter().any(|event| matches!(event, NormalizedInputEvent::Key {
             code, state: ButtonState::Pressed, modifiers, repeat: false
-        } if code.get() == 26 && *modifiers == Modifiers::one(Modifier::Control).with(Modifier::Shift))) {
+        } if code.get() == 26 && *modifiers == Modifiers::one(Modifier::Control).with(Modifier::Shift)));
+        // The shared frontend draws presets inside the Wheel panel, so a closed
+        // panel takes the full open path, which also opens the presets.
+        if presets && !(self.uses_shared_frontend() && !lock(&self.mailbox).wheel.open) {
             self.wheel_presets_open();
             return true;
         }
-        if !oteryn_client_ui::wheel_allocation::open_key(events) {
+        if !presets && !oteryn_client_ui::wheel_allocation::open_key(events) {
             return false;
         }
         self.wheel_request(Intent::Refresh);

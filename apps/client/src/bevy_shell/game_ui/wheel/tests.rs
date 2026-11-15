@@ -357,3 +357,29 @@ fn wheel_shortcut_and_stale_controls_are_fenced() -> TestResult {
     assert_eq!(panel(&app)?.points[14], 10);
     Ok(())
 }
+#[test]
+fn wheel_preset_shortcut_opens_closed_panel() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut closed = model();
+    closed.open = false;
+    let (mut app, mut commands, _outbox) = fixture(closed)?;
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(26)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
+        repeat: false,
+    };
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .route_input(&[key], false);
+    assert!(
+        panel(&app)?.open,
+        "the preset chord must open the Wheel panel"
+    );
+    let PlayCommand::Wheel(c) = commands.try_recv()? else {
+        return Err("wheel query".into());
+    };
+    let request = wheel::decode_wheel_request(&c.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(request.action, 0);
+    Ok(())
+}
