@@ -190,6 +190,14 @@ impl UpdateClient {
     }
     /// Streams a signed-length, signed-hash checked target; never buffers a package in memory.
     pub async fn download(&self, destination: &Path) -> Result<(), UpdateError> {
+        self.download_with_progress(destination, |_, _| {}).await
+    }
+    /// Progress counts received bytes; success is reported only after signed verification.
+    pub async fn download_with_progress(
+        &self,
+        destination: &Path,
+        mut progress: impl FnMut(u64, u64),
+    ) -> Result<(), UpdateError> {
         use futures::StreamExt;
         use std::io::Write;
         let partial = destination.with_extension("partial");
@@ -205,9 +213,12 @@ impl UpdateClient {
                 .await
                 .map_err(|_| UpdateError::Verification)?
                 .ok_or(UpdateError::Unavailable)?;
+            let mut received = 0_u64;
             while let Some(chunk) = stream.next().await {
-                file.write_all(&chunk.map_err(|_| UpdateError::Verification)?)
-                    .map_err(|_| UpdateError::Storage)?;
+                let chunk = chunk.map_err(|_| UpdateError::Verification)?;
+                file.write_all(&chunk).map_err(|_| UpdateError::Storage)?;
+                received = received.saturating_add(chunk.len() as u64);
+                progress(received, self.length);
             }
             file.sync_all().map_err(|_| UpdateError::Storage)?;
             std::fs::rename(&partial, destination).map_err(|_| UpdateError::Storage)

@@ -14,6 +14,7 @@ mod owner;
 mod scene;
 mod selection;
 mod ui;
+mod updater;
 mod window_drag;
 
 use bevy::{
@@ -172,6 +173,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     health_circle::install(&mut app);
     hints::install(&mut app);
     login::install(&mut app);
+    updater::install(&mut app);
     window_drag::install(&mut app);
     app
 }

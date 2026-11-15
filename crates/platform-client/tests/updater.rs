@@ -62,7 +62,9 @@ fn signed_origin_checks_versions_downloads_and_refuses_corruption()
   let requests=Arc::new(std::sync::Mutex::new(Vec::new()));
   let client=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:false,requests:requests.clone()}).await?;
   assert_eq!(client.policy.current_release_id,"rel-a");assert_eq!(client.length,7);
-  client.download(&folder.join("package.zip")).await?;
+  let mut progress = Vec::new();
+  client.download_with_progress(&folder.join("package.zip"), |received, total| progress.push((received, total))).await?;
+  assert_eq!(progress.last(), Some(&(7, 7)));
   assert_eq!(std::fs::read(folder.join("package.zip"))?,b"package");
   let bad=UpdateClient::check_with_transport(UpdateConfig::new("stable",root,"windows","x86_64")?,&folder,Fixture{corrupted:true,requests}).await?;
   assert!(bad.download(&folder.join("bad.zip")).await.is_err());
