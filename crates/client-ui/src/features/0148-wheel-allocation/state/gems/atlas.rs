@@ -49,9 +49,15 @@ fn empty_slot() -> Vec<u8> {
 }
 pub fn panel_glyphs(p: &WheelPanel) -> Vec<u8> {
     let mut cells = Vec::new();
-    for index in 0..5 {
+    let vessel_count = usize::from(p.vessel_slot_count());
+    for index in 0..=vessel_count {
         let id = if index == 0 {
             p.gem
+        } else if p.atelier_v2 {
+            p.vessel_board
+                .as_ref()
+                .and_then(|board| board.slots.get(index - 1))
+                .and_then(|slot| slot.gem)
         } else {
             p.vessels[index - 1]
         };
@@ -65,11 +71,21 @@ pub fn panel_glyphs(p: &WheelPanel) -> Vec<u8> {
         cells.push(gem.map_or_else(empty_slot, |g| glyph(g.quality, g.locked, g.vessel)));
     }
     let mut pixels = vec![0; SIZE * SIZE * 5 * 4];
-    for y in 0..SIZE {
-        for (column, cell) in cells.iter().enumerate() {
-            let source = &cell[y * SIZE * 4..(y + 1) * SIZE * 4];
-            let start = (y * SIZE * 5 + column * SIZE) * 4;
-            pixels[start..start + SIZE * 4].copy_from_slice(source);
+    for (index, cell) in cells.iter().enumerate() {
+        // Keep the native 320x64 atlas contract: v2 vessels use three rows beside
+        // the full-sized selected gem, in board slot order.
+        let (column, row, size) = if p.atelier_v2 && index > 0 {
+            (1 + (index - 1) % 4, (index - 1) / 4, SIZE / 3)
+        } else {
+            (index, 0, SIZE)
+        };
+        for y in 0..size {
+            for x in 0..size {
+                let source = ((y * SIZE / size) * SIZE + x * SIZE / size) * 4;
+                let start =
+                    ((row * size + y) * SIZE * 5 + column * SIZE + (SIZE - size) / 2 + x) * 4;
+                pixels[start..start + 4].copy_from_slice(&cell[source..source + 4]);
+            }
         }
     }
     pixels

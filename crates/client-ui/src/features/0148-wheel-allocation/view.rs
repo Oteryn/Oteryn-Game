@@ -98,8 +98,10 @@ pub fn workshop_lines(panel: &WheelPanel) -> Vec<String> {
     let Some(atelier) = &panel.confirmed_atelier else {
         return Vec::new();
     };
-    let unlocked: u32 = atelier.grades.iter().map(|g| u32::from(g.grade)).sum();
-    let promotion = atelier.grades.iter().filter(|g| g.grade >= 3).count();
+    let grades_current = gems::current(panel).is_none_or(|r| r.grades_current);
+    let grades = || atelier.grades.iter().filter(|_| grades_current);
+    let unlocked: u32 = grades().map(|g| u32::from(g.grade)).sum();
+    let promotion = grades().filter(|g| g.grade >= 3).count();
     let mut lines = vec![
         format!(
             "Fragment Workshop: +{} Health, Mana and Capacity (+5 for each mod grade unlocked).",
@@ -110,7 +112,7 @@ pub fn workshop_lines(panel: &WheelPanel) -> Vec<String> {
             promotion
         ),
     ];
-    for grade in atelier.grades.iter().filter(|g| {
+    for grade in grades().filter(|g| {
         g.kind == 1 && catalogue::modifier_name(g.kind, g.mod_id).starts_with("Revelation Mastery")
     }) {
         lines.push(format!(
@@ -156,15 +158,32 @@ pub fn gem_label(gem: &atelier::GemView) -> String {
 }
 
 pub fn modifier_label(panel: &WheelPanel, kind: u8, mod_id: u16) -> String {
-    let grade = ["I", "II", "III", "IV"]
-        .get(usize::from(panel.grade(kind, mod_id)))
+    let names = ["I", "II", "III", "IV"];
+    let grade = names
+        .get(usize::from(active_grade(panel, kind, mod_id)))
         .copied()
         .unwrap_or("?");
-    lfmt!(
+    let mut label = lfmt!(
         "{} · Grade {grade}",
         catalogue::modifier_name(kind, mod_id),
         grade = grade
-    )
+    );
+    if gems::current(panel).is_some_and(|r| !r.grades_current) {
+        let stored = names
+            .get(usize::from(panel.grade(kind, mod_id)))
+            .copied()
+            .unwrap_or("?");
+        label.push_str(&format!(" (stored Grade {stored})"));
+    }
+    label
+}
+
+pub(super) fn active_grade(panel: &WheelPanel, kind: u8, mod_id: u16) -> u8 {
+    if gems::current(panel).is_some_and(|r| !r.grades_current) {
+        0
+    } else {
+        panel.grade(kind, mod_id)
+    }
 }
 
 /// Plain text also feeds the native accessible description control.

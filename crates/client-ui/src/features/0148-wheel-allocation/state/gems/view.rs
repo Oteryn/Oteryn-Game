@@ -20,9 +20,14 @@ pub fn modifier(p: &WheelPanel, kind: u8, id: u16) -> String {
             super::super::modifier_label(p, kind, id)
         );
     };
-    let mut text = format!("{} · Workshop grade {}\n", row.name, p.grade(kind, id) + 1);
+    let mut text = format!(
+        "{} · Workshop grade {}\n",
+        row.name,
+        super::super::view::active_grade(p, kind, id) + 1
+    );
     let qualified = current(p).is_some_and(|r| r.grades_current);
     if !qualified {
+        text.push_str(&format!("{}\n", super::super::modifier_label(p, kind, id)));
         text.push_str("Stored grades belong to an earlier catalogue; current rules use Grade I.\n");
     }
     for e in &row.effects {

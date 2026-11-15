@@ -12,7 +12,10 @@ fn value<'a>(item: Option<&'a InspectedItem>, key: &str) -> Result<Option<&'a st
     Ok(result)
 }
 pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static str> {
-    if matches!(panel.last_request, Some(Request::CatalogueQuery(_))) {
+    if matches!(
+        panel.last_request,
+        Some(Request::CatalogueQuery(Query::Items { .. }))
+    ) {
         panel.catalogue_query = None;
         panel.catalogue_page = None;
         panel.clear_sources();
@@ -107,7 +110,21 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
             )
         });
         if panel.catalogue.contains_key(&item.definition_ref) || panel.catalogue.len() < 512 {
-            panel.catalogue.insert(item.definition_ref, item.clone());
+            if matches!(
+                panel.last_request,
+                Some(Request::CatalogueQuery(Query::Drops { .. }))
+            ) && let Some(cached) = panel.catalogue.get_mut(&item.definition_ref)
+            {
+                cached.attributes.retain(|(key, _)| key != "Dropped by");
+                cached.attributes.extend(
+                    item.attributes
+                        .iter()
+                        .filter(|(key, _)| key == "Dropped by")
+                        .cloned(),
+                );
+            } else {
+                panel.catalogue.insert(item.definition_ref, item.clone());
+            }
         }
     }
     Ok(())
