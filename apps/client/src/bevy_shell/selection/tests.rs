@@ -31,6 +31,7 @@ fn picker_buttons_return_server_channel_through_existing_callback()
         .spawn((Window::default(), bevy::window::PrimaryWindow))
         .id();
     app.update();
+    let account_callback = callback.clone();
     let worker = thread::spawn(move || {
         callback(
             &[crate::character_selection::CharacterRow {
@@ -75,6 +76,13 @@ fn picker_buttons_return_server_channel_through_existing_callback()
             .map(|(entity, _)| entity)
             .ok_or("picker button missing")
     };
+    assert!(
+        app.world_mut()
+            .query::<&PickerControl>()
+            .iter(app.world())
+            .any(|control| control.id == "selection.account"),
+        "account services must be reachable from the picker"
+    );
     let initial_play = find(&mut app, false)?;
     assert_eq!(
         app.world().resource::<InputFocus>().get(),
@@ -135,6 +143,34 @@ fn picker_buttons_return_server_channel_through_existing_callback()
             .is_none()
     );
     assert_eq!(app.world().resource::<InputFocus>().get(), None);
+    let account_worker = thread::spawn(move || account_callback(&[], "", CancellationToken::new()));
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while app
+        .world()
+        .non_send::<HostOwner>()
+        .selection
+        .pending()
+        .is_none()
+        && Instant::now() < deadline
+    {
+        app.update();
+        thread::yield_now();
+    }
+    app.update();
+    let account = app
+        .world_mut()
+        .query::<(Entity, &PickerControl)>()
+        .iter(app.world())
+        .find(|(_, c)| c.id == "selection.account")
+        .map(|(e, _)| e)
+        .ok_or("Account Services button")?;
+    app.world_mut().trigger(Activate { entity: account });
+    assert_eq!(
+        account_worker
+            .join()
+            .map_err(|_| "account selector worker")?,
+        SelectionAction::AccountServices
+    );
     Ok(())
 }
 #[test]

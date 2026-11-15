@@ -62,6 +62,7 @@ pub(super) struct HostOwner {
     pub(super) login: super::login::LoginState,
     pub(super) selection: super::selection::SelectionBridge,
     selector: crate::character_selection::CharacterSelector,
+    pub(super) services: super::account_services::Services,
     pub(super) dialogs: super::gameplay_dialogs::Dialogs,
 }
 impl HostOwner {
@@ -84,6 +85,7 @@ impl HostOwner {
             login: Default::default(),
             selection,
             selector,
+            services: super::account_services::Services::new(),
             dialogs: Default::default(),
         })
     }
@@ -158,6 +160,7 @@ impl HostOwner {
     fn change_scope(&mut self, character: Option<[u8; 16]>) {
         self.cancel();
         self.selection.cancel();
+        self.services.cancel();
         self.dialogs.clear();
         self.scope = Scope {
             character,
@@ -203,6 +206,7 @@ impl HostOwner {
         self.draft.is_some()
             || self.login.visible
             || self.selection.pending().is_some()
+            || self.services.pending().is_some()
             || self.dialogs.active()
             || self
                 .play
@@ -240,11 +244,11 @@ impl HostOwner {
         }
         config.preference_path.clone_from(&self.preferences_path);
         config.select_character = self.selector.clone();
-        // These account presenters have not migrated; the picker exposes no such actions.
-        config.account_services = std::sync::Arc::new(|_, _| crate::account_services::Action::Back);
+        self.services.configure(&mut config);
+        // Pre-login purchases are a separate presentation batch.
         config.coin_shop = std::sync::Arc::new(|_, _| crate::coin_shop::Action::Back);
-        config.premium = std::sync::Arc::new(|_, _| crate::premium::Action::Back);
         self.selection.cancel();
+        self.services.cancel();
         if self
             .entry
             .as_mut()
@@ -263,6 +267,7 @@ impl HostOwner {
     }
     pub fn cancel_login(&mut self) {
         self.selection.cancel();
+        self.services.cancel();
         if let Some(entry) = &mut self.entry {
             entry.cancel_entry();
         }
@@ -337,6 +342,7 @@ impl HostOwner {
         }
         self.cancel();
         self.selection.cancel();
+        self.services.cancel();
         self.dialogs.clear();
         self.login.visible = false;
         drop(self.play.take());
