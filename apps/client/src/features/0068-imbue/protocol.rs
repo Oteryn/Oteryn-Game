@@ -50,6 +50,9 @@ pub(in crate::play) fn equipment_inspection_result(
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl Outbox {
+    pub(crate) fn bevy_imbue_equipment(&self, inventory: oteryn_session::CharacterInventory) {
+        lock(&self.0).depot.items.inventory = inventory;
+    }
     pub(crate) fn bevy_imbue_initialize(&self) {
         self.imbue_initialize(true);
     }

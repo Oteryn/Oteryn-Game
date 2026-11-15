@@ -118,8 +118,7 @@ impl HostOwner {
                 .highscores_request(oteryn_client_ui::highscores::Action::Refresh);
             return;
         }
-        if oteryn_client_ui::imbue::open_key(&routed) {
-            play.link.open_imbue();
+        if play.link.imbue_input(&routed) {
             return;
         }
         if oteryn_client_ui::market::open_key(&routed) {

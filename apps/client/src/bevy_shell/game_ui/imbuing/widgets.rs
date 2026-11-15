@@ -68,6 +68,20 @@ pub(super) fn build(
         );
         return root;
     }
+    button(
+        commands,
+        skins,
+        window,
+        control(Kind::Tracker),
+        "Imbuement tracker",
+        true,
+    );
+    text(
+        commands,
+        skins,
+        window,
+        &costs::summary(panel, selection.offer),
+    );
     let body = commands
         .spawn(Node {
             width: percent(100.),
