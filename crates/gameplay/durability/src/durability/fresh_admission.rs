@@ -2075,7 +2075,8 @@ impl FreshAdmissionStore {
         account_id: &str,
         transport: AuthenticatedTransportRefV1,
     ) -> Result<ExpiredLossReleaseV1> {
-        let (current, now) = self.current_session_at(session).await?;
+        let (current, now) =
+            terminal_release::nb("logout_session_at", self.current_session_at(session).await)?;
         if current.session_state() == GameSessionState::Terminal {
             return Ok(ExpiredLossReleaseV1::Terminal);
         }

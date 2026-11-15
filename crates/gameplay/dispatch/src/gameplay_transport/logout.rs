@@ -493,6 +493,10 @@ impl AdmissionRetryBudget<'_> {
                     operator_event(&format!(
                         "event=session_durability_failed stage={stage} kind={kind}"
                     ));
+                    // [DBG-NBHOLD] Temporary: the exact variant behind the kind.
+                    eprintln!(
+                        "[DBG-NBHOLD] event=retry_durability_failed stage={stage} error={error:?}"
+                    );
                     return Err(error);
                 }
             }

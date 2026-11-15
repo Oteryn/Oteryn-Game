@@ -1923,7 +1923,11 @@ where
     match task.await {
         Ok(result) => result,
         Err(error) if error.is_panic() => std::panic::resume_unwind(error.into_panic()),
-        Err(_) => Err(DurabilityError::RootTaskFailed),
+        Err(error) => {
+            // [DBG-NBHOLD] Temporary: a cancelled root task.
+            eprintln!("[DBG-NBHOLD] event=root_task_failed error={error:?}");
+            Err(DurabilityError::RootTaskFailed)
+        }
     }
 }
 
@@ -2021,6 +2025,12 @@ impl IssuedSemanticPass {
                 eprintln!(
                     "DURABILITY_PASS_RETIRED caller={} reason=closed",
                     self.owner.caller
+                );
+                // [DBG-NBHOLD] Temporary: the retired pass's own outcome.
+                eprintln!(
+                    "[DBG-NBHOLD] event=pass_retired caller={} reason=closed result={:?}",
+                    self.owner.caller,
+                    result.as_ref().err()
                 );
                 self.root.request_ready();
                 result
