@@ -85,3 +85,55 @@ async fn malformed_frame_yields_protocol_error_then_close() -> Result<(), Box<dy
     ));
     Ok(())
 }
+
+#[test]
+fn backpressured_error_write_preserves_admitted_cleanup_identity()
+-> Result<(), Box<dyn Error + Send + Sync>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .start_paused(true)
+                .build()?
+                .block_on(backpressured_error_write())
+        })?
+        .join()
+        .map_err(|_| "backpressured connection test thread panicked")?
+}
+
+async fn backpressured_error_write() -> Result<(), Box<dyn Error + Send + Sync>> {
+    let (runtime, actor, session) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_player(191);
+    let admitted = AdmittedSession {
+        game_session_id: session,
+        world_id: runtime.binding().world_id(),
+        channel_id: runtime
+            .binding()
+            .channel_id()
+            .ok_or("Channel fixture binding")?,
+        runtime_actor: Some(actor),
+        first_entry: FirstEntryOutcome::Positioned,
+        controller: Some(ControllerBinding {
+            transport: AuthenticatedTransportRefV1::decode(&[9; 16])?,
+            account_id: [8; 16],
+        }),
+        continuity: SessionContinuity::FRESH,
+        item_fence: None,
+    };
+    let (mut server, mut client) = tokio::io::duplex(1);
+    let send = async {
+        client.write_all(&1u32.to_be_bytes()).await?;
+        client.write_all(&[0]).await?;
+        Ok::<_, std::io::Error>(client)
+    };
+    let serve = tokio::time::timeout(
+        std::time::Duration::from_secs(6),
+        hold_admitted(&mut server, admitted),
+    );
+    let (held_peer, result) = tokio::join!(send, serve);
+    let _held_peer = held_peer?;
+    let end = result.map_err(|_| "a blocked error write prevented admitted cleanup")?;
+    assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(held, _) if held == admitted));
+    Ok(())
+}

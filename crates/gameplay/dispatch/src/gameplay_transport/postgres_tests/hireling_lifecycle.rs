@@ -50,8 +50,16 @@ mod position;
 
 const OTHER_HOUSE: &str = "oteryn:content.house.admiral_s_avenue_2";
 #[derive(Clone, Copy)]
-enum Case { Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied, BedRest }
+enum Case { Lifecycle, InboxFull, LegacyConversion, Bank, GuestAcl, Wire, LegacyWire, Trader, Gourmet, Cook, CookBank, Steward, Furniture, LampPending, Store, PositionCapture, PositionRelog, PositionProcessLoss, PositionAcl, PositionOccupied, BedRest, Cadence, Lights }
 
+#[test]
+fn visibility_lights_house_keeps_active_player_spell_postgres() -> TestResult {
+    run_case(Case::Lights)
+}
+#[test]
+fn house_resident_regenerates_vitals_and_resting_stamina_and_soul_postgres() -> TestResult {
+    run_case(Case::Cadence)
+}
 #[test]
 fn hireling_postgres_native_inbox_lamp_fences_replay_and_return() -> TestResult {
     run_case(Case::Lifecycle)
@@ -177,7 +185,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     input.source_world = None;
     if matches!(case, Case::BedRest) { super::bed_sleep_fixture::bed_profiles(&input)?; }
     if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
-        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
+        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest | Case::Cadence) {
         // Use the same qualified training fixture as the existing native
         // death/relog tests: source formula bytes are unchanged, while its
         // binding names this fixture's actual Character interpretation.
@@ -219,7 +227,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         },
     ).await.map_err(debug)?);
     let bed_index = if matches!(case, Case::BedRest) { generation.native_gameplay().and_then(|n| n.item_index()) } else { None };
-    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id, bed_index.map(|i| i.as_ref()))?;
+    let world = hireling_bundle(base.admitted.world_id, base.admitted.channel_id, bed_index.map(|i| i.as_ref()), matches!(case, Case::Cadence))?;
     let cells = world.movement_cells(room.movement_cells()).map_err(debug)?;
     use sha2::Digest as _;
     let map_digest = sha2::Sha256::digest(cells.scope().map_revision.as_str().as_bytes()).into();
@@ -363,7 +371,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await.map_err(debug)?;
     assert!(equipment.items.is_empty());
     if matches!(case, Case::PositionCapture | Case::PositionRelog | Case::PositionProcessLoss
-        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest) {
+        | Case::PositionAcl | Case::PositionOccupied | Case::BedRest | Case::Cadence) {
         // This source is really positioned in its Channel. Use the ordinary
         // native login settlement and runtime install before the House handoff.
         // Other service fixtures deliberately retain their revision-one seed.
@@ -400,6 +408,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             "the bed modal remains playable without Hireling capabilities");
     }
 
+    if matches!(case, Case::Lights) {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        super::actor_light_projection::apply_light(
+            states.get_mut(&runtime, deps.actor, admitted.game_session_id).ok_or("source Light caster")?,
+            owner.owner_now().get(), runtime.content_pin().server_artifact_digest(),
+        )?;
+    }
     let mut transfer = vec![8, 1, 18, HOUSE.len() as u8];
     transfer.extend(HOUSE.as_bytes());
     let (inside, _) = owner.transfer_house(admitted, 1, &transfer).await.ok_or("house transfer outcome")?;
@@ -416,6 +432,12 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::BedRest) {
         return super::bed_sleep_dispatch::production_rest(h, &owner, admitted, deps.actor).await;
+    }
+    if matches!(case, Case::Lights) {
+        return super::actor_light_projection::house(&owner, deps.actor).await;
+    }
+    if matches!(case, Case::Cadence) {
+        return position::cadence(&owner, admitted, deps.actor).await;
     }
     if matches!(case, Case::PositionCapture) {
         return position::capture(h, &owner, admitted, deps.actor).await;
@@ -830,6 +852,7 @@ fn hireling_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
     bed_index: Option<&crate::content::item_ref::ItemDefinitionIndex>,
+    resting: bool,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use crate::map::boot::{self, tests as fixture};
     use oteryn_world_bundle::bundle;
@@ -851,6 +874,9 @@ fn hireling_bundle(
         if tile.x == 6 {
             tile.house = 3437;
             tile.items.last_mut().ok_or("door")?.attrs.door = Some(42);
+        }
+        if resting && tile.house == 3437 {
+            tile.flags |= 1; // Retained native PZ metadata for the eligible resting resident.
         }
         tile.x += 32303;
         tile.y += 32804;

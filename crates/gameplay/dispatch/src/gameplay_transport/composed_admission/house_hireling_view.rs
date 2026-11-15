@@ -12,6 +12,7 @@ fn direction(facing: Option<crate::foundation::MovementFacing>) -> StepDirection
 
 pub(super) fn entities(
     runtime: &ChannelRuntimeV1,
+    states: &actor_spell::ChannelSpellStates,
     observer: ExactActorRef,
     observed_at_ms: u64,
 ) -> Result<Option<world_spatial::ChannelEntities>, CarrierError> {
@@ -26,7 +27,7 @@ pub(super) fn entities(
         let movement = runtime.read_house_movement(entry.actor, entry_session)?;
         entities.push(world_spatial::ChannelEntity {
             display_name: None,
-            health_percent: 100,
+            health_percent: super::health_percent(runtime, states, entry.actor),
             direction: direction(movement.facing()),
             kind: world_spatial::VisibleKind::Player,
             identity: entry.actor.placement_identity(),

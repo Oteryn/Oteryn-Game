@@ -275,19 +275,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .indexed(*index)
                     .is_some_and(|spell| spell.key == spoken.spell.key)
             })?;
-        let cast = actor_spell::SpellCastIntent {
-            spell: index,
-            target: actor_spell::SpellTarget::None,
-            aim_at_target: false,
-        };
-        let parameter = matches!(
+        let takes_parameter = matches!(
             spoken.spell.carrier,
             crate::spell::Carrier::Instant {
                 takes_parameter: true,
                 ..
             }
-        )
-        .then_some(
+        );
+        let target = if !takes_parameter
+            && !spoken.spell.self_target
+            && spoken.spell.takes_target()
+            && (spoken.spell.needs_target
+                || self
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .combat_state(actor, session, self.owner_now())
+                    .target
+                    .is_some())
+        {
+            actor_spell::SpellTarget::AttackTarget
+        } else {
+            actor_spell::SpellTarget::None
+        };
+        let cast = actor_spell::SpellCastIntent {
+            spell: index,
+            target,
+            aim_at_target: false,
+        };
+        let parameter = takes_parameter.then_some(
             oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent {
                 intent: cast,
                 parameter: spoken.parameter,

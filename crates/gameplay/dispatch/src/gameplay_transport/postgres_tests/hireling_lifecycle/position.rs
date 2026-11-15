@@ -664,3 +664,40 @@ async fn wound(owner: &ComposedFreshAdmission<'_, '_, '_>, admitted: AdmittedSes
     state.restore_saved_vitals(maxima.max_health.min(20) - health_loss, 0);
     state.saved_vitals().ok_or_else(|| "wounded House actor must have saved vitals".into())
 }
+
+pub(super) async fn cadence(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    actor: ExactActorRef,
+) -> TestResult {
+    use std::sync::atomic::Ordering;
+    let session = admitted.game_session_id;
+    let fence = admitted.item_fence.ok_or("House item fence")?;
+    let now = owner.owner_now().get();
+    owner.states.resting_areas.install(session, actor, 0);
+    let before = {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        states.load_house_stamina(&runtime, actor, session, fence, 1800, now)
+            .ok_or("House stamina")?;
+        let state = states.house_state_mut(&runtime, actor, session, fence).ok_or("House vitals")?;
+        state.apply_owner_promotion_transition(true, true, Some(now + 1_000_000_000)).map_err(debug)?;
+        let mana = state.vitals().max_mana / 2;
+        state.restore_saved_vitals(state.vitals().max_health / 2, mana);
+        *state = state.after_food(600, now / 1_000).ok_or("House food")?;
+        state.vitals()
+    };
+    for second in 1..=180_u64 {
+        owner.states.test_owner_time.store(now + second * 1_000_000 + 1, Ordering::SeqCst);
+        owner.tick_actor_vitals(actor, session).await.ok_or("House cadence projection")?;
+        if second == 179 {
+            assert_eq!(owner.states.spell_states.lock().await.live_stamina(actor, session), Some(1800));
+        }
+    }
+    let after = owner.observe_actor_vitals(actor, session).await.ok_or("House vitals after cadence")?.1;
+    assert!(after.health > before.health, "eligible House residents regenerate health");
+    assert!(after.mana > before.mana, "eligible House residents regenerate mana");
+    assert!(after.soul > before.soul, "eligible House residents regain resting soul");
+    assert_eq!(owner.states.spell_states.lock().await.live_stamina(actor, session), Some(1801));
+    Ok(())
+}

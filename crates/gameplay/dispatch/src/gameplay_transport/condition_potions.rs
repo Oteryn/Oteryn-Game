@@ -11,6 +11,7 @@ use crate::foundation::{
     ApplicationFacts, CommandId, CommandRef, ConditionDefinition, ConditionSourceKind,
     ConditionStore, StagedSpellBatch,
 };
+use crate::gameplay_transport::actor_spell;
 use crate::gameplay_transport::actor_spell::{
     PlayerBatchPreflight, check_owner_batch, install_owner_batch, stage_player_batch,
 };
@@ -100,6 +101,31 @@ fn prepared_potion_conditions(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn condition_potion_pending(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let Err(unresolved) = self.spell_lane.acquire().await else {
+            return false;
+        };
+        let (mut permit, attempt) = unresolved.into_resolution();
+        let pending = attempt
+            .downcast_ref::<actor_spell::native_combat_cast::UnresolvedSpellCommit>()
+            .is_some_and(|attempt| match attempt {
+                actor_spell::native_combat_cast::UnresolvedSpellCommit::ConditionPotion(potion) => {
+                    potion.physical.batch().caster == actor
+                        && potion.fence.game_session_id == session
+                }
+                _ => false,
+            });
+        // Observing the pending command must preserve the exact retained operation.
+        permit
+            .open_commit_window(attempt, std::convert::identity)
+            .park();
+        pending
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn use_condition_potion(
         &self,

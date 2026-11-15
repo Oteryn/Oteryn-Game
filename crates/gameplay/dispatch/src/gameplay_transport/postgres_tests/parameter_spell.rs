@@ -27,6 +27,51 @@ use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
 #[test]
+fn spoken_energy_strike_uses_selected_attack_target_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new().stack_size(128 << 20).spawn(|| {
+        run(async |admin| scenario_inner(admin, 5, None, true, false).await)
+            .map_err(|error| error.to_string())
+    })?.join().map_err(|_| "spoken target thread panicked")?.map_err(Into::into)
+}
+
+async fn spoken_target(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    target: crate::foundation::ExactActorRef,
+) -> TestResult {
+    let _ = owner.chat_open(session).await;
+    assert!(owner.spells.spoken("exori vis").is_some(), "Energy Strike words are admitted");
+    assert!(owner.turn_actor(actor, session,
+        crate::gameplay_transport::world_spatial::StepDirection::North).await);
+    assert_eq!(owner.select_attack_target(actor, session, 1, Some(
+        oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
+            identity: target.placement_identity(), generation: target.actor_local_generation(),
+        },
+    )).await, oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok);
+    let before = owner.runtime.lock().await.companion_snapshot(target).map_err(debug)?.health;
+    let (_, cast) = owner.complete_chat_intent(actor, session, 2, &chat::ChatIntent::Say {
+        mode: chat::ChatSpeechMode::Say, text: "exori vis".into(),
+    }).await.ok_or("spoken dispatch")?;
+    assert_eq!(cast.ok_or("spoken spell")?.disposition, actor_spell::SpellCastDisposition::Cast);
+    let after = owner.runtime.lock().await.companion_snapshot_including_dead(target).map_err(debug)?.health;
+    assert!(after < before, "spoken Energy Strike must hit the selected eastern target, not the northern fallback");
+    Ok(())
+}
+
+#[test]
+fn visibility_lights_equipment_condition_and_native_creature_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() { return Ok(()); }
+    std::thread::Builder::new().stack_size(128 << 20).spawn(|| {
+        run(async |admin| scenario_inner(admin, 5, None, false, true).await)
+            .map_err(|error| error.to_string())
+    })?.join().map_err(|_| "actor light thread panicked")?.map_err(Into::into)
+}
+
+#[test]
 fn parameter_spell_online_exiva_real_session_postgres() -> TestResult {
     scenario(0)
 }
@@ -58,7 +103,7 @@ pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, case, world_type).await)
+            run(async move |admin| scenario_inner(admin, case, world_type, false, false).await)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -66,7 +111,7 @@ pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> TestResult {
+async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>, use_spoken_target: bool, view_lights: bool) -> TestResult {
     let h = Harness::create_with_admission_seed(
         admin,
         &format!("parameter_spell_{case}"),
@@ -88,7 +133,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, pin) = if matches!(case, 4..=6) {
-        super::item_spell_augments::activate(world, case == 6)?
+        if view_lights {
+            super::item_spell_augments::activate_with_lights(world, case == 6)?
+        } else {
+            super::item_spell_augments::activate(world, case == 6)?
+        }
     } else {
         production_generation_with_source(
             world,
@@ -189,8 +238,9 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             runtime
                 .install_companion_policies(native.policies().clone())
                 .map_err(debug)?;
+            let creature = if view_lights { "oteryn:creature.an_eye" } else { "oteryn:creature.rat" };
             let health = runtime
-                .companion_policy("oteryn:creature.rat")
+                .companion_policy(creature)
                 .map_err(debug)?
                 .maximum_health;
             runtime
@@ -198,7 +248,7 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
                     vec![(position.x, position.y, position.floor)],
                     60_000,
                     5_000,
-                    "oteryn:creature.rat".into(),
+                    creature.into(),
                     u64::try_from(health)?,
                 )])
                 .map_err(debug)?;
@@ -296,8 +346,11 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             .ok_or("install equipment effects")?;
     }
     admitted.first_entry = FirstEntryOutcome::Positioned;
+    let supported: &[u32] = if use_spoken_target {
+        &[6, 7, oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1]
+    } else { &[6, 7] };
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
+        SelectedCapabilities::select(owner.offered_capabilities(), supported)
             .ok_or("chat capabilities")?;
     if case >= 7 {
         return exiva_settings::exercise(
@@ -309,6 +362,16 @@ async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> Tes
             world_type,
         )
         .await;
+    }
+    if view_lights {
+        return super::actor_light_projection::channel(&owner, actor, session,
+            augment_target.ok_or("light creature")?.0).await;
+    }
+    if use_spoken_target {
+        assert!(admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::attack::CAPABILITY_ATTACK_V1,
+        ));
+        return spoken_target(&owner, actor, session, augment_target.ok_or("spoken target")?.0).await;
     }
     let before = owner
         .observe_vitals(actor, session)

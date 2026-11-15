@@ -394,6 +394,9 @@ fn scenario(
                 UseDisposition::Rejected
             );
             assert!(deps.runtime.lock().await.actor_spell_reserved(deps.actor));
+            assert!(crate::gameplay_transport::connection::FreshAdmissionAuthority::item_use_pending(
+                &owner, deps.actor, admitted.game_session_id,
+            ).await, "a lost potion acknowledgement must keep the carried-item command pending");
             assert_eq!(progress(&h, potion).await?, 100);
             assert_eq!(quantity(&h, potion).await?, 3);
             assert_eq!(awards(&h, potion).await?, 1);

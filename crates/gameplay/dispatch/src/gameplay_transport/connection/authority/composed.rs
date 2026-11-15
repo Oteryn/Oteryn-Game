@@ -1050,18 +1050,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        let states = self.states.spell_states.lock().await;
-        states
-            .pending_gourmet
-            .iter()
-            .any(|pending| pending.actor == actor && pending.session == session)
-            || states
-                .pending_hireling_lamps
+        let pending = {
+            let states = self.states.spell_states.lock().await;
+            states
+                .pending_gourmet
                 .iter()
                 .any(|pending| pending.actor == actor && pending.session == session)
-            || states.pending_item_effects.iter().any(|pending| {
-                pending.actor == actor && pending.request.command.game_session_id() == session
-            })
+                || states
+                    .pending_hireling_lamps
+                    .iter()
+                    .any(|pending| pending.actor == actor && pending.session == session)
+                || states.pending_item_effects.iter().any(|pending| {
+                    pending.actor == actor && pending.request.command.game_session_id() == session
+                })
+        };
+        pending || self.condition_potion_pending(actor, session).await
     }
 
     async fn use_event_item(

@@ -120,7 +120,7 @@ use super::item_view::{
 pub use super::logout::LogoutReply;
 use super::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpdate};
 use super::npc_trade_command::NpcTradeStep;
-use super::tcp_tls::{FrameReader, read_frame, write_frame};
+use super::tcp_tls::{FrameReader, read_frame};
 use super::world_map::{MapUpdate, MapViewError, SessionMapView};
 use super::world_spatial::{
     CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
@@ -1559,6 +1559,23 @@ async fn reject<S: AsyncWrite + Unpin>(
 ) -> ConnectionEnd {
     let _ = send_error(stream, error, generation).await;
     ConnectionEnd::ProtocolViolation(error)
+}
+
+// A stalled peer must return its admitted identity to the existing cleanup owner.
+const SOCKET_WRITE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+async fn write_frame<W: AsyncWrite + Unpin>(writer: &mut W, body: &[u8]) -> std::io::Result<()> {
+    tokio::time::timeout(
+        SOCKET_WRITE_TIMEOUT,
+        super::tcp_tls::write_frame(writer, body),
+    )
+    .await
+    .map_err(|_| {
+        std::io::Error::new(
+            std::io::ErrorKind::TimedOut,
+            "gameplay socket write deadline",
+        )
+    })?
 }
 
 async fn send_error<S: AsyncWrite + Unpin>(

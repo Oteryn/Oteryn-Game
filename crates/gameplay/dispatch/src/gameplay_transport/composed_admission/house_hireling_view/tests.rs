@@ -79,7 +79,7 @@ fn scoped_house_snapshot_and_projection_bind_actual_npc_and_exclude_channel_and_
     let npc_b = runtime
         .reconcile_house_hirelings(b, sb, &[hireling(2)])
         .expect("B NPC")[0];
-    let view = entities(&runtime, a, 1)
+    let view = entities(&runtime, &actor_spell::ChannelSpellStates::default(), a, 1)
         .expect("view authority")
         .expect("House view");
     assert_eq!(view.entities.len(), 2);
@@ -121,7 +121,7 @@ fn scoped_house_snapshot_and_projection_bind_actual_npc_and_exclude_channel_and_
     runtime
         .compare_move_house(&before, north, MovementFacing::North)
         .expect("House step");
-    let moved = entities(&runtime, a, 2)
+    let moved = entities(&runtime, &actor_spell::ChannelSpellStates::default(), a, 2)
         .expect("view authority")
         .expect("House view");
     let player = moved

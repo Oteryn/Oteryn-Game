@@ -285,7 +285,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // the exact operation and reconcile it until the outcome is proven.
                 Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
                     match self
-                        .reconcile(&request, attempt.game_session_id, attempt.transport)
+                        .reconcile_retained_admission(
+                            &request,
+                            attempt.game_session_id,
+                            attempt.transport,
+                        )
                         .await
                     {
                         ReconciliationDisposition::Committed => {}
@@ -648,6 +652,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .rollback_definitely_uncommitted(reservation)
             .map_err(|_| AdmissionRefusal::Unavailable)
+    }
+
+    /// The fresh attempt retains its reservation until reconciliation proves an outcome.
+    pub(in crate::gameplay_transport) async fn reconcile_retained_admission(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
+    ) -> ReconciliationDisposition {
+        loop {
+            let outcome = self.reconcile(request, game_session_id, transport).await;
+            if !matches!(outcome, ReconciliationDisposition::Unknown) {
+                return outcome;
+            }
+            // A read budget expiring proves nothing about the commit. The admission
+            // future still owns the exact request and reservation; never resubmit
+            // the grant or abandon that ownership on an inconclusive read.
+            tokio::time::sleep(RECONCILE_BACKOFF).await;
+        }
     }
 
     /// Committed proves the exact current session belongs to this socket.

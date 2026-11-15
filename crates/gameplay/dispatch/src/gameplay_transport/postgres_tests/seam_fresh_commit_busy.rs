@@ -140,3 +140,31 @@ fn seam_fresh_commit_reconciliation_waits_for_busy_root_postgres() -> TestResult
         cleanup
     })
 }
+
+#[test]
+fn fresh_reconciliation_retains_attempt_past_read_budget_postgres() -> TestResult {
+    run(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "fresh_reconcile_retained", false, false).await?;
+        let result: TestResult = async {
+            let request = prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            let deps = Dependencies::new()?;
+            let owner = deps.owner(&h, &authority);
+            let session = deps.admitted.game_session_id;
+            let transport = deps.admitted.controller.ok_or("controller")?.transport;
+            let mut held = h.root.try_acquire_ready()?;
+            let mut pending = std::pin::pin!(owner.reconcile_retained_admission(&request, session, transport));
+            let premature = tokio::time::timeout(crate::durability::ROOT_RECOVERY_WINDOW + Duration::from_millis(200), &mut pending).await;
+            held.return_to_pool_observed_until(std::time::Instant::now() + crate::durability::DB_PASS_DEADLINE).await;
+            assert!(premature.is_err(), "an unknown receipt must retain its recovery owner");
+            assert!(matches!(pending.await, ReconciliationDisposition::Committed));
+            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_fresh_admission_receipts").fetch_one(&h.pool).await?;
+            assert_eq!(count, 1);
+            Ok(())
+        }.await;
+        let cleanup = h.cleanup().await;
+        result?;
+        cleanup
+    })
+}

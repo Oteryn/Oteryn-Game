@@ -41,6 +41,87 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor_spell::observe_vitals(&runtime, &states, actor, game_session_id)
     }
 
+    async fn tick_house_vitals(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, actor_spell::ActorVitals)> {
+        use crate::foundation::condition::TickFacts;
+        self.load_wheel_gift(actor, session).await;
+        let (current, _) = FreshAdmissionStore::from_root(self.root.clone())
+            .current_session_at(session)
+            .await
+            .ok()?;
+        let fence = item_fence_of(current)?;
+        let runtime = self.runtime.lock().await;
+        let house = runtime.house_actor_state(actor, session).ok()?;
+        let scope = self.movement_cells().scope();
+        let map_revision: [u8; 32] =
+            <sha2::Sha256 as sha2::Digest>::digest(scope.map_revision.as_str().as_bytes()).into();
+        if scope.world_id != runtime.binding().world_id()
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+            || map_revision != runtime.content_pin().map_revision_digest()
+            || runtime
+                .assert_house_actor_spell_unreserved(actor, session)
+                .is_err()
+        {
+            return None;
+        }
+        let cell = crate::content::LogicalCell {
+            x: house.position.x,
+            y: house.position.y,
+            z: i32::from(house.position.floor),
+        };
+        let position = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+        let inside = self
+            .bundle_map()?
+            .overlay
+            .base()
+            .tile(position.x, position.y, position.floor)?
+            .protection_zone();
+        let now = self.owner_now();
+        let mut states = self.states.spell_states.lock().await;
+        if states.has_pending_spell_commit(actor, session) {
+            return None;
+        }
+        let stamina = states.live_stamina(actor, session).unwrap_or(2520);
+        let state = states.house_state_mut(&runtime, actor, session, fence)?;
+        if state.vitals().health == 0 {
+            return None;
+        }
+        state.expire_owner_premium(now.get()).ok()?;
+        state.set_resting_streak(self.states.resting_areas.tier(session, actor, inside));
+        if let Some(cycle) =
+            crate::spell::actor_conditions::stage_source_owner_cycle_without_damage(
+                state,
+                now,
+                TickFacts {
+                    in_protection_zone: inside,
+                    standing_on_field: None,
+                },
+                None,
+            )
+            .ok()?
+        {
+            *state = cycle.next;
+        }
+        let premium = state.hunting_premium_current(now.get());
+        let interval =
+            super::super::resting_area::soul_interval(state.character_facts().vocation, premium);
+        let (stamina_due, soul_due) = self
+            .states
+            .resting_areas
+            .cadence(session, actor, inside, premium, stamina, interval);
+        if soul_due {
+            *state = state.after_resting_soul()?;
+        }
+        let projection = (state.revision(), state.vitals());
+        if stamina_due {
+            states.gain_resting_stamina(actor, session);
+        }
+        Some(projection)
+    }
+
     pub(in crate::gameplay_transport) async fn tick_actor_vitals(
         &self,
         actor: ExactActorRef,
@@ -66,6 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .house_actor_state(actor, game_session_id)
             .is_ok()
         {
+            if let Some(vitals) = self.tick_house_vitals(actor, game_session_id).await {
+                return Some(vitals);
+            }
             return self.observe_actor_vitals(actor, game_session_id).await;
         }
         if !self.ensure_source_map_initialized().await {

@@ -23,6 +23,16 @@ pub(super) fn activate(
     world: WorldId,
     equipment_leech: bool,
 ) -> TestResult<(ContentActivationController, NativeEntryContentPin)> {
+    activate_inner(world, equipment_leech, false)
+}
+
+pub(super) fn activate_with_lights(world: WorldId, equipment_leech: bool)
+    -> TestResult<(ContentActivationController, NativeEntryContentPin)> {
+    activate_inner(world, equipment_leech, true)
+}
+
+fn activate_inner(world: WorldId, equipment_leech: bool, item_lights: bool)
+    -> TestResult<(ContentActivationController, NativeEntryContentPin)> {
     let mut input = native_gameplay::NativeGameplayInput::from_manifest(
         &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../../content/spells.manifest.json"),
@@ -56,6 +66,13 @@ pub(super) fn activate(
         .iter_mut()
         .find(|r| r["production_definition"]["production_key"] == key)
         .ok_or("fixture item")?;
+    if item_lights {
+        let presentations: serde_json::Value = serde_json::from_slice(&input.presentation_profiles.bytes)?;
+        let presentation = presentations["records"].as_array().ok_or("presentations")?
+            .iter().find(|record| record["target"]["key"] == "oteryn:presentation.creature.an_eye")
+            .ok_or("An Eye light presentation")?["target"].clone();
+        item["authoring"]["presentation"] = presentation;
+    }
     // Qualified synthetic values isolate the executable field. XML unit conversion has its
     // own pinned-source tests; no production Item value is asserted by this fixture.
     item["attributes"]["spell_augments"] = serde_json::json!([
