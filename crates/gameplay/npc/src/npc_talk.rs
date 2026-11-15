@@ -842,12 +842,13 @@ pub fn talk<K: Copy + PartialEq>(
                 text: npc.entry.farewell_reply.clone(),
             });
         }
-        if let Some(keyword) = npc
-            .entry
-            .dialogue_keywords
-            .iter()
-            .find(|keyword| contains_words(&said, &keyword.triggers))
-        {
+        if let Some(keyword) = npc.entry.dialogue_keywords.iter().find(|keyword| {
+            !keyword.triggers.is_empty()
+                && keyword
+                    .triggers
+                    .iter()
+                    .all(|trigger| contains_words(&said, &words(trigger)))
+        }) {
             return Some(NpcReply {
                 id: npc.id,
                 text: keyword.reply[0].clone(),
@@ -1270,6 +1271,47 @@ mod tests {
 
     fn say(text: &str) -> String {
         text.to_owned()
+    }
+
+    #[test]
+    fn wayland_all_of_triggers_match_independently_after_greeting() {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("catalogue");
+        let model = catalogue.service_model_for_project().expect("model");
+        let book = NpcTalkBook::from_model(&model);
+        let wayland = book.get("oteryn:npc.wayland_smythers").expect("Wayland");
+        let npcs = [TalkNpc {
+            id: 1_u8,
+            position: at(102),
+            entry: wayland,
+        }];
+        let mut engaged = None;
+        assert!(talk(at(100), "hi", &npcs, &mut engaged).is_some());
+        let expected = talk(at(100), "cult cultists", &npcs, &mut engaged)
+            .expect("canonical order")
+            .text;
+        for text in ["cultists cult", "cult and cultists", "CULTISTS and CULT"] {
+            assert_eq!(
+                talk(at(100), text, &npcs, &mut engaged)
+                    .map(|reply| reply.text)
+                    .as_deref(),
+                Some(expected.as_str()),
+                "all-of trigger set: {text}"
+            );
+        }
+        for text in ["cult", "cultists", "occult cultists", "cult cultistsx"] {
+            assert_ne!(
+                talk(at(100), text, &npcs, &mut engaged)
+                    .map(|reply| reply.text)
+                    .as_deref(),
+                Some(expected.as_str()),
+                "every whole trigger is required: {text}"
+            );
+        }
     }
 
     #[test]
