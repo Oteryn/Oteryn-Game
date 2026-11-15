@@ -288,7 +288,7 @@ fn is_coin(state: &OneItemStateV1) -> bool {
 fn check_state(state: &OneItemStateV1, world_id: &[u8]) -> Result<(), AuditError> {
     check_uuid_v7(&state.item_instance_id)?;
     check_definition(state.definition.as_ref())?;
-    if state.world_id != world_id || state.quantity > COIN_STACK_MAXIMUM {
+    if state.world_id != world_id || state.quantity > COIN_STACK_MAXIMUM || state.key_number != 0 {
         return Err(AuditError::InvalidInput);
     }
     Ok(())

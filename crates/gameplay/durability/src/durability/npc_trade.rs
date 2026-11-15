@@ -910,8 +910,6 @@ impl DurabilityRoot {
                         .container_capacity
                         .and_then(|capacity| usize::try_from(capacity).ok())
                         .unwrap_or(0);
-                    if let Some(source)=&hireling
-                        && let Err(error)=source.package_preflight(&mut tx,&fence,&request,*weights).await {return Ok(Err(error));}
                     if request.cause.npc_key == yeo::NPC
                         && (yeo_position != Some(yeo::POSITION) || !yeo::matches(&request)) {
                         return Ok(Err(NpcTradeError::RequirementNotMet));
@@ -928,9 +926,6 @@ impl DurabilityRoot {
                             pick_exchange::fits(&mut tx, fence, *weights, &[present_exchange::input()], present_exchange::output()).await?
                         } else { pick_exchange::fits(&mut tx, fence, *weights, &[pick_exchange::input()], pick_exchange::output()).await? };
                         if !fits { return Ok(Err(NpcTradeError::DoesNotFit)); }
-                    }
-                    if matches!(hireling,Some(hireling::Extra::Package(_))) && entries.len()>=capacity {
-                        return Ok(Err(NpcTradeError::DoesNotFit));
                     }
                     let plan = if yeo_position.is_some() {yeo::plan(&request,capacity,&entries,tx.tuple().tuple()).map(|plan|(plan,0,1))} else if hireling_sell {sell_hireling::plan(&request,priced,capacity,&entries)} else {match (priced, request.cause.side) {
                         (None, _) => plan_sell_all(&request, capacity, &entries),
@@ -949,6 +944,10 @@ impl DurabilityRoot {
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    if let Some(source) = &hireling
+                        && let Err(error) = source.package_preflight(&mut tx, &fence, &request, *weights, &plan, (entries.len(), capacity)).await {
+                        return Ok(Err(error));
+                    }
                     // A sell-all records and audits the units it sold as its quantity.
                     let quantity = if sell_all { units } else { request.quantity };
 
