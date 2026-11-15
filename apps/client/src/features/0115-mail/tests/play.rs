@@ -364,3 +364,68 @@ fn e2e_e09_real_mail_outcomes_replay_into_mail_panel() -> Result<(), Error> {
         Ok(())
     }).checked()?.join().map_err(|_| "e09 scenario thread failed").checked()?
 }
+
+#[test]
+fn rejected_unicode_edits_never_submit_stored_values() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    let (link, mut incoming, _) = play_channel();
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.properties.mail.selected = true;
+        mailbox.properties.house_transfer.selected = true;
+        mailbox.properties.guildhall.selected = true;
+        mailbox.boss_encounter.selected = true;
+    }
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "previous inscription".into());
+    link.mail_edit(2, "ż".repeat(4000));
+    link.mail_request(Intent::Write);
+    assert!(incoming.try_recv().is_err(), "submitted stale inscription");
+    assert!(!link.mail_panel().feedback.is_empty());
+    link.house_transfer_edit(0, "oteryn:content.house.test".into());
+    link.house_transfer_edit(0, "界".repeat(256));
+    link.house_transfer_request(oteryn_client_ui::house_transfer::Intent::Enter);
+    assert!(incoming.try_recv().is_err(), "submitted stale house");
+    link.guildhall_edit(0, "00000000-0000-7000-8000-000000000001".into());
+    link.guildhall_edit(1, "00000000-0000-7000-8000-000000000002".into());
+    link.guildhall_edit(2, "1".into());
+    link.guildhall_edit(0, "界".repeat(256));
+    link.guildhall_request(oteryn_client_ui::guildhall::Intent::Transfer);
+    assert!(incoming.try_recv().is_err(), "submitted stale guild");
+    link.boss_encounter_edit(0, "oteryn:creature.test".into());
+    link.boss_encounter_edit(0, "界".repeat(256));
+    link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Enter);
+    assert!(incoming.try_recv().is_err(), "submitted stale boss");
+    Ok(())
+}
+
+#[test]
+fn writing_drafts_follow_item_and_session_identity() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    let (link, _, outbox) = play_channel();
+    let selected = Peer {
+        exchanges: Arc::new(Script {
+            entries: Mutex::new(VecDeque::new()),
+            release: tokio::sync::Semaphore::new(0),
+        }),
+        inventory: None,
+    };
+    outbox.properties_initialize(&selected);
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "letter A".into());
+    link.mail_edit(0, "7".into());
+    assert_eq!(link.mail_panel().fields[2], "letter A");
+    link.mail_edit(0, "8".into());
+    assert!(
+        link.mail_panel().fields[2].is_empty(),
+        "letter B inherited A's draft"
+    );
+    link.mail_edit(2, "letter B".into());
+    outbox.properties_initialize(&selected);
+    assert!(link.mail_panel().fields.iter().all(String::is_empty));
+    link.mail_edit(0, "7".into());
+    link.mail_edit(2, "another session".into());
+    lock(&link.mailbox).properties.end();
+    assert!(link.mail_panel().fields.iter().all(String::is_empty));
+    Ok(())
+}

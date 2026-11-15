@@ -109,15 +109,6 @@ pub(in crate::play) fn submit(
     }
     let query = match action {
         0..=3 => {
-            let after = if action == 1 {
-                let Some(next) = panel.catalogue_next else {
-                    panel.feedback = "End of item catalogue".into();
-                    return;
-                };
-                next
-            } else {
-                0
-            };
             if action == 2 || action == 3 {
                 panel.select_category(action == 2);
             }
@@ -135,6 +126,28 @@ pub(in crate::play) fn submit(
                 };
                 (index + 1) as u8
             };
+            let after = if action == 1 {
+                let same_filters = match panel.last_request {
+                    Some(Request::CatalogueQuery(
+                        query @ catalogue::Query::Items { category: previous, .. },
+                    )) => {
+                        previous == category
+                            && catalogue::search(query).ok().as_deref() == Some(panel.search.as_str())
+                    }
+                    _ => false,
+                };
+                if !same_filters {
+                    panel.feedback = "Browse again after changing catalogue filters".into();
+                    return;
+                }
+                let Some(next) = panel.catalogue_next else {
+                    panel.feedback = "End of item catalogue".into();
+                    return;
+                };
+                next
+            } else {
+                0
+            };
             let Ok(query) = catalogue::items(after, category, panel.search.trim()) else {
                 panel.feedback = "Use a shorter item name for the search".into();
                 return;
@@ -150,6 +163,10 @@ pub(in crate::play) fn submit(
                 Request::Catalogue(reference)
             } else {
                 let after = if action == 8 {
+                    if !matches!(panel.last_request, Some(Request::CatalogueQuery(catalogue::Query::Drops { reference: previous, .. })) if previous == reference) {
+                        panel.feedback = "Browse drop sources again after changing the selected item".into();
+                        return;
+                    }
                     let Some(next) = panel.catalogue_drop_next else {
                         panel.feedback = "End of drop sources".into();
                         return;
@@ -163,6 +180,13 @@ pub(in crate::play) fn submit(
         }
         _ => return,
     };
+    // A refused or malformed reply must not leave a cursor from an older query usable.
+    if matches!(query, Request::CatalogueQuery(catalogue::Query::Items { .. })) {
+        panel.catalogue_next = None;
+    }
+    if matches!(query, Request::CatalogueQuery(catalogue::Query::Drops { .. })) {
+        panel.catalogue_drop_next = None;
+    }
     if let Some(command) = request(panel, query)
         && commands.send(PlayCommand::ServerMechanic(command)).is_err()
     {

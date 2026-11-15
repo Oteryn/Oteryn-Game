@@ -59,12 +59,11 @@ impl Panels {
             feedback: tr!("The session has ended").into(),
             ..Default::default()
         };
+        self.mail = oteryn_client_ui::mail::Panel {
+            feedback: tr!("The session has ended").into(),
+            ..Default::default()
+        };
         for (open, pending, feedback) in [
-            (
-                &mut self.mail.open,
-                &mut self.mail.pending,
-                &mut self.mail.feedback,
-            ),
             (
                 &mut self.house_podium.open,
                 &mut self.house_podium.pending,
@@ -97,7 +96,6 @@ impl Panels {
             feedback: tr!("The session has ended").into(),
             ..Default::default()
         };
-        self.mail.selected = false;
         self.house_podium.selected = false;
         self.house_podium.flagged = false;
         self.training.selected = false;

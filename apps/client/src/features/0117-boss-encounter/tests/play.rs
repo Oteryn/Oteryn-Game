@@ -180,3 +180,49 @@ mod catalogue;
 
 #[path = "slots.rs"]
 mod slots;
+
+#[test]
+fn boss_catalogue_next_rejects_changed_filters() -> Result<(), Error> {
+    use crate::play::mailbox::lock;
+    use oteryn_client_runtime::boss_encounter::catalogue::{Page, Query};
+    let (link, mut incoming, outbox) = play_channel();
+    outbox.boss_encounter_initialize(true);
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.boss_encounter.catalogue_query = Some(Query {
+            after: 0,
+            category: 0,
+            search: "old".into(),
+        });
+        mailbox.boss_encounter.catalogue = Some(Page {
+            next: Some(64),
+            points: 0,
+            entries: vec![],
+        });
+        mailbox.boss_encounter.browser_search = "new".into();
+    }
+    link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::CatalogueNext);
+    assert!(incoming.try_recv().is_err());
+    assert!(link.boss_encounter_panel().feedback.is_some());
+    {
+        let mut mailbox = lock(&link.mailbox);
+        mailbox.boss_encounter.browser_search = "old".into();
+        mailbox.boss_encounter.browser_category =
+            oteryn_client_ui::boss_encounter::BossCategory::Bane;
+    }
+    link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::CatalogueNext);
+    assert!(
+        incoming.try_recv().is_err(),
+        "changed category reused old query"
+    );
+    lock(&link.mailbox).boss_encounter.browser_category =
+        oteryn_client_ui::boss_encounter::BossCategory::All;
+    link.boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::CatalogueNext);
+    let crate::combat_input::PlayCommand::Feature(command) = incoming.try_recv()? else {
+        return Err("missing valid boss continuation".into());
+    };
+    let query = Query::decode(&command.payload).ok_or("invalid boss query")?;
+    assert_eq!(query.after, 64);
+    assert_eq!(query.search, "old");
+    Ok(())
+}
