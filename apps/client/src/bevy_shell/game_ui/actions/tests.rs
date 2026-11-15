@@ -246,7 +246,8 @@ fn native_drop_swaps_only_unlocked_slots_then_casts_new_binding() -> TestResult 
     let (mut app, mut commands) = fixture()?;
     let from = slot(&mut app, 0)?;
     let to = slot(&mut app, 1)?;
-    let window = app.world_mut().spawn_empty().id();
+    // Pointer traversal must terminate at a real window, rather than revisit an empty entity.
+    let window = app.world_mut().spawn(Window::default()).id();
     let target = bevy::camera::NormalizedRenderTarget::Window(
         bevy::window::WindowRef::Entity(window)
             .normalize(None)
