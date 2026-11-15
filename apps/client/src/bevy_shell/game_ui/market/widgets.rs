@@ -177,6 +177,19 @@ pub(super) fn render(
     if let Some(ware) = selected.filter(|_| panel.view == MarketView::Browse) {
         // The server definition reference is not an appearance identifier.
         label(commands, skin, right, "Item artwork unavailable");
+        label(
+            commands,
+            skin,
+            right,
+            &format!(
+                "Required level: {} · Forge class: {} · In depot: {}",
+                ware.level
+                    .map_or_else(|| "Unknown".into(), |level| level.to_string()),
+                ware.forge_class
+                    .map_or_else(|| "Unknown".into(), |class| class.to_string()),
+                ware.depot_units,
+            ),
+        );
         if panel.definition == ware.definition {
             let books = row(commands, right);
             for (side, title) in [(1, "Buy offers"), (2, "Sell offers")] {
@@ -237,7 +250,8 @@ pub(super) fn render(
                 "Refresh offers",
                 110.,
             );
-            let stats = scroll(commands, right, px(130.));
+            let stats = scroll(commands, right, px(180.));
+            statistics::render(commands, skin, stats, panel);
             label(
                 commands,
                 skin,
