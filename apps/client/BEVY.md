@@ -124,7 +124,10 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+Z:** Bug report with category, multiline description, review and Send.
 - **Ctrl+Shift+Y:** the selected analyser window. The Analysers HUD selector opens
   any of the fourteen retained tools. Reports update live; Reset session uses the
-  existing local reset, and Close or Escape dismisses the window.
+  existing local reset, and Close or Escape dismisses the window. Loot Tracker
+  accepts an item number shown in the report: Track item / Untrack item changes
+  the local selection; Show tracked only / Show all drops filters the live report
+  without changing confirmed counters. Selection survives closing and session reset.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+I:** Imbuing shrine: choose a carried item, then a slot and imbuement.
   Clear asks for confirmation. Refresh queries the existing shrine command;
