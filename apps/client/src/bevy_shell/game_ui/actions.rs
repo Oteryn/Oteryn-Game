@@ -57,13 +57,14 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
     let tools = commands
         .spawn(Node {
             width: percent(100.),
-            height: px(20.),
+            height: Val::Auto,
             min_height: px(20.),
+            flex_wrap: FlexWrap::Wrap,
             column_gap: px(2.),
             ..default()
         })
         .id();
-    for bar in 0..3 {
+    for bar in 0..9 {
         let toggle = button(
             &mut commands,
             &skins,
@@ -122,7 +123,7 @@ fn setup(mut commands: Commands, skins: Res<Skins>, regions: Res<super::GameRegi
             .entity(if side { regions.world } else { regions.bars })
             .add_child(anchor);
     }
-    for bar in 0..3 {
+    for bar in 0..9 {
         let row = commands
             .spawn((
                 BarRow(bar),

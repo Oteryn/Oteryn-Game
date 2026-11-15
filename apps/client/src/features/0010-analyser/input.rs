@@ -19,25 +19,34 @@ mod bosses;
 mod party_import;
 impl PlayLink {
     pub fn analyser_close(&self) {
-        lock(&self.mailbox).analyser.open = false;
+        let mut mailbox = lock(&self.mailbox);
+        let tool = mailbox.analyser.tool;
+        mailbox.analyser.open_tools.retain(|open| *open != tool);
+        mailbox.analyser.open = !mailbox.analyser.open_tools.is_empty();
     }
     pub fn analyser_reset(&self) {
         let panel = &mut lock(&self.mailbox).analyser;
         if panel.selected && panel.open {
-            oteryn_client_ui::analyser::protocol::reset(panel);
+            oteryn_client_ui::analyser::protocol::reset_tool(panel);
         }
     }
 
     /// Local tracker preferences never change confirmed drop measurements.
     pub fn analyser_track_item(&self, item: &str, tracked: bool) {
         let panel = &mut lock(&self.mailbox).analyser;
-        if panel.selected && panel.open && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker {
+        if panel.selected
+            && panel.open
+            && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker
+        {
             oteryn_client_ui::analyser::tracking::select(panel, item, tracked);
         }
     }
     pub fn analyser_filter_tracked(&self) {
         let panel = &mut lock(&self.mailbox).analyser;
-        if panel.selected && panel.open && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker {
+        if panel.selected
+            && panel.open
+            && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker
+        {
             panel.loot_only_tracked = !panel.loot_only_tracked;
         }
     }
@@ -54,6 +63,21 @@ impl PlayLink {
             item,
             price,
         )
+    }
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn analyser_item_price_for(
+        &self,
+        tool: oteryn_client_ui::analyser::Tool,
+        item: &str,
+        price: &str,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.analyser;
+        let previous = panel.tool;
+        panel.tool = tool;
+        let saved = oteryn_client_ui::analyser::set_item_price(panel, item, price);
+        panel.tool = previous;
+        saved
     }
     pub fn analyser_resolve_items(&self) {
         resolve_items(&mut lock(&self.mailbox), &self.commands);
@@ -78,7 +102,12 @@ impl PlayLink {
             super::view::open_window(self);
         }
         if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox).analyser.open = true;
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.analyser.open = true;
+            let tool = mailbox.analyser.tool;
+            if !mailbox.analyser.open_tools.contains(&tool) {
+                mailbox.analyser.open_tools.push(tool);
+            }
         }
     }
 }

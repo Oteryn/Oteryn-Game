@@ -16,7 +16,7 @@ pub(super) struct PresentationCache {
     assets: Option<Arc<Mutex<Assets>>>,
     attempted: bool,
     pixels: Vec<u8>,
-    glyphs: BTreeMap<char, u16>,
+    glyphs: BTreeMap<(char, [u8; 3]), u16>,
     outfits: BTreeMap<OutfitKey, Vec<Draw>>,
     palette: Vec<[u8; 3]>,
     image: Option<Arc<AtlasImage>>,
@@ -141,17 +141,30 @@ impl PresentationCache {
         draws
     }
 
-    pub(super) fn name(&mut self, name: &str) -> Vec<u16> {
+    pub(super) fn name(&mut self, name: &str, health: u8) -> Vec<u16> {
+        let colour = match health {
+            93.. => [0, 188, 0],
+            61..=92 => [80, 161, 80],
+            31..=60 => [161, 161, 0],
+            9..=30 => [191, 10, 10],
+            4..=8 => [145, 15, 15],
+            _ => [133, 12, 12],
+        };
         let mut cells = Vec::new();
         for character in name.chars() {
-            let cell = if let Some(cell) = self.glyphs.get(&character) {
+            let cell = if let Some(cell) = self.glyphs.get(&(character, colour)) {
                 *cell
             } else {
-                let Some(cell) = self.append(&oteryn_renderer::name_text::glyph_rgba(character))
-                else {
+                let mut pixels = oteryn_renderer::name_text::glyph_rgba(character);
+                for pixel in pixels.as_chunks_mut::<4>().0 {
+                    if pixel[3] == 255 {
+                        pixel[..3].copy_from_slice(&colour);
+                    }
+                }
+                let Some(cell) = self.append(&pixels) else {
                     break;
                 };
-                self.glyphs.insert(character, cell);
+                self.glyphs.insert((character, colour), cell);
                 cell
             };
             cells.push(cell);

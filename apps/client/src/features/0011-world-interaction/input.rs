@@ -41,6 +41,28 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command};
 use oteryn_client_ui::world_interaction::menu::Menu;
 impl PlayView {
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn creature_context(
+        &self,
+        target: oteryn_session::EntityRef,
+        link: &PlayLink,
+    ) -> Option<Menu> {
+        self.entities.iter().find(|row| {
+            row.entity == target
+                && row.position.floor == self.floor
+                && matches!(row.detail, oteryn_session::EntityDetail::Actor { .. })
+        })?;
+        let mailbox = lock(&link.mailbox);
+        if mailbox.world_context.pending {
+            return None;
+        }
+        let menu = Menu::new(
+            oteryn_client_runtime::world_interaction::Target::Creature(target),
+            mailbox.world_context.look,
+            false,
+        );
+        (!menu.entries.is_empty()).then_some(menu)
+    }
     pub fn world_context(&self, tile: TileCoord, link: &PlayLink) -> Option<Menu> {
         let target = self.world_context_target(tile)?;
         let mailbox = lock(&link.mailbox);
@@ -114,6 +136,11 @@ impl PlayView {
                             })
                         })
                 }
+                Target::Creature(entity) => self.entities.iter().any(|row| {
+                    row.entity == entity
+                        && row.position.floor == self.floor
+                        && matches!(row.detail, oteryn_session::EntityDetail::Actor { .. })
+                }),
                 _ => false,
             };
             if !carried {

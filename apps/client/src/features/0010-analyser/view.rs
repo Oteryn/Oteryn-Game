@@ -1,23 +1,31 @@
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn analyser_text(&self) -> String {
-        panel_text(&lock(&self.mailbox))
+        let mailbox = lock(&self.mailbox);
+        panel_text(&mailbox, mailbox.analyser.tool)
+    }
+    #[cfg(feature = "bevy-shell")]
+    pub(crate) fn analyser_text_for(&self, tool: oteryn_client_ui::analyser::Tool) -> String {
+        panel_text(&lock(&self.mailbox), tool)
     }
     pub fn analyser_panel(&self) -> oteryn_client_ui::analyser::Panel {
         lock(&self.mailbox).analyser.clone()
     }
 }
-fn panel_text(mailbox: &crate::play::mailbox::Mailbox) -> String {
-    if mailbox.analyser.selected
-        && mailbox.analyser.tool == oteryn_client_ui::analyser::Tool::Bosses
-    {
+fn panel_text(
+    mailbox: &crate::play::mailbox::Mailbox,
+    tool: oteryn_client_ui::analyser::Tool,
+) -> String {
+    if mailbox.analyser.selected && tool == oteryn_client_ui::analyser::Tool::Bosses {
         oteryn_client_ui::analyser::bosses::text(
             &mailbox.analyser,
             &mailbox.boss_encounter,
             &mailbox.boss_rewards,
         )
     } else {
-        oteryn_client_ui::analyser::panel_text(&mailbox.analyser)
+        let mut panel = mailbox.analyser.clone();
+        panel.tool = tool;
+        oteryn_client_ui::analyser::panel_text(&panel)
     }
 }
 #[cfg(windows)]
@@ -118,7 +126,7 @@ fn form() -> crate::play::feature_0115_mail::view::native::Form {
                     panel.price_input[1].clone(),
                     panel.export_path.clone(),
                 ],
-                panel_text(mailbox),
+                panel_text(mailbox, mailbox.analyser.tool),
             )
         },
         set_open: |mailbox, value| mailbox.analyser.open = value,

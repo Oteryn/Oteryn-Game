@@ -171,7 +171,7 @@ fn t048_every_action_bar_slot_of_all_rows_has_an_editable_hotkey()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::{PreferenceStore, SettingsState};
     let slots = oteryn_client_runtime::spell::ACTION_BAR_SLOTS;
-    assert_eq!(slots, 150);
+    assert_eq!(slots, 450);
     let path = std::env::temp_dir().join(format!("t048-all-rows-{}.json", std::process::id()));
     let mut settings = SettingsState::new(Some(path.clone()));
     let mut preferences = settings.preferences.clone();
@@ -186,12 +186,39 @@ fn t048_every_action_bar_slot_of_all_rows_has_an_editable_hotkey()
     ];
     let keys: Vec<String> = (1..=12)
         .map(|n| format!("F{n}"))
-        .chain(('A'..='L').map(String::from))
+        .chain(('A'..='Z').map(String::from))
+        .chain(('0'..='9').map(String::from))
+        .chain(
+            [
+                "BACKSPACE",
+                "INSERT",
+                "HOME",
+                "PAGEUP",
+                "DELETE",
+                "END",
+                "PAGEDOWN",
+                "ARROWUP",
+                "ARROWDOWN",
+                "ARROWLEFT",
+                "ARROWRIGHT",
+                "ESCAPE",
+                "ENTER",
+                "KEYPADENTER",
+                "SPACE",
+                "TAB",
+                "KEYPAD0",
+            ]
+            .map(String::from),
+        )
         .collect();
     for slot in 0..slots {
         preferences.rebind(
             &format!("local-spell-action-bar-spell-{}", slot + 1),
-            &format!("{}+{}", modifiers[slot / 24], keys[slot % 24]),
+            &format!(
+                "{}+{}",
+                modifiers[slot / keys.len()],
+                keys[slot % keys.len()]
+            ),
         )?;
     }
     settings.apply(preferences);
@@ -207,7 +234,7 @@ fn t048_every_action_bar_slot_of_all_rows_has_an_editable_hotkey()
         .filter(|label| label.starts_with("Action bar row"))
         .map(|label| label.split(" / ").next().unwrap_or_default().to_owned())
         .collect();
-    assert_eq!(rows.len(), 3);
+    assert_eq!(rows.len(), 9);
     assert_eq!(settings.preferences.action_keys.0.len(), slots - 4);
     let _ = std::fs::remove_file(path.with_extension("backup.json"));
     let _ = std::fs::remove_file(path);

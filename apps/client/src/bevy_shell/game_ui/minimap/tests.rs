@@ -214,3 +214,92 @@ mod foreground_click {
         Ok(())
     }
 }
+
+#[test]
+fn parity_a_minimap_pointer_gestures_use_pointed_camera_position() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerDrag, PointerPress, PointerScroll},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let mut app = fixture()?;
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<MiniImage>>()
+        .single(app.world())?;
+    app.world_mut()
+        .get_mut::<RelativeCursorPosition>(entity)
+        .ok_or("cursor")?
+        .normalized = Some(Vec2::new(0.75, 0.5));
+    let pointer = Pointer::new(
+        PointerId::Mouse,
+        Location {
+            target: bevy::camera::NormalizedRenderTarget::None {
+                width: 124,
+                height: 100,
+            },
+            position: Vec2::new(93., 50.),
+        },
+    );
+    let before = camera(&app)?;
+    app.world_mut().trigger(PointerPress {
+        entity,
+        pointer: pointer.clone(),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        count: 1,
+    });
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: pointer.clone(),
+        button: PointerButton::Secondary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    let owner = app.world().non_send::<HostOwner>();
+    owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .view
+        .satellite_map(|_, marks| {
+            assert_eq!(marks.len(), 1);
+            assert_eq!(
+                (marks[0].x, marks[0].y, marks[0].floor),
+                (before.0 + 8 * before.3, before.1, before.2)
+            );
+        });
+    app.world_mut().trigger(PointerDrag {
+        entity,
+        pointer: pointer.clone(),
+        button: PointerButton::Primary,
+        distance: Vec2::new(8., -4.),
+        delta: Vec2::new(8., -4.),
+    });
+    assert_eq!(camera(&app)?.0, before.0 - 2 * before.3);
+    assert_eq!(camera(&app)?.1, before.1 + before.3);
+    let zoom = camera(&app)?.3;
+    let scroll = |pointer, y| PointerScroll {
+        entity,
+        pointer,
+        unit: bevy::input::mouse::MouseScrollUnit::Line,
+        x: 0.,
+        y,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        phase: bevy::input::touch::TouchPhase::Moved,
+    };
+    app.world_mut().trigger(scroll(pointer.clone(), -1.));
+    assert!(camera(&app)?.3 > zoom, "wheel down must zoom out");
+    let floor = camera(&app)?.2;
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::ControlLeft);
+    app.world_mut().trigger(scroll(pointer, -1.));
+    assert_eq!(
+        camera(&app)?.2,
+        floor + 1,
+        "Ctrl-wheel down must browse the floor above"
+    );
+    Ok(())
+}

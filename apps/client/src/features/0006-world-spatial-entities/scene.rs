@@ -160,7 +160,16 @@ impl Scene {
                     .and_then(|name| name.as_str().ok());
                 if let Some(name) = name.or_else(|| marker.map(|_| tr!("Creature"))) {
                     let label = oteryn_client_ui::forge_creature::label(name, marker);
-                    self.names.push((tile, self.cache.name(&label)));
+                    self.names.push((
+                        tile,
+                        self.cache.name(
+                            &label,
+                            match entity.detail {
+                                EntityDetail::Actor { health_percent, .. } => health_percent,
+                                _ => 100,
+                            },
+                        ),
+                    ));
                     #[cfg(feature = "bevy-shell")]
                     self.name_entities.push(entity.entity);
                 }

@@ -82,6 +82,11 @@ impl PlayLink {
         lock(&self.mailbox).imbue.tracker_open = false;
     }
 
+    pub fn imbue_tracker_toggle_group(&self, group: usize) {
+        if let Some(hidden) = lock(&self.mailbox).imbue.tracker_hidden.get_mut(group) {
+            *hidden = !*hidden;
+        }
+    }
     pub fn imbue_tracker_filter(&self, value: &str) -> bool {
         set_filter(&mut lock(&self.mailbox), value)
     }

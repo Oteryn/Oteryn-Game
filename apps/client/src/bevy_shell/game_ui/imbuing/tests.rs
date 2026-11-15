@@ -65,7 +65,8 @@ fn imbuing_apply_guard() {
     assert_eq!(selection.intent(&p, Kind::Apply), None);
     selection.slot = Some(1);
     selection.offer = Some(0);
-    assert_eq!(selection.intent(&p, Kind::Apply), Some(Intent::Apply));
+    assert_eq!(selection.intent(&p, Kind::Apply), None);
+    assert_eq!(selection.intent(&p, Kind::Confirm), Some(Intent::Apply));
     p.pending = true;
     assert_eq!(selection.intent(&p, Kind::Apply), None);
 }
@@ -241,6 +242,8 @@ fn imbuing_commands_require_confirmation_and_show_result() -> TestResult {
     assert!(commands.try_recv().is_err());
     click(&owner, &mut state, Kind::Offer(0));
     click(&owner, &mut state, Kind::Apply);
+    assert!(commands.try_recv().is_err());
+    click(&owner, &mut state, Kind::Confirm);
     let crate::combat_input::PlayCommand::Imbue(command) = commands.try_recv()? else {
         return Err("apply missing".into());
     };
@@ -376,5 +379,52 @@ fn imbuement_tracker_shortcut_opens_independently_in_bevy() -> TestResult {
     let panel = owner.play.as_ref().ok_or("play")?.link.imbue_panel();
     assert!(panel.tracker_open);
     assert!(!panel.open);
+    Ok(())
+}
+
+#[test]
+fn parity_a_apply_waits_for_exact_cost_confirmation() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| parity_a_apply_case().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "apply case panicked")?
+        .map_err(Into::into)
+}
+fn parity_a_apply_case() -> TestResult {
+    let (owner, mut commands, outbox) = host()?;
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    link.imbue_item(NonZeroU64::MIN);
+    link.open_imbue();
+    let _query = commands.try_recv()?;
+    publish(&outbox, &panel());
+    let mut state = current(&owner);
+    click(&owner, &mut state, Kind::Slot(1));
+    click(&owner, &mut state, Kind::Offer(0));
+    click(&owner, &mut state, Kind::Apply);
+    assert!(
+        commands.try_recv().is_err(),
+        "Apply must only open confirmation"
+    );
+    click(&owner, &mut state, Kind::Cancel);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(commands.try_recv().is_err());
+    click(&owner, &mut state, Kind::Apply);
+    let mut changed = panel();
+    changed.window.as_mut().ok_or("window")?.offers[0].gold += 1;
+    publish(&outbox, &changed);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(
+        commands.try_recv().is_err(),
+        "changed quote invalidates confirmation"
+    );
+    state = current(&owner);
+    click(&owner, &mut state, Kind::Slot(1));
+    click(&owner, &mut state, Kind::Offer(0));
+    click(&owner, &mut state, Kind::Apply);
+    click(&owner, &mut state, Kind::Confirm);
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Imbue(command) if matches!(command.0.action, imbuement::ImbuementAction::Apply { slot: 1, imbuement: 0 }))
+    );
     Ok(())
 }

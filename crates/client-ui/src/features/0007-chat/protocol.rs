@@ -11,6 +11,9 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
         panel.feedback = Some(tr!("Enter a message of at most 1,020 bytes").into());
         return None;
     }
+    if let Some(intent) = inline_request(panel) {
+        return intent;
+    }
     let intent = if mode == Mode::Guild {
         return crate::chat_guild_room::request(panel);
     } else if mode == Mode::Private {
@@ -42,6 +45,13 @@ pub fn request(panel: &mut ChatPanel, mode: Mode, recipient: &str) -> Option<Cha
 /// Send the composer text to the selected channel tab; `None` while a fixed tab is selected.
 pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
     use super::ChannelTab;
+    if panel.selected
+        && !panel.pending
+        && panel.console.can_send()
+        && let Some(intent) = inline_request(panel)
+    {
+        return intent;
+    }
     let channel = panel.console.current.clone()?;
     if !panel.selected || panel.pending || !panel.console.can_send() {
         panel.feedback = Some(tr!("Chat unavailable or waiting for the server").into());
@@ -73,6 +83,60 @@ pub fn channel_request(panel: &mut ChatPanel) -> Option<ChatIntent> {
     panel.pending = true;
     panel.feedback = None;
     Some(intent)
+}
+
+// Inline commands take precedence over the selected destination, including auto-sent hotkeys.
+fn inline_request(panel: &mut ChatPanel) -> Option<Option<ChatIntent>> {
+    let original = panel.text.as_str();
+    let speech = [
+        ("#w ", ChatSpeechMode::Whisper),
+        ("#y ", ChatSpeechMode::Yell),
+        ("#s ", ChatSpeechMode::Say),
+    ]
+    .into_iter()
+    .find(|(prefix, _)| {
+        original
+            .get(..3)
+            .is_some_and(|head| head.eq_ignore_ascii_case(prefix))
+    });
+    let mut retained = String::new();
+    let intent = if let Some((_, mode)) = speech {
+        ChatIntent::Say {
+            mode,
+            text: original[3..].trim_start().into(),
+        }
+    } else if let Some(delimiter @ ('*' | '@')) = original.chars().next() {
+        let Some((name, message)) = original[1..].split_once(delimiter) else {
+            panel.feedback = Some("Close the private-message recipient delimiter".into());
+            return Some(None);
+        };
+        let name = name.trim();
+        if name.is_empty() || name.len() > 120 || name.contains('\0') {
+            panel.feedback = Some("Enter a player name of at most 120 bytes".into());
+            return Some(None);
+        }
+        if delimiter == '*' {
+            retained = format!("*{name}* ");
+        }
+        ChatIntent::Private {
+            recipient_name: name.into(),
+            text: message.trim_start().into(),
+        }
+    } else {
+        return None;
+    };
+    let text = match &intent {
+        ChatIntent::Say { text, .. } | ChatIntent::Private { text, .. } => text,
+        _ => return Some(None),
+    };
+    if text.trim().is_empty() || text.len() > 1020 || text.contains('\0') {
+        panel.feedback = Some("Enter a message of at most 1,020 bytes".into());
+        return Some(None);
+    }
+    panel.text = retained;
+    panel.pending = true;
+    panel.feedback = None;
+    Some(Some(intent))
 }
 
 type Private = crate::chat_private_channel::ChatPanel;

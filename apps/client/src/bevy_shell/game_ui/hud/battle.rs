@@ -33,11 +33,44 @@ fn keyboard(
         });
     }
 }
+#[derive(Component, Default)]
+struct Chord {
+    held: [bool; 2],
+    chord: bool,
+    suppress: bool,
+}
+fn press(
+    event: On<bevy::picking::events::PointerPress>,
+    mut rows: Query<&mut Chord>,
+    mouse: Option<Res<ButtonInput<MouseButton>>>,
+) {
+    use bevy::picking::pointer::PointerButton;
+    let index = match event.button {
+        PointerButton::Primary => 0,
+        PointerButton::Secondary => 1,
+        _ => return,
+    };
+    if let Ok(mut state) = rows.get_mut(event.entity) {
+        if mouse.as_ref().is_some_and(|mouse| {
+            let other = if index == 0 {
+                MouseButton::Right
+            } else {
+                MouseButton::Left
+            };
+            !mouse.pressed(other) && !mouse.just_pressed(other)
+        }) {
+            *state = Chord::default();
+        }
+        state.held[index] = true;
+        state.chord |= state.held.iter().all(|held| *held);
+    }
+}
 fn click(
     event: On<PointerClick>,
     guard: ModalGuard,
     actions: Query<(&HudAction, Has<InteractionDisabled>)>,
     keys: Option<Res<ButtonInput<KeyCode>>>,
+    mut chords: Query<&mut Chord>,
     mut owner: NonSendMut<HostOwner>,
     mut commands: Commands,
 ) {
@@ -72,7 +105,24 @@ fn click(
     let shift = keys
         .as_ref()
         .is_some_and(|keys| keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]));
-    if event.button == primary && !shift {
+    let index = match event.button {
+        PointerButton::Primary => 0,
+        PointerButton::Secondary => 1,
+        _ => return,
+    };
+    let mut chord = false;
+    if let Ok(mut state) = chords.get_mut(event.entity) {
+        state.held[index] = false;
+        if state.suppress {
+            *state = Chord::default();
+            return;
+        }
+        chord |= state.chord;
+        if chord {
+            state.suppress = true;
+        }
+    }
+    if event.button == primary && !shift && !chord {
         commands.trigger(Activate {
             entity: event.entity,
         });
@@ -84,29 +134,17 @@ fn click(
     ) {
         return;
     }
-    let Some(position) = play
-        .link
-        .filtered_battle_rows(play.link.active_battle_list())
-        .iter()
-        .find(|row| row.entity == target)
-        .map(|row| row.position)
-    else {
+    let Some(menu) = play.view.creature_context(target, &play.link) else {
         return;
     };
-    let tile = oteryn_renderer::TileCoord::new(position.x, position.y);
-    let Some(menu) = play.view.world_context(tile, &play.link).filter(|menu| {
-        menu.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target)
-    }) else {
-        return;
-    };
-    if event.button == primary {
+    if event.button == primary || chord {
         play.view.world_context_choose(
             &play.link,
             &menu,
             oteryn_client_ui::world_interaction::menu::Action::Look,
         );
     } else {
-        owner.request_world_context(tile);
+        owner.request_creature_context(target);
     }
 }
 fn name(row: &WorldSpatialEntity) -> String {
@@ -298,6 +336,7 @@ pub(super) fn project(
         let entry = commands
             .spawn((
                 Pickable::default(),
+                Chord::default(),
                 bevy::input_focus::tab_navigation::TabIndex(0),
                 HudAction {
                     generation,
@@ -312,6 +351,7 @@ pub(super) fn project(
                 },
             ))
             .observe(click)
+            .observe(press)
             .observe(keyboard)
             .id();
         if disabled {

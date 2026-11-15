@@ -407,3 +407,51 @@ fn t107_session_shows_clock_xp_per_hour_and_profit_balance() {
     }
     assert!(super::view::session_text_at(&panel, 0).contains("Session clock: 0:00:00"));
 }
+
+#[test]
+fn parity_a_current_combat_rates_expire_without_erasing_session_totals() -> Result<(), &'static str>
+{
+    use crate::analyser::protocol::{AnalyserFact, AnalyserImpact, apply_at};
+    let mut panel = Panel {
+        selected: true,
+        ..Default::default()
+    };
+    let value = std::num::NonZeroU32::MIN.saturating_add(99);
+    let damage = oteryn_client_runtime::analyser::decode_analyser_facts(&[
+        10, 8, 34, 6, 8, 1, 16, 100, 24, 2,
+    ])
+    .map_err(|_| "damage wire")?;
+    let element = damage
+        .iter()
+        .find_map(|fact| match fact {
+            AnalyserFact::Impact(AnalyserImpact::Damage { element, .. }) => Some(*element),
+            _ => None,
+        })
+        .ok_or("damage fact")?;
+    apply_at(
+        &mut panel,
+        &[
+            AnalyserFact::Impact(AnalyserImpact::Healing(value)),
+            AnalyserFact::Impact(AnalyserImpact::Damage { value, element }),
+            AnalyserFact::DamageInput {
+                value,
+                element,
+                source: oteryn_client_runtime::analyser::AnalyserDamageSource::Player,
+            },
+        ],
+        100,
+    );
+    let fresh = crate::analyser::view::impact_text(&panel, 101);
+    assert!(fresh.contains("HPS: 100.00"), "{fresh}");
+    let expired = crate::analyser::view::impact_text(&panel, 111);
+    assert!(expired.contains("HPS: 0.00"), "{expired}");
+    assert_eq!(
+        (panel.damage, panel.healing, panel.received),
+        (100, 100, 100)
+    );
+    assert!(fresh.contains("DPS: 100.00"));
+    assert!(expired.contains("DPS: 0.00"));
+    assert!(crate::analyser::view::input_text(&panel, 101).contains("Incoming DPS: 100.00"));
+    assert!(crate::analyser::view::input_text(&panel, 104).contains("Incoming DPS: 0.00"));
+    Ok(())
+}

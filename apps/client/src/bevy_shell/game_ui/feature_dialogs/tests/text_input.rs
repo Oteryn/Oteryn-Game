@@ -230,3 +230,29 @@ fn deferred_modal_reply_cancels_on_choice_remember_and_descriptor_changes() -> T
     }
     Ok(())
 }
+
+#[test]
+fn parity_a_modal_selects_first_choice_and_arrows_change_real_answer() -> TestResult {
+    use bevy::input::{
+        ButtonState,
+        keyboard::{Key, KeyboardInput},
+    };
+    let (mut app, _editor, mut fixture) = app_with_choices(true)?;
+    assert_eq!(app.world().resource::<State>().selected, Some(7));
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::ArrowDown,
+        logical_key: Key::ArrowDown,
+        state: ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    assert_eq!(app.world().resource::<State>().selected, Some(9));
+    let entity = button(&mut app)?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    let answer = fixture.accepted_input()?.ok_or("answer")?;
+    assert_eq!(answer.answer.choice_id, Some(9));
+    Ok(())
+}

@@ -75,12 +75,33 @@ fn select(app: &mut App, tool: Tool) -> TestResult {
     Ok(())
 }
 fn report(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
-    Ok(app
-        .world_mut()
-        .query_filtered::<&Text, With<Report>>()
-        .single(app.world())?
-        .0
-        .clone())
+    let tool = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .analyser_panel()
+        .tool;
+    app.world_mut()
+        .query_filtered::<(Entity, &Text), With<Report>>()
+        .iter(app.world())
+        .find_map(|(entity, text)| {
+            let mut current = Some(entity);
+            while let Some(entity) = current {
+                if app
+                    .world()
+                    .get::<Overlay>(entity)
+                    .is_some_and(|overlay| overlay.0 == tool)
+                {
+                    return Some(text.0.clone());
+                }
+                current = app.world().get::<ChildOf>(entity).map(ChildOf::parent);
+            }
+            None
+        })
+        .ok_or("selected analyser report".into())
 }
 fn fields(tool: Tool, expected: &[&str]) -> TestResult {
     let (mut app, _outbox) = app()?;
@@ -733,5 +754,50 @@ fn boss_tracker_refreshes_cooldowns_after_browsing_gallery() -> TestResult {
     assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(
         |c| matches!(c, PlayCommand::Feature(c) if c.kind == 133 && !c.payload.starts_with(b"BCT1"))
     ));
+    Ok(())
+}
+
+#[test]
+fn parity_a_analyser_windows_and_resets_are_independent() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Loot)?;
+    select(&mut app, Tool::Experience)?;
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<Entity, With<Overlay>>()
+            .iter(app.world())
+            .count(),
+        2
+    );
+    let reset = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| {
+            (control.tool == Tool::Loot && control.reset).then_some(entity)
+        })
+        .ok_or("loot reset")?;
+    app.world_mut().trigger(Activate { entity: reset });
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.analyser_panel();
+    assert_eq!(panel.gold, 0);
+    assert_eq!(panel.gained_xp, 150);
+    assert_eq!(panel.supplies, 2);
+    Ok(())
+}
+
+#[test]
+fn parity_a_loot_reset_retains_xp_and_supplies() -> TestResult {
+    let (mut app, _) = app()?;
+    select(&mut app, Tool::Loot)?;
+    let reset = control(&mut app, true)?;
+    app.world_mut().trigger(Activate { entity: reset });
+    app.update();
+    let owner = app.world().non_send::<HostOwner>();
+    let panel = owner.play.as_ref().ok_or("play")?.link.analyser_panel();
+    assert_eq!(panel.gold, 0);
+    assert_eq!(panel.gained_xp, 150);
+    assert_eq!(panel.supplies, 2);
     Ok(())
 }

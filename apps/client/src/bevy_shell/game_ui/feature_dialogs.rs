@@ -139,6 +139,11 @@ fn project(
     let (Some(key), Some(projected)) = (key, projected) else {
         return;
     };
+    state.selected = projected
+        .panel
+        .active
+        .as_ref()
+        .and_then(|dialog| dialog.choices.first().map(|(id, _)| *id));
     let (panel, initial_focus) = build::panel(
         &mut commands,
         &skin,
@@ -270,6 +275,27 @@ fn keyboard(
     for event in keys.read() {
         if event.state != bevy::input::ButtonState::Pressed || event.repeat {
             continue;
+        }
+        if matches!(event.key_code, KeyCode::ArrowUp | KeyCode::ArrowDown)
+            && let Some(dialog) = owner
+                .play
+                .as_ref()
+                .and_then(|play| play.link.server_modal_panel())
+                .and_then(|panel| panel.panel.active)
+            && !dialog.choices.is_empty()
+        {
+            let index = dialog
+                .choices
+                .iter()
+                .position(|(id, _)| Some(*id) == state.selected)
+                .unwrap_or(0);
+            let next = if event.key_code == KeyCode::ArrowUp {
+                index.saturating_sub(1)
+            } else {
+                (index + 1).min(dialog.choices.len() - 1)
+            };
+            state.selected = Some(dialog.choices[next].0);
+            state.pending = None;
         }
         if event.key_code == KeyCode::Escape {
             let button = owner

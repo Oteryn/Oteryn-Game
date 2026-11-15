@@ -487,3 +487,66 @@ fn response_refresh_retains_source_geometry_and_drag_offset_and_enter_closes_onl
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn parity_a_inspection_cyclopedia_navigation_keeps_displayed_identity() -> TestResult {
+    let (mut app, link, mut commands, _outbox) = app(true)?;
+    inspect(&link, &mut commands, Request::Item(7.try_into()?))?;
+    response(&link, &reply("Displayed sword"))?;
+    app.update();
+    let expected = link.inspection_panel().reply.ok_or("reply")?.items[0].definition_ref;
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| {
+            (text.0 == "Cyclopedia" && app.world().get::<Control>(parent.parent()).is_some())
+                .then_some(parent.parent())
+        })
+        .ok_or("Cyclopedia action")?;
+    let control = *app.world().get::<Control>(button).ok_or("control")?;
+    assert!(current(
+        app.world().non_send::<HostOwner>(),
+        app.world().resource::<State>(),
+        control.key
+    ));
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(
+        link.inspection_panel().catalogue_open,
+        "{:?}",
+        link.inspection_panel()
+    );
+    let PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("catalogue request".into());
+    };
+    assert_eq!(
+        oteryn_client_ui::inspection::decode_request(&command.payload)
+            .map_err(|e| format!("{e:?}"))?,
+        Request::Catalogue(expected)
+    );
+    assert!(link.inspection_panel().catalogue_open);
+    assert!(!link.inspection_panel().open);
+    Ok(())
+}
+
+#[test]
+fn parity_a_inspection_proficiency_navigation_keeps_displayed_weapon() -> TestResult {
+    let (mut app, link, mut commands, outbox) = app(true)?;
+    outbox.bevy_proficiency_initialize();
+    inspect(&link, &mut commands, Request::Item(7.try_into()?))?;
+    let mut inspected = reply("Displayed sword");
+    inspected.items[0]
+        .attributes
+        .push(("Weapon Type".into(), "sword".into()));
+    response(&link, &inspected)?;
+    app.update();
+    let button = action(&mut app, Kind::Proficiency)?;
+    app.world_mut().trigger(Activate { entity: button });
+    assert!(link.weapon_proficiency_panel().open);
+    assert_eq!(link.weapon_proficiency_panel().weapon, 42);
+    assert!(!link.inspection_panel().open);
+    assert!(
+        matches!(commands.try_recv()?, PlayCommand::Feature(command) if command.capability == 195)
+    );
+    Ok(())
+}

@@ -107,7 +107,7 @@ pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
         Form {
             title: "Spell action bar",
             labels: &[
-                "Slot number (1–150; 50 per bar)",
+                "Slot number (1–450; 50 per bar)",
                 "Server cast index (see live catalogue)",
                 "Carried item definition (equip)",
                 "Text to say",

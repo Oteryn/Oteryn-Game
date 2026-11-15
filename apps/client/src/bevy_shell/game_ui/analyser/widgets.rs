@@ -17,7 +17,7 @@ pub(super) fn build(
 ) -> Widgets {
     let overlay = commands
         .spawn((
-            Overlay,
+            Overlay(tool),
             GlobalZIndex(160),
             TabGroup {
                 order: 2,
@@ -112,7 +112,7 @@ pub(super) fn build(
                 .id();
             let field = commands
                 .spawn((
-                    ConfigField(index),
+                    ConfigField(index, tool),
                     bevy::ui_widgets::TextInput,
                     bevy::text::EditableText {
                         max_characters: Some(20),

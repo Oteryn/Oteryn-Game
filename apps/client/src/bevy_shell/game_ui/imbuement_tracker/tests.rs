@@ -191,3 +191,153 @@ fn imbuement_tracker_and_items_shortcuts_route_to_distinct_owners() -> TestResul
     ));
     Ok(())
 }
+
+#[test]
+fn parity_a_tracker_retains_empty_slots_and_independent_duration_groups() -> TestResult {
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut requests, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    link.bevy_item_details_selected(true);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    let item = ItemEntry {
+        appearance_id: 0,
+        handle: 7.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    outbox.bevy_imbue_equipment(CharacterInventory {
+        equipment: vec![EquippedItem {
+            slot: EquipmentSlot::Head,
+            item,
+        }],
+        ..Default::default()
+    });
+    link.open_imbue_tracker();
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = requests.try_recv()? else {
+        return Err("inspection missing".into());
+    };
+    assert_eq!((command.capability, command.command_type), (132, 153));
+    assert_eq!(
+        decode_request(&command.payload).map_err(|e| format!("{e:?}"))?,
+        Request::Item(item.handle)
+    );
+    link.bevy_item_details_response(&ServerMechanicResponse {
+        command_id: 1,
+        server_sequence: 1,
+        status: CommandStatus::Accepted,
+        payload: encode_reply(&Reply {
+            catalogue: None,
+            status: 1,
+            requests: vec![],
+            items: vec![InspectedItem {
+                slot: 0,
+                definition_ref: 42,
+                count: 1,
+                tier: 0,
+                name: "Helmet".into(),
+                attributes: vec![
+                    (
+                        "Imbuement Slot 1".into(),
+                        "Basic Strike, lasts 00:10h while fighting.".into(),
+                    ),
+                    ("Imbuement Slot 2".into(), "empty".into()),
+                    (
+                        "Imbuement Slot 3".into(),
+                        "Powerful Strike, lasts 04:00h while fighting.".into(),
+                    ),
+                ],
+            }],
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    });
+    owner.phase = Phase::Playing;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .add_systems(Startup, crate::bevy_shell::ui::setup)
+    .insert_non_send(owner);
+    install(&mut app);
+    app.update();
+    assert!(texts(app.world_mut()).contains("Helmet"));
+
+    assert!(texts(app.world_mut()).contains("unused imbuement slot"));
+    assert!(texts(app.world_mut()).contains("240 minutes"));
+    for label in ["Under 1 hour", "Unused slots"] {
+        let button = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| text.0.ends_with(label).then_some(parent.parent()))
+            .ok_or("duration-group control")?;
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+    }
+    let text = texts(app.world_mut());
+    assert!(text.contains("10 minutes"));
+    assert!(text.contains("unused imbuement slot"));
+    assert!(text.contains("240 minutes"));
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| text.0.ends_with("Over 3 hours").then_some(parent.parent()))
+        .ok_or("long-duration group")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let text = texts(app.world_mut());
+    assert!(!text.contains("240 minutes"));
+    assert!(!text.contains("unused imbuement slot"));
+    // Inspection rounds active timers down to whole minutes; zero still means active.
+    trigger(&mut app, |kind| matches!(kind, Kind::Refresh))?;
+    let _inspection = requests.try_recv()?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_item_details_response(&ServerMechanicResponse {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload: encode_reply(&Reply {
+                catalogue: None,
+                status: 1,
+                requests: vec![],
+                items: vec![InspectedItem {
+                    slot: 0,
+                    definition_ref: 42,
+                    count: 1,
+                    tier: 0,
+                    name: "Helmet".into(),
+                    attributes: vec![
+                        (
+                            "Imbuement Slot 1".into(),
+                            "Basic Strike, lasts 00:00h while fighting.".into(),
+                        ),
+                        ("Imbuement Slot 2".into(), "empty".into()),
+                    ],
+                }],
+            })
+            .map_err(|error| format!("{error:?}"))?,
+        });
+    app.update();
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| text.0.ends_with("Under 1 hour").then_some(parent.parent()))
+        .ok_or("short-duration group")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert!(texts(app.world_mut()).contains("less than 1 minute"));
+    Ok(())
+}

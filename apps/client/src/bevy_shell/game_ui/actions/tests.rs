@@ -441,18 +441,28 @@ fn side_bars_project_their_dock_and_vertical_capacity() -> TestResult {
             });
     }
     app.update();
+    let layout = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bar_layout();
     for (bar, node, parent) in app
         .world_mut()
         .query::<(&BarRow, &Node, &ChildOf)>()
         .iter(app.world())
     {
-        if bar.0 > 0 {
+        if layout.rows[bar.0].dock != crate::play::BarDock::Bottom {
             assert_eq!(node.flex_direction, FlexDirection::Column);
             assert_ne!(
                 parent.parent(),
                 app.world().resource::<super::super::GameRegions>().bars
             );
             assert_eq!(node.width, px(SLOT_SIZE));
+        } else {
+            assert_eq!(node.flex_direction, FlexDirection::Row);
         }
     }
     Ok(())

@@ -129,6 +129,14 @@ fn four_slot_saved_archive_migrates_to_the_full_row_without_losing_bindings()
 -> Result<(), Box<dyn std::error::Error>> {
     let saved = r#"{"slots":[{"kind":"Empty"},{"kind":"Unmanaged"},{"kind":"Empty"},{"kind":"Unmanaged"}]}"#;
     let archive: super::archive::ArchiveBindings = serde_json::from_str(saved)?;
+    assert!(archive.valid());
+    let incomplete = super::archive::ArchiveBindings {
+        slots: Box::default(),
+    };
+    assert!(
+        !incomplete.valid(),
+        "the in-memory archive must retain its fixed slot count"
+    );
     assert_eq!(
         archive.slots.len(),
         oteryn_client_runtime::spell::ACTION_BAR_SLOTS

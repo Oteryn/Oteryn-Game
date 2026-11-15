@@ -290,9 +290,9 @@ fn native_chat_shortcut_rearms_after_application_deactivation()
             &link, input, 0x54, ctrl, true, false, false
         ));
     };
-    let help = crate::combat_input::PlayCommand::ChatPublic(
-        oteryn_session::ChatIntent::OpenRoom(oteryn_session::ChatRoom::Help),
-    );
+    let help = crate::combat_input::PlayCommand::ChatPublic(oteryn_session::ChatIntent::OpenRoom(
+        oteryn_session::ChatRoom::Help,
+    ));
     let acknowledge = || {
         outbox.chat_public_result(
             &oteryn_session::ChatIntent::OpenRoom(oteryn_session::ChatRoom::Help),
@@ -630,5 +630,75 @@ fn channel_dialog_reuses_a_conversation_with_different_name_case()
     link.chat_close_current();
     assert!(link.chat_panel().console.channels.is_empty());
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn parity_a_inline_chat_commands_override_channel_and_keep_private_prefix()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_session::{ChatIntent, ChatSpeechMode};
+    for (text, expected) in [
+        (
+            "#w hello",
+            ChatIntent::Say {
+                mode: ChatSpeechMode::Whisper,
+                text: "hello".into(),
+            },
+        ),
+        (
+            "#y help",
+            ChatIntent::Say {
+                mode: ChatSpeechMode::Yell,
+                text: "help".into(),
+            },
+        ),
+        (
+            "*Alice* private message",
+            ChatIntent::Private {
+                recipient_name: "Alice".into(),
+                text: "private message".into(),
+            },
+        ),
+        (
+            "@Alice@ private message",
+            ChatIntent::Private {
+                recipient_name: "Alice".into(),
+                text: "private message".into(),
+            },
+        ),
+    ] {
+        for route in 0..3 {
+            let (link, mut commands, outbox) = play_channel();
+            outbox.chat_initialize(true);
+            if route == 1 {
+                crate::play::mailbox::lock(&link.mailbox)
+                    .chat
+                    .console
+                    .open_channel(oteryn_client_ui::chat::ChannelTab::Room(
+                        oteryn_session::ChatRoom::Help,
+                    ));
+            }
+            if route == 2 {
+                assert!(link.assign_bar_action(
+                    0,
+                    crate::play::BarAction::Text {
+                        text: text.into(),
+                        send_automatically: true
+                    }
+                ));
+                link.cast_spell_slot(std::num::NonZeroU32::MIN);
+            } else {
+                link.chat_text(text.into());
+                link.chat_request(oteryn_client_ui::chat::Mode::Say, "");
+            }
+            assert!(
+                matches!(commands.try_recv()?, PlayCommand::ChatPublic(intent) if intent == expected)
+            );
+            if route != 2 && text.starts_with('*') {
+                assert_eq!(link.chat_panel().text, "*Alice* ");
+            }
+        }
+    }
     Ok(())
 }

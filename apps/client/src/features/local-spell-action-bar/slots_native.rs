@@ -12,7 +12,7 @@ use windows_sys::Win32::{
 #[path = "tooltips_native.rs"]
 mod tips;
 const ROW_SLOTS: usize = 50;
-const ROWS: usize = 3;
+const ROWS: usize = 9;
 const TOOLS: usize = 7;
 pub(super) struct SpellRow {
     tips: tips::Tips,
@@ -87,6 +87,12 @@ impl SpellRow {
             GetClientRect(self.parent, &mut rect);
             for (bar, row) in layout.rows.iter().enumerate() {
                 let horizontal = row.dock == BarDock::Bottom;
+                let dock_index = layout.rows[..bar]
+                    .iter()
+                    .filter(|other| other.enabled && other.dock == row.dock)
+                    .count() as i32;
+                let columns = (rect.right / 310).max(1) as usize;
+                let controls_height = ROWS.div_ceil(columns) as i32 * 26 + 8;
                 let capacity = if horizontal {
                     ((rect.right - 180) / 62).clamp(1, 12)
                 } else {
@@ -112,11 +118,11 @@ impl SpellRow {
                     let (x, y) = match row.dock {
                         BarDock::Bottom => (
                             8 + display * width,
-                            (rect.bottom - 88 - bar as i32 * 56).max(0),
+                            (rect.bottom - controls_height - 60 - dock_index * 56).max(0),
                         ),
-                        BarDock::Left => (8 + bar as i32 * 80, 94 + display * 54),
+                        BarDock::Left => (8 + dock_index * 80, 94 + display * 54),
                         BarDock::Right => (
-                            (rect.right - 260 - bar as i32 * 80).max(0),
+                            (rect.right - 260 - dock_index * 80).max(0),
                             94 + display * 54,
                         ),
                     };

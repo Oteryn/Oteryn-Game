@@ -123,6 +123,42 @@ impl HostOwner {
             );
         }
     }
+    pub(super) fn request_creature_context(&mut self, target: oteryn_session::EntityRef) {
+        let unambiguous = self.play.as_ref().and_then(|play| {
+            let row = play
+                .link
+                .filtered_battle_rows(play.link.active_battle_list())
+                .into_iter()
+                .find(|row| row.entity == target)?;
+            let tile = TileCoord::new(row.position.x, row.position.y);
+            let menu = play.view.world_context(tile, &play.link)?;
+            (menu.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target))
+                .then_some(tile)
+        });
+        if let Some(tile) = unambiguous {
+            self.request_world_context(tile);
+            return;
+        }
+        let menu = self
+            .play
+            .as_ref()
+            .and_then(|play| play.view.creature_context(target, &play.link));
+        if self.phase == Phase::Playing
+            && let Some(menu) = menu
+        {
+            self.dialogs.open(
+                self.generation(),
+                Content::Context {
+                    menu: Some(Box::new(menu)),
+                    party: None,
+                    inspection: None,
+                    report: None,
+                    trade: None,
+                    browse: None,
+                },
+            );
+        }
+    }
     fn choose_dialog(&mut self, id: u64, choice: Choice) -> bool {
         if self
             .dialogs

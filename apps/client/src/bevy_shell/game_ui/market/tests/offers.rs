@@ -504,3 +504,38 @@ fn market_catalogue_rejects_invalid_filter_fields() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn parity_a_market_preview_includes_placement_fee_and_debit() -> TestResult {
+    let (mut app, mut commands, outbox, root) = setup()?;
+    let item = button(&mut app, root, Kind::Item(0))?;
+    app.world_mut().trigger(Activate { entity: item });
+    let book = feature(&mut commands)?;
+    outbox.bevy_market_reply(
+        &book,
+        &result(&wire::Reply::Book {
+            definition: 42,
+            page: 0,
+            rows: vec![],
+            statistics: wire::Statistics {
+                definition: 42,
+                as_of_us: 2592000000000,
+                ..default()
+            },
+            has_next: false,
+        })?,
+    );
+    app.update();
+    edit(&mut app, "market.create.amount", "10")?;
+    edit(&mut app, "market.create.price", "1000")?;
+    click(&mut app, "market.create.buy")?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(
+                |text| text.0.contains("Fee: 250 gold") && text.0.contains("Debit now: 10250 gold")
+            )
+    );
+    Ok(())
+}

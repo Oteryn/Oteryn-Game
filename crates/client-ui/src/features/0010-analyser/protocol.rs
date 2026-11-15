@@ -67,6 +67,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.damage = panel.damage.saturating_add(value);
                 panel.damage_chart.add(seconds, value);
+                panel.recent[0].add(seconds, value);
                 let total = panel.impact_types.entry(element.wire()).or_default();
                 *total = total.saturating_add(value);
             }
@@ -74,6 +75,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.healing = panel.healing.saturating_add(value);
                 panel.healing_chart.add(seconds, value);
+                panel.recent[1].add(seconds, value);
             }
             AnalyserFact::DamageInput {
                 value,
@@ -84,6 +86,7 @@ pub fn apply_at(panel: &mut Panel, facts: &[AnalyserFact], seconds: u64) {
                 let value = u64::from(value.get());
                 panel.received = panel.received.saturating_add(value);
                 panel.received_chart.add(seconds, value);
+                panel.recent[2].add(seconds, value);
                 let total = panel.input_types.entry(element.wire()).or_default();
                 *total = total.saturating_add(value);
                 let key = match source {
@@ -106,6 +109,7 @@ pub fn reset(panel: &mut Panel) {
         .map(|goal| goal.saturating_sub(panel.gained_xp));
     *panel = Panel {
         tool: panel.tool,
+        open_tools: panel.open_tools.clone(),
         // Party counters use server connection intervals, independent of this local reset.
         party: std::mem::take(&mut panel.party),
         party_adjustments: std::mem::take(&mut panel.party_adjustments),
@@ -136,6 +140,7 @@ pub fn reset(panel: &mut Panel) {
 pub fn recover(panel: &mut Panel) {
     *panel = Panel {
         tool: panel.tool,
+        open_tools: panel.open_tools.clone(),
         selected: panel.selected,
         open: panel.open,
         feedback: Some(tr!(
@@ -222,4 +227,75 @@ pub fn party_request(
     panel: &mut Panel,
 ) -> Option<oteryn_client_runtime::raw_feature::FeatureCommand> {
     super::party::request(panel)
+}
+
+/// Reset the selected report while retaining measurements belonging to other tools.
+pub fn reset_tool(panel: &mut Panel) {
+    use super::Tool;
+    let now = panel.clock.seconds();
+    let index = Tool::ALL
+        .iter()
+        .position(|tool| *tool == panel.tool)
+        .unwrap_or(0);
+    panel.reset_at[index] = now;
+    match panel.tool {
+        Tool::Loot | Tool::LootTracker => {
+            panel.loot.clear();
+            panel.gold = 0;
+            panel.loot_items = 0;
+            panel.omitted_items = 0;
+            panel.gold_chart = Default::default();
+            panel.loot_drops.clear();
+            panel.omitted_drops = 0;
+        }
+        Tool::Experience => {
+            panel.goal_xp = panel
+                .goal_xp
+                .map(|goal| goal.saturating_sub(panel.gained_xp));
+            panel.gained_xp = 0;
+            panel.raw_xp = 0;
+            panel.xp_chart = Default::default();
+            panel.raw_xp_chart = Default::default();
+        }
+        Tool::Supplies => {
+            panel.supply.clear();
+            panel.supplies = 0;
+            panel.omitted_supplies = 0;
+        }
+        Tool::Damage | Tool::Healing | Tool::Impact => {
+            if panel.tool != Tool::Healing {
+                panel.damage = 0;
+                panel.damage_chart = Default::default();
+                panel.impact_types.clear();
+                panel.recent[0] = Default::default();
+            }
+            if panel.tool != Tool::Damage {
+                panel.healing = 0;
+                panel.healing_chart = Default::default();
+                panel.recent[1] = Default::default();
+            }
+        }
+        Tool::Input => {
+            panel.received = 0;
+            panel.received_chart = Default::default();
+            panel.input_types.clear();
+            panel.input_sources.clear();
+            panel.recent[2] = Default::default();
+        }
+        Tool::Kills => {
+            panel.kills = 0;
+            panel.kills_by_race.clear();
+            panel.kill_chart = Default::default();
+        }
+        Tool::Bosses => {
+            panel.boss_drops.clear();
+            panel.boss_drops_truncated = false;
+        }
+        Tool::Party => {
+            panel.party_import = None;
+            panel.party_feedback =
+                Some("Party measurements are server-owned; refresh to read the current interval");
+        }
+        Tool::Overview | Tool::Hunting | Tool::Session => reset(panel),
+    }
 }

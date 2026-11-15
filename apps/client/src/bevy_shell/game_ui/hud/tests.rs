@@ -436,3 +436,97 @@ fn compact_status_projects_the_settings_owner() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn parity_a_battle_chord_and_stacked_row_preserve_exact_target() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerPress},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    for gesture in 0..3 {
+        let chord = gesture == 1;
+        let (mut app, mut commands, outbox) = app()?;
+        crate::play::PlayLink::bevy_items_fixture(&outbox, None, None, false, false);
+        let target = row(7);
+        let mut stacked = row(8);
+        stacked.entity.identity = [3; 16];
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?
+            .with_entities(vec![target, stacked])?;
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &HudAction)>()
+            .iter(app.world())
+            .find_map(|(entity, action)| {
+                matches!(action.command, Command::Attack(id) if id == target.entity)
+                    .then_some(entity)
+            })
+            .ok_or("row")?;
+        let pointer = Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        );
+        if chord {
+            app.init_resource::<ButtonInput<MouseButton>>();
+            // InputPlugin may publish both releases before picking dispatches these presses.
+            for button in [MouseButton::Left, MouseButton::Right] {
+                let mut mouse = app.world_mut().resource_mut::<ButtonInput<MouseButton>>();
+                mouse.press(button);
+                mouse.release(button);
+            }
+            for button in [PointerButton::Primary, PointerButton::Secondary] {
+                app.world_mut().trigger(PointerPress {
+                    entity,
+                    pointer: pointer.clone(),
+                    button,
+                    hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+                    count: 1,
+                });
+            }
+        } else if gesture == 0 {
+            app.init_resource::<ButtonInput<KeyCode>>();
+            app.world_mut()
+                .resource_mut::<ButtonInput<KeyCode>>()
+                .press(KeyCode::ShiftLeft);
+        }
+        for button in if chord {
+            vec![PointerButton::Primary, PointerButton::Secondary]
+        } else if gesture == 0 {
+            vec![PointerButton::Primary]
+        } else {
+            vec![PointerButton::Secondary]
+        } {
+            app.world_mut().trigger(PointerClick {
+                entity,
+                pointer: pointer.clone(),
+                button,
+                hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+                duration: std::time::Duration::ZERO,
+                count: 1,
+            });
+        }
+        if gesture == 2 {
+            assert!(app.world().non_send::<HostOwner>().dialogs.active());
+        } else {
+            assert!(
+                matches!(commands.try_recv()?, PlayCommand::WorldContext(command) if command.target == oteryn_client_ui::world_interaction::menu::Target::Creature(target.entity) && command.action == oteryn_client_ui::world_interaction::menu::Action::Look)
+            );
+        }
+        assert!(
+            commands.try_recv().is_err(),
+            "chord releases must not attack or open a second menu"
+        );
+    }
+    Ok(())
+}

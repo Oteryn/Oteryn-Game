@@ -1,4 +1,6 @@
 //! Existing product input owners, shared with headless caller tests.
+#[path = "controls/container.rs"]
+mod container;
 use super::owner::HostOwner;
 use crate::{input::MouseActions, spell::SpellHotkeys};
 use oteryn_input_actions::{InputError, NormalizedInputEvent};
@@ -250,11 +252,19 @@ impl HostOwner {
         play.view.observe_bar_pointer(&play.link);
         let mut context = None;
         for click in clicks {
-            if suppress_primary && !click.secondary {
+            if suppress_primary && !click.secondary && !click.look {
                 continue;
             }
             if let Some(tile) = play.view.click_tile(click.x, click.y) {
-                if click.secondary {
+                if click.look {
+                    if let Some(menu) = play.view.world_context(tile, &play.link) {
+                        play.view.world_context_choose(
+                            &play.link,
+                            &menu,
+                            oteryn_client_ui::world_interaction::menu::Action::Look,
+                        );
+                    }
+                } else if click.secondary {
                     if !play.view.gameplay_secondary_click(&play.link) {
                         context = Some(tile);
                         self.controls.mouse.context_closed();
@@ -268,77 +278,6 @@ impl HostOwner {
         if let Some(tile) = context {
             self.request_world_context(tile);
         }
-    }
-
-    pub(super) fn take_container_tool_request(&mut self) -> Option<ContainerToolRequest> {
-        self.controls.container_tool.take()
-    }
-    pub(super) fn request_container_tool(
-        &mut self,
-        tool: ContainerTool,
-        position: Option<(i32, i32, i16)>,
-        view: Option<(u8, oteryn_session::ItemHandle)>,
-    ) -> bool {
-        if self.modal_active() {
-            return false;
-        }
-        let Some(play) = &self.play else {
-            return false;
-        };
-        if play.view.gameplay_input_blocked(&play.link)
-            || position.is_some_and(|position| position.2 != play.view.satellite_player().2)
-            || view.is_some_and(|(id, handle)| {
-                !play
-                    .link
-                    .container_panel()
-                    .views
-                    .as_ref()
-                    .is_some_and(|views| {
-                        views.views.iter().any(|view| {
-                            view.view_id == id
-                                && view.container_handle == handle
-                                && view.browse.is_none()
-                        })
-                    })
-            })
-        {
-            return false;
-        }
-        use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers};
-        let (code, modifiers) = match tool {
-            ContainerTool::BrowseField => {
-                (5, Modifiers::one(Modifier::Control).with(Modifier::Shift))
-            }
-            ContainerTool::Depot => (15, Modifiers::one(Modifier::Control).with(Modifier::Shift)),
-            ContainerTool::Search => (4, Modifiers::one(Modifier::Control).with(Modifier::Shift)),
-            ContainerTool::Sort => (22, Modifiers::one(Modifier::Control).with(Modifier::Alt)),
-        };
-        let Ok(code) = KeyCode::new(code) else {
-            return false;
-        };
-        // Menu actions call the existing canonical opener, independent of the user's keyboard binding.
-        let events = [NormalizedInputEvent::Key {
-            code,
-            state: ButtonState::Pressed,
-            modifiers,
-            repeat: false,
-        }];
-        let opened = match tool {
-            ContainerTool::BrowseField => play.link.browse_field_input(&events),
-            ContainerTool::Depot => play.link.depot_input(&events),
-            ContainerTool::Search => play.link.depot_search_input(&events),
-            ContainerTool::Sort => play.link.container_sort_input(&events),
-        };
-        // The Depot already has its own retained window (game_ui::depot) over `depot_panel().open`.
-        if opened && tool != ContainerTool::Depot {
-            self.controls.container_tool = Some(ContainerToolRequest {
-                generation: self.generation(),
-                tool,
-                position,
-                view,
-            });
-        }
-        opened
     }
 
     pub(super) fn request_toolbar_map(&mut self) {
@@ -592,3 +531,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "controls/parity_tests.rs"]
+mod parity_tests;

@@ -39,7 +39,7 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
     ] {
         entry.forge_stacks = mark;
         scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-        let glyphs = scene.cache.name(expected);
+        let glyphs = scene.cache.name(expected, 100);
         assert_eq!(
             scene.names,
             vec![(TileCoord::new(101, 200), glyphs)],
@@ -49,7 +49,10 @@ fn cl6_forge_marks_reach_native_name_glyphs_and_clear_with_visibility() -> Resul
     entry.forge_stacks = Some(15);
     entry.entity.display_name = None;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Creature"));
+    assert_eq!(
+        scene.names[0].1,
+        scene.cache.name("[Fiendish] Creature", 100)
+    );
     entry.entity.kind = oteryn_session::EntityKind::Player;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
     assert!(
@@ -353,14 +356,20 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
         look: None,
     };
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("[Influenced 3] Rat"));
+    assert_eq!(
+        scene.names[0].1,
+        scene.cache.name("[Influenced 3] Rat", 100)
+    );
     entry.forge_stacks = Some(15);
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Rat"));
+    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Rat", 100));
     // Capability 104 is independently negotiable from capability 286 display names.
     let name = entry.entity.display_name.take();
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("[Fiendish] Creature"));
+    assert_eq!(
+        scene.names[0].1,
+        scene.cache.name("[Fiendish] Creature", 100)
+    );
     entry.forge_stacks = None;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
     assert_eq!(
@@ -371,13 +380,13 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
     entry.entity.display_name = name;
     entry.forge_stacks = None;
     scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
-    assert_eq!(scene.names[0].1, scene.cache.name("Rat"));
+    assert_eq!(scene.names[0].1, scene.cache.name("Rat", 100));
     entry.forge_stacks = Some(15);
     entry.entity.kind = oteryn_session::EntityKind::Player;
     scene.set_presentations_from(&[entry], 0, None)?;
     assert_eq!(
         scene.names[0].1,
-        scene.cache.name("Rat"),
+        scene.cache.name("Rat", 100),
         "forge labels apply only to creatures"
     );
     scene.set_presentations_from(&[], 0, None)?;
@@ -415,6 +424,62 @@ fn item_icons_reuse_loaded_assets_and_packed_cells() -> Result<(), Box<dyn std::
         scene.cache.counts(),
         prepared,
         "no repack for the same item"
+    );
+    Ok(())
+}
+
+#[test]
+fn parity_a_health_updates_recolour_cached_name_glyphs() -> Result<(), BatchError> {
+    let mut scene = Scene::centered_on(
+        Arc::new(World::builtin()?),
+        None,
+        TileCoord::new(100, 200),
+        StepDir::South,
+        &[],
+    )?;
+    let mut entry = VisibleAppearance {
+        entity: oteryn_session::WorldSpatialEntity {
+            entity: oteryn_session::EntityRef {
+                identity: [8; 16],
+                generation: 1,
+            },
+            kind: oteryn_session::EntityKind::Creature,
+            position: oteryn_session::ActorPosition {
+                x: 101,
+                y: 200,
+                floor: 0,
+            },
+            display_name: Some(
+                oteryn_session::EntityDisplayName::new("Rat")
+                    .map_err(|_| BatchError::InvalidView)?,
+            ),
+            detail: EntityDetail::Actor {
+                direction: oteryn_session::StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        },
+        look: None,
+        light: None,
+        forge_stacks: None,
+    };
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    let healthy = scene.names[0].1.clone();
+    entry.entity.detail = EntityDetail::Actor {
+        direction: oteryn_session::StepDirection::South,
+        appearance_ref: 1,
+        health_percent: 3,
+    };
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_ne!(
+        healthy, scene.names[0].1,
+        "health must change the rendered name, not just its bar"
+    );
+    let critical = scene.names[0].1.clone();
+    scene.set_presentations_from(std::slice::from_ref(&entry), 0, None)?;
+    assert_eq!(
+        critical, scene.names[0].1,
+        "unchanged health reuses cached glyphs"
     );
     Ok(())
 }

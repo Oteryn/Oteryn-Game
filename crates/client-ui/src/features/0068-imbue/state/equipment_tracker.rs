@@ -23,6 +23,7 @@ pub struct Timer {
 pub struct GearRecord {
     pub name: String,
     pub timers: Vec<Timer>,
+    pub empty: Vec<String>,
     pub ended: Vec<String>,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -98,8 +99,13 @@ impl EquipmentTracker {
             return;
         }
         let mut timers = Vec::new();
+        let mut empty = Vec::new();
         for (label, value) in &item.attributes {
-            if !label.starts_with("Imbuement Slot ") || value == "empty" {
+            if !label.starts_with("Imbuement Slot ") {
+                continue;
+            }
+            if value == "empty" {
+                empty.push(label.clone());
                 continue;
             }
             let Some(timer) = parse_timer(label, value) else {
@@ -123,6 +129,7 @@ impl EquipmentTracker {
             GearRecord {
                 name: item.name.clone(),
                 timers,
+                empty,
                 ended,
             },
         );
@@ -148,7 +155,7 @@ fn parse_timer(slot: &str, value: &str) -> Option<Timer> {
         minutes: total,
     })
 }
-pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
+pub fn text(tracker: &EquipmentTracker, maximum_ms: u32, hidden: &[bool; 4]) -> String {
     let mut out = format!(
         "Equipped imbuements — {} / {} items inspected\r\nTimes are server-reported whole minutes while fighting.\r\n",
         tracker.records.len(),
@@ -159,6 +166,16 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
         let Some(record) = tracker.records.get(&scope.handle) else {
             continue;
         };
+        let longest = record.timers.iter().map(|timer| timer.minutes).max();
+        let group = match longest {
+            None => 3,
+            Some(0..60) => 0,
+            Some(60..=180) => 1,
+            _ => 2,
+        };
+        if hidden[group] {
+            continue;
+        }
         for timer in &record.timers {
             if maximum_ms != 0 && u64::from(timer.minutes) * 60_000 > u64::from(maximum_ms) {
                 continue;
@@ -180,6 +197,13 @@ pub fn text(tracker: &EquipmentTracker, maximum_ms: u32) -> String {
                 } else {
                     ""
                 }
+            ));
+        }
+        for slot in &record.empty {
+            shown = true;
+            out.push_str(&format!(
+                "{} — {} — {slot}: unused imbuement slot\r\n",
+                scope.label, record.name
             ));
         }
         for slot in &record.ended {

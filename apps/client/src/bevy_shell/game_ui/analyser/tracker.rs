@@ -54,11 +54,12 @@ fn finish(
     let panel = play.link.analyser_panel();
     if !panel.selected
         || !panel.open
-        || panel.tool != Tool::LootTracker
+        || !panel.open_tools.contains(&Tool::LootTracker)
         || play.view.gameplay_input_blocked(&play.link)
     {
         return;
     }
+    play.link.analyser_select(Tool::LootTracker.key());
     match control.action {
         Action::Filter => play.link.analyser_filter_tracked(),
         Action::Track | Action::Untrack => {

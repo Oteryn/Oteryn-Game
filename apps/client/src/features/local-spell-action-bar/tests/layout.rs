@@ -65,9 +65,9 @@ fn docked_bars_lock_swaps_scroll_and_persist_all_rows() -> Result<(), Box<dyn st
         })
     );
     assert_eq!(loaded.preferences.bar_layout.rows[2].offset, 1);
-    assert!(!link.bar_gesture(BarGesture::Swap { from: 0, to: 150 }));
+    assert!(!link.bar_gesture(BarGesture::Swap { from: 0, to: 450 }));
     assert!(!link.bar_gesture(BarGesture::Configure {
-        bar: 3,
+        bar: 9,
         dock: BarDock::Bottom,
         enabled: true,
         locked: true
@@ -92,7 +92,7 @@ fn third_bar_last_slot_uses_the_same_real_cast_caller() -> Result<(), Box<dyn st
     assert!(
         matches!(commands.try_recv()?,crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get()==71)
     );
-    assert_eq!(link.spell_slot_labels().len(), 150);
+    assert_eq!(link.spell_slot_labels().len(), 450);
     Ok(())
 }
 
@@ -154,5 +154,34 @@ fn fifty_button_count_is_configurable_persisted_and_keeps_hidden_assignments()
     assert!(link.spell_slot_labels()[49].contains("saved"));
     assert!(commands.try_recv().is_err());
     std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn parity_a_nine_bars_keep_legacy_layout_and_dispatch_last_slot()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = play_channel();
+    let legacy = serde_json::json!({"rows": [
+        {"dock":"Bottom","enabled":true,"locked":true,"offset":0},
+        {"dock":"Left","enabled":true,"locked":true,"offset":1},
+        {"dock":"Right","enabled":true,"locked":true,"offset":2}
+    ]});
+    let layout: crate::play::BarLayout = serde_json::from_value(legacy)?;
+    assert_eq!(layout.rows.len(), 9);
+    assert_eq!(layout.rows[2].offset, 2);
+    assert!(link.bar_gesture(BarGesture::Configure {
+        bar: 8,
+        dock: BarDock::Right,
+        enabled: true,
+        locked: true
+    }));
+    let mut fields = vec![String::new(); 450];
+    fields[449] = "71".into();
+    assert!(link.spell_bar_bind(&fields));
+    assert!(link.bar_gesture(BarGesture::Cast { slot: 449 }));
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Cast(id)) if id.get() == 71)
+    );
+    assert!(!link.bar_gesture(BarGesture::Cast { slot: 450 }));
     Ok(())
 }

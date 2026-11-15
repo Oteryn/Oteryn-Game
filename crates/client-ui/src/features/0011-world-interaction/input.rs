@@ -15,6 +15,7 @@ pub struct ClickAction {
     pub secondary: bool,
     /// Alt+click on an opponent: toggles attacking it.
     pub toggle_attack: bool,
+    pub look: bool,
 }
 #[must_use]
 pub fn click_tile(view: &TileView, x: f64, y: f64) -> Option<TileCoord> {
@@ -45,6 +46,24 @@ impl MouseActions {
                 ContextDefinition::new(modal.clone(), ContextKind::Modal, 20),
             ],
             vec![
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::one(oteryn_input_actions::Modifier::Shift),
+                        vec![InputAtom::Mouse(MouseButton::PRIMARY)],
+                    )?,
+                    ActionId::new("client.look_primary".to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
+                Binding::new(
+                    gameplay.clone(),
+                    InputChord::new(
+                        Modifiers::one(oteryn_input_actions::Modifier::Shift),
+                        vec![InputAtom::Mouse(MouseButton::SECONDARY)],
+                    )?,
+                    ActionId::new("client.look_secondary".to_owned())?,
+                    RepeatPolicy::Ignore,
+                ),
                 Binding::new(
                     gameplay.clone(),
                     InputChord::new(
@@ -123,7 +142,11 @@ impl MouseActions {
             for action in self.router.process(event) {
                 if matches!(
                     action.action().as_str(),
-                    CLICK_ACTION | ATTACK_TOGGLE_ACTION | "client.context"
+                    CLICK_ACTION
+                        | ATTACK_TOGGLE_ACTION
+                        | "client.context"
+                        | "client.look_primary"
+                        | "client.look_secondary"
                 ) && action.context() == &self.gameplay
                     && action.phase() == ActionPhase::Started
                     && let Some((x, y)) = self.pointer
@@ -133,6 +156,10 @@ impl MouseActions {
                         y,
                         secondary: action.action().as_str() == "client.context",
                         toggle_attack: action.action().as_str() == ATTACK_TOGGLE_ACTION,
+                        look: matches!(
+                            action.action().as_str(),
+                            "client.look_primary" | "client.look_secondary"
+                        ),
                     });
                 }
             }

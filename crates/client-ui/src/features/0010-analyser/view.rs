@@ -36,6 +36,19 @@ pub fn panel_text(panel: &Panel) -> String {
     }
     text
 }
+fn report_elapsed(panel: &Panel, seconds: u64, tool: super::Tool) -> u64 {
+    let index = super::Tool::ALL
+        .iter()
+        .position(|candidate| *candidate == tool)
+        .unwrap_or(0);
+    seconds.saturating_sub(panel.reset_at[index])
+}
+fn interval_chart(values: &[u64], elapsed: u64) -> String {
+    let count = usize::try_from(elapsed / 60 + 1)
+        .unwrap_or(usize::MAX)
+        .min(values.len());
+    super::state::chart_values(&values[values.len() - count..])
+}
 fn overview(panel: &Panel) -> String {
     lfmt!(
         "Kills: {}\r\nExperience: {} raw / {} gained\r\nLoot: {} items / {} gold\r\nSupplies used: {}\r\nDamage dealt: {} | Healing: {} | Damage received: {}\r\nDropped facts: {} (totals may be incomplete)",
@@ -53,11 +66,12 @@ fn overview(panel: &Panel) -> String {
 }
 
 pub(super) fn xp_text(panel: &Panel, seconds: u64) -> String {
+    let elapsed = report_elapsed(panel, seconds, super::Tool::Xp);
     use super::state::{eta_seconds, per_hour};
     let remaining = panel
         .goal_xp
         .map(|goal| goal.saturating_sub(panel.gained_xp));
-    let eta = remaining.and_then(|value| eta_seconds(value, panel.gained_xp, seconds));
+    let eta = remaining.and_then(|value| eta_seconds(value, panel.gained_xp, elapsed));
     let goal = remaining.map_or_else(
         || tr!("Set the XP still needed for your level goal").into(),
         |value| lfmt!("Level goal remaining: {value} XP", value = value),
@@ -75,19 +89,20 @@ pub(super) fn xp_text(panel: &Panel, seconds: u64) -> String {
         "XP Analyser\r\nElapsed: {seconds} seconds\r\nExperience: {} raw / {} gained\r\nXP/h: {}\r\nRaw XP/h: {}\r\n{goal}\r\n{eta}\r\nGained XP\r\n{}\r\nRaw XP\r\n{}\r\n{}",
         panel.raw_xp,
         panel.gained_xp,
-        per_hour(panel.gained_xp, seconds),
-        per_hour(panel.raw_xp, seconds),
-        panel.xp_chart.chart(seconds),
-        panel.raw_xp_chart.chart(seconds),
+        per_hour(panel.gained_xp, elapsed),
+        per_hour(panel.raw_xp, elapsed),
+        interval_chart(&panel.xp_chart.values(seconds), elapsed),
+        interval_chart(&panel.raw_xp_chart.values(seconds), elapsed),
         panel.feedback.unwrap_or(""),
         eta = eta,
         goal = goal,
-        seconds = seconds
+        seconds = elapsed
     )
 }
 
 pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
-    use super::state::{chart_values, per_hour};
+    let elapsed = report_elapsed(panel, seconds, super::Tool::Loot);
+    use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
         .loot
@@ -104,9 +119,9 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
         panel.gold,
         panel.loot_items,
         panel.loot_value(),
-        per_hour(panel.loot_value(), seconds),
+        per_hour(panel.loot_value(), elapsed),
         panel.omitted_items,
-        chart_values(&panel.loot_values(seconds)),
+        interval_chart(&panel.loot_values(seconds), elapsed),
         unpriced = unpriced
     );
     for (item, row) in &panel.loot {
@@ -133,7 +148,7 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
             text,
             "Item {item}: {} | {}/h | {price} | {}\r",
             row.count,
-            per_hour(row.count, seconds),
+            per_hour(row.count, elapsed),
             panel
                 .item_info
                 .get(item)
@@ -149,7 +164,8 @@ pub(super) fn loot_text(panel: &Panel, seconds: u64) -> String {
 }
 
 pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
-    use super::state::{chart_values, per_hour};
+    let elapsed = report_elapsed(panel, seconds, super::Tool::Supply);
+    use super::state::per_hour;
     use std::fmt::Write;
     let unpriced = panel
         .supply
@@ -160,9 +176,9 @@ pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
         "Supply Analyser\r\nSupplies used: {}\r\nSupply cost: {} (priced entries)\r\nSupply cost/h: {}\r\nUnpriced supply units: {unpriced} | Unlisted units: {}\r\n{}\r\n",
         panel.supplies,
         panel.supply_cost(),
-        per_hour(panel.supply_cost(), seconds),
+        per_hour(panel.supply_cost(), elapsed),
         panel.omitted_supplies,
-        chart_values(&panel.supply_values(seconds)),
+        interval_chart(&panel.supply_values(seconds), elapsed),
         unpriced = unpriced
     );
     for (item, row) in &panel.supply {
@@ -180,7 +196,7 @@ pub(super) fn supply_text(panel: &Panel, seconds: u64) -> String {
             text,
             "Item {item}: {} | {}/h | {price} | {}\r",
             row.count,
-            per_hour(row.count, seconds),
+            per_hour(row.count, elapsed),
             panel
                 .item_info
                 .get(item)
@@ -224,6 +240,7 @@ fn gauge(value: u64, total: u128) -> String {
     format!("{bars} {}.{:02}%", share / 100, share % 100)
 }
 pub(super) fn outgoing_text(panel: &Panel, seconds: u64, tool: super::Tool) -> String {
+    let elapsed = report_elapsed(panel, seconds, tool);
     use std::fmt::Write;
     let (mut text, value, label, chart) = if tool == super::Tool::Healing {
         (
@@ -246,11 +263,15 @@ pub(super) fn outgoing_text(panel: &Panel, seconds: u64, tool: super::Tool) -> S
     };
     let _ = write!(
         text,
-        "\r\nElapsed: {seconds} seconds\r\n{label}: {}\r\n{} per minute\r\n{}",
-        rate(value, seconds),
+        "\r\nElapsed: {elapsed} seconds\r\n{label}: {}\r\n{} per minute\r\n{}",
+        panel.recent[usize::from(tool == super::Tool::Healing)].rate(seconds, 10),
         tool.title(),
-        chart.chart(seconds)
+        interval_chart(&chart.values(seconds), elapsed)
     );
+    text.push_str(&format!(
+        "\r\nSession average {label}: {}",
+        rate(value, elapsed)
+    ));
     if value == 0 {
         text.push_str("\r\nNo confirmed measurements yet");
     }
@@ -267,20 +288,26 @@ pub(super) fn outgoing_text(panel: &Panel, seconds: u64, tool: super::Tool) -> S
     text
 }
 pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
+    let elapsed = report_elapsed(panel, seconds, super::Tool::Impact);
     use std::fmt::Write;
     let total = u128::from(panel.damage) + u128::from(panel.healing);
     let mut text = lfmt!(
         "Impact Analyser\r\nElapsed: {seconds} seconds\r\nDPS: {} | HPS: {}\r\nDamage dealt: {} {}\r\nHealing given: {} {}\r\nDamage per minute\r\n{}\r\nHealing per minute\r\n{}",
-        rate(panel.damage, seconds),
-        rate(panel.healing, seconds),
+        panel.recent[0].rate(seconds, 10),
+        panel.recent[1].rate(seconds, 10),
         panel.damage,
         gauge(panel.damage, total),
         panel.healing,
         gauge(panel.healing, total),
-        panel.damage_chart.chart(seconds),
-        panel.healing_chart.chart(seconds),
-        seconds = seconds
+        interval_chart(&panel.damage_chart.values(seconds), elapsed),
+        interval_chart(&panel.healing_chart.values(seconds), elapsed),
+        seconds = elapsed
     );
+    text.push_str(&format!(
+        "\r\nSession average DPS: {} | HPS: {}",
+        rate(panel.damage, elapsed),
+        rate(panel.healing, elapsed)
+    ));
     if total == 0 {
         text.push_str(tr!("\r\nNo impact yet"));
     }
@@ -296,15 +323,20 @@ pub(super) fn impact_text(panel: &Panel, seconds: u64) -> String {
 }
 
 pub(super) fn input_text(panel: &Panel, seconds: u64) -> String {
+    let elapsed = report_elapsed(panel, seconds, super::Tool::Input);
     use std::fmt::Write;
     let total = u128::from(panel.received);
     let mut text = lfmt!(
         "Input Analyser\r\nElapsed: {seconds} seconds\r\nDamage received: {}\r\nIncoming DPS: {}\r\n{}",
         panel.received,
-        rate(panel.received, seconds),
-        panel.received_chart.chart(seconds),
-        seconds = seconds
+        panel.recent[2].rate(seconds, 3),
+        interval_chart(&panel.received_chart.values(seconds), elapsed),
+        seconds = elapsed
     );
+    text.push_str(&format!(
+        "\r\nSession average Incoming DPS: {}",
+        rate(panel.received, elapsed)
+    ));
     if total == 0 {
         text.push_str(tr!("\r\nNo damage received yet"));
     }

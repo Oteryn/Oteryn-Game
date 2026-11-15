@@ -1,4 +1,5 @@
 //! Sidebar projection of the existing Scene minimap, rendered through an upstream image target.
+mod mouse;
 use super::{
     super::{owner::HostOwner, ui::Skins},
     GameRegions,
@@ -94,6 +95,7 @@ fn project(
     let image = commands
         .spawn((
             MiniImage(generation),
+            mouse::DragState::default(),
             ImageNode::new(state.image.clone()),
             RelativeCursorPosition::default(),
             Node {
@@ -104,6 +106,9 @@ fn project(
             },
         ))
         .observe(click)
+        .observe(mouse::press)
+        .observe(mouse::drag)
+        .observe(mouse::scroll)
         .id();
     commands.entity(panel).add_children(&[title, image]);
     navigation_controls(&mut commands, &skins, panel, generation);
@@ -112,21 +117,24 @@ fn project(
 }
 fn click(
     event: On<PointerClick>,
-    nodes: Query<(&MiniImage, &RelativeCursorPosition)>,
+    mut nodes: Query<(&MiniImage, &RelativeCursorPosition, &mut mouse::DragState)>,
     mut owner: NonSendMut<HostOwner>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     guard: super::modal::ModalGuard,
 ) {
-    if event.button != bevy::picking::pointer::PointerButton::Primary
-        || owner.modal_active()
+    if !matches!(
+        event.button,
+        bevy::picking::pointer::PointerButton::Primary
+            | bevy::picking::pointer::PointerButton::Secondary
+    ) || owner.modal_active()
         || !guard.allows(event.entity)
     {
         return;
     }
-    let Ok((node, cursor)) = nodes.get(event.entity) else {
+    let Ok((node, cursor, mut drag)) = nodes.get_mut(event.entity) else {
         return;
     };
-    if node.0 != owner.generation() {
+    if mouse::was_dragged(&mut drag) || node.0 != owner.generation() {
         return;
     }
     let Some(point) = cursor.normalized else {
@@ -139,6 +147,13 @@ fn click(
         return;
     }
     focus.clear();
+    if event.button == bevy::picking::pointer::PointerButton::Secondary {
+        play.view.minimap_mark_at(
+            f64::from(point.x) * f64::from(SIZE.x),
+            f64::from(point.y) * f64::from(SIZE.y),
+        );
+        return;
+    }
     play.view.minimap_click(
         f64::from(point.x) * f64::from(SIZE.x),
         f64::from(point.y) * f64::from(SIZE.y),

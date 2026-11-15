@@ -18,6 +18,7 @@ enum Kind {
     Close,
     Refresh,
     Filter(&'static str),
+    Group(usize),
 }
 #[derive(Component, Clone, Copy)]
 struct Control {
@@ -30,7 +31,7 @@ struct State {
     generation: u64,
     serial: u64,
     root: Option<Entity>,
-    snapshot: Option<(String, String)>,
+    snapshot: Option<(String, String, [bool; 4])>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>().add_systems(Update, project);
@@ -51,9 +52,13 @@ fn project(
     let panel = play
         .map(|play| play.link.imbue_panel())
         .filter(|panel| panel.tracker_open);
-    let snapshot = panel
-        .as_ref()
-        .map(|panel| (tracker_text(panel), panel.tracker_minutes.clone()));
+    let snapshot = panel.as_ref().map(|panel| {
+        (
+            tracker_text(panel),
+            panel.tracker_minutes.clone(),
+            panel.tracker_hidden,
+        )
+    });
     if state.generation == owner.generation() && state.snapshot == snapshot {
         return;
     }
@@ -63,7 +68,7 @@ fn project(
     state.generation = owner.generation();
     state.serial = state.serial.saturating_add(1);
     state.snapshot = snapshot;
-    if let Some((text, filter)) = &state.snapshot {
+    if let Some((text, filter, hidden)) = &state.snapshot {
         state.root = Some(build(
             &mut commands,
             &skins,
@@ -71,6 +76,7 @@ fn project(
             state.serial,
             text,
             filter,
+            hidden,
         ));
     }
 }
@@ -81,6 +87,7 @@ fn build(
     serial: u64,
     text: &str,
     filter: &str,
+    hidden: &[bool; 4],
 ) -> Entity {
     let root = commands
         .spawn((
@@ -108,13 +115,18 @@ fn build(
         .id();
     source::dialog_caption(commands, root, "Imbuement Tracker", skins.font.clone());
     for (label, kind) in [
+        ("Under 1 hour", Kind::Group(0)),
+        ("1–3 hours", Kind::Group(1)),
+        ("Over 3 hours", Kind::Group(2)),
+        ("Unused slots", Kind::Group(3)),
         ("All times", Kind::Filter("0")),
         ("5 minutes or less", Kind::Filter("5")),
         ("60 minutes or less", Kind::Filter("60")),
         ("Refresh equipment", Kind::Refresh),
         ("Close", Kind::Close),
     ] {
-        let selected = matches!(kind, Kind::Filter(value) if value == filter || (value == "0" && filter.is_empty()));
+        let selected = matches!(kind, Kind::Group(index) if !hidden[index])
+            || matches!(kind, Kind::Filter(value) if value == filter || (value == "0" && filter.is_empty()));
         let button = commands
             .spawn((
                 source::button(skins.buttons.clone(), 260.),
@@ -195,6 +207,7 @@ fn perform(owner: &HostOwner, state: &State, control: &Control) {
         Kind::Refresh => {
             play.link.imbue_tracker_refresh();
         }
+        Kind::Group(index) => play.link.imbue_tracker_toggle_group(index),
         Kind::Filter(value) => {
             play.link.imbue_tracker_filter(value);
         }

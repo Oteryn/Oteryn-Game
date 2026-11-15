@@ -250,6 +250,37 @@ pub(super) fn render(
             model.selected && !model.pending && model.last_request.is_some_and(read_request),
             72.,
         ),
+        (
+            Kind::Cyclopedia,
+            "Cyclopedia",
+            !model.pending
+                && model.reply.as_ref().is_some_and(|reply| {
+                    reply.status == 1
+                        && reply
+                            .items
+                            .get(selected_index)
+                            .is_some_and(|item| item.definition_ref != 0)
+                }),
+            90.,
+        ),
+        (
+            Kind::Proficiency,
+            "Proficiency",
+            !model.pending
+                && model.reply.as_ref().is_some_and(|reply| {
+                    reply.status == 1
+                        && reply.items.get(selected_index).is_some_and(|item| {
+                            item.attributes.iter().any(|(label, value)| {
+                                label == "Weapon Type"
+                                    && matches!(
+                                        value.as_str(),
+                                        "axe" | "club" | "distance" | "fist" | "sword" | "wand"
+                                    )
+                            })
+                        })
+                }),
+            90.,
+        ),
         (Kind::Copy, "Copy", copy_text(model).is_some(), 60.),
         (Kind::Close, "Close", true, 60.),
     ] {

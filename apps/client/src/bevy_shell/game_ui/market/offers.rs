@@ -333,11 +333,20 @@ fn validate(
     });
     for mut text in &mut summary {
         text.0 = if let Some(request) = request {
-            format!(
-                "{} offer · Total: {} gold",
-                if request.action == 6 { "Sell" } else { "Buy" },
-                u128::from(request.amount) * u128::from(request.price)
-            )
+            let gross = u128::from(request.amount) * u128::from(request.price);
+            // Same accepted placement rule as gameplay/economy::market::placement_fee.
+            let fee = (gross * 25 / 1000).clamp(20, 2_500_000);
+            if request.action == 6 {
+                format!(
+                    "Sell offer · Item value: {gross} gold · Fee: {fee} gold · Debit now: {fee} gold · Net if filled: {} gold",
+                    gross as i128 - fee as i128
+                )
+            } else {
+                format!(
+                    "Buy offer · Item value: {gross} gold · Fee: {fee} gold · Debit now: {} gold",
+                    gross + fee
+                )
+            }
         } else {
             "Enter an item, amount (1–64000) and price ≥ 1; total ≤ 999999999999 gold.".into()
         };

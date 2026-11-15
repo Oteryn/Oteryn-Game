@@ -40,24 +40,46 @@ struct Selection {
     slot: Option<u8>,
     offer: Option<usize>,
     base_type: Option<u8>,
-    confirmation: Option<ImbuePanel>,
+    confirmation: Option<(ImbuePanel, Intent)>,
 }
 impl Selection {
+    fn same_terms(expected: &ImbuePanel, current: &ImbuePanel) -> bool {
+        expected.item == current.item
+            && expected.slot == current.slot
+            && expected.offer == current.offer
+            && expected.window == current.window
+            && expected.details == current.details
+            && expected.success == current.success
+            && expected.success_selected == current.success_selected
+            && expected.selected == current.selected
+            && expected.pending == current.pending
+            && expected.refresh_required == current.refresh_required
+    }
     fn can_apply(&self, panel: &ImbuePanel) -> bool {
         self.slot == Some(panel.slot) && self.offer == Some(panel.offer) && panel.can_apply()
     }
     fn intent(&mut self, panel: &ImbuePanel, kind: Kind) -> Option<Intent> {
         match kind {
-            Kind::Apply if self.can_apply(panel) => Some(Intent::Apply),
+            Kind::Apply if self.can_apply(panel) => {
+                self.confirmation = Some((panel.clone(), Intent::Apply));
+                None
+            }
             Kind::Clear if panel.can_clear() => {
-                self.confirmation = Some(panel.clone());
+                self.confirmation = Some((panel.clone(), Intent::Clear));
                 None
             }
             Kind::Confirm => self
                 .confirmation
                 .take()
-                .filter(|expected| expected == panel && panel.can_clear())
-                .map(|_| Intent::Clear),
+                .filter(|(expected, intent)| {
+                    Self::same_terms(expected, panel)
+                        && match intent {
+                            Intent::Apply => self.can_apply(panel),
+                            Intent::Clear => panel.can_clear(),
+                            Intent::Refresh => false,
+                        }
+                })
+                .map(|(_, intent)| intent),
             _ => {
                 self.confirmation = None;
                 None
@@ -191,7 +213,11 @@ fn project(
         .selection
         .confirmation
         .as_ref()
-        .is_some_and(|expected| Some(expected) != panel.as_ref())
+        .is_some_and(|(expected, _)| {
+            panel
+                .as_ref()
+                .is_none_or(|current| !Selection::same_terms(expected, current))
+        })
     {
         state.selection.confirmation = None;
     }

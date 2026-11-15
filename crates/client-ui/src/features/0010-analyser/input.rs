@@ -11,6 +11,9 @@ pub fn select_tool(panel: &mut super::Panel, key: &str) -> bool {
         .find(|tool| tool.key() == key.trim())
     {
         panel.tool = tool;
+        if panel.open && !panel.open_tools.contains(&tool) {
+            panel.open_tools.push(tool);
+        }
         true
     } else {
         false

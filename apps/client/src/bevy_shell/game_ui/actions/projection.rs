@@ -73,7 +73,7 @@ pub(super) fn project(
     let layout = play.link.bar_layout();
     let labels = play.link.spell_slot_labels();
     let tips = play.link.spell_slot_tooltips();
-    let mut capacities = [12; 3];
+    let mut capacities = [12; 9];
     for (entity, bar, mut node, computed, parent) in &mut ui.rows {
         let row = &layout.rows[bar.0];
         let side = row.dock != crate::play::BarDock::Bottom;

@@ -103,7 +103,7 @@ fn each_bar_accepts_fifty_buttons_through_play_queue() -> Result<(), Box<dyn std
         assert!(commands.try_recv().is_ok());
     }
     assert!(!link.assign_bar_action(
-        150,
+        450,
         crate::play::BarAction::Text {
             text: "overflow".into(),
             send_automatically: true
@@ -317,7 +317,11 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
             Some((99, 99)),
             crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
-                position: oteryn_session::SpellTargetPosition { x: 99, y: 99, floor: 7 },
+                position: oteryn_session::SpellTargetPosition {
+                    x: 99,
+                    y: 99,
+                    floor: 7,
+                },
                 direction: Some(StepDirection::West),
             },
         ),
@@ -326,7 +330,11 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
             Some((101, 101)),
             crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
-                position: oteryn_session::SpellTargetPosition { x: 101, y: 101, floor: 7 },
+                position: oteryn_session::SpellTargetPosition {
+                    x: 101,
+                    y: 101,
+                    floor: 7,
+                },
                 direction: Some(StepDirection::East),
             },
         ),
@@ -335,7 +343,11 @@ fn spell_aim_modes_and_diagonal_cursor_use_real_play_queue()
             Some((100, 99)),
             crate::combat_input::CombatCommand::CastCursor {
                 spell: std::num::NonZeroU32::new(71).ok_or("spell")?,
-                position: oteryn_session::SpellTargetPosition { x: 100, y: 99, floor: 7 },
+                position: oteryn_session::SpellTargetPosition {
+                    x: 100,
+                    y: 99,
+                    floor: 7,
+                },
                 direction: Some(StepDirection::North),
             },
         ),

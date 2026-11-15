@@ -256,9 +256,9 @@ impl TileAnimation {
 }
 
 impl World {
-    /// The shared animation epoch; the first caller fixes it.
-    pub(crate) fn animation_epoch() -> std::time::Instant {
-        *ANIMATION_EPOCH.get_or_init(std::time::Instant::now)
+    /// The first supplied sample fixes the shared epoch, without a later wall-clock read.
+    pub(crate) fn animation_epoch(now: std::time::Instant) -> std::time::Instant {
+        *ANIMATION_EPOCH.get_or_init(|| now)
     }
 
     /// Sample every item's own duration sequence, skipping elapsed frames after a stall.
@@ -267,7 +267,7 @@ impl World {
             return None;
         }
         let elapsed = now
-            .saturating_duration_since(Self::animation_epoch())
+            .saturating_duration_since(Self::animation_epoch(now))
             .as_millis();
         let mut next = None;
         for animation in self.animations.iter() {

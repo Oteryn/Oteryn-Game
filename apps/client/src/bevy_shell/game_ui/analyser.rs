@@ -9,7 +9,7 @@ use bevy::{input_focus::InputFocus, prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::analyser::Tool;
 
 #[derive(Component)]
-struct Overlay;
+struct Overlay(Tool);
 #[derive(Component)]
 struct Report;
 #[derive(Component)]
@@ -39,7 +39,8 @@ fn refresh(
     };
     let Some(play) = &owner.play else { return };
     let panel = play.link.analyser_panel();
-    if control.generation == owner.generation() && panel.open && panel.tool == control.tool {
+    if control.generation == owner.generation() && panel.open_tools.contains(&control.tool) {
+        play.link.analyser_select(control.tool.key());
         if let Some(intent) = control.boss {
             play.link.boss_encounter_request(intent);
         } else {
@@ -89,7 +90,7 @@ fn resolve_items(owner: NonSend<HostOwner>, mut previous: Local<Option<IdentityP
     }
 }
 #[derive(Component)]
-struct ConfigField(usize);
+struct ConfigField(usize, Tool);
 #[derive(Clone, Copy)]
 enum ConfigKind {
     Goal,
@@ -139,12 +140,15 @@ fn finish_configuration(
         || owner.modal_active()
         || !guard.allows(entity)
         || !panel.open
-        || panel.tool != tool
+        || !panel.open_tools.contains(&tool)
     {
         pending.0 = None;
         return;
     }
-    if fields.iter().any(|(_, text)| {
+    if fields.iter().any(|(field, text)| {
+        if field.1 != tool {
+            return false;
+        }
         text.pending_paste.is_some()
             || text
                 .pending_edits
@@ -156,6 +160,9 @@ fn finish_configuration(
     pending.0 = None;
     let mut values: [String; 3] = default();
     for (field, text) in &fields {
+        if field.1 != tool {
+            continue;
+        }
         if let Some(value) = values.get_mut(field.0) {
             *value = text.value().to_string();
         }
@@ -165,14 +172,14 @@ fn finish_configuration(
             play.link.analyser_xp_goal(&values[0]);
         }
         ConfigKind::Loot | ConfigKind::Supply => {
-            play.link
-                .analyser_select(if matches!(kind, ConfigKind::Supply) {
-                    Tool::Supply.key()
-                } else {
-                    Tool::Loot.key()
-                });
-            let saved = play.link.analyser_item_price(&values[1], &values[2]);
-            play.link.analyser_select(tool.key());
+            let selected = if matches!(kind, ConfigKind::Supply) {
+                Tool::Supply
+            } else {
+                Tool::Loot
+            };
+            let saved = play
+                .link
+                .analyser_item_price_for(selected, &values[1], &values[2]);
             if saved && tool == Tool::Party {
                 play.link.analyser_party_refresh();
             }
@@ -219,9 +226,10 @@ fn activate(
     };
     let Some(play) = &owner.play else { return };
     let panel = play.link.analyser_panel();
-    if control.generation != owner.generation() || control.tool != panel.tool || !panel.open {
+    if control.generation != owner.generation() || !panel.open_tools.contains(&control.tool) {
         return;
     }
+    play.link.analyser_select(control.tool.key());
     if control.reset {
         if !play.view.gameplay_input_blocked(&play.link) {
             play.link.analyser_reset();
@@ -232,7 +240,7 @@ fn activate(
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
-    overlays: Query<Entity, With<Overlay>>,
+    overlays: Query<(Entity, &Overlay)>,
     focus: Res<InputFocus>,
     parents: Query<&ChildOf>,
     guard: ModalGuard,
@@ -245,11 +253,17 @@ fn keyboard(
     });
     if escape
         && !owner.modal_active()
-        && overlays.iter().any(|overlay| {
+        && overlays.iter().any(|(overlay, tool)| {
             let mut entity = focus.get();
             while let Some(current) = entity {
                 if current == overlay {
-                    return guard.allows(overlay);
+                    if guard.allows(overlay) {
+                        if let Some(play) = &owner.play {
+                            play.link.analyser_select(tool.0.key());
+                        }
+                        return true;
+                    }
+                    return false;
                 }
                 entity = parents.get(current).ok().map(ChildOf::parent);
             }
@@ -266,58 +280,82 @@ fn project(
     skins: Res<Skins>,
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
-    mut window: Local<Option<widgets::Widgets>>,
+    mut windows: Local<Vec<widgets::Widgets>>,
 ) {
     let panel = owner.play.as_ref().map(|play| play.link.analyser_panel());
     let panel = panel.filter(|panel| panel.selected && panel.open);
-    let key = panel.as_ref().map(|panel| (owner.generation(), panel.tool));
-    if window
-        .as_ref()
-        .is_some_and(|window| Some(window.key) != key)
-        && let Some(old) = window.take()
-    {
-        let mut entity = focus.get();
-        while let Some(current) = entity {
-            if current == old.overlay {
-                focus.clear();
-                break;
+    windows.retain(|window| {
+        let retained = window.key.0 == owner.generation()
+            && panel
+                .as_ref()
+                .is_some_and(|panel| panel.open_tools.contains(&window.key.1));
+        if !retained {
+            let mut entity = focus.get();
+            while let Some(current) = entity {
+                if current == window.overlay {
+                    focus.clear();
+                    break;
+                }
+                entity = parents.get(current).ok().map(ChildOf::parent);
             }
-            entity = parents.get(current).ok().map(ChildOf::parent);
+            commands.entity(window.overlay).despawn();
         }
-        commands.entity(old.overlay).despawn();
-    }
+        retained
+    });
     let Some(panel) = panel else { return };
     let Some(play) = &owner.play else { return };
-    let mut text = play.link.analyser_text();
-    if panel.tool == Tool::Hunting {
-        text.push_str("\r\n\r\n");
-        text.push_str(&oteryn_client_ui::analyser::session_text(&panel));
-    }
-    if let Some(feedback) = panel.feedback {
-        text.push_str("\r\n");
-        text.push_str(feedback);
-    }
-    let text = text.replace("\r\n", "\n");
-    let window = window.get_or_insert_with(|| {
-        if panel.tool == Tool::Party {
-            play.link.analyser_party_refresh();
-        } else if panel.tool == Tool::Bosses {
-            play.link
-                .boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
+    for tool in &panel.open_tools {
+        let mut report_panel = panel.clone();
+        report_panel.tool = *tool;
+        let mut text = if *tool == Tool::Bosses {
+            play.link.analyser_text_for(*tool)
+        } else {
+            oteryn_client_ui::analyser::panel_text(&report_panel)
+        };
+        if *tool == Tool::Hunting {
+            text.push_str("\r\n\r\n");
+            text.push_str(&oteryn_client_ui::analyser::session_text(&panel));
         }
-        widgets::build(&mut commands, &skins, owner.generation(), panel.tool)
-    });
-    if let Some(caption) = window.tracker_filter {
-        commands
-            .entity(caption)
-            .insert(Text::new(if panel.loot_only_tracked {
-                "Show all drops"
-            } else {
-                "Show tracked only"
-            }));
-    }
-    if window.text != text {
-        commands.entity(window.report).insert(Text::new(&text));
-        window.text = text;
+        if let Some(feedback) = panel.feedback {
+            text.push_str("\r\n");
+            text.push_str(feedback);
+        }
+        let text = text.replace("\r\n", "\n");
+        if !windows
+            .iter()
+            .any(|window| window.key == (owner.generation(), *tool))
+        {
+            if *tool == Tool::Party {
+                play.link.analyser_party_refresh();
+            } else if *tool == Tool::Bosses {
+                play.link
+                    .boss_encounter_request(oteryn_client_ui::boss_encounter::Intent::Refresh);
+            }
+            windows.push(widgets::build(
+                &mut commands,
+                &skins,
+                owner.generation(),
+                *tool,
+            ));
+        }
+        let Some(window) = windows
+            .iter_mut()
+            .find(|window| window.key == (owner.generation(), *tool))
+        else {
+            continue;
+        };
+        if let Some(caption) = window.tracker_filter {
+            commands
+                .entity(caption)
+                .insert(Text::new(if panel.loot_only_tracked {
+                    "Show all drops"
+                } else {
+                    "Show tracked only"
+                }));
+        }
+        if window.text != text {
+            commands.entity(window.report).insert(Text::new(&text));
+            window.text = text;
+        }
     }
 }

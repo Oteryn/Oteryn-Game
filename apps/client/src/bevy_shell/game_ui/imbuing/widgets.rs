@@ -222,26 +222,33 @@ pub(super) fn build(
             }
         }
     }
-    if let Some(expected) = &selection.confirmation
+    if let Some((expected, intent)) = &selection.confirmation
         && let Some(quote) = &expected.window
     {
         text(
             commands,
             skins,
             window,
-            &format!(
-                "Clear {} for {} gold?",
-                slot_label(expected, expected.slot),
-                quote.clear_gold
-            ),
+            &match intent {
+                Intent::Apply => quote.offers.get(expected.offer).map_or_else(String::new, |offer| format!("Apply {} tier {} to the selected item, slot {}? This consumes the required materials and {} gold.", family_name(offer.family), offer.tier, expected.slot + 1, offer.gold)),
+                _ => format!("Clear {} for {} gold?", slot_label(expected, expected.slot), quote.clear_gold),
+            },
         );
         button(
             commands,
             skins,
             window,
             control(Kind::Confirm),
-            "Confirm clear",
-            panel.can_clear(),
+            if *intent == Intent::Apply {
+                "Confirm imbuing"
+            } else {
+                "Confirm clear"
+            },
+            if *intent == Intent::Apply {
+                selection.can_apply(panel)
+            } else {
+                panel.can_clear()
+            },
         );
         button(
             commands,

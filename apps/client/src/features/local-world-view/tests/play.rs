@@ -341,14 +341,18 @@ fn failed_live_map_install_preserves_position_world_scene_and_walk() -> Result<(
     assert_eq!(view.scene().sprites().instances(), sprites);
     assert_eq!(
         view.inputs.back(),
-        Some(&Input::TargetWalk(ActorPosition { x: 110, y: 200, floor: 0 }))
+        Some(&Input::TargetWalk(ActorPosition {
+            x: 110,
+            y: 200,
+            floor: 0
+        }))
     );
     Ok(())
 }
 
 #[test]
-fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
--> Result<(), BatchError> {
+fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs() -> Result<(), BatchError>
+{
     use oteryn_session::world_map::MapOrigin;
     let mut view = view()?;
     hide_minimap(&mut view)?;
@@ -373,15 +377,23 @@ fn floor_replacement_preserves_ground_item_targets_without_extra_glyphs()
     let selected = view.scene().target().and_then(|target| target.item);
     assert_eq!(selected.map(|item| item.floor()), Some(-8));
     assert_eq!(selected.map(|item| item.quantity()), Some(7));
-    assert!(!view.inputs.iter().any(|input| matches!(input, Input::TargetWalk(_))));
+    assert!(
+        !view
+            .inputs
+            .iter()
+            .any(|input| matches!(input, Input::TargetWalk(_)))
+    );
     Ok(())
 }
 
 // Floor sprite assertions isolate world rendering from the package-5 minimap overlay.
 fn hide_minimap(view: &mut PlayView) -> Result<(), BatchError> {
     let mut preferences = view.preferences().clone();
-    preferences.visible_panels.retain(|panel| panel != "minimap");
-    view.set_preferences(preferences).map_err(|_| BatchError::InvalidView)
+    preferences
+        .visible_panels
+        .retain(|panel| panel != "minimap");
+    view.set_preferences(preferences)
+        .map_err(|_| BatchError::InvalidView)
 }
 
 #[test]
@@ -435,7 +447,7 @@ fn live_map_items_advance_frames_during_presentation() -> Result<(), Box<dyn std
     let mut view = view()?;
     view.place(map.header.origin);
     view.set_world(world)?;
-    let now = World::animation_epoch();
+    let now = World::animation_epoch(std::time::Instant::now());
     view.project_presentation(now)?;
     let before = view.scene().sprites().instances().to_vec();
     view.project_presentation(
