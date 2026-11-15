@@ -430,18 +430,14 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
     };
     // Every coin of the closed D176 table resolves to its stack maximum and its Global client
-    // weight (gold 0.01 oz, platinum and crystal 0.10 oz, in hundredths of an ounce).
+    // weight (gold, platinum and crystal 0.10 oz, in hundredths of an ounce).
     for coin in Coin::ALL {
-        let client_weight = match coin {
-            Coin::Gold => 1,
-            Coin::Platinum | Coin::Crystal => 10,
-        };
         let definition = item(coin.production_key());
         assert_eq!(
             generation_item_facts(native, &definition).unwrap(),
             ItemDefinitionFacts {
                 definition: definition.clone(),
-                weight: Some(client_weight),
+                weight: Some(10),
                 stack: ItemStackClass::Stackable {
                     proven_maximum: Some(COIN_STACK_MAXIMUM)
                 },
