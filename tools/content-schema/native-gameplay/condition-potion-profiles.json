@@ -14,7 +14,7 @@
     },
     {
       "path": "content/items/definitions/items-31500-31999.json",
-      "sha256": "0f0765e2a9df76dac610c99e5eb15fea4821298fb79aca4cd8c6b7ad6f822fa0"
+      "sha256": "3ba713258b6797d9d6bba33205a3376c78b11d9254e577ae83994b18db0b05ef"
     }
   ],
   "donor_rule": "crystal/data/scripts/actions/items/potions.lua:1-42,52-54,57,62-63,78-110,115-147",
