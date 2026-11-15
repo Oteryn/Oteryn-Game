@@ -73,6 +73,19 @@ Optional executable arguments:
 | `--login-settings <path>` | Override the existing login-settings path. |
 | `--ui-audit <path>` | Write diagnostic UI state; F12 also writes a rendered PNG beside it. Keep captures containing private assets/session UI private. |
 
+F12 also works without `--ui-audit`: it saves a uniquely named BMP from the rendered
+window. Options → Show Advanced Options → Screenshots accepts an absolute folder
+path (Use folder, then Apply/OK); an empty path uses `screenshots` beside the normal
+client preference file. Cancel discards destination edits. Capture game area only
+uses the visible map rectangle and reports an error if no map is available. The
+status line reports the saved path or write error. Audit mode retains its diagnostic
+PNG destination. Automatic event captures/backlogs are not wired in this Bevy batch.
+
+Reference: OTClient `dab86e610991092fe8b2471f7de55a7c986b3cd2`,
+`src/framework/graphics/image.cpp:66–78` encodes image pixels and flushes the output;
+that revision has no ordinary screenshot action in its modules. This host uses
+Bevy framebuffer readback and Oteryn's existing exclusive-create BMP writer.
+
 ## Gameplay UI entry points
 
 With no text field focused, the existing gameplay shortcuts open:

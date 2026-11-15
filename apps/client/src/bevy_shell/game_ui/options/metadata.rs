@@ -18,10 +18,11 @@ pub(super) enum Page {
     UiSounds,
     Misc,
     Gameplay,
+    Screenshots,
 }
 impl Page {
     pub const BASIC_NAV: [Self; 1] = [Self::Basic];
-    pub const ADVANCED: [Self; 13] = [
+    pub const ADVANCED: [Self; 14] = [
         Self::Controls,
         Self::Interface,
         Self::Hud,
@@ -35,6 +36,7 @@ impl Page {
         Self::UiSounds,
         Self::Misc,
         Self::Gameplay,
+        Self::Screenshots,
     ];
     pub const fn label(self) -> &'static str {
         match self {
@@ -52,6 +54,7 @@ impl Page {
             Self::UiSounds => "UI Sounds",
             Self::Misc => "Misc.",
             Self::Gameplay => "Gameplay",
+            Self::Screenshots => "Screenshots",
         }
     }
     pub const fn child(self) -> bool {
@@ -164,6 +167,11 @@ pub(super) fn rows(page: Page) -> &'static [Row] {
         Page::UiSounds => &sound::UI,
         Page::Misc => &miscellaneous::MAIN,
         Page::Gameplay => &miscellaneous::GAMEPLAY,
+        Page::Screenshots => &[check!(
+            "screenshots.game-only",
+            "Capture game area only",
+            screenshots.game_only
+        )],
     }
 }
 const BASIC: [Row; 7] = [

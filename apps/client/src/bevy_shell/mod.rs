@@ -13,6 +13,7 @@ mod live_assets;
 mod login;
 mod owner;
 mod scene;
+mod screenshots;
 mod selection;
 mod ui;
 mod window_drag;

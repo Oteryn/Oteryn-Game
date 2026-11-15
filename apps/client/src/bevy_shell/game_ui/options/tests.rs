@@ -4,7 +4,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
-fn app(page: Page, path: Option<std::path::PathBuf>) -> Result<App, Box<dyn std::error::Error>> {
+pub(super) fn app(
+    page: Page,
+    path: Option<std::path::PathBuf>,
+) -> Result<App, Box<dyn std::error::Error>> {
     let mut owner = HostOwner::new(path)?;
     owner.open_graphics();
     let generation = owner.generation();

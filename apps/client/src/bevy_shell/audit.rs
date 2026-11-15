@@ -11,20 +11,24 @@ use std::path::PathBuf;
 
 mod named;
 
-/// In the explicit UI audit mode, F12 captures the rendered window through Bevy.
-/// GPU capture also works on native test displays without a desktop compositor.
+/// F12 captures the rendered window; explicit audit mode keeps its diagnostic PNG path.
 pub(super) fn capture_on_key(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
     output: Res<AuditOutput>,
+    mut owner: NonSendMut<HostOwner>,
+    viewport: Res<super::game_ui::viewport::WorldViewport>,
 ) {
-    if keys.just_pressed(KeyCode::F12)
-        && let Some(path) = &output.path
-    {
+    if !keys.just_pressed(KeyCode::F12) {
+        return;
+    }
+    if let Some(path) = &output.path {
         use bevy::render::view::screenshot::{Screenshot, save_to_disk};
         commands
             .spawn(Screenshot::primary_window())
             .observe(save_to_disk(path.with_extension("png")));
+    } else {
+        super::screenshots::request(&mut commands, &mut owner, *viewport);
     }
 }
 #[derive(Resource)]
@@ -259,3 +263,29 @@ pub(super) fn write(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::*;
+    #[test]
+    fn ordinary_f12_requests_window_capture_without_audit() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut app = App::new();
+        app.insert_non_send(HostOwner::new(None)?)
+            .insert_resource(AuditOutput::new(None))
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<super::super::game_ui::viewport::WorldViewport>()
+            .add_systems(Update, capture_on_key);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F12);
+        app.update();
+        let count = app
+            .world_mut()
+            .query::<&bevy::render::view::screenshot::Screenshot>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count, 1, "ordinary F12 must capture without --ui-audit");
+        Ok(())
+    }
+}
