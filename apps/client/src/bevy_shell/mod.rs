@@ -146,6 +146,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             project_window,
             game_ui::project,
             scene::project,
+            scene::typing::project,
         )
             .chain(),
     )

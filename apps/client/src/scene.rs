@@ -55,6 +55,8 @@ pub struct Scene {
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<(TileCoord, Vec<Draw>)>,
     names: Vec<(TileCoord, Vec<u16>)>,
+    #[cfg(feature = "bevy-shell")]
+    name_entities: Vec<oteryn_session::EntityRef>,
     name_visibility: [bool; 3],
     name_marks: bool,
     npc_names: bool,
@@ -133,6 +135,8 @@ impl Scene {
             own_draws: None,
             actor_draws: Vec::new(),
             names: Vec::new(),
+            #[cfg(feature = "bevy-shell")]
+            name_entities: Vec::new(),
             name_visibility: [true; 3],
             name_marks: true,
             npc_names: true,
