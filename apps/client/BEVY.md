@@ -103,6 +103,13 @@ With no text field focused, the existing gameplay shortcuts open:
   context menu exposes Party and an invitation for a visible player, subject to
   confirmed party state and server authority.
 
+Right-click a visible, named player and choose **Report** to open the rule-violation
+window (requires capability 0076). **Ctrl+Alt+R** opens it with an empty character
+field. No query is sent on open: protocol 0076 carries report submission and reply
+only. Choose a reason and action, enter a comment,
+then Send. The window uses the protocol-supported Name, Statement and Bot report
+types; legacy OTClient moderation penalties are not report actions in this protocol.
+
 Market and Party also have buttons on the gameplay toolbar.
 
 Achievement notices appear in arrival order, one banner at a time. Each fades in

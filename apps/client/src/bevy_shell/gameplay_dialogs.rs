@@ -1,6 +1,6 @@
 //! Generation-bound Bevy presentation for existing logout and world-context owners.
 use super::{
-    game_ui::party,
+    game_ui::{party, rule_violation},
     owner::{HostOwner, Phase},
 };
 use bevy::{
@@ -27,6 +27,7 @@ enum Content {
     Context {
         menu: Option<Menu>,
         party: Option<Box<party::Target>>,
+        report: Option<Box<rule_violation::Target>>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -36,6 +37,7 @@ enum Choice {
     Context(usize),
     Invite,
     Party,
+    Report,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -70,9 +72,16 @@ impl HostOwner {
             .and_then(|play| play.view.world_context(tile, &play.link));
         // Capture the player before opening our own modal, which correctly blocks new world input.
         let party = party::context(self, tile).map(Box::new);
-        if self.phase == Phase::Playing && (menu.is_some() || party.is_some()) {
-            self.dialogs
-                .open(self.generation(), Content::Context { menu, party });
+        let report = rule_violation::context(self, tile).map(Box::new);
+        if self.phase == Phase::Playing && (menu.is_some() || party.is_some() || report.is_some()) {
+            self.dialogs.open(
+                self.generation(),
+                Content::Context {
+                    menu,
+                    party,
+                    report,
+                },
+            );
         }
     }
     fn choose_dialog(&mut self, id: u64, choice: Choice) -> bool {
@@ -129,6 +138,13 @@ impl HostOwner {
                     true
                 })
             }
+            (
+                Content::Context {
+                    report: Some(target),
+                    ..
+                },
+                Choice::Report,
+            ) => rule_violation::open(self, &target),
             _ => false,
         }
     }
@@ -290,7 +306,21 @@ fn project(
                 Choice::Logout,
             );
         }
-        Content::Context { menu, party } => {
+        Content::Context {
+            menu,
+            party,
+            report,
+        } => {
+            if report.is_some() {
+                button(
+                    &mut commands,
+                    &skin,
+                    window,
+                    request.id,
+                    "Report",
+                    Choice::Report,
+                );
+            }
             for (index, (label, _)) in menu.iter().flat_map(|menu| menu.entries.iter()).enumerate()
             {
                 button(
@@ -454,6 +484,7 @@ mod tests {
             Content::Context {
                 menu: Some(menu),
                 party: None,
+                report: None,
             },
         );
         let id = host.dialogs.pending.as_ref().ok_or("context")?.id;

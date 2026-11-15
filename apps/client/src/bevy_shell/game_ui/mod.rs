@@ -23,6 +23,7 @@ mod proficiency;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+pub(super) mod rule_violation;
 mod reward_wall;
 pub(super) mod satellite_map;
 mod store;
@@ -254,6 +255,7 @@ pub(super) fn install(app: &mut App) {
     party::install(app);
     proficiency::install(app);
     quick_loot::install(app);
+    rule_violation::install(app);
     store::install(app);
     satellite_map::install(app);
     reward_wall::install(app);
