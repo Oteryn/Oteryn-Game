@@ -410,6 +410,28 @@ impl ChannelRuntimeV1 {
                 current.monster_ai = Some(merged);
             }
             OwnerCombatChange::DispelParalysis => {
+                if let Slot::CreatureOccupied {
+                    committed,
+                    companion,
+                    ..
+                } = &mut next.slots[index]
+                {
+                    let now = batch
+                        .now_us
+                        .map_or(batch.now_ms.saturating_mul(1000), |now| now.get());
+                    committed.conditions.remove_type_at(
+                        oteryn_gameplay_domain::domain::condition::ConditionType::Paralysis,
+                        now,
+                    )?;
+                    if let Some(companion) = companion {
+                        if !companion.conditions.accepts_time(now) {
+                            return Err(Error::InvalidCondition);
+                        }
+                        companion.conditions.remove_type(
+                            oteryn_gameplay_domain::domain::condition::ConditionType::Paralysis,
+                        );
+                    }
+                }
                 state_mut(&mut next.slots[index])?.paralysed = false;
             }
             _ => return Err(Error::InvalidCondition),

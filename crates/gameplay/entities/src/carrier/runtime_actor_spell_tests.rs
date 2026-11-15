@@ -989,6 +989,10 @@ fn source_relocation_stages_same_slot_with_batch_and_reserves_destination_until_
             .position_occupied_by_other(f.targets[2], destination)
             .unwrap()
     );
+    assert!(
+        f.runtime
+            .current_cell_occupied_except(destination, f.targets[2])
+    );
     // The issuer's own reservation is invisible to the other-actor census but not to its own.
     assert!(
         !f.runtime
@@ -1558,4 +1562,159 @@ fn instance_spell_batch_commits_and_replays_without_channel_alias() -> Result<()
     assert_eq!(health(&newer, 0), 20);
     assert_eq!(health(&instance, 0), 17);
     Ok(())
+}
+
+#[test]
+fn discovery_speed_refuses_reserved_slot_and_keeps_original_batch_committable() {
+    let mut f = fixture(1);
+    f.runtime
+        .set_player_discovery_speed(f.caster, f.session, 12)
+        .unwrap();
+    let original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    let mut staged = f.runtime.stage_spell_batch(&original).unwrap();
+    f.runtime.reserve_spell_batch(&mut staged).unwrap();
+    assert!(
+        f.runtime
+            .set_player_discovery_speed(f.caster, f.session, 0)
+            .is_err()
+    );
+    assert_eq!(
+        f.runtime
+            .actor_active_speed_delta(
+                f.caster,
+                Some(f.session),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0)
+            )
+            .unwrap(),
+        12
+    );
+    assert!(f.runtime.commit_spell_batch(staged).unwrap().applied);
+    assert!(!f.runtime.actor_spell_reserved(f.caster));
+}
+
+#[test]
+fn reused_creature_slot_rejects_old_generation_in_current_fact_readers() {
+    let mut f = fixture(1);
+    let old = f.targets[0];
+    f.runtime
+        .carrier
+        .remove(&f.runtime.continuity, old.0)
+        .unwrap();
+    let replacement = f.runtime.admit_test_creature(position(15)).unwrap();
+    assert_eq!(old.actor_local_id(), replacement.actor_local_id());
+    assert_ne!(
+        old.actor_local_generation(),
+        replacement.actor_local_generation()
+    );
+    assert!(f.runtime.creature_combat_facts(old, 0).is_err());
+    assert!(f.runtime.creature_spell_target_atom(old).is_err());
+    assert!(f.runtime.actor_staff_visibility(old).is_err());
+    assert!(
+        f.runtime
+            .position_occupied_by_other(old, position(12))
+            .is_err()
+    );
+    assert!(
+        f.runtime
+            .reserved_into_by_own_pending(old, position(20))
+            .is_err()
+    );
+    assert!(f.runtime.current_cell_occupied_except(position(20), old));
+    assert_eq!(
+        f.runtime
+            .creature_combat_facts(replacement, 0)
+            .unwrap()
+            .health,
+        20
+    );
+}
+
+#[test]
+fn raw_damage_batch_lethal_projection_retains_owner_timestamp() {
+    let mut f = fixture(1);
+    f.runtime
+        .borrow_exact_actor_commit_at(456)
+        .commit_raw_creature_damage_batch(
+            &f.targets[..2],
+            OwnerDamageCommand {
+                target: b"test:creature",
+                occurrence: b"test.raw.lethal",
+                binding: b"test.raw.lethal\0binding",
+                damage: 30,
+            },
+            |_| Ok(()),
+        )
+        .unwrap();
+    let mut view = f.runtime.borrow_combat_death();
+    for target in &f.targets[..2] {
+        let lethal = view.committed_lethal_receipt(*target).unwrap();
+        view.project_committed_lethal(lethal).unwrap();
+        assert_eq!(view.projected_death_at_ms(*target).unwrap(), Some(456));
+    }
+}
+
+#[test]
+fn pending_relocation_blocks_companion_and_saved_position_admission() {
+    struct Proof(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        MovementLocalPosition,
+    );
+    impl relocation_seal::Sealed for Proof {}
+    impl SpellRelocationProof for Proof {
+        fn parts(
+            &self,
+        ) -> (
+            ExactActorRef,
+            MovementPositionSnapshot,
+            MovementLocalPosition,
+        ) {
+            (self.0, self.1, self.2)
+        }
+    }
+    let mut f = fixture_with_position(1, true);
+    f.runtime
+        .carrier
+        .remove(&f.runtime.continuity, f.targets[2].0)
+        .unwrap();
+    let session = GameSessionId::decode(&uuid(0x23)).unwrap();
+    let reserved = f.runtime.reserve_fresh_session(session).unwrap();
+    let observer = f.runtime.commit_fresh_session(reserved).unwrap();
+    f.runtime.initialize_first_entry_position(observer).unwrap();
+    let expected = f.runtime.read_actor_position(f.caster).unwrap();
+    let p = expected.position();
+    let destination = MovementLocalPosition { x: p.x + 1, ..p };
+    let empty = MovementLocalPosition { x: p.x + 2, ..p };
+    let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 1)]);
+    original.binding = br#"{"source":"reserved-destination-admission-test"}"#.to_vec();
+    let relocation =
+        QualifiedSpellRelocation::bind(&mut original, Proof(f.caster, expected, destination))
+            .unwrap();
+    let mut staged = f
+        .runtime
+        .stage_spell_batch_with_relocation(&original, &relocation)
+        .unwrap();
+    f.runtime.reserve_spell_batch(&mut staged).unwrap();
+    f.runtime
+        .carrier
+        .remove(&f.runtime.continuity, f.targets[1].0)
+        .unwrap();
+    assert!(f.runtime.companion_creation_available(empty).unwrap());
+    assert!(!f.runtime.companion_creation_available(destination).unwrap());
+    let placed = f
+        .runtime
+        .place_admitted_respawn(observer, session, Some(destination), |_| true)
+        .unwrap();
+    assert_ne!(placed.position(), destination);
+    f.runtime
+        .place_respawned_player(observer, session, destination)
+        .unwrap();
+    assert!(!f.runtime.is_sole_current_actor_on_cell(observer).unwrap());
+    f.runtime
+        .release_definitely_uncommitted_spell_batch(&staged)
+        .unwrap();
+    f.runtime
+        .place_respawned_player(observer, session, empty)
+        .unwrap();
+    assert!(f.runtime.companion_creation_available(destination).unwrap());
 }

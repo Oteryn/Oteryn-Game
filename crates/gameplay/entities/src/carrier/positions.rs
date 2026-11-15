@@ -282,14 +282,47 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         destination: MovementLocalPosition,
     ) -> Result<bool, CarrierError> {
-        let source_index = self.carrier.validate_ref(&self.continuity, actor.0)?;
-        if matches!(&self.carrier.slots[source_index], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
+        self.position_occupied_excluding(Some(actor), destination)
+    }
+    pub(super) fn position_occupied_excluding(
+        &self,
+        actor: Option<ExactActorRef>,
+        destination: MovementLocalPosition,
+    ) -> Result<bool, CarrierError> {
+        self.position_occupied_excluding_in_context(
+            actor,
+            destination,
+            self.pinned_position_context(),
+            true,
+        )
+    }
+    pub(super) fn position_occupied_excluding_in_context(
+        &self,
+        actor: Option<ExactActorRef>,
+        destination: MovementLocalPosition,
+        context: PreProductionPositionContext,
+        require_position: bool,
+    ) -> Result<bool, CarrierError> {
+        let source_index = actor
+            .map(|actor| {
+                let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+                // Companion validation also excludes its already-validated future free-head slot.
+                if !require_position && (matches!(&self.carrier.slots[index], Slot::CreatureReserved { generation, .. }
+                    if *generation == actor.0.actor_local_generation.0)
+                    || matches!(&self.carrier.slots[index], Slot::VacantReusable { generation, .. }
+                        if generation.checked_add(1) == Some(actor.0.actor_local_generation.0))) {
+                    Ok(index)
+                } else {
+                    self.carrier.current_slot_index(&self.continuity, actor.0)
+                }
+            })
+            .transpose()?;
+        if source_index.is_some_and(|index| matches!(&self.carrier.slots[index], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost))
         {
             return Ok(false);
         }
-        let context = self.pinned_position_context();
         for (index, slot) in self.carrier.slots.iter().enumerate() {
-            if index == source_index
+            if Some(index) == source_index
                 || matches!(slot, Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
             {
                 continue;
@@ -302,7 +335,9 @@ impl ChannelRuntimeV1 {
             if spell_combat
                 .and_then(|state| state.pending_owner.as_ref())
                 .and_then(|reservation| reservation.destination())
-                .is_some_and(|(relocated, reserved)| relocated != actor && reserved == destination)
+                .is_some_and(|(relocated, reserved)| {
+                    Some(relocated) != actor && reserved == destination
+                })
             {
                 return Ok(true);
             }
@@ -325,10 +360,18 @@ impl ChannelRuntimeV1 {
                     ..
                 } => Some(*position),
                 _ => continue,
-            }
-            .ok_or(CarrierError::PositionSnapshotMismatch)?;
+            };
+            let Some(version) = version else {
+                if require_position {
+                    return Err(CarrierError::PositionSnapshotMismatch);
+                }
+                continue;
+            };
             if version.context != context {
-                return Err(CarrierError::PositionContextMismatch);
+                if require_position {
+                    return Err(CarrierError::PositionContextMismatch);
+                }
+                continue;
             }
             if version.position
                 == (LocalPosition {
@@ -350,7 +393,7 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
         cell: MovementLocalPosition,
     ) -> Result<bool, CarrierError> {
-        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let index = self.carrier.current_slot_index(&self.continuity, actor.0)?;
         Ok(match self.carrier.slots.get(index) {
             Some(
                 Slot::Occupied { spell_combat, .. } | Slot::CreatureOccupied { spell_combat, .. },
@@ -657,6 +700,24 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelActorCarrier {
+    pub(super) fn current_slot_index(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ActorRef,
+    ) -> Result<usize, CarrierError> {
+        let index = self.validate_ref(continuity, actor)?;
+        match &self.slots[index] {
+            Slot::Occupied { generation, .. }
+            | Slot::CreatureOccupied { generation, .. }
+            | Slot::NpcOccupied { generation, .. }
+                if *generation == actor.actor_local_generation.0 =>
+            {
+                Ok(index)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
     pub(super) fn current_owner_movement_position<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
@@ -1046,12 +1107,18 @@ impl ChannelRuntimeV1 {
         cell: MovementLocalPosition,
         except: ExactActorRef,
     ) -> bool {
-        let Ok(excluded) = self.carrier.validate_ref(&self.continuity, except.0) else {
+        let Ok(excluded) = self.carrier.current_slot_index(&self.continuity, except.0) else {
             return true;
         };
         if matches!(&self.carrier.slots[excluded], Slot::Occupied { lifecycle, .. } if lifecycle.staff_ghost)
         {
             return false;
+        }
+        if self
+            .position_occupied_by_other(except, cell)
+            .unwrap_or(true)
+        {
+            return true;
         }
         self.carrier.slots.iter().enumerate().any(|(i, slot)| {
             if i == excluded
