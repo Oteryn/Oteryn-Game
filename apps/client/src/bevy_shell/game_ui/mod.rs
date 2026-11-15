@@ -39,6 +39,7 @@ pub(super) mod satellite_map;
 mod stash;
 mod store;
 mod task_board;
+mod team_finder;
 mod trade;
 mod tutorial;
 pub(super) mod viewport;

@@ -84,3 +84,99 @@ impl PlayLink {
         build().is_some_and(|listing| self.team_finder_advertise(Some(listing)))
     }
 }
+
+/// Snapshot-bound actions for the shared Social dialog.
+#[cfg(feature = "bevy-shell")]
+#[derive(Clone, PartialEq, Eq)]
+pub enum TeamControl {
+    Browse(bool),
+    Select(usize),
+    Apply(bool),
+    Filter(oteryn_client_ui::team_finder::TeamFilter),
+    Close,
+}
+#[cfg(feature = "bevy-shell")]
+impl PlayLink {
+    pub fn team_dispatch_bound(
+        &self,
+        expected: &oteryn_client_ui::team_finder::Panel,
+        action: TeamControl,
+    ) -> bool {
+        use oteryn_client_ui::team_finder::{MemberStatus, TeamFinderResult, member, query};
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.discovery.teams;
+        if panel != expected || !panel.open {
+            return false;
+        }
+        if action == TeamControl::Close {
+            panel.open = false;
+            return true;
+        }
+        if !panel.selected || panel.pending.is_some() || panel.applicants {
+            return false;
+        }
+        let command = match action {
+            TeamControl::Select(row) if row < panel.visible_indices().len() => {
+                panel.selected_row = row;
+                return true;
+            }
+            TeamControl::Filter(filter) => {
+                panel.filter = filter;
+                panel.selected_row = 0;
+                return true;
+            }
+            TeamControl::Browse(next) => query(panel, false, next),
+            TeamControl::Apply(cancel) => {
+                let Some(TeamFinderResult::Browse { listings, .. }) = &panel.result else {
+                    return false;
+                };
+                let Some(row) = panel
+                    .visible_indices()
+                    .get(panel.selected_row)
+                    .and_then(|index| listings.get(*index))
+                else {
+                    return false;
+                };
+                let allowed = if cancel {
+                    matches!(
+                        row.status,
+                        MemberStatus::Pending | MemberStatus::Invited | MemberStatus::Accepted
+                    )
+                } else {
+                    matches!(row.status, MemberStatus::None | MemberStatus::Denied)
+                        && row.occupied_slots < row.listing.slots
+                };
+                if !allowed {
+                    return false;
+                }
+                member(panel, cancel)
+            }
+            _ => return false,
+        };
+        let Some(command) = command else {
+            return false;
+        };
+        if self
+            .commands
+            .send(crate::combat_input::PlayCommand::ServerMechanic(command))
+            .is_err()
+        {
+            panel.pending = None;
+            panel.feedback = tr!("Session ended").into();
+            return false;
+        }
+        true
+    }
+}
+#[cfg(all(test, feature = "bevy-shell"))]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_team_selected(&self, selected: bool) {
+        lock(&self.0).discovery.teams.selected = selected;
+    }
+    pub(crate) fn bevy_team_response(
+        &self,
+        response: &oteryn_client_runtime::server_mechanic::ServerMechanicResponse,
+    ) {
+        self.discovery_result(232, response);
+    }
+}

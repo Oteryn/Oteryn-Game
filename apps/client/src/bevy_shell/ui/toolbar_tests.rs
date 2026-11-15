@@ -100,3 +100,30 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
+
+#[test]
+fn social_toolbar_opens_join_team() -> Result<(), Box<dyn std::error::Error>> {
+    let control = TOOLBAR
+        .iter()
+        .find(|(label, _)| *label == "Social")
+        .map(|(_, control)| *control)
+        .ok_or("Social toolbar entry absent")?;
+    let mut owner = HostOwner::new(None)?;
+    let (link, _, _) = crate::play::play_channel();
+    link.use_shared_frontend();
+    let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    owner.phase = crate::bevy_shell::owner::Phase::Playing;
+    assert!(open_toolbar(&mut owner, control));
+    assert!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .discovery_panel()
+            .teams
+            .open
+    );
+    Ok(())
+}

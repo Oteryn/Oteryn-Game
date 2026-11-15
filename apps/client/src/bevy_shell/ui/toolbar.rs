@@ -18,6 +18,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Party", Control::Party),
     ("Quest Log", Control::Quests),
     ("Skills", Control::Skills),
+    ("Social", Control::Social),
     ("Spellbook", Control::Spells),
     ("VIP", Control::Panel("vip")),
 ];
@@ -52,6 +53,11 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Inspection => {
             if let Some(play) = &owner.play {
                 play.link.inspection_set_open(true);
+            }
+        }
+        Control::Social => {
+            if let Some(play) = &owner.play {
+                play.link.discovery_open(232);
             }
         }
         Control::Loot => {
