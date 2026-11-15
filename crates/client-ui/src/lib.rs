@@ -399,5 +399,14 @@ pub mod support_intake;
 #[path = "features/0499-item-appearance/protocol.rs"]
 pub mod item_appearance;
 
+#[path = "features/0505-server-modal-defaults/protocol.rs"]
+pub mod server_modal_defaults;
+
+#[path = "features/0507-highscores-catalogue/protocol.rs"]
+pub mod highscores_catalogue;
+
+#[path = "features/0506-holdings-search/protocol.rs"]
+pub mod holdings_search;
+
 #[path = "features/0500-server-info/mod.rs"]
 pub mod server_info;

@@ -164,11 +164,15 @@ pub(super) fn run(
             },
             |rect| control(hwnd, "STATIC", "", 12, rect, 0),
         );
-        fill_choices(&dialog, |label| {
-            SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
-        }, |index| {
-            SendMessageW(list, LB_SETCURSEL, index, 0);
-        });
+        fill_choices(
+            &dialog,
+            |label| {
+                SendMessageW(list, LB_ADDSTRING, 0, wide(label).as_ptr() as isize);
+            },
+            |index| {
+                SendMessageW(list, LB_SETCURSEL, index, 0);
+            },
+        );
         let mut buttons = Vec::new();
         for (index, (_, label)) in dialog.buttons.iter().enumerate() {
             buttons.push(control(
@@ -190,10 +194,14 @@ pub(super) fn run(
         while IsWindow(hwnd) != 0 && !sender.is_closed() {
             while PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) != 0 {
                 let selected = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
-                let multiline = field == Some(message.hwnd) && input.as_ref().is_some_and(|input| {
-                    input.kind == oteryn_client_runtime::server_modal::input::InputKind::Edit
-                });
-                let allow_confirm = !multiline && (message.hwnd == list || field == Some(message.hwnd) || message.hwnd == hwnd);
+                let multiline = field == Some(message.hwnd)
+                    && input.as_ref().is_some_and(|input| {
+                        input.kind == oteryn_client_runtime::server_modal::input::InputKind::Edit
+                    });
+                let allow_confirm = !multiline
+                    && (message.hwnd == list
+                        || field == Some(message.hwnd)
+                        || message.hwnd == hwnd);
                 let key = if message.message == WM_KEYDOWN {
                     key_action(&dialog, message.wParam, selected, allow_confirm)
                 } else {
@@ -268,7 +276,9 @@ pub(super) fn run(
                 } else if wants_value && value.is_none() {
                     SetWindowTextW(feedback, wide("Enter a value within the limits.").as_ptr());
                 } else {
-                    *entry.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Entry {
+                    *entry
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner) = Entry {
                         value,
                         dont_show_again: remember
                             .is_some_and(|box_| SendMessageW(box_, BM_GETCHECK, 0, 0) == 1),
@@ -317,8 +327,12 @@ fn key_action(
     if key == 27 {
         return KeyAction::Close;
     }
-    if key == 13 && allow_confirm
-        && let Some(index) = dialog.buttons.iter().position(|(id, _)| Some(*id) != dialog.cancel_button)
+    if key == 13
+        && allow_confirm
+        && let Some(index) = dialog
+            .buttons
+            .iter()
+            .position(|(id, _)| Some(*id) != dialog.cancel_button)
     {
         let answer = oteryn_client_ui::server_modal::Answer {
             dialog_id: dialog.id,
@@ -343,6 +357,7 @@ mod tests {
             message: "Server options".into(),
             choices: vec![(9, "Nine".into())],
             buttons: vec![(8, "Cancel".into()), (4, "Accept".into())],
+            default_button: None,
             cancel_button: Some(8),
             image: None,
         }
@@ -351,19 +366,30 @@ mod tests {
     fn native_modal_initially_selects_first_server_choice() {
         let mut labels = Vec::new();
         let mut selected = None;
-        fill_choices(&dialog(), |label| labels.push(label.to_owned()), |row| selected = Some(row));
+        fill_choices(
+            &dialog(),
+            |label| labels.push(label.to_owned()),
+            |row| selected = Some(row),
+        );
         assert_eq!(labels, ["Nine"]);
         assert_eq!(selected, Some(0));
         selected = None;
         let mut empty = dialog();
         empty.choices.clear();
-        fill_choices(&empty, |label| labels.push(label.to_owned()), |row| selected = Some(row));
+        fill_choices(
+            &empty,
+            |label| labels.push(label.to_owned()),
+            |row| selected = Some(row),
+        );
         assert_eq!(selected, None);
     }
     #[test]
     fn native_modal_enter_validates_confirmation_and_preserves_multiline_editing() {
         let mut dialog = dialog();
-        assert_eq!(key_action(&dialog, 13, Some(0), true), KeyAction::Confirm(1));
+        assert_eq!(
+            key_action(&dialog, 13, Some(0), true),
+            KeyAction::Confirm(1)
+        );
         assert_eq!(key_action(&dialog, 13, None, true), KeyAction::Dispatch);
         assert_eq!(key_action(&dialog, 13, Some(3), true), KeyAction::Dispatch);
         assert_eq!(key_action(&dialog, 13, Some(0), false), KeyAction::Dispatch);

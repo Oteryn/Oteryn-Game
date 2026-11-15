@@ -248,3 +248,37 @@ fn highscores_unknown_world_keeps_its_identity() -> TestResult {
     assert!(table_rows(&p, &worlds).all(|row| row.cells[3] == "Named World"));
     Ok(())
 }
+
+#[test]
+fn srvcat_highscores_world_type_control_emits_the_server_predicate() -> TestResult {
+    use oteryn_client_runtime::highscores::catalogue::{self, Entry, WorldType};
+    let world =
+        wire::WorldId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 1])
+            .map_err(|e| format!("{e:?}"))?;
+    let mut p = panel();
+    p.catalogue_selected = true;
+    p.catalogue_loaded = true;
+    p.catalogue = vec![Entry {
+        world,
+        world_type: WorldType::Optional,
+    }];
+    let action =
+        request_action(&p, Kind::WorldType(Some(WorldType::Optional))).ok_or("type selector")?;
+    let command = oteryn_client_ui::highscores::request(&mut p, action).ok_or("type query")?;
+    assert_eq!((command.capability, command.command_type), (507, 6245));
+    let (query, kind) = catalogue::decode_query(&command.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.world, kind),
+        (Some(world), Some(WorldType::Optional))
+    );
+    assert_eq!(
+        (
+            query.category,
+            query.vocation,
+            query.page,
+            query.snapshot_id
+        ),
+        (1, 0, 1, 0)
+    );
+    Ok(())
+}

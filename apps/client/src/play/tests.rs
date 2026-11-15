@@ -401,6 +401,7 @@ impl Stepper for HandoffPeer {
                     message: "Choose".into(),
                     choices: Vec::new(),
                     buttons: vec![(4, "Accept".into())],
+                    default_button: None,
                     cancel_button: None,
                     image: None,
                 },

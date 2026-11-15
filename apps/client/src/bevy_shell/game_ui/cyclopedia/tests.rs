@@ -608,3 +608,105 @@ fn cyclopedia_familiars_browse_shared_pages_and_keep_server_look_ids() -> TestRe
     assert_eq!(command(&mut commands)?.payload, gallery::request(0));
     Ok(())
 }
+
+#[test]
+fn srvcat_holdings_search_location_and_pages_use_named_server_results() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::items::{self, Location, Page, Row, filtered};
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, Vec::new());
+    outbox.bevy_holdings_initialize();
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Items))?;
+    assert_eq!(
+        filtered::Query::decode(&command(&mut commands)?.payload)
+            .map_err(|e| format!("{e:?}"))?
+            .offset,
+        0
+    );
+    let rows = (0..items::PAGE_SIZE)
+        .map(|i| Row {
+            definition: format!("oteryn:item.a{i:02}"),
+            quantities: [1, 0, 2, 0],
+        })
+        .collect();
+    response(
+        &outbox,
+        filtered::Page {
+            holdings: Page {
+                offset: 0,
+                total: 25,
+                rows,
+            },
+            names: (0..24).map(|i| format!("Item {i}")).collect(),
+        }
+        .encode()
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::Next)?;
+    let next =
+        filtered::Query::decode(&command(&mut commands)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(next.offset, 24);
+    let row = Row {
+        definition: "oteryn:item.tibia.i3031".into(),
+        quantities: [0, 0, 7, 0],
+    };
+    response(
+        &outbox,
+        filtered::Page {
+            holdings: Page {
+                offset: 24,
+                total: 25,
+                rows: vec![row.clone()],
+            },
+            names: vec!["gold coin".into()],
+        }
+        .encode()
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|text| text.contains("gold coin | Inventory: 0"))
+    );
+    let search = app
+        .world_mut()
+        .query_filtered::<Entity, With<cyclopedia::HoldingsSearch>>()
+        .single(app.world())?;
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(search)
+        .ok_or("holdings search")?
+        .editor_mut()
+        .set_text("GoLd");
+    click(&mut app, Kind::HoldingsFilter)?;
+    let query =
+        filtered::Query::decode(&command(&mut commands)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.offset, query.search.as_str(), query.location),
+        (0, "GoLd", None)
+    );
+    response(
+        &outbox,
+        filtered::Page {
+            holdings: Page {
+                offset: 0,
+                total: 1,
+                rows: vec![row],
+            },
+            names: vec!["gold coin".into()],
+        }
+        .encode()
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    click(&mut app, Kind::HoldingsLocation(Some(Location::Stash)))?;
+    let query =
+        filtered::Query::decode(&command(&mut commands)?.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (query.offset, query.search.as_str(), query.location),
+        (0, "GoLd", Some(Location::Stash))
+    );
+    Ok(())
+}

@@ -145,6 +145,7 @@ impl PlayLink {
             message: "Frontend modal gating fixture".into(),
             choices: Vec::new(),
             buttons: vec![(1, "Close".into())],
+            default_button: None,
             cancel_button: Some(1),
             image: None,
         });
@@ -178,6 +179,14 @@ impl PlayLink {
 }
 #[cfg(all(test, feature = "bevy-shell"))]
 impl BevyServerModalFixture {
+    pub(crate) fn with_defaults(&mut self) {
+        self._driver.panel.defaults = true;
+        if let Some(dialog) = &mut self._driver.panel.active {
+            dialog.default_button = Some(1);
+            dialog.buttons.insert(0, (8, "Help".into()));
+        }
+        self._driver.publish(false);
+    }
     pub(crate) fn with_choices(&mut self) {
         if let Some(dialog) = &mut self._driver.panel.active {
             dialog.choices = vec![(7, "First".into()), (9, "Second".into())];

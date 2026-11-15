@@ -1424,6 +1424,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         highscores::answer_session_highscores(self.root, self.world_id, world, session, query).await
     }
 
+    async fn highscores_catalogue(
+        &self,
+        world: WorldId,
+        session: GameSessionId,
+        query: Option<(
+            oteryn_protocol_oteryn::highscores::HighscoresQuery,
+            Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
+        )>,
+    ) -> highscores::HighscoresReply {
+        crate::durability::highscores_catalogue::answer_session(
+            self.root,
+            self.world_id,
+            world,
+            session,
+            query,
+        )
+        .await
+    }
+
     /// The periodic 1000 ms Serene evaluation of the admitted actor (SPELL-D8 §8.2), under the
     /// same runtime lock as a cast. DEATH-2: a dead actor is respawned on this cadence instead
     /// ([`Self::respawn_after_death`]), and its respawn vitals are the published delta.

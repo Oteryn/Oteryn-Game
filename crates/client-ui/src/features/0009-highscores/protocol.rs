@@ -10,6 +10,25 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     if !p.selected || p.pending {
         return None;
     }
+    if matches!(action, Action::Catalogue)
+        || (matches!(action, Action::Refresh) && p.catalogue_selected && !p.catalogue_loaded)
+    {
+        if !p.catalogue_selected {
+            return None;
+        }
+        p.pending = true;
+        p.catalogue_pending = true;
+        p.query = None;
+        p.reply = None;
+        p.feedback = None;
+        return Some(ServerMechanicCommand {
+            capability: 507,
+            command_type: 6244,
+            payload: Vec::new(),
+        });
+    }
+    p.catalogue_pending = false;
+    let mut world_type = p.world_type;
     let mut query = HighscoresQuery {
         world: p.world,
         details: true,
@@ -19,6 +38,26 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
         snapshot_id: 0,
     };
     match action {
+        Action::Catalogue => return None,
+        Action::WorldType(kind) => {
+            if !p.catalogue_selected {
+                return None;
+            }
+            world_type = kind;
+            let target = query
+                .world
+                .or_else(|| p.reply.as_ref().and_then(|reply| reply.world));
+            if !p.catalogue.iter().any(|entry| {
+                Some(entry.world) == target && kind.is_none_or(|kind| entry.world_type == kind)
+            }) {
+                query.world = Some(
+                    p.catalogue
+                        .iter()
+                        .find(|entry| kind.is_none_or(|kind| entry.world_type == kind))?
+                        .world,
+                );
+            }
+        }
         Action::Refresh => {}
         Action::World(world) => {
             query.world = world;
@@ -73,10 +112,22 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
             query.snapshot_id = reply.snapshot_id;
         }
     }
-    let command = command(query).ok()?;
-    if (p.world, p.category, p.vocation) != (query.world, query.category, query.vocation) {
+    let command = if p.catalogue_selected {
+        ServerMechanicCommand {
+            capability: 507,
+            command_type: 6245,
+            payload: oteryn_client_runtime::highscores::catalogue::encode_query(query, world_type)
+                .ok()?,
+        }
+    } else {
+        command(query).ok()?
+    };
+    if (p.world, p.category, p.vocation, p.world_type)
+        != (query.world, query.category, query.vocation, world_type)
+    {
         p.reply = None;
     }
+    p.world_type = world_type;
     p.world = query.world;
     p.category = query.category;
     p.vocation = query.vocation;
@@ -86,6 +137,23 @@ pub fn request(p: &mut HighscoresPanel, action: Action) -> Option<ServerMechanic
     Some(command)
 }
 pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
+    if p.catalogue_pending {
+        p.catalogue_pending = false;
+        p.pending = false;
+        if matches!(
+            r.status,
+            CommandStatus::Accepted | CommandStatus::DuplicateReplay
+        ) && let Ok(catalogue) =
+            oteryn_client_runtime::highscores::catalogue::decode_catalogue(&r.payload)
+        {
+            p.catalogue = catalogue;
+            p.catalogue_loaded = true;
+            p.feedback = None;
+        } else {
+            p.feedback = Some("The server returned an invalid World catalogue".into());
+        }
+        return;
+    }
     let Some(query) = p.query.take() else {
         return;
     };
@@ -112,4 +180,12 @@ pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
         }
         _ => p.feedback = Some(tr!("The server returned invalid highscores").into()),
     }
+}
+
+pub fn world_choices(
+    p: &HighscoresPanel,
+) -> impl Iterator<Item = &oteryn_client_runtime::highscores::catalogue::Entry> {
+    p.catalogue
+        .iter()
+        .filter(|entry| p.world_type.is_none_or(|kind| entry.world_type == kind))
 }

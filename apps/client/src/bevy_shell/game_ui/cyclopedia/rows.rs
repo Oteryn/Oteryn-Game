@@ -55,7 +55,7 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
             .map(|r| {
                 format!(
                     "{} | Inventory: {} | Depot: {} | Stash: {} | Inbox: {}",
-                    r.definition,
+                    oteryn_client_ui::holdings_search::display_name(&panel.items, r),
                     r.quantities[0],
                     r.quantities[1],
                     r.quantities[2],

@@ -75,17 +75,59 @@ pub(super) fn body(
             ..default()
         },
     ));
-    for world in std::iter::once(None).chain(worlds.iter().map(|(id, _)| Some(*id))) {
-        button(
-            commands,
-            skin,
-            choices,
-            action,
-            Kind::World(world),
-            &format!("World: {}", model::world_label(world, worlds)),
-            240.,
-            request_action(panel, Kind::World(world)).is_some(),
-        );
+    if panel.catalogue_selected {
+        use oteryn_client_runtime::highscores::catalogue::WorldType;
+        for kind in std::iter::once(None).chain(
+            WorldType::ALL
+                .into_iter()
+                .filter(|kind| {
+                    panel
+                        .catalogue
+                        .iter()
+                        .any(|entry| entry.world_type == *kind)
+                })
+                .map(Some),
+        ) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::WorldType(kind),
+                kind.map_or("All World types", WorldType::label),
+                180.,
+                !panel.pending && panel.catalogue_loaded,
+            );
+        }
+        for entry in oteryn_client_ui::highscores_catalogue::world_choices(panel) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::World(Some(entry.world)),
+                &format!(
+                    "{} ({})",
+                    model::world_label(Some(entry.world), worlds),
+                    entry.world_type.label()
+                ),
+                240.,
+                !panel.pending,
+            );
+        }
+    } else {
+        for world in std::iter::once(None).chain(worlds.iter().map(|(id, _)| Some(*id))) {
+            button(
+                commands,
+                skin,
+                choices,
+                action,
+                Kind::World(world),
+                &format!("World: {}", model::world_label(world, worlds)),
+                240.,
+                request_action(panel, Kind::World(world)).is_some(),
+            );
+        }
     }
     label(
         commands,
@@ -96,12 +138,19 @@ pub(super) fn body(
             model::world_label(panel.world, worlds)
         ),
     );
-    label(
-        commands,
-        skin,
-        root,
-        "World type unavailable for this session. Named worlds come from your character list.",
-    );
+    let world_type = if panel.catalogue_selected {
+        format!(
+            "World type: {}",
+            panel.world_type.map_or(
+                "All World types",
+                oteryn_client_runtime::highscores::catalogue::WorldType::label
+            )
+        )
+    } else {
+        "World type unavailable for this session. Named worlds come from your character list."
+            .into()
+    };
+    label(commands, skin, root, &world_type);
     let filters = row(commands, root);
     label(commands, skin, filters, "Other World ID (blank = current):");
     let mut text = EditableText::new(

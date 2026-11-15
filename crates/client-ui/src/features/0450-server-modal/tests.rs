@@ -18,6 +18,7 @@ fn generic_modal_panel_drives_wire_and_clears_only_after_matching_ack()
         message: "Select one".into(),
         choices: vec![(7, "First".into())],
         buttons: vec![(1, "OK".into()), (2, "Cancel".into())],
+        default_button: None,
         cancel_button: Some(2),
         image: None,
     };
@@ -106,6 +107,7 @@ fn active_panel() -> Result<Panel, Box<dyn std::error::Error>> {
                 message: "Select one".into(),
                 choices: vec![(7, "First".into())],
                 buttons: vec![(1, "OK".into()), (2, "Cancel".into())],
+                default_button: None,
                 cancel_button: Some(2),
                 image: None,
             })
@@ -336,6 +338,7 @@ fn t159_modal_show_image_and_button_variants_validate_and_resolve_answers()
     let single = Dialog {
         choices: Vec::new(),
         buttons: vec![(3, "Close".into())],
+        default_button: None,
         cancel_button: None,
         ..dialog
     };

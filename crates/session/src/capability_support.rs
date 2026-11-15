@@ -178,6 +178,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::actor_motion::CAPABILITY_ACTOR_MOTION_V1,
     oteryn_protocol_oteryn::cyclopedia_character::blessings_dialog::CAPABILITY_BLESSINGS_DIALOG_V1,
     oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
+    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1,
+    cyclopedia_character::items::filtered::CAPABILITY,
+    highscores_catalogue::CAPABILITY,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -294,6 +297,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    highscores_catalogue::CAPABILITY,
     oteryn_protocol_oteryn::tutorial_vocation::CAPABILITY_TUTORIAL_VOCATION_V1,
     oteryn_protocol_oteryn::server_info::CAPABILITY_SERVER_INFO_V1,
 ];
@@ -407,6 +411,36 @@ mod native_advertisement_tests {
             schema_revision: 1,
             selected_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
         })?;
+        Ok(())
+    }
+
+    #[test]
+    fn srvcat_bootstrap_advertises_extensions_and_gates_world_queries()
+    -> Result<(), FoundationProtocolError> {
+        let mut id = [1u8; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: CharacterId::decode(&id)?,
+            admission_material: b"srvcat-bootstrap-regression",
+            client_build_id: "srvcat-bootstrap-regression",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        })?;
+        let envelope = decode_wire_envelope(&bootstrap)?;
+        let supported = envelope.client_bootstrap()?.supported_capabilities;
+        for capability in [505, 506, 507] {
+            assert!(
+                supported.contains(&capability),
+                "native bootstrap omitted {capability}"
+            );
+        }
+        assert_eq!(
+            super::gated_routes()
+                .find(|(capability, _, _)| *capability == 507)
+                .map(|(_, commands, _)| commands),
+            Some(&[6244, 6245][..])
+        );
         Ok(())
     }
 }

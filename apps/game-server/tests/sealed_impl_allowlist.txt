@@ -11,6 +11,9 @@ crates/gameplay/foundation/src/foundation/admission_authority_publication.rs | f
 # 60f2542a5 (Wheel): the due-combat compositor owns ChannelSpellStates in dispatch;
 # its delayed-execution fixture exercises the same spell-owned commit boundary.
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs | due_commit_seal::Sealed | ChannelSpellStates
+# Base 4acc206a11 inventory review: the private due-charm compositor borrows the
+# current dispatch owner state/content/catalogue and commits through the same fenced boundary.
+crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | due_commit_seal::Sealed | DueCharmCommit<'_>
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | player_proof_seal::Sealed | PlayerBatchPreflight
 crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
 crates/gameplay/dispatch/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
@@ -114,6 +117,9 @@ crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | sourc
 # W05d CP review: this second private cfg(test) fixture belongs to entities,
 # the seal owner; retain exact multiplicity, without a wildcard implementer.
 crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
+crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
+# Base 4acc206a11 inventory review: second function-local physical-only test proof;
+# exact multiplicity remains enforced and no production implementer is added.
 crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | companion_source_seal::Sealed | CompanionSpawnReservation
 crates/gameplay/spell/src/spell/companion_lifecycle.rs | direct_companion_source_seal::Sealed | DirectCompanionReservation

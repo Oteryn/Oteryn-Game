@@ -20,6 +20,8 @@ pub(super) fn request_action(panel: &HighscoresPanel, kind: Kind) -> Option<Requ
             vocation: (panel.vocation + 1) % 6,
         },
         Kind::World(world) => Request::World(world),
+        Kind::WorldType(kind) => Request::WorldType(kind),
+        Kind::Refresh if panel.catalogue_selected => Request::Catalogue,
         Kind::Refresh => Request::Refresh,
         Kind::First | Kind::Previous => {
             if panel.reply.as_ref()?.page <= 1 {

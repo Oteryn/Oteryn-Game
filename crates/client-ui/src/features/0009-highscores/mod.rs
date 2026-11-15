@@ -4,7 +4,7 @@ mod protocol;
 mod state;
 mod view;
 pub use input::open_key;
-pub use protocol::{apply_result, request};
+pub use protocol::{apply_result, request, world_choices};
 pub use state::{Action, HighscoresPanel};
 pub use view::{panel_text, parse_world, world_text};
 // Category 13 (Loyalty) is added by capability 498 (`crate::highscores_loyalty`); 15 (Taint) is reserved; Game filters preserve explicit wire IDs.

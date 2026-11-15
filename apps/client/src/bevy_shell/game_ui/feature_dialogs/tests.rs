@@ -89,6 +89,7 @@ fn server_input_fields_preserve_multiline_and_source_font_on_first_mount() -> Re
             message: "Server text".into(),
             choices: vec![],
             buttons: vec![(1, "Ok".into())],
+            default_button: None,
             cancel_button: None,
             image: None,
         }),
