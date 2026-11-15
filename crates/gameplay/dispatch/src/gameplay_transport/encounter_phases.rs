@@ -61,12 +61,16 @@ impl Registry {
                 let _ = fight.advance(runtime, |runtime, at| placement(cells, runtime, at));
             }
         }
-        // Terminal victory releases the lever key independently of corpse lifetime.
-        active.retain(|phase| {
-            phase
-                .fight
-                .victors(runtime)
-                .is_ok_and(|victors| victors.is_none())
+        // Release the lever key only after terminal decorations retire; failures retry on tick.
+        active.retain_mut(|phase| match phase.fight.victors(runtime) {
+            Ok(Some(_)) => {
+                let ActivePhase { fight, cells, .. } = phase;
+                fight
+                    .advance(runtime, |runtime, at| placement(cells, runtime, at))
+                    .is_err()
+            }
+            Ok(None) => true,
+            Err(_) => false,
         });
     }
 
@@ -214,7 +218,7 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
         return;
     };
     active.retain(|phase| phase.fight.is_current(runtime));
-    for phase in &mut *active {
+    active.retain_mut(|phase| {
         let ActivePhase {
             key, fight, cells, ..
         } = phase;
@@ -222,6 +226,10 @@ pub(super) fn tick(runtime: &mut ChannelRuntimeV1, states: &ChannelSpellStates) 
             super::operator_event(&format!(
                 "encounter_phase_deferred key={key} reason={error:?}"
             ));
+            return true;
         }
-    }
+        fight
+            .victors(runtime)
+            .is_ok_and(|victors| victors.is_none())
+    });
 }

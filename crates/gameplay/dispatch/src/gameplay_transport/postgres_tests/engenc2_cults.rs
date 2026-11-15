@@ -344,7 +344,46 @@ fn cults_scenario(reenter: bool) -> TestResult {
                         .map(|(actor, _, _)| actor)
                         .ok_or("expected source phase actor")?
                 };
+                let decorations = if i == 10 {
+                    let runtime = owner.runtime.lock().await;
+                    let decorations: Vec<_> = runtime
+                        .positioned_melee_census()
+                        .map_err(debug)?
+                        .into_iter()
+                        .filter(|(actor, _, _)| {
+                            runtime.matches_live_creature_identity(
+                                *actor,
+                                b"oteryn:creature.destroyed_pillar",
+                            )
+                        })
+                        .map(|(actor, _, _)| actor)
+                        .collect();
+                    assert_eq!(decorations.len(), 5, "all five pillars became decorations");
+                    decorations
+                } else {
+                    Vec::new()
+                };
                 kill(&owner, &admitted, target, plan.roles[i].creature, command).await?;
+                if i == 10 {
+                    let runtime = owner.runtime.lock().await;
+                    for decoration in decorations {
+                        assert!(
+                            !runtime.contains_live_creature(decoration),
+                            "victory retires the exact pillar decoration"
+                        );
+                    }
+                    assert!(
+                        runtime
+                            .positioned_melee_census()
+                            .map_err(debug)?
+                            .iter()
+                            .all(|(actor, _, _)| !runtime.matches_live_creature_identity(
+                                *actor,
+                                b"oteryn:creature.destroyed_pillar",
+                            )),
+                        "victory leaves no live pillar decorations"
+                    );
+                }
                 if i < 10 {
                     let runtime = owner.runtime.lock().await;
                     let essence = runtime
@@ -385,23 +424,6 @@ fn cults_scenario(reenter: bool) -> TestResult {
             if reenter {
                 {
                     let mut runtime = owner.runtime.lock().await;
-                    // Start the next admission with an empty room, including the
-                    // inert decorations left at the original pillar cells.
-                    let decorations: Vec<_> = runtime
-                        .positioned_melee_census()
-                        .map_err(debug)?
-                        .into_iter()
-                        .filter(|(actor, _, _)| {
-                            runtime.matches_live_creature_identity(
-                                *actor,
-                                b"oteryn:creature.destroyed_pillar",
-                            )
-                        })
-                        .map(|(actor, _, _)| actor)
-                        .collect();
-                    for decoration in decorations {
-                        runtime.remove_encounter_actor(decoration).map_err(debug)?;
-                    }
                     let expected = runtime.read_actor_position(deps.actor).map_err(debug)?;
                     let closed = crate::map::floor::BundleDoors(world.facts());
                     let proof = crate::map::floor::prepare_quest_callback_teleport(

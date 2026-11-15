@@ -130,6 +130,18 @@ impl CultsEncounter {
         runtime: &mut ChannelRuntimeV1,
         map_admits: impl Fn(&ChannelRuntimeV1, MovementLocalPosition) -> bool,
     ) -> Result<(), CarrierError> {
+        self.phase.current(runtime)?;
+        if self.phase.progress.completed() {
+            // Retire only this encounter's exact decorations, including on a retry.
+            for decoration in &mut self.phase.decorations {
+                if let Some(actor) = *decoration {
+                    if runtime.contains_live_creature(actor) {
+                        runtime.remove_encounter_actor(actor)?;
+                    }
+                    *decoration = None;
+                }
+            }
+        }
         let pending: Vec<_> = self.phase.pending().map(|(role, _)| role).collect();
         for role in pending {
             match role {
