@@ -45,6 +45,7 @@ pub(super) enum Control {
     Options,
     Panel(&'static str),
     Analysers,
+    Depot,
     Inspection,
     Loot,
     Notices,
@@ -70,6 +71,7 @@ impl Control {
     pub fn id(self) -> &'static str {
         match self {
             Self::Panel(id) => id,
+            Self::Depot => "shell.depot",
             Self::Analysers => "shell.analysers",
             Self::Inspection => "shell.inspection",
             Self::Loot => "shell.loot",

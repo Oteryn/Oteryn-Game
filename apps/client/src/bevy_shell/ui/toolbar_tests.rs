@@ -9,6 +9,7 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
         "Analysers",
         "Battle",
         "Chat",
+        "Depot",
         "Compendium",
         "Inspection",
         "Inventory",
@@ -46,6 +47,12 @@ fn toolbar_opens_window() -> Result<(), Box<dyn std::error::Error>> {
         let owner = app.world().non_send::<HostOwner>();
         match entry.1 {
             Control::Panel(id) => assert!(owner.settings.preferences.panel_visible(id)),
+            Control::Depot => assert!(
+                owner
+                    .play
+                    .as_ref()
+                    .is_some_and(|play| play.link.depot_panel().open)
+            ),
             Control::Options => assert!(owner.draft().is_some()),
             Control::Analysers => assert!(
                 owner

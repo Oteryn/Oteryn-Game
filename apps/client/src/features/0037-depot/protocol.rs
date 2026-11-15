@@ -71,3 +71,13 @@ macro_rules! dispatch {
     };
 }
 pub(in crate::play) use dispatch;
+
+#[cfg(all(test, feature = "bevy-shell"))]
+impl Outbox {
+    pub(crate) fn bevy_depot_initialize(&self, selected: bool) {
+        self.depot_initialize(selected);
+    }
+    pub(crate) fn bevy_depot_result(&self, reply: Option<DepotReply>) {
+        self.depot_result(reply);
+    }
+}
