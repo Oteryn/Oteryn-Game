@@ -404,3 +404,22 @@ mod tests;
 #[cfg(test)]
 #[path = "live_assets/tests.rs"]
 mod live_asset_tests;
+
+#[cfg(test)]
+mod selection_return_tests {
+    use super::*;
+    #[test]
+    fn confirmed_logout_restarts_admission_but_disconnect_does_not()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        owner.finish_play(PlayEnd::Ended(
+            oteryn_platform_client::native_login::PublicClass::SessionUnavailable,
+        ));
+        assert_eq!(owner.phase, Phase::Offline);
+        owner.finish_play(PlayEnd::LoggedOut);
+        assert_eq!(owner.phase, Phase::Entering);
+        assert!(owner.entry.as_ref().is_some_and(Reentry::is_entering));
+        owner.close();
+        Ok(())
+    }
+}

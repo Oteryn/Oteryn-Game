@@ -190,6 +190,10 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
         SelectionAction::Play {
             character_id,
             channel_id,
+        }
+        | SelectionAction::Train {
+            character_id,
+            channel_id,
         } => request.rows.iter().any(|row| {
             row.available
                 && &row.character.character_id == character_id
@@ -201,7 +205,7 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
         | SelectionAction::Refresh
         | SelectionAction::Create
         | SelectionAction::AccountServices => true,
-        SelectionAction::Train { .. } | SelectionAction::TrainMany { .. } => false,
+        SelectionAction::TrainMany { .. } => false,
     }
 }
 
