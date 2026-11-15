@@ -92,6 +92,36 @@ pub(super) fn perform(
             }
             return false;
         }
+        Kind::Cast => {
+            if action.key.tab != Tab::Spells {
+                return false;
+            }
+            let id = if book.selected {
+                state
+                    .selected_spell
+                    .or_else(|| {
+                        book.page
+                            .as_ref()?
+                            .entries
+                            .first()
+                            .map(|entry| entry.spell.cast_index)
+                    })
+                    .filter(|id| {
+                        book.page.as_ref().is_some_and(|page| {
+                            page.entries
+                                .iter()
+                                .any(|entry| entry.spell.cast_index == *id)
+                        })
+                    })
+            } else {
+                catalogue.selected_spell().map(|spell| spell.cast_index)
+            };
+            let Some(id) = id.and_then(std::num::NonZeroU32::new) else {
+                return false;
+            };
+            link.request_combat(crate::combat_input::CombatCommand::Cast(id));
+            return true;
+        }
         Kind::Assign(slot) => {
             let id = if book.selected {
                 state.selected_spell.filter(|id| {
@@ -178,6 +208,14 @@ pub(super) fn perform(
         ..book.filter
     };
     match action.kind {
+        Kind::Castable => {
+            let Some(level) = link.spellbook_actor_level() else {
+                state.feedback = "Actor level has not been received.".into();
+                return false;
+            };
+            filter.min_level = 0;
+            filter.max_level = if filter.max_level == level { 0 } else { level };
+        }
         Kind::Vocation => {
             filter.vocation = ((usize::from(filter.vocation) + 1) % SPELLBOOK_VOCATIONS.len()) as u8
         }
