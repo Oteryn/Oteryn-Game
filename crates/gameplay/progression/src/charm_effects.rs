@@ -578,3 +578,7 @@ mod property_tests;
 #[cfg(test)]
 #[path = "bestiary_charm_crystal_parity_tests.rs"]
 mod crystal_parity_tests;
+
+#[cfg(test)]
+#[path = "charm_effects_global_values_tests.rs"]
+mod global_values_tests;
