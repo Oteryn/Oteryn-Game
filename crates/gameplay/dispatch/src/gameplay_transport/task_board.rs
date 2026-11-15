@@ -286,6 +286,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::durability::character_progression::CharacterProgressionError::InvalidInput,
             ),
         });
+        // [DBG-NBSEAM] temporary probe, removed before the PR.
+        let dbg_catalogue = format!(
+            "catalogue_gameplay_content_revision={} catalogue_content_revision={} progression_some={}",
+            catalogue.gameplay_content_revision,
+            catalogue.content_revision,
+            catalogue.progression.is_some()
+        );
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let result = slot
             .commit_task_board(
@@ -314,6 +321,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Err(error) = &result {
             operator_event(&format!("task_board_write_failed reason={error:?}"));
+            // [DBG-NBSEAM] temporary probe, removed before the PR.
+            let stored = self
+                .root
+                .read_character_progression(self.character, fence.character_id)
+                .await;
+            operator_event(&format!(
+                "DBG-NBSEAM {dbg_catalogue} stored={:?}",
+                stored.map(|state| state.map(|state| (state.context, state.policy_revision, state.reward_revision)))
+            ));
         }
         result
     }
