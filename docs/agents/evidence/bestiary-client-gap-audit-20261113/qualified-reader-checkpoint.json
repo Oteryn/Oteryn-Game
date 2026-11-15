@@ -1,0 +1,158 @@
+{
+  "status": "BESTIARY_PAUSED_OWNER_SWITCHED_TO_CHARMS",
+  "utc": "2026-11-13T10:35:17.576632+00:00",
+  "searches": [
+    {
+      "query": "omega bulwark",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-bulwark-result.png",
+      "sha256": "abacb15135ce0d54e84a85c26fa186c5322c17d8e77f5e8dabf991a1ec086b16",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "omega bastion",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-bastion-result.png",
+      "sha256": "18be595ddb8b91ac4a5e264024e71088318819510ea18ac09a3855c81d9a1463",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "omega battler",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-battler-result.png",
+      "sha256": "ed015d11a085d554ce7ab63043d6d51049abadfc1e57e7ffb7c5c3bd04e1a46f",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "omega moonbreaker",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-moonbreaker-result.png",
+      "sha256": "a303ddebb7a87dd86065a432e99bcb28c8a3c8ea9ac4bc264be95dd43cb492d6",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "omega cinderflayer",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-cinderflayer-result.png",
+      "sha256": "be204b5f9bb8b623131925032d3efa51570c281908fb45af777ad1b5e18867c1",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "omega rampart",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-omega-rampart-result.png",
+      "sha256": "58c7816b48163afcb514689830008438d971d55f4dbe7e42056561c74781883a",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "giant rat",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-giant-rat-result.png",
+      "sha256": "f3ea79a042dc7615e8f316198e800fe879fefe3260b184c0902139d286a50211",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "greedcarrier rat",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-greedcarrier-rat-result.png",
+      "sha256": "d88bb700a679e78539a13b41aee519f9d655176521951ad6636d2675fe371524",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "hoarder rat",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-hoarder-rat-result.png",
+      "sha256": "b395f6ad4c327f2df1a6c7d59a785ea0f94618bc6efa8c3d23f46ca4cfb70f84",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "greed elemental",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-greed-elemental-result.png",
+      "sha256": "b1fe83ac38d98e9aa4c892f2d69a8362954c081ca4fa30b8ddb295bb05633282",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "greedweaver",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-greedweaver-result.png",
+      "sha256": "7d2ad2a2b13c40b2994c3dd9496e6baa223779310ab1a2319af02a196d6ce2f1",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "greater greed",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-greater-greed-result.png",
+      "sha256": "391ff874d0fc5d561b1bb33ee6c9b63d13aa92aab282394b42bb4ff6ed42b499",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "nomad",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-nomad-result.png",
+      "sha256": "0328078f5e5c9409244b9240b970ce2440d71252340ab63f206cd38a78674047",
+      "qualification": "LABELS_CHANGED_REVIEW_REQUIRED",
+      "visually_confirmed_result": true
+    },
+    {
+      "query": "butterfly",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-butterfly-result.png",
+      "sha256": "92a9e1de37a17a4ae1510b6fa0d1174dbe18b708ff24ee73ac079fa95e1dc486",
+      "qualification": "LABELS_CHANGED_REVIEW_REQUIRED",
+      "visually_confirmed_result": true
+    },
+    {
+      "query": "night harpy",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-night-harpy-result.png",
+      "sha256": "14307c89b7a4e9eac6687529e0f416f23ed5ba80074ef5c6edce110c075e42e7",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "cake golem",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-cake-golem-result.png",
+      "sha256": "258e749c9c3347d2d2fa7a0453c38c69bdf9d1a119e21bc0b5bc81ba445409fe",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "undead jester",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-undead-jester-result.png",
+      "sha256": "6c8b7857d5064aef854f9e9073426569abde3b2e07b78a62a0658f378c9fe9cf",
+      "qualification": "NO_NEW_RESULT_LABELS",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "nightslayer",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-nightslayer-result.png",
+      "sha256": "536dd5e54c84c5377b13562dd85e3021b6eabb6cdfef7b4b11f73b9bb4f88464",
+      "qualification": "LABELS_CHANGED_REVIEW_REQUIRED",
+      "visually_confirmed_result": false
+    },
+    {
+      "query": "butterfly",
+      "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\query-butterfly-navigation-1794565977454400200-result.png",
+      "sha256": "9305a106103b8447c7c33c83a17d790fa398f87dbc91508a5a8caaf3c8d8a153",
+      "qualification": "LABELS_CHANGED_REVIEW_REQUIRED",
+      "visually_confirmed_result": true
+    }
+  ],
+  "warning": "Old journal full-grid pixel statuses superseded; animated sprites change while failed search retains previous results",
+  "wafer_paper_butterfly": {
+    "file": "C:\\Users\\barte\\Documents\\Codex\\2026-11-12\\referenced-chatgpt-conversation-this-is-an\\outputs\\bestiary-audit-20261113\\resume-20261113\\detail-wafer-paper-butterfly.png",
+    "sha256": "247de0becff86a7bf7b2baabf6ec7911eafed173da6bc4ffc93a648ee8e66e2a",
+    "health": 2,
+    "experience": 0,
+    "speed": 160,
+    "armor": 0,
+    "mitigation_percent": "0.56",
+    "charm_points": 1,
+    "dynamic_kills": 37,
+    "locations_literal": "Candia, Carlin, Edron Surroundings, Thais",
+    "kill_thresholds": "NOT_READ",
+    "loot": "NO_VISIBLE_ROWS_ONLY_NOT_NO_LOOT_AUTHORITY",
+    "client_id_candidate": 2544,
+    "canonical_name_match": "NONE_IN_INITIAL_MAIN_NAME_SCAN_NOT_GLOBAL_ABSENCE_PROOF"
+  },
+  "nomad": "3 visible variants: first completed, other two0/3; details not read",
+  "next_scope": "Charms; no further Bestiary collection"
+}

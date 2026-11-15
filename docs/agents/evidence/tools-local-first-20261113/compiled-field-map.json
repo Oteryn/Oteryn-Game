@@ -1,0 +1,509 @@
+{
+  "elf_sha256": "7f6555b19514abc34220a09f427732ea66ddfcd8d7052c733f0557d624baaf34",
+  "descriptor_start": 45621408,
+  "messages": [
+    {
+      "name": "Appearance",
+      "fields": [
+        {
+          "name": "id",
+          "number": 1,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "frame_group",
+          "number": 2,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.FrameGroup"
+        },
+        {
+          "name": "flags",
+          "number": 3,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlags"
+        },
+        {
+          "name": "name",
+          "number": 4,
+          "type": 9,
+          "type_name": ""
+        },
+        {
+          "name": "description",
+          "number": 5,
+          "type": 9,
+          "type_name": ""
+        }
+      ]
+    },
+    {
+      "name": "AppearanceFlags",
+      "fields": [
+        {
+          "name": "bank",
+          "number": 1,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagBank"
+        },
+        {
+          "name": "clip",
+          "number": 2,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "bottom",
+          "number": 3,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "top",
+          "number": 4,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "container",
+          "number": 5,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "cumulative",
+          "number": 6,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "usable",
+          "number": 7,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "forceuse",
+          "number": 8,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "multiuse",
+          "number": 9,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "write",
+          "number": 10,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagWrite"
+        },
+        {
+          "name": "write_once",
+          "number": 11,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagWriteOnce"
+        },
+        {
+          "name": "liquidpool",
+          "number": 12,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "unpass",
+          "number": 13,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "unmove",
+          "number": 14,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "unsight",
+          "number": 15,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "avoid",
+          "number": 16,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "no_movement_animation",
+          "number": 17,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "take",
+          "number": 18,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "liquidcontainer",
+          "number": 19,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "hang",
+          "number": 20,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "hook",
+          "number": 21,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagHook"
+        },
+        {
+          "name": "rotate",
+          "number": 22,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "light",
+          "number": 23,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagLight"
+        },
+        {
+          "name": "dont_hide",
+          "number": 24,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "translucent",
+          "number": 25,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "shift",
+          "number": 26,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagShift"
+        },
+        {
+          "name": "height",
+          "number": 27,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagHeight"
+        },
+        {
+          "name": "lying_object",
+          "number": 28,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "animate_always",
+          "number": 29,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "automap",
+          "number": 30,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagAutomap"
+        },
+        {
+          "name": "lenshelp",
+          "number": 31,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagLenshelp"
+        },
+        {
+          "name": "fullbank",
+          "number": 32,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "ignore_look",
+          "number": 33,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "clothes",
+          "number": 34,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagClothes"
+        },
+        {
+          "name": "default_action",
+          "number": 35,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagDefaultAction"
+        },
+        {
+          "name": "market",
+          "number": 36,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagMarket"
+        },
+        {
+          "name": "wrap",
+          "number": 37,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "unwrap",
+          "number": 38,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "topeffect",
+          "number": 39,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "npcsaledata",
+          "number": 40,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagNPC"
+        },
+        {
+          "name": "changedtoexpire",
+          "number": 41,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagChangedToExpire"
+        },
+        {
+          "name": "corpse",
+          "number": 42,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "player_corpse",
+          "number": 43,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "cyclopediaitem",
+          "number": 44,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagCyclopedia"
+        },
+        {
+          "name": "ammo",
+          "number": 45,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "show_off_socket",
+          "number": 46,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "reportable",
+          "number": 47,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "upgradeclassification",
+          "number": 48,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagUpgradeClassification"
+        },
+        {
+          "name": "reverse_addons_east",
+          "number": 49,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "reverse_addons_west",
+          "number": 50,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "reverse_addons_south",
+          "number": 51,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "reverse_addons_north",
+          "number": 52,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "wearout",
+          "number": 53,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "clockexpire",
+          "number": 54,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "expire",
+          "number": 55,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "expirestop",
+          "number": 56,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "deco_item_kit",
+          "number": 57,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "skillwheel_gem",
+          "number": 58,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagSkillWheelGem"
+        },
+        {
+          "name": "dual_wielding",
+          "number": 59,
+          "type": 8,
+          "type_name": ""
+        },
+        {
+          "name": "imbueable",
+          "number": 60,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagImbueable"
+        },
+        {
+          "name": "proficiency",
+          "number": 61,
+          "type": 11,
+          "type_name": ".tibia.protobuf.appearances.AppearanceFlagProficiency"
+        },
+        {
+          "name": "restrict_to_vocation",
+          "number": 62,
+          "type": 14,
+          "type_name": ".tibia.protobuf.shared.VOCATION"
+        },
+        {
+          "name": "minimum_level",
+          "number": 63,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "weapon_type",
+          "number": 64,
+          "type": 14,
+          "type_name": ".tibia.protobuf.shared.WEAPON_TYPE"
+        }
+      ]
+    },
+    {
+      "name": "AppearanceFlagImbueable",
+      "fields": [
+        {
+          "name": "slot_count",
+          "number": 1,
+          "type": 13,
+          "type_name": ""
+        }
+      ]
+    },
+    {
+      "name": "AppearanceFlagMarket",
+      "fields": [
+        {
+          "name": "category",
+          "number": 1,
+          "type": 14,
+          "type_name": ".tibia.protobuf.shared.ITEM_CATEGORY"
+        },
+        {
+          "name": "trade_as_object_id",
+          "number": 2,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "show_as_object_id",
+          "number": 3,
+          "type": 13,
+          "type_name": ""
+        }
+      ]
+    },
+    {
+      "name": "AppearanceFlagNPC",
+      "fields": [
+        {
+          "name": "name",
+          "number": 1,
+          "type": 9,
+          "type_name": ""
+        },
+        {
+          "name": "location",
+          "number": 2,
+          "type": 9,
+          "type_name": ""
+        },
+        {
+          "name": "sale_price",
+          "number": 3,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "buy_price",
+          "number": 4,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "currency_object_type_id",
+          "number": 5,
+          "type": 13,
+          "type_name": ""
+        },
+        {
+          "name": "currency_quest_flag_display_name",
+          "number": 6,
+          "type": 9,
+          "type_name": ""
+        }
+      ]
+    }
+  ],
+  "descriptor_bytes_scanned": 5319,
+  "schema": "OTERYN_STATIC_COMPILED_APPEARANCE_FIELD_MAP/v1",
+  "method": "Static ELF serialized FileDescriptorProto wire scan, not process memory. Candidate boundary5319bytes; field mappings directly encoded.",
+  "raw_descriptor_published": false
+}

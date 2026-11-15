@@ -1,0 +1,63 @@
+{
+  "schema": "OTERYN_CURRENT_MAP_AREA_SUBAREA_OFFLINE_STRUCTURE_PROVENANCE/v1",
+  "raw_map": {
+    "basename": "map-6fa58c950e17a48095d935c82ea93b98d3363bc8f8c86d12f3511cfcec053745.dat",
+    "bytes": 201692,
+    "sha256": "6fa58c950e17a48095d935c82ea93b98d3363bc8f8c86d12f3511cfcec053745"
+  },
+  "existing_parser": {
+    "relative_key": "outputs/items-client-assets-audit/sources/tools/content-schema/world-authoring/client_map_reader.py",
+    "sha256": "85b1f510ef818139a9f3d96bbfd6f0178b0fdd0b97af6819995d3b9892061c07"
+  },
+  "source_head": "3e168ce6afe374485da20ee0ac13d3749558e2f8",
+  "source_area_projection_sha256": "5d5007823709f18d208b7501f7a1251c1736c2300346989b21bcb839c6fd4bc3",
+  "counts": {
+    "areas": 473,
+    "raw_kind_counts": {
+      "1": 28,
+      "2": 445
+    },
+    "subarea_image_refs": 212,
+    "markers_counted_only": 1297,
+    "other_images_counted_only": {
+      "satellite": 748,
+      "minimap": 207
+    },
+    "child_references": 449,
+    "distinct_child_targets": 445,
+    "multiply_parented_child_ids": 1,
+    "dangling_child_ids": 0,
+    "mask_file_exists": 212,
+    "source_old_area_records": 465,
+    "source_provenance_statuses": {
+      "EXACT_RAW_RECORD_PROVENANCE_MATCH": 463,
+      "SAME_CLIENT_SOURCE_ID_OLD_RAW_RECORD_DIFFERENT": 2,
+      "NO_OLD_SOURCE_ID_PROVENANCE_CANDIDATE": 8
+    }
+  },
+  "bounds_raw": {
+    "minimum": [
+      31616,
+      30720,
+      0
+    ],
+    "maximum": [
+      34399,
+      33311,
+      7
+    ]
+  },
+  "boundary": [
+    "Existing15.30reader currentstructuralcompatibility only; no newruntime/profileadmission",
+    "Areas current473vsold465, marker1297vs1270; oldprofilecountgatesnotmet/unmodified",
+    "Areaauthoring candidate consumes oldstaged465 sourceid/rawhash tokeepallocatedkeys; currentIDalone notGameAreaidentitypromotion",
+    "client_map_reader area/mask methods have no currentregionconsumer according README;AREAS-1 ownsauthoring. Sharedreader unframeusedworldconverter, notnewmapadmission",
+    "Markerpayload semanticmeaning UNKNOWN/count+rawhashonly; no icon interpretation",
+    "Maskstoredbytes hashed only, neverdecompressed/pixelinterpreted; no newspatialfootprint/region/parityclaims",
+    "Secondarynames sealedprivate; kind/positionlabel meanings boundedexistinginferredschema; field6/secondarynames semanticsUNKNOWN",
+    "No fullmap/jpeg/GUI/gameinput/progress ornewcollectors accessed"
+  ],
+  "client_inputs": 0,
+  "repo_writes": 0,
+  "full_private_receipt_sha256": "4e4d939a2306f32d73e5fe1b0c3407920841da5892c9b8b847f2c9355a432c23"
+}
