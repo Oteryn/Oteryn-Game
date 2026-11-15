@@ -54,16 +54,36 @@ fn run_source_entry_case(
     super::kill_reward_e2e::scenario_thread::run("srx3-cruelty-native", move || {
         run(async move |admin| {
             reset();
-            // Crystal201189f lib/quests/soul_war.lua:422-448: literal first
-            // waiting tile and its real source map; no seeded catalogue recipe.
-            let scene = SourceScene::new(
-                PinnedActivitySourceRoom::GoshnarsCruelty,
-                MovementLocalPosition {
-                    x: 33854,
-                    y: 31854,
-                    floor: 6,
-                },
-            )?;
+            // Cruelty's shared attack clock resets at 7 s, so its 2 s/6 s physical
+            // entries cannot precede the 7 s source entry in one Think. Purple's
+            // native 35 s maximum admits that cancellation witness without
+            // changing any source interval, chance, attack order or assertion.
+            let (source_room, origin, entry_key, boss_key) = if attack_cancellation {
+                (
+                    PinnedActivitySourceRoom::GoshnarsMegalomania,
+                    MovementLocalPosition {
+                        x: 33676,
+                        y: 31634,
+                        floor: 14,
+                    },
+                    "oteryn:boss.goshnar_s_megalomania",
+                    "oteryn:creature.goshnar_s_megalomania_purple",
+                )
+            } else {
+                (
+                    PinnedActivitySourceRoom::GoshnarsCruelty,
+                    MovementLocalPosition {
+                        x: 33854,
+                        y: 31854,
+                        floor: 6,
+                    },
+                    "oteryn:creature.goshnar_s_cruelty",
+                    "oteryn:creature.goshnar_s_cruelty",
+                )
+            };
+            // Crystal201189f lib/quests/soul_war.lua:422-478: literal first
+            // waiting tiles and their real source maps; no seeded catalogue.
+            let scene = SourceScene::new(source_room, origin)?;
             let deps: Dependencies = scene.dependencies()?;
             let seed = if attack_cancellation {
                 "srx3_soul_war_attack_cancellation"
@@ -77,8 +97,8 @@ fn run_source_entry_case(
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *historical)
                 .await?;
-            sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,0,NULL,false,false)")
-                .bind(id(41).as_slice()).execute(&mut *historical).await?;
+            sqlx::query("INSERT INTO game_character_soul_war(character_id,teleport_access,defeated_bosses,first_taint_at,megalomania_completed,final_reward_claimed) VALUES(encode($1,'hex')::uuid,true,$2,CASE WHEN $2=0 THEN NULL ELSE floor(extract(epoch FROM clock_timestamp()))::bigint END,false,false)")
+                .bind(id(41).as_slice()).bind(if attack_cancellation {31_i16} else {0}).execute(&mut *historical).await?;
             historical.commit().await?;
             let evidence = super::house_transfer::RecoverySource::start(&h).await?;
             super::house_transfer::prepare_owned_session(&h).await?;
@@ -106,11 +126,7 @@ fn run_source_entry_case(
                     .catalogue()
                     .clone(),
             ));
-            install_scene(
-                &mut owner,
-                &scene,
-                PinnedActivitySourceRoom::GoshnarsCruelty,
-            )?;
+            install_scene(&mut owner, &scene, source_room)?;
             super::boss_activity::issue_content_and_reset(&h, &scene.pin).await?;
             let mut admitted = deps.admitted;
             admitted.continuity.selected_capabilities = SelectedCapabilities::select(
@@ -136,7 +152,7 @@ fn run_source_entry_case(
             let (_, reply, barrier) = super::boss_activity::exchange_capture(
                 &owner,
                 &mut admitted,
-                "oteryn:creature.goshnar_s_cruelty",
+                entry_key,
                 true,
                 &mut frames,
             )
@@ -160,12 +176,7 @@ fn run_source_entry_case(
                     .visible_entities()
                     .creatures
                     .into_iter()
-                    .find(|c| {
-                        runtime.matches_live_creature_identity(
-                            c.actor,
-                            b"oteryn:creature.goshnar_s_cruelty",
-                        )
-                    })
+                    .find(|c| runtime.matches_live_creature_identity(c.actor, boss_key.as_bytes()))
                     .ok_or("actual source Cruelty actor")?
                     .actor
             };

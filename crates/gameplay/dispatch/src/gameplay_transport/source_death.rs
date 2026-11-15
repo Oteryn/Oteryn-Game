@@ -555,6 +555,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // Keep the projected death and its per-player occurrences through
                     // asynchronous copied effects, before any durable side effect runs.
                     PendingSourceCorpse::request(native, &begin)?;
+                    crate::combat::project_fixed_one_creature_death(
+                        &mut runtime.borrow_combat_death(),
+                        begin.actor(),
+                    )
+                    .map_err(|_| ())?;
                     runtime
                         .pin_uncredited_source_corpse_projection(&begin)
                         .map_err(|_| ())?;
@@ -653,6 +658,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return Err(());
             }
+            // Source damage can be uncredited, so no ordinary kill settlement
+            // has projected its already committed lethal receipt yet.
+            crate::combat::project_fixed_one_creature_death(
+                &mut runtime.borrow_combat_death(),
+                begin.actor(),
+            )
+            .map_err(|_| ())?;
             runtime
                 .pin_uncredited_source_corpse_projection(&begin)
                 .map_err(|_| ())?;
