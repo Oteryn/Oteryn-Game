@@ -49,7 +49,6 @@ pub async fn enter<A: AdmissionAttempt>(
     let mut grant_retries = 0;
     let mut reconciliations = 0;
     let mut capacity_retried = false;
-    let mut queued_retries = 0;
     loop {
         let code = match attempt.admit().await {
             Ok(session) => return Ok(session),
@@ -64,8 +63,7 @@ pub async fn enter<A: AdmissionAttempt>(
             .then(|| attempt.queue())
             .flatten();
         let delay = match code {
-            CAPACITY_EXCEEDED if queue.is_some() && queued_retries < 16 => {
-                queued_retries += 1;
+            CAPACITY_EXCEEDED if queue.is_some() => {
                 Duration::from_millis(u64::from(queue.map_or(0, |queue| queue.retry_after_ms)))
             }
             GRANT_NOT_YET_VALID | GRANT_SECURITY_EVIDENCE_STALE

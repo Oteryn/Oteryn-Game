@@ -8,6 +8,7 @@ struct Queued {
     succeed: u32,
     until: Instant,
     waits: Vec<AdmissionWait>,
+    cancel_after: Option<(u32, CancellationToken)>,
 }
 impl AdmissionAttempt for Queued {
     type Output = ();
@@ -37,6 +38,11 @@ impl AdmissionAttempt for Queued {
     }
     fn waiting(&mut self, wait: AdmissionWait) {
         self.waits.push(wait);
+        if let Some((calls, cancellation)) = &self.cancel_after
+            && self.calls == *calls
+        {
+            cancellation.cancel();
+        }
     }
 }
 
@@ -51,6 +57,7 @@ fn authoritative_queue_retries_more_than_once_with_each_server_position()
         succeed: 4,
         until: Instant::now() + Duration::from_secs(10),
         waits: vec![],
+        cancel_after: None,
     };
     assert_eq!(
         runtime.block_on(enter(
@@ -78,8 +85,8 @@ fn authoritative_queue_retries_more_than_once_with_each_server_position()
 }
 
 #[test]
-fn queued_retries_are_bounded_and_never_extend_the_grant() -> Result<(), Box<dyn std::error::Error>>
-{
+fn queued_retries_outlast_sixteen_replies_and_never_extend_the_grant()
+-> Result<(), Box<dyn std::error::Error>> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_time()
         .build()?;
@@ -88,14 +95,14 @@ fn queued_retries_are_bounded_and_never_extend_the_grant() -> Result<(), Box<dyn
         succeed: 100,
         until: Instant::now() + Duration::from_secs(10),
         waits: vec![],
+        cancel_after: None,
     };
-    assert!(
-        runtime
-            .block_on(enter(&mut queued, Duration::ZERO, CancellationToken::new()))
-            .is_err()
+    assert_eq!(
+        runtime.block_on(enter(&mut queued, Duration::ZERO, CancellationToken::new())),
+        Ok(())
     );
-    assert_eq!(queued.calls, 17);
-    assert_eq!(queued.waits.len(), 16);
+    assert_eq!(queued.calls, 100);
+    assert_eq!(queued.waits.len(), 99);
     queued.calls = 0;
     queued.waits.clear();
     queued.until = Instant::now();
@@ -106,5 +113,29 @@ fn queued_retries_are_bounded_and_never_extend_the_grant() -> Result<(), Box<dyn
     );
     assert_eq!(queued.calls, 1);
     assert!(queued.waits.is_empty());
+    Ok(())
+}
+
+#[test]
+fn authoritative_queue_can_be_cancelled_after_sixteen_retries()
+-> Result<(), Box<dyn std::error::Error>> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
+    let cancellation = CancellationToken::new();
+    let mut queued = Queued {
+        calls: 0,
+        succeed: 100,
+        until: Instant::now() + Duration::from_secs(10),
+        waits: vec![],
+        cancel_after: Some((18, cancellation.clone())),
+    };
+    assert!(
+        runtime
+            .block_on(enter(&mut queued, Duration::ZERO, cancellation))
+            .is_err()
+    );
+    assert_eq!(queued.calls, 18);
+    assert_eq!(queued.waits.len(), 18);
     Ok(())
 }

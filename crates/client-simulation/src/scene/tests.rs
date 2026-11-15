@@ -67,3 +67,51 @@ fn scene_projection_without_a_floor_skips_map_lookup_and_propagates_batch_errors
     assert_eq!(result, Err("batch full"));
     assert_eq!(lookups.get(), 0);
 }
+
+#[test]
+fn scene_visitors_traverse_diagonals_from_south_to_east() -> Result<(), &'static str> {
+    let draw = Draw {
+        cell: 1,
+        offset: [0, 0],
+    };
+    let mut single = Vec::new();
+    visit_scene(
+        (0, 0),
+        None,
+        ((-1, -1), &[]),
+        |_, _| None,
+        |_, _| Some(draw),
+        |tile, _| {
+            single.push(tile);
+            Ok(())
+        },
+    )?;
+    let mut entities = Vec::new();
+    visit_scene_entities(
+        (0, 0),
+        None,
+        ((-1, -1), &[]),
+        |_, _| None,
+        |_, _| vec![draw],
+        |tile, _| {
+            entities.push(tile);
+            Ok(())
+        },
+    )?;
+    let mut expected = Vec::new();
+    for diagonal in 0..SCENE_ROWS as i32 + SCENE_COLUMNS as i32 + 2 * SCAN_MARGIN - 1 {
+        for x in 0..SCENE_COLUMNS as i32 + SCAN_MARGIN {
+            let y = diagonal - x;
+            if (0..SCENE_ROWS as i32 + SCAN_MARGIN).contains(&y) {
+                expected.push((x, y));
+            }
+        }
+    }
+    assert_eq!(
+        &expected[..6],
+        &[(0, 0), (0, 1), (1, 0), (0, 2), (1, 1), (2, 0)]
+    );
+    assert_eq!(single, expected);
+    assert_eq!(entities, expected);
+    Ok(())
+}

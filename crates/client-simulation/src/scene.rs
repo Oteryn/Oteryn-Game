@@ -48,8 +48,11 @@ pub fn visit_scene_entities<'a, E>(
     glyph_at: impl Fn(i32, i32) -> Vec<Draw>,
     mut emit: impl FnMut((i32, i32), Draw) -> Result<(), E>,
 ) -> Result<(), E> {
-    for row in 0..SCENE_ROWS as i32 + SCAN_MARGIN {
-        for column in 0..SCENE_COLUMNS as i32 + SCAN_MARGIN {
+    let rows = SCENE_ROWS as i32 + SCAN_MARGIN;
+    let columns = SCENE_COLUMNS as i32 + SCAN_MARGIN;
+    for diagonal in 0..rows + columns - 1 {
+        for column in (diagonal - rows + 1).max(0)..=diagonal.min(columns - 1) {
+            let row = diagonal - column;
             // Past the edge of the coordinate space there is nothing to draw.
             let (Some(x), Some(y)) = (origin.0.checked_add(column), origin.1.checked_add(row))
             else {
