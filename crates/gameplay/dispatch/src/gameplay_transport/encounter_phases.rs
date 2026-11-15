@@ -70,6 +70,18 @@ impl Registry {
         // corpse lifetime, after this synchronous death publication finishes.
     }
 
+    pub(super) fn has_terminal(&self, runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
+        self.active.lock().is_ok_and(|active| {
+            active.iter().any(|phase| {
+                phase.fight.contains(actor)
+                    && phase
+                        .fight
+                        .victors(runtime)
+                        .is_ok_and(|victors| victors.is_some())
+            })
+        })
+    }
+
     pub(super) fn capture_terminal(
         &self,
         runtime: &ChannelRuntimeV1,

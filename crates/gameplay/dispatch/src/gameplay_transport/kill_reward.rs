@@ -2150,6 +2150,9 @@ pub fn record_creature_kill(
                     || !super::grizzly_kills::tracks_creature(&creature)
                         && !super::grizzly_kills::tracks_native_creature(sink.queue, &creature)
                         && !tracks_native_progression(&creature)
+                        && !sink.prey.is_some_and(|states| {
+                            states.encounter_phases.has_terminal(runtime, target)
+                        })
                         && !oteryn_gameplay_quests::quest::source_deaths::tracks_creature(
                             &creature,
                         ))
