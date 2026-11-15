@@ -3,7 +3,7 @@
 use crate::appearance_mount_binding as mount_binding;
 #[cfg(any(windows, feature = "bevy-shell"))]
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
-#[cfg(windows)]
+#[cfg(any(windows, feature = "bevy-shell"))]
 use oteryn_client_ui::appearance::Preview;
 #[cfg(any(windows, feature = "bevy-shell"))]
 use std::path::Path;
@@ -31,7 +31,6 @@ impl Assets {
             sheets: SpriteSheets::new(store, catalog),
         })
     }
-    #[cfg(windows)]
     pub fn draw(&mut self, preview: &Preview) -> Result<Vec<u8>, String> {
         let mut pixels = vec![32; 96 * 96 * 4];
         self.draw_look(

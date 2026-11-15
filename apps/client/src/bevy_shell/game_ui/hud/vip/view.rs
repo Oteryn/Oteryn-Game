@@ -161,7 +161,6 @@ pub(super) fn project(
                         generation,
                         entry: entry.entry,
                     },
-                    bevy::ui_widgets::Button,
                     Control {
                         generation,
                         revision: panel.revision,
@@ -180,6 +179,7 @@ pub(super) fn project(
                 ))
                 .observe(input::activate)
                 .observe(presentation::click)
+                .observe(presentation::key)
                 .observe(row_click)
                 .id();
             let glyph = commands

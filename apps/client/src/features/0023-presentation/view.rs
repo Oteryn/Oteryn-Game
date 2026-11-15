@@ -12,7 +12,7 @@ mod icons;
 mod resources;
 #[path = "visual.rs"]
 mod visual;
-#[cfg(feature = "bevy-shell")]
+#[cfg(any(windows, feature = "bevy-shell"))]
 pub(crate) use actor_hud::health_rgb;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;

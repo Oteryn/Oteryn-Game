@@ -97,7 +97,7 @@ fn project(
         .id();
 
     for (label, intent) in [
-        ("Refresh", Intent::Catalogue),
+        ("Refresh", Intent::CatalogueRefresh),
         ("Next page", Intent::CatalogueNext),
     ] {
         let button = commands
@@ -125,11 +125,17 @@ fn project(
     }
     commands.entity(root).add_child(label);
 }
-fn activate(event: On<Activate>, controls: Query<&Action>, owner: NonSend<HostOwner>) {
+fn activate(
+    event: On<Activate>,
+    controls: Query<&Action>,
+    owner: NonSend<HostOwner>,
+    guard: super::modal::ModalGuard,
+) {
     let Ok(action) = controls.get(event.entity) else {
         return;
     };
-    if owner.phase == Phase::Playing
+    if guard.allows(event.entity)
+        && owner.phase == Phase::Playing
         && owner.generation() == action.generation
         && !owner.modal_active()
         && let Some(play) = &owner.play
@@ -143,6 +149,42 @@ fn activate(event: On<Activate>, controls: Query<&Action>, owner: NonSend<HostOw
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bosstiary_activation_is_fenced_by_foreground_map_modal()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        outbox.bevy_bosstiary_initialize();
+        let generation = owner.generation();
+        owner.phase = Phase::Playing;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        });
+        let mut app = App::new();
+        app.insert_non_send(owner);
+        let entity = app
+            .world_mut()
+            .spawn((
+                Action {
+                    generation,
+                    intent: Intent::Catalogue,
+                },
+                Node::default(),
+            ))
+            .observe(activate)
+            .id();
+        let modal = app
+            .world_mut()
+            .spawn((super::super::GameModal, Node::default(), GlobalZIndex(250)))
+            .id();
+        app.world_mut().trigger(Activate { entity });
+        assert!(commands.try_recv().is_err());
+        app.world_mut().despawn(modal);
+        app.world_mut().trigger(Activate { entity });
+        assert!(commands.try_recv().is_ok());
+        Ok(())
+    }
     #[test]
     fn bosstiary_toolbar_requests_catalogue_and_projects_window()
     -> Result<(), Box<dyn std::error::Error>> {

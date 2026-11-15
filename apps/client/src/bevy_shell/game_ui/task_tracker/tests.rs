@@ -91,7 +91,18 @@ fn fixture() -> Result<
             inset: Handle::default(),
             font: Handle::default(),
         })
-        .add_systems(Startup, super::super::setup);
+        .add_systems(
+            Startup,
+            (
+                super::super::setup,
+                |mut roots: Query<&mut Node, With<super::super::GameRoot>>| {
+                    for mut node in &mut roots {
+                        node.display = Display::Flex;
+                    }
+                },
+            )
+                .chain(),
+        );
     install(&mut app);
     Ok((app, outbox, commands))
 }
@@ -242,5 +253,27 @@ fn task_tracker_click_opens_board_and_rejects_stale_session() -> TestResult {
     link(&app)?.task_board_set_open(false);
     app.update();
     assert!(text(&mut app).contains("dragon: 3/10"));
+    Ok(())
+}
+
+#[test]
+fn task_tracker_open_is_fenced_by_foreground_map_modal() -> TestResult {
+    let (mut app, _, mut commands) = fixture()?;
+    app.update();
+    while commands.try_recv().is_ok() {}
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<Tracker>>()
+        .single(app.world())?;
+    let modal = app
+        .world_mut()
+        .spawn((super::super::GameModal, Node::default(), GlobalZIndex(250)))
+        .id();
+    app.world_mut().trigger(Activate { entity });
+    assert!(!link(&app)?.task_board_panel().open);
+    assert!(commands.try_recv().is_err());
+    app.world_mut().despawn(modal);
+    app.world_mut().trigger(Activate { entity });
+    assert!(link(&app)?.task_board_panel().open);
     Ok(())
 }

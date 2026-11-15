@@ -288,6 +288,7 @@ pub(super) fn build(
     generation: u64,
     fields: &[String; 7],
     model: &Panel,
+    message: &str,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -356,12 +357,7 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(panel).add_child(content);
-    label(
-        commands,
-        skin,
-        content,
-        &oteryn_client_ui::house::panel_text(model),
-    );
+    label(commands, skin, content, message);
     for (index, prompt) in [
         (0, "World UUID"),
         (1, "Town key"),

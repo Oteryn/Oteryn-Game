@@ -141,6 +141,7 @@ pub(super) fn setup(
 
 pub(super) fn click(
     event: On<PointerClick>,
+    mut commands: Commands,
     guard: ModalGuard,
     controls: Query<&Control>,
     owner: NonSend<HostOwner>,
@@ -167,6 +168,27 @@ pub(super) fn click(
     };
     if event.button == PointerButton::Secondary {
         preferences.context = Some((owner.generation(), panel.revision, entry));
+    } else if event.button == PointerButton::Primary {
+        commands.trigger(Activate {
+            entity: event.entity,
+        });
+    }
+}
+
+pub(super) fn key(
+    mut event: On<bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>>,
+    rows: Query<(), With<Row>>,
+    mut commands: Commands,
+) {
+    if rows.contains(event.focused_entity)
+        && event.input.state == bevy::input::ButtonState::Pressed
+        && !event.input.repeat
+        && matches!(event.input.key_code, KeyCode::Enter | KeyCode::Space)
+    {
+        event.propagate(false);
+        commands.trigger(Activate {
+            entity: event.focused_entity,
+        });
     }
 }
 

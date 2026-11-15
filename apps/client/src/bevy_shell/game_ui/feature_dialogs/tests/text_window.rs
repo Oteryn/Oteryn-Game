@@ -334,7 +334,9 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
             app.world_mut()
                 .query::<&Text>()
                 .iter(app.world())
-                .any(|text| text.0.contains("Offer Harbour Home to Mira Vale"))
+                .any(|text| text.0.contains("Offer Harbour Home to Mira Vale")
+                    && text.0.contains("2027-01-20 12:00:00 UTC")
+                    && text.0.contains("for 200 gold"))
         );
         let confirm = app
             .world_mut()

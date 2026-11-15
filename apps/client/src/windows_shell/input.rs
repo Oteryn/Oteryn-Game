@@ -31,6 +31,16 @@ impl Application {
         let events = routed.as_slice();
         let clicks = self.actions.route(events);
         if let Some(play) = &mut self.play {
+            if play.view.death_modal_notice().is_some()
+                && events.iter().any(|event| matches!(event, oteryn_input_actions::NormalizedInputEvent::Key {
+                    code, state: oteryn_input_actions::ButtonState::Pressed, modifiers, repeat: false
+                } if matches!(code.get(), 40 | 88) && *modifiers == oteryn_input_actions::Modifiers::NONE))
+            {
+                if play.view.world_pointer_input(&play.link, events).is_err() {
+                    self.fail(event_loop, ShellError::RendererRender);
+                }
+                return;
+            }
             match play.view.tutorial_input(events) {
                 Ok(true) => return,
                 Ok(false) => {}

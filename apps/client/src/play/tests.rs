@@ -468,7 +468,24 @@ fn modal_and_support_handoffs_recover_before_servicing_destination() -> Result<(
                             .is_ok()
                     );
                 }
+                outbox.push(vec![SessionEvent::ServerMessage(
+                    oteryn_session::AppliedDelta {
+                        server_sequence: 1000,
+                        base_revision: 0,
+                        new_revision: 1,
+                        value: oteryn_session::ServerMessage::StatusText("source namespace".into()),
+                    },
+                )]);
                 run_session(peer, commands, outbox).await;
+                {
+                    let mailbox = super::mailbox::lock(&link.mailbox);
+                    assert!(mailbox.pushed.server_messages.iter().next().is_none());
+                    assert!(
+                        mailbox.pushed.scope_changed,
+                        "all recovered handoffs restart the message sequence namespace"
+                    );
+                }
+
                 if modal {
                     assert_eq!(
                         feature_calls.load(Ordering::SeqCst),

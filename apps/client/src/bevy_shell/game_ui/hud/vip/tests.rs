@@ -695,6 +695,8 @@ fn vip_sorting_and_hide_offline_follow_live_presence_without_hiding_unknown() ->
 #[test]
 fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> TestResult {
     let (mut app, mut commands, outbox) = super::super::tests::app()?;
+    app.init_resource::<bevy::input_focus::InputFocus>()
+        .add_plugins(bevy::ui_widgets::ButtonPlugin);
     publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
     app.update();
     use bevy::picking::{
@@ -703,6 +705,24 @@ fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> Te
         pointer::{Location, PointerButton, PointerId},
     };
     let entity = control(&mut app, |action| matches!(action, Action::Edit(73)))?;
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerPress {
+            entity,
+            count: 1,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        });
+    app.update();
     app.world_mut().trigger(PointerClick {
         entity,
         pointer: Pointer::new(
@@ -722,6 +742,10 @@ fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> Te
     });
     app.update();
 
+    assert!(
+        app.world().resource::<State>().draft.is_none(),
+        "secondary click must only open the context menu"
+    );
     click(&mut app, |action| matches!(action, Action::Message(73)))?;
     assert_eq!(
         app.world()
@@ -762,5 +786,62 @@ fn vip_context_message_remove_and_stale_actions_use_authoritative_owners() -> Te
             .any(|row| row.entry == 73),
         "removal waits for authoritative refresh"
     );
+    Ok(())
+}
+
+#[test]
+fn vip_rows_primary_and_keyboard_activation_open_edit() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::{Pointer, PointerClick},
+        pointer::{Location, PointerButton, PointerId},
+    };
+    use bevy::{
+        input::keyboard::{Key, KeyboardInput},
+        input_focus::FocusedInput,
+    };
+    let (mut app, _, outbox) = super::super::tests::app()?;
+    app.init_resource::<bevy::input_focus::InputFocus>()
+        .add_plugins(bevy::ui_widgets::ButtonPlugin);
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    let entity = control(&mut app, |a| matches!(a, Action::Edit(73)))?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    app.update();
+    assert!(app.world().resource::<State>().draft.is_some());
+    click(&mut app, |a| matches!(a, Action::Cancel(_)))?;
+    for key_code in [KeyCode::Enter, KeyCode::Space] {
+        app.world_mut().trigger(FocusedInput::new(
+            entity,
+            KeyboardInput {
+                key_code,
+                logical_key: Key::Enter,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            },
+            Entity::PLACEHOLDER,
+        ));
+        app.update();
+        assert!(app.world().resource::<State>().draft.is_some());
+        click(&mut app, |a| matches!(a, Action::Cancel(_)))?;
+    }
     Ok(())
 }

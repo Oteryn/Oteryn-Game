@@ -153,8 +153,47 @@ fn boss_refresh_requeries_the_loaded_gallery_page_including_progress_outside_sna
         }),
         ..Default::default()
     };
-    let refresh = request(&mut panel, Intent::Refresh).ok_or("refresh")?;
+    let refresh = request(&mut panel, Intent::CatalogueRefresh).ok_or("refresh")?;
     assert_eq!(Some(refresh.payload), query.encode());
     assert_eq!(panel.pending_catalogue, Some(query));
+    Ok(())
+}
+
+#[test]
+fn boss_cooldown_refresh_after_gallery_updates_snapshot_and_clock() -> Result<(), &'static str> {
+    let mut panel = BossEncounterPanel {
+        selected: true,
+        ..Default::default()
+    };
+    request(&mut panel, Intent::Catalogue).ok_or("gallery request")?;
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload: Page {
+                next: None,
+                points: 0,
+                entries: vec![]
+            }
+            .encode()
+            .ok_or("page")?
+        }
+    ));
+    let command = request(&mut panel, Intent::Refresh).ok_or("cooldown request")?;
+    assert!(!command.payload.starts_with(b"BCT1"));
+    assert!(panel.pending_catalogue.is_none());
+    assert!(apply_result(
+        &mut panel,
+        &GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: CommandStatus::Accepted,
+            payload: vec![8, 100]
+        }
+    ));
+    assert!(panel.snapshot.is_some());
+    assert!(panel.cooldown_received_at.is_some());
     Ok(())
 }

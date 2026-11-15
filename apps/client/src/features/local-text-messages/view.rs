@@ -16,7 +16,7 @@ impl crate::play::PlayLink {
 
 #[cfg(feature = "bevy-shell")]
 impl crate::play::PlayView {
-    pub(crate) fn screen_message_controls(&self) -> (bool, bool, u64) {
+    pub(crate) fn screen_message_controls(&self) -> (bool, bool, u64, u64) {
         let center =
             crate::play::feature_local_game_notifications::state::lock(&self.game_notifications.0);
         (
@@ -26,6 +26,7 @@ impl crate::play::PlayView {
                 .0
                 .screen_dismissals
                 .load(std::sync::atomic::Ordering::Relaxed),
+            self.message_namespace,
         )
     }
 }

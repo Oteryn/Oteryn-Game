@@ -256,15 +256,3 @@ impl PlayView {
         Ok(())
     }
 }
-
-/// OTClient creature information colours, from highest to lowest health.
-pub(in crate::play) fn health_rgb(percent: u8) -> [u8; 3] {
-    match percent {
-        93..=u8::MAX => [0x00, 0xbc, 0x00],
-        61..=92 => [0x50, 0xa1, 0x50],
-        31..=60 => [0xa1, 0xa1, 0x00],
-        9..=30 => [0xbf, 0x0a, 0x0a],
-        4..=8 => [0x91, 0x0f, 0x0f],
-        0..=3 => [0x85, 0x0c, 0x0c],
-    }
-}

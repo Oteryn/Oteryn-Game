@@ -68,7 +68,14 @@ impl ChannelRuntimeV1 {
             return Err(CarrierError::NotCreature);
         };
         if committed.field_entry_revision == Some(before.position_revision)
-            && committed.field_entry.as_ref() == field
+            && match (committed.field_entry.as_ref(), field) {
+                (Some(previous), Some(current)) => {
+                    previous.occurrence == current.occurrence
+                        && previous.definition == current.definition
+                }
+                (None, None) => true,
+                _ => false,
+            }
         {
             return Ok(());
         }
@@ -206,6 +213,10 @@ impl ChannelRuntimeV1 {
         } = &self.carrier.slots[index]
         else {
             return Err(CarrierError::NotCreature);
+        };
+        let soulpit = match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { spell_combat, .. } => spell_combat.soulpit,
+            _ => return Err(CarrierError::NotCreature),
         };
         let ordinal = committed.next_ordinal;
         let mut contributors_after = damage_contributors.clone();
@@ -370,11 +381,21 @@ impl ChannelRuntimeV1 {
                     }
                     // Source combatBlockHit heals before residual damage; each
                     // real tick caps independently, and lethal never resurrects.
+                    let healing = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(healing, health_after, before.maximum_health)?
+                    } else {
+                        healing
+                    };
                     let health_before_healing = health_after;
                     health_after = health_after
                         .saturating_add(healing)
                         .min(before.maximum_health);
                     let healed = health_after.saturating_sub(health_before_healing);
+                    let damage = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(damage, health_after, before.maximum_health)?
+                    } else {
+                        damage
+                    };
                     let applied = damage.min(health_after).max(0);
                     self.record_periodic_contributor(
                         &mut contributors_after,
@@ -415,6 +436,11 @@ impl ChannelRuntimeV1 {
                         i64::from(amount)
                     } else {
                         0
+                    };
+                    let damage = if let Some(tag) = soulpit {
+                        tag.incoming_health_change(damage, health_after, before.maximum_health)?
+                    } else {
+                        damage
                     };
                     had_damage |= damage > 0;
                     if damage > 0 {
@@ -525,6 +551,7 @@ impl ChannelRuntimeV1 {
                 None,
                 false,
                 Some(now_us / 1000),
+                true,
             )?;
             let Some(Slot::CreatureOccupied { committed, .. }) = successor else {
                 return Err(CarrierError::PlanConflict);
@@ -1003,6 +1030,172 @@ mod tests {
                     .is_none()
             );
         }
+    }
+
+    #[test]
+    fn enrage_periodic_lethal_health_matches_retained_receipt() {
+        use super::super::soulpit::{SoulpitBossState, SoulpitCreatureTag};
+        use oteryn_gameplay_domain::domain::soulpit::{BossAbility, SoulpitStack};
+        for (agony, damage) in [(false, 10), (true, 10), (false, 1000), (true, 1000)] {
+            let (mut runtime, owner, session) = owner();
+            let creature = runtime
+                .create_companion(
+                    owner,
+                    session,
+                    "rat",
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                    None,
+                    None,
+                    0,
+                )
+                .unwrap();
+            let index = runtime
+                .carrier
+                .validate_ref(&runtime.continuity, creature.0)
+                .unwrap();
+            let Slot::CreatureOccupied {
+                health,
+                spell_combat,
+                ..
+            } = &mut runtime.carrier.slots[index]
+            else {
+                unreachable!()
+            };
+            *health = 30;
+            spell_combat.maximum_health = 147;
+            spell_combat.soulpit = Some(SoulpitCreatureTag {
+                handoff_id: id(7),
+                wave: 4,
+                monster_id: 7,
+                stack: SoulpitStack::Boss,
+                is_summon: false,
+                boss: Some(SoulpitBossState {
+                    ability: BossAbility::Enrage,
+                    next_oppressor_at_micros: 0,
+                    ordinal: 0,
+                }),
+            });
+            if agony {
+                let before = runtime.companion_snapshot(creature).unwrap();
+                let mut after = before.state.clone();
+                let definition = ConditionDefinition::new(
+                    "test.agony",
+                    1,
+                    ConditionValues::Agony {
+                        total_min: damage,
+                        total_max: damage,
+                        per_tick: damage,
+                        interval_ms: 1000,
+                        delayed: true,
+                    },
+                )
+                .unwrap();
+                after
+                    .conditions
+                    .apply(
+                        &definition,
+                        None,
+                        ConditionSourceKind::Field,
+                        &[],
+                        &ApplicationFacts {
+                            now: 0,
+                            base_speed: 220,
+                            mana_shield_capacity: 0,
+                            target_reentry_protected: false,
+                            source_reentry_protected: false,
+                            target_is_player: false,
+                            decision_root: &GameplayDecisionRoot::from_bytes([7; 32]),
+                            occurrence: DecisionOccurrenceId::from_bytes([5; 16]),
+                        },
+                    )
+                    .unwrap();
+                runtime.compare_companion_state(&before, after).unwrap();
+            } else {
+                install_dot(&mut runtime, creature, damage, 1);
+            }
+            let turn = runtime
+                .stage_creature_periodic_turn(creature, 1_000_000, TickFacts::default())
+                .unwrap();
+            let receipt = runtime.commit_creature_periodic_turn(turn).unwrap();
+            if damage == 10 {
+                assert_eq!(receipt.health_after, 24, "Enrage resolves each tick once");
+                assert_eq!(receipt.impacts.iter().map(|i| i.damage).sum::<u64>(), 6);
+                continue;
+            }
+            assert_eq!(receipt.health_after, 0);
+            assert_eq!(receipt.impacts.iter().map(|i| i.damage).sum::<u64>(), 30);
+            let mut death = runtime.borrow_combat_death();
+            let lethal = death.committed_lethal_receipt(creature).unwrap();
+            death.project_committed_lethal(lethal).unwrap();
+        }
+    }
+
+    #[test]
+    fn stationary_field_control_changes_do_not_reapply_or_reset_ticks() {
+        use oteryn_gameplay_foundation::foundation::condition::ConditionLineage;
+        let (mut runtime, owner, session) = owner();
+        let creature = runtime
+            .create_companion(
+                owner,
+                session,
+                "rat",
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                None,
+                None,
+                0,
+            )
+            .unwrap();
+        let mut field = CreatureFieldEntry {
+            definition: ConditionDefinition::new(
+                "test.field",
+                1,
+                ConditionValues::DamageOverTime {
+                    element: DotElement::Fire,
+                    total_min: 10,
+                    total_max: 10,
+                    per_tick: 1,
+                    interval_ms: 1000,
+                    delayed: false,
+                },
+            )
+            .unwrap(),
+            source: Some(owner),
+            lineage: Some(ConditionLineage {
+                source_character: id(9),
+                source_session: id(4),
+                source_lease_generation: 1,
+                source_actor_placement: owner.placement_identity(),
+                source_scope_generation: runtime.binding().scope_generation().get(),
+                source_content_digest: runtime.content_pin().server_artifact_digest(),
+                source_catalog_digest: [1; 32],
+                source_creation_command: 1,
+            }),
+            occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+        };
+        runtime
+            .commit_creature_field_entry(creature, 0, Some(&field))
+            .unwrap();
+        let original = runtime.companion_snapshot(creature).unwrap();
+        let source = field.source.take();
+        let lineage = field.lineage.take();
+        runtime
+            .commit_creature_field_entry(creature, 100, Some(&field))
+            .unwrap();
+        assert_eq!(runtime.companion_snapshot(creature).unwrap(), original);
+        field.source = source;
+        field.lineage = lineage;
+        runtime
+            .commit_creature_field_entry(creature, 200, Some(&field))
+            .unwrap();
+        assert_eq!(runtime.companion_snapshot(creature).unwrap(), original);
     }
 
     #[test]

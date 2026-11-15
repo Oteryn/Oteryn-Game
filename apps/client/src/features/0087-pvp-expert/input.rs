@@ -12,6 +12,9 @@ pub(in crate::play) fn submit(
     commands: &UnboundedSender<PlayCommand>,
     intent: Intent,
 ) {
+    if mailbox.battle.pending {
+        return;
+    }
     let panel = &mut mailbox.properties.pvp_expert;
     if !panel.selected {
         panel.feedback = tr!("Unavailable in this session").into();

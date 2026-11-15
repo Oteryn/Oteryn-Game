@@ -344,6 +344,7 @@ fn stash_stow_controls_are_disabled_while_request_pending() -> TestResult {
         .clone()
         .ok_or("panel")?;
     panel.carried.push(oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
         handle: std::num::NonZeroU64::MIN,
         item_definition_ref: std::num::NonZeroU32::MIN,
         count: std::num::NonZeroU32::MIN,

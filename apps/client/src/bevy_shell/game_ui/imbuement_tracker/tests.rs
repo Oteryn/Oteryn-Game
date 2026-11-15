@@ -14,6 +14,7 @@ fn tracker_projects_equipped_inspection_filters_closes_and_rejects_stale_control
     let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
     view.use_shared_frontend();
     let item = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 1.try_into()?,
@@ -132,5 +133,61 @@ fn trigger(app: &mut App, matches: impl Fn(Kind) -> bool) -> TestResult {
         .map(|(entity, _)| entity)
         .ok_or("control")?;
     world.trigger(Activate { entity });
+    Ok(())
+}
+
+#[test]
+fn imbuement_tracker_and_items_shortcuts_route_to_distinct_owners() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut commands, _) = crate::play::play_channel();
+    link.use_shared_frontend();
+    link.bevy_item_details_selected(true);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let code = KeyCode::new(12)?;
+    let chord = |shift| NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers: if shift {
+            Modifiers::one(Modifier::Control)
+                .with(Modifier::Alt)
+                .with(Modifier::Shift)
+        } else {
+            Modifiers::one(Modifier::Control).with(Modifier::Alt)
+        },
+        repeat: false,
+    };
+    owner.route_input(&[chord(true)], false);
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    assert!(link.imbue_panel().tracker_open);
+    assert!(!link.inspection_panel().catalogue_open);
+    assert!(commands.try_recv().is_err());
+    owner.route_input(
+        &[NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Released,
+            modifiers: Modifiers::one(Modifier::Control)
+                .with(Modifier::Alt)
+                .with(Modifier::Shift),
+            repeat: false,
+        }],
+        false,
+    );
+    owner.route_input(&[chord(false)], false);
+    assert!(
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .inspection_panel()
+            .catalogue_open
+    );
+    assert!(matches!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::ServerMechanic(_)
+    ));
     Ok(())
 }

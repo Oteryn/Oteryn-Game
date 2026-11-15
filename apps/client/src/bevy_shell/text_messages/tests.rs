@@ -6,6 +6,39 @@ use std::time::Duration;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn screen_messages_reset_watermark_on_scope_namespace_change() -> TestResult {
+    let (link, _, outbox) = play_channel();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    let message = |sequence, text: &str| {
+        SessionEvent::ServerMessage(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: 0,
+            new_revision: 1,
+            value: ServerMessage::StatusText(text.into()),
+        })
+    };
+    outbox.push(vec![message(1000, "source")]);
+    view.tick(&link).map_err(|_| "tick")?;
+    let mut state = ScreenMessages::default();
+    state.observe(&view, Duration::ZERO);
+    view.apply_pushed(&crate::play::Pushed {
+        scope_changed: true,
+        ..Default::default()
+    })?;
+    outbox.push(vec![message(1, "destination")]);
+    view.tick(&link).map_err(|_| "tick")?;
+    state.observe(&view, Duration::from_secs(1));
+    assert_eq!(
+        state
+            .visible(Area::Bottom, Duration::from_secs(1))
+            .ok_or("message")?
+            .text,
+        "destination"
+    );
+    Ok(())
+}
+
+#[test]
 fn otc_textmsg_setup_mounts_wrapping_noninteractive_areas_in_world() -> TestResult {
     let mut app = App::new();
     let world = app.world_mut().spawn_empty().id();

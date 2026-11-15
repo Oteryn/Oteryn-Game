@@ -220,6 +220,7 @@ fn settled_pair_refreshes_metadata_when_observed_handles_do_not_change() -> Resu
                 candidate.classification = 4;
                 candidate.maximum_tier = 10;
                 panel.preview.live.push(oteryn_client_runtime::depot::ItemEntry {
+                    appearance_id: 0,
                     handle: candidate.handle,
                     item_definition_ref: std::num::NonZeroU32::new(7).ok_or("ref")?,
                     count: std::num::NonZeroU32::MIN,

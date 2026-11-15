@@ -364,7 +364,10 @@ fn compact_drop_sources_preserve_inspected_attributes() -> Result<(), Box<dyn st
         count: 1,
         tier: 0,
         name: "Sword".into(),
-        attributes: vec![("attack".into(), "25".into())],
+        attributes: vec![
+            ("attack".into(), "25".into()),
+            ("Dropped by".into(), "Full source detail".into()),
+        ],
     };
     panel.catalogue.insert(10, item);
     for after in [0, 10] {
@@ -386,7 +389,14 @@ fn compact_drop_sources_preserve_inspected_attributes() -> Result<(), Box<dyn st
                 count: 1,
                 tier: 0,
                 name: "Sword".into(),
-                attributes: vec![("Dropped by".into(), format!("Dragon {after}"))],
+                attributes: if after == 0 {
+                    vec![
+                        ("Drop sources".into(), format!("Dragon {after}")),
+                        ("Catalogue drop next".into(), "10".into()),
+                    ]
+                } else {
+                    vec![("Drop sources".into(), format!("Dragon {after}"))]
+                },
             }],
         };
         apply_result(
@@ -398,20 +408,26 @@ fn compact_drop_sources_preserve_inspected_attributes() -> Result<(), Box<dyn st
                 payload: encode_reply(&reply).map_err(|_| "reply")?,
             },
         );
+        assert_eq!(panel.catalogue_drop_next, (after == 0).then_some(10));
         let cached = panel.catalogue.get(&10).ok_or("cached item")?;
         assert!(cached.attributes.contains(&("attack".into(), "25".into())));
+        assert!(
+            cached
+                .attributes
+                .contains(&("Dropped by".into(), "Full source detail".into()))
+        );
         assert_eq!(
             cached
                 .attributes
                 .iter()
-                .filter(|(key, _)| key == "Dropped by")
+                .filter(|(key, _)| key == "Drop sources")
                 .count(),
             1
         );
         assert!(
             cached
                 .attributes
-                .contains(&("Dropped by".into(), format!("Dragon {after}")))
+                .contains(&("Drop sources".into(), format!("Dragon {after}")))
         );
     }
     Ok(())

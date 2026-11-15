@@ -363,7 +363,7 @@ fn prey_wildcard_chooser_requires_confirmation_and_sends_exact_key() -> TestResu
     Ok(())
 }
 #[test]
-fn prey_displays_balance_and_each_free_reroll() -> TestResult {
+fn prey_displays_balance_and_only_unlocked_free_rerolls() -> TestResult {
     let (mut app, _) = fixture()?;
     let labels: Vec<_> = app
         .world_mut()
@@ -377,7 +377,7 @@ fn prey_displays_balance_and_each_free_reroll() -> TestResult {
             .iter()
             .filter(|t| t.as_str() == "Free list reroll available")
             .count(),
-        3
+        2
     );
     Ok(())
 }
@@ -501,6 +501,98 @@ fn prey_paid_reroll_warns_about_missing_gold_quote() -> TestResult {
     );
     assert!(commands.try_recv().is_err());
     click(&mut app, Kind::Cancel)?;
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn prey_unoffered_name_resolves_to_canonical_key() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    let field = named(&mut app, "prey.wildcard.creature.2")?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(EditableText::new("Dragon Lord"));
+    click(&mut app, Kind::ChooseAny(2))?;
+    app.update();
+    let confirm = named(&mut app, "prey.wildcard.confirm")?;
+    app.world_mut().trigger(Activate { entity: confirm });
+    assert!(
+        matches!(commands.try_recv()?, crate::combat_input::PlayCommand::Prey(
+        oteryn_client_ui::prey::prey::Request::SelectAny { slot: 2, creature }
+    ) if creature == "oteryn:creature.dragon_lord")
+    );
+    Ok(())
+}
+#[test]
+fn prey_wildcard_selection_costs_five_and_rejects_insufficient_balance() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let field = named(&mut app, "prey.wildcard.creature.2")?;
+    app.world_mut()
+        .entity_mut(field)
+        .insert(EditableText::new("Rat"));
+    click(&mut app, Kind::ChooseAny(2))?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("5 Prey wildcard cards"))
+    );
+    for balance in [0, 1, 4] {
+        let (mut app, mut commands) = fixture_balance(balance)?;
+        let field = named(&mut app, "prey.wildcard.creature.2")?;
+        app.world_mut()
+            .entity_mut(field)
+            .insert(EditableText::new("Rat"));
+        let choose = named(&mut app, "prey.wildcard.choose.2")?;
+        assert!(app.world().get::<InteractionDisabled>(choose).is_some());
+        app.world_mut().trigger(Activate { entity: choose });
+        assert!(app.world().resource::<State>().wildcard.is_none());
+        let panel = app
+            .world()
+            .get::<Action>(choose)
+            .ok_or("action")?
+            .panel
+            .clone();
+        assert!(!affordable(
+            &panel,
+            &Kind::ConfirmAny(Intent::SelectAny {
+                slot: 2,
+                creature: "oteryn:creature.rat".into()
+            })
+        ));
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+#[test]
+fn prey_wildcard_chooser_only_accepts_selection_slots() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    assert!(named(&mut app, "prey.wildcard.choose.1").is_err());
+    let panel = app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .prey_panel();
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .spawn((Wildcard(1), EditableText::new("Dragon")));
+    let entity = app
+        .world_mut()
+        .spawn(Action {
+            generation,
+            panel,
+            kind: Kind::ChooseAny(1),
+        })
+        .observe(activate)
+        .id();
+    let root = app.world().resource::<State>().root.ok_or("prey root")?;
+    app.world_mut().entity_mut(root).add_child(entity);
+    app.world_mut().trigger(Activate { entity });
+    assert!(app.world().resource::<State>().wildcard.is_none());
     assert!(commands.try_recv().is_err());
     Ok(())
 }

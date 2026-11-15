@@ -153,3 +153,34 @@ fn dropping_play_closes_and_joins_the_editor_before_reopening_the_cache()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn minimap_editor_survives_temporary_play_view_replacement() -> Result<(), Box<dyn std::error::Error>> {
+    let mut play = PlayView::new(TileCoord::new(100, 200), -7, &[])?;
+    let shared = play.minimap.clone();
+    let (done, finished) = std::sync::mpsc::channel();
+    open_editor(&shared, move |stopped| {
+        while !stopped.load(std::sync::atomic::Ordering::Acquire) { std::thread::park(); }
+        let _ = done.send(());
+    });
+    drop(play.clone());
+    let clone_kept_editor = lock(&shared).editor.is_some();
+    play.set_preferences(play.preferences().clone())?;
+    let preferences_kept_editor = lock(&shared).editor.is_some();
+    play.set_world_viewport([600, 330])?;
+    let viewport_kept_editor = lock(&shared).editor.is_some();
+    let position = ActorPosition { x: 100, y: 200, floor: -7 };
+    play.set_live_map(&WorldMapViewSnapshot {
+        header: MapViewHeader { content_generation: [1; 32], bundle_digest: [2; 32], reset_epoch: 1, origin: position, first_visible_floor: -7 },
+        tiles: vec![MapTile { position, ground_speed: 100, more: false, items: vec![] }],
+    })?;
+    let map_kept_editor = lock(&shared).editor.is_some();
+    drop(play);
+    finished.recv_timeout(Duration::from_secs(2))?;
+    assert!(clone_kept_editor);
+    assert!(preferences_kept_editor);
+    assert!(viewport_kept_editor);
+    assert!(map_kept_editor);
+    assert!(lock(&shared).editor.is_none());
+    Ok(())
+}

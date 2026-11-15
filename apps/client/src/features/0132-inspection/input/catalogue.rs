@@ -51,11 +51,12 @@ impl PlayLink {
         &self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) -> bool {
-        use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
-        let modifiers = Modifiers::one(Modifier::Control)
-            .with(Modifier::Alt)
-            .with(Modifier::Shift);
-        if !events.iter().any(|e| matches!(e, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers: actual, repeat: false } if code.get() == 12 && *actual == modifiers)) { return false; }
+        if !oteryn_client_ui::inspection::open_key(events) {
+            return false;
+        }
+        if !lock(&self.mailbox).discovery.inspection.selected {
+            return false;
+        }
         self.item_catalogue_open();
         true
     }
@@ -140,10 +141,8 @@ pub(in crate::play) fn submit(
                 (index + 1) as u8
             };
             let after = if action == 1 {
-                let same_filters = match panel.last_request {
-                    Some(Request::CatalogueQuery(
-                        query @ catalogue::Query::Items { category: previous, .. },
-                    )) => {
+                let same_filters = match panel.catalogue_items_query {
+                    Some(query @ catalogue::Query::Items { category: previous, .. }) => {
                         previous == category
                             && catalogue::search(query).ok().as_deref() == Some(panel.search.as_str())
                     }

@@ -675,3 +675,63 @@ fn analyser_configuration_reaches_validated_goal_and_price_owners() -> TestResul
     );
     Ok(())
 }
+
+#[test]
+fn boss_tracker_refreshes_cooldowns_after_browsing_gallery() -> TestResult {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{boss_encounter::catalogue::Page, raw_feature::GatedCommandResult};
+    use oteryn_client_ui::boss_encounter::Intent;
+    let (mut app, outbox) = app()?;
+    outbox.bevy_bosstiary_initialize();
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    link.boss_encounter_request(Intent::Catalogue);
+    outbox.bevy_bosstiary_result(&GatedCommandResult {
+        command_id: 1,
+        server_sequence: 1,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: Page {
+            next: None,
+            points: 0,
+            entries: vec![],
+        }
+        .encode()
+        .ok_or("page")?,
+    });
+    app.world_mut()
+        .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>()
+        .try_recv()?;
+    select(&mut app, Tool::Bosses)?;
+    {
+        let mut commands = app
+            .world_mut()
+            .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>();
+        assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(|c| matches!(c, PlayCommand::Feature(c) if c.kind == 133 && !c.payload.starts_with(b"BCT1"))));
+    }
+    outbox.bevy_bosstiary_result(&GatedCommandResult {
+        command_id: 2,
+        server_sequence: 2,
+        status: oteryn_session::CommandStatus::Accepted,
+        payload: vec![8, 100],
+    });
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(t, p)| (t.0 == "Refresh cooldowns").then_some(p.parent()))
+        .ok_or("refresh")?;
+    app.world_mut().trigger(Activate { entity });
+    let mut commands = app
+        .world_mut()
+        .non_send_mut::<tokio::sync::mpsc::UnboundedReceiver<PlayCommand>>();
+    assert!(std::iter::from_fn(|| commands.try_recv().ok()).any(
+        |c| matches!(c, PlayCommand::Feature(c) if c.kind == 133 && !c.payload.starts_with(b"BCT1"))
+    ));
+    Ok(())
+}

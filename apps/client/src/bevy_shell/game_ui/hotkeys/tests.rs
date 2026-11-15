@@ -210,6 +210,7 @@ fn object_picker_assigns_live_definition_and_subtype_and_rejects_stale_entry() -
     let (mut app, editor) = editor_app()?;
     let (link, _commands, outbox) = play_channel();
     let item = oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into()?,
         item_definition_ref: 42.try_into()?,
         count: 3.try_into()?,

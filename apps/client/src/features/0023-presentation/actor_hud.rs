@@ -177,7 +177,7 @@ mod health_tests {
                 detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
             };
             let mut batch = SpriteBatch::new();
-            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO))?;
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false))?;
             let mut expected = SpriteBatch::new();
             super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
             assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));

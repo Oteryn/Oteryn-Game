@@ -52,6 +52,9 @@ impl crate::play::PlayView {
 impl PlayLink {
     pub fn battle_request(&self, action: Action) {
         let mut mailbox = lock(&self.mailbox);
+        if mailbox.properties.pvp_expert.pending {
+            return;
+        }
         if let Some(command) = battle::request(&mut mailbox.battle, action)
             && self.commands.send(PlayCommand::Battle(command)).is_err()
         {
@@ -78,5 +81,32 @@ impl PlayLink {
             super::view::open_window(self);
         }
         true
+    }
+}
+
+#[cfg(test)]
+mod review_regressions {
+    use super::*;
+    #[test]
+    fn pending_secure_mode_serializes_battle_and_expert_commands() {
+        let (link, mut commands, _) = crate::play::play_channel();
+        {
+            let mut mailbox = lock(&link.mailbox);
+            mailbox.properties.pvp_expert.selected = true;
+            mailbox.properties.pvp_expert.fields = ["1", "1", "0", "0"].map(str::to_owned);
+            mailbox.battle.combat = Some(oteryn_session::ActorCombatState { target: None, modes: oteryn_session::FightModes::DEFAULT, in_fight: false });
+        }
+        link.pvp_expert_request(oteryn_client_ui::pvp_expert::Intent::Apply);
+        assert!(matches!(commands.try_recv(), Ok(PlayCommand::Feature(_))));
+        link.battle_request(Action::Fight(oteryn_client_runtime::attack::FightMode::Defensive));
+        assert!(commands.try_recv().is_err());
+        {
+            let mut mailbox = lock(&link.mailbox);
+            mailbox.properties.pvp_expert.pending = false;
+        }
+        link.battle_request(Action::Chase(oteryn_client_runtime::attack::ChaseMode::Chase));
+        assert!(matches!(commands.try_recv(), Ok(PlayCommand::Battle(_))));
+        link.pvp_expert_request(oteryn_client_ui::pvp_expert::Intent::Apply);
+        assert!(commands.try_recv().is_err());
     }
 }

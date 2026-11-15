@@ -331,8 +331,11 @@ mod tests {
                 channel_id: Some("foreign".into()),
             },
             SelectionAction::Train {
-                character_id: "character".into(),
+                character_id: "foreign".into(),
                 channel_id: None,
+            },
+            SelectionAction::TrainMany {
+                characters: Vec::new(),
             },
         ] {
             assert!(!bridge.respond(id, action));

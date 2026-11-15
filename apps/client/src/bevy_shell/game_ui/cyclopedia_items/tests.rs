@@ -15,7 +15,10 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
     link.use_shared_frontend();
     link.bevy_item_details_selected(true);
     link.item_catalogue_open();
-    let PlayCommand::ServerMechanic(command) = receiver.try_recv()? else {
+    let PlayCommand::ServerMechanic(command) = receiver
+        .try_recv()
+        .map_err(|error| format!("command: {error}"))?
+    else {
         return Err("catalogue request".into());
     };
     assert!(matches!(
@@ -81,7 +84,10 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
     click(&mut app, Action::Select(42))?;
     let confirmed = link.inspection_panel().reply.ok_or("confirmed catalogue")?;
     click(&mut app, Action::Details)?;
-    let PlayCommand::ServerMechanic(details) = receiver.try_recv()? else {
+    let PlayCommand::ServerMechanic(details) = receiver
+        .try_recv()
+        .map_err(|error| format!("details: {error}"))?
+    else {
         return Err("item details".into());
     };
     assert_eq!(
@@ -98,11 +104,17 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
     );
     app.update();
     click(&mut app, Action::Prices)?;
-    let PlayCommand::Market(command) = receiver.try_recv()? else {
+    let PlayCommand::Market(command) = receiver
+        .try_recv()
+        .map_err(|error| format!("command: {error}"))?
+    else {
         return Err("market offers".into());
     };
     assert_eq!((command.0.action, command.0.definition), (2, 42));
-    let PlayCommand::Feature(statistics) = receiver.try_recv()? else {
+    let PlayCommand::Feature(statistics) = receiver
+        .try_recv()
+        .map_err(|error| format!("statistics: {error}"))?
+    else {
         return Err("price statistics".into());
     };
     use oteryn_client_runtime::market::market_details::PriceSummary;
@@ -152,7 +164,10 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
     assert!(receiver.try_recv().is_err());
     app.world_mut().entity_mut(blocker).despawn();
     click(&mut app, Action::Next)?;
-    let PlayCommand::ServerMechanic(next) = receiver.try_recv()? else {
+    let PlayCommand::ServerMechanic(next) = receiver
+        .try_recv()
+        .map_err(|error| format!("next: {error}"))?
+    else {
         return Err("next catalogue page".into());
     };
     assert!(matches!(
@@ -178,9 +193,7 @@ fn cyclopedia_items_reaches_catalogue_and_renders_confirmed_details()
         &[NormalizedInputEvent::Key {
             code: InputKey::new(12).map_err(|e| format!("{e:?}"))?,
             state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Control)
-                .with(Modifier::Alt)
-                .with(Modifier::Shift),
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
             repeat: false,
         }],
         false,

@@ -21,9 +21,11 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
         panel.clear_sources();
     }
     match panel.last_request {
-        Some(Request::CatalogueQuery(Query::Items {
-            after, category, ..
-        })) => {
+        Some(Request::CatalogueQuery(
+            query @ Query::Items {
+                after, category, ..
+            },
+        )) => {
             let next: Option<u32> = value(reply.items.first(), "Catalogue next")?
                 .map(str::parse)
                 .transpose()
@@ -54,6 +56,7 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
             {
                 return Err("Invalid catalogue page order");
             }
+            panel.catalogue_items_query = Some(query);
             panel.catalogue_loaded = true;
             panel.catalogue.clear();
             panel.catalogue_query_categories = categories;
@@ -115,11 +118,11 @@ pub(super) fn apply(panel: &mut Panel, reply: &mut Reply) -> Result<(), &'static
                 Some(Request::CatalogueQuery(Query::Drops { .. }))
             ) && let Some(cached) = panel.catalogue.get_mut(&item.definition_ref)
             {
-                cached.attributes.retain(|(key, _)| key != "Dropped by");
+                cached.attributes.retain(|(key, _)| key != "Drop sources");
                 cached.attributes.extend(
                     item.attributes
                         .iter()
-                        .filter(|(key, _)| key == "Dropped by")
+                        .filter(|(key, _)| key == "Drop sources")
                         .cloned(),
                 );
             } else {

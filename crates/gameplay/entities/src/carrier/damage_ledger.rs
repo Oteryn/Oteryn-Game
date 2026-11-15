@@ -432,6 +432,7 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             false,
             now_ms,
+            false,
         )?;
         if let Some(staged) = staged {
             self.slots[index] = staged;
@@ -455,6 +456,7 @@ impl ChannelActorCarrier {
             Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
             false,
             None,
+            false,
         )
     }
     /// ATTACK-1b: refuses a swing ordinal at or below the attacker's mark for the same lineage
@@ -550,6 +552,7 @@ impl ChannelActorCarrier {
             max_sub_ordinal,
             deferred,
             now_ms,
+            false,
         )?;
         if let Some(staged) = staged {
             self.slots[index] = staged;
@@ -567,6 +570,7 @@ impl ChannelActorCarrier {
         max_sub_ordinal: Option<u16>,
         deferred: bool,
         now_ms: Option<u64>,
+        health_change_resolved: bool,
     ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let OwnerDamageCommand {
             target,
@@ -674,14 +678,19 @@ impl ChannelActorCarrier {
         // Resolve Crystal's onHealthChange callback after replay, from the real HP slot.
         // The receipt retains the original request: retrying at a new HP fraction cannot
         // change the already committed hit or its damage attribution.
-        let effective_damage = match &self.slots[index] {
-            Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
-                Some(tag) => {
-                    tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
-                }
-                None => damage,
-            },
-            _ => return Err(CarrierError::NotCreature),
+        let effective_damage = if health_change_resolved {
+            // Periodic owner turns have already resolved each tick against its current HP.
+            damage
+        } else {
+            match &self.slots[index] {
+                Slot::CreatureOccupied { spell_combat, .. } => match spell_combat.soulpit {
+                    Some(tag) => {
+                        tag.incoming_health_change(damage, *health, spell_combat.maximum_health)?
+                    }
+                    None => damage,
+                },
+                _ => return Err(CarrierError::NotCreature),
+            }
         };
         let next = health
             .checked_sub(effective_damage)

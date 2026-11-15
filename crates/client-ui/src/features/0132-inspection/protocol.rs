@@ -129,6 +129,7 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
             }
             panel.catalogue.clear();
             panel.catalogue_query_categories.clear();
+            panel.catalogue_items_query = None;
             panel.catalogue_next = None;
             panel.catalogue_drop_next = None;
             panel.catalogue_market = None;

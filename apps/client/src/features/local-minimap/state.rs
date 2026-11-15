@@ -63,9 +63,12 @@ fn close_editor(shared: &SharedMinimap) {
         editor.close();
     }
 }
-impl Drop for crate::play::PlayView {
+/// Shared by view snapshots; only the last session view closes its native editor.
+#[derive(Debug)]
+pub(in crate::play) struct EditorOwner(pub SharedMinimap);
+impl Drop for EditorOwner {
     fn drop(&mut self) {
-        close_editor(&self.minimap);
+        close_editor(&self.0);
     }
 }
 type Binding = ([u8; 32], [u8; 32], u64);

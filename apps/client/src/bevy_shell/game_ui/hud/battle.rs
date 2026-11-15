@@ -152,7 +152,8 @@ pub(super) fn project(
         .iter()
         .map(|list| list.name.clone())
         .collect::<Vec<_>>();
-    let disabled = panel.pending || panel.combat.is_none() || panel.shutdown || modal;
+    let disabled =
+        panel.pending || pvp.pending || panel.combat.is_none() || panel.shutdown || modal;
     for (entity, action, was_disabled) in &actions {
         if matches!(
             action.command,
@@ -163,9 +164,6 @@ pub(super) fn project(
                 | Command::Secure(_)
                 | Command::Expert(_)
         ) {
-            let disabled = disabled
-                || (matches!(action.command, Command::Secure(_) | Command::Expert(_))
-                    && pvp.pending);
             if disabled && !was_disabled {
                 commands.entity(entity).insert(InteractionDisabled);
             }

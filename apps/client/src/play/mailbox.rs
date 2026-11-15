@@ -270,6 +270,12 @@ const MAX_COMBAT_REPORTS: usize = 8;
 pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
 impl Mailbox {
+    pub(super) fn reset_server_message_namespace(&mut self) {
+        self.before.server_messages = ServerMessageInbox::default();
+        self.pushed.server_messages = ServerMessageInbox::default();
+        self.pushed.scope_changed = true;
+    }
+
     pub(super) fn combat_report(&mut self, report: CombatReport) {
         if let CombatReport::Cast(disposition) = &report {
             self.spell_bar.feedback = oteryn_client_ui::localization::tr(

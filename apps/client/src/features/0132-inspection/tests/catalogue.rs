@@ -22,9 +22,7 @@ fn item_catalogue_search_drops_and_market_use_production_queues()
         link.item_catalogue_input(&[NormalizedInputEvent::Key {
             code: KeyCode::new(12).map_err(|e| format!("{e:?}"))?,
             state: ButtonState::Pressed,
-            modifiers: Modifiers::one(Modifier::Control)
-                .with(Modifier::Alt)
-                .with(Modifier::Shift),
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
             repeat: false,
         }])
     );
@@ -199,9 +197,9 @@ fn catalogue_continuations_reject_changed_inputs() -> Result<(), Box<dyn std::er
         let panel = &mut mailbox.discovery.inspection;
         panel.selected = true;
         panel.catalogue_next = Some(50);
-        panel.last_request = Some(wire::Request::CatalogueQuery(
-            wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?,
-        ));
+        let query = wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?;
+        panel.last_request = Some(wire::Request::CatalogueQuery(query));
+        panel.catalogue_items_query = Some(query);
         panel.search = "new".into();
     }
     link.item_catalogue_request(1);
@@ -272,9 +270,9 @@ fn failed_catalogue_queries_cannot_reuse_previous_item_cursors()
         let panel = &mut mailbox.discovery.inspection;
         panel.selected = true;
         panel.catalogue_next = Some(50);
-        panel.last_request = Some(wire::Request::CatalogueQuery(
-            wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?,
-        ));
+        let query = wire::catalogue::items(0, 0, "old").map_err(|e| format!("{e:?}"))?;
+        panel.last_request = Some(wire::Request::CatalogueQuery(query));
+        panel.catalogue_items_query = Some(query);
         panel.search = "new".into();
     }
     link.item_catalogue_request(0);
@@ -327,5 +325,33 @@ fn failed_catalogue_queries_cannot_reuse_previous_drop_cursors()
         receiver.try_recv().is_err(),
         "failed fresh query borrowed old drop cursor"
     );
+    Ok(())
+}
+
+#[test]
+fn catalogue_next_page_survives_item_details_and_drop_source_requests() -> Result<(), Box<dyn std::error::Error>> {
+    for action in [6, 7] {
+        let (link, mut commands, outbox) = play_channel();
+        {
+            let mut mailbox = lock(&link.mailbox);
+            let panel = &mut mailbox.discovery.inspection;
+            panel.selected = true;
+            panel.catalogue_next = Some(7);
+            panel.catalogue_definition = "7".into();
+            let query = wire::catalogue::items(0, 0, "silver").map_err(|e| format!("{e:?}"))?;
+            panel.catalogue_items_query = Some(query);
+            panel.last_request = Some(wire::Request::CatalogueQuery(query));
+            panel.search = "silver".into();
+        }
+        link.item_catalogue_request(action);
+        let PlayCommand::ServerMechanic(_) = commands.try_recv()? else { return Err("detail command".into()) };
+        outbox.discovery_result(132, &ServerMechanicResponse {
+            command_id: 1, server_sequence: 1, status: CommandStatus::Accepted,
+            payload: wire::encode_reply(&Reply { status: 1, requests: vec![], catalogue: None, items: vec![InspectedItem { slot: 0, definition_ref: 7, count: 1, tier: 0, name: "Silver sword".into(), attributes: vec![("Drop sources".into(), "Rat".into())] }] }).map_err(|e| format!("{e:?}"))?,
+        });
+        link.item_catalogue_request(1);
+        let PlayCommand::ServerMechanic(command) = commands.try_recv()? else { return Err("next page".into()) };
+        assert!(matches!(wire::decode_request(&command.payload), Ok(wire::Request::CatalogueQuery(Query::Items { after: 7, category: 0, .. }))));
+    }
     Ok(())
 }

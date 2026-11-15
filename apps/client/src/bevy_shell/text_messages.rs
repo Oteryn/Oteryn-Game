@@ -28,6 +28,7 @@ struct ScreenMessages {
     generation: Option<u64>,
     dismissals: u64,
     last_sequence: Option<u64>,
+    namespace: u64,
     last_look: Option<u64>,
 }
 
@@ -54,6 +55,12 @@ impl ScreenMessages {
             .filter(|message| now < message.expires)
     }
     fn observe(&mut self, view: &PlayView, now: Duration) {
+        let namespace = view.screen_message_controls().3;
+        if self.namespace != namespace {
+            self.namespace = namespace;
+            self.last_sequence = None;
+            self.slots = default();
+        }
         for message in view.server_messages() {
             if self
                 .last_sequence
@@ -135,7 +142,7 @@ fn project(
         if let Some(message) = play.link.look_message() {
             state.observe_look(&message, now);
         }
-        let (banners, popups, dismissals) = play.view.screen_message_controls();
+        let (banners, popups, dismissals, _) = play.view.screen_message_controls();
         if state.dismissals != dismissals {
             state.slots = default();
             state.dismissals = dismissals;

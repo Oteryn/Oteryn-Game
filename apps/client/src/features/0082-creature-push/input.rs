@@ -11,6 +11,12 @@ impl PlayView {
         link: &PlayLink,
         events: &[NormalizedInputEvent],
     ) -> Result<bool, BatchError> {
+        if !self.shared_frontend && self.death.awaiting_acknowledgement() {
+            if events.iter().any(|event| matches!(event, NormalizedInputEvent::Key { code, state: ButtonState::Pressed, modifiers, repeat: false } if matches!(code.get(), 40 | 88) && *modifiers == Modifiers::NONE)) {
+                self.acknowledge_death(link);
+            }
+            return Ok(true);
+        }
         if link.lens_active() {
             self.observe_creature_pointer(events);
             self.creature_drag.source = None;

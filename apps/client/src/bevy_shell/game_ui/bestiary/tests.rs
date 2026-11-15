@@ -66,32 +66,36 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     install(&mut app);
     app.update();
     assert!(labels(&mut app).contains("Bestiary"));
-    let query = command(&mut receiver)?;
+    let query = command(&mut receiver).map_err(|error| format!("query: {error}"))?;
     assert_eq!((query.capability, query.kind), (67, 84));
     // End the progress query, then let the Bevy system request the catalogue.
-    outbox.bevy_bestiary_result(
-        &query,
-        &GatedCommandResult {
-            command_id: 1,
-            server_sequence: 1,
-            status: oteryn_session::CommandStatus::Accepted,
-            payload: progression::encode_charm_progression_reply(
-                &progression::CharmProgressionReply {
-                    outcome: progression::CharmProgressionOutcome::Query,
-                    fee_gold: 0,
-                    bestiary: vec![progression::bestiary::BestiaryRaceProgress {
-                        race: std::num::NonZeroU32::new(9).ok_or("race")?,
-                        kill_count: 12,
-                        kill_thresholds: [10, 20, 30],
-                    }],
-                    charms: Default::default(),
-                },
-            )
-            .map_err(|e| format!("{e:?}"))?,
-        },
-    );
+    let publish_progress = |query: &FeatureCommand, kills| -> Result {
+        outbox.bevy_bestiary_result(
+            query,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload: progression::encode_charm_progression_reply(
+                    &progression::CharmProgressionReply {
+                        outcome: progression::CharmProgressionOutcome::Query,
+                        fee_gold: 0,
+                        bestiary: vec![progression::bestiary::BestiaryRaceProgress {
+                            race: std::num::NonZeroU32::new(9).ok_or("race")?,
+                            kill_count: kills,
+                            kill_thresholds: [10, 20, 30],
+                        }],
+                        charms: Default::default(),
+                    },
+                )
+                .map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        Ok(())
+    };
+    publish_progress(&query, 12)?;
     app.update();
-    let catalogue = command(&mut receiver)?;
+    let catalogue = command(&mut receiver).map_err(|error| format!("catalogue: {error}"))?;
     assert_eq!((catalogue.capability, catalogue.kind), (67, 84));
     let mut page = wire::Page {
         next: Some(9),
@@ -134,7 +138,7 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     assert!(labels(&mut app).contains("Toad [Amphibic]"));
     assert!(labels(&mut app).contains("Progress not reported"));
     click(&mut app, Kind::Select(9))?;
-    let detail = command(&mut receiver)?;
+    let detail = command(&mut receiver).map_err(|error| format!("detail: {error}"))?;
     assert_eq!(
         wire::decode_request(&detail.payload)
             .map_err(|e| format!("{e:?}"))?
@@ -150,14 +154,30 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     assert!(labels(&mut app).contains("Stage 1: 10/10 complete"));
     assert!(labels(&mut app).contains("Stage 2: 12/20 in progress"));
     click(&mut app, Kind::Catalogue(3))?;
-    let loot = command(&mut receiver)?;
+    assert!(
+        receiver.try_recv().is_err(),
+        "undiscovered loot stays locked"
+    );
+    assert!(!labels(&mut app).contains("Gold coin"));
+    app.update();
+    click(&mut app, Kind::Progress)?;
+    let progress = command(&mut receiver).map_err(|error| format!("progress: {error}"))?;
+    publish_progress(&progress, 30)?;
+    app.update();
+    click(&mut app, Kind::Select(9))?;
+    let completed = command(&mut receiver).map_err(|error| format!("completed: {error}"))?;
+    publish(&completed, &page)?;
+    app.update();
+    assert!(labels(&mut app).contains("Gold coin"));
+    click(&mut app, Kind::Catalogue(3))?;
+    let loot = command(&mut receiver).map_err(|error| format!("loot: {error}"))?;
     let request = wire::decode_request(&loot.payload).map_err(|e| format!("{e:?}"))?;
     assert_eq!((request.race, request.after), (9, 1));
     page.next = None;
     publish(&loot, &page)?;
     app.update();
     click(&mut app, Kind::Catalogue(5))?;
-    let category = command(&mut receiver)?;
+    let category = command(&mut receiver).map_err(|error| format!("category: {error}"))?;
     assert_eq!(
         wire::decode_request(&category.payload)
             .map_err(|e| format!("{e:?}"))?

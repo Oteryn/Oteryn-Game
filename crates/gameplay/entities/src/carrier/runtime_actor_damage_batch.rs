@@ -30,6 +30,7 @@ impl CurrentOwnerExactActorCommit<'_> {
                 Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
                 false,
                 self.now_ms,
+                false,
             )?;
             if prepared.iter().any(|(prior, _)| *prior == index) {
                 return Err(

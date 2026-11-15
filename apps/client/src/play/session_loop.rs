@@ -460,6 +460,7 @@ fn recover_handoff<T: Stepper>(
     {
         let mut mailbox = super::mailbox::lock(&outbox.0);
         mailbox.cancel_activity_requests();
+        mailbox.reset_server_message_namespace();
         mailbox.activity_reset_commands = true;
     }
     outbox.hud_stamina_initialize(session.feature_selected(199));

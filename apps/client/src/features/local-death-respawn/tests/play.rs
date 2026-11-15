@@ -4,6 +4,29 @@ use oteryn_renderer::TileCoord;
 use oteryn_session::{ActorVitals, AppliedDelta, SessionEvent};
 
 #[test]
+fn native_enter_acknowledges_respawn_through_normal_input_route()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+    let (link, mut commands, outbox) = play_channel();
+    let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[])?;
+    outbox.vitals(Some(ActorVitals { health: 0, max_health: 150, ..Default::default() }));
+    view.tick(&link).map_err(|_| "tick")?;
+    let _ = outbox.death_command(&mut commands);
+    outbox.vitals(Some(ActorVitals { health: 150, max_health: 150, ..Default::default() }));
+    view.tick(&link).map_err(|_| "tick")?;
+    let enter = [NormalizedInputEvent::Key {
+        code: KeyCode::new(40)?, state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE, repeat: false,
+    }];
+    assert!(view.world_pointer_input(&link, &enter)?);
+    assert!(!view.gameplay_input_blocked(&link));
+    view.arrow(StepDir::South);
+    view.tick(&link).map_err(|_| "tick")?;
+    assert!(commands.try_recv().is_ok());
+    Ok(())
+}
+
+#[test]
 fn death_blocks_input_and_respawn_does_not_replay_pending_actions() -> Result<(), String> {
     let (link, mut commands, outbox) = play_channel();
     let mut view = PlayView::new(TileCoord::new(1, 1), 0, &[]).map_err(|e| e.to_string())?;

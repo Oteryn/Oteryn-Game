@@ -68,6 +68,7 @@ pub struct PlayView {
     local: LocalPlayState,
     live_map: bool,
     minimap: feature_local_minimap::state::SharedMinimap,
+    _minimap_editor_owner: std::sync::Arc<feature_local_minimap::state::EditorOwner>,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
     /// The session floor the map is anchored to; on any other floor no map is drawn.
@@ -93,6 +94,7 @@ pub struct PlayView {
     logout_line: Option<String>,
     /// Recent server messages in their validated delivery order, owned by this connection.
     server_messages: VecDeque<oteryn_session::AppliedDelta<oteryn_session::ServerMessage>>,
+    message_namespace: u64,
 }
 
 mod construction;

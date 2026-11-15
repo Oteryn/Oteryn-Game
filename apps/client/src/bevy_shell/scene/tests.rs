@@ -660,6 +660,8 @@ fn resource_gauges_do_not_duplicate_sidebar_hud_in_bevy_scene() -> TestResult {
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(width, height),
@@ -852,9 +854,8 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
     let (width, height) = scene.view().viewport_px();
     let [x, y] = scene.view().tile_to_screen(TileCoord::new(100, 100));
     let side = scene.view().tile_px() as f32;
-    // Filled and empty gauge regions, active/inactive Harmony, actor health,
-    // NPC badge and the first lit pixel in the original 3x5 value glyph.
-    let samples = vec![
+    // Native gauges remain in the packed batch, while Bevy uses its sidebar HUD.
+    let native_samples = [
         ([12., 60.], [255, 0, 0]),
         ([100., 60.], [204; 3]),
         ([12., 74.], [0, 0, 255]),
@@ -862,7 +863,34 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
         ([12., 89.], [255, 255, 0]),
         ([108., 89.], [204; 3]),
         ([12., 103.], [102, 255, 102]),
-        ([x + 4., y + side - 4.], [102, 255, 102]),
+    ];
+    for (point, rgb) in native_samples {
+        let (index, quad) = scene
+            .sprites()
+            .instances()
+            .iter()
+            .enumerate()
+            .rfind(|(_, quad)| {
+                Rect::from_corners(
+                    Vec2::from(quad.position),
+                    Vec2::from(quad.position) + Vec2::from(quad.size),
+                )
+                .contains(Vec2::from(point))
+            })
+            .ok_or("native gauge quad")?;
+        assert!(scene.native_hud_quads.contains(&index));
+        let atlas = scene.atlas();
+        let column = (quad.uv[0] * atlas.width() as f32) as usize;
+        let row = (quad.uv[1] * atlas.height() as f32) as usize;
+        let offset = (row * atlas.width() as usize + column) * 4;
+        assert_eq!(
+            &atlas.rgba()[offset..offset + 4],
+            &[rgb[0], rgb[1], rgb[2], 255]
+        );
+    }
+    // Actor health, NPC badge and the first lit pixel of the value glyph remain in Bevy.
+    let samples = vec![
+        ([x + 4., y - 3.], [153, 153, 0]),
         ([x + side - 7., y + 1.], [0, 204, 255]),
         ([x + side / 2. - 2., y + 1.], [255, 153, 0]),
     ];
@@ -873,6 +901,8 @@ fn palette_gauges_health_icons_and_text_reach_bevy_and_native_capture() -> TestR
         .init_resource::<SceneCache>()
         .init_resource::<Time>()
         .init_resource::<Assets<Image>>()
+        .init_resource::<Assets<Mesh>>()
+        .init_resource::<Assets<ColorMaterial>>()
         .insert_resource(WorldViewport {
             origin: UVec2::ZERO,
             size: UVec2::new(width, height),

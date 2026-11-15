@@ -110,6 +110,7 @@ impl ChannelRuntimeV1 {
             None,
             false,
             Some(now_ms),
+            false,
         )?;
         let Some(mut next) = next else {
             return Ok(result);

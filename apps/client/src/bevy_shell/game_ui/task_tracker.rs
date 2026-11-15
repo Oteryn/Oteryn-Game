@@ -2,6 +2,7 @@
 use super::{
     super::{owner::HostOwner, ui::Skins},
     GameRegions,
+    modal::ModalGuard,
 };
 use bevy::{
     prelude::*,
@@ -222,8 +223,13 @@ fn project(
     state.root = Some(root);
     state.text = text;
 }
-fn open_board(event: On<Activate>, nodes: Query<&Tracker>, owner: NonSend<HostOwner>) {
-    if owner.modal_active() {
+fn open_board(
+    event: On<Activate>,
+    nodes: Query<&Tracker>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+) {
+    if owner.modal_active() || !guard.allows(event.entity) {
         return;
     }
     let Ok(tracker) = nodes.get(event.entity) else {
