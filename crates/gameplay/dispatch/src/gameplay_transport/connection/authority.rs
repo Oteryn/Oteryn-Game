@@ -25,6 +25,11 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Complete only the final spell participant under this connection's admitted fence.
+    fn repair_pending_spells(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// One bounded cadence body; production retains its root's fairness grant across passes.
     fn background_operation<F: Future>(&self, future: F) -> impl Future<Output = F::Output> {
         future

@@ -28,7 +28,8 @@ class WorldBundleTests(unittest.TestCase):
                 work = Path(directory)
                 pin = work / "pin.json"
                 pin.write_bytes((REPO / "content/world/pins/oteryn.json").read_bytes())
-                script = r'''set -Eeuo pipefail
+                interpretation = re.search(r"(?m)^readonly INTERPRETATION=.*$", RUN).group(0)
+                script = interpretation + "\n" + r'''set -Eeuo pipefail
 BASE=/staged
 LL_HOST=127.0.0.1
 GAME_PORT=17181
@@ -51,6 +52,8 @@ sudo() { return 0; }
                                  json.loads(expected) if mode == "1" else [])
                 self.assertEqual(config["readiness"]["map_revision"],
                                  "bundle-digest" if mode == "1" else "map-ll-1")
+                self.assertEqual(config["readiness"]["content_revision"],
+                                 interpretation.split("(", 1)[1].rstrip(")").split()[2])
 
     def test_activation_and_readiness_have_separate_node_boot_budgets(self):
         setup = section('GAME_SOURCE="$(git rev-parse --show-toplevel)"', 'PLATFORM_SOURCE=')
@@ -62,8 +65,11 @@ sudo() { return 0; }
                 script = r'''set -Eeuo pipefail
 WORK=.
 WB_DIGEST=d
+WORLD_ID=world
+CHANNEL_ID=channel
 grep() { return 0; }
 evidence() { :; }
+psql_admin() { cat >/dev/null; printf 't\n'; }
 await_log() { printf '%s|%s\n' "$1" "$2"; }
 ''' + setup + waits
                 result = subprocess.run(["bash", "-c", script], capture_output=True, text=True,
@@ -86,7 +92,8 @@ await_log() { printf '%s|%s\n' "$1" "$2"; }
             work.mkdir()
             base.mkdir()
             # Run only the bundle block, with no compiler, privilege or service access.
-            script = r'''set -Eeuo pipefail
+            interpretation = re.search(r"(?m)^readonly INTERPRETATION=.*$", RUN).group(0)
+            script = interpretation + "\n" + r'''set -Eeuo pipefail
 cargo() { return 0; }
 sudo() {
   local args=()
@@ -110,12 +117,15 @@ printf '%s\n' "${LL_GAMEPLAY_ENV[@]}"
             self.assertEqual(result.stdout.strip(), f"OTERYN_NATIVE_GAMEPLAY_MANIFEST={manifest}")
             self.assertTrue(manifest.is_file(), "bundle boot still uses the fixture item index")
             document = json.loads(manifest.read_bytes())
+            expected_content = interpretation.split("(", 1)[1].rstrip(")").split()[2]
+            self.assertEqual(document["build_training"]["content_revision"], expected_content)
             self.assertIn("item_keys", document)
             self.assertIn("item_profiles", document)
             for pin in document.values():
                 if isinstance(pin, dict) and "path" in pin and "sha256" in pin:
                     data = (manifest.parent / pin["path"]).read_bytes()
                     self.assertEqual(hashlib.sha256(data).hexdigest(), pin["sha256"])
+
             # Check the additional cosmetics closure as well as top-level pins.
             descriptor_path = manifest.parent / document["cosmetics"]["path"]
             descriptor = json.loads(descriptor_path.read_bytes())
@@ -127,6 +137,39 @@ printf '%s\n' "${LL_GAMEPLAY_ENV[@]}"
             for pin in json.loads(source.read_bytes())["files"]:
                 data = (source.parent / pin["path"]).read_bytes()
                 self.assertEqual(hashlib.sha256(data).hexdigest(), pin["sha256"])
+
+    def test_bundle_control_initializes_calendar_before_readiness_and_character_bootstrap(self):
+        boot = section('await_log "event=content_activated',
+                       '# Character from a real Platform intent;')
+        for initialized in ("t", "f", ""):
+            with self.subTest(initialized=initialized), tempfile.TemporaryDirectory(dir=HERE) as directory:
+                query = Path(directory) / "epoch.sql"
+                script = r'''set -Eeuo pipefail
+WORLD_ID=11111111-1111-1111-1111-111111111111
+CHANNEL_ID=22222222-2222-2222-2222-222222222222
+WB_DIGEST=abc123
+NODE_ACTIVATION_WAIT_SECONDS=180
+await_log() { printf 'wait:%s\n' "$1"; }
+evidence() { printf 'evidence:%s\n' "$1"; }
+psql_admin() { cat > "$QUERY"; printf '%s\n' "$INITIALIZED"; }
+''' + boot
+                result = subprocess.run(["bash", "-c", script], capture_output=True, text=True,
+                                        env={**os.environ, "GAME_SOURCE": str(REPO),
+                                             "LOGIN_LOCAL_WORLD_BUNDLE": "1", "QUERY": str(query),
+                                             "INITIALIZED": initialized}, timeout=10, check=False)
+                sql = query.read_text()
+                self.assertIn("SELECT game_world_reset_initialize(", sql)
+                self.assertIn("'TIBIA_SERVER_SAVE_BERLIN_06'", sql)
+                self.assertIn("EXECUTE login_local_world_epoch('11111111-1111-1111-1111-111111111111', "
+                              "'22222222-2222-2222-2222-222222222222', 'abc123');", sql)
+                if initialized == "t":
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertLess(result.stdout.index("world_epoch=0"),
+                                    result.stdout.index("wait:event=readiness"))
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("World epoch initialization failed", result.stdout)
+                    self.assertNotIn("wait:event=readiness", result.stdout)
 
     def test_operator_and_server_receive_the_same_manifest_in_both_rust_modes(self):
         ops = re.search(r"(?ms)^ops\(\) \{.*?^}", RUN).group(0)
