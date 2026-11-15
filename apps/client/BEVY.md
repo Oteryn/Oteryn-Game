@@ -74,6 +74,12 @@ With no text field focused, the existing gameplay shortcuts open:
   text input share one window with the trade addon when the server opens a shop.
 - **Ctrl+Alt+Q:** QuickLoot management, subject to the negotiated capability.
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Ctrl+Shift+H:** house access lists. Query the town catalogue, select a row,
+  load guests/subowners/a door, then edit the multiline list and enter CONFIRM
+  before saving. The current server requires member UUIDs; name resolution and
+  book/sign author/date descriptors are not available on the current wire.
+  Server modal messages without an input remain read-only; text inputs retain
+  their existing edit and answer path.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics. This slice
   is read-only; creating or accepting offers is not yet exposed.
 - **Ctrl+Shift+G:** Party List and its existing membership actions. The world

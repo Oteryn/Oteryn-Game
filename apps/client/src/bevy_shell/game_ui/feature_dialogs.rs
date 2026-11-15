@@ -2,6 +2,7 @@
 mod build;
 mod notices;
 mod submission;
+mod text_window;
 use super::modal::ModalGuard;
 
 use super::{
@@ -55,6 +56,7 @@ struct State {
 }
 
 pub(super) fn install(app: &mut App) {
+    text_window::install(app);
     app.init_resource::<State>()
         .add_systems(Startup, (setup, notices::setup).after(super::setup))
         .add_systems(
