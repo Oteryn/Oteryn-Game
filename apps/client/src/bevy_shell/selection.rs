@@ -30,6 +30,7 @@ enum Choice {
     Previous,
     Next,
     Play,
+    Train,
     Refresh,
     Create,
     Cancel,
@@ -264,7 +265,7 @@ pub(super) fn project(
         commands.entity(panel).add_child(channel);
         let unavailable = commands
             .spawn(source::text(
-                "Training and account services are unavailable in this frontend.",
+                "Offline training logs the selected character out after activation.",
                 source::font(skin.font.clone(), false),
             ))
             .insert(TextColor(source::DISABLED_TEXT_COLOR))
@@ -280,6 +281,12 @@ pub(super) fn project(
         for (choice, label, width, disabled) in [
             (Choice::Create, "Create", 60., false),
             (Choice::Refresh, "Refresh", 60., false),
+            (
+                Choice::Train,
+                "Offline Training",
+                110.,
+                row.is_none_or(|row| !row.available),
+            ),
             (
                 Choice::Play,
                 "Play",
@@ -323,6 +330,7 @@ fn add_button(
         Choice::Previous => "selection.previous".into(),
         Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
+        Choice::Train => "selection.training".into(),
         Choice::Refresh => "selection.refresh".into(),
         Choice::Create => "selection.create".into(),
         Choice::Cancel => "selection.cancel".into(),
@@ -397,16 +405,26 @@ fn activate(
                 .min(request.rows.len().max(1).div_ceil(state.page_rows.max(1)) - 1);
             None
         }
-        Choice::Play => state
+        Choice::Play | Choice::Train => state
             .selected
             .and_then(|index| request.rows.get(index))
             .filter(|row| row.available)
-            .map(|row| SelectionAction::Play {
-                character_id: row.character.character_id.clone(),
-                channel_id: state
+            .map(|row| {
+                let character_id = row.character.character_id.clone();
+                let channel_id = state
                     .channel
                     .and_then(|index| row.channels.get(index))
-                    .map(|channel| channel.0.clone()),
+                    .map(|channel| channel.0.clone());
+                if matches!(target.choice, Choice::Train) {
+                    return SelectionAction::Train {
+                        character_id,
+                        channel_id,
+                    };
+                }
+                SelectionAction::Play {
+                    character_id,
+                    channel_id,
+                }
             }),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),

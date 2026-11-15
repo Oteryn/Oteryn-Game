@@ -318,13 +318,20 @@ impl HostOwner {
             end = play.view.tick(&play.link).err();
         }
         if let Some(end) = end {
-            let message = match end {
-                PlayEnd::LoggedOut => "Logged out. Choose a character after signing in again.",
-                PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
-            };
-            self.leave(message);
+            self.finish_play(end);
         }
     }
+    fn finish_play(&mut self, end: PlayEnd) {
+        let message = match end {
+            PlayEnd::LoggedOut => "Logged out. Returning to character selection.",
+            PlayEnd::Ended(class) => error_text(crate::GameplayEntryError::Rejected(class)),
+        };
+        self.leave(message);
+        if matches!(end, PlayEnd::LoggedOut) && self.entry.as_mut().is_some_and(Reentry::request) {
+            self.phase = Phase::Entering;
+        }
+    }
+
     fn reset_input(&mut self) {
         self.route_input(
             &[oteryn_input_actions::NormalizedInputEvent::DeviceLost],
@@ -363,3 +370,22 @@ mod tests;
 #[cfg(test)]
 #[path = "live_assets/tests.rs"]
 mod live_asset_tests;
+
+#[cfg(test)]
+mod selection_return_tests {
+    use super::*;
+    #[test]
+    fn confirmed_logout_restarts_admission_but_disconnect_does_not()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = HostOwner::new(None)?;
+        owner.finish_play(PlayEnd::Ended(
+            oteryn_platform_client::native_login::PublicClass::SessionUnavailable,
+        ));
+        assert_eq!(owner.phase, Phase::Offline);
+        owner.finish_play(PlayEnd::LoggedOut);
+        assert_eq!(owner.phase, Phase::Entering);
+        assert!(owner.entry.as_ref().is_some_and(Reentry::is_entering));
+        owner.close();
+        Ok(())
+    }
+}

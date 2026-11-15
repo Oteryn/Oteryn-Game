@@ -165,6 +165,10 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
         SelectionAction::Play {
             character_id,
             channel_id,
+        }
+        | SelectionAction::Train {
+            character_id,
+            channel_id,
         } => request.rows.iter().any(|row| {
             row.available
                 && &row.character.character_id == character_id
@@ -173,9 +177,7 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
                     .is_none_or(|id| row.channels.iter().any(|channel| &channel.0 == id))
         }),
         SelectionAction::Cancel | SelectionAction::Refresh | SelectionAction::Create => true,
-        SelectionAction::Train { .. }
-        | SelectionAction::TrainMany { .. }
-        | SelectionAction::AccountServices => false,
+        SelectionAction::TrainMany { .. } | SelectionAction::AccountServices => false,
     }
 }
 
