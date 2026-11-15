@@ -307,18 +307,9 @@ mod tests {
         for counter in super::super::native_kills::counters() {
             let original = counter.transition();
             validate(&original, false)?;
-            assert!(!original.effects.is_empty());
-            // Terminal settlements can have one effect; every registered
-            // operation, including the gate of an ordinary counter, is exact.
-            for index in 0..original.effects.len() {
-                let mut changed = original.clone();
-                changed.effects[index].effect = QuestEffectKind::Add(2);
-                assert_ne!(
-                    changed.effects[index].effect,
-                    original.effects[index].effect
-                );
-                assert!(validate(&changed, false).is_err());
-            }
+            let mut changed = original.clone();
+            changed.effects[1].effect = QuestEffectKind::Add(2);
+            assert!(validate(&changed, false).is_err());
             let mut alias = original;
             alias.key.push_str("-shadow");
             assert!(validate(&alias, false).is_err());

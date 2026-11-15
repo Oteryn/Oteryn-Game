@@ -193,7 +193,9 @@ pub const COUNTERS: &[Counter] = &[
 
 #[must_use]
 pub fn counter(transition: &str) -> Option<&'static Counter> {
-    counters().find(|counter| counter.transition == transition)
+    counters()
+        .chain(phase_settlements::COUNTERS)
+        .find(|counter| counter.transition == transition)
 }
 
 #[must_use]
@@ -229,12 +231,14 @@ pub fn active_encounter(tracks: &BTreeMap<String, i64>) -> Vec<&'static str> {
         .collect()
 }
 
+// Ordinary lethal counters exclude terminal settlements: only an admitted
+// encounter may capture those through active_encounter. The complete registry
+// below still owns their canonical transition and definition hash.
 pub(crate) fn counters() -> impl Iterator<Item = &'static Counter> {
     COUNTERS
         .iter()
         .chain(qworld::counters().unwrap_or_default())
         .chain(fugue::COUNTERS)
-        .chain(phase_settlements::COUNTERS)
         .chain(
             super::world_change_journals::counters()
                 .into_iter()
@@ -338,10 +342,7 @@ mod tests {
     fn eligibility_requires_an_active_trial_and_an_unsaturated_counter() {
         let counter = &COUNTERS[0];
         let mut tracks = BTreeMap::new();
-        // Crystal's Cults terminal settlement sets Humans.Mission to two
-        // from either zero or one, independently of this trial's phase.
-        let settlement = "oteryn:quest-transition/native-kills/cults-essence";
-        assert_eq!(active(&tracks), vec![settlement]);
+        assert!(active(&tracks).is_empty());
         tracks.insert(counter.gate.into(), 1);
         assert!(active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), counter.maximum);
@@ -350,13 +351,6 @@ mod tests {
         assert!(!active(&tracks).contains(&counter.transition));
         tracks.insert(counter.track.into(), 0);
         tracks.insert(counter.gate.into(), 2);
-        assert_eq!(active(&tracks), vec![settlement]);
-        let cults = &phase_settlements::COUNTERS[0];
-        for value in [0, 1] {
-            tracks.insert(cults.track.into(), value);
-            assert_eq!(active(&tracks), vec![settlement]);
-        }
-        tracks.insert(cults.track.into(), 2);
         assert!(active(&tracks).is_empty());
         assert!(!tracks_creature("oteryn:creature.rat"));
     }
