@@ -48,17 +48,32 @@ pub(super) struct Row {
     pub color: Color,
     pub background: Color,
 }
-pub(super) fn table_rows(panel: &HighscoresPanel) -> impl Iterator<Item = Row> + '_ {
-    panel.reply.iter().flat_map(|reply| {
-        reply.rows.iter().enumerate().map(|(index, row)| Row {
+pub(super) fn world_label(
+    world: Option<oteryn_client_runtime::highscores::wire::WorldId>,
+    worlds: &[(oteryn_client_runtime::highscores::wire::WorldId, String)],
+) -> String {
+    world.map_or_else(
+        || "Current world".into(),
+        |id| {
+            worlds
+                .iter()
+                .find(|(known, _)| *known == id)
+                .map(|(_, name)| name.clone())
+                .unwrap_or_else(|| oteryn_client_ui::highscores::world_text(id))
+        },
+    )
+}
+pub(super) fn table_rows<'a>(
+    panel: &'a HighscoresPanel,
+    worlds: &'a [(oteryn_client_runtime::highscores::wire::WorldId, String)],
+) -> impl Iterator<Item = Row> + 'a {
+    panel.reply.iter().flat_map(move |reply| {
+        reply.rows.iter().enumerate().map(move |(index, row)| Row {
             cells: [
                 row.rank.to_string(),
                 row.name.clone(),
                 row.vocation.clone(),
-                reply
-                    .world
-                    .map(oteryn_client_ui::highscores::world_text)
-                    .unwrap_or_else(|| "current".into()),
+                world_label(reply.world, worlds),
                 row.level.to_string(),
                 row.value.to_string(),
             ],
