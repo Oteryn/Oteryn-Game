@@ -64,6 +64,12 @@ impl PlayView {
                         | crate::play::Input::TargetWalk(_)
                 )
             });
+            if intent == TargetMoveIntent::Stop
+                && lock(&link.mailbox).battle.combat.is_some()
+            {
+                // Domain 10 proves capability 17 is selected; its receipt clears the target.
+                link.request_combat(crate::combat_input::CombatCommand::Stop);
+            }
             if !crate::play::mailbox::lock(&link.mailbox).target_move_selected {
                 return true;
             }

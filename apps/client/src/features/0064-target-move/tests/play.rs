@@ -6,6 +6,7 @@ fn native_turn_stop_and_follow_send_target_move_without_a_step()
 -> Result<(), Box<dyn std::error::Error>> {
     let (link, mut commands, outbox) = play_channel();
     outbox.target_move_initialize(true);
+    enable_combat(&link);
     let mut view = view()?;
     let key = |code, modifiers| NormalizedInputEvent::Key {
         code,
@@ -42,6 +43,10 @@ fn native_turn_stop_and_follow_send_target_move_without_a_step()
     assert_eq!(view.scene().facing(), StepDir::North);
     assert_eq!(view.own(), TileCoord::new(100, 200));
     assert!(view.target_move_input(&link, &[key(KeyCode::ESCAPE, Modifiers::NONE)]));
+    assert_eq!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Stop)
+    );
     let crate::combat_input::PlayCommand::ServerMechanic(stop) = commands.try_recv()? else {
         return Err("missing stop".into());
     };
@@ -187,5 +192,79 @@ fn an_unselected_walk_sends_nothing_and_leaves_arrows_usable() -> Result<(), Bat
         commands.try_recv(),
         Ok(crate::combat_input::PlayCommand::Step(StepDir::North))
     );
+    Ok(())
+}
+
+#[test]
+fn escape_stops_authoritative_combat_and_movement() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    enable_combat(&link);
+    let mut view = view()?;
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ESCAPE,
+            modifiers: Modifiers::NONE,
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
+    assert_eq!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Stop)
+    );
+    let crate::combat_input::PlayCommand::ServerMechanic(stop) = commands.try_recv()? else {
+        return Err("missing movement stop".into());
+    };
+    assert_eq!(stop.payload, [16, 1]);
+    Ok(())
+}
+
+#[test]
+fn escape_stops_combat_when_target_movement_is_unavailable()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, _) = play_channel();
+    enable_combat(&link);
+    let mut view = view()?;
+    assert!(view.target_move_input(
+        &link,
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::ESCAPE,
+            modifiers: Modifiers::NONE,
+            state: ButtonState::Pressed,
+            repeat: false,
+        }]
+    ));
+    assert_eq!(
+        commands.try_recv()?,
+        crate::combat_input::PlayCommand::Combat(crate::combat_input::CombatCommand::Stop)
+    );
+    assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+fn enable_combat(link: &PlayLink) {
+    crate::play::mailbox::lock(&link.mailbox).battle.combat = Some(oteryn_session::ActorCombatState {
+        target: Some(EntityRef { identity: [3; 16], generation: 7 }),
+        modes: oteryn_session::FightModes::DEFAULT,
+        in_fight: true,
+    });
+}
+
+#[test]
+fn escape_without_combat_capability_only_stops_movement() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut commands, outbox) = play_channel();
+    outbox.target_move_initialize(true);
+    let mut view = view()?;
+    assert!(view.target_move_input(&link, &[NormalizedInputEvent::Key {
+        code: KeyCode::ESCAPE, modifiers: Modifiers::NONE,
+        state: ButtonState::Pressed, repeat: false,
+    }]));
+    let crate::combat_input::PlayCommand::ServerMechanic(stop) = commands.try_recv()? else {
+        return Err("Escape attempted unselected combat capability".into());
+    };
+    assert_eq!(stop.payload, [16, 1]);
+    assert!(commands.try_recv().is_err());
     Ok(())
 }

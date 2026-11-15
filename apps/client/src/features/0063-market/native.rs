@@ -1,23 +1,34 @@
 //! Native market form, paged server lists and trade controls.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::play::mailbox::{SharedMailbox, lock};
+#[cfg(windows)]
 use oteryn_client_ui::market::{Intent, panel_text};
+#[cfg(windows)]
 #[path = "view/catalogue_native.rs"]
 mod catalogue;
+#[cfg(windows)]
 #[path = "view/table_native.rs"]
 mod table;
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use std::sync::{Arc, Weak};
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[cfg(windows)]
 #[derive(Default)]
-struct Actions(Vec<usize>);
+struct Actions(Vec<usize>, bool);
+#[cfg(windows)]
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND {
             let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
             if !p.is_null()
+                && !(*p).1
                 && (*p).0.len() < 16
                 && (w >> 16 == BN_CLICKED as usize
                     || w >> 16 == LBN_SELCHANGE as usize
@@ -31,7 +42,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
             && let Some(id) = table::selection_notification(l)
         {
             let p = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut Actions;
-            if !p.is_null() && (*p).0.len() < 16 {
+            if !p.is_null() && !(*p).1 && (*p).0.len() < 16 {
                 (*p).0.push(id);
             }
             return 0;
@@ -39,6 +50,7 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(windows)]
 fn wide(value: &str) -> Vec<u16> {
     value
         .replace('\0', "\u{fffd}")
@@ -46,6 +58,7 @@ fn wide(value: &str) -> Vec<u16> {
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 pub(in crate::play) fn open_window(
     mailbox: &SharedMailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
@@ -69,10 +82,18 @@ pub(in crate::play) fn open_window(
         lock(&m).market.open = false;
     }
 }
+#[cfg(windows)]
 fn run(
     weak: Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>,
     commands: tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
 ) {
+    let initial = {
+        let Some(shared) = weak.upgrade() else {
+            return;
+        };
+        let mailbox = lock(&shared);
+        form_fields(&mailbox.market)
+    };
     unsafe {
         let hwnd = CreateWindowExW(
             0,
@@ -93,6 +114,7 @@ fn run(
             return;
         }
         let mut actions = Box::<Actions>::default();
+        actions.1 = true;
         SetWindowLongPtrW(
             hwnd,
             GWLP_USERDATA,
@@ -107,7 +129,7 @@ fn run(
         let item = control(
             hwnd,
             "EDIT",
-            "",
+            &initial.item,
             20,
             [80, 10, 100, 25],
             WS_BORDER | WS_TABSTOP,
@@ -115,7 +137,7 @@ fn run(
         let amount = control(
             hwnd,
             "EDIT",
-            "1",
+            &initial.amount,
             21,
             [270, 10, 100, 25],
             WS_BORDER | WS_TABSTOP,
@@ -123,7 +145,7 @@ fn run(
         let price = control(
             hwnd,
             "EDIT",
-            "1",
+            &initial.price,
             22,
             [475, 10, 170, 25],
             WS_BORDER | WS_TABSTOP,
@@ -147,6 +169,8 @@ fn run(
             [270, 45, 150, 28],
             BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
         );
+        SendMessageW(buy, BM_SETCHECK, usize::from(initial.buy), 0);
+        SendMessageW(anonymous, BM_SETCHECK, usize::from(initial.anonymous), 0);
         for (id, label) in [
             (2, tr!("Browse")),
             (3, tr!("My offers")),
@@ -211,6 +235,8 @@ fn run(
         );
         control(hwnd,"STATIC","Coin market and coin transactions: Ctrl+Alt+F8",26,[10,690,680,20],0);
 
+        actions.0.clear();
+        actions.1 = false;
         let mut held = None;
         loop {
             let mut message: MSG = std::mem::zeroed();
@@ -274,11 +300,13 @@ fn run(
                         if let Some(row) = tables.selected(&m.market.rows, id) {
                             let (offer, definition, unit_price) =
                                 (row.offer, row.definition, row.price);
-                            m.market.selected_offer = Some(offer);
+                            select_row(&mut m.market, offer, definition, unit_price);
+                            actions.1 = true;
                             SetWindowTextW(item, wide(&definition.to_string()).as_ptr());
                             if unit_price > 0 {
                                 SetWindowTextW(price, wide(&unit_price.to_string()).as_ptr());
                             }
+                            actions.1 = false;
                         }
                         None
                     }
@@ -323,11 +351,13 @@ fn run(
         close(&weak);
     }
 }
+#[cfg(windows)]
 fn close(weak: &Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>) {
     if let Some(m) = weak.upgrade() {
         lock(&m).market.open = false;
     }
 }
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -354,8 +384,96 @@ unsafe fn control(
     }
 }
 
+#[cfg(windows)]
 unsafe fn read(hwnd: HWND) -> String {
     let mut buffer = [0u16; 64];
     let length = unsafe { GetWindowTextW(hwnd, buffer.as_mut_ptr(), buffer.len() as i32) };
     String::from_utf16_lossy(&buffer[..length.max(0) as usize])
+}
+
+fn select_row(
+    panel: &mut oteryn_client_ui::market::MarketPanel,
+    offer: [u8; 16],
+    definition: u32,
+    price: u64,
+) {
+    panel.definition = definition;
+    if price > 0 {
+        panel.price = price;
+    }
+    panel.selected_offer = Some(offer);
+}
+
+#[cfg(test)]
+mod regression {
+    #[test]
+    fn selecting_another_definition_keeps_rows_and_cancel_selection() {
+        use oteryn_client_ui::market::{MarketPanel, MarketView, edit_details};
+        let mut panel = MarketPanel {
+            selected: true,
+            definition: 1,
+            view: MarketView::Own,
+            ..Default::default()
+        };
+        let row = oteryn_client_runtime::market::market::MarketRow {
+            offer: [9; 16],
+            definition: 42,
+            side: 2,
+            amount: 3,
+            price: 100,
+            state: 1,
+            anonymous: false,
+        };
+        panel.rows.push(row);
+        super::select_row(&mut panel, [9; 16], 42, 100);
+        assert!(edit_details(&mut panel, "42", "1", "100", true, false));
+        assert_eq!(panel.rows.len(), 1);
+        assert_eq!(panel.selected_offer, Some([9; 16]));
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct FormFields {
+    item: String,
+    amount: String,
+    price: String,
+    buy: bool,
+    anonymous: bool,
+}
+fn form_fields(panel: &oteryn_client_ui::market::MarketPanel) -> FormFields {
+    FormFields {
+        item: if panel.definition == 0 {
+            String::new()
+        } else {
+            panel.definition.to_string()
+        },
+        amount: panel.amount.to_string(),
+        price: panel.price.to_string(),
+        buy: !panel.sell,
+        anonymous: panel.anonymous,
+    }
+}
+#[cfg(test)]
+mod reopen_regression {
+    #[test]
+    fn reopened_market_form_uses_one_retained_snapshot() {
+        let panel = oteryn_client_ui::market::MarketPanel {
+            definition: 42,
+            amount: 7,
+            price: 99,
+            sell: false,
+            anonymous: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            super::form_fields(&panel),
+            super::FormFields {
+                item: "42".into(),
+                amount: "7".into(),
+                price: "99".into(),
+                buy: true,
+                anonymous: true
+            }
+        );
+    }
 }

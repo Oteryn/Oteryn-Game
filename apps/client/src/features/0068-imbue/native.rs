@@ -239,7 +239,49 @@ fn run(
                     _ => None,
                 };
                 if let Some(intent) = intent {
-                    super::super::input::enqueue(&mut mailbox, &commands, intent);
+                    let expected = mailbox.imbue.clone();
+                    if matches!(intent, Intent::Apply | Intent::Clear) {
+                        let item_label = carried
+                            .iter()
+                            .find(|entry| Some(entry.handle) == expected.item)
+                            .map_or_else(
+                                || "Selected carried item".to_owned(),
+                                |entry| {
+                                    format!(
+                                        "Carried item {} ×{}",
+                                        entry.item_definition_ref, entry.count
+                                    )
+                                },
+                            );
+                        let prompt = format!(
+                            "{}\r\n{}\r\n{}\r\nConfirm this paid action?",
+                            if intent == Intent::Apply {
+                                "Apply imbuement"
+                            } else {
+                                "Clear imbuement"
+                            },
+                            item_label,
+                            oteryn_client_ui::imbue::selected_detail_text(&expected)
+                        );
+                        // The network owner can update the item while the dialog is open.
+                        drop(mailbox);
+                        let confirmed = MessageBoxW(
+                            hwnd,
+                            wide(&prompt).as_ptr(),
+                            wide("Confirm imbuement").as_ptr(),
+                            MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2,
+                        ) == IDYES;
+                        mailbox = lock(&shared);
+                        super::super::input::enqueue_confirmed(
+                            &mut mailbox,
+                            &commands,
+                            &expected,
+                            intent,
+                            confirmed,
+                        );
+                    } else {
+                        super::super::input::enqueue(&mut mailbox, &commands, intent);
+                    }
                 }
             }
             let current = super::super::input::carried_items(&mailbox);
