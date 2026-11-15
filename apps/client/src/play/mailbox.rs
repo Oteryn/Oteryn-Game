@@ -203,6 +203,7 @@ pub(super) struct Mailbox {
     pub(super) rest_status: oteryn_client_ui::rest_status::RestStatusPanel,
     pub(super) battle_instinct_status:
         oteryn_client_ui::battle_instinct_status::BattleInstinctStatusPanel,
+    pub(super) skill_progress_last_request: Option<std::time::Instant>,
     pub(super) skill_progress: oteryn_client_ui::skill_progress::SkillProgressPanel,
     pub(super) party_effects: oteryn_client_ui::party_effects::PartyEffectsPanel,
     pub(super) loyalty_skills: oteryn_client_ui::loyalty_skills::LoyaltySkillsPanel,

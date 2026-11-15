@@ -1,23 +1,42 @@
 //! Windows personal boss reward panel; HWND access remains on its creating thread.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::combat_input::PlayCommand;
+#[cfg(windows)]
 use crate::play::{PlayLink, mailbox::lock};
-use oteryn_client_ui::boss_rewards::{BossRewardsPanel, Intent, panel_text};
+use oteryn_client_ui::boss_rewards::BossRewardsPanel;
+#[cfg(windows)]
+use oteryn_client_ui::boss_rewards::{Intent, panel_text};
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use std::sync::{Arc, Weak};
+#[cfg(windows)]
 use std::time::Duration;
+#[cfg(windows)]
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
+#[cfg(windows)]
 const DEATH: usize = 101;
+#[cfg(windows)]
 const ORDINAL: usize = 102;
+#[cfg(windows)]
 const BROWSE: usize = 103;
+#[cfg(windows)]
 const TAKE: usize = 104;
+#[cfg(windows)]
 const GROUP: usize = 105;
+#[cfg(windows)]
 const ALL: usize = 106;
+#[cfg(windows)]
 type WeakMailbox = Weak<std::sync::Mutex<crate::play::mailbox::Mailbox>>;
 #[derive(Default)]
+#[cfg(windows)]
 struct Actions(Vec<usize>);
+#[cfg(windows)]
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     unsafe {
         if msg == WM_COMMAND {
@@ -35,12 +54,14 @@ unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LR
         DefWindowProcW(hwnd, msg, w, l)
     }
 }
+#[cfg(windows)]
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")
         .encode_utf16()
         .chain(Some(0))
         .collect()
 }
+#[cfg(windows)]
 pub(in crate::play) fn open_window(link: &PlayLink) {
     if link.uses_shared_frontend() {
         return;
@@ -63,6 +84,7 @@ pub(in crate::play) fn open_window(link: &PlayLink) {
         close(&rollback);
     }
 }
+#[cfg(windows)]
 fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
     unsafe {
         let hwnd = CreateWindowExW(
@@ -98,10 +120,16 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             [10, 10, 190, 24],
             0,
         );
+        let Some(shared) = weak.upgrade() else {
+            DestroyWindow(hwnd);
+            return;
+        };
+        let fields = initial_fields(&lock(&shared).boss_rewards);
+        drop(shared);
         let death = control(
             hwnd,
             "EDIT",
-            "",
+            &fields[0],
             DEATH,
             [205, 10, 400, 24],
             WS_BORDER | WS_TABSTOP,
@@ -117,7 +145,7 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         let ordinal = control(
             hwnd,
             "EDIT",
-            "1",
+            &fields[1],
             ORDINAL,
             [135, 45, 80, 24],
             ES_NUMBER as u32 | WS_BORDER | WS_TABSTOP,
@@ -195,9 +223,20 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
         close(&weak);
     }
 }
-fn parse_death(text: &str) -> Option<[u8; 16]> {
+pub(super) fn initial_fields(panel: &BossRewardsPanel) -> [String; 2] {
+    [
+        panel
+            .death
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect(),
+        panel.selected_ordinal.to_string(),
+    ]
+}
+
+pub(super) fn parse_death(text: &str) -> Option<[u8; 16]> {
     let text = text.trim();
-    if text.len() != 32 {
+    if text.len() != 32 || !text.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return None;
     }
     let mut out = [0; 16];
@@ -206,11 +245,13 @@ fn parse_death(text: &str) -> Option<[u8; 16]> {
     }
     Some(out)
 }
+#[cfg(windows)]
 fn close(weak: &WeakMailbox) {
     if let Some(m) = weak.upgrade() {
         lock(&m).boss_rewards.open = false;
     }
 }
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -236,6 +277,7 @@ unsafe fn control(
         )
     }
 }
+#[cfg(windows)]
 unsafe fn read_text(hwnd: HWND) -> String {
     unsafe {
         let length = GetWindowTextLengthW(hwnd);

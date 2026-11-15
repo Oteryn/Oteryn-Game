@@ -111,6 +111,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
             if mailbox.chat_public_shutdown {
                 break;
             }
+            if let Some(previous) = &held
+                && previous.text != mailbox.chat_party_room.text
+                && read_text(message) == previous.text
+            {
+                SetWindowTextW(message, wide(&mailbox.chat_party_room.text).as_ptr());
+            }
             if GetWindowLongPtrW(hwnd, GWLP_USERDATA) != 0 {
                 SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
                 mailbox.chat_party_room.text = read_text(message);

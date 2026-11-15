@@ -2,6 +2,17 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::boss_difficulty::{BossDifficultyPanel, Intent, request};
 
+pub(super) fn difficulty_levels(
+    reply: Option<&oteryn_client_runtime::boss_difficulty::Reply>,
+) -> std::ops::RangeInclusive<u16> {
+    0..=match reply {
+        Some(oteryn_client_runtime::boss_difficulty::Reply::Window {
+            maximum_difficulty, ..
+        }) => *maximum_difficulty,
+        _ => 0,
+    }
+}
+
 pub(super) fn enabled(panel: &BossDifficultyPanel) -> bool {
     panel.selected && !panel.pending
 }
@@ -58,7 +69,7 @@ pub(in crate::play) use platform::open_window;
 // Win32 controls are owned and accessed exclusively by the panel thread.
 #[allow(unsafe_code)]
 mod platform {
-    use super::{enabled, submit};
+    use super::{difficulty_levels, enabled, submit};
     use crate::combat_input::PlayCommand;
     use crate::play::{PlayLink, mailbox::lock};
     use oteryn_client_ui::boss_difficulty::{BossDifficultyPanel, Intent, panel_text};
@@ -184,15 +195,6 @@ mod platform {
                 [205, 80, 160, 240],
                 CBS_DROPDOWNLIST as u32 | WS_VSCROLL | WS_TABSTOP,
             );
-            for level in 0..=25 {
-                SendMessageW(
-                    difficulty,
-                    CB_ADDSTRING,
-                    0,
-                    wide(&level.to_string()).as_ptr() as isize,
-                );
-            }
-            SendMessageW(difficulty, CB_SETCURSEL, 0, 0);
             let buttons = [
                 (tr!("Open"), OPEN, Intent::Open),
                 (tr!("Preview"), PREVIEW, Intent::Preview),
@@ -257,6 +259,21 @@ mod platform {
                 }
                 if held.as_ref() != Some(&mailbox.boss_difficulty) {
                     let panel = &mailbox.boss_difficulty;
+                    let levels = difficulty_levels(panel.reply.as_ref());
+                    if held.as_ref().map(|p| difficulty_levels(p.reply.as_ref()))
+                        != Some(levels.clone())
+                    {
+                        SendMessageW(difficulty, CB_RESETCONTENT, 0, 0);
+                        for level in levels {
+                            SendMessageW(
+                                difficulty,
+                                CB_ADDSTRING,
+                                0,
+                                wide(&level.to_string()).as_ptr() as isize,
+                            );
+                        }
+                        SendMessageW(difficulty, CB_SETCURSEL, usize::from(panel.difficulty), 0);
+                    }
                     if held.as_ref().map(|p| p.context) != Some(panel.context) {
                         let value = panel
                             .context
