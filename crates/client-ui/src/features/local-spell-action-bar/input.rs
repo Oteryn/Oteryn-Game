@@ -33,7 +33,7 @@ impl SpellHotkeys {
                     vec![InputAtom::Key(KeyCode::new(FIRST_DIGIT_KEY + slot - 1)?)],
                 )?,
                 ActionId::new(format!("{ACTION_PREFIX}{slot}"))?,
-                RepeatPolicy::Ignore,
+                RepeatPolicy::Allow,
             ));
         }
         let map = BindingMap::new(
@@ -55,7 +55,10 @@ impl SpellHotkeys {
         events
             .iter()
             .flat_map(|event| self.router.process(event))
-            .filter(|action| action.phase() == ActionPhase::Started)
+            // Platform repeats use the same bounded, coalescing cast queue as initial presses.
+            .filter(|action| {
+                matches!(action.phase(), ActionPhase::Started | ActionPhase::Repeated)
+            })
             .filter_map(|action| {
                 action
                     .action()
