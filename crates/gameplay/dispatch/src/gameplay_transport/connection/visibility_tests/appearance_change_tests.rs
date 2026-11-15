@@ -173,6 +173,10 @@ async fn scenario_actor(
             assert_eq!(domains[0].domain_id, 21);
             let snapshot =
                 appearance::Snapshot::decode(domains[0].payload).map_err(|e| format!("{e:?}"))?;
+            assert_eq!(snapshot.catalogue.root_revision, 1);
+            assert!(snapshot.catalogue.selected.is_none());
+            assert_eq!(snapshot.catalogue.outfits.len(), 1);
+            assert_eq!(snapshot.catalogue.outfits[0].look_type, 128);
             assert_eq!(snapshot.bindings.len(), binding_count);
             let shown = snapshot
                 .bindings
@@ -235,7 +239,15 @@ async fn scenario_actor(
             {
                 let catalogue = read_one(&mut client).await?;
                 let envelope = decode_wire_envelope(&catalogue)?;
-                assert_eq!(decode_state_delta(envelope.payload())?.domain_id, 21);
+                let delta = decode_state_delta(envelope.payload())?;
+                assert_eq!(
+                    (delta.domain_id, delta.delta_type),
+                    (21, appearance::DELTA_TYPE_APPEARANCE_CATALOGUE)
+                );
+                let catalogue =
+                    appearance::Catalogue::decode(delta.payload).map_err(|e| format!("{e:?}"))?;
+                assert_eq!(catalogue.root_revision, 2);
+                assert_eq!(catalogue.context, change.context);
                 let mappings = read_one(&mut client).await?;
                 let envelope = decode_wire_envelope(&mappings)?;
                 let delta = decode_state_delta(envelope.payload())?;

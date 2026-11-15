@@ -198,3 +198,13 @@ change. Cancel closes the editor. The standing preview uses local verified sprit
 sheets; mounts display their catalogue keys because the model has no mount sprite
 IDs. The catalogue arrives in appearance snapshots and updates; the protocol has
 no separate outfit-window event or catalogue request command.
+
+Appearance changes still need a protocol follow-up before the production offer
+can be enabled: `Change.content_revision` requires the active cosmetics revision,
+but `Catalogue` supplies only its digest and the optional historical selection's
+provenance. Neither identifies the active revision string. The Bevy editor reports
+this missing server data on OK and keeps the edited preview. It must not guess a
+revision or reuse historical provenance. NEEDS-CONTRACT: supply the active
+`content_revision` in `oteryn.appearance.v1.Catalogue` (initial snapshot and catalogue
+delta); then consume it when constructing `oteryn.appearance.v1.Change`. Capability 25's production
+offer remains a separate protocol batch.

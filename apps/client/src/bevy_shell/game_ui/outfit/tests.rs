@@ -93,6 +93,26 @@ fn outfit_ok_sends_intent() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 #[test]
+fn outfit_apply_explains_missing_server_content_revision_without_sending()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (link, mut receiver, outbox) = crate::play::play_channel();
+    let mut value = panel();
+    value.fields[4].clear();
+    outbox.bevy_outfit_test_panel(value.clone());
+    send(&link, &Kind::Colour(0, 132));
+    send(&link, &Kind::Ok);
+    let after = link.appearance_panel();
+    assert!(!after.pending);
+    assert!(receiver.try_recv().is_err());
+    assert_eq!(after.fields[3], "132,0,0,0");
+    assert_eq!(after.catalogue, value.catalogue);
+    assert_eq!(
+        after.feedback,
+        "Appearance changes are unavailable: the server has not supplied the required outfit data"
+    );
+    Ok(())
+}
+#[test]
 fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::{
