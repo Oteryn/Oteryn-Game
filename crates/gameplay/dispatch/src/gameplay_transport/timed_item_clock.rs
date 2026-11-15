@@ -197,6 +197,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     effects::equipped_mana_shield(&equipment, native)?,
                     effects::equipped_offence(&equipment, native)?,
                     equipment.clone(),
+                    None,
                 ))
             })() {
                 let runtime = self.runtime.lock().await;

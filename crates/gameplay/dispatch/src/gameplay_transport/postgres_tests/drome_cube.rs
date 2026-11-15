@@ -21,6 +21,8 @@ use tokio::sync::Mutex;
 
 #[path = "drome_cube/cases.rs"]
 mod cases;
+#[path = "drome_cube/concoctions.rs"]
+mod concoctions;
 #[path = "drome_cube/fixture.rs"]
 mod fixture;
 #[path = "drome_cube/kooldown_aid.rs"]
@@ -35,6 +37,7 @@ enum Case {
     ExistingStack,
     ConcurrentLastUnit,
     KooldownAid,
+    Concoction(oteryn_gameplay_items::concoctions::Concoction, &'static str),
 }
 
 fn scenario(case: Case) -> TestResult {
@@ -126,6 +129,13 @@ impl FreshAdmissionAuthority for WireOwner<'_, '_, '_, '_> {
         target: ItemKey,
     ) -> Option<crate::gameplay_transport::container_view::ContainerObservation> {
         self.0.observe_container(actor, fence, target).await
+    }
+    async fn use_item(&self, actor: ExactActorRef, command: UseCommand, item: ItemKey) -> UseOutcome {
+        self.0.use_backpack_item(actor, command, item).await
+    }
+    async fn use_item_by_definition(&self, actor: ExactActorRef, command: UseCommand,
+        definition: std::num::NonZeroU32) -> UseOutcome {
+        self.0.use_item_definition(actor, command, definition).await
     }
     async fn use_drome_cube(
         &self,
@@ -385,4 +395,24 @@ async fn reload(
     assert_eq!(receipt.reward_index, expected);
     assert_eq!(harness.count("game_item_use_records").await?, 1);
     Ok(())
+}
+
+#[test]
+fn w09fx_all_eighteen_concoctions_consume_start_and_refuse_cooldown() -> TestResult {
+    use oteryn_gameplay_items::concoctions::{ALL, Concoction};
+    for kind in ALL {
+        if !matches!(kind, Concoction::KooldownAid | Concoction::WealthDuplex) {
+            scenario(Case::Concoction(kind, "w09fx_table"))?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn w09fx_stamina_extension_reaches_the_build_and_live_stamina_owners() -> TestResult {
+    scenario(Case::Concoction(oteryn_gameplay_items::concoctions::Concoction::StaminaExtension, "w09fx_stamina"))
+}
+#[test]
+fn w09fx_bestiary_betterment_doubles_the_real_kill_receipt_once() -> TestResult {
+    scenario(Case::Concoction(oteryn_gameplay_items::concoctions::Concoction::BestiaryBetterment, "w09fx_bestiary"))
 }

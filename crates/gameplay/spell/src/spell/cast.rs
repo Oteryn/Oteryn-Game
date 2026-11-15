@@ -86,6 +86,8 @@ pub struct CharacterCastFacts {
 pub struct PlayerSpellState {
     /// Tibiadrome suppresses training and soul-cost spells (manual combat.md:258-259).
     pub drome_practice: bool,
+    /// Online timers restored from the canonical concoction owner at admission.
+    pub(super) concoctions: [Option<u64>; 20],
     pub facts: CharacterCastFacts,
     /// Character-owner maxima before temporary Wheel dedication is projected.
     pub(crate) base_max_health: u32,
@@ -247,6 +249,7 @@ impl PlayerSpellState {
                 equipped_holy_protection: None,
                 equipped_element_protections: Default::default(),
                 equipped_offence: Default::default(),
+                concoctions: [None; 20],
                 training: None,
                 training_payment: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),

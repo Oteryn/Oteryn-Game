@@ -13,10 +13,17 @@ pub(super) fn attacker_offence(
     runtime: &ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
+    now_us: u64,
 ) -> EquippedOffence {
     states
         .get(runtime, actor, session)
-        .map(crate::spell::cast::PlayerSpellState::equipped_offence)
+        .map(|state| {
+            let mut offence = state.equipped_offence();
+            offence.critical_chance = offence
+                .critical_chance
+                .saturating_add(state.concoction_critical_chance(now_us));
+            offence
+        })
         .unwrap_or_default()
 }
 

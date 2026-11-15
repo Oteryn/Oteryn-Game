@@ -8,6 +8,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         Case::ExistingStack => "drome_cube_stack",
         Case::ConcurrentLastUnit => "drome_cube_concurrent",
         Case::KooldownAid => "kooldown_aid",
+        Case::Concoction(_, label) => label,
     };
     let harness = Harness::create(admin, label, true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -38,6 +39,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         .execute(&mut *tx)
         .await?;
     let source_key = match case {
+        Case::Concoction(kind, _) => kind.production_key(),
         Case::KooldownAid => {
             crate::durability::item_use::concoction::kooldown_aid::KOOLDOWN_AID_KEY
         }
@@ -63,6 +65,10 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
                  VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
         .bind(id(110).as_slice()).bind(id(42).as_slice()).bind(id(80).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+    if matches!(case, Case::Concoction(_, _)) {
+        sqlx::query("UPDATE game_item_instances SET quantity=2 WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(110).as_slice()).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     let channel_pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
         world,
@@ -152,7 +158,13 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         );
     }
     super::runtime_role(&harness.root).await?;
+    if matches!(case, Case::Concoction(oteryn_gameplay_items::concoctions::Concoction::StaminaExtension, _)) {
+        harness.root.commit_hunting_stamina(&authority, &harness.node, postgres_fixture::fence(1)?,
+            crate::durability::character_build::BuildOccurrence::from_bytes(id(150)).map_err(debug)?,
+            (2520, 1000)).await.map_err(debug)?;
+    }
     let result = match case {
+        Case::Concoction(kind, _) => super::concoctions::run(&owner, &harness, actor, session, index, kind).await,
         Case::KooldownAid => {
             super::kooldown_aid::run(&owner, &harness, actor, session, index).await
         }

@@ -135,15 +135,68 @@ pub(in crate::gameplay_transport) fn evaluate(
     occurrence: DecisionOccurrenceId,
     event: CharmHookEvent,
 ) -> Vec<CharmOutcome> {
+    evaluate_at(
+        states, runtime, catalogue, actor, session, race, root, occurrence, event, 0,
+    )
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the existing Charm event inputs plus its owner timestamp"
+)]
+pub(in crate::gameplay_transport) fn evaluate_at(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+    event: CharmHookEvent,
+    now_us: u64,
+) -> Vec<CharmOutcome> {
     let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
         return Vec::new();
     };
     let Some(state) = states.charm_state(runtime, actor, session) else {
         return Vec::new();
     };
+    struct WithConcoction<'a> {
+        state: &'a crate::durability::charm_state::CombatCharmState,
+        bonus: u32,
+    }
+    impl oteryn_gameplay_progression::charm_effects::CharmStateRead for WithConcoction<'_> {
+        fn character(&self) -> [u8; 16] {
+            oteryn_gameplay_progression::charm_effects::CharmStateRead::character(self.state)
+        }
+        fn offensive_trigger_bonus(&self) -> u32 {
+            self.bonus
+        }
+        fn assignments_for_race(
+            &self,
+            race: &str,
+        ) -> std::result::Result<
+            Vec<oteryn_gameplay_progression::charm_effects::CharmAssignment>,
+            oteryn_gameplay_progression::charm_effects::CharmStateUnavailable,
+        > {
+            oteryn_gameplay_progression::charm_effects::CharmStateRead::assignments_for_race(
+                self.state, race,
+            )
+        }
+    }
+    // Crystal scripts/systems/concoctions.lua:21 grants 5 percentage points.
+    let bonus = if states
+        .get(runtime, actor, session)
+        .is_some_and(|player| player.concoction_active(36726, now_us))
+    {
+        500
+    } else {
+        0
+    };
     run_charm_hook(
         catalogue,
-        state,
+        &WithConcoction { state, bonus },
         *lease.character_id().as_bytes(),
         race,
         root,
@@ -231,9 +284,25 @@ pub(super) fn damage_amount(
     damage: CharmDamageKind,
     amount: u64,
     armor_draw: u64,
+    source: Option<(&crate::spell::cast::PlayerSpellState, u64)>,
 ) -> Option<u32> {
     let snapshot = runtime.companion_snapshot(target).ok()?;
     let mut amount = u32::try_from(amount).unwrap_or(u32::MAX);
+    let element = match damage.element {
+        CharmElement::Physical => "physical",
+        CharmElement::Fire => "fire",
+        CharmElement::Earth => "earth",
+        CharmElement::Energy => "energy",
+        CharmElement::Ice => "ice",
+        CharmElement::Holy => "holy",
+        CharmElement::Death => "death",
+    };
+    if !damage.ignores_resistances
+        && let Some((source, now_us)) = source
+    {
+        amount = u32::try_from(source.concoction_damage(element, i64::from(amount), false, now_us))
+            .unwrap_or(u32::MAX);
+    }
     if damage.reduced_by_armor {
         amount = oteryn_gameplay_combat_rules::resolution::player_armor_mitigated(
             AttackConstants::checked_in()?,
@@ -243,15 +312,6 @@ pub(super) fn damage_amount(
         );
     }
     if !damage.ignores_resistances {
-        let element = match damage.element {
-            CharmElement::Physical => "physical",
-            CharmElement::Fire => "fire",
-            CharmElement::Earth => "earth",
-            CharmElement::Energy => "energy",
-            CharmElement::Ice => "ice",
-            CharmElement::Holy => "holy",
-            CharmElement::Death => "death",
-        };
         amount = u32::try_from(
             oteryn_gameplay_combat_rules::resolution::creature_damage_response(
                 &snapshot.state.policy,
@@ -401,9 +461,17 @@ pub(in crate::gameplay_transport) fn incoming_conditions(
                 ) else {
                     continue;
                 };
-                let Some(amount) = damage_amount(runtime, source, damage, amount, draw)
-                    .filter(|amount| *amount > 0)
-                else {
+                let Some(amount) = damage_amount(
+                    runtime,
+                    source,
+                    damage,
+                    amount,
+                    draw,
+                    states
+                        .get(runtime, target, session)
+                        .map(|state| (state, now)),
+                )
+                .filter(|amount| *amount > 0) else {
                     continue;
                 };
                 let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
@@ -605,5 +673,110 @@ mod tests {
         ));
         assert_eq!(states.charm_states.len(), 1);
         assert!(states.charm_state(&runtime, replacement, session).is_none());
+    }
+    #[test]
+    fn w09fx_charm_upgrade_reaches_the_real_offensive_hook_and_expires() {
+        use crate::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+        use oteryn_gameplay_progression::charm_effects::{CharmAttackerFacts, CharmHitSource};
+        let (mut runtime, actor, session) = runtime_with_player(82);
+        let character =
+            crate::foundation::CharacterId::decode(session.as_bytes()).expect("character");
+        runtime
+            .bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(character, 1).expect("lease"),
+            )
+            .expect("binding");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::gameplay_transport::actor_spell::tests::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("state");
+        let key = CharmKey::new("oteryn:charm.wound").expect("key");
+        assert!(
+            states.install_charm_state(
+                &runtime,
+                actor,
+                session,
+                CombatCharmState::new(
+                    crate::domain::CharacterId::from_bytes(*character.as_bytes())
+                        .expect("domain character"),
+                    CharacterCharmState {
+                        unlocks: [(key.clone(), CharmStage::new(1).expect("stage"))].into(),
+                        assignments: [(
+                            key,
+                            BestiaryRaceKey::new("oteryn:creature.rat").expect("race")
+                        )]
+                        .into(),
+                    }
+                )
+            )
+        );
+        assert!(
+            states
+                .get_mut(&runtime, actor, session)
+                .expect("state")
+                .activate_concoction(36726, 3_600_000, 0)
+        );
+        let catalogue =
+            crate::content::charm_source::CanonicalCharmCatalogue::embedded().expect("catalogue");
+        let root = GameplayDecisionRoot::from_bytes([82; 32]);
+        let event = CharmHookEvent::CommittedHit {
+            source: CharmHitSource::CharacterAttack,
+            attacker: CharmAttackerFacts {
+                level: 100,
+                max_health: 1000,
+                max_mana: 1000,
+            },
+            creature_max_health: 1000,
+            health_before: 1000,
+            health_after: 999,
+        };
+        let found = (0_u32..10_000).any(|seed| {
+            let mut bytes = [0; 16];
+            bytes[..4].copy_from_slice(&seed.to_le_bytes());
+            let occurrence = DecisionOccurrenceId::from_bytes(bytes);
+            let boosted = evaluate_at(
+                &states,
+                &runtime,
+                &catalogue,
+                actor,
+                session,
+                "oteryn:creature.rat",
+                &root,
+                occurrence,
+                event,
+                1,
+            );
+            let expired = evaluate_at(
+                &states,
+                &runtime,
+                &catalogue,
+                actor,
+                session,
+                "oteryn:creature.rat",
+                &root,
+                occurrence,
+                event,
+                3_600_000_000,
+            );
+            boosted
+                .first()
+                .is_some_and(|outcome| effect(outcome).is_some())
+                && expired
+                    .first()
+                    .is_some_and(|outcome| outcome.result == CharmResult::NotTriggered)
+        });
+        assert!(
+            found,
+            "the live five-point modifier changes a real proc roll and expires at the boundary"
+        );
     }
 }

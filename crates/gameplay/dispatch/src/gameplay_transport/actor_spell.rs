@@ -1298,6 +1298,7 @@ impl ChannelSpellStates {
             now,
             analyser_source,
             None,
+            false,
         )
     }
 
@@ -1315,6 +1316,7 @@ impl ChannelSpellStates {
         now: crate::foundation::owner_timer::SemanticTimeMicros,
         analyser_source: impl Into<super::analyser::HitSource>,
         public_cause: Option<crate::durability::character_death::PublicDeathCause>,
+        condition_preprocessed: bool,
     ) -> Option<CreatureHit> {
         let analyser_source = analyser_source.into();
         // Durable unknown outcomes retain their exact player before-state. A bite
@@ -1327,15 +1329,12 @@ impl ChannelSpellStates {
         }
         let state = self.get(runtime, target, target_session)?;
         let health_before = state.vitals().health;
-        let (next, damage) = crate::spell::actor_conditions::stage_typed_hit_in_world(
-            runtime,
-            target,
-            state,
-            magnitude,
-            kind,
-            now.get(),
-        )
-        .ok()?;
+        let stage = if condition_preprocessed {
+            crate::spell::actor_conditions::stage_melee_hit_in_world
+        } else {
+            crate::spell::actor_conditions::stage_typed_hit_in_world
+        };
+        let (next, damage) = stage(runtime, target, state, magnitude, kind, now.get()).ok()?;
         if next.revision() == state.revision() {
             return Some(CreatureHit {
                 damage,

@@ -491,7 +491,7 @@ async fn due_return(
         .spell_lane_permit()
         .await
         .ok_or("equipment test lane")?;
-    let Some((_, _, _, _, _, equipment)) = origin
+    let Some((_, _, _, _, _, equipment, _)) = origin
         .read_activity_death_effects(returned_fence)
         .await
         .map_err(|_| "current offline Channel equipment")?

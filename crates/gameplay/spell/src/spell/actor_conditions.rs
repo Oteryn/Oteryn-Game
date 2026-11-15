@@ -712,12 +712,51 @@ pub fn stage_typed_hit_in_world(
     ),
     SpellCastDisposition,
 > {
+    stage_typed_hit_in_world_inner(runtime, actor, state, magnitude, kind, now, false)
+}
+
+/// Melee raw condition modifiers were applied before defence and armor by the bite owner.
+pub fn stage_melee_hit_in_world(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
+    stage_typed_hit_in_world_inner(runtime, actor, state, magnitude, kind, now, true)
+}
+
+fn stage_typed_hit_in_world_inner(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+    condition_preprocessed: bool,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+    ),
+    SpellCastDisposition,
+> {
     let bonus = state
         .wheel_battle_instinct(runtime, actor, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    let magnitude = state
-        .after_player_block(magnitude, kind, bonus.shielding, now)
-        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = if condition_preprocessed {
+        state.after_player_block_without_concoction(magnitude, kind, bonus.shielding, now)
+    } else {
+        state.after_player_block(magnitude, kind, bonus.shielding, now)
+    }
+    .ok_or(SpellCastDisposition::Rejected)?;
     stage_hit(
         state,
         magnitude,

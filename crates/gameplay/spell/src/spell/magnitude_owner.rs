@@ -1008,8 +1008,15 @@ impl PreparedMagnitudeOwner {
                 )
                 .ok_or(Error::InvalidMagnitude)?;
         }
+        let base_chance = u32::from(needed(a.base_critical_chance_permyriad)?);
         let chance = skill_chance
-            .checked_add(u32::from(needed(a.base_critical_chance_permyriad)?))
+            .checked_add(base_chance)
+            .and_then(|chance| {
+                chance.checked_add(u32::from(
+                    self.caster
+                        .concoction_critical_chance(self.now_ms.saturating_mul(1000)),
+                ))
+            })
             .ok_or(Error::InvalidMagnitude)?;
         let _ = bonus
             .checked_add(needed(a.base_critical_extra_permyriad)?)
@@ -1196,6 +1203,19 @@ impl PreparedMagnitudeOwner {
                 u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
                 black,
             );
+            let pvp = target_state.concoction_damage(
+                element_key(element),
+                i64::from(pvp),
+                true,
+                self.now_ms.saturating_mul(1000),
+            );
+            let pvp = u32::try_from(self.caster.concoction_damage(
+                element_key(element),
+                pvp,
+                false,
+                self.now_ms.saturating_mul(1000),
+            ))
+            .map_err(|_| Error::InvalidMagnitude)?;
             let shielding = self
                 .player_block_shielding
                 .iter()
@@ -1204,7 +1224,7 @@ impl PreparedMagnitudeOwner {
                 .1;
             value = i64::from(
                 target_state
-                    .after_player_block(
+                    .after_player_block_without_concoction(
                         pvp,
                         crate::player_lethal::PlayerHitKind::from_element(Some(element_key(
                             element,
@@ -1244,6 +1264,9 @@ impl PreparedMagnitudeOwner {
         if policy.damage_immunities.iter().any(|v| v == key) {
             return Ok(0);
         }
+        value = self
+            .caster
+            .concoction_damage(key, value, false, self.now_ms.saturating_mul(1000));
         if armor {
             let base = policy.armor.ok_or(Error::InvalidBatch)?;
             let penetration = if element == Element::Physical {
@@ -1521,7 +1544,13 @@ impl PreparedMagnitudeOwner {
                         .ok_or(Error::InvalidMagnitude)?;
                 }
                 chance = chance
-                    .checked_add(u32::from(needed(a.base_critical_chance_permyriad)?))
+                    .checked_add(
+                        u32::from(needed(a.base_critical_chance_permyriad)?)
+                            + u32::from(
+                                self.caster
+                                    .concoction_critical_chance(self.now_ms.saturating_mul(1000)),
+                            ),
+                    )
                     .ok_or(Error::InvalidMagnitude)?;
                 // Crystal uses a 1..100 draw multiplied by 100, per healed target, no fatal roll.
                 if chance > 0 && checked_draw(draw, 1, 100)? * 100 <= i64::from(chance) {

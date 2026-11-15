@@ -203,7 +203,8 @@ fn scenario() -> TestResult {
             exchange(&owner, &mut admitted, 3, tab, &[8, 0, 0, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         let offence = CombatStats::decode(&offence_bytes).map_err(debug)?;
-        assert_eq!(offence.get(Stat::CriticalChance), Some(1_050_000));
+        assert_eq!(offence.get(Stat::CriticalChance), Some(1_100_000));
+        assert_eq!(offence.get(Stat::CriticalChanceConcoction), Some(50_000));
         assert_eq!(offence.get(Stat::LifeLeech), Some(500_000));
         assert_eq!(offence.get(Stat::Cleave), Some(1_000_000));
         assert_eq!(offence.get(Stat::PerfectShot1), Some(42));
@@ -233,10 +234,10 @@ fn scenario() -> TestResult {
         assert_eq!(misc.get(Stat::MaximumBlessings), Some(7));
         assert!(
             misc.get(Stat::WealthDuplexSeconds)
-                .is_some_and(|value| value > 0 && value <= 1800)
+                .is_some_and(|value| value > 0 && value <= 3600)
         );
         assert_eq!(misc.get(Stat::Momentum), None);
-        assert_eq!(misc.get(Stat::OtherConcoctions), None);
+        assert_eq!(misc.get(Stat::OtherConcoctions), Some(2));
         let version = sample_revision(&h).await?;
         let mut foreign = vec![8, 0, 0, 1];
         foreign.extend_from_slice(&id(60));
@@ -301,6 +302,11 @@ fn scenario() -> TestResult {
             .map_err(debug)?;
         assert!(replay.replayed);
         assert_eq!(replay.sample_revision, receipt.sample_revision);
+        let retained: Vec<u8> = sqlx::query_scalar("SELECT offence FROM game_character_cyclopedia_combat WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        let retained = CombatStats::decode(&retained).map_err(debug)?;
+        assert_eq!(retained.get(Stat::CriticalChance), snapshot.offence.get(Stat::CriticalChance));
+        assert_eq!(retained.get(Stat::CriticalChanceConcoction), Some(50_000));
         let mut changed = snapshot.clone();
         changed
             .offence
@@ -452,6 +458,10 @@ async fn seed(h: &Harness) -> TestResult {
     }
     sqlx::query("INSERT INTO game_character_concoction_effects(transaction_id,character_id,concoction,started_at,expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'wealth_duplex',now()-interval '30 minutes',now()+interval '30 minutes')")
         .bind(id(115).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+    for (seed, kind) in [(116, "strike_enhancement"), (117, "charm_upgrade")] {
+        sqlx::query("INSERT INTO game_character_concoction_effects(transaction_id,character_id,concoction,started_at,expires_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,now(),now()+interval '1 hour')")
+            .bind(id(seed).as_slice()).bind(id(41).as_slice()).bind(kind).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     Ok(())
 }

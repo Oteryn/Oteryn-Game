@@ -616,3 +616,56 @@ fn pubproj_creature_dot_keeps_frozen_identity_after_source_removal_and_hides_sum
     }
     Ok(())
 }
+
+#[test]
+fn w09fx_all_resiliences_reach_the_native_damage_owner_and_expire() -> Result<(), String> {
+    use crate::player_lethal::PlayerHitKind as Kind;
+    for (item, kind) in [
+        (36729, Kind::Fire),
+        (36730, Kind::Ice),
+        (36731, Kind::Earth),
+        (36732, Kind::Energy),
+        (36733, Kind::Holy),
+        (36734, Kind::Death),
+        (36735, Kind::Physical),
+    ] {
+        let (runtime, mut states, actor, session) = ready(81);
+        let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000);
+        assert!(
+            states
+                .get_mut(&runtime, actor, session)
+                .ok_or_else(|| "state".to_owned())?
+                .activate_concoction(item, 3_600_000, 0)
+        );
+        let hit = states
+            .apply_creature_damage_kind(
+                &runtime,
+                actor,
+                session,
+                100,
+                kind,
+                now,
+                oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            )
+            .ok_or_else(|| "native hit".to_owned())?;
+        assert_eq!(hit.damage.applied, 92, "{kind:?}");
+        let state = states
+            .get_mut(&runtime, actor, session)
+            .ok_or_else(|| "current state".to_owned())?;
+        state.restore_saved_vitals(185, 90);
+        state.install_concoctions(&[(item, now.get())]);
+        let hit = states
+            .apply_creature_damage_kind(
+                &runtime,
+                actor,
+                session,
+                100,
+                kind,
+                now,
+                oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
+            )
+            .ok_or_else(|| "expired native hit".to_owned())?;
+        assert_eq!(hit.damage.applied, 100, "expired {kind:?}");
+    }
+    Ok(())
+}

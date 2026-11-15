@@ -218,6 +218,35 @@ impl ChannelSpellStates {
         state.minutes = next;
         changed
     }
+    /// Publish the same-transaction build result without resetting the hunting clock.
+    pub(in crate::gameplay_transport) fn install_concoction_stamina(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        minutes: u16,
+        now: u64,
+    ) {
+        if self.get(runtime, actor, session).is_none() {
+            return;
+        }
+        if let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|s| s.actor == actor && s.session == session)
+        {
+            if state.pending_debit.is_none()
+                && state.pending_gain.is_none()
+                && state.minutes == state.durable
+            {
+                state.minutes = minutes;
+                state.durable = minutes;
+            }
+        } else {
+            self.install_admitted_stamina(actor, session, minutes, now);
+        }
+    }
+
     pub(super) fn stamina_to_flush(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.hunting_stamina.iter().any(|s| {
             s.actor == actor

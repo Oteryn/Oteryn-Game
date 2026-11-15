@@ -218,8 +218,8 @@ impl DurabilityRoot {
                     }
                     let projection =
                         super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
-                    let increment =
-                        talisman_bestiary_increment(occurrence, projection.bonuses(&race)[3]);
+                    let increment = talisman_bestiary_increment(occurrence, projection.bonuses(&race)[3])
+                        * concoction_bestiary_multiplier(&mut tx, fence.character_id).await?;
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(CapturedBountyTalismanKill {
                         fence,
@@ -362,6 +362,7 @@ impl DurabilityRoot {
                     } else {
                         let talisman = super::task_board::read_talisman_in_transaction(&mut tx, fence).await?;
                         talisman_bestiary_increment(request.occurrence, talisman.bonuses(request.race.key())[3])
+                            * concoction_bestiary_multiplier(&mut tx, fence.character_id).await?
                     };
                     let kill_count_after = first_kill_count
                         .saturating_add(u32::from(increment - 1))
@@ -608,6 +609,14 @@ fn validate_request(
         return Err(BestiaryProgressError::InvalidInput);
     }
     Ok(())
+}
+
+/// Crystal player.cpp:6549-6550 doubles the credited increment before the receipt is sealed.
+async fn concoction_bestiary_multiplier(
+    connection: &mut sqlx::PgConnection, character: CharacterId,
+) -> std::result::Result<u8, sqlx::Error> {
+    let active = super::item_use::concoction::active_concoctions(connection, character).await?;
+    Ok(if active.iter().any(|line| line.item_id == 36728) { 2 } else { 1 })
 }
 
 /// Crystal player.cpp:6555-6561 uses one uniform roll in 1..=10000. A tagged

@@ -298,6 +298,7 @@ fn pubproj_native_lethal_owner_retains_source_identity_in_death_work() {
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1),
             oteryn_protocol_oteryn::analyser::AnalyserDamageSource::Creature(None),
             Some(cause),
+            false,
         )
         .expect("native lethal owner commit");
     assert!(hit.death.is_some());

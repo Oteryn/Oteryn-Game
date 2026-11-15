@@ -155,6 +155,81 @@ impl PlayerSpellState {
         self.equipped_offence.clone()
     }
 
+    /// Crystal 201189f8 config.lua.dist:311-312: one hour while online. Runtime mirrors
+    /// use monotonic deadlines; a fresh admission restores only durable remaining time.
+    pub fn activate_concoction(&mut self, item_id: u32, remaining_ms: u64, now_us: u64) -> bool {
+        let Some(slot) = item_id
+            .checked_sub(36723)
+            .and_then(|n| self.concoctions.get_mut(n as usize))
+        else {
+            return false;
+        };
+        *slot = remaining_ms
+            .checked_mul(1000)
+            .and_then(|remaining| now_us.checked_add(remaining));
+        slot.is_some()
+    }
+
+    pub fn install_concoctions(&mut self, timers: &[(u32, u64)]) {
+        self.concoctions.fill(None);
+        for (item, deadline) in timers {
+            if let Some(slot) = item
+                .checked_sub(36723)
+                .and_then(|n| self.concoctions.get_mut(n as usize))
+            {
+                *slot = Some(*deadline);
+            }
+        }
+    }
+
+    pub fn concoction_active(&self, item_id: u32, now_us: u64) -> bool {
+        item_id
+            .checked_sub(36723)
+            .and_then(|n| self.concoctions.get(n as usize))
+            .and_then(|deadline| *deadline)
+            .is_some_and(|deadline| deadline > now_us)
+    }
+
+    /// Crystal scripts/systems/concoctions.lua:20: 500 hundredths of a percent.
+    pub fn concoction_critical_chance(&self, now_us: u64) -> u16 {
+        if self.concoction_active(36724, now_us) {
+            500
+        } else {
+            0
+        }
+    }
+
+    /// Crystal scripts/systems/concoctions.lua:24-37; creature.cpp:855-870 rounds
+    /// each condition's removed/added amount before the target's ordinary block.
+    pub fn concoction_damage(
+        &self,
+        element: &str,
+        damage: i64,
+        incoming: bool,
+        now_us: u64,
+    ) -> i64 {
+        let offset = match element {
+            "fire" => 0,
+            "ice" => 1,
+            "earth" => 2,
+            "energy" => 3,
+            "holy" => 4,
+            "death" => 5,
+            "physical" => 6,
+            _ => return damage,
+        };
+        let item = if incoming { 36729 } else { 36736 } + offset;
+        if damage <= 0 || !self.concoction_active(item, now_us) {
+            return damage;
+        }
+        let change = i64::try_from((i128::from(damage) * 8 + 50) / 100).unwrap_or(i64::MAX);
+        if incoming {
+            damage.saturating_sub(change)
+        } else {
+            damage.saturating_add(change)
+        }
+    }
+
     /// Replace the offence with that of a fresh committed equipment read.
     pub fn install_equipped_offence(&mut self, offence: EquippedOffence) {
         self.equipped_offence = offence;

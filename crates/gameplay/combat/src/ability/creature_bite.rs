@@ -211,6 +211,18 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// Raw source condition modifiers precede defence and armor (Crystal creature.cpp:879).
+    fn raw_melee_damage_taken(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        magnitude: u32,
+        _now: SemanticTimeMicros,
+    ) -> u32 {
+        magnitude
+    }
+
     /// Called only for melee auto-attacks, after defence, armor and physical protection.
     fn melee_damage_taken(
         &self,
@@ -462,6 +474,13 @@ fn resolve_and_apply(
     // the hit before the vitals owner's reductions and mana shield (`game.cpp`
     // `combatBlockHit` precedes `combatChangeHealth`).
     let constants = AttackConstants::checked_in().ok_or(BiteRejection::InvalidPlan)?;
+    let magnitude = vitals.raw_melee_damage_taken(
+        runtime,
+        intent.target,
+        intent.target_session,
+        magnitude,
+        now,
+    );
     let defended = vitals
         .target_defence(runtime, intent.target, intent.target_session, now)
         .map_or(magnitude, |bounds| {

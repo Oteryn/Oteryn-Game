@@ -80,6 +80,28 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
+    fn raw_melee_damage_taken(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: OwnerTime,
+    ) -> u32 {
+        self.states
+            .get(runtime, target, session)
+            .and_then(|state| {
+                u32::try_from(state.concoction_damage(
+                    "physical",
+                    i64::from(magnitude),
+                    true,
+                    now.get(),
+                ))
+                .ok()
+            })
+            .unwrap_or(magnitude)
+    }
+
     fn melee_damage_taken(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -204,10 +226,17 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                 ) else {
                     continue;
                 };
-                let Some(amount) =
-                    charm_combat::damage_amount(runtime, source, damage, amount, draw)
-                        .filter(|n| *n > 0)
-                else {
+                let Some(amount) = charm_combat::damage_amount(
+                    runtime,
+                    source,
+                    damage,
+                    amount,
+                    draw,
+                    self.states
+                        .get(runtime, target, session)
+                        .map(|state| (state, now.get())),
+                )
+                .filter(|n| *n > 0) else {
                     continue;
                 };
                 let amount = if self
@@ -363,6 +392,7 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
                     charm.source,
                 )
             }),
+            true,
         )?;
         if !was_dead && let (Some(death), Some(charm)) = (hit.death, &self.charm) {
             self.attack.capture_death_charm(

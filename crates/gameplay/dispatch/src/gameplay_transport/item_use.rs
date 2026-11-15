@@ -335,8 +335,8 @@ pub(super) fn hireling_refusal(
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
-    /// W22c: the durable effect row is the whole effect; the kill settle reads it.
-    Concoction,
+    /// The durable activation and its current runtime projection.
+    Concoction(u32),
 }
 
 enum UseSource {
@@ -600,12 +600,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
-            _ if entry.item.definition.production_key
-                == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
+            _ if oteryn_gameplay_items::concoctions::Concoction::from_production_key(
+                &entry.item.definition.production_key,
+            )
+            .is_some() =>
             {
                 (
                     ItemUseKind::Concoction,
-                    Effect::Concoction,
+                    Effect::Concoction(
+                        oteryn_gameplay_items::concoctions::Concoction::from_production_key(
+                            &entry.item.definition.production_key,
+                        )
+                        .ok_or(UseDisposition::NothingToUse)?
+                        .item_id(),
+                    ),
                     ItemUseFlaskPlan::None,
                 )
             }
@@ -656,6 +664,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_quantity_before: entry.item.quantity,
             flask,
         };
+        // Stamina shares the existing build receipt chain and commits its bounded gain
+        // beside the item burn. Flush live spending before that absolute durable increase.
+        if matches!(effect, Effect::Concoction(36725)) {
+            let budget = super::AdmissionRetryBudget::for_command(self.root);
+            let gained = self
+                .save_resting_stamina_with_budget(actor, session, &budget)
+                .await;
+            if !matches!(
+                gained,
+                super::actor_spell::TrainingSave::Saved
+                    | super::actor_spell::TrainingSave::NotApplicable
+            ) {
+                return Err(UseDisposition::Rejected);
+            }
+
+            let saved = self
+                .save_hunting_stamina_with_budget(actor, session, &budget)
+                .await;
+            if !matches!(
+                saved,
+                super::actor_spell::TrainingSave::Saved
+                    | super::actor_spell::TrainingSave::NotApplicable
+            ) {
+                return Err(UseDisposition::Rejected);
+            }
+        }
         // PREPARE (§5): requirements before any reservation, then FULL, then the cooldown.
         {
             let runtime = self.runtime.lock().await;
@@ -684,15 +718,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let analyser_supply =
             matches!(kind, ItemUseKind::Potion).then(|| request.source_definition.clone());
-        let commit = self
-            .root
-            .commit_item_use(self.character, self.holder, fence, request);
+        let commit = async {
+            if matches!(effect, Effect::Concoction(36725)) {
+                self.root
+                    .commit_stamina_extension(self.character, self.holder, fence, request)
+                    .await
+                    .map(|(outcome, stamina)| (outcome, Some(stamina)))
+            } else {
+                self.root
+                    .commit_item_use(self.character, self.holder, fence, request)
+                    .await
+                    .map(|outcome| (outcome, None))
+            }
+        };
+        let mut stamina_projection = None;
         let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
         let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
         {
-            Ok(Ok(ItemUseOutcome::Written { .. })) => (UseDisposition::Committed, true, false),
+            Ok(Ok((ItemUseOutcome::Written { .. }, stamina))) => {
+                stamina_projection = stamina;
+                (UseDisposition::Committed, true, false)
+            }
             // A replay committed earlier; its effect, if any, was applied then.
-            Ok(Ok(ItemUseOutcome::AlreadyCommitted { .. })) => {
+            Ok(Ok((ItemUseOutcome::AlreadyCommitted { .. }, stamina))) => {
+                stamina_projection = stamina;
                 (UseDisposition::Committed, false, false)
             }
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
@@ -702,8 +751,49 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Ok(Err(_)) => (UseDisposition::Rejected, false, false),
         };
+        let sampled = self.owner_now().get();
+        let timers = if kind == ItemUseKind::Concoction && disposition == UseDisposition::Committed
+        {
+            self.root
+                .read_active_potion_durations(
+                    self.character,
+                    self.holder,
+                    fence,
+                    *self.channel_id.as_bytes(),
+                )
+                .await
+                .ok()
+                .map(|lines| {
+                    lines
+                        .into_iter()
+                        .filter(|line| line.source == 1)
+                        .filter_map(|line| {
+                            line.remaining_ms
+                                .checked_mul(1000)
+                                .and_then(|remaining| sampled.checked_add(remaining))
+                                .map(|deadline| (line.item_id, deadline))
+                        })
+                        .collect::<Vec<_>>()
+                })
+        } else {
+            None
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        if let Some(timers) = timers
+            && let Some(state) = states.get_mut(&runtime, actor, session)
+        {
+            state.install_concoctions(&timers);
+        }
+        if let Some(stamina) = stamina_projection {
+            states.install_concoction_stamina(
+                &runtime,
+                actor,
+                session,
+                stamina,
+                self.owner_now().get(),
+            );
+        }
         if known_commit {
             if let Some(definition) = &analyser_supply {
                 states.analyser.supply(actor, session, definition, 1);
@@ -1311,7 +1401,16 @@ fn apply_effect(
                 };
             }
         }
-        Effect::Concoction => {}
+        Effect::Concoction(item) => {
+            // The postcommit read restores the canonical remaining timer, including replay.
+            // A known new write has this fallback if best-effort duration enrichment is busy.
+            if *item != 36725
+                && let Some(state) = states.get_mut(runtime, actor, session)
+                && !state.concoction_active(*item, now_ms.saturating_mul(1000))
+            {
+                state.activate_concoction(*item, 3_600_000, now_ms.saturating_mul(1000));
+            }
+        }
     }
 }
 

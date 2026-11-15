@@ -37,7 +37,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if expected_fence.is_some_and(|expected| expected != fence) {
             return Err(());
         }
-        let Some((effects, armor, defence, _, offence, equipment)) =
+        let Some((effects, armor, defence, _, offence, equipment, _)) =
             self.read_admission_effects(session).await?
         else {
             return Err(());

@@ -253,8 +253,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 trained.push((entry.actor, entry.session));
             }
-            let mut offence =
-                equipped_offence::attacker_offence(&states, &runtime, entry.actor, entry.session);
+            let mut offence = equipped_offence::attacker_offence(
+                &states,
+                &runtime,
+                entry.actor,
+                entry.session,
+                now.get(),
+            );
             // Conviction leech is part of the same primary-hit projection as equipment leech.
             // Recompute it for every due swing from the session's latest committed allocation;
             // the live spell-state Premium deadline prevents expired Premium from retaining it.
@@ -557,6 +562,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 }
+                let damage =
+                    if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_none() {
+                        states
+                            .get(&runtime, entry.actor, entry.session)
+                            .map_or(damage, |state| {
+                                state.concoction_damage("physical", damage, false, now.get())
+                            })
+                    } else {
+                        damage
+                    };
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
                 let mut resolved_element = crate::content::ProjectV2RangedElement::Physical;
                 let mut ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
@@ -606,9 +621,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ranged_magnitude = {
                         use crate::content::ProjectV2RangedElement as E;
                         offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
+                        let player = states.get(&runtime, entry.actor, entry.session)?;
+                        let physical = player.concoction_damage("physical", physical, false, now.get());
                         let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
                         let physical = creature_physical_response(&snapshot.state.policy, physical)?;
                         let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
+                        let elemental = player.concoction_damage(key, elemental, false, now.get());
                         let elemental = oteryn_gameplay_combat_rules::resolution::creature_damage_response(&snapshot.state.policy, elemental, key)?;
                         resolved_element = element;
                         Some([physical,elemental])
@@ -827,7 +845,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         CharmHitSource::CharacterAttack
                     };
-                    charm_combat::evaluate(
+                    charm_combat::evaluate_at(
                         &states,
                         &runtime,
                         self.imported_charms,
@@ -846,6 +864,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             },
                             creature_max_health,
                         ),
+                        now.get(),
                     )
                 };
                 charm_combat::bonuses(&mut offence, &outcomes);
@@ -968,6 +987,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             damage,
                             amount,
                             draw as u64,
+                            states
+                                .get(&runtime, entry.actor, entry.session)
+                                .map(|state| (state, now.get())),
                         )
                         .filter(|n| *n > 0) else {
                             continue;
@@ -1066,7 +1088,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 continue;
                             };
                             let Some(amount) = charm_combat::damage_amount(
-                                &runtime, neighbour, damage, amount, draw,
+                                &runtime,
+                                neighbour,
+                                damage,
+                                amount,
+                                draw,
+                                states
+                                    .get(&runtime, entry.actor, entry.session)
+                                    .map(|state| (state, now.get())),
                             )
                             .filter(|amount| *amount > 0) else {
                                 continue;
@@ -1267,7 +1296,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             return;
         };
-        let offence = equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
+        let offence =
+            equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session, now.get());
+        let Some(source_state) = states.get(runtime, hit.actor, hit.session) else {
+            return;
+        };
+        let Some(target_state) = states.get(runtime, hit.target, target_session) else {
+            return;
+        };
+        let raw = |element: &str, damage| {
+            source_state.concoction_damage(
+                element,
+                target_state.concoction_damage(element, damage, true, now.get()),
+                false,
+                now.get(),
+            )
+        };
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
             self.ranged_player_damage(
                 permit,
@@ -1280,10 +1324,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 constants,
                 root,
                 states.target_armor(runtime, hit.target, target_session),
+                &raw,
             )
             .await
         } else {
             None
+        };
+        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
+            hit.magnitude,
+            0,
+            crate::content::ProjectV2RangedElement::Physical,
+        ) else {
+            return;
+        };
+        let physical_raw = if hit.weapon.ranged.is_none() {
+            raw("physical", physical_raw)
+        } else {
+            physical_raw
+        };
+        let converted_key = match converted_element {
+            crate::content::ProjectV2RangedElement::Physical => "physical",
+            crate::content::ProjectV2RangedElement::Fire => "fire",
+            crate::content::ProjectV2RangedElement::Ice => "ice",
+            crate::content::ProjectV2RangedElement::Earth => "earth",
+            crate::content::ProjectV2RangedElement::Energy => "energy",
+            crate::content::ProjectV2RangedElement::Death => "death",
+        };
+        let secondary_raw = if hit.weapon.ranged.is_none() {
+            raw(converted_key, secondary_raw)
+        } else {
+            secondary_raw
         };
         let mut vitals = PlayerBiteVitals {
             quest_sessions: Some(&self.states.quest_sessions),
@@ -1306,13 +1376,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let armor = vitals.target_armor(runtime, hit.target, target_session);
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
-        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
-            hit.magnitude,
-            0,
-            crate::content::ProjectV2RangedElement::Physical,
-        ) else {
-            return;
-        };
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
             ranged_damage
                 .as_ref()
@@ -1347,8 +1410,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .as_ref()
                 .is_some_and(|r| matches!(r.damage, ranged::RangedDamage::Distance { .. }))
         {
-            let offence =
-                equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
+            let offence = equipped_offence::attacker_offence(
+                states,
+                runtime,
+                hit.actor,
+                hit.session,
+                now.get(),
+            );
             let Some((from, to)) = runtime
                 .read_actor_position(hit.actor)
                 .ok()
@@ -1940,6 +2008,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         constants: &AttackConstants,
         root: &GameplayDecisionRoot,
         armor: u32,
+        raw: &(dyn Fn(&str, i64) -> i64 + Sync),
     ) -> Option<RangedPlayerDamage> {
         use crate::content::ProjectV2RangedElement as Element;
         use crate::durability::character_equipment as equipment;
@@ -1963,6 +2032,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (physical, elemental, element) = ranged
             .split(hit.magnitude)
             .and_then(|(p, s, e)| offence.convert_physical(p, s, e))?;
+        let key = match element {
+            Element::Physical => "physical",
+            Element::Death => "death",
+            Element::Earth => "earth",
+            Element::Energy => "energy",
+            Element::Fire => "fire",
+            Element::Ice => "ice",
+        };
+        let physical = raw("physical", physical);
+        let elemental = raw(key, elemental);
         let physical = if physical > 0 {
             oteryn_gameplay_combat_rules::resolution::swing_mitigated(
                 root,

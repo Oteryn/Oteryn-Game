@@ -640,6 +640,7 @@ pub(in crate::gameplay_transport) type AdmissionEffects = (
     bool,
     EquippedOffence,
     EquipmentSnapshot,
+    Option<Vec<(u32, u64)>>,
 );
 
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.
@@ -794,7 +795,38 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let defence = equipped_defence(&equipment, native).ok_or(())?;
         let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
         let offence = equipped_offence_inner(&equipment, native, &imbuements).ok_or(())?;
-        Ok((effects, armor, defence, mana_shield, offence, equipment))
+        let sampled = self.owner_now().get();
+        let concoctions = self
+            .root
+            .read_active_potion_durations(
+                self.character,
+                self.holder,
+                fence.item_fence(),
+                *self.channel_id.as_bytes(),
+            )
+            .await
+            .ok()
+            .map(|lines| {
+                lines
+                    .into_iter()
+                    .filter(|line| line.source == 1)
+                    .filter_map(|line| {
+                        line.remaining_ms
+                            .checked_mul(1000)
+                            .and_then(|remaining| sampled.checked_add(remaining))
+                            .map(|deadline| (line.item_id, deadline))
+                    })
+                    .collect()
+            });
+        Ok((
+            effects,
+            armor,
+            defence,
+            mana_shield,
+            offence,
+            equipment,
+            concoctions,
+        ))
     }
 
     /// The caller holds the spell lane and runtime; publish equipment before its effects.
@@ -805,7 +837,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor, defence, mana_shield, offence, equipment)) = effects {
+        if let Some((effects, armor, defence, mana_shield, offence, equipment, concoctions)) =
+            effects
+        {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
@@ -826,6 +860,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            if let Some(concoctions) = concoctions {
+                state.install_concoctions(&concoctions);
+            }
             state.install_equipped_regeneration(regeneration);
             state.install_equipped_invisibility(invisible);
         }
@@ -841,7 +878,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         fence: crate::durability::item_transfer::CurrentCharacterItemFence,
         effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor, defence, mana_shield, offence, equipment)) = effects {
+        if let Some((effects, armor, defence, mana_shield, offence, equipment, concoctions)) =
+            effects
+        {
             self.install_house_proficiency_equipment(runtime, actor, session, fence, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
@@ -862,6 +901,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 proficiency_shield_modifier,
             );
             install_prepared_effects(state, effects, armor, defence, mana_shield, offence, mantra);
+            if let Some(concoctions) = concoctions {
+                state.install_concoctions(&concoctions);
+            }
             state.install_equipped_regeneration(regeneration);
             state.install_equipped_invisibility(invisible);
         }

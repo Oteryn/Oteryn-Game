@@ -394,6 +394,7 @@ impl PlayerSpellState {
             && self.equipped_mana_shield == before.equipped_mana_shield
             && self.equipped_defence == before.equipped_defence
             && self.equipped_offence == before.equipped_offence
+            && self.concoctions == before.concoctions
             && self.base_speed == before.base_speed
             && anchor.expected_revision == before.revision
             && before.revision.checked_add(1) == Some(anchor.next_revision)

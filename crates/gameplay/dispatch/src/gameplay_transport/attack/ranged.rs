@@ -858,6 +858,20 @@ pub(super) fn creature_damage(
                 == Some(crate::content::ReferenceAmmoType::Arrow)
     });
     let (physical, elemental, element) = resolved_damage(ranged.damage, damage, offence)?;
+    let key = match element {
+        Element::Physical => "physical",
+        Element::Death => "death",
+        Element::Earth => "earth",
+        Element::Energy => "energy",
+        Element::Fire => "fire",
+        Element::Ice => "ice",
+    };
+    let (physical, elemental) = wheel.map_or((physical, elemental), |(state, now, _, _, _)| {
+        (
+            state.concoction_damage("physical", physical, false, now),
+            state.concoction_damage(key, elemental, false, now),
+        )
+    });
     let physical = if physical > 0 {
         let physical = swing_mitigated(
             root,

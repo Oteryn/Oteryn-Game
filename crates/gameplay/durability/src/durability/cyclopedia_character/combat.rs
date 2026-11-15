@@ -69,19 +69,20 @@ fn stored_u64(row: &sqlx::postgres::PgRow, name: &str) -> Result<u64, sqlx::Erro
 async fn fill_misc(
     tx: &mut Transaction<'_, Postgres>,
     character: &[u8; 16],
-    now_ms: i64,
+    _now_ms: i64,
     misc: &mut CombatStats,
 ) -> Result<(), sqlx::Error> {
     let row = sqlx::query(
-        "SELECT (SELECT count(*) FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid AND blessing_key <> 'oteryn:blessing.twist_of_fate') AS blessings, \
-         COALESCE((SELECT greatest(0,ceil((extract(epoch FROM expires_at)*1000-$2::bigint)/1000))::bigint FROM game_character_concoction_effects \
-         WHERE character_id=encode($1,'hex')::uuid AND concoction='wealth_duplex' AND started_at<=to_timestamp($2::double precision/1000) AND expires_at>to_timestamp($2::double precision/1000) \
-         ORDER BY started_at DESC LIMIT 1),0) AS wealth_seconds",
-    )
-    .bind(character.as_slice())
-    .bind(now_ms)
-    .fetch_one(&mut **tx)
-    .await?;
+        "SELECT count(*) AS blessings FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid AND blessing_key <> 'oteryn:blessing.twist_of_fate'",
+    ).bind(character.as_slice()).fetch_one(&mut **tx).await?;
+    let character = crate::domain::CharacterId::from_bytes(*character)
+        .map_err(|_| sqlx::Error::Decode("concoction character".into()))?;
+    let active = super::super::item_use::concoction::active_concoctions(tx, character).await?;
+    let wealth_seconds = active.iter().find(|line| line.item_id == 36727)
+        .map_or(0, |line| line.remaining_ms.div_ceil(1000) as i64);
+    let other = active.iter().filter(|line| line.item_id != 36727).count() as i64;
+    misc.set(CombatStat::OtherConcoctions, other)
+        .map_err(|_| sqlx::Error::Decode("concoction count".into()))?;
     for (key, value) in [
         (CombatStat::Blessings, row.try_get::<i64, _>("blessings")?),
         (
@@ -90,7 +91,7 @@ async fn fill_misc(
         ),
         (
             CombatStat::WealthDuplexSeconds,
-            row.try_get::<i64, _>("wealth_seconds")?,
+            wealth_seconds,
         ),
     ] {
         misc.set(key, value)
@@ -225,6 +226,16 @@ impl DurabilityRoot {
                 sample_revision = next;
             }
             fill_misc(&mut tx, fence.character_id.as_bytes(), observed_ms, &mut snapshot.misc).await?;
+            let active = super::super::item_use::concoction::active_concoctions(&mut tx, fence.character_id).await?;
+            let chance = if active.iter().any(|line| line.item_id == 36724) { 50_000 } else { 0 };
+            let previous_chance = snapshot.offence.get(CombatStat::CriticalChanceConcoction).unwrap_or(0);
+            snapshot.offence.set(CombatStat::CriticalChanceConcoction, chance)
+                .map_err(|_| sqlx::Error::Decode("concoction critical chance".into()))?;
+            if let Some(total) = snapshot.offence.get(CombatStat::CriticalChance) {
+                snapshot.offence.set(CombatStat::CriticalChance, total.saturating_sub(previous_chance).saturating_add(chance))
+                    .map_err(|_| sqlx::Error::Decode("concoction critical total".into()))?;
+            }
+
             let encoded = match snapshot.encoded() {
                 Ok(encoded) => encoded,
                 Err(error) => return Ok(Err(error)),

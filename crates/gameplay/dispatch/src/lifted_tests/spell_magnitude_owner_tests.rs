@@ -2506,3 +2506,87 @@ fn ascetic_spell_and_rune_damage_use_own_or_guiding_mantra_after_flat_before_san
         }
     }
 }
+
+fn w09fx_numeric_fixture(element: Element) -> (Fixture, NativeCombatPlan) {
+    let mut f = fixture();
+    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("player");
+    f.attributes.binding.player_revision = f.state.revision();
+    f.attributes.base_critical_chance_permyriad = Some(0);
+    f.attributes.equipment_critical_chance_permyriad = Some(0);
+    f.attributes.base_critical_extra_permyriad = Some(10_000);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.wheel_flat_damage = Some(0);
+    f.attributes.elemental_pierce_permyriad = Some(vec![
+        (Element::Physical, 0),
+        (Element::Fire, 0),
+        (Element::Ice, 0),
+        (Element::Earth, 0),
+        (Element::Energy, 2_000),
+        (Element::Holy, 0),
+        (Element::Death, 0),
+    ]);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = element;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].magnitude = 100;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    (f, p)
+}
+
+#[test]
+fn w09fx_strike_enhancement_reaches_the_real_spell_critical_roll_and_expires() {
+    let (mut f, p) = w09fx_numeric_fixture(Element::Physical);
+    let finish = |f: &Fixture| {
+        let mut prepared = qualify(f, &p).expect("magnitude owner");
+        let NativeCombatPlan::Combat(combat) = &p else {
+            panic!("combat");
+        };
+        prepared
+            .finish(&p, &combat.hits[0], &f.bindings[1], &mut |low, high| {
+                500_i64.clamp(low, high)
+            })
+            .expect("finish")
+    };
+    assert_eq!(finish(&f), 95);
+    assert!(f.state.activate_concoction(36724, 3_600_000, 100_000));
+    assert_eq!(finish(&f), 190);
+    f.state.install_concoctions(&[(36724, 100_000)]);
+    assert_eq!(
+        finish(&f),
+        95,
+        "the expiry boundary removes the critical bonus"
+    );
+}
+
+#[test]
+fn w09fx_all_amplifications_reach_the_real_spell_damage_finisher() {
+    for (item, element) in [
+        (36736, Element::Fire),
+        (36737, Element::Ice),
+        (36738, Element::Earth),
+        (36739, Element::Energy),
+        (36740, Element::Holy),
+        (36741, Element::Death),
+        (36742, Element::Physical),
+    ] {
+        let (mut f, p) = w09fx_numeric_fixture(element);
+        assert!(f.state.activate_concoction(item, 3_600_000, 100_000));
+        let mut prepared = qualify(&f, &p).expect("magnitude owner");
+        let NativeCombatPlan::Combat(combat) = &p else {
+            panic!("combat");
+        };
+        let amount = prepared
+            .finish(&p, &combat.hits[0], &f.bindings[1], &mut |_, high| high)
+            .expect("finish");
+        // Crystal creature.cpp:867-870: +round(100*8%) before this fixture's 5% mitigation.
+        assert_eq!(amount, 102, "{element:?}");
+    }
+}

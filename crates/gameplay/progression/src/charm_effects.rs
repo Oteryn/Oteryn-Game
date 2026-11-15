@@ -56,6 +56,11 @@ pub struct CharmStateUnavailable;
 pub trait CharmStateRead {
     /// The `CharacterId` bytes of the character this state belongs to.
     fn character(&self) -> [u8; 16];
+    /// Crystal 201189f8 game.cpp:8564-8577: offensive trigger chance only;
+    /// Cripple and non-trigger stage values do not receive this modifier.
+    fn offensive_trigger_bonus(&self) -> u32 {
+        0
+    }
     /// Every charm this character assigned to `race_key` (the Creature definition key of the
     /// race's Bestiary entry), with its unlocked stage.
     fn assignments_for_race(
@@ -302,6 +307,24 @@ pub fn evaluate_charm_hook(
         if !event_runs_effect(&input.event, lethal, effect) {
             continue;
         }
+        let boosted = matches!(
+            effect,
+            CharmEffect::AttackProcDamage { .. }
+                | CharmEffect::AttackProcResourceDamage { .. }
+                | CharmEffect::KillAreaDamage { .. }
+                | CharmEffect::PreventCreatureFlee { .. }
+        );
+        let value = if boosted {
+            CharmPercent::from_hundredths(
+                value
+                    .hundredths()
+                    .saturating_add(state.offensive_trigger_bonus())
+                    .min(10_000),
+            )
+            .ok_or(CharmEvaluationError::InvalidStage)?
+        } else {
+            value
+        };
         let result = evaluate_effect(input, hook, lethal, definition, value)?;
         outcomes.push(CharmOutcome {
             charm_key: definition.key().to_owned(),

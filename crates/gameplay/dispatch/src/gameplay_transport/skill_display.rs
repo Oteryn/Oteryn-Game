@@ -127,7 +127,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .get(&runtime, admitted.runtime_actor?, admitted.game_session_id)
                 .and_then(|state| {
                     let now = self.owner_now().get();
-                    let (effects, _, _, _, _, equipment) = equipment.as_ref()?;
+                    let (effects, _, _, _, _, equipment, _) = equipment.as_ref()?;
                     state.owned_effective_skills(&build, now).ok()?;
                     let adjustments = state.owned_skill_adjustments(now).ok()?;
                     let mut values = [0; 8];

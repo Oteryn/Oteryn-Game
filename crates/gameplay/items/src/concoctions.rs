@@ -64,6 +64,36 @@ impl Concoction {
         ALL.into_iter().find(|kind| kind.production_key() == key)
     }
 
+    /// Crystal 201189f8 data/scripts/systems/concoctions.lua:7-37 identifies the effects.
+    pub const fn effect_key(self) -> &'static str {
+        [
+            "kooldown_aid",
+            "strike_enhancement",
+            "stamina_extension",
+            "charm_upgrade",
+            "wealth_duplex",
+            "bestiary_betterment",
+            "fire_resilience",
+            "ice_resilience",
+            "earth_resilience",
+            "energy_resilience",
+            "holy_resilience",
+            "death_resilience",
+            "physical_resilience",
+            "fire_amplification",
+            "ice_amplification",
+            "earth_amplification",
+            "energy_amplification",
+            "holy_amplification",
+            "death_amplification",
+            "physical_amplification",
+        ][self.index()]
+    }
+
+    pub fn from_effect_key(key: &str) -> Option<Self> {
+        ALL.into_iter().find(|kind| kind.effect_key() == key)
+    }
+
     pub const fn item_id(self) -> u32 {
         self as u32
     }

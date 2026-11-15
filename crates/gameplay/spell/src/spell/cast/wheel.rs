@@ -315,6 +315,31 @@ impl PlayerSpellState {
         shielding: u32,
         now_us: u64,
     ) -> Option<u32> {
+        use crate::player_lethal::PlayerHitKind;
+        let element = match kind {
+            PlayerHitKind::Physical => "physical",
+            PlayerHitKind::Fire => "fire",
+            PlayerHitKind::Ice => "ice",
+            PlayerHitKind::Earth => "earth",
+            PlayerHitKind::Energy => "energy",
+            PlayerHitKind::Holy => "holy",
+            PlayerHitKind::Death => "death",
+            _ => "",
+        };
+        let magnitude =
+            u32::try_from(self.concoction_damage(element, i64::from(magnitude), true, now_us))
+                .ok()?;
+        self.after_player_block_without_concoction(magnitude, kind, shielding, now_us)
+    }
+
+    /// A caller that already applied the raw condition modifiers before armor uses this stage.
+    pub fn after_player_block_without_concoction(
+        &self,
+        magnitude: u32,
+        kind: crate::player_lethal::PlayerHitKind,
+        shielding: u32,
+        now_us: u64,
+    ) -> Option<u32> {
         let magnitude = self.after_player_baseline(magnitude, kind, shielding, now_us)?;
         self.after_wheel_block(magnitude, kind, now_us)
     }
