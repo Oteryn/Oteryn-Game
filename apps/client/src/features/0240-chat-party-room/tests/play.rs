@@ -46,3 +46,34 @@ fn chat_snapshot_clears_retained_lines_before_later_party_messages() {
     );
     drop(link);
 }
+
+#[test]
+fn party_rejections_preserve_disposition_and_retry_delay() {
+    use crate::play::{mailbox::lock, play_channel};
+    use oteryn_session::{ChatDisposition, ChatIntent, ChatOutcome};
+    let (_link, _commands, outbox) = play_channel();
+    for disposition in [
+        ChatDisposition::Muted,
+        ChatDisposition::Exhausted,
+        ChatDisposition::NotAllowed,
+    ] {
+        lock(&outbox.0).chat_party_room.pending = true;
+        outbox.chat_result(
+            &ChatIntent::Party {
+                text: "hello".into(),
+            },
+            &ChatOutcome {
+                command_id: 1,
+                status: oteryn_session::CommandStatus::Rejected,
+                disposition,
+                wait_seconds: 17,
+                result_server_sequence: 1,
+            },
+        );
+        let mailbox = lock(&outbox.0);
+        assert!(!mailbox.chat_party_room.pending);
+        let feedback = mailbox.chat_party_room.feedback.as_deref().unwrap_or("");
+        assert!(feedback.contains(&format!("{disposition:?}")), "{feedback}");
+        assert!(feedback.contains("17"), "{feedback}");
+    }
+}
