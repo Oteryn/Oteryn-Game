@@ -8,7 +8,10 @@ impl ActivityHandoffOwner {
         fence: CurrentCharacterItemFence,
         active: &crate::content::ActiveGeneration,
         template: &crate::content::bosses::activity_template::QualifiedActivityRoomTemplate,
-        world_origin: Option<(&crate::content::QualifiedNativeEntryRoom, &crate::foundation::ChannelContentPin)>,
+        world_origin: Option<(
+            &crate::content::QualifiedNativeEntryRoom,
+            &crate::foundation::ChannelContentPin,
+        )>,
     ) -> Result<bool> {
         if ![
             (
@@ -67,7 +70,11 @@ impl ActivityHandoffOwner {
         // runtime and current activation before accepting this interpretation.
         if let Some((origin, pin)) = world_origin {
             self.publish_qualified_boss_rooms_from_world(
-                node, std::slice::from_ref(template), active, origin, pin,
+                node,
+                std::slice::from_ref(template),
+                active,
+                origin,
+                pin,
             )
             .await?;
         } else {

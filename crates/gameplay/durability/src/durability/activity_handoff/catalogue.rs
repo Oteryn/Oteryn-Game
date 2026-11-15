@@ -21,7 +21,9 @@ impl ActivityHandoffOwner {
         origin: &crate::content::QualifiedNativeEntryRoom,
         pin: &crate::foundation::ChannelContentPin,
     ) -> Result<()> {
-        if active.qualify_published_world_context(origin, pin).is_none()
+        if active
+            .qualify_published_world_context(origin, pin)
+            .is_none()
             || templates.iter().any(|template| {
                 template.issue_runtime_pin(active).is_err()
                     || template.room().movement_cells().scope().world_id != pin.world_id()
