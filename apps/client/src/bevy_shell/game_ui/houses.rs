@@ -136,6 +136,7 @@ fn project(
         &skin,
         owner.generation(),
         &panel.fields,
+        &panel.model,
         &message,
     ));
     state.fields = panel.fields;
@@ -286,7 +287,7 @@ pub(super) fn build(
     skin: &Skins,
     generation: u64,
     fields: &[String; 7],
-    message: &str,
+    model: &Panel,
 ) -> Entity {
     let root = commands
         .spawn((
@@ -328,12 +329,18 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(root).add_child(panel);
-    source::dialog_caption(
-        commands,
-        panel,
-        "Houses — Browser, Auctions and Transfers",
-        skin.font.clone(),
+    let title = model.page.rows.get(model.index).map_or_else(
+        || "Houses — Browser, Auctions and Transfers".to_owned(),
+        |row| {
+            let name = if row.name.is_empty() {
+                &row.house
+            } else {
+                &row.name
+            };
+            format!("Edit House List — {name}")
+        },
     );
+    source::dialog_caption(commands, panel, &title, skin.font.clone());
     let content = commands
         .spawn((
             ScrollArea,
@@ -349,13 +356,18 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(panel).add_child(content);
-    label(commands, skin, content, message);
+    label(
+        commands,
+        skin,
+        content,
+        &oteryn_client_ui::house::panel_text(model),
+    );
     for (index, prompt) in [
         (0, "World UUID"),
         (1, "Town key"),
         (2, "House row (1 onwards)"),
         (3, "Maximum auction bid / transfer price (gold)"),
-        (4, "Enter one name per line."),
+        (4, "Enter one member UUID per line."),
         (
             5,
             "Door: x y floor / transfer date: YYYY-MM-DD HH:MM:SS UTC",
@@ -368,7 +380,7 @@ pub(super) fn build(
                 commands,
                 skin,
                 content,
-                "Access lists require member UUIDs. For transfers, enter the recipient character name here.",
+                "Names cannot be resolved by this server for access lists; an empty list removes all members. For transfers, enter the recipient character name here.",
             );
         }
         let mut editable = EditableText::new(&fields[index]);

@@ -119,6 +119,7 @@ fn house_list_window() -> TestResult {
             String::new(),
             String::new(),
         ],
+        &oteryn_client_ui::house::Panel::default(),
         "",
     );
     queue.apply(app.world_mut());
@@ -127,7 +128,7 @@ fn house_list_window() -> TestResult {
         world
             .query::<&Text>()
             .iter(world)
-            .any(|text| text.0 == "Enter one name per line.")
+            .any(|text| text.0 == "Enter one member UUID per line.")
     );
     for caption in [
         "Bid",
@@ -286,6 +287,18 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         window: Entity::PLACEHOLDER,
     });
     app.update();
+    for expected in [
+        "Edit House List — oteryn:house.test",
+        "Enter one member UUID per line.",
+    ] {
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == expected),
+            "missing house list descriptor: {expected}"
+        );
+    }
     let save = app
         .world_mut()
         .query::<(&Text, &ChildOf)>()
@@ -363,6 +376,48 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
         0
     );
     assert!(receiver.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn house_list_window_uses_selected_house_name() -> TestResult {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.update();
+    let skin = app.world_mut().remove_resource::<Skins>().ok_or("skins")?;
+    let mut model = oteryn_client_ui::house::Panel::default();
+    model.page.rows = vec![
+        oteryn_client_runtime::house::Row {
+            name: "First house".into(),
+            ..default()
+        },
+        oteryn_client_runtime::house::Row {
+            name: "Harbour Place 2".into(),
+            house: "oteryn:house.harbour-2".into(),
+            ..default()
+        },
+    ];
+    model.index = 1;
+    let mut queue = bevy::ecs::world::CommandQueue::default();
+    let mut commands = Commands::new(&mut queue, app.world());
+    super::super::houses::build(&mut commands, &skin, 1, &Default::default(), &model, "");
+    queue.apply(app.world_mut());
+    let world = app.world_mut();
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Edit House List — Harbour Place 2")
+    );
+    assert!(
+        !world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Enter one name per line.")
+    );
     Ok(())
 }
 
