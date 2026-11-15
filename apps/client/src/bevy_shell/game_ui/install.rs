@@ -1,6 +1,11 @@
 //! Installation of the shared in-game presentations.
 use super::{
-    actions, analyser, bestiary, bosstiary, bug_report, chat, cyclopedia, cyclopedia_items, cyclopedia_map, depot, feature_dialogs, forge, highscores, hotkeys, hud, imbuement_tracker, imbuing, inventory, item_details, journal, layout, market, minimap, modal, npc_shop, options, outfit, party, prey, proficiency, project, projection, quick_loot, reward_wall, rule_violation, satellite_map, stash, store, store_inbox, task_board, task_tracker, team_finder, trade, tutorial, unjustified_points, wheel,
+    actions, analyser, bestiary, bosstiary, bug_report, chat, cyclopedia, cyclopedia_items,
+    cyclopedia_map, depot, feature_dialogs, forge, highscores, hotkeys, hud, imbuement_tracker,
+    imbuing, inventory, item_details, journal, layout, market, minimap, modal, npc_shop, options,
+    outfit, party, prey, proficiency, project, projection, quick_loot, reward_wall, rule_violation,
+    satellite_map, stash, store, store_inbox, task_board, task_tracker, team_finder, trade,
+    tutorial, unjustified_points, wheel,
 };
 use bevy::prelude::*;
 

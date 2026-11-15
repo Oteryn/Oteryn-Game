@@ -1,8 +1,8 @@
 //! Shared in-game regions. Modules project the retained client owners into these anchors.
 mod actions;
 mod analyser;
-mod bosstiary;
 mod bestiary;
+mod bosstiary;
 mod bug_report;
 mod chat;
 mod cyclopedia;
@@ -47,8 +47,8 @@ mod stash;
 mod store;
 mod store_inbox;
 mod task_board;
-mod team_finder;
 mod task_tracker;
+mod team_finder;
 mod trade;
 mod tutorial;
 pub(super) mod unjustified_points;
