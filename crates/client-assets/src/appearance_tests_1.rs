@@ -22,6 +22,33 @@ mod tests {
     }
 
     #[test]
+    fn odd_fixed_and_mean_phase_durations_keep_their_remainders() -> Result<(), &'static str> {
+        for (low, high, expected) in [(75, 75, 75), (75, 77, 76), (u32::MAX, u32::MAX, 10_000)] {
+            let mut message = shifted(0, 0);
+            let info = message
+                .frame_group
+                .first_mut()
+                .and_then(|group| group.sprite_info.as_mut())
+                .ok_or("sprite info")?;
+            info.sprite_id = vec![1, 2];
+            info.animation = Some(AnimationMsg {
+                sprite_phase: vec![
+                    PhaseMsg {
+                        duration_min: Some(low),
+                        duration_max: Some(high)
+                    };
+                    2
+                ],
+            });
+            let appearance = convert(9, message).ok_or("converted effect")?;
+            assert_eq!(appearance.phase_ms, [expected, expected]);
+            assert_eq!(appearance.phase_at(u64::from(expected - 1)), Some(0));
+            assert_eq!(appearance.phase_at(u64::from(expected)), Some(1));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn an_oversized_displacement_makes_the_entry_unusable() {
         let kept = convert(1, shifted(8, MAX_DISPLACEMENT_PX));
         assert_eq!(
