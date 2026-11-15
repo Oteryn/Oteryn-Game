@@ -2,6 +2,7 @@
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::foundation::{CharacterId, CharacterLease};
+use crate::map::view::MapFacts;
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
@@ -104,10 +105,15 @@ pub(super) async fn exercise(
         UseDisposition::Committed
     );
     let next_command = admitted.continuity.next_command_id;
+    // Personal rewards preserve the shared chest; only the character once track changes.
+    assert_eq!(
+        owner.bundle_map().ok_or("map")?.facts.object_revision(key),
+        0
+    );
     let claimed_payload =
         oteryn_protocol_oteryn::world_object::encode_use_intent(&WorldObjectTarget {
             placement,
-            expected_revision: 1,
+            expected_revision: 0,
         })
         .map_err(debug)?;
     let second =

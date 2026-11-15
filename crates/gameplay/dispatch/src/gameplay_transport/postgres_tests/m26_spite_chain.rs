@@ -55,14 +55,28 @@ async fn scenario(admin: String) -> TestResult {
     let native = active
         .native_gameplay()
         .ok_or("native production content")?;
-    let room = source_pin.qualified_room().clone();
+    let source = crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsSpite;
+    let room = active
+        .qualify_activity_source_room(source_pin.qualified_room(), source)
+        .map_err(debug)?;
+    let room = crate::gameplay_transport::activity_runtime::source_bundle::qualify(
+        &room,
+        source,
+        active,
+        world,
+        super::fixture::fence(1)?
+            .runtime_scope
+            .channel_id()
+            .ok_or("Channel")?,
+    )
+    .map_err(|_| "Spite source bundle")?;
     let candidate = crate::content::bosses::activity_template::captured_boss_levers()
         .map_err(debug)?
         .into_iter()
         .find(|row| row.creature_key.as_deref() == Some(SPITE_KEY))
         .ok_or("Spite source candidate")?;
-    let template = controller
-        .qualify_activity_template(&room, &room, "content-1", &candidate)
+    let template = active
+        .qualify_soul_war_activity_template(&room, "content-1", source)
         .map_err(debug)?;
     assert_eq!(
         (
@@ -72,6 +86,10 @@ async fn scenario(admin: String) -> TestResult {
         ),
         (250, 1, 60)
     );
+    assert_eq!(
+        Some(template.creature_key()),
+        candidate.creature_key.as_deref()
+    );
     let lever = *template.lever_positions().first().ok_or("source lever")?;
     let pin = source_pin.into_channel_pin();
     let pin = ChannelContentPin::from_activation(
@@ -79,8 +97,8 @@ async fn scenario(admin: String) -> TestResult {
         pin.activation_sequence(),
         pin.server_artifact_digest(),
         pin.client_artifact_digest(),
-        pin.frame_binding_digest(),
-        pin.map_revision_digest(),
+        room.frame_binding().digest(),
+        room.map_revision_digest(),
         (lever.x, lever.y, i16::try_from(lever.z)?),
     );
     let deps = Dependencies::with_content_and_capacity(
@@ -99,6 +117,10 @@ async fn scenario(admin: String) -> TestResult {
     owner.evidence = &evidence.evidence;
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
+    owner
+        .activity_runtimes
+        .register_source_room(source, &deps.room)
+        .map_err(|_| "register Spite source room")?;
     // A qualified level-250 participant, with the actual native progression policy.
     let progression = native
         .progression()
@@ -320,16 +342,24 @@ async fn scenario(admin: String) -> TestResult {
         let runtime = destination.runtime.lock().await;
         let room = destination
             .rooms()
-            .gate_source_map_initialization()
-            .ok_or("actual bounded source Instance map")?;
-        assert!(
-            room.source_world()
-                .ok_or("source Instance")?
-                .pending_mutable_placements()
-                .is_empty()
+            .gate_monster_ai()
+            .ok_or("actual captured source Instance map")?;
+        // Source Instances own their captured Bundle map. The native SourceWorld
+        // initializer belongs to the separate static-instance qualification case.
+        assert!(room.source_world().is_none());
+        assert_eq!(room.pinned_activity_source_room(), Some(source));
+        assert_eq!(
+            destination
+                .bundle_map()
+                .ok_or("source Bundle")?
+                .overlay
+                .runtime_scope(),
+            instance
         );
+        assert_eq!(room.map_revision_digest(), runtime.map_revision_digest());
         assert!(
-            CurrentNativeMapInitialization::qualify_static_instance(&runtime, room, native).is_ok()
+            CurrentNativeMapInitialization::qualify_static_instance(&runtime, room, native)
+                .is_err()
         );
         assert!(
             CurrentNativeMapInitialization::qualify_current_binding(&runtime, room, native)

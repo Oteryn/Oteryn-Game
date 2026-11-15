@@ -553,9 +553,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ).await? {
                             return Err(DurabilityError::Unavailable);
                         }
-                    if endgame_kill && crate::durability::activity_handoff::boss_room::native_defeat_earned_in_transaction(
+                    if endgame_kill && crate::durability::activity_handoff::boss_room::record_native_defeat_earned_in_transaction(
                         &mut tx, entry.facts.death.runtime_scope(), entry.facts.death.scope_ownership_generation(),
                         &entry.creature, super::kill_reward::personal_death_id(entry.facts.death),
+                        // The chest owner uses its frozen wall clock; nonreward
+                        // deaths use the separately retained activity occurrence.
+                        entry.boss_reward.as_ref()
+                            .map(|death| i64::try_from(death.died_at_unix_ms))
+                            .transpose().map_err(|_| DurabilityError::InvalidStoredState)?
+                            .or_else(|| entry.activity_death.as_ref().map(|death| death.died_at_unix_ms)),
                     ).await? {
                         let death = death.as_slice();
                         // Quest/Hazard gains observe pre-gain XP and commit in the same
