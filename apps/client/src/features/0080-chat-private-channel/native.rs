@@ -1,13 +1,22 @@
 //! Win32 FFI for private-channel controls, used only on the chat window's creating thread.
 #![allow(unsafe_code)]
+#[cfg(windows)]
 use crate::combat_input::PlayCommand;
+#[cfg(windows)]
 use crate::play::mailbox::Mailbox;
-use oteryn_client_ui::chat_private_channel::{ChatPanel, Intent, leave_label, panel_text};
+use oteryn_client_ui::chat_private_channel::ChatPanel;
+#[cfg(windows)]
+use oteryn_client_ui::chat_private_channel::{Intent, leave_label, panel_text};
+#[cfg(windows)]
 use std::ptr::{null, null_mut};
+#[cfg(windows)]
 use tokio::sync::mpsc::UnboundedSender;
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::HWND;
+#[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
+#[cfg(windows)]
 pub(in crate::play) struct Controls {
     channels: HWND,
     leave: HWND,
@@ -16,8 +25,10 @@ pub(in crate::play) struct Controls {
     transcript: HWND,
     ids: Vec<u16>,
     held: Option<ChatPanel>,
+    submitted: Option<String>,
 }
 
+#[cfg(windows)]
 fn wide(text: &str) -> Vec<u16> {
     text.replace('\0', "\u{fffd}")
         .encode_utf16()
@@ -25,6 +36,7 @@ fn wide(text: &str) -> Vec<u16> {
         .collect()
 }
 
+#[cfg(windows)]
 impl Controls {
     pub(in crate::play) fn accepts(id: usize, note: usize) -> bool {
         (matches!(id, 201..=207) && note == BN_CLICKED as usize)
@@ -96,6 +108,7 @@ impl Controls {
                 transcript,
                 ids: vec![],
                 held: None,
+                submitted: None,
             }
         }
     }
@@ -125,13 +138,24 @@ impl Controls {
             };
             mailbox.chat_private.name = read_text(self.name);
             mailbox.chat_private.text = read_text(self.message);
+            let was_pending = mailbox.chat_private.pending;
             super::super::input::enqueue(mailbox, commands, intent);
+            if intent == Intent::Send && !was_pending && mailbox.chat_private.pending {
+                self.submitted = Some(mailbox.chat_private.text.clone());
+            }
             true
         }
     }
 
     pub(in crate::play) unsafe fn render(&mut self, panel: &ChatPanel) {
         unsafe {
+            if !panel.pending {
+                if clear_submitted_draft(panel, self.submitted.as_deref(), &read_text(self.message))
+                {
+                    SetWindowTextW(self.message, wide("").as_ptr());
+                }
+                self.submitted = None;
+            }
             if self.held.as_ref() == Some(panel) {
                 return;
             }
@@ -175,6 +199,7 @@ impl Controls {
     }
 }
 
+#[cfg(windows)]
 unsafe fn control(
     parent: HWND,
     class: &str,
@@ -200,11 +225,45 @@ unsafe fn control(
         )
     }
 }
+#[cfg(windows)]
 unsafe fn read_text(hwnd: HWND) -> String {
     unsafe {
         let length = GetWindowTextLengthW(hwnd);
         let mut value = vec![0; usize::try_from(length).unwrap_or(0) + 1];
         let read = GetWindowTextW(hwnd, value.as_mut_ptr(), length + 1);
         String::from_utf16_lossy(&value[..usize::try_from(read).unwrap_or(0)])
+    }
+}
+
+fn clear_submitted_draft(panel: &ChatPanel, submitted: Option<&str>, control: &str) -> bool {
+    !panel.pending
+        && panel.feedback.is_none()
+        && panel.text.is_empty()
+        && submitted == Some(control)
+}
+#[cfg(test)]
+mod regression {
+    #[test]
+    fn private_native_control_clears_only_the_successfully_submitted_text() {
+        let mut panel = super::ChatPanel::default();
+        assert!(super::clear_submitted_draft(&panel, Some("hello"), "hello"));
+        assert!(!super::clear_submitted_draft(
+            &panel,
+            Some("hello"),
+            "new text"
+        ));
+        panel.pending = true;
+        assert!(!super::clear_submitted_draft(
+            &panel,
+            Some("hello"),
+            "hello"
+        ));
+        panel.pending = false;
+        panel.feedback = Some("refused".into());
+        assert!(!super::clear_submitted_draft(
+            &panel,
+            Some("hello"),
+            "hello"
+        ));
     }
 }

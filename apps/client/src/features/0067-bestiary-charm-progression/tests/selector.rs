@@ -207,3 +207,48 @@ fn t081_named_selector_uses_confirmed_descriptions_and_routes_all_operations()
     assert!(link.charm_progression_panel().charm_choices().is_empty());
     Ok(())
 }
+
+#[test]
+fn cancelled_selector_does_not_consume_progression_reply() -> Result<(), Box<dyn std::error::Error>>
+{
+    for races in [false, true] {
+        let (link, mut receiver, outbox) = play_channel();
+        {
+            let mut m = crate::play::mailbox::lock(&link.mailbox);
+            let p = &mut m.properties.charm_progression;
+            p.selected = true;
+            p.pending = true;
+            if races {
+                p.selector.race_pending = Some(vec![1]);
+            } else {
+                p.selector.pending = Some(0);
+            }
+            m.cancel_activity_requests();
+        }
+        link.charm_progression_request(Intent::Query);
+        let PlayCommand::Feature(query) = receiver.try_recv()? else {
+            return Err("progression query".into());
+        };
+        let reply = w::CharmProgressionReply {
+            outcome: w::CharmProgressionOutcome::Query,
+            fee_gold: 0,
+            bestiary: Vec::new(),
+            charms: Default::default(),
+        };
+        outbox.properties_result(
+            &query,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload: w::encode_charm_progression_reply(&reply).map_err(|e| format!("{e:?}"))?,
+            },
+        );
+        let panel = link.charm_progression_panel();
+        assert!(!panel.pending);
+        assert_eq!(panel.reply, Some(reply));
+        assert_eq!(panel.selector.pending, None);
+        assert_eq!(panel.selector.race_pending, None);
+    }
+    Ok(())
+}

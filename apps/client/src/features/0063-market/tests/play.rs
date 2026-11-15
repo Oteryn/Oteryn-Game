@@ -214,3 +214,7 @@ fn market_side_filter_preserves_server_offer_identity() -> Result<(), Error> {
     assert!(!link.market_filter_side(3));
     Ok(())
 }
+
+#[cfg(not(windows))]
+#[path = "../native.rs"]
+mod native_form;

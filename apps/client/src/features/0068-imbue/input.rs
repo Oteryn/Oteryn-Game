@@ -139,3 +139,23 @@ impl PlayLink {
         true
     }
 }
+
+#[cfg(any(windows, test))]
+pub(in crate::play) fn enqueue_confirmed(
+    mailbox: &mut Mailbox,
+    commands: &UnboundedSender<PlayCommand>,
+    expected: &oteryn_client_ui::imbue::ImbuePanel,
+    intent: Intent,
+    confirmed: bool,
+) -> bool {
+    if !confirmed
+        || !mailbox.imbue.open
+        || mailbox.imbue != *expected
+        || mailbox.world_input_blocked()
+        || commands.is_closed()
+    {
+        return false;
+    }
+    enqueue(mailbox, commands, intent);
+    mailbox.imbue.pending
+}
