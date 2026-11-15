@@ -292,3 +292,19 @@ fn release_effects() -> Vec<GreedEffect> {
         GreedEffect::BossSpeed { speed: BOSS_SPEED },
     ]
 }
+
+#[test]
+fn replacement_boss_cancels_previous_fight_but_preserves_current_opening() {
+    let mut room = GoshnarsGreedRoom::default();
+    room.lever_pulled(0);
+    room.boss_spawned();
+    room.boss_spawned();
+    assert_eq!(room.advance(10_000), vec![]);
+
+    room.minion_died(1, GreedMinion::Greedbeast, 10_000);
+    room.lever_pulled(20_000);
+    room.boss_spawned();
+    assert_eq!(room.advance(26_999), vec![]);
+    assert_eq!(room.advance(30_000).len(), 12);
+    assert_eq!(room.advance(40_000), vec![]);
+}
