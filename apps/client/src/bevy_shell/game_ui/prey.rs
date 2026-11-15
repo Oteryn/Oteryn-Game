@@ -3,7 +3,7 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
-use bevy::{prelude::*, ui_widgets::Activate};
+use bevy::{prelude::*, ui::InteractionDisabled, ui_widgets::Activate};
 use oteryn_client_ui::prey::{Intent, PreyPanel, creature_label};
 use oteryn_client_ui_bevy as source;
 #[cfg(test)]
@@ -12,6 +12,7 @@ mod tests;
 enum Kind {
     Close,
     Refresh,
+    Store,
     Reroll(u8),
     Confirm,
     Cancel,
@@ -26,7 +27,7 @@ struct Action {
 }
 #[derive(Resource, Default)]
 struct State {
-    seen: Option<(u64, PreyPanel, Option<u8>)>,
+    seen: Option<(u64, PreyPanel, Option<u8>, u64)>,
     root: Option<Entity>,
     confirmation: Option<u8>,
 }
@@ -70,6 +71,31 @@ fn resolve(kind: Kind, confirmation: &mut Option<u8>) -> Option<Intent> {
         _ => None,
     }
 }
+// These fixed Wildcard costs are the admitted Prey rules; gold quotes are not on the wire.
+fn affordable(panel: &PreyPanel, kind: &Kind) -> bool {
+    let cost = match kind {
+        Kind::Send(Intent::BonusReroll { .. } | Intent::SetOption { option: 1, .. }) => 1,
+        Kind::Send(Intent::SetOption { option: 2, .. }) => 5,
+        _ => 0,
+    };
+    cost == 0
+        || panel
+            .confirmed
+            .as_ref()
+            .is_some_and(|reply| reply.wildcard_balance >= cost)
+}
+fn reroll_time(free_at: u64, now: u64) -> String {
+    let minutes = free_at.saturating_sub(now).div_ceil(60);
+    if minutes == 0 {
+        "Free list reroll available".into()
+    } else {
+        format!(
+            "Next free list reroll in {:02}:{:02} (estimated)",
+            minutes / 60,
+            minutes % 60
+        )
+    }
+}
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
@@ -86,13 +112,21 @@ fn activate(
     let Some(play) = &owner.play else {
         return;
     };
-    if action.generation != owner.generation() || action.panel != play.link.prey_panel() {
+    if action.generation != owner.generation()
+        || action.panel != play.link.prey_panel()
+        || !affordable(&action.panel, &action.kind)
+    {
         return;
     }
     match action.kind {
         Kind::Close => {
             play.link.prey_set_open(false);
             state.confirmation = None;
+        }
+        Kind::Store => {
+            play.link.prey_set_open(false);
+            state.confirmation = None;
+            play.link.store_set_open(true);
         }
         Kind::Select(slot, index) => play.link.prey_select(slot, index),
         _ => {
@@ -117,9 +151,10 @@ fn button(
     kind: Kind,
     text: &str,
 ) {
+    let disabled = !affordable(panel, &kind);
     let child = commands
         .spawn((
-            source::button(skin.buttons.clone(), 220.),
+            source::button(skin.buttons.clone(), 320.),
             Action {
                 generation,
                 panel: panel.clone(),
@@ -128,6 +163,9 @@ fn button(
         ))
         .observe(activate)
         .id();
+    if disabled {
+        commands.entity(child).insert(InteractionDisabled);
+    }
     label(commands, skin, child, text);
     commands.entity(parent).add_child(child);
 }
@@ -153,11 +191,16 @@ fn project(
     if state
         .seen
         .as_ref()
-        .is_some_and(|(old, old_panel, _)| *old != generation || old_panel != &panel)
+        .is_some_and(|(old, old_panel, _, _)| *old != generation || old_panel != &panel)
     {
         state.confirmation = None;
     }
-    let seen = (generation, panel.clone(), state.confirmation);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    // Refresh cooldown labels once per minute even without another server reply.
+    let seen = (generation, panel.clone(), state.confirmation, now / 60);
     if state.seen.as_ref() == Some(&seen) {
         return;
     }
@@ -194,6 +237,43 @@ fn project(
         Kind::Close,
         "Close",
     );
+    if let Some(reply) = &panel.confirmed {
+        label(
+            &mut commands,
+            &skin,
+            root,
+            &format!("Prey Wildcards: {} / 52", reply.wildcard_balance),
+        );
+        label(
+            &mut commands,
+            &skin,
+            root,
+            &format!(
+                "Creature list: {} · Expansion {}",
+                reply.list_size,
+                if reply.expansion_owned {
+                    "owned"
+                } else {
+                    "not owned"
+                }
+            ),
+        );
+        label(
+            &mut commands,
+            &skin,
+            root,
+            "Controls requiring more Wildcards than your balance are disabled.",
+        );
+        button(
+            &mut commands,
+            &skin,
+            root,
+            generation,
+            &panel,
+            Kind::Store,
+            "Get Wildcards in Store",
+        );
+    }
     if let Some(feedback) = panel.feedback {
         label(&mut commands, &skin, root, feedback);
     }
@@ -214,7 +294,9 @@ fn project(
                 &mut commands,
                 &skin,
                 root,
-                &format!("Reroll the creature list in slot {slot}?"),
+                &format!(
+                    "Reroll the creature list in slot {slot}? The server may charge gold; the gold price is not provided. Rerolling replaces the current selection and bonus."
+                ),
             );
             button(
                 &mut commands,
@@ -245,6 +327,41 @@ fn project(
                     root,
                     &format!("Slot {id} · {}", slot_title(slot.state)),
                 );
+                if slot.state == 0 && id >= 2 {
+                    label(
+                        &mut commands,
+                        &skin,
+                        root,
+                        if id == 2 {
+                            "Slot 2: Premium access or a permanent Store unlock."
+                        } else {
+                            "Slot 3: permanent Store unlock."
+                        },
+                    );
+                    button(
+                        &mut commands,
+                        &skin,
+                        root,
+                        generation,
+                        &panel,
+                        Kind::Store,
+                        &format!("Unlock slot {id} in Store"),
+                    );
+                    label(
+                        &mut commands,
+                        &skin,
+                        root,
+                        "After a purchase, reopen Prey and Refresh to check access.",
+                    );
+                }
+                if slot.state != 0 {
+                    label(
+                        &mut commands,
+                        &skin,
+                        root,
+                        &reroll_time(slot.free_reroll_at, now),
+                    );
+                }
                 if slot.state == 2 {
                     let bonus = ["None", "Damage", "Defense", "Experience", "Loot"]
                         .get(usize::from(slot.bonus))
@@ -284,16 +401,16 @@ fn project(
                         Kind::Reroll(_) => (Kind::Reroll(id), "List reroll".to_owned()),
                         Kind::Send(Intent::BonusReroll { .. }) => (
                             Kind::Send(Intent::BonusReroll { slot: id }),
-                            "Bonus reroll".to_owned(),
+                            "Bonus reroll · 1 Wildcard".to_owned(),
                         ),
                         Kind::Send(Intent::SetOption { option, .. }) => {
                             let text = format!(
                                 "{} {}",
                                 if slot.option == option { "[x]" } else { "[ ]" },
                                 if option == 1 {
-                                    "Auto-reroll"
+                                    "Auto-reroll · 1 Wildcard per renewal"
                                 } else {
-                                    "Lock bonus"
+                                    "Lock bonus · 5 Wildcards per renewal"
                                 }
                             );
                             (

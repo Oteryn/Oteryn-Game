@@ -1,4 +1,5 @@
 use super::*;
+use bevy::ui::InteractionDisabled;
 #[test]
 fn prey_slot_state_labels() {
     assert_eq!(
@@ -52,10 +53,34 @@ fn fixture() -> Result<
     ),
     Box<dyn std::error::Error>,
 > {
+    fixture_balance(5)
+}
+fn fixture_balance(
+    balance: u8,
+) -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
+    fixture_details(balance, 0)
+}
+fn fixture_details(
+    balance: u8,
+    free_reroll_at: u64,
+) -> Result<
+    (
+        App,
+        tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    ),
+    Box<dyn std::error::Error>,
+> {
     use crate::play::{PlayView, play_channel};
     use oteryn_client_ui::prey::{CommandStatus, PreyResponse, prey};
     let (link, mut commands, outbox) = play_channel();
     outbox.bevy_prey_initialize(true);
+    outbox.bevy_store_initialize();
     link.prey_set_open(true);
     link.prey_request(Intent::Refresh);
     assert!(matches!(
@@ -64,7 +89,7 @@ fn fixture() -> Result<
     ));
     let reply = prey::Reply {
         status: 0,
-        wildcard_balance: 5,
+        wildcard_balance: balance,
         list_size: 9,
         expansion_owned: false,
         offered_today: vec![],
@@ -94,7 +119,7 @@ fn fixture() -> Result<
                 percent: 19,
                 hunting_seconds: 3660,
                 option: 0,
-                free_reroll_at: 0,
+                free_reroll_at,
                 chosen_tier: 1,
                 allowed_tier: 1,
                 selection_epoch: 1,
@@ -262,5 +287,108 @@ fn prey_reroll_needs_confirmation() -> TestResult {
             slot: 2
         })
     ));
+    Ok(())
+}
+
+fn click_caption(app: &mut App, caption: &str) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+        .ok_or("missing caption")?;
+    app.world_mut().trigger(Activate { entity });
+    Ok(())
+}
+
+#[test]
+fn prey_resources_and_costs_are_visible() -> TestResult {
+    let (mut app, _) = fixture()?;
+    let texts: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    for expected in [
+        "Prey Wildcards: 5 / 52",
+        "Creature list: 9 · Expansion not owned",
+        "Bonus reroll · 1 Wildcard",
+        "[ ] Auto-reroll · 1 Wildcard per renewal",
+        "[ ] Lock bonus · 5 Wildcards per renewal",
+        "Free list reroll available",
+    ] {
+        assert!(
+            texts.iter().any(|text| text == expected),
+            "missing {expected}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn prey_unlock_opens_store_without_granting_slot() -> TestResult {
+    let (mut app, mut commands) = fixture()?;
+    click_caption(&mut app, "Unlock slot 3 in Store")?;
+    let host = app.world().non_send::<HostOwner>();
+    let link = &host.play.as_ref().ok_or("play")?.link;
+    assert!(!link.prey_panel().open);
+    assert!(link.store_panel().open);
+    assert_eq!(link.prey_panel().slot(3).ok_or("slot")?.state, 0);
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = commands.try_recv()? else {
+        return Err("expected Store catalogue request".into());
+    };
+    assert_eq!(
+        command.command_type,
+        oteryn_client_runtime::cui3::store::browse::COMMAND_TYPE
+    );
+    assert!(commands.try_recv().is_err()); // opens catalogue; never purchases or grants locally
+    Ok(())
+}
+
+#[test]
+fn prey_insufficient_wildcards_disable_spending_controls() -> TestResult {
+    for (balance, intent) in [
+        (0, Intent::BonusReroll { slot: 1 }),
+        (0, Intent::SetOption { slot: 1, option: 1 }),
+        (4, Intent::SetOption { slot: 1, option: 2 }),
+    ] {
+        let (mut app, mut commands) = fixture_balance(balance)?;
+        let disabled = app
+            .world_mut()
+            .query::<(&Action, &InteractionDisabled)>()
+            .iter(app.world())
+            .any(|(action, _)| action.kind == Kind::Send(intent.clone()));
+        assert!(disabled, "unaffordable action must be disabled");
+        click(&mut app, Kind::Send(intent))?; // direct activation must also be fenced
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}
+
+#[test]
+fn prey_paid_reroll_warns_about_missing_gold_quote() -> TestResult {
+    let future = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?
+        .as_secs()
+        + 7200;
+    let (mut app, mut commands) = fixture_details(5, future)?;
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.starts_with("Next free list reroll in "))
+    );
+    click(&mut app, Kind::Reroll(2))?;
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("gold price is not provided"))
+    );
+    assert!(commands.try_recv().is_err());
+    click(&mut app, Kind::Cancel)?;
+    assert!(commands.try_recv().is_err());
     Ok(())
 }
