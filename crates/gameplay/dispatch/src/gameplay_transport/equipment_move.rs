@@ -365,14 +365,14 @@ async fn equipment_view(
         .items
         .iter()
         .map(|item| {
+            let definition =
+                super::timed_item_content::equipped_definition(native, &item.definition)?;
             Some((
                 wire_slot(item.slot)?,
                 ViewItem {
+                    appearance_id: super::item_view::appearance_of(&definition),
                     key: ItemKey::Instance(item.item_instance_id),
-                    item_definition_ref: definition_ref(
-                        index,
-                        &super::timed_item_content::equipped_definition(native, &item.definition)?,
-                    )?,
+                    item_definition_ref: definition_ref(index, &definition)?,
                     count: std::num::NonZeroU32::new(item.quantity)?,
                     sub_type: 0,
                 },

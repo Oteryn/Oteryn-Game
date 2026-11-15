@@ -2,6 +2,7 @@ use super::*;
 fn inventory(count: u32) -> Result<Vec<u8>, Error> {
     let entry = |handle, item, count| -> Result<ItemEntry, Error> {
         Ok(ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(handle).ok_or("handle")?,
             item_definition_ref: std::num::NonZeroU32::new(item).ok_or("item")?,
             count: std::num::NonZeroU32::new(count).ok_or("count")?,

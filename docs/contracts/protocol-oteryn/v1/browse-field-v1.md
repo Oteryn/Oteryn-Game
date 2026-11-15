@@ -98,8 +98,10 @@ Ordinary durable views have no browse metadata and keep capacity 1 through
 continue to reject field 6 and retain the 10384-byte limit. The selected
 codec functions accept up to 15488 bytes: sixteen views, each at most
 965 bytes plus a three-byte repeated-message wrapper. This aggregate bound
-is registered on domain 14; it does not permit an unselected session to
-receive the extension.
+is extended to 17408 bytes (1085 per view plus wrapper) only with
+ITEM_APPEARANCE_V1 (499), whose entry elements grow from 31 to 35 bytes.
+The domain 14 registry ceiling covers that selected mode; unselected
+sessions retain their legacy limits and reject ItemEntry field 5.
 
 Browse selection raises the base live-handle bound from 651 to 811: the
 existing 315 handles plus sixteen times one synthetic container handle and

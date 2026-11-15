@@ -9,6 +9,7 @@ use super::*;
 
 fn entry(handle: u64, definition: u32, count: u32) -> ItemEntry {
     ItemEntry {
+        appearance_id: 0,
         handle: ItemHandle::new(handle).unwrap_or(ItemHandle::MIN),
         item_definition_ref: std::num::NonZeroU32::new(definition)
             .unwrap_or(std::num::NonZeroU32::MIN),

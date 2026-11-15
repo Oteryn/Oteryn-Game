@@ -170,12 +170,14 @@ fn forge_stale_quote_and_removed_candidate_are_invalidated_with_legacy_fallback(
         panel.preview.selected = false;
         panel.observe(vec![
             oteryn_client_runtime::depot::ItemEntry {
+                appearance_id: 0,
                 handle: item(2)?.handle,
                 item_definition_ref: std::num::NonZeroU32::new(7).ok_or("ref")?,
                 count: std::num::NonZeroU32::MIN,
                 sub_type: 0,
             },
             oteryn_client_runtime::depot::ItemEntry {
+                appearance_id: 0,
                 handle: item(3)?.handle,
                 item_definition_ref: std::num::NonZeroU32::new(7).ok_or("ref")?,
                 count: std::num::NonZeroU32::MIN,

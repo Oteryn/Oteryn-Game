@@ -24,6 +24,9 @@ impl State {
                     .contains(oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1))
         {
             let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1) {
+                view = view.with_appearances();
+            }
             if selected.contains(
                 oteryn_protocol_oteryn::container_tree::CAPABILITY_HOUSE_CONTAINER_CAPACITY_V2,
             ) {

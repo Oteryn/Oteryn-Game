@@ -270,6 +270,7 @@ fn echo_portal_click_walks_and_reward_remains_in_native_container()
             capacity: 20,
             entries: vec![
                 oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: 91.try_into()?,
                     // Compact generation reference, not a donor item ID.
                     item_definition_ref: 42.try_into()?,
@@ -277,6 +278,7 @@ fn echo_portal_click_walks_and_reward_remains_in_native_container()
                     sub_type: 0,
                 },
                 oteryn_session::ItemEntry {
+                    appearance_id: 0,
                     handle: 92.try_into()?,
                     item_definition_ref: 43.try_into()?,
                     count: 1.try_into()?,

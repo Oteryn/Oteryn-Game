@@ -712,13 +712,33 @@ pub fn stage_typed_hit_in_world(
     ),
     SpellCastDisposition,
 > {
+    stage_typed_hit_with_gate(runtime, actor, state, magnitude, kind, now)
+        .map(|(next, damage, _)| (next, damage))
+}
+
+/// Read-only staging reports the admitted post-mitigation health component before shield/Gift.
+pub fn stage_typed_hit_with_gate(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    actor: crate::foundation::ExactActorRef,
+    state: &PlayerSpellState,
+    magnitude: u32,
+    kind: crate::player_lethal::PlayerHitKind,
+    now: u64,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+        u32,
+    ),
+    SpellCastDisposition,
+> {
     let bonus = state
         .wheel_battle_instinct(runtime, actor, now)
         .ok_or(SpellCastDisposition::Rejected)?;
     let magnitude = state
         .after_player_block(magnitude, kind, bonus.shielding, now)
         .ok_or(SpellCastDisposition::Rejected)?;
-    stage_hit(
+    stage_hit_with_gate(
         state,
         magnitude,
         now,
@@ -911,6 +931,35 @@ fn stage_hit(
     ),
     SpellCastDisposition,
 > {
+    stage_hit_with_gate(
+        state,
+        magnitude,
+        now,
+        mitigated,
+        preprocessed,
+        components,
+        delivery,
+    )
+    .map(|(next, damage, _)| (next, damage))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn stage_hit_with_gate(
+    state: &PlayerSpellState,
+    magnitude: u32,
+    now: u64,
+    mitigated: bool,
+    preprocessed: bool,
+    components: Option<(u32, u32)>,
+    delivery: HitDelivery,
+) -> Result<
+    (
+        PlayerSpellState,
+        crate::ability::creature_bite::FlooredDamage,
+        u32,
+    ),
+    SpellCastDisposition,
+> {
     use oteryn_gameplay_domain::domain::condition::ConflictKey;
     if !state.conditions.accepts_time(now)
         || state.health == 0
@@ -960,6 +1009,7 @@ fn stage_hit(
             .after_drome_incoming_bonus(remaining, now)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
+    let hit_gate = remaining;
     // Crystal src/game/game.cpp:8004-8066 skips origin-based reductions for Lua addHealth,
     // but :8142-8155 and :8290 retain mana shields and the existing lethal-health owner.
     // Crystal 201189f src/game/game.cpp:8142 excludes Undefined only from mana
@@ -1001,7 +1051,7 @@ fn stage_hit(
     if next != *state {
         next.advance_batch_revision()?;
     }
-    Ok((next, damage))
+    Ok((next, damage, hit_gate))
 }
 
 #[cfg(test)]
