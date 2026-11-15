@@ -25,6 +25,7 @@ impl Outbox {
         self.equipment_initialize(false);
         let mut mailbox = lock(&self.0);
         mailbox.world_context.targeting = None;
+        mailbox.use_with_pending = false;
         mailbox.inventory = Default::default();
         mailbox.item_movement = Default::default();
         mailbox.item_count_selected = false;

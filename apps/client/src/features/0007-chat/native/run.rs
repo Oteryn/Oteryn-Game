@@ -139,6 +139,12 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                 if keyboard(&msg, &weak, &commands, &mut actions.keyboard_input) {
                     continue;
                 }
+                if msg.hwnd == message && msg.message == WM_KEYDOWN && msg.wParam == 13 {
+                    if actions.pending.len() < 16 {
+                        actions.pending.push(SEND);
+                    }
+                    continue;
+                }
                 TranslateMessage(&msg);
                 DispatchMessageW(&msg);
             }
@@ -253,8 +259,9 @@ fn run(weak: WeakMailbox, commands: UnboundedSender<PlayCommand>) {
                     _ => Mode::Say,
                 };
                 mailbox.chat.text = read_text(message);
+                let was_pending = mailbox.chat.pending;
                 super::super::input::enqueue(&mut mailbox, &commands, mode, &read_text(recipient));
-                if mailbox.chat.pending {
+                if !was_pending && mailbox.chat.pending {
                     SetWindowTextW(message, wide("").as_ptr());
                 }
             }

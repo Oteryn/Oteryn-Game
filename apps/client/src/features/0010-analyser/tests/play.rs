@@ -177,9 +177,8 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
     })]);
     std::fs::write(&path, "old report")?;
     {
-        let mut mailbox = crate::play::mailbox::lock(&link.mailbox);
-        crate::play::feature_0010_analyser::input::submit(
-            &mut mailbox,
+        crate::play::feature_0010_analyser::input::submit_shared(
+            &link.mailbox,
             &link.commands,
             oteryn_client_ui::analyser::Tool::ALL.len() + 4,
             vec![
@@ -189,7 +188,10 @@ fn analyser_session_export_writes_confirmed_report_through_native_action()
                 path.to_string_lossy().into_owned(),
             ],
         );
-        assert_eq!(mailbox.analyser.feedback, Some("Session report exported"));
+        assert_eq!(
+            crate::play::mailbox::lock(&link.mailbox).analyser.feedback,
+            Some("Session report exported")
+        );
     }
     let report = std::fs::read_to_string(&path)?;
     std::fs::remove_file(path)?;

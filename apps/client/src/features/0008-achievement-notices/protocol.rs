@@ -20,7 +20,20 @@ impl Outbox {
                     .and_then(|payload| decode_achievement_notices_snapshot(&payload).ok());
             }
         }
-        self.push(session.drain());
+        let mut preceding = Vec::new();
+        for event in session.drain() {
+            if let oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) = &event
+                && delta.value.domain_id == 13
+                && delta.value.snapshot_type == 1
+                && let Ok(watermark) = decode_achievement_notices_snapshot(&delta.value.payload)
+            {
+                // Preserve event order: earlier notices cannot overwrite the recovery totals.
+                self.push(std::mem::take(&mut preceding));
+                lock(&self.0).achievement_notices.watermark = Some(watermark);
+            }
+            preceding.push(event);
+        }
+        self.push(preceding);
     }
 }
 

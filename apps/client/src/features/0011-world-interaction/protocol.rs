@@ -15,9 +15,14 @@ impl Outbox {
         session: &mut impl Stepper,
         command: &Command,
     ) -> Result<(), oteryn_session::SessionError> {
+        lock(&self.0).use_with_pending = matches!(
+            command.action,
+            oteryn_client_runtime::world_interaction::Action::UseOn(_)
+        );
         let result = session.world_context(command).await;
         let mut mailbox = lock(&self.0);
         mailbox.world_context.pending = false;
+        mailbox.use_with_pending = false;
         // The ordinary use owns the result; refresh advisory multiaction data afterwards.
         mailbox.bar_actions.item_cooldowns.clear();
         match result {

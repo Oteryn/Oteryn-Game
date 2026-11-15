@@ -144,6 +144,7 @@ pub(super) struct Mailbox {
     pub(super) properties: super::feature_0115_mail::protocol::Panels,
     pub(super) containers: oteryn_client_ui::container_tree::ContainerPanel,
     pub(super) world_context: oteryn_client_ui::world_interaction::menu::State,
+    pub(super) use_with_pending: bool,
     pub(super) inventory: oteryn_client_ui::inventory::InventoryPanel,
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,

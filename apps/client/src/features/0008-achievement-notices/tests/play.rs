@@ -217,3 +217,108 @@ fn nx6_wayfarer_server_payload_reaches_native_notice_panel() -> Result<(), Error
         .join()
         .map_err(|_| "Wayfarer play thread panicked")?
 }
+
+#[test]
+fn recovery_snapshot_replaces_achievement_totals_without_replaying_notices() {
+    let (_sender, incoming) = unbounded_channel();
+    let mut peer = Peer {
+        selected: true,
+        incoming,
+        queued: vec![],
+    };
+    let (link, _commands, outbox) = play_channel();
+    outbox.achievement_notices_publish(&mut peer);
+    let expected = AchievementWatermark {
+        fact_count: 3,
+        total_points: 15,
+    };
+    peer.queued
+        .push(SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+            server_sequence: 42,
+            base_revision: 0,
+            new_revision: 3,
+            value: oteryn_session::GatedSnapshot {
+                domain_id: 13,
+                snapshot_type: 1,
+                revision: 3,
+                payload: oteryn_session::achievement_notices::encode_achievement_notices_snapshot(
+                    expected,
+                ),
+            },
+        }));
+    outbox.achievement_notices_publish(&mut peer);
+    let panel = link.achievement_notices_panel();
+    assert_eq!(panel.watermark, Some(expected));
+    assert!(panel.recent.is_empty());
+    #[cfg(feature = "bevy-shell")]
+    assert!(
+        crate::play::mailbox::lock(&outbox.0)
+            .achievement_banners
+            .is_empty()
+    );
+}
+
+#[test]
+fn recovery_totals_follow_event_order_with_live_achievement_notices() {
+    let (_sender, incoming) = unbounded_channel();
+    let mut peer = Peer {
+        selected: true,
+        incoming,
+        queued: vec![],
+    };
+    let (link, _commands, outbox) = play_channel();
+    outbox.achievement_notices_publish(&mut peer);
+    let earned = |count| {
+        SessionEvent::AchievementEarned(AppliedDelta {
+            server_sequence: u64::from(count),
+            base_revision: 0,
+            new_revision: u64::from(count),
+            value: AchievementEarned {
+                key: format!("award-{count}"),
+                name: format!("Award {count}"),
+                watermark: AchievementWatermark {
+                    fact_count: count,
+                    total_points: count * 5,
+                },
+            },
+        })
+    };
+    peer.queued = vec![
+        earned(1),
+        SessionEvent::GatedSnapshotReplaced(AppliedDelta {
+            server_sequence: 3,
+            base_revision: 1,
+            new_revision: 3,
+            value: oteryn_session::GatedSnapshot {
+                domain_id: 13,
+                snapshot_type: 1,
+                revision: 3,
+                payload: oteryn_session::achievement_notices::encode_achievement_notices_snapshot(
+                    AchievementWatermark {
+                        fact_count: 3,
+                        total_points: 15,
+                    },
+                ),
+            },
+        }),
+    ];
+    outbox.achievement_notices_publish(&mut peer);
+    assert_eq!(
+        link.achievement_notices_panel().watermark,
+        Some(AchievementWatermark {
+            fact_count: 3,
+            total_points: 15
+        })
+    );
+    assert_eq!(link.achievement_notices_panel().recent.len(), 1);
+    peer.queued = vec![earned(4)];
+    outbox.achievement_notices_publish(&mut peer);
+    assert_eq!(
+        link.achievement_notices_panel().watermark,
+        Some(AchievementWatermark {
+            fact_count: 4,
+            total_points: 20
+        })
+    );
+    assert_eq!(link.achievement_notices_panel().recent.len(), 2);
+}
