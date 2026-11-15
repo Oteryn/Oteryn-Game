@@ -36,6 +36,7 @@ struct Row {
 
 /// Apply only the 18 pinned fields, preserving every other Item property.
 pub fn apply_item_capacity_promotion_v1(draft: &mut ProjectV2Draft) -> Result<usize, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_CAPACITY_PACKET) != ITEM_CAPACITY_PACKET_SHA256 {
         return Err("capacity packet digest mismatch".into());
     }

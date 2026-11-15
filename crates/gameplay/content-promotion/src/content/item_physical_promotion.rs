@@ -44,6 +44,7 @@ pub struct PhysicalPromotion {
 pub fn apply_item_physical_promotion_v1(
     draft: &mut ProjectV2Draft,
 ) -> Result<PhysicalPromotion, String> {
+    super::item_identity::validate_unique_item_keys(draft)?;
     if world_project_sha256(ITEM_PHYSICAL_PACKET) != ITEM_PHYSICAL_PACKET_SHA256 {
         return Err("physical packet digest drift".into());
     }
