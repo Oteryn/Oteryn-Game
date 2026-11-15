@@ -112,7 +112,18 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+V:** VIP contacts and group management through the existing server requests.
 - **Ctrl+I:** Imbuing shrine: choose a carried item, then a slot and imbuement.
   Clear asks for confirmation. Refresh queries the existing shrine command;
-  the protocol has no unsolicited open event, balance, or protection charm.
+  costs include apply/clear gold, material requirements and success/failure chance.
+  Balance and protection availability are explicitly identified; the protocol has no
+  unsolicited open event, balance, protection price or protected-apply request.
+- **Ctrl+Alt+Shift+I:** independent, nonmodal Imbuement Tracker (also opened from
+  Imbuing). Automatically inspects equipped items; All/5/60-minute filters, Refresh
+  and Close. Durations remain confirmed server snapshots, never wall-clock estimates.
+  Reference: Tibia manual `interface.md` §3.6.24 and `characters.md` §Imbuing.
+  OTClient `dab86e610991092fe8b2471f7de55a7c986b3cd2` has no imbuing module;
+  its `modules/game_healthinfo/healthinfo.lua:29-66` is the independent HUD reference.
+  NEEDS-CONTRACT: negotiated protection quote (item, family/tier, protection gold,
+  available gold) and protected apply (item, slot, offer, protection choice). Commands
+  85/731 do not carry these fields. Artwork and shrine-driven opening remain absent.
 - **Ctrl+D:** Daily Reward wall, free/premium catalogue, streak and account/World
   history. Collect uses the server-confirmed shrine availability.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers

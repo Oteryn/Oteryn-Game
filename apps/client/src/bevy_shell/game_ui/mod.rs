@@ -17,6 +17,7 @@ mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
+mod imbuement_tracker;
 mod imbuing;
 mod install;
 pub(super) use install::install;

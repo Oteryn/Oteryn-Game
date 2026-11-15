@@ -1,4 +1,5 @@
 //! Imbuing shrine presentation over the retained model and existing commands.
+mod costs;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -24,6 +25,7 @@ struct Control {
 enum Kind {
     Close,
     Refresh,
+    Tracker,
     Item(ItemHandle),
     Slot(u8),
     BaseType(u8),
@@ -241,6 +243,10 @@ fn perform(owner: &HostOwner, state: &mut State, control: &Control) {
     let action = match control.kind {
         Kind::Close => ImbueViewAction::Close,
         Kind::Refresh => ImbueViewAction::Request(Intent::Refresh),
+        Kind::Tracker => {
+            play.link.open_imbue_tracker();
+            return;
+        }
         Kind::Item(item) => ImbueViewAction::Item(item),
         Kind::Slot(slot) => {
             state.selection.confirmation = None;

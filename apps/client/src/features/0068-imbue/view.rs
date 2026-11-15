@@ -64,9 +64,11 @@ impl PlayLink {
         }
         self.imbue_tracker_refresh();
         #[cfg(windows)]
-        super::input::tracker::poll(
-            std::sync::Arc::downgrade(&self.mailbox),
-            self.commands.clone(),
-        );
+        if !self.uses_shared_frontend() {
+            super::input::tracker::poll(
+                std::sync::Arc::downgrade(&self.mailbox),
+                self.commands.clone(),
+            );
+        }
     }
 }

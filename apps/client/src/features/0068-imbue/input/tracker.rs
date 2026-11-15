@@ -73,6 +73,15 @@ pub(in crate::play) fn set_filter(mailbox: &mut Mailbox, value: &str) -> bool {
     value.trim().is_empty() || value.trim().parse::<u32>().is_ok()
 }
 impl PlayLink {
+    /// Shared frontends drive the existing throttled inspection queue from their frame loop.
+    pub fn imbue_tracker_poll(&self) {
+        enqueue(&mut lock(&self.mailbox), &self.commands, false);
+    }
+
+    pub fn imbue_tracker_close(&self) {
+        lock(&self.mailbox).imbue.tracker_open = false;
+    }
+
     pub fn imbue_tracker_filter(&self, value: &str) -> bool {
         set_filter(&mut lock(&self.mailbox), value)
     }

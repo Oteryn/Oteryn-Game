@@ -99,6 +99,19 @@ fn imbuing_widgets_render_model_and_disable_apply_until_selected()
             .any(|text| text.contains("500 gold") && text.contains("75%"))
     );
     assert!(text.iter().any(|text| text == "Insufficient funds"));
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Apply total: 500 gold")
+                && text.contains("Success: 75% — failure: 25%"))
+    );
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Protection: unavailable"))
+    );
+    assert!(
+        text.iter()
+            .any(|text| text.contains("Balance: not supplied"))
+    );
     let mut controls = world.query::<(&Control, Option<&bevy::ui::InteractionDisabled>)>();
     assert!(
         controls
@@ -117,7 +130,10 @@ fn render_fixture(mut commands: Commands, skins: Res<Skins>, panel: Res<TestPane
         1,
         &panel.0,
         &[],
-        &Selection::default(),
+        &Selection {
+            offer: Some(panel.0.offer),
+            ..Default::default()
+        },
     );
 }
 
@@ -279,5 +295,34 @@ fn imbuing_stale_controls_cannot_send_or_confirm() -> TestResult {
         },
     );
     assert!(commands.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn imbuement_tracker_shortcut_opens_independently_in_bevy() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut owner, _, _) = host()?;
+    let key = NormalizedInputEvent::Key {
+        code: KeyCode::new(12)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+        repeat: false,
+    };
+    owner.route_input(std::slice::from_ref(&key), true);
+    assert!(
+        !owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .tracker_open
+    );
+    owner.route_input(&[key], false);
+    let panel = owner.play.as_ref().ok_or("play")?.link.imbue_panel();
+    assert!(panel.tracker_open);
+    assert!(!panel.open);
     Ok(())
 }
