@@ -2809,6 +2809,7 @@ mod tests {
     )]
     fn custody_ignores_only_admission_handles_and_entry_order() -> TestResult {
         let first = items::ItemEntry {
+            appearance_id: 0,
             handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
             item_definition_ref: NonZeroU32::new(1).ok_or("definition")?,
             count: NonZeroU32::new(3).ok_or("count")?,

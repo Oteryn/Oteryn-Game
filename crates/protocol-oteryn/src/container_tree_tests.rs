@@ -5,7 +5,7 @@ use crate::item_view::{
     COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveDestination, ItemMoveIntent, ItemMoveSelection,
     MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES,
     MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES, decode_item_move_intent_for,
-    decode_item_move_intent_with_equip_drop, encode_item_move_intent_for,
+    decode_item_move_intent_with_equip_drop, encode_entry, encode_item_move_intent_for,
 };
 use serde_json::Value;
 use std::num::NonZeroU32;
@@ -20,7 +20,7 @@ fn handle(value: u64) -> ItemHandle {
 /// The largest entry: every varint at its maximum.
 fn worst_entry(n: u64) -> ItemEntry {
     ItemEntry {
-        appearance_id: u16::MAX,
+        appearance_id: 0,
         handle: handle(u64::MAX - n),
         item_definition_ref: NonZeroU32::MAX,
         count: NonZeroU32::MAX,
@@ -71,16 +71,16 @@ fn views(list: Vec<ContainerView>) -> ContainerViews {
 
 #[test]
 fn views_hold_16_views_of_20_entries_and_refuse_more() {
-    // One worst-case view is the measured 726 bytes; 16 of them are the registered 11,664.
+    // One worst-case view is the measured 646 bytes; 16 of them are the registered 10,384.
     let one =
         encode_container_views(&views(vec![worst_view(MAX_CONTAINER_VIEW_ID)])).expect("one view");
     assert_eq!(one.len(), 3 + MAX_CONTAINER_VIEW_BYTES);
-    assert_eq!(MAX_CONTAINER_VIEW_BYTES, 726);
+    assert_eq!(MAX_CONTAINER_VIEW_BYTES, 646);
     let full = views((0..=MAX_CONTAINER_VIEW_ID).map(worst_view).collect());
     let bytes = encode_container_views(&full).expect("16 views");
     // View 0 omits its proto3 default id, two bytes under the bound.
     assert_eq!(bytes.len(), MAX_CONTAINER_VIEWS_BYTES - 2);
-    assert_eq!(MAX_CONTAINER_VIEWS_BYTES, 11_664);
+    assert_eq!(MAX_CONTAINER_VIEWS_BYTES, 10_384);
     assert_eq!(decode_container_views(&bytes), Ok(full.clone()));
 
     // A seventeenth view fails closed both ways (view ids stop at 15, so the extra one repeats
@@ -97,7 +97,7 @@ fn views_hold_16_views_of_20_entries_and_refuse_more() {
             .collect(),
     );
     let mut bytes = encode_container_views(&small).expect("16 small views");
-    encode_view(&mut bytes, &small_view(15, 0));
+    encode_view(&mut bytes, &small_view(15, 0), false);
     assert_eq!(
         decode_container_views(&bytes),
         Err(ItemViewWireError::LimitExceeded)
@@ -209,7 +209,7 @@ fn views_are_ascending_and_hold_unique_handles() {
         );
         let mut bytes = Vec::new();
         for view in &value.views {
-            encode_view(&mut bytes, view);
+            encode_view(&mut bytes, view, false);
         }
         assert_eq!(
             decode_container_views(&bytes),
@@ -556,8 +556,12 @@ fn registries_bind_capability_14_and_its_limits() {
         assert_eq!(
             types[0]["max_payload_bytes"].as_u64(),
             // Capability 230 adds thirty-entry browse pages to this domain; legacy codecs
-            // and the original BAGS0 resource limit above remain bounded by 11,664 bytes.
-            Some(crate::browse_field::MAX_BROWSE_FIELD_VIEWS_BYTES as u64)
+            // and the original BAGS0 resource limit above remain bounded by 10,384 bytes.
+            Some(
+                (crate::browse_field::MAX_BROWSE_FIELD_VIEWS_BYTES
+                    + MAX_CONTAINER_VIEWS * 4 * crate::browse_field::MAX_BROWSE_FIELD_PAGE_ENTRIES)
+                    as u64
+            )
         );
         assert_eq!(
             types[0]["payload_schema"],
@@ -647,4 +651,101 @@ fn house_capacity_v2_measured_whole_payload_bound() {
     let mut oversized = bytes;
     oversized.push(0);
     assert!(decode_container_views_with_house_capacity(&oversized, false, true).is_err());
+}
+
+#[test]
+fn container_appearance_field_and_byte_bounds_require_499() {
+    let mut view = views((0..=MAX_CONTAINER_VIEW_ID).map(worst_view).collect());
+    for container in &mut view.views {
+        for item in &mut container.entries {
+            item.appearance_id = u16::MAX;
+        }
+    }
+    let legacy =
+        encode_container_views_with_appearances(&view, false, false, false).expect("legacy");
+    assert_eq!(legacy.len(), MAX_CONTAINER_VIEWS_BYTES - 2);
+    assert!(
+        decode_container_views(&legacy)
+            .expect("legacy decode")
+            .views
+            .iter()
+            .flat_map(|v| &v.entries)
+            .all(|i| i.appearance_id == 0)
+    );
+    let extended = encode_container_views_with_appearances(&view, false, false, true).expect("499");
+    assert_eq!(
+        extended.len(),
+        MAX_CONTAINER_VIEWS_BYTES + MAX_CONTAINER_VIEWS * 4 * MAX_CONTAINER_VIEW_ENTRIES - 2
+    );
+    assert_eq!(
+        decode_container_views_with_appearances(&extended, false, false, true),
+        Ok(view)
+    );
+    assert_eq!(
+        decode_container_views(&extended),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let mut one = worst_view(1);
+    one.entries.truncate(1);
+    one.entries[0] = small_entry(1);
+    one.entries[0].appearance_id = 3031;
+    let extended =
+        encode_container_views_with_appearances(&views(vec![one.clone()]), false, false, true)
+            .expect("small 499");
+    assert_eq!(
+        decode_container_views(&extended),
+        Err(ItemViewWireError::Malformed)
+    );
+    assert_eq!(
+        decode_container_views_with_appearances(&extended, false, false, true),
+        Ok(views(vec![one]))
+    );
+}
+
+#[test]
+fn house_container_appearance_bounds_are_selected_independently_of_capacity() {
+    let mut view = views(
+        (0..=MAX_CONTAINER_VIEW_ID)
+            .map(|id| {
+                let mut v = worst_view(id);
+                v.capacity = 25;
+                v.entries = (0..25)
+                    .map(|n| {
+                        let mut item = worst_entry(u64::from(id) * 100 + n);
+                        item.appearance_id = u16::MAX;
+                        item
+                    })
+                    .collect();
+                v
+            })
+            .collect(),
+    );
+    let extended = encode_container_views_with_appearances(&view, false, true, true)
+        .expect("499 house maximum");
+    assert_eq!(
+        extended.len(),
+        MAX_HOUSE_CONTAINER_VIEWS_BYTES
+            + MAX_CONTAINER_VIEWS * 4 * MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+    );
+    assert_eq!(
+        decode_container_views_with_appearances(&extended, false, true, true),
+        Ok(view.clone())
+    );
+    assert!(decode_container_views_with_appearances(&extended, false, false, true).is_err());
+    assert_eq!(
+        decode_container_views_with_house_capacity(&extended, false, true),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    for v in &mut view.views {
+        for item in &mut v.entries {
+            item.appearance_id = 0;
+        }
+    }
+    let legacy = encode_container_views_with_house_capacity(&view, false, true)
+        .expect("legacy house maximum");
+    assert_eq!(legacy.len(), MAX_HOUSE_CONTAINER_VIEWS_BYTES);
+    assert_eq!(
+        decode_container_views_with_house_capacity(&legacy, false, true),
+        Ok(view)
+    );
 }

@@ -2,7 +2,7 @@
 
 use super::*;
 use oteryn_protocol_oteryn::container_tree::{
-    STATE_DOMAIN_CONTAINER_VIEWS, decode_container_views,
+    STATE_DOMAIN_CONTAINER_VIEWS, decode_container_views_with_appearances,
 };
 use oteryn_protocol_oteryn::world_object::{
     UseIntent, UseTarget, encode_item_use_intent, encode_use_item_intent,
@@ -36,12 +36,18 @@ fn item_use_without_container_capability_emits_no_container_delta() -> TestResul
     run_scenario(Some(Case::WithoutContainerCapability))
 }
 
+#[test]
+fn item_use_selected_appearance_binding_survives_a_postgres_transform() -> TestResult {
+    run_scenario_items(Some(Case::PotionFlask), false, true)
+}
+
 pub(super) async fn run(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     admitted: AdmittedSession,
     case: Case,
 ) -> TestResult {
+    let appearances = admitted.continuity.selected_capabilities.contains(499);
     let source = match case {
         Case::LastCharge | Case::ClosedBag | Case::WithoutContainerCapability => 100,
         Case::PotionFlask => 110,
@@ -125,18 +131,26 @@ pub(super) async fn run(
                     assert_eq!(delta.new_revision, delta.base_revision + 1);
                     views_revision = Some(delta.new_revision);
                     if last_result == use_command {
-                        let views = decode_container_views(delta.payload).map_err(debug)?;
+                        let views = decode_container_views_with_appearances(
+                            delta.payload,
+                            false,
+                            false,
+                            appearances,
+                        )
+                        .map_err(debug)?;
                         for item in views.views.iter().flat_map(|view| &view.entries) {
-                            let (key, _) = index
-                                .definition_at(item.item_definition_ref)
-                                .ok_or("indexed container entry")?;
-                            assert_eq!(
-                                item.appearance_id,
+                            let expected = if appearances {
+                                let (key, _) = index
+                                    .definition_at(item.item_definition_ref)
+                                    .ok_or("indexed container entry")?;
                                 crate::map::view::appearance_id(
                                     key,
-                                    crate::map::palette_appearance(key).map(u32::from)
+                                    crate::map::palette_appearance(key).map(u32::from),
                                 )
-                            );
+                            } else {
+                                0
+                            };
+                            assert_eq!(item.appearance_id, expected);
                         }
                         refreshes.push(views);
                     }

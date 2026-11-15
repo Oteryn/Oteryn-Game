@@ -14,7 +14,7 @@ fn handle(value: u64) -> ItemHandle {
 /// The largest entry: every varint at its maximum.
 fn worst(n: u64) -> ItemEntry {
     ItemEntry {
-        appearance_id: u16::MAX,
+        appearance_id: 0,
         handle: handle(u64::MAX - n),
         item_definition_ref: NonZeroU32::MAX,
         count: NonZeroU32::MAX,
@@ -64,7 +64,7 @@ fn the_largest_entry_and_payloads_are_measured() {
 
     let full = encode_character_inventory(&inventory(29, worst)).expect("30 items");
     assert_eq!(full.len(), MAX_CHARACTER_INVENTORY_BYTES);
-    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 1050);
+    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 930);
 
     let full = encode_open_container(&OpenContainer {
         container_handle: Some(handle(u64::MAX)),
@@ -72,7 +72,7 @@ fn the_largest_entry_and_payloads_are_measured() {
     })
     .expect("30 entries");
     assert_eq!(full.len(), MAX_OPEN_CONTAINER_BYTES);
-    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 1061);
+    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 941);
 
     let intent = encode_item_move_intent(&ItemMoveIntent {
         source: handle(u64::MAX),
@@ -390,7 +390,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_CHARACTER_INVENTORY,
             "CHARACTER_INVENTORY",
             "CharacterInventoryV1",
-            MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES,
+            MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES,
             DELTA_TYPE_CHARACTER_INVENTORY_V1,
             SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
         ),
@@ -398,7 +398,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
             STATE_DOMAIN_OPEN_CONTAINER,
             "OPEN_CONTAINER",
             "OpenContainerV1",
-            MAX_OPEN_CONTAINER_BYTES,
+            MAX_OPEN_CONTAINER_APPEARANCE_BYTES,
             DELTA_TYPE_OPEN_CONTAINER_V1,
             SNAPSHOT_TYPE_OPEN_CONTAINER_V1,
         ),
@@ -498,7 +498,7 @@ fn without_capability_12_command_9_and_domain_9_decode_as_item_view_1a() {
             Ok(view.clone())
         );
     }
-    // Field 3 and the equipment are refused, and the 1050-byte bound holds.
+    // Field 3 and the equipment are refused, and the 930-byte bound holds.
     let view = equipped_inventory(small);
     let bytes = encode_character_inventory_with_equip_drop(&view, true).expect("cap 12");
     assert_eq!(
@@ -578,12 +578,12 @@ fn equipped_views_are_measured_and_bounded_at_30_items() {
     assert_eq!(body.len(), MAX_EQUIPPED_ITEM_BYTES);
     push_message_field(&mut element, 3, &body);
     assert_eq!(element.len(), MAX_EQUIPPED_ITEM_ELEMENT_BYTES);
-    assert_eq!(MAX_EQUIPPED_ITEM_ELEMENT_BYTES, 39);
+    assert_eq!(MAX_EQUIPPED_ITEM_ELEMENT_BYTES, 35);
 
     let full = equipped_inventory(worst);
     let bytes = encode_character_inventory_with_equip_drop(&full, true).expect("30 items");
     assert_eq!(bytes.len(), MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES);
-    assert_eq!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES, 1086);
+    assert_eq!(MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES, 966);
     assert_eq!(
         decode_character_inventory_with_equip_drop(&bytes, true),
         Ok(full.clone())
@@ -939,14 +939,129 @@ fn stack_quantity_count_is_explicit_bounded_and_negotiated()
 fn entry_appearance_round_trips_and_validates_wire_values() {
     let legacy = [0x08, 1, 0x10, 1, 0x18, 1];
     assert_eq!(decode_entry(&legacy).expect("legacy").appearance_id, 0);
+    assert_eq!(
+        decode_entry_for(&legacy, true)
+            .expect("absent appearance with 499")
+            .appearance_id,
+        0
+    );
     let mut item = small(1);
     item.appearance_id = u16::MAX;
     let mut framed = Vec::new();
-    encode_entry(&mut framed, 1, &item);
-    assert_eq!(decode_entry(&framed[2..]), Ok(item));
+    encode_entry_for(&mut framed, 1, &item, true);
+    assert_eq!(decode_entry_for(&framed[2..], true), Ok(item));
     for suffix in [vec![0x28, 0x80, 0x80, 4], vec![0x28, 0, 0x28, 1]] {
         let mut invalid = legacy.to_vec();
         invalid.extend(suffix);
-        assert_eq!(decode_entry(&invalid), Err(ItemViewWireError::Malformed));
+        assert_eq!(
+            decode_entry_for(&invalid, true),
+            Err(ItemViewWireError::Malformed)
+        );
     }
+}
+
+#[test]
+fn appearance_selection_preserves_exact_legacy_inventory_and_container_bytes() {
+    let mut item = small(1);
+    item.appearance_id = 3031;
+    let view = CharacterInventory {
+        main_backpack: Some(item),
+        ..CharacterInventory::default()
+    };
+    // Exact main encoding: field 1, six-byte entry containing only handle, definition, count.
+    let legacy = [0x0a, 6, 8, 1, 16, 1, 24, 1];
+    assert_eq!(
+        encode_character_inventory_with_appearances(&view, false, false).expect("legacy"),
+        legacy
+    );
+    assert_eq!(
+        decode_character_inventory(&legacy)
+            .expect("legacy")
+            .main_backpack
+            .expect("item")
+            .appearance_id,
+        0
+    );
+    let extended = encode_character_inventory_with_appearances(&view, false, true).expect("499");
+    assert_eq!(
+        decode_character_inventory_with_appearances(&extended, false, true),
+        Ok(view)
+    );
+    assert!(decode_character_inventory(&extended).is_err());
+    let container = OpenContainer {
+        container_handle: Some(handle(2)),
+        entries: vec![item],
+    };
+    let legacy = [8, 2, 18, 6, 8, 1, 16, 1, 24, 1];
+    assert_eq!(
+        encode_open_container_with_appearances(&container, false).expect("legacy container"),
+        legacy
+    );
+    assert_eq!(
+        decode_open_container(&legacy)
+            .expect("legacy container")
+            .entries[0]
+            .appearance_id,
+        0
+    );
+    let extended = encode_open_container_with_appearances(&container, true).expect("499 container");
+    assert_eq!(
+        decode_open_container_with_appearances(&extended, true),
+        Ok(container)
+    );
+    assert!(decode_open_container(&extended).is_err());
+}
+
+#[test]
+fn appearance_selection_uses_extended_inventory_bounds_only_when_negotiated() {
+    let mut view = inventory(29, worst);
+    for item in view.main_backpack.iter_mut().chain(&mut view.entries) {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes =
+        encode_character_inventory_with_appearances(&view, false, true).expect("499 maximum");
+    assert_eq!(bytes.len(), MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES);
+    assert_eq!(
+        decode_character_inventory_with_appearances(&bytes, false, true),
+        Ok(view.clone())
+    );
+    assert_eq!(
+        decode_character_inventory(&bytes),
+        Err(ItemViewWireError::LimitExceeded)
+    );
+    let legacy =
+        encode_character_inventory_with_appearances(&view, false, false).expect("legacy maximum");
+    assert_eq!(legacy.len(), MAX_CHARACTER_INVENTORY_BYTES);
+    assert_eq!(MAX_CHARACTER_INVENTORY_BYTES, 930);
+    assert_eq!(MAX_CHARACTER_INVENTORY_APPEARANCE_BYTES, 1050);
+    let mut view = equipped_inventory(worst);
+    for item in view
+        .main_backpack
+        .iter_mut()
+        .chain(&mut view.entries)
+        .chain(view.equipment.iter_mut().map(|slot| &mut slot.item))
+    {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_character_inventory_with_appearances(&view, true, true)
+        .expect("499 equipped maximum");
+    assert_eq!(
+        bytes.len(),
+        MAX_CHARACTER_INVENTORY_EQUIP_DROP_APPEARANCE_BYTES
+    );
+    assert_eq!(
+        decode_character_inventory_with_appearances(&bytes, true, true),
+        Ok(view)
+    );
+    let mut view = container(30, worst);
+    view.container_handle = Some(handle(u64::MAX));
+    for item in &mut view.entries {
+        item.appearance_id = u16::MAX;
+    }
+    let bytes = encode_open_container_with_appearances(&view, true).expect("499 container maximum");
+    assert_eq!(bytes.len(), MAX_OPEN_CONTAINER_APPEARANCE_BYTES);
+    assert_eq!(
+        decode_open_container_with_appearances(&bytes, true),
+        Ok(view)
+    );
 }

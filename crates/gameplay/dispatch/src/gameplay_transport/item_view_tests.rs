@@ -1251,12 +1251,16 @@ fn inventory_snapshot_uses_the_world_map_appearance_binding() {
         // A generation-specific compact reference deliberately differs from the appearance.
         let inventory = inventory_from_backpack(Some(&backpack), |_| NonZeroU32::new(17))
             .expect("indexed backpack");
-        let mut session = SessionItemView::resume(ItemViewContinuity::default());
+        let mut session = SessionItemView::resume(ItemViewContinuity::default()).with_appearances();
         let [inventory, _] = session.snapshot(inventory, None).expect("snapshot");
-        let item = decode_character_inventory(&inventory.payload)
-            .expect("wire inventory")
-            .main_backpack
-            .expect("backpack");
+        let item = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_appearances(
+            &inventory.payload,
+            false,
+            true,
+        )
+        .expect("wire inventory")
+        .main_backpack
+        .expect("backpack");
         assert_eq!(item.item_definition_ref.get(), 17);
         assert_eq!(
             item.appearance_id,

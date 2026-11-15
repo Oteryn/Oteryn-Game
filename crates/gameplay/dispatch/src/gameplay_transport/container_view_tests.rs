@@ -84,7 +84,7 @@ fn shown(delta: &ItemViewDelta) -> ContainerViews {
             .views
             .iter()
             .flat_map(|view| &view.entries)
-            .all(|item| item.appearance_id == 2854)
+            .all(|item| item.appearance_id == 0)
     );
     views
 }
@@ -1069,5 +1069,38 @@ mod connection {
             assert_eq!(output, expected);
             Ok(())
         })
+    }
+}
+
+#[test]
+fn container_delta_appearance_encoding_follows_the_item_session_selection() {
+    use oteryn_protocol_oteryn::container_tree::decode_container_views_with_appearances;
+    for appearances in [false, true] {
+        let mut view = session(1);
+        if appearances {
+            view = view.with_appearances();
+        }
+        let mut state = ContainerViewState::default();
+        let bag = handle_of(&view, instance(1));
+        let (outcome, delta) = run(
+            &mut state,
+            &mut view,
+            open(bag),
+            Some(container(Some(instance(0)), &[2])),
+        );
+        assert_eq!(outcome, ContainerViewOutcome::Opened);
+        let delta = delta.expect("opened view delta");
+        let decoded =
+            decode_container_views_with_appearances(&delta.payload, false, false, appearances)
+                .expect("selected domain 14 schema");
+        assert_eq!(
+            decoded.views[0].entries[0].appearance_id,
+            if appearances { 2854 } else { 0 }
+        );
+        if appearances {
+            assert!(decode_container_views(&delta.payload).is_err());
+        } else {
+            assert_eq!(decode_container_views(&delta.payload), Ok(decoded));
+        }
     }
 }

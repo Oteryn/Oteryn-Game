@@ -26,7 +26,7 @@ use crate::charm_wire::{
 use crate::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, ItemEntry, ItemHandle,
     ItemViewWireError, MAX_ITEM_ENTRY_BYTES, MAX_ITEM_TARGET_BYTES, MAX_LIVE_ITEM_HANDLES,
-    decode_entry, encode_entry,
+    decode_entry_for, encode_entry_for,
 };
 
 /// Registered capability `CONTAINER_TREE_V1`: domain 14, command type 21, the `CONTAINER`
@@ -240,7 +240,7 @@ fn validate_container_views(
     Ok(())
 }
 
-fn encode_view(output: &mut Vec<u8>, view: &ContainerView) {
+fn encode_view(output: &mut Vec<u8>, view: &ContainerView, appearances: bool) {
     let mut body = Vec::with_capacity(MAX_CONTAINER_VIEW_BYTES);
     push_nonzero_varint_field(&mut body, 1, u64::from(view.view_id));
     push_varint_field(&mut body, 2, view.container_handle.get());
@@ -249,7 +249,7 @@ fn encode_view(output: &mut Vec<u8>, view: &ContainerView) {
     }
     push_varint_field(&mut body, 4, u64::from(view.capacity));
     for entry in &view.entries {
-        encode_entry(&mut body, 5, entry);
+        encode_entry_for(&mut body, 5, entry, appearances);
     }
     if let Some(page) = view.browse {
         push_message_field(&mut body, 6, &encode_page(page));
@@ -261,6 +261,7 @@ fn decode_view(
     input: &[u8],
     browse_field: bool,
     house_capacity_v2: bool,
+    appearances: bool,
 ) -> WireResult<ContainerView> {
     let maximum_bytes = if browse_field {
         MAX_BROWSE_FIELD_VIEW_BYTES
@@ -269,6 +270,18 @@ fn decode_view(
     } else {
         MAX_CONTAINER_VIEW_BYTES
     };
+    let maximum_bytes = maximum_bytes
+        + if appearances {
+            4 * if browse_field {
+                MAX_BROWSE_FIELD_PAGE_ENTRIES
+            } else if house_capacity_v2 {
+                MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+            } else {
+                MAX_CONTAINER_VIEW_ENTRIES
+            }
+        } else {
+            0
+        };
     let maximum_entries = if browse_field {
         MAX_BROWSE_FIELD_PAGE_ENTRIES
     } else if house_capacity_v2 {
@@ -293,7 +306,10 @@ fn decode_view(
                 if entries.len() == maximum_entries {
                     return Err(ItemViewWireError::LimitExceeded);
                 }
-                entries.push(decode_entry(read_bytes(input, &mut cursor)?)?);
+                entries.push(decode_entry_for(
+                    read_bytes(input, &mut cursor)?,
+                    appearances,
+                )?);
             }
             0x32 if browse_field => {
                 set_once(&mut browse, decode_page(read_bytes(input, &mut cursor)?)?)?;
@@ -308,6 +324,16 @@ fn decode_view(
     } else {
         MAX_CONTAINER_VIEW_BYTES
     };
+    let ordinary_bytes = ordinary_bytes
+        + if appearances {
+            4 * if house_capacity_v2 {
+                MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+            } else {
+                MAX_CONTAINER_VIEW_ENTRIES
+            }
+        } else {
+            0
+        };
     if browse.is_none() && input.len() > ordinary_bytes {
         return Err(ItemViewWireError::LimitExceeded);
     }
@@ -347,10 +373,19 @@ pub fn encode_container_views_with_house_capacity(
     browse_field: bool,
     house_capacity_v2: bool,
 ) -> WireResult<Vec<u8>> {
+    encode_container_views_with_appearances(views, browse_field, house_capacity_v2, false)
+}
+
+pub fn encode_container_views_with_appearances(
+    views: &ContainerViews,
+    browse_field: bool,
+    house_capacity_v2: bool,
+    appearances: bool,
+) -> WireResult<Vec<u8>> {
     validate_container_views(views, browse_field, house_capacity_v2)?;
     let mut output = Vec::new();
     for view in &views.views {
-        encode_view(&mut output, view);
+        encode_view(&mut output, view, appearances);
     }
     Ok(output)
 }
@@ -372,6 +407,15 @@ pub fn decode_container_views_with_house_capacity(
     browse_field: bool,
     house_capacity_v2: bool,
 ) -> WireResult<ContainerViews> {
+    decode_container_views_with_appearances(payload, browse_field, house_capacity_v2, false)
+}
+
+pub fn decode_container_views_with_appearances(
+    payload: &[u8],
+    browse_field: bool,
+    house_capacity_v2: bool,
+    appearances: bool,
+) -> WireResult<ContainerViews> {
     let maximum = if browse_field {
         MAX_BROWSE_FIELD_VIEWS_BYTES
     } else if house_capacity_v2 {
@@ -379,6 +423,20 @@ pub fn decode_container_views_with_house_capacity(
     } else {
         MAX_CONTAINER_VIEWS_BYTES
     };
+    let maximum = maximum
+        + if appearances {
+            MAX_CONTAINER_VIEWS
+                * 4
+                * if browse_field {
+                    MAX_BROWSE_FIELD_PAGE_ENTRIES
+                } else if house_capacity_v2 {
+                    MAX_HOUSE_CONTAINER_VIEW_ENTRIES
+                } else {
+                    MAX_CONTAINER_VIEW_ENTRIES
+                }
+        } else {
+            0
+        };
     if payload.len() > maximum {
         return Err(ItemViewWireError::LimitExceeded);
     }
@@ -394,6 +452,7 @@ pub fn decode_container_views_with_house_capacity(
                     read_bytes(payload, &mut cursor)?,
                     browse_field,
                     house_capacity_v2,
+                    appearances,
                 )?);
             }
             _ => return malformed(),

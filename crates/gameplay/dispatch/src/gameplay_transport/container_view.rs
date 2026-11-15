@@ -30,7 +30,7 @@ use oteryn_protocol_oteryn::browse_field::{
 };
 use oteryn_protocol_oteryn::container_tree::{
     ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews, MAX_CONTAINER_VIEWS,
-    encode_container_views_with_house_capacity,
+    encode_container_views_with_appearances,
 };
 use oteryn_protocol_oteryn::item_view::ItemEntry;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
@@ -493,15 +493,17 @@ impl ContainerViewState {
                     .chain(view.page_entries().iter().map(|e| e.key))
             })
             .collect();
+        let appearances = item_view.appearances();
         let encode = |table: &ItemHandleTable| {
             let views = next
                 .iter()
                 .map(|(id, view)| encode_view(table, *id, view))
                 .collect::<Result<_, _>>()?;
-            encode_container_views_with_house_capacity(
+            encode_container_views_with_appearances(
                 &ContainerViews { views },
                 self.browse_field,
                 self.house_capacity_v2,
+                appearances,
             )
             .map_err(|_| ItemViewError::Encode)
         };

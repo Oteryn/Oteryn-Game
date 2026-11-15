@@ -4,7 +4,7 @@
   "owner_decision": "BAGS-0 BAGS0-CONTAINERS-WITH-CONTENTS-V1 \u00a75 (docs/architecture/reviews/OTERYN_GAME_BAGS0_CONTAINERS_WITH_CONTENTS_DECISION_2026-09-30.md); numbers allocated by the #1622 control plane and registered by BAGS-WIRE-1",
   "owner": "current ChannelRuntime",
   "capability": 14,
-  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends an empty snapshot above any revision the session has seen (views close, BAGS-0 R3); a delta carries every open view",
+  "revision": "per GameSessionId, monotonic and never reused (FND-02 \u00a715), carried in resume state across reconnect, resume and channel transfer; every admission, reconnect, resume and transfer sends an empty snapshot above any revision the session has seen (views close, BAGS-0 R3); a delta carries every open view. The registered byte ceiling requires capabilities 230 and 499. Ordinary legacy views retain 10384 bytes (11664 with 499); capability 446 permits 12862 (14462 with 499); capability 230 permits 15488 (17408 with 499).",
   "delta_types": [
     {
       "id": 1,

@@ -1,8 +1,10 @@
 // UI cells share the scene's verified assets and packed atlas.
 impl PresentationCache {
     pub(super) fn prepare_item(&mut self, item: &oteryn_session::ItemEntry) {
-        let key = (item.appearance_id, item.count.get(), item.sub_type);
-        if item.appearance_id == 0 || self.items.contains_key(&key) {
+        let Some(key) = oteryn_client_ui::item_appearance::atlas_key(item) else {
+            return;
+        };
+        if self.items.contains_key(&key) {
             return;
         }
         let resolved = self.assets.as_ref().and_then(|assets| {
@@ -40,7 +42,7 @@ impl PresentationCache {
 
     pub(super) fn item(&self, item: &oteryn_session::ItemEntry) -> Option<&[Draw]> {
         self.items
-            .get(&(item.appearance_id, item.count.get(), item.sub_type))
+            .get(&oteryn_client_ui::item_appearance::atlas_key(item)?)
             .filter(|draws| !draws.is_empty())
             .map(Vec::as_slice)
     }

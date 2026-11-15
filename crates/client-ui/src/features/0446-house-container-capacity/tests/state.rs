@@ -9,6 +9,7 @@ fn negotiated_twenty_fifth_entry_is_visible_and_selectable()
     let mut entries = Vec::new();
     for id in 2_u64..=26 {
         entries.push(ItemEntry {
+            appearance_id: 0,
             handle: id.try_into()?,
             item_definition_ref: 2854_u32.try_into()?,
             count: 1_u32.try_into()?,

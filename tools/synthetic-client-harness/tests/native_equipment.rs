@@ -130,6 +130,7 @@ fn equip_unequip_container_drop_refusal_and_disconnect() -> Result<(), Box<dyn s
 }
 fn scenario() -> Result<(), String> {
     let item = ItemEntry {
+        appearance_id: 0,
         handle: 7.try_into().map_err(|_| "handle")?,
         item_definition_ref: 42.try_into().map_err(|_| "definition")?,
         count: 50.try_into().map_err(|_| "count")?,
