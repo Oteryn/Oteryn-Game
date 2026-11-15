@@ -10,10 +10,12 @@ enum Kind {
 pub(in crate::gameplay_transport) struct CopiedDeath {
     kind: Kind,
     unmastered: bool,
+    source_room: bool,
 }
 impl CopiedDeath {
     pub(in crate::gameplay_transport) fn capture(
         runtime: &ChannelRuntimeV1,
+        room: &QualifiedNativeEntryRoom,
         begin: &SourceCreatureDeathSeal,
         event: &crate::content::QualifiedNativeDeathEvent,
     ) -> Result<Option<Self>, ()> {
@@ -33,6 +35,8 @@ impl CopiedDeath {
             .map_err(|_| ())?;
         Ok(Some(Self {
             kind,
+            source_room: room.pinned_activity_source_room()
+                == Some(crate::content::bosses::activity_template::PinnedActivitySourceRoom::GoshnarsMegalomania),
             unmastered: current.state.master.is_none()
                 && runtime.native_summon_master(begin.actor()).is_none(),
         }))
@@ -44,7 +48,7 @@ impl CopiedDeath {
         permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         action: &PreparedSourceDeathAction,
     ) -> Result<(), ()> {
-        if !self.unmastered || self.kind == Kind::Focus {
+        if !self.source_room || !self.unmastered || self.kind == Kind::Focus {
             // The retained Focus callback calls increaseNecromaticMegalomaniaStrength
             // after 300s; its undefined necromanticRemainsId makes it a literal
             // no-op (accepted W11 qualification). It grants no +5 or Item effect.
@@ -110,7 +114,8 @@ impl CopiedDeath {
         action: &PreparedSourceDeathAction,
     ) -> bool {
         action.current_for(runtime)
-            && (!self.unmastered
+            && (!self.source_room
+                || !self.unmastered
                 || self.kind == Kind::Focus
                 || states
                     .soul_war_callbacks
