@@ -1,4 +1,4 @@
-//! Kingsday's source NPC, native STEP and achievement share the production quest owner.
+//! The source NPC cannot manufacture the donor-unavailable Kingsday mission.
 use super::fixture::{Harness, debug};
 use super::{AdmittedSession, ComposedFreshAdmission, TestResult};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -140,6 +140,14 @@ pub(super) async fn exercise(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
 ) -> TestResult {
+    // Crystal core/storages.lua:1888 declares no personal Kingsday mission.
+    // Raw M31 recipes remain for reconciliation, not executable NPC offers.
+    assert!(matches!(
+        oteryn_gameplay_quests::quest::authored_bindings::personal_event_profile(QUEST),
+        Some(
+            oteryn_gameplay_quests::quest::authored_bindings::PersonalEventProfile::Unavailable { .. }
+        )
+    ));
     let npc = install(owner, admitted).await?;
     owner.premium_coordinator = None;
     let mut supported = admitted
@@ -169,23 +177,23 @@ pub(super) async fn exercise(
         "a greeting cannot skip the chosen royal visit"
     );
     super::engworldchg_journals::step(owner, admitted, 1, StepDirection::West).await?;
-    assert_eq!(super::engworldchg_journals::value(h, PHASE).await?, 1);
+    assert_eq!(super::engworldchg_journals::value(h, PHASE).await?, 0);
     super::engworldchg_journals::step(owner, admitted, 2, StepDirection::East).await?;
     owner.open_npc_session(admitted.game_session_id).await;
     talk(owner, admitted, npc, 30002, "hi").await?;
     talk(owner, admitted, npc, 30003, "hail the king").await?;
-    assert_eq!(super::engworldchg_journals::value(h, PHASE).await?, 3);
-    assert_eq!(achievements(h).await?, 1);
+    assert_eq!(super::engworldchg_journals::value(h, PHASE).await?, 0);
+    assert_eq!(achievements(h).await?, 0);
     talk(owner, admitted, npc, 30003, "hail the king").await?;
     talk(owner, admitted, npc, 30004, "hail the king").await?;
-    assert_eq!(achievements(h).await?, 1);
+    assert_eq!(achievements(h).await?, 0);
     let receipts: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM game_character_quest_receipts WHERE quest_key=$1 AND completes",
     )
     .bind(QUEST)
     .fetch_one(&h.pool)
     .await?;
-    assert_eq!(receipts, 1);
+    assert_eq!(receipts, 0);
     let fence = owner
         .current_quest_fence(admitted.game_session_id)
         .await
@@ -196,6 +204,6 @@ pub(super) async fn exercise(
         .read_character_quest_state(authority, fence.character_id)
         .await
         .map_err(debug)?;
-    assert_eq!(loaded.tracks().get(PHASE), Some(&3));
+    assert_eq!(loaded.tracks().get(PHASE), None);
     Ok(())
 }

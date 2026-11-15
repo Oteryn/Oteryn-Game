@@ -25,6 +25,14 @@ pub async fn clear_feroxa_ground_batch(
     if channel_id != identity.channel || authority.generation() != identity.generation.get() {
         return Err(DurabilityError::Unavailable);
     }
+    // Reuse bounded custody plans through the deferred COMMIT guards, just as
+    // stack hand-ins do; planning/JIT must not consume the physical pass budget.
+    sqlx::query("SET LOCAL plan_cache_mode = force_generic_plan")
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("SET LOCAL jit = off")
+        .execute(&mut **tx)
+        .await?;
     Ok(sqlx::query_scalar("SELECT game_feroxa_clear_ground_batch(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5::smallint,$6,$7,$8,$9,$10)")
         .bind(identity.firing_id.as_slice()).bind(authority.world_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
         .bind(identity.generation.get().to_string()).bind(i16::from(phase)).bind(now_ms)

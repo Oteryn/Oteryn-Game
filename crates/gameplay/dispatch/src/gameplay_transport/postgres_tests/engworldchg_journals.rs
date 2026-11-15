@@ -132,6 +132,8 @@ fn scenario(
                 pin,
             )
             .map_err(debug)?;
+            // This generic bundle view has no qualified native onDeath source room.
+            runtime.use_classic_creature_deaths().map_err(debug)?;
             let reservation = runtime
                 .reserve_fresh_session(deps.admitted.game_session_id)
                 .map_err(debug)?;
@@ -441,6 +443,7 @@ fn scenario(
                 &entry_callback.quest,
                 (goal > 0).then_some(goal),
                 journal_command,
+                program != "kingsday",
             )
             .await?;
             eprintln!(
@@ -771,6 +774,7 @@ async fn prove_journal_wire(
     quest: &str,
     goal: Option<i64>,
     command_id: u64,
+    completed: bool,
 ) -> TestResult {
     use oteryn_protocol_oteryn::quest_log::{
         QuestLogQuery, QuestLogView, decode_quest_log, encode_quest_log_query,
@@ -796,8 +800,12 @@ async fn prove_journal_wire(
             &[16],
         )
         .ok_or("journal capability")?;
-    let payload =
-        encode_quest_log_query(&QuestLogQuery::Quest { quest_index: index }).map_err(debug)?;
+    let payload = encode_quest_log_query(&if completed {
+        QuestLogQuery::Quest { quest_index: index }
+    } else {
+        QuestLogQuery::List
+    })
+    .map_err(debug)?;
     let command = oteryn_protocol_oteryn::encode_client_command(
         1,
         &oteryn_protocol_oteryn::ClientCommandValue {
@@ -821,7 +829,14 @@ async fn prove_journal_wire(
                 oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
             if delta.domain_id == 16 {
                 let log = decode_quest_log(delta.payload).map_err(debug)?;
-                if let Some(QuestLogView::Line(line)) = log.view {
+                if !completed && let Some(QuestLogView::List(quests)) = &log.view {
+                    assert!(
+                        !quests.iter().any(|quest| quest.quest_index == index),
+                        "an unavailable donor mission must not be listed"
+                    );
+                    found = true;
+                }
+                if completed && let Some(QuestLogView::Line(line)) = log.view {
                     found |= line.completed
                         && line.quest_index == index
                         && line.missions.iter().any(|m| {
@@ -833,10 +848,7 @@ async fn prove_journal_wire(
             }
         }
     }
-    assert!(
-        found,
-        "completed native journal and its real kill counter must reach domain 16"
-    );
+    assert!(found, "the native journal result must reach domain 16");
     Ok(())
 }
 
