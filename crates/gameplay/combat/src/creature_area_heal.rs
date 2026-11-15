@@ -390,7 +390,6 @@ impl AreaHealSource {
             source_load_magnitude,
         })
     }
-    #[cfg(any(test, feature = "test-support"))]
     pub fn requires_paralysis_removal(&self) -> bool {
         self.remove_paralysis
     }

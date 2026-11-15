@@ -82,7 +82,7 @@ impl DurabilityRoot {
             if !controller.start(request.from,request.to,request.now_ms as u64,seconds as u64).map_err(|_|DurabilityError::InvalidStoredState)? { commit_semantic_transaction(tx,deadline).await?;return Ok(false); }
             let state=String::from_utf8(controller.snapshot().map_err(|_|DurabilityError::InvalidStoredState)?).map_err(|_|DurabilityError::InvalidStoredState)?;
             if storage::load(&mut tx,request.world,&key).await.map_err(|_|DurabilityError::InvalidStoredState)?.is_none(){
-                let initial=RaidSchedule::initial(request.reset_epoch,request.now_ms).map_err(|_|DurabilityError::InvalidStoredState)?;
+                let initial=RaidSchedule::initial_at_world_epoch(request.reset_epoch,request.now_ms).map_err(|_|DurabilityError::InvalidStoredState)?;
                 storage::insert_schedule(&mut tx,request.world,&key,&initial).await.map_err(|_|DurabilityError::Unavailable)?;
             }
             sqlx::query("INSERT INTO game_world_raid_schedule_sources(world_id,raid_key,source_kind) VALUES(encode($1,'hex')::uuid,$2,4) ON CONFLICT DO NOTHING")

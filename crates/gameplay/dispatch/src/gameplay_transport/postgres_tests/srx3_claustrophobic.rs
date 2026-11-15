@@ -43,6 +43,15 @@ fn srx3_claustrophobic_actual_world_step_starts_source_raid_postgres() -> TestRe
             let mut owner = deps.owner(&h, &authority);
             owner.evidence = &evidence.evidence;
             owner.active_generation = scene.controller.active();
+            // This direct World fixture skips the transport's native creature
+            // bootstrap. Install the same active policies before raid spawning.
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            owner
+                .active_generation
+                .and_then(|active| active.native_gameplay())
+                .ok_or("actual World native policies")?
+                .install_companion_policies(&mut *owner.runtime.lock().await)
+                .map_err(debug)?;
             owner.rooms =
                 crate::gameplay_transport::SeamRooms::new(Some(&scene.room), Some(&scene.room));
             // A published World reset binds the map bundle separately from

@@ -6,6 +6,7 @@ mod conditions;
 mod death_items;
 mod eruption;
 mod gaz;
+mod malice_heal;
 mod omrafir;
 mod outburst_cast;
 mod outburst_entry;
@@ -48,6 +49,7 @@ pub(in crate::gameplay_transport) struct NativeCallbackState {
     outburst_entry: Option<outburst_entry::Entry>,
     omrafir: omrafir::NativeOmrafir,
     gaz: gaz::NativeGaz,
+    malice_heal: malice_heal::NativeMaliceHeal,
     smelly: smelly::NativeSmelly,
     binding: Option<(
         crate::foundation::RuntimeScopeRefV1,
@@ -172,6 +174,7 @@ impl NativeCallbackState {
         proposals: &[ProfileAbilityProposal],
         parties: &super::physical_spell::ReferenceParties,
         now: u64,
+        execution_now: u64,
         native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.bind_current(runtime, room, native)?;
@@ -192,6 +195,12 @@ impl NativeCallbackState {
             .await?;
             return Err(());
         }
+
+        // Player condition clocks may advance while this same native proposal
+        // is retained. Keep its identity, but commit the cure at execution time.
+        self.malice_heal
+            .execute(runtime, states, room, native, map, proposals, execution_now)
+            .await?;
 
         self.omrafir
             .execute(
@@ -854,6 +863,7 @@ impl NativeCallbacks {
         proposals: &[ProfileAbilityProposal],
         parties: &super::physical_spell::ReferenceParties,
         now: u64,
+        execution_now: u64,
         native_health_names: &crate::gameplay_transport::source_names::NativeHealthNamesData,
     ) -> Result<(), ()> {
         self.retained_owner()
@@ -870,6 +880,7 @@ impl NativeCallbacks {
                 proposals,
                 parties,
                 now,
+                execution_now,
                 native_health_names,
             )
             .await

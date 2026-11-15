@@ -1084,7 +1084,19 @@ pub(crate) async fn committed_fresh_player_from_source_owned(
         .await
         .map_err(debug)?;
     for (index, row) in rows.into_iter().enumerate() {
-        if let Some(row) = row {
+        if let Some(mut row) = row {
+            if index == 1 && row.source.source_observed_at < now {
+                // This independent signing owner observes the same key again;
+                // a large roster must not republish its first, expired proof.
+                row.precondition = crate::foundation::admission_authority_publication::AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: row.publication_revision,
+                };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.source_observed_at = now;
+                row.source.decision_identity =
+                    format!("platform-observation-{}", row.source.source_revision);
+            }
             source.rows[index + 2] = row;
         }
     }
