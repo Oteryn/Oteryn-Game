@@ -44,8 +44,8 @@ fn only_a_creature_click_queues_an_attack() -> Result<(), BatchError> {
     };
     let creature = actor(EntityKind::Creature, 101, 1);
     let mut view = view()?.with_entities(vec![creature, actor(EntityKind::Npc, 99, 2)])?;
-    // The NPC is still drawn: player plus one glyph per visible entity.
-    assert_eq!(view.scene().sprites().len(), 2 + 2);
+    // The NPC is still drawn: player/marker plus a glyph and two health quads per entity.
+    assert_eq!(view.scene().sprites().len(), 2 + 2 * 3);
     view.click(TileCoord::new(99, 200))?;
     assert!(view.inputs.is_empty());
     view.click(TileCoord::new(101, 200))?;

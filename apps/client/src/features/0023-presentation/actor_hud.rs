@@ -3,6 +3,18 @@ use super::*;
 use oteryn_client_runtime::party_skull::PartyIcon;
 use oteryn_session::{EntityDetail, EntityKind, EntityRef, WorldSpatialEntity};
 
+/// OTClient Creature::setHealthPercent uses strict thresholds, including >3%.
+pub(crate) fn health_rgb(percent: u8) -> [u8; 3] {
+    match percent {
+        93.. => [0, 188, 0],
+        61..=92 => [80, 161, 80],
+        31..=60 => [161, 161, 0],
+        9..=30 => [191, 10, 10],
+        4..=8 => [145, 15, 15],
+        _ => [133, 12, 12],
+    }
+}
+
 pub(super) struct Options {
     pvp_frame: bool,
     loot_highlight: bool,
@@ -21,12 +33,13 @@ impl Options {
         floor: i16,
         own: Option<EntityRef>,
         age: std::time::Duration,
+        shared_frontend: bool,
     ) -> Self {
         Self {
             age,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
-            health: preferences.creature_bars,
+            health: preferences.creature_bars && !shared_frontend,
             scale: preferences.interface_scale,
             own_marks: preferences.hud_marks_own,
             other_marks: preferences.hud_marks_other,
@@ -65,7 +78,7 @@ pub(super) fn draw(
         if options.health
             && let EntityDetail::Actor { health_percent, .. } = entity.detail
         {
-            let at = [x + 2.0 * scale, y + view.tile_px() as f32 - 5.0 * scale];
+            let at = [x + 2.0 * scale, (y - 4.0 * scale).max(10.0 * scale)];
             let width = (view.tile_px() as f32 - 4.0 * scale).max(1.0);
             pixel_rgb(
                 batch,

@@ -200,7 +200,7 @@ pub struct ReferencePreferences {
     pub show_harmony: bool,
     #[serde(default = "enabled")]
     pub show_serene: bool,
-    #[serde(default)]
+    #[serde(default = "enabled")]
     pub creature_bars: bool,
     #[serde(default)]
     pub health_circle: bool,
@@ -329,7 +329,7 @@ impl Default for ReferencePreferences {
             show_lights: true,
             show_harmony: true,
             show_serene: true,
-            creature_bars: false,
+            creature_bars: true,
             health_circle: false,
             shortcuts_collapsed: false,
             shortcut_order: default_shortcuts(),
