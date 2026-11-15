@@ -29,6 +29,7 @@ pub use native_departure::NativeArenaDeparture;
 pub use native_origin::NativeArenaOrigin;
 pub use native_step::NativeArenaStep;
 pub use native_timeout::NativeArenaTimeout;
+const NATIVE_STEP_BINDING_PREFIX: &[u8] = b"oteryn:svargrond-native-step:v1";
 mod pit_lease;
 pub(in crate::durability) mod pit_reset;
 pub(in crate::durability) mod terminal;
@@ -146,18 +147,26 @@ impl MatchCause {
             Self::Command(command) | Self::Step { command, .. } => command,
         }
     }
-    fn ordinal(self) -> String {
+    fn ordinal(self, origin: Option<&[u8]>) -> String {
         let raw = u128::from(self.command().command_id().get());
-        (raw + if matches!(self, Self::Step { .. }) {
+        // Source-qualified portals carry their sealed native origin alongside
+        // the command. They share the native STEP domain with generic pit exits.
+        (raw + if matches!(self, Self::Step { .. })
+            || origin.is_some_and(|binding| binding.starts_with(NATIVE_STEP_BINDING_PREFIX))
+        {
             u128::from(u64::MAX)
         } else {
             0
         })
         .to_string()
     }
-    fn bind(self, payload: &[u8]) -> Vec<u8> {
+    fn bind(self, payload: &[u8], origin: Option<&[u8]>) -> Vec<u8> {
         let mut bytes = payload.to_vec();
-        if let Self::Step {
+        if let Some(origin) =
+            origin.filter(|binding| binding.starts_with(NATIVE_STEP_BINDING_PREFIX))
+        {
+            bytes.extend_from_slice(&Sha256::digest(origin));
+        } else if let Self::Step {
             actor,
             revision,
             epoch,
@@ -460,9 +469,9 @@ pub(super) async fn replay_origin(
 ) -> Result<Option<Vec<u8>>, DurabilityError> {
     let cause = cause.into();
     let command = cause.command();
-    let payload = cause.bind(payload);
+    let payload = cause.bind(payload, origin);
     let row=sqlx::query("SELECT payload,reply,native_origin_binding FROM game_arena_match_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND character_id=encode($3,'hex')::uuid")
-        .bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal(origin)).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     if let Some(row) = row {
         if row.try_get::<Vec<u8>, _>("payload")? != payload
             || row
@@ -504,13 +513,13 @@ pub(super) async fn save_origin(
 ) -> Result<(), DurabilityError> {
     let cause = cause.into();
     let command = cause.command();
-    let payload = cause.bind(payload);
+    let payload = cause.bind(payload, origin);
     let before = serde_json::to_value(before).map_err(|_| DurabilityError::InvalidStoredState)?;
     let after = serde_json::to_value(after).map_err(|_| DurabilityError::InvalidStoredState)?;
     sqlx::query("INSERT INTO game_arena_match_receipts(character_id,game_session_id,command_id,payload,before_state,after_state,reply,native_origin_binding) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6,$7,$8)")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).bind(&payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal(origin)).bind(&payload).bind(before).bind(&after).bind(reply).bind(origin).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_character_arena_matches(character_id,body,game_session_id,command_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::numeric) ON CONFLICT(character_id) DO UPDATE SET body=EXCLUDED.body,game_session_id=EXCLUDED.game_session_id,command_id=EXCLUDED.command_id")
-        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal()).execute(&mut **tx).await?;
+        .bind(fence.character_id.as_bytes().as_slice()).bind(after).bind(command.game_session_id().as_bytes().as_slice()).bind(cause.ordinal(origin)).execute(&mut **tx).await?;
     Ok(())
 }
 

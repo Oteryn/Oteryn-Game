@@ -782,7 +782,7 @@ fn scenario_route_with_expiry(funded: bool, route: Option<NativeScenario>, expir
                 let native_receipts: i64 = sqlx::query_scalar(
                     "SELECT count(*) FROM game_arena_match_receipts WHERE substring(native_origin_binding FROM 1 FOR $1)=$2",
                 ).bind(i32::try_from(prefix.len())?).bind(prefix).fetch_one(&harness.pool).await?;
-                assert_eq!(native_receipts, 10, "one native {callback} receipt per pit");
+                assert_eq!(native_receipts, 30, "one native {callback} receipt per pit in each of the three source ranks");
             }
         }
         let achievements:i64=sqlx::query_scalar("SELECT count(*) FROM game_account_achievements WHERE achievement_key='oteryn:achievement/greenhorn'").fetch_one(&harness.pool).await?;

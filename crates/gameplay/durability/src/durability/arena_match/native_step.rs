@@ -33,7 +33,7 @@ impl NativeArenaStep {
         {
             return None;
         }
-        let mut binding = b"oteryn:svargrond-native-step:v1".to_vec();
+        let mut binding = NATIVE_STEP_BINDING_PREFIX.to_vec();
         binding.extend_from_slice(&actor.placement_identity());
         binding.extend_from_slice(session.as_bytes());
         binding.extend_from_slice(&run);
