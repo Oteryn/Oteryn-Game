@@ -256,3 +256,6 @@ fn parity_a_modal_selects_first_choice_and_arrows_change_real_answer() -> TestRe
     assert_eq!(answer.answer.choice_id, Some(9));
     Ok(())
 }
+
+#[path = "defaults.rs"]
+mod defaults;

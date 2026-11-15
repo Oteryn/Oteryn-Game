@@ -63,3 +63,26 @@ impl PlayLink {
         self.cyclopedia_character_request(Intent::Items);
     }
 }
+
+impl PlayLink {
+    pub fn cyclopedia_holdings_filter(
+        &self,
+        search: &str,
+        location: Option<oteryn_client_runtime::cyclopedia_character::items::Location>,
+    ) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        let Some(command) = oteryn_client_ui::cyclopedia_character::holdings_filter(
+            &mut mailbox.cyclopedia_character,
+            search,
+            location,
+        ) else {
+            return false;
+        };
+        if self.commands.send(PlayCommand::Feature(command)).is_err() {
+            mailbox.cyclopedia_character.pending = false;
+            mailbox.cyclopedia_character.feedback = Some(tr!("The session has ended"));
+            return false;
+        }
+        true
+    }
+}

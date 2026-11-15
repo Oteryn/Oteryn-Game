@@ -1,0 +1,13 @@
+{
+  "id": 500,
+  "name": "SERVER_MODAL_DEFAULTS_V1",
+  "owner_decision": "srvcat Tibia Global modal defaults",
+  "owner": "Game server-owned default confirmation and escape buttons",
+  "requires": [
+    450
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only; default button is encoded only on a selected connection. See server-modal-defaults-v1.md."
+}

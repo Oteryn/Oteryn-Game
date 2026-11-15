@@ -125,6 +125,82 @@ pub(super) fn render(
     {
         text(commands, skin, content, error);
     }
+    if tab == Tab::Items {
+        use oteryn_client_runtime::cyclopedia_character::items::Location;
+        let filters = commands
+            .spawn(Node {
+                width: percent(100.),
+                column_gap: px(4.),
+                flex_wrap: FlexWrap::Wrap,
+                ..default()
+            })
+            .id();
+        commands.entity(content).add_child(filters);
+        let search = commands
+            .spawn((
+                HoldingsSearch,
+                bevy::ui_widgets::TextInput,
+                bevy::text::EditableText::new(&panel.items.search),
+                source::font(skin.font.clone(), false),
+                TextColor(source::TEXT_COLOR),
+                Node {
+                    width: px(240.),
+                    min_height: px(24.),
+                    ..default()
+                },
+            ))
+            .id();
+        if panel.pending || !panel.holdings_selected {
+            commands.entity(search).insert(InteractionDisabled);
+        }
+        commands.entity(filters).add_child(search);
+        button(
+            commands,
+            skin,
+            filters,
+            Control {
+                kind: Kind::HoldingsFilter,
+                ..control
+            },
+            "Search holdings",
+            panel.pending || !panel.holdings_selected,
+        );
+        for (location, label) in [
+            (None, "All locations"),
+            (Some(Location::Inventory), "Inventory"),
+            (Some(Location::Depot), "Depot"),
+            (Some(Location::Stash), "Stash"),
+            (Some(Location::Inbox), "Inbox"),
+        ] {
+            let choice = button(
+                commands,
+                skin,
+                filters,
+                Control {
+                    kind: Kind::HoldingsLocation(location),
+                    ..control
+                },
+                label,
+                panel.pending || !panel.holdings_selected,
+            );
+            if panel.items.location == location {
+                commands.entity(choice).insert(Checked);
+            }
+        }
+        if let Some(page) = &panel.items.page {
+            text(
+                commands,
+                skin,
+                content,
+                format!(
+                    "Page {} of {} — {} matching holdings",
+                    usize::from(page.offset) / 24 + 1,
+                    usize::from(page.total).div_ceil(24).max(1),
+                    page.total
+                ),
+            );
+        }
+    }
     let rows = commands
         .spawn((
             ScrollArea,

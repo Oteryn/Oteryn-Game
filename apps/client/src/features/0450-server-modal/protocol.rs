@@ -46,6 +46,11 @@ impl Driver {
         self.panel.input = selected;
         self
     }
+    #[must_use]
+    pub(in crate::play) fn with_defaults(mut self, selected: bool) -> Self {
+        self.panel.defaults = selected;
+        self
+    }
     pub(in crate::play) async fn poll<T: Stepper>(
         &mut self,
         session: &mut T,

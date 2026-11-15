@@ -45,6 +45,7 @@ impl FreshAdmissionAuthority for Authority {
                     message: "Choose an entry".into(),
                     choices: vec![(7, "First".into())],
                     buttons: vec![(1, "Accept".into()), (2, "Cancel".into())],
+                    default_button: None,
                     cancel_button: Some(2),
                     image: Some(Image {
                         width: 1,

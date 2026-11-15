@@ -6,33 +6,105 @@ fn cosmetic_token_balance_uses_real_store_input_queue() -> Result<(), Box<dyn st
     outbox.store_tokens_initialize(true);
     link.store_request(6187, vec![]);
     let command = incoming.try_recv()?;
-    assert!(matches!(command, crate::combat_input::PlayCommand::ServerMechanic(c) if c.capability == 479 && c.command_type == 6187));
-    use oteryn_client_runtime::{cui3::store::*, server_mechanic::{CommandStatus, ServerMechanicResponse}};
-    outbox.store_result(&ServerMechanicResponse { command_id: 1, status: CommandStatus::Accepted, server_sequence: 1, payload: 870_u64.to_le_bytes().to_vec() });
+    assert!(
+        matches!(command, crate::combat_input::PlayCommand::ServerMechanic(c) if c.capability == 479 && c.command_type == 6187)
+    );
+    use oteryn_client_runtime::{
+        cui3::store::*,
+        server_mechanic::{CommandStatus, ServerMechanicResponse},
+    };
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 1,
+        status: CommandStatus::Accepted,
+        server_sequence: 1,
+        payload: 870_u64.to_le_bytes().to_vec(),
+    });
     assert_eq!(link.store_panel().cosmetic_tokens, Some(870));
     link.store_browse("cosmetics.outfits", "", 0, 0);
-    assert!(matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::ServerMechanic(c)) if c.command_type == browse::COMMAND_TYPE));
-    let page = browse::Page { categories: vec![browse::Category { key: "cosmetics".into(), parent: String::new(), title: "Cosmetics".into() }, browse::Category { key: "cosmetics.outfits".into(), parent: "cosmetics".into(), title: "Outfits".into() }], products: vec![browse::Product {
-        category: "cosmetics.outfits".into(), revision: "reference-revision".into(), artwork: browse::Artwork { kind: 2, looks: [1814,1815] },
-        offer: StoreOffer { offer_key: "store:outfit:field-surgeon".into(), title: "Field Surgeon (full outfit)".into(), price: 870, currency: "TIBIA_COIN".into() }
-    }], next: String::new(), total: 1000, transferable: 0, transferable_known: false };
-    outbox.store_result(&ServerMechanicResponse { command_id: 2, status: CommandStatus::Accepted, server_sequence: 2, payload: page.encode().map_err(|e| format!("{e:?}"))? });
+    assert!(
+        matches!(incoming.try_recv(), Ok(crate::combat_input::PlayCommand::ServerMechanic(c)) if c.command_type == browse::COMMAND_TYPE)
+    );
+    let page = browse::Page {
+        categories: vec![
+            browse::Category {
+                key: "cosmetics".into(),
+                parent: String::new(),
+                title: "Cosmetics".into(),
+            },
+            browse::Category {
+                key: "cosmetics.outfits".into(),
+                parent: "cosmetics".into(),
+                title: "Outfits".into(),
+            },
+        ],
+        products: vec![browse::Product {
+            category: "cosmetics.outfits".into(),
+            revision: "reference-revision".into(),
+            artwork: browse::Artwork {
+                kind: 2,
+                looks: [1814, 1815],
+            },
+            offer: StoreOffer {
+                offer_key: "store:outfit:field-surgeon".into(),
+                title: "Field Surgeon (full outfit)".into(),
+                price: 870,
+                currency: "TIBIA_COIN".into(),
+            },
+        }],
+        next: String::new(),
+        total: 1000,
+        transferable: 0,
+        transferable_known: false,
+    };
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 2,
+        status: CommandStatus::Accepted,
+        server_sequence: 2,
+        payload: page.encode().map_err(|e| format!("{e:?}"))?,
+    });
     assert!(link.store_payment(true));
-    let quote = oteryn_client_ui::store::confirmation_quote(&link.store_panel()).ok_or("displayed quote")?;
+    let quote = oteryn_client_ui::store::confirmation_quote(&link.store_panel())
+        .ok_or("displayed quote")?;
     assert_eq!(quote.offers[0].currency, "COSMETIC_TOKEN");
     assert!(link.store_confirm_purchase(&quote, "", "", ""));
-    let crate::combat_input::PlayCommand::ServerMechanic(command) = incoming.try_recv()? else { return Err("wrong queue command".into()); };
-    assert_eq!((command.capability,command.command_type),(479,6188));
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = incoming.try_recv()? else {
+        return Err("wrong queue command".into());
+    };
+    assert_eq!((command.capability, command.command_type), (479, 6188));
     let request = decode_purchase_request(&command.payload).map_err(|e| format!("{e:?}"))?;
-    assert_eq!((request.price, request.currency.as_str()), (870,"COSMETIC_TOKEN"));
-    assert!(!link.store_payment(false), "an uncertain confirmed payment cannot change currency");
-    outbox.store_result(&ServerMechanicResponse { command_id: 3, status: CommandStatus::Accepted, server_sequence: 3, payload: encode_purchase_result(&StorePurchaseResult { code: StorePurchaseCode::Accepted, order_id: Some(request.purchase_request_id), operation_id: Some(request.purchase_request_id) }).map_err(|e| format!("{e:?}"))? });
+    assert_eq!(
+        (request.price, request.currency.as_str()),
+        (870, "COSMETIC_TOKEN")
+    );
+    assert!(
+        !link.store_payment(false),
+        "an uncertain confirmed payment cannot change currency"
+    );
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 3,
+        status: CommandStatus::Accepted,
+        server_sequence: 3,
+        payload: encode_purchase_result(&StorePurchaseResult {
+            code: StorePurchaseCode::Accepted,
+            order_id: Some(request.purchase_request_id),
+            operation_id: Some(request.purchase_request_id),
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    });
     assert!(link.store_panel().token_balance_refresh);
     link.store_request(6187, vec![]);
     assert!(incoming.try_recv().is_ok());
-    outbox.store_result(&ServerMechanicResponse { command_id: 4, status: CommandStatus::Accepted, server_sequence: 4, payload: 0_u64.to_le_bytes().to_vec() });
+    outbox.store_result(&ServerMechanicResponse {
+        command_id: 4,
+        status: CommandStatus::Accepted,
+        server_sequence: 4,
+        payload: 0_u64.to_le_bytes().to_vec(),
+    });
     assert_eq!(link.store_panel().cosmetic_tokens, Some(0));
-    assert!(oteryn_client_ui::store::panel_text(&link.store_panel()).contains("Cosmetic Tokens (this character): 0"));
+    assert!(
+        oteryn_client_ui::store::panel_text(&link.store_panel())
+            .contains("Cosmetic Tokens (this character): 0")
+    );
     Ok(())
 }
 
@@ -74,6 +146,7 @@ fn store_hireling_confirmation_queues_server_modal_selection()
         message: "Select a hireling below".into(),
         choices: vec![(1, "Alex".into())],
         buttons: vec![(1, "Select".into()), (2, "Cancel".into())],
+        default_button: None,
         cancel_button: Some(2),
         image: None,
     };

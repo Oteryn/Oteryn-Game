@@ -1,0 +1,7 @@
+{
+  "mechanic": "0500-server-modal-defaults",
+  "kind": "panels",
+  "id": "0500-server-modal-defaults-panel",
+  "status": "supported",
+  "entry": "protocol.rs::keyboard_button"
+}

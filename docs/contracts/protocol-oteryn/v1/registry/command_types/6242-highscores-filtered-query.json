@@ -1,0 +1,10 @@
+{
+  "id": 6242,
+  "name": "HIGHSCORES_FILTERED_QUERY",
+  "owner_decision": "srvcat Tibia Global World type selectors",
+  "capability": 502,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/highscores-catalogue-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/highscores-catalogue-v1.md#reply",
+  "max_payload_bytes": 46,
+  "max_result_payload_bytes": 9899
+}

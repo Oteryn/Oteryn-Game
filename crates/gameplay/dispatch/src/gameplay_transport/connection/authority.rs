@@ -1459,6 +1459,18 @@ pub trait FreshAdmissionAuthority {
         async { HighscoresReply::Rejected }
     }
 
+    fn highscores_catalogue(
+        &self,
+        _world: WorldId,
+        _session: GameSessionId,
+        _query: Option<(
+            HighscoresQuery,
+            Option<oteryn_protocol_oteryn::highscores_catalogue::WorldType>,
+        )>,
+    ) -> impl Future<Output = HighscoresReply> {
+        async { HighscoresReply::Rejected }
+    }
+
     /// The account's achievement watermark for the `ACCOUNT_ACHIEVEMENT_NOTICES` snapshot
     /// (ACHIEVEMENT-0 §5), read for the admitted controller's account; `None` when it cannot be
     /// read.

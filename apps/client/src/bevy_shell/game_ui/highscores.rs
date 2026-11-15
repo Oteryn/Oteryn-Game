@@ -24,6 +24,7 @@ enum Kind {
     Vocation,
     World(Option<oteryn_client_runtime::highscores::wire::WorldId>),
     WorldInput,
+    WorldType(Option<oteryn_client_runtime::highscores::catalogue::WorldType>),
 }
 #[derive(Component, Clone, Copy)]
 struct Action {
@@ -132,6 +133,17 @@ fn project(
                     .map(|id| (id, name.clone()))
             })
             .collect();
+    }
+    if panel.catalogue_selected
+        && !panel.pending
+        && panel.feedback.is_none()
+        && let Some(play) = &owner.play
+    {
+        if !panel.catalogue_loaded {
+            play.link.highscores_request(Request::Catalogue);
+        } else if panel.reply.is_none() {
+            play.link.highscores_request(Request::Refresh);
+        }
     }
     let now = now_millis();
     if state.seen.as_ref() == Some(&panel) {

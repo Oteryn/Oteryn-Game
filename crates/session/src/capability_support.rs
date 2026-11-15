@@ -173,6 +173,9 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
     oteryn_protocol_oteryn::highscores_loyalty::CAPABILITY_HIGHSCORES_LOYALTY_V1,
     oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_APPEARANCE_V1,
+    oteryn_protocol_oteryn::server_modal::CAPABILITY_SERVER_MODAL_DEFAULTS_V1,
+    cyclopedia_character::items::filtered::CAPABILITY,
+    highscores_catalogue::CAPABILITY,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
@@ -288,6 +291,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     atelier::v2::CAPABILITY_GEM_ATELIER_V2,
     // WU26 own sanction record, command 6240.
     oteryn_protocol_oteryn::sanction_record::CAPABILITY_SANCTION_RECORD_V1,
+    highscores_catalogue::CAPABILITY,
 ];
 
 pub(super) fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
@@ -399,6 +403,36 @@ mod native_advertisement_tests {
             schema_revision: 1,
             selected_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
         })?;
+        Ok(())
+    }
+
+    #[test]
+    fn srvcat_bootstrap_advertises_extensions_and_gates_world_queries()
+    -> Result<(), FoundationProtocolError> {
+        let mut id = [1u8; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        let bootstrap = encode_client_bootstrap(&ClientBootstrapValue {
+            schema_revision: 1,
+            character_id: CharacterId::decode(&id)?,
+            admission_material: b"srvcat-bootstrap-regression",
+            client_build_id: "srvcat-bootstrap-regression",
+            supported_capabilities: CLIENT_SUPPORTED_CAPABILITIES,
+        })?;
+        let envelope = decode_wire_envelope(&bootstrap)?;
+        let supported = envelope.client_bootstrap()?.supported_capabilities;
+        for capability in [500, 501, 502] {
+            assert!(
+                supported.contains(&capability),
+                "native bootstrap omitted {capability}"
+            );
+        }
+        assert_eq!(
+            super::gated_routes()
+                .find(|(capability, _, _)| *capability == 502)
+                .map(|(_, commands, _)| commands),
+            Some(&[6241, 6242][..])
+        );
         Ok(())
     }
 }

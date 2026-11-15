@@ -80,6 +80,7 @@ pub mod guild_bank;
 pub mod guild_war;
 pub mod hazard;
 pub mod highscores;
+pub mod highscores_catalogue;
 pub mod highscores_loyalty;
 pub mod hireling;
 pub mod hotkey_equip;

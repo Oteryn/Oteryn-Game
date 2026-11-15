@@ -32,6 +32,7 @@ fn render(input: Option<DialogInput>, message: &str) -> Result<World, Box<dyn st
                 message: message.into(),
                 choices: vec![],
                 buttons: vec![(1, "Ok".into())],
+                default_button: None,
                 cancel_button: None,
                 image: None,
             }),

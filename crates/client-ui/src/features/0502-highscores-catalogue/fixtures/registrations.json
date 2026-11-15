@@ -1,0 +1,59 @@
+[
+  {
+    "mechanic": "0502-highscores-catalogue",
+    "kind": "handlers",
+    "id": "0502-highscores-catalogue-catalogue",
+    "status": "supported",
+    "commands": [
+      6241
+    ],
+    "direction": "client_to_server",
+    "capability": 502,
+    "entry": "protocol.rs::request",
+    "push_messages": [
+      "HighscoresWorldCatalogue",
+      "HighscoresReply"
+    ],
+    "reducer": "protocol.rs::apply_result",
+    "test": "tests.rs::world_type_selector_uses_the_server_catalogue",
+    "not_applicable": {
+      "state": "The retained highscores panel stores catalogue, type and pages.",
+      "protocol": "The shared catalogue codec decodes Worlds and types.",
+      "view": "The Bevy highscores window lists server Worlds by selected type.",
+      "input": "The retained highscores request builder sends catalogue and filtered query commands.",
+      "settings": "World type is a transient filter."
+    }
+  },
+  {
+    "mechanic": "0502-highscores-catalogue",
+    "kind": "panels",
+    "id": "0502-highscores-catalogue-panel",
+    "status": "supported",
+    "entry": "protocol.rs::world_choices"
+  },
+  {
+    "mechanic": "0502-highscores-catalogue",
+    "kind": "handlers",
+    "id": "0502-highscores-catalogue-query",
+    "status": "supported",
+    "commands": [
+      6242
+    ],
+    "direction": "client_to_server",
+    "capability": 502,
+    "entry": "protocol.rs::request",
+    "push_messages": [
+      "HighscoresWorldCatalogue",
+      "HighscoresReply"
+    ],
+    "reducer": "protocol.rs::apply_result",
+    "test": "tests.rs::world_type_selector_uses_the_server_catalogue",
+    "not_applicable": {
+      "state": "The retained highscores panel stores catalogue, type and pages.",
+      "protocol": "The shared catalogue codec decodes Worlds and types.",
+      "view": "The Bevy highscores window lists server Worlds by selected type.",
+      "input": "The retained highscores request builder sends catalogue and filtered query commands.",
+      "settings": "World type is a transient filter."
+    }
+  }
+]

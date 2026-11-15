@@ -105,6 +105,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
             oteryn_session::cyclopedia_character::CAPABILITY_CYCLOPEDIA_DEATH_DETAILS_V1,
         ),
     );
+    outbox.holdings_initialize(session.feature_selected(501));
     outbox.cyclopedia_tracker_initialize(session.feature_selected(197));
     outbox.world_event_initialize(session.feature_selected(53));
     outbox.daily_boost_initialize(session.feature_selected(151));
@@ -112,6 +113,7 @@ pub(super) fn initialize<T: Stepper>(session: &T, outbox: &Outbox) -> bool {
         session.server_mechanic_selected(9),
         session.feature_selected(498),
     );
+    outbox.highscores_catalogue_initialize(session.feature_selected(502));
     outbox.sanction_initialize(session.feature_selected(497));
     outbox.depot_search_initialize(session.server_mechanic_selected(153));
     outbox.target_move_initialize(session.feature_selected(64));

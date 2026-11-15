@@ -1,6 +1,6 @@
 //! Self custody in one fenced, read-only snapshot, including closed nested bags.
 use super::*;
-use oteryn_protocol_oteryn::cyclopedia_character::items::{Page, Row as ItemRow};
+use oteryn_protocol_oteryn::cyclopedia_character::items::{Page, Row as ItemRow, filtered};
 pub const HOLDINGS_SQL: &str = r#"
 WITH RECURSIVE owner AS (
  SELECT character_id,world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1
@@ -25,9 +25,14 @@ WITH RECURSIVE owner AS (
  COALESCE(sum(quantity) FILTER(WHERE kind=2),0)::bigint stash,
  COALESCE(sum(quantity) FILTER(WHERE kind=3),0)::bigint inbox
  FROM units GROUP BY key COLLATE "C"
+), named AS (
+ SELECT grouped.*,COALESCE(names.name,grouped.key) display_name FROM grouped
+ LEFT JOIN unnest($3::text[],$4::text[]) names(definition,name) ON names.definition=grouped.key
+ WHERE (strpos(lower(COALESCE(names.name,grouped.key)),lower($5))>0 OR strpos(lower(grouped.key),lower($5))>0)
+ AND CASE $6 WHEN 1 THEN inventory>0 WHEN 2 THEN depot>0 WHEN 3 THEN stash>0 WHEN 4 THEN inbox>0 ELSE true END
 )
-SELECT page.*,totals.total FROM (SELECT count(*)::bigint total FROM grouped) totals
-LEFT JOIN (SELECT * FROM grouped ORDER BY key COLLATE "C" OFFSET $2 LIMIT 24) page ON true
+SELECT page.*,totals.total FROM (SELECT count(*)::bigint total FROM named) totals
+LEFT JOIN (SELECT * FROM named ORDER BY key COLLATE "C" OFFSET $2 LIMIT 24) page ON true
 ORDER BY page.key COLLATE "C"
 "#;
 impl DurabilityRoot {
@@ -38,6 +43,34 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         offset: u16,
     ) -> Result<Page, CharacterAuthorityError> {
+        Ok(self
+            .read_cyclopedia_item_summary_filtered(
+                authority,
+                node,
+                fence,
+                filtered::Query {
+                    offset,
+                    location: None,
+                    search: String::new(),
+                },
+                Vec::new(),
+            )
+            .await?
+            .holdings)
+    }
+    pub async fn read_cyclopedia_item_summary_filtered(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        query: filtered::Query,
+        names: Vec<(String, String)>,
+    ) -> Result<filtered::Page, CharacterAuthorityError> {
+        query
+            .encode()
+            .map_err(|_| CharacterAuthorityError::Rejected)?;
+        let offset = query.offset;
+        let (keys, names): (Vec<_>, Vec<_>) = names.into_iter().unzip();
         let recovery = authority.record_for(self)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?
@@ -57,6 +90,10 @@ impl DurabilityRoot {
                     let records = sqlx::query(HOLDINGS_SQL)
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(i64::from(offset))
+                        .bind(keys)
+                        .bind(names)
+                        .bind(query.search.trim())
+                        .bind(query.location.map_or(0i16, |location| location as i16 + 1))
                         .fetch_all(&mut *tx)
                         .await?;
                     let total = records
@@ -65,10 +102,12 @@ impl DurabilityRoot {
                         .transpose()?
                         .unwrap_or(0);
                     let mut rows = Vec::with_capacity(records.len());
+                    let mut labels = Vec::with_capacity(records.len());
                     for record in records {
                         let Some(definition) = record.try_get::<Option<String>, _>("key")? else {
                             continue;
                         };
+                        labels.push(record.try_get::<String, _>("display_name")?);
                         rows.push(ItemRow {
                             definition,
                             quantities: [
@@ -79,10 +118,13 @@ impl DurabilityRoot {
                             ],
                         });
                     }
-                    let page = Page {
-                        offset,
-                        total: narrow(total)?,
-                        rows,
+                    let page = filtered::Page {
+                        holdings: Page {
+                            offset,
+                            total: narrow(total)?,
+                            rows,
+                        },
+                        names: labels,
                     };
                     if page.encode().is_err() {
                         return Ok(Err(CharacterAuthorityError::Rejected));

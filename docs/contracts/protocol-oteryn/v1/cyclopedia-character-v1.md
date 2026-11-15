@@ -344,3 +344,11 @@ Current difference: Crystal `Player::death` compares the damage of every
 attacker, creatures included. Only player damage has durable amounts here, so
 a player who dealt any recorded damage is reported over a creature that may have
 dealt more.
+
+## Holdings search extension
+
+With capability 501 selected, command 388 also accepts selector 134 from
+[Holdings search V1](holdings-search-v1.md). Its request is at most 101 bytes;
+legacy selectors keep their existing grammars and bounds. The reply adds the
+active content names for exactly the server-filtered custody page. Selector 134
+is rejected without 501; legacy selector 130 and its reply remain unchanged.

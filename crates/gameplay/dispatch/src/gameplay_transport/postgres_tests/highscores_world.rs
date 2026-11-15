@@ -8,7 +8,7 @@ use crate::foundation::{FoundationProtocolError, GameSessionId, WorldId};
 use crate::gameplay_transport::connection::FreshAdmissionAuthority;
 use oteryn_protocol_oteryn::highscores::{self as wire, HighscoresQuery, HighscoresResult};
 
-async fn snapshot(
+pub(super) async fn snapshot(
     pool: &sqlx::PgPool,
     world: WorldId,
     category: i32,

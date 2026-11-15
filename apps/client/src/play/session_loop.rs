@@ -23,6 +23,7 @@ pub async fn run_session<T: Stepper>(
     let modal = super::feature_0450_server_modal::protocol::Driver::new(
         session.feature_selected(450),
     )
+    .with_defaults(session.feature_selected(500))
     .with_input(session.feature_selected(
         oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
     ));
@@ -164,7 +165,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                             64 => outbox.target_move_result(&request, &response),
                             82 => outbox.creature_push_result(&response),
                             98 | 132 | 200 | 232 | 285 => outbox.discovery_result(request.capability, &response),
-                            9 => outbox.highscores_result(&response),
+                            9 | 502 => outbox.highscores_result(&response),
                             17 if request.command_type == oteryn_session::battle_metadata::COMMAND_TYPE_BATTLE_METADATA_QUERY => outbox.battle_metadata_result(&response),
                             14 => outbox.browse_field_result(&response),
                             152 => outbox.item_forge_result(&response),
@@ -453,6 +454,7 @@ fn recover_handoff<T: Stepper>(
     *modal = super::feature_0450_server_modal::protocol::Driver::new(
         session.feature_selected(450),
     )
+    .with_defaults(session.feature_selected(500))
     .with_input(session.feature_selected(
         oteryn_session::property_services::server_modal::input::CAPABILITY_SERVER_MODAL_INPUT_V1,
     ))

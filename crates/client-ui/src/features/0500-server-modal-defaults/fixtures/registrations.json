@@ -1,0 +1,35 @@
+[
+  {
+    "mechanic": "0500-server-modal-defaults",
+    "kind": "handlers",
+    "id": "0500-server-modal-defaults-buttons",
+    "status": "supported",
+    "commands": [],
+    "shared_commands": [
+      736,
+      737
+    ],
+    "direction": "server_to_client",
+    "capability": 500,
+    "entry": "protocol.rs::keyboard_button",
+    "push_messages": [
+      "ServerModalReply"
+    ],
+    "reducer": "protocol.rs::keyboard_button",
+    "test": "tests.rs::default_and_escape_use_server_ids",
+    "not_applicable": {
+      "state": "The existing server modal panel retains the decoded dialog.",
+      "protocol": "The server modal codec decodes the explicit default button.",
+      "view": "The Bevy modal submits the default button on Enter and double click.",
+      "input": "The original answer command carries the server button id.",
+      "settings": "Server defaults have no client setting."
+    }
+  },
+  {
+    "mechanic": "0500-server-modal-defaults",
+    "kind": "panels",
+    "id": "0500-server-modal-defaults-panel",
+    "status": "supported",
+    "entry": "protocol.rs::keyboard_button"
+  }
+]

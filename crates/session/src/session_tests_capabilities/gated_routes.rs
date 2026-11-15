@@ -30,6 +30,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         // P-C01 already routes charm progression and expert fight modes on this base.
         (67, &[84], &[]),
         (87, &[103], &[52]),
+        (502, &[6241, 6242], &[]),
         (60, &[78], &[26]),
         (62, &[79], &[27]),
         (63, &[80, 6126, 6128], &[28]),
@@ -37,6 +38,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         // P-C01 already enables charm progression and PvP expert; preserve that exact table.
         (67, &[84], &[]),
         (87, &[103], &[52]),
+        (502, &[6241, 6242], &[]),
         (68, &[85], &[]),
         (72, &[89, 6120], &[]),
         (75, &[], &[40]),
@@ -142,6 +144,7 @@ fn derived_gated_routes_match_previous_table() -> Result<(), &'static str> {
         (67, &[84], &[]),
         (83, &[], &[48]),
         (87, &[103], &[52]),
+        (502, &[6241, 6242], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();
