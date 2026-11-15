@@ -84,7 +84,9 @@ With no text field focused, the existing gameplay shortcuts open:
   history. Collect uses the server-confirmed shrine availability.
 - **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
   and Offer History. Create buy/sell offers, cancel selected own offers, and accept
-  buy/sell offers with bounded quantities through the existing server intents.
+  buy/sell offers through the existing server intents. Accept quantities clamp to
+  the remaining offer amount and, for buy offers, the item's known depot stock.
+  Create requires amount 1–64000, price ≥ 1, and total ≤ 999999999999 gold.
 - **Ctrl+Shift+S:** coin Store, with category browsing, purchase confirmation,
   coin gifts/transfers, purchase history and the coin ledger.
 - **Ctrl+Shift+P:** Weapon proficiency. Requests the existing server catalogue,
