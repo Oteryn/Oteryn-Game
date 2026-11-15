@@ -441,3 +441,45 @@ fn an_existing_outgoing_offer_cannot_be_replaced_through_the_picker() -> TestRes
     assert_eq!(command.intent, player_trade::Intent::Cancel);
     Ok(())
 }
+
+#[test]
+fn labelled_offer_inspection_routes_each_side_and_displays_server_description() -> TestResult {
+    for (caption, counter) in [("Inspect yours", false), ("Inspect theirs", true)] {
+        let (mut app, mut commands, outbox) = app()?;
+        let inspect = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find(|(text, _)| text.0 == caption)
+            .map(|(_, parent)| parent.parent())
+            .ok_or("labelled inspection button absent")?;
+        app.world_mut().trigger(Activate { entity: inspect });
+        app.world_mut().trigger(Activate { entity: inspect });
+        let PlayCommand::PlayerTrade(command) = commands.try_recv()? else {
+            return Err("inspection command absent".into());
+        };
+        assert_eq!(
+            command.intent,
+            player_trade::Intent::Look {
+                trade_id: [3; 16],
+                counter_offer: counter,
+            }
+        );
+        assert!(commands.try_recv().is_err());
+        let mut reply = panel().state.ok_or("state")?;
+        reply.look = "You see a sword. It weighs 35.00 oz.".into();
+        outbox.bevy_trade_response(&PlayerTradeResponse {
+            status: CommandStatus::Accepted,
+            result: player_trade::ResultCode::Offered,
+            state: reply,
+        });
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0.contains("You see a sword. It weighs 35.00 oz."))
+        );
+    }
+    Ok(())
+}
