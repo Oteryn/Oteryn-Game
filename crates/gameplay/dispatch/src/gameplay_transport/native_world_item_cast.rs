@@ -502,6 +502,7 @@ pub(super) async fn prepare(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,
@@ -850,6 +851,7 @@ async fn prepare_barrier(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,
@@ -1138,6 +1140,7 @@ async fn prepare_carried(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         direct_companion: None,

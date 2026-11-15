@@ -3,9 +3,7 @@
 
 use super::*;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
-use oteryn_gameplay_combat_rules::resolution::equipped_offence::{
-    CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN, EquippedOffence, leech_amount,
-};
+use oteryn_gameplay_combat_rules::resolution::equipped_offence::{EquippedOffence, leech_amount};
 
 /// The attacker's installed offence; zero for an actor without spell state.
 pub(super) fn attacker_offence(
@@ -21,9 +19,9 @@ pub(super) fn attacker_offence(
 }
 
 /// `Combat::applyExtensions` (`combat.cpp:2724-2742`): a drawn swing meets the critical roll
-/// before the target's defence, armor or the PvP halving. The roll is its own tagged draw, so it
-/// shifts no other draw of the swing. EQMOD2 then draws the tier/amplified fatal hit and
-/// adds its rounded 60% bonus. `None` when a required draw cannot be made (fail closed).
+/// before the target's defence, armor or the PvP halving. The caller supplies the attack's
+/// shared tagged critical draw; target-specific damage draws remain independent. EQMOD2 then
+/// draws the tier/amplified fatal hit and adds its rounded 60% bonus. `None` when a required draw cannot be made (fail closed).
 pub(super) fn critical_swing(
     offence: &EquippedOffence,
     root: &GameplayDecisionRoot,
@@ -31,23 +29,14 @@ pub(super) fn critical_swing(
     lineage: CommandRef,
     ordinal: u16,
     damage: i64,
+    critical_roll: u64,
 ) -> Option<i64> {
     if damage <= 0 || (!offence.rolls_critical() && offence.weapon_tier == 0) {
         return Some(damage);
     }
     let damage = u32::try_from(damage).ok()?;
     let damage = if offence.rolls_critical() {
-        let roll = swing_draw(
-            root,
-            attacker,
-            lineage,
-            ordinal,
-            b"critical-hit",
-            "attack.critical-hit",
-            i64::try_from(CRITICAL_ROLL_MIN).ok()?,
-            i64::try_from(CRITICAL_ROLL_MAX).ok()?,
-        )?;
-        offence.critical(damage, u64::try_from(roll).ok()?)
+        offence.critical(damage, critical_roll)
     } else {
         damage
     };

@@ -299,6 +299,7 @@ pub async fn prepare_from_owners(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: item_spell_augments::leech(owned, spell, before, now),
         corpse_companion: None,
@@ -1202,6 +1203,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     room: &QualifiedNativeEntryRoom,
     objects: &LocalObjectRuntime,
     content: &NativeGameplayState,
+    charms: &crate::content::charm_source::CanonicalCharmCatalogue,
     owned: &OwnedCastFacts,
     book: &SpellBook,
     saved: &crate::spell::delayed_execution::SavedStrike,
@@ -1322,6 +1324,15 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     magnitude
         .select_item_spell(spell)
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    crate::gameplay_transport::attack::charm_combat::select_spell_critical(
+        states,
+        runtime,
+        charms,
+        saved.binding.caster,
+        saved.binding.command,
+        &mut magnitude,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
     if saved.scheduled.captured_raw_bounds.is_some() {
         magnitude
             .select_planted_strike(&saved.cast_modifiers)
@@ -1362,15 +1373,39 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         &mut |plan, hit, target| magnitude.finish_with_damage_healing(plan, hit, target, draw),
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    states.apply_prey_spell_damage(runtime, &mut lowered.batch);
-    let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+    let mut leech = item_spell_augments::leech_projection::capture(
         runtime,
-        &mut lowered.batch,
-        talisman,
+        states,
+        charms,
+        &lowered.batch,
+        item_spell_augments::leech(owned, spell, &before, now),
+        Some(&magnitude),
         &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest()),
         decision,
     )
-    .ok_or(SpellCastDisposition::Rejected)?;
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    let candidates = super::outgoing_charms::due_candidates(
+        tx,
+        authority,
+        runtime,
+        room,
+        objects,
+        &lowered.batch,
+    )
+    .await?;
+    states.apply_prey_spell_damage(runtime, &mut lowered.batch);
+    let bounty_leech =
+        crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses_with_leech(
+            runtime,
+            &mut lowered.batch,
+            talisman,
+            &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                content.source_digest(),
+            ),
+            decision,
+            &mut leech,
+        )
+        .ok_or(SpellCastDisposition::Rejected)?;
     let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
     let presentation = states
         .presentations
@@ -1392,6 +1427,12 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .hold_prepared_before_sql(runtime, &presentation, &lowered.batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(Some(crate::spell::delayed_execution::ResolvedStrike {
+        augments: crate::spell::delayed_execution::DueSpellAugments {
+            leech,
+            candidates,
+            talisman: talisman.clone(),
+            children: Default::default(),
+        },
         batch: lowered.batch,
         bounty_leech,
         presentation: std::sync::Arc::new(presentation),

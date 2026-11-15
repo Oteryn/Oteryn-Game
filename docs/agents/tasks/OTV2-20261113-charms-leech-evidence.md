@@ -79,6 +79,8 @@ owned_paths:
   - apps/game-server/tests/ability_engine.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_secondary.rs
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/party_xp.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/all_charms_delayed.rs
+  - crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs
 public_contracts: []
 depends_on: []
 blocks: []
@@ -285,3 +287,23 @@ ability-engine shim remains fail-closed; no authority or assertion is relaxed.
 This is a tested increment, not full charm completion. Outgoing/secondary/due
 source repairs remain under qualification. System audio/udev development
 packages are installed on the PC, not proof of a rebuilt cloud snapshot.
+
+## Recovered secondary-critical integration
+
+The preserved secondary-auto patch is integrated for independent combined-tree
+qualification: one attack-level critical draw, assigned-species threshold and
+extra damage, no ordinary secondary fatal/proc extension. The new real-PG
+scenario and exact EQMOD2 regression previously executed successfully on their
+isolated source. They are rerun on the final combined tree before completion.
+The interrupted baseline RED compilation is not misreported as an executed test.
+
+## Reconnected combined-source qualification — 2026-11-15
+
+AUTHORING resumed in PR comment 6891785157 from a911edb63. The owner PC
+is reachable again and no previous worker/build remains active. The dedicated
+test database was restarted without replacing its data or touching shared DBs.
+All 20 preserved outgoing/delayed files were applied to the canonical tree with
+`git apply --check` first and byte-for-byte hashes recorded outside the repo.
+The four secondary files remain composed; no recovered work was discarded.
+Focused real-database regression results and subsequent exact-head gates remain
+required before final completion; no review/merge/deployment is claimed here.

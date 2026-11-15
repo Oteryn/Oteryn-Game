@@ -380,36 +380,7 @@ impl crate::spell::delayed_execution::DueCombatCommit for ChannelSpellStates {
         crate::spell::combat_batch::CombatBatchReceipt,
         crate::spell::delayed_execution::Error,
     > {
-        use crate::spell::delayed_execution::{Error, TimerPayload};
-        let staged = runtime.stage_spell_batch(batch).map_err(Error::Batch)?;
-        // A matching physical receipt must not consume a newly armed
-        // Focus window or require its historical numerical predecessor.
-        if !staged.will_apply() {
-            return runtime.commit_spell_batch(staged).map_err(Error::Batch);
-        }
-        let player = match payload {
-            TimerPayload::Strike(saved) => {
-                let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
-                owner_commit::stage_due_player_batch(runtime, self, batch, &resolved.magnitude)
-                    .map_err(|_| Error::StaleOwner)?
-            }
-            TimerPayload::OrdinaryCombat(saved) => {
-                let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
-                stage_player_batch_with_magnitude(
-                    runtime,
-                    self,
-                    batch,
-                    None,
-                    Some(&resolved.magnitude),
-                )
-                .map_err(|_| Error::StaleOwner)?
-            }
-            _ => return runtime.commit_spell_batch(staged).map_err(Error::Batch),
-        };
-        // Both successors and all comparisons are prepared first. The existing
-        // compositor installs them without await or fallible work after either
-        // store changes, before the next timer callback reads this context.
-        owner_commit::commit_owner_batch(runtime, self, staged, Some(player)).map_err(Error::Batch)
+        owner_commit::commit_due_batch(runtime, self, payload, batch, None)
     }
 }
 

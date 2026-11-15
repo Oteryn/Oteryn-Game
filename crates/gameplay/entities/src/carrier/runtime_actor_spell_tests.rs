@@ -1559,3 +1559,172 @@ fn instance_spell_batch_commits_and_replays_without_channel_alias() -> Result<()
     assert_eq!(health(&instance, 0), 17);
     Ok(())
 }
+
+#[test]
+fn charm_children_keep_exact_deferred_phase_replay_and_damage_preimage() {
+    use super::super::runtime_actor_spell_types::DeferredCommitAuthority;
+    let mut f = fixture_with_position(1, true);
+    use super::super::runtime_actor_companion::{
+        CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+    };
+    let policy = CompiledCreaturePolicy {
+        definition_key: "test:creature".into(),
+        definition_revision: "test:qualified:1".into(),
+        display_name: "Rat".into(),
+        maximum_health: 20,
+        forge_difficulty: None,
+        base_speed: 100,
+        outfit_look_type: 21,
+        object_look_type: None,
+        summonable: true,
+        convinceable: true,
+        mana_cost: Some(200),
+        is_familiar: false,
+        condition_immunities: vec![],
+        defense: Some(1),
+        armor: Some(0),
+        mitigation: None,
+        resistances: vec![],
+        damage_immunities: vec![],
+        healing_from_damage: vec![],
+        preferred_distance: Some(1),
+        reward_boss: Some(false),
+        blocked_by_nearby_players: false,
+        flags: CreatureFlags {
+            attackable: true,
+            illusionable: true,
+            health_hidden: false,
+        },
+    };
+    f.runtime
+        .install_companion_policies(
+            CompiledCreaturePolicies::from_active_artifact([1; 32], vec![policy]).unwrap(),
+        )
+        .unwrap();
+    f.runtime
+        .install_creature_policy(f.targets[0], "test:creature")
+        .unwrap();
+    let mut original = batch(&f, 1, vec![damage(f.targets[0], 0, 2)]);
+    original.binding = br#"{"source":"original"}"#.to_vec();
+    let source_binding = original.binding.clone();
+    let direct = QualifiedSpellChildren::bind(
+        &f.runtime,
+        &mut original,
+        vec![SpellCharmChild::Damage(damage(
+            f.targets[0],
+            MAX_EFFECTS as u16,
+            3,
+        ))],
+    )
+    .unwrap();
+    let staged = f
+        .runtime
+        .stage_spell_batch_with_children(&original, &direct)
+        .unwrap();
+    assert!(f.runtime.commit_spell_batch(staged).unwrap().applied);
+    assert_eq!(health(&f, 0), 15);
+    for (phase, sequence, expected_health) in [(3, 1, 10), (4, 2, 5)] {
+        let mut due = original.clone();
+        due.binding = format!(r#"{{"source":"due-{phase}"}}"#).into_bytes();
+        due.now_ms = 200 + u64::from(phase);
+        due.effects = vec![damage(f.targets[0], phase, 2)];
+        let stamp = f.runtime.issue_owner_work().unwrap();
+        let binding = f.runtime.binding();
+        due.deferred = Some(
+            DeferredCommitAuthority::from_due(
+                f.runtime.owner_fence().unwrap(),
+                binding.runtime_scope(),
+                binding.scope_generation(),
+                stamp,
+                phase,
+                sequence,
+                source_binding.clone(),
+                &due,
+            )
+            .unwrap(),
+        );
+        let sealed = due.clone();
+        let proof = QualifiedSpellChildren::bind(
+            &f.runtime,
+            &mut due,
+            vec![SpellCharmChild::Damage(damage(
+                f.targets[0],
+                MAX_EFFECTS as u16,
+                3,
+            ))],
+        )
+        .unwrap();
+        assert_eq!(
+            due, sealed,
+            "children never rewrite the scheduler's exact source token"
+        );
+        assert!(f.runtime.qualified_deferred_batch(&due));
+        let mut changed = due.clone();
+        changed.now_ms += 1;
+        assert!(
+            f.runtime
+                .stage_spell_batch_with_children(&changed, &proof)
+                .is_err()
+        );
+        let mut caller_phase = due.clone();
+        caller_phase.deferred = None;
+        assert!(
+            f.runtime
+                .stage_spell_batch_with_children(&caller_phase, &proof)
+                .is_err()
+        );
+        let before = health(&f, 0);
+        f.runtime
+            .set_test_creature_health(f.targets[0], before - 1)
+            .unwrap();
+        assert!(matches!(
+            f.runtime.stage_spell_batch_with_children(&due, &proof),
+            Err(Error::SnapshotChanged)
+        ));
+        f.runtime
+            .set_test_creature_health(f.targets[0], before)
+            .unwrap();
+        let staged = f
+            .runtime
+            .stage_spell_batch_with_children(&due, &proof)
+            .unwrap();
+        let receipt = f.runtime.commit_spell_batch(staged).unwrap();
+        assert!(receipt.applied);
+        assert_eq!(receipt.effects.len(), 2);
+        assert_eq!(health(&f, 0), expected_health);
+        let replay = f
+            .runtime
+            .stage_spell_batch_with_children(&due, &proof)
+            .unwrap();
+        assert!(!replay.will_apply());
+        assert_eq!(replay.preview_effect_receipts(), receipt.effects.as_slice());
+        assert!(!f.runtime.commit_spell_batch(replay).unwrap().applied);
+        assert_eq!(health(&f, 0), expected_health);
+        let mut substituted = due.clone();
+        let other = QualifiedSpellChildren::bind(
+            &f.runtime,
+            &mut substituted,
+            vec![SpellCharmChild::Damage(damage(
+                f.targets[0],
+                MAX_EFFECTS as u16,
+                4,
+            ))],
+        )
+        .unwrap();
+        assert!(matches!(
+            f.runtime
+                .stage_spell_batch_with_children(&substituted, &other),
+            Err(Error::CommandConflict)
+        ));
+    }
+    let replay = f
+        .runtime
+        .stage_spell_batch_with_children(&original, &direct)
+        .unwrap();
+    assert!(
+        !replay.will_apply(),
+        "later phases never overwrite the caller-phase receipt"
+    );
+    assert!(!f.runtime.commit_spell_batch(replay).unwrap().applied);
+    assert_eq!(health(&f, 0), 5);
+}

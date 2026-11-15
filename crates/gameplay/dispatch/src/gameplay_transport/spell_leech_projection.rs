@@ -10,16 +10,7 @@ use oteryn_gameplay_progression::charm_effects::{
 };
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
-#[derive(Debug, Clone)]
-pub(in crate::gameplay_transport) struct Target {
-    pub target: ExactActorRef,
-    pub ordinal: u16,
-    /// None preserves the existing actual-health-loss PvP policy. Monster
-    /// damage is retained before Prey and before a lethal hit is clipped.
-    pub damage: Option<u32>,
-    pub rates: (u32, u32),
-    pub affected: usize,
-}
+pub(in crate::gameplay_transport) use crate::spell::delayed_execution::SpellLeechTarget as Target;
 
 #[allow(
     clippy::too_many_arguments,

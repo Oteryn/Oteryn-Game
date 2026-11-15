@@ -496,8 +496,13 @@ impl ChannelSpellStates {
     }
 }
 
+#[path = "native_combat_cast/outgoing_charms.rs"]
+mod outgoing_charms;
+pub(in crate::gameplay_transport) use outgoing_charms::{due_candidates, prepare_due_children};
+
 #[derive(Debug)]
 pub struct PreparedNativeCombatCast {
+    outgoing_charms: Option<outgoing_charms::PreparedOutgoingCharms>,
     leech_inputs: Vec<item_spell_augments::leech_projection::Target>,
     item_spell_leech: (u32, u32),
     corpse_companion: Option<native_companion_item_cast::PreparedCorpseCompanionState>,
@@ -656,7 +661,21 @@ impl PreparedNativeCombatCast {
                 )
                 .map_err(|_| Error::SnapshotChanged)?;
         }
-        let mut physical = runtime.stage_spell_batch(&self.batch)?;
+        let physical_batch = self
+            .outgoing_charms
+            .as_ref()
+            .map_or(&self.batch, |charms| &charms.batch);
+        if let Some(charms) = &self.outgoing_charms {
+            charms.validate_fatal_holds(states)?;
+        }
+        let mut physical = match self
+            .outgoing_charms
+            .as_ref()
+            .and_then(|charms| charms.children.as_ref())
+        {
+            Some(children) => runtime.stage_spell_batch_with_children(physical_batch, children)?,
+            None => runtime.stage_spell_batch(physical_batch)?,
+        };
         let mut player = super::stage_player_batch_with_magnitude(
             runtime,
             states,
@@ -665,6 +684,13 @@ impl PreparedNativeCombatCast {
             self.magnitude.as_deref(),
         )
         .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
+        if self
+            .outgoing_charms
+            .as_ref()
+            .is_some_and(|charms| charms.children.is_some())
+        {
+            player.join_charm_children(physical_batch)?;
+        }
         player.stage_item_spell_leech(runtime, &physical, &self.leech_inputs, bounty_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
@@ -833,6 +859,9 @@ impl PreparedNativeCombatCast {
             .player
             .check_rebind_training(runtime, states, &preview)
             .map_err(|_| Error::InvalidAnchor)?;
+        if let Some(charms) = &self.outgoing_charms {
+            charms.validate_fatal_holds(states)?;
+        }
         let owner = check_owner_batch(
             runtime,
             states,
@@ -875,6 +904,9 @@ impl PreparedNativeCombatCast {
             checked.owner,
         );
         if result.applied {
+            if let Some(charms) = &self.outgoing_charms {
+                charms.install_fatal_holds(states);
+            }
             if let Some(companion) = self.direct_companion.take() {
                 companion
                     .reservation
@@ -1462,6 +1494,7 @@ async fn prepare_source_self_from_owners(
         .as_ref()
         .map_or_else(Vec::new, |p| p.player_predecessors());
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         corpse_companion: None,
@@ -1979,6 +2012,7 @@ async fn prepare_named_failure(
         .positioned_actor_census()
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: (0, 0),
         corpse_companion: None,
@@ -2658,6 +2692,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             reserved.consumption().clone()));
                     }
                     ordinary_field_items::append_creations(&mut tx,&authority,owner.root,runtime,room,objects,content,&mut prepared,&mut request).await
+                        .map_err(|_|DurabilityError::Unavailable)?;
+                    prepared.prepare_outgoing_charms(runtime,states,content,owner.imported_charms,&talisman)
                         .map_err(|_|DurabilityError::Unavailable)?;
                     *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request,bounty_leech});
                 }

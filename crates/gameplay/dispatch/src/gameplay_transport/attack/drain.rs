@@ -21,7 +21,9 @@ use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
-    creature_physical_response, creature_physically_immune, swing_mitigated,
+    creature_physical_response, creature_physically_immune,
+    equipped_offence::{CRITICAL_ROLL_MAX, CRITICAL_ROLL_MIN},
+    swing_mitigated,
 };
 use oteryn_gameplay_items::equipment_effects::apply_protection;
 use oteryn_gameplay_progression::charm_effects::{
@@ -280,6 +282,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             } else {
                 Vec::new()
             };
+            // D186: one uniform critical draw for the attack, compared with each
+            // species' own augmented threshold. Damage/armor retain their target roots.
+            let Some(critical_roll) = swing_draw(
+                &root,
+                entry.actor,
+                selected.swing.lineage,
+                selected.ordinal,
+                b"critical-hit",
+                "attack.critical-hit",
+                CRITICAL_ROLL_MIN as i64,
+                CRITICAL_ROLL_MAX as i64,
+            )
+            .and_then(|roll| u64::try_from(roll).ok()) else {
+                continue;
+            };
             let primary = selected.target;
             for (target, extension) in cleaves
                 .into_iter()
@@ -315,6 +332,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
+                let base_critical = (offence.critical_chance, offence.critical_damage);
                 let mut offence = offence.clone();
                 if let Ok(snapshot) = runtime.companion_snapshot(target) {
                     let source = if extension {
@@ -340,6 +358,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                     charm_combat::bonuses(&mut offence, &outcomes);
                 }
+                let charm_critical =
+                    base_critical != (offence.critical_chance, offence.critical_damage);
                 let Some((mut damage, revision)) =
                     draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
                 else {
@@ -406,10 +426,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let Some(damage) = (if extension {
-                    Some(
+                    let scaled =
                         i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
-                            .unwrap_or(i64::MAX),
-                    )
+                            .unwrap_or(i64::MAX);
+                    // EQMOD2's ordinary extension exclusion remains. D186 permits
+                    // assigned critical charms, using the existing additive skills;
+                    // it grants neither fatal nor damage-proc eligibility.
+                    if charm_critical && scaled > 0 {
+                        u32::try_from(scaled)
+                            .ok()
+                            .map(|damage| i64::from(offence.critical(damage, critical_roll)))
+                    } else {
+                        Some(scaled)
+                    }
                 } else {
                     equipped_offence::critical_swing(
                         &offence,
@@ -418,6 +447,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         swing.lineage,
                         ordinal,
                         damage,
+                        critical_roll,
                     )
                 }) else {
                     continue;

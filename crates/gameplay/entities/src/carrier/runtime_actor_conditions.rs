@@ -308,7 +308,115 @@ impl ChannelActorCarrier {
     }
 }
 
+/// The live condition preimage is distinct from any primary spell successor.
+#[derive(Debug, Clone)]
+pub(super) struct SpellParalysisPreimage {
+    conditions: ActorConditionState,
+    target: super::runtime_actor_companion::CompanionSnapshot,
+}
+
 impl ChannelRuntimeV1 {
+    /// Resolve only the canonical charm leaf through the existing condition owner.
+    /// All writes are to the spell's data clone, including policy no-effect receipts.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the retained leaf keeps its source, target, occurrence and exact preimage explicit"
+    )]
+    pub(super) fn stage_spell_charm_paralysis(
+        &self,
+        next: &mut ChannelActorCarrier,
+        batch: &super::runtime_actor_spell_types::OwnerCombatBatch,
+        target: ExactActorRef,
+        root: &oteryn_simulation_determinism::GameplayDecisionRoot,
+        occurrence: DecisionOccurrenceId,
+        expected: Option<&SpellParalysisPreimage>,
+    ) -> Result<SpellParalysisPreimage, ConditionOwnerError> {
+        let index = self.condition_index(target, None)?;
+        let snapshot = self
+            .companion_snapshot(target)
+            .map_err(ConditionOwnerError::Actor)?;
+        let current = self.condition_state(index);
+        if expected.is_some_and(|before| before.conditions != *current || before.target != snapshot)
+        {
+            return Err(ConditionOwnerError::StalePlan);
+        }
+        if snapshot.health <= 0
+            || snapshot.state.master.is_some()
+            || snapshot.state.policy.is_familiar
+        {
+            return Err(ConditionOwnerError::FactsMismatch);
+        }
+        let now = batch.now_us.ok_or(ConditionOwnerError::TimeMismatch)?;
+        let definition = ConditionDefinition::new(
+            "oteryn:charm.paralysis",
+            1,
+            ConditionValues::Speed {
+                paralysis: true,
+                range: SpeedRange {
+                    a_min: -1000,
+                    a_max: -1000,
+                    b_min: 0,
+                    b_max: 0,
+                },
+                duration_ms: 10_000,
+            },
+        )
+        .ok_or(ConditionOwnerError::FactsMismatch)?;
+        let definitions = [definition];
+        let base_speed = u16::try_from(snapshot.state.policy.base_speed)
+            .map_err(|_| ConditionOwnerError::FactsMismatch)?;
+        let transition = || ActorConditionTransition::ApplyBatch {
+            definitions: &definitions,
+            source: ConditionSource {
+                actor: batch.caster,
+                session: Some(batch.command.game_session_id()),
+                kind: ConditionSourceKind::Player,
+            },
+            immunities: &snapshot.state.policy.condition_immunities,
+            facts: ApplicationFacts {
+                now: now.get(),
+                base_speed,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: root,
+                occurrence,
+            },
+        };
+        // Validate the exact live preimage even if an earlier staged major killed the target.
+        self.prepare_actor_condition(target, None, transition(), now)?;
+        let Slot::CreatureOccupied {
+            health, committed, ..
+        } = &mut next.slots[index]
+        else {
+            return Err(ConditionOwnerError::FactsMismatch);
+        };
+        if *health > 0 {
+            let plan = self.prepare_actor_condition_from_state(
+                target,
+                None,
+                transition(),
+                now,
+                &committed.conditions,
+            )?;
+            committed.conditions = ActorConditionState {
+                store: plan.next,
+                revision: committed
+                    .conditions
+                    .revision
+                    .checked_add(1)
+                    .ok_or(ConditionOwnerError::RevisionExhausted)?,
+                at: now.get(),
+                receipt: Some(plan.receipt),
+            };
+        }
+        Ok(SpellParalysisPreimage {
+            conditions: current.clone(),
+            target: snapshot,
+        })
+    }
+
     fn condition_index(
         &self,
         actor: ExactActorRef,
@@ -517,7 +625,23 @@ impl ChannelRuntimeV1 {
         now: SemanticTimeMicros,
     ) -> Result<ActorConditionPlan, ConditionOwnerError> {
         let index = self.condition_index(actor, session)?;
-        let current = self.condition_state(index);
+        self.prepare_actor_condition_from_state(
+            actor,
+            session,
+            transition,
+            now,
+            self.condition_state(index),
+        )
+    }
+
+    fn prepare_actor_condition_from_state(
+        &self,
+        actor: ExactActorRef,
+        session: Option<GameSessionId>,
+        transition: ActorConditionTransition<'_>,
+        now: SemanticTimeMicros,
+        current: &ActorConditionState,
+    ) -> Result<ActorConditionPlan, ConditionOwnerError> {
         let (facts, source) = match &transition {
             ActorConditionTransition::Apply { facts, source, .. }
             | ActorConditionTransition::ApplyBatch { facts, source, .. }

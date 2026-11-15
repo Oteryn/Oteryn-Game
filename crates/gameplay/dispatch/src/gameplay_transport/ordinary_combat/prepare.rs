@@ -365,6 +365,7 @@ pub(super) async fn prepare_inner(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        outgoing_charms: None,
         leech_inputs: Vec::new(),
         item_spell_leech: item_spell_augments::leech(owned, spell, &before, now),
         corpse_companion: None,
