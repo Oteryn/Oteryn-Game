@@ -7,6 +7,7 @@ pub(super) struct Widgets {
     pub overlay: Entity,
     pub report: Entity,
     pub text: String,
+    pub tracker_filter: Option<Entity>,
 }
 pub(super) fn build(
     commands: &mut Commands,
@@ -56,6 +57,8 @@ pub(super) fn build(
         .id();
     commands.entity(overlay).add_child(panel);
     source::dialog_caption(commands, panel, tool.title(), skins.font.clone());
+    let tracker_filter =
+        (tool == Tool::LootTracker).then(|| tracker::build(commands, skins, panel, generation));
     let scroll = commands
         .spawn((
             ScrollArea,
@@ -108,5 +111,6 @@ pub(super) fn build(
         overlay,
         report,
         text: String::new(),
+        tracker_filter,
     }
 }

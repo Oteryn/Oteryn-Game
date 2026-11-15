@@ -304,3 +304,114 @@ fn analyser_shortcut_and_stale_reset() -> TestResult {
     assert!(report(&mut app)?.contains("Kills: 23"));
     Ok(())
 }
+
+fn click_caption(app: &mut App, caption: &str) -> TestResult {
+    let entity = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+        .ok_or("tracker button")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
+fn tracker_item(app: &mut App, value: &str) -> TestResult {
+    let mut field = app
+        .world_mut()
+        .query::<&mut bevy::text::EditableText>()
+        .single_mut(app.world_mut())?;
+    *field = bevy::text::EditableText::new(value);
+    Ok(())
+}
+#[test]
+fn analyser_tracker_controls_filter_confirmed_drops_and_keep_selection() -> TestResult {
+    let (mut app, outbox) = app()?;
+    select(&mut app, Tool::LootTracker)?;
+    click_caption(&mut app, "Show tracked only")?;
+    assert!(!report(&mut app)?.contains("#202"));
+    tracker_item(&mut app, "202")?;
+    click_caption(&mut app, "Track item")?;
+    let text = report(&mut app)?;
+    assert!(text.contains("#202 Name unresolved (tracked)"));
+    assert!(text.contains("3 confirmed items"));
+    assert!(text.contains("#202 × 3"));
+    outbox.push(vec![SessionEvent::AnalyserFacts(AppliedDelta {
+        server_sequence: 2,
+        base_revision: 2,
+        new_revision: 3,
+        value: vec![AnalyserFact::KillLoot {
+            race: None,
+            corpse_items: vec![oteryn_session::analyser_transport::AnalyserItemCount {
+                item_type: std::num::NonZeroU32::new(204).ok_or("item")?,
+                count: std::num::NonZeroU16::MIN,
+            }],
+            gold: 0,
+        }],
+    })]);
+    app.update();
+    assert!(!report(&mut app)?.contains("#204"));
+
+    click_caption(&mut app, "Untrack item")?;
+    assert!(!report(&mut app)?.contains("#202"));
+    click_caption(&mut app, "Show all drops")?;
+    assert!(report(&mut app)?.contains("#202 Name unresolved (observed)"));
+    assert!(report(&mut app)?.contains("#204 Name unresolved (observed)"));
+    tracker_item(&mut app, "999")?;
+    click_caption(&mut app, "Track item")?;
+    assert!(report(&mut app)?.contains("Choose an item from confirmed loot"));
+    tracker_item(&mut app, "202")?;
+    click_caption(&mut app, "Track item")?;
+    click_caption(&mut app, "Close")?;
+    select(&mut app, Tool::LootTracker)?;
+    assert!(report(&mut app)?.contains("(tracked)"));
+    click_caption(&mut app, "Reset session")?;
+    assert!(report(&mut app)?.contains("(tracked) · no confirmed drops"));
+    Ok(())
+}
+
+#[test]
+fn analyser_tracker_rejects_stale_controls_and_preserves_counts() -> TestResult {
+    let (mut app, _outbox) = app()?;
+    select(&mut app, Tool::LootTracker)?;
+    tracker_item(&mut app, "202")?;
+    let button = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Track item").then_some(parent.parent()))
+        .ok_or("track")?;
+    // A queued activation from a previous session must not alter this session.
+    app.world_mut()
+        .get_mut::<tracker::TrackerControl>(button)
+        .ok_or("control")?
+        .generation = u64::MAX;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    assert!(!report(&mut app)?.contains("(tracked)"));
+    assert!(report(&mut app)?.contains("3 confirmed items"));
+    let host = app.world().non_send::<HostOwner>();
+    let panel = host.play.as_ref().ok_or("play")?.link.analyser_panel();
+    assert_eq!(panel.loot_items, 3);
+    assert_eq!(panel.gold, 77);
+    Ok(())
+}
+
+#[test]
+fn analyser_tracker_waits_for_pending_text_edits() -> TestResult {
+    let (mut app, _outbox) = app()?;
+    select(&mut app, Tool::LootTracker)?;
+    tracker_item(&mut app, "202")?;
+    app.world_mut()
+        .query::<&mut bevy::text::EditableText>()
+        .single_mut(app.world_mut())?
+        .pending_edits
+        .push(bevy::text::TextEdit::Paste);
+    click_caption(&mut app, "Track item")?;
+    assert!(!report(&mut app)?.contains("(tracked)"));
+    // Resolve the edit without another activation; the original action completes.
+    tracker_item(&mut app, "202")?;
+    app.update();
+    assert!(report(&mut app)?.contains("(tracked)"));
+    Ok(())
+}

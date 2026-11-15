@@ -28,6 +28,20 @@ impl PlayLink {
         }
     }
 
+    /// Local tracker preferences never change confirmed drop measurements.
+    pub fn analyser_track_item(&self, item: &str, tracked: bool) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected && panel.open && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker {
+            oteryn_client_ui::analyser::tracking::select(panel, item, tracked);
+        }
+    }
+    pub fn analyser_filter_tracked(&self) {
+        let panel = &mut lock(&self.mailbox).analyser;
+        if panel.selected && panel.open && panel.tool == oteryn_client_ui::analyser::Tool::LootTracker {
+            panel.loot_only_tracked = !panel.loot_only_tracked;
+        }
+    }
+
     pub fn analyser_xp_goal(&self, value: &str) -> bool {
         oteryn_client_ui::analyser::set_xp_goal(
             &mut crate::play::mailbox::lock(&self.mailbox).analyser,

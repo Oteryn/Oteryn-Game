@@ -1,6 +1,7 @@
 //! Live analyser reports over the retained session measurements.
 #[cfg(test)]
 mod tests;
+mod tracker;
 mod widgets;
 use super::{GameModal, modal::ModalGuard};
 use crate::bevy_shell::{owner::HostOwner, ui::Skins};
@@ -23,6 +24,7 @@ pub(super) fn install(app: &mut App) {
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Update, (keyboard, project).chain())
         .add_observer(activate);
+    tracker::install(app);
 }
 pub(super) fn open(owner: &HostOwner, tool: Tool) {
     if owner.modal_active() {
@@ -117,6 +119,15 @@ fn project(
     let window = window.get_or_insert_with(|| {
         widgets::build(&mut commands, &skins, owner.generation(), panel.tool)
     });
+    if let Some(caption) = window.tracker_filter {
+        commands
+            .entity(caption)
+            .insert(Text::new(if panel.loot_only_tracked {
+                "Show all drops"
+            } else {
+                "Show tracked only"
+            }));
+    }
     if window.text != text {
         commands.entity(window.report).insert(Text::new(&text));
         window.text = text;
