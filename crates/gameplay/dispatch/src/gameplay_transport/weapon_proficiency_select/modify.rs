@@ -267,6 +267,9 @@ pub(in crate::gameplay_transport) async fn execute(
         return None;
     }
     let current = owner.current_quest_fence(session).await.ok()??;
+    if command.item_fence != Some(current.item_fence()) {
+        return None;
+    }
     // §5 check 2: a known occurrence answers its original result and is never charged.
     match owner
         .root

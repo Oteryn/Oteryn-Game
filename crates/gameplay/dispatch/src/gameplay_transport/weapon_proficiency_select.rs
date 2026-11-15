@@ -273,6 +273,9 @@ pub(super) async fn execute(
         return None;
     }
     let current = owner.current_quest_fence(session).await.ok()??;
+    if command.item_fence != Some(current.item_fence()) {
+        return None;
+    }
     let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
     let root = owner
         .root

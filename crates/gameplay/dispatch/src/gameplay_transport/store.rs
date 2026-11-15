@@ -469,7 +469,10 @@ async fn purchase_retained_or_new(
             return Some(refusal(wire::StorePurchaseCode::OfferUnavailable));
         };
         state
-    } else {owner.root.record_purchase_request(journal.clone()).await.ok()?};
+    } else {
+        gameplay_fence(owner,admitted).await?;
+        owner.root.record_purchase_request(journal.clone()).await.ok()?
+    };
     let saved = match request_state {
         PurchaseRequestState::Answered(saved) => saved,
         PurchaseRequestState::Sent => {
@@ -490,7 +493,9 @@ async fn purchase_retained_or_new(
             let answer = if reserved {
                 // Every admitted runtime offer uses Platform ITEM grants, including
                 // native permanent unlocks and Hireling service effects.
-                purchase_answer(platform.lock().await.purchase(&PurchaseStoreOffer {
+                let mut client = platform.lock().await;
+                gameplay_fence(owner, admitted).await?;
+                purchase_answer(client.purchase(&PurchaseStoreOffer {
                     purchase_request_id: uuid_text(&request.purchase_request_id),
                     account_id: uuid_text(&account),
                     character_id: uuid_text(&character_id),

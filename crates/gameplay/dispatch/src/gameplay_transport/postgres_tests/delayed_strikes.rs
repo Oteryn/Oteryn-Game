@@ -137,6 +137,18 @@ fn delayed_strikes_postgres_overlapping_callbacks_follow_lane_order() -> TestRes
     })
 }
 
+#[test]
+fn delayed_strikes_postgres_selected_callback_beyond_storage_cap_does_not_block() -> TestResult {
+    scenario(Plan {
+        tag: "delayed_backlog",
+        vocation: "sorcerer",
+        experience: 30_000_000,
+        weapon: "oteryn:item.tibia.i3277",
+        spells: &[("candidate:spell/death_echo", 120, 150); 65],
+        case: Case::QueuedOrder,
+    })
+}
+
 fn scenario(plan: Plan) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -162,6 +174,30 @@ fn scenario(plan: Plan) -> TestResult {
 async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     let h = Harness::create_with_admission_seed(admin, plan.tag, false, false).await?;
     prepare_current_session(&h).await?;
+    let mut additional = Vec::new();
+    if plan.case == Case::QueuedOrder && plan.spells.len() > 2 {
+        let now: i64 =
+            sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+                .fetch_one(&h.pool)
+                .await?;
+        for (character, account, session) in [(60, 63, 70), (61, 64, 71)] {
+            additional.push((
+                crate::world_party_runtime_postgres_cases::committed_fresh_player_owned(
+                    &crate::world_party_runtime_postgres_cases::FreshPlayerOwners {
+                        root: h.root.clone(),
+                        node: h.node.clone(),
+                        recovery: &h.recovery,
+                    },
+                    character,
+                    account,
+                    session,
+                    now,
+                )
+                .await?,
+                account,
+            ));
+        }
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let authority = h
         .root
@@ -217,11 +253,20 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         room.map_revision_digest(),
         (start.x, start.y, start.floor),
     );
-    let mut deps =
-        Dependencies::with_content_and_capacity(cp, room.clone(), native.spell_book().clone(), 3)?;
+    let mut deps = Dependencies::with_content_and_capacity(
+        cp,
+        room.clone(),
+        native.spell_book().clone(),
+        if additional.is_empty() { 3 } else { 5 },
+    )?;
     deps.combat_room = Some(room);
     // Every spell here is premium: the account holds a Current Premium.
-    let (consumer, clock, activation, _) = purchase_fixture::current(id(40));
+    let (consumer, clock, activation, proof) = purchase_fixture::current(id(40));
+    for (_, account) in &additional {
+        let mut member = proof.clone();
+        member.account_id = id(*account);
+        consumer.prove_for_test(member);
+    }
     h.root
         .latch_premium_activation(
             &activation.activation_id,
@@ -254,42 +299,8 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     let session = admitted.game_session_id;
     owner.admit_premium(id(40), session);
     owner.admit_progression_session(&mut admitted).await;
-    let progression = owner.progression_binding(session).ok_or("progression")?;
     let formula = native.training_formula().ok_or("training")?;
-    let build =
-        convert_vocation(formula, &DurableBuildState::default(), plan.vocation).map_err(debug)?;
-    h.root
-        .commit_character_build(
-            &authority,
-            &h.node,
-            current_fence(&owner, session).await?,
-            BuildChangeRequest {
-                occurrence: BuildOccurrence::from_bytes(id(90)).map_err(debug)?,
-                cause: BuildCause::VocationChoice,
-                before: DurableBuildState::default(),
-                after: build.clone(),
-                pruned_stance: None,
-            },
-            formula,
-        )
-        .await
-        .map_err(debug)?;
-    h.root
-        .commit_character_experience(
-            &authority,
-            &h.node,
-            current_fence(&owner, session).await?,
-            ExperienceAwardRequest {
-                occurrence: ExperienceRewardOccurrence::from_bytes(id(91)).map_err(debug)?,
-                amount: oteryn_simulation_determinism::ExactI64::new(plan.experience),
-                context: progression.context.clone(),
-                policy_revision: progression.policy_revision.clone(),
-                reward_revision: progression.reward_revision.clone(),
-                policy: progression.policy.clone(),
-            },
-        )
-        .await
-        .map_err(debug)?;
+    let build = train_caster(&owner, session, formula, plan.vocation, plan.experience, 90).await?;
     if matches!(plan.case, Case::Grenade | Case::Pz | Case::Outburst(_)) {
         let purchase = super::atelier::fixture::prepare(&h).await?;
         let fence = current_fence(&owner, session).await?;
@@ -447,6 +458,94 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         .initialize_familiar_group(&authority, &h.node, current_fence(&owner, session).await?)
         .await
         .map_err(debug)?;
+    let mut casters = vec![(actor, session)];
+    for (index, (current, account)) in additional.into_iter().enumerate() {
+        let session = current.current_game_session_id();
+        let actor = {
+            let mut runtime = deps.runtime.lock().await;
+            let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
+            let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+            runtime
+                .bind_attacker_lease(actor, session, current.current_character_lease())
+                .map_err(debug)?;
+            runtime
+                .initialize_pinned_test_position(
+                    actor,
+                    crate::foundation::MovementLocalPosition {
+                        x: if index == 0 {
+                            position.x - 2
+                        } else {
+                            position.x - 1
+                        },
+                        y: if index == 0 {
+                            position.y
+                        } else {
+                            position.y + 1
+                        },
+                        floor: position.floor,
+                    },
+                )
+                .map_err(debug)?;
+            actor
+        };
+        let mut admitted = crate::gameplay_transport::connection::AdmittedSession {
+            game_session_id: session,
+            runtime_actor: Some(actor),
+            controller: None,
+            item_fence: item_fence_of(current),
+            first_entry: FirstEntryOutcome::Positioned,
+            ..deps.admitted
+        };
+        owner.admit_premium(id(account), session);
+        owner.admit_progression_session(&mut admitted).await;
+        let build = train_caster(
+            &owner,
+            session,
+            formula,
+            plan.vocation,
+            plan.experience,
+            120 + u8::try_from(index)? * 2,
+        )
+        .await?;
+        let fence = current_fence(&owner, session).await?;
+        let CastFactsLoad::Ready { facts, .. } =
+            load_character_cast_facts(&h.root, &authority, fence.character_id).await
+        else {
+            return Err("additional caster facts".into());
+        };
+        {
+            let runtime = deps.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            assert!(
+                states
+                    .initialize(&runtime, actor, session, facts, (0, 0), owner.owner_now())
+                    .is_some()
+            );
+            assert!(states.load_owned_build(&runtime, actor, session, &build));
+            states
+                .get_mut(&runtime, actor, session)
+                .ok_or("caster")?
+                .enable_owned_training(&build, formula)
+                .map_err(debug)?;
+        }
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision,combat_mode) VALUES(encode($1,'hex')::uuid,1,1)")
+            .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+        let item = id(180 + u8::try_from(index)?);
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(item.as_slice()).bind(id(42).as_slice()).bind(plan.weapon).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,5,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(id(42).as_slice()).bind(item.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        h.root
+            .initialize_familiar_group(&authority, &h.node, current_fence(&owner, session).await?)
+            .await
+            .map_err(debug)?;
+        casters.push((actor, session));
+    }
     let current =
         crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
             .current_session_at(session)
@@ -458,6 +557,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
     for (index, (key, _, mana)) in plan.spells.iter().enumerate() {
+        let (actor, session) = casters[index % casters.len()];
         let spell = (1..=deps.spells.source_len())
             .find_map(|i| {
                 std::num::NonZeroU32::new(u32::try_from(i).ok()?).filter(|i| {
@@ -485,6 +585,10 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             .ok_or("before vitals")?
             .1
             .mana;
+        assert!(
+            i64::from(before) >= *mana,
+            "cast {index} has sufficient mana"
+        );
         if let Case::Outburst(charges) = plan.case {
             let runtime = deps.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
@@ -597,7 +701,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         assert_eq!(
             outcome.disposition,
             actor_spell::SpellCastDisposition::Cast,
-            "{key}"
+            "{key} cast {index}, mana {before}"
         );
         let hit = deps
             .runtime
@@ -667,10 +771,32 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
             }
         }
         if plan.case == Case::QueuedOrder {
-            if index == 0 {
+            if plan.spells.len() > 2 {
+                // Keep the backlog fixture funded and publish each cast's immediate cues,
+                // while leaving every delayed callback in the real timer lane.
+                let runtime = deps.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let paid = states
+                    .get(&runtime, actor, session)
+                    .ok_or("caster")?
+                    .vitals()
+                    .mana;
+                assert_eq!(i64::from(before) - i64::from(paid), *mana);
+                let (gained, _) = states
+                    .apply_mana_gain(&runtime, actor, session, u64::try_from(*mana)?)
+                    .ok_or("mana credit")?;
+                assert_eq!(i64::from(gained), *mana);
+                let _published = states
+                    .presentations
+                    .as_mut()
+                    .ok_or("presentation owner")?
+                    .take_for_current_publisher(&runtime)
+                    .map_err(debug)?;
+            }
+            if index + 1 < plan.spells.len() {
                 continue;
             }
-            // Storage traversal order is not timer order. Two accepted casts stay
+            // Storage traversal order is not timer order. Accepted casts stay
             // pending across a stalled tick; permuting payload storage must not jam them.
             owner
                 .states
@@ -686,15 +812,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .clock_origin
                 .checked_sub(Duration::from_millis(1100))
                 .ok_or("clock")?;
-            let first = owner.drain_native_ai_timers().await.map_err(debug)?;
-            assert_eq!(
-                first.receipts.len(),
-                1,
-                "the earliest lane callback commits first"
-            );
-            let second = owner.drain_native_ai_timers().await.map_err(debug)?;
-            assert_eq!(second.receipts.len(), 1);
-            assert!(second.blocked.is_none());
+            for _ in 0..plan.spells.len() {
+                let report = owner.drain_native_ai_timers().await.map_err(debug)?;
+                assert_eq!(
+                    report.receipts.len(),
+                    1,
+                    "the earliest lane callback commits first"
+                );
+                assert!(report.blocked.is_none());
+                if plan.spells.len() > 2 {
+                    let runtime = deps.runtime.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
+                    let _published = states
+                        .presentations
+                        .as_mut()
+                        .ok_or("presentation owner")?
+                        .take_for_current_publisher(&runtime)
+                        .map_err(debug)?;
+                }
+            }
             assert_eq!(
                 owner
                     .states
@@ -940,4 +1076,59 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
     drop(authority);
     drop(seal);
     h.cleanup().await
+}
+
+async fn train_caster(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    session: crate::foundation::GameSessionId,
+    formula: &crate::spell::mana_training::CompiledTrainingFormula,
+    vocation: &str,
+    experience: i64,
+    seed: u8,
+) -> TestResult<DurableBuildState> {
+    let progression = owner.progression_binding(session).ok_or("progression")?;
+    let before = owner
+        .root
+        .read_character_build_state(
+            owner.character,
+            current_fence(owner, session).await?.character_id,
+        )
+        .await
+        .map_err(debug)?;
+    let build = convert_vocation(formula, &before, vocation).map_err(debug)?;
+    owner
+        .root
+        .commit_character_build(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(id(seed)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before,
+                after: build.clone(),
+                pruned_stance: None,
+            },
+            formula,
+        )
+        .await
+        .map_err(debug)?;
+    owner
+        .root
+        .commit_character_experience(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(id(seed + 1)).map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(experience),
+                context: progression.context.clone(),
+                policy_revision: progression.policy_revision.clone(),
+                reward_revision: progression.reward_revision.clone(),
+                policy: progression.policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    Ok(build)
 }

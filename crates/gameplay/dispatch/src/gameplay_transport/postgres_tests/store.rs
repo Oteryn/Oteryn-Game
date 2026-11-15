@@ -251,8 +251,20 @@ fn store_restored_backup_refuses_new_and_reconciles_sent() -> TestResult {
     result
 }
 
-#[allow(clippy::too_many_lines)]
+#[test]
+fn store_queued_purchase_cannot_debit_after_connection_replacement() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("store-generation", || scenario_with_options(false, false, true))
+}
+
 fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
+    scenario_with_options(malformed, restored, false)
+}
+
+#[allow(clippy::too_many_lines)]
+fn scenario_with_options(malformed: bool, restored: bool, replacement: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "store_e2e", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -268,6 +280,9 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
             None,
         );
         let active = controller.active().ok_or("active")?;
+        if replacement {
+            harness.root.await_ready().await.map_err(debug)?;
+        }
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(active);
         deps.initialize(&owner).await;
@@ -309,6 +324,47 @@ fn scenario_with_answer(malformed: bool, restored: bool) -> TestResult {
         owner.store = Some(Arc::new(tokio::sync::Mutex::new(StoreClient::new(Box::new(
             FakePlatform(ledger.clone()),
         ), "oteryn-game/store-consumer".into()))));
+
+        if replacement {
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(), &[wire::CAPABILITY_STORE_V1],
+            ).ok_or("Store selection")?;
+            let session = admitted.game_session_id;
+            let character = *admitted.item_fence.ok_or("fence")?.character_id.as_bytes();
+            let commands = [purchase_request(190, SWORD, 25)?];
+            let platform = owner.store.clone().ok_or("Platform")?;
+            let held = platform.lock().await;
+            {
+                let mut pending = Box::pin(serve(&owner, &mut admitted, &commands));
+                let ready = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                    loop {
+                        let retained: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM store_purchase_requests WHERE purchase_request_id=encode($1,'hex')::uuid AND account_id=encode($2,'hex')::uuid AND character_id=encode($3,'hex')::uuid)")
+                            .bind(id(190).as_slice()).bind(account_id.as_slice()).bind(character.as_slice())
+                            .fetch_one(&harness.pool).await?;
+                        if retained {
+                            return Ok::<(), Box<dyn std::error::Error>>(());
+                        }
+                        tokio::task::yield_now().await;
+                    }
+                });
+                tokio::select! {
+                    _ = &mut pending => return Err("purchase did not wait for Platform".into()),
+                    ready = ready => ready??,
+                }
+                sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid")
+                    .bind(session.as_bytes().as_slice()).execute(&harness.pool).await?;
+                drop(held);
+                let _results = pending.await?;
+            }
+            {
+                let ledger = ledger.lock().map_err(|_| "ledger")?;
+                assert_eq!(ledger.purchases, 0, "a replaced connection cannot start a debit");
+                assert!(ledger.debits.is_empty());
+            }
+            assert_eq!(swords(&harness).await?, 0);
+            drop(owner); drop(authority); drop(seal);
+            return harness.cleanup().await;
+        }
 
         if restored {
             owner.store_purchases = crate::gameplay_transport::StorePurchaseMode::DisabledRestoredBackup;

@@ -393,6 +393,17 @@ impl ProductionProficiencyCatalogue {
             }
             replaced.push(row.level);
             let (identity, unit, value) = shaping::modified_value(row, &resolved.definition_key)?;
+            if identity == "attack_damage" {
+                if unit != ImportedShapingUnit::Points {
+                    return None;
+                }
+                let points = proficiency_defense_points(ProjectV2ExactRatio {
+                    numerator: value.numerator,
+                    denominator: value.denominator,
+                })?;
+                effects.flat_attack = effects.flat_attack.checked_add(i64::from(points))?;
+                continue;
+            }
             if matches!(identity, "defence" | "weapon_shield_defence") {
                 if unit != ImportedShapingUnit::Points {
                     return None;
@@ -714,7 +725,6 @@ impl WeaponProficiencyDispatch {
             numerator = numerator.saturating_add(effects.omega_numerator);
         }
         base_damage
-            .saturating_add(effects.flat_attack)
             .saturating_add(base_damage.saturating_mul(numerator) / effects.denominator)
             .max(0)
     }
@@ -752,6 +762,13 @@ mod tests {
                 weapon_shield_modifier: 0,
             },
         }
+    }
+
+    #[test]
+    fn flat_proficiency_attack_is_not_added_to_final_damage() {
+        let mut owner = WeaponProficiencyDispatch::default();
+        owner.install_track("weapon", track());
+        assert_eq!(owner.dispatch_attack("weapon", 100, 50, 100), 105);
     }
 
     #[test]
@@ -850,7 +867,7 @@ mod tests {
         owner.install_track(stored.state.item_key(), live);
         assert_eq!(
             owner.dispatch_attack(stored.state.item_key(), 100, 50, 100),
-            101
+            100
         );
     }
 
@@ -962,9 +979,9 @@ mod tests {
     fn real_attack_dispatch_applies_selected_threshold_effects_once() {
         let mut owner = WeaponProficiencyDispatch::default();
         owner.install_track("weapon", track());
-        assert_eq!(owner.dispatch_attack("weapon", 100, 96, 100), 117);
-        assert_eq!(owner.dispatch_attack("weapon", 100, 95, 100), 107);
-        assert_eq!(owner.dispatch_attack("weapon", 100, 29, 100), 127);
-        assert_eq!(owner.dispatch_attack("weapon", 100, 30, 100), 107);
+        assert_eq!(owner.dispatch_attack("weapon", 100, 96, 100), 115);
+        assert_eq!(owner.dispatch_attack("weapon", 100, 95, 100), 105);
+        assert_eq!(owner.dispatch_attack("weapon", 100, 29, 100), 125);
+        assert_eq!(owner.dispatch_attack("weapon", 100, 30, 100), 105);
     }
 }

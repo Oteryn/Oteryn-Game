@@ -14,6 +14,23 @@ enum DueSource {
     Ordinary(OrdinaryCastBinding),
 }
 impl DueSource {
+    fn from_payload(payload: &TimerPayload) -> Option<Self> {
+        let binding = match payload {
+            TimerPayload::Strike(saved) => &saved.binding,
+            TimerPayload::NativeOwnerEffect(saved) => &saved.binding,
+            TimerPayload::OrdinaryCombat(saved) => {
+                return Some(Self::Ordinary(saved.binding.clone()));
+            }
+            _ => return None,
+        };
+        Some(Self::Native(NativeAiTimerSource {
+            caster: binding.caster,
+            attacker: binding.attacker,
+            command: binding.command,
+            spell: binding.spell.clone(),
+        }))
+    }
+
     fn caster(&self) -> crate::foundation::ExactActorRef {
         match self {
             Self::Native(s) => s.caster,
@@ -213,9 +230,17 @@ fn apply_due_under_current_owners(
         .spell_timers
         .as_ref()
         .map(|timer| {
-            timer.due_strikes(
-                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
-            )
+            // The retained payload set is bounded by MAX_PENDING_TOTAL. Cleanup must
+            // include the lane head even when storage order differs from deadline order.
+            let at = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());
+            timer
+                .payloads
+                .iter()
+                .filter_map(|pending| match &pending.payload {
+                    TimerPayload::Strike(saved) if pending.due <= at => Some(saved.clone()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
         })
         .unwrap_or_default();
     for saved in strikes.iter().filter(|s| {
@@ -358,78 +383,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn drain_native_ai_timer_unit(&self) -> Result<FireReport, Error> {
         let now = self.owner_now();
-        let selected = {
+        let (selected, selected_access, selected_source) = {
             let runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             let Some(timer) = states.spell_timers.as_ref() else {
                 return Ok(FireReport::default());
             };
-            timer
-                .next_due_payload(
-                    &runtime,
-                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
-                )?
-                .map(|payload| payload.binding().command)
+            let payload = timer.next_due_payload(
+                &runtime,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+            )?;
+            let source = payload.as_ref().and_then(DueSource::from_payload);
+            let access = payload
+                .as_ref()
+                .filter(|p| matches!(p, TimerPayload::Strike(_) | TimerPayload::OrdinaryCombat(_)))
+                .map(|p| {
+                    let binding = p.binding();
+                    (binding.caster, binding.command.game_session_id())
+                });
+            (payload.map(|p| p.binding().command), access, source)
         };
         // Refresh external access before taking the Channel owner locks: refresh
         // itself reads those owners and must never recursively acquire the turn.
-        let ordinary = {
-            let states = self.states.spell_states.lock().await;
-            states
-                .spell_timers
-                .as_ref()
-                .map(|t| {
-                    t.due_ordinary_payloads(
-                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
-                    )
-                })
-                .unwrap_or_default()
-        };
-        let delayed = {
-            let states = self.states.spell_states.lock().await;
-            states
-                .spell_timers
-                .as_ref()
-                .map(|t| {
-                    t.due_strikes(
-                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
-                    )
-                })
-                .unwrap_or_default()
-        };
         let mut access = Vec::new();
-        for saved in delayed
-            .iter()
-            .filter(|saved| Some(saved.binding.command) == selected)
-        {
+        if let Some((caster, session)) = selected_access {
             access.push((
-                saved.binding.caster,
-                saved.binding.command.game_session_id(),
-                self.refresh_spell_access(
-                    saved.binding.caster,
-                    saved.binding.command.game_session_id(),
-                )
-                .await,
+                caster,
+                session,
+                self.refresh_spell_access(caster, session).await,
             ));
-        }
-        for saved in ordinary
-            .iter()
-            .filter(|saved| Some(saved.binding.command) == selected)
-        {
-            if !access.iter().any(|(actor, session, _)| {
-                *actor == saved.binding.caster
-                    && *session == saved.binding.command.game_session_id()
-            }) {
-                access.push((
-                    saved.binding.caster,
-                    saved.binding.command.game_session_id(),
-                    self.refresh_spell_access(
-                        saved.binding.caster,
-                        saved.binding.command.game_session_id(),
-                    )
-                    .await,
-                ));
-            }
         }
         // Lock order (§1.2): the lane before any Channel guard. Due timers stay due.
         let Some(permit) = self.spell_lane_permit().await else {
@@ -452,6 +434,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .into_iter()
                     .map(|saved| DueSource::Ordinary(saved.binding)),
             )
+            .chain(selected_source)
             .collect::<Vec<_>>();
         let mut casters: Vec<QualifiedCaster> = Vec::new();
         let store = FreshAdmissionStore::from_root(self.root.clone());

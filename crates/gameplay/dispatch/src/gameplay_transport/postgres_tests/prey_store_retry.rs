@@ -228,6 +228,18 @@ fn scenario(answered: bool, invalid_local: bool) -> TestResult {
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_prey_expansions").fetch_one(&h.pool).await?, 1);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM store_delivery_receipts WHERE entitlement_key='prey-list-expansion' AND item_instance_id IS NULL").fetch_one(&h.pool).await?, 1);
         assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM store_receipt_outbox").fetch_one(&h.pool).await?, 1);
+        if !answered {
+            let history = owner.root.store_purchase_history_page(account, None, 33).await.map_err(debug)?;
+            assert_eq!(history.len(), 1, "recovery retains exactly one history entry");
+            assert_eq!(history[0].entry.order_id, id(232));
+            assert_eq!(history[0].entry.offer_key, request.offer_key);
+            assert_eq!(history[0].entry.catalog_revision, request.catalog_revision);
+            assert_eq!(history[0].entry.price, request.price);
+            assert_eq!(history[0].entry.currency, request.currency);
+
+            let popularity = owner.root.store_popularity(vec![request.offer_key.clone()]).await.map_err(debug)?;
+            assert_eq!(popularity.get(&request.offer_key), Some(&1));
+        }
         {
             let ledger = ledger.lock().expect("ledger");
             assert_eq!(ledger.purchases, usize::from(!answered));

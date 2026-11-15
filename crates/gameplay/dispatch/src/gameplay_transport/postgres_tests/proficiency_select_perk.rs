@@ -167,6 +167,32 @@ fn scenario() -> TestResult {
         };
         let before_receipts = receipts().await?;
 
+        // A command must retain its supplied session authority across checkpointing.
+        let mut stale = admitted.item_fence.ok_or("supplied fence")?;
+        stale.connection_generation =
+            crate::foundation::ConnectionGeneration::new(99).map_err(debug)?;
+        for item_fence in [Some(stale), None] {
+            assert_eq!(
+                FreshAdmissionAuthority::weapon_proficiency_select(
+                    &owner,
+                    actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: session,
+                        command_id: 100,
+                        item_fence,
+                    },
+                    SelectPerkRequest {
+                        definition: sword,
+                        level: 0,
+                        perk: Some(0)
+                    },
+                )
+                .await,
+                None
+            );
+            assert_eq!(receipts().await?, before_receipts);
+        }
+
         let accepted = protocol::CommandStatus::Accepted;
         let served = connection(&owner, admitted, async |client| {
             // Malformed and non-weapon payloads are closed refusals before any read.

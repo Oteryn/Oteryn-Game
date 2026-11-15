@@ -60,8 +60,20 @@ pub(super) async fn resume(
                 quantity: 1,
                 currency: "COINS".into(),
             }, "ITEM").await)?;
+            let history = match &answer {
+                PurchaseResult::Accepted { order_id, .. } => {
+                    Some(StorePurchaseHistoryEntry {
+                        order_id: uuid_bytes(order_id)?,
+                        offer_key: binding.offer_key.clone(),
+                        catalog_revision: binding.catalog_revision.clone(),
+                        price: binding.price,
+                        currency: currency_text(binding.currency).into(),
+                    })
+                }
+                _ => None,
+            };
             let answer = serde_json::to_vec(&RetainedAnswer::of(&answer)).ok()?;
-            owner.root.record_store_answer(journal.clone(), answer).await.ok()?
+            owner.root.record_store_answer_with_history(journal.clone(), answer, history).await.ok()?
         }
     };
     let answer: RetainedAnswer = serde_json::from_slice(&saved).ok()?;

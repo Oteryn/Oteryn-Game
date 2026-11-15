@@ -161,6 +161,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 continue;
             };
+            // Flat proficiency points belong to weapon attack, before either damage formula.
+            if let Some(key) = selected.weapon.item_key.as_deref()
+                && let Ok(sessions) = self.states.proficiencies.lock()
+                && let Some(track) = sessions.get(&entry.session).and_then(|p| p.track(key))
+            {
+                proficiency_weapon_attack(&mut selected.weapon, track.effects.flat_attack);
+            }
             // The selected swing already owns the current weapon. Read its current
             // selections as for spell casts; no reward survives a weapon change.
             if let Some(catalogue) = &self.proficiency_catalogue
@@ -1774,6 +1781,17 @@ fn melee_swing_formula(
     }
 }
 
+fn proficiency_weapon_attack(weapon: &mut WeaponFacts, bonus: i64) {
+    let bonus = u32::try_from(bonus.clamp(0, i64::from(u32::MAX))).unwrap_or(0);
+    if let Some(ranged) = weapon.ranged.as_mut() {
+        if let ranged::RangedDamage::Distance { attack, .. } = &mut Arc::make_mut(ranged).damage {
+            *attack = attack.saturating_add(bonus);
+        }
+    } else if let SwingWeapon::Melee { attack, .. } = &mut weapon.weapon {
+        *attack = attack.saturating_add(bonus);
+    }
+}
+
 fn draw_swing_damage(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
@@ -2223,6 +2241,48 @@ mod tests {
             ),
             [75, 75]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn flat_proficiency_attack_recalculates_the_melee_formula()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::{
+            AttackConstants, FormulaInputs, SemanticTimeMicros, SwingWeapon, WeaponFacts,
+            proficiency_weapon_attack,
+        };
+        let constants = AttackConstants::checked_in().ok_or("constants")?;
+        let mut weapon = WeaponFacts {
+            weapon: SwingWeapon::Melee {
+                attack: 44,
+                skill: oteryn_gameplay_combat_rules::resolution::MeleeSkill::Sword,
+            },
+            item_key: Some("weapon".into()),
+            ranged: None,
+            content_digest: [0; 32],
+            read_at: SemanticTimeMicros::from_micros(0),
+        };
+        proficiency_weapon_attack(&mut weapon, 1);
+        let (formula, attack_value, _) =
+            melee_swing_formula(constants, crate::spell::Vocation::Knight, weapon.weapon);
+        assert_eq!(attack_value, 45);
+        let inputs = FormulaInputs {
+            level: 500,
+            magic_level: 0,
+            base_power: None,
+            attack_skill: 100,
+            attack_value,
+            attack_factor: 1.0,
+            shielding_skill: 0,
+            shield_defense: None,
+        };
+        let before = formula.bounds(&FormulaInputs {
+            attack_value: 44,
+            ..inputs
+        })?;
+        let after = formula.bounds(&inputs)?;
+        assert!(after.0 > before.0 + 1);
+        assert!(after.1 > before.1 + 1);
         Ok(())
     }
 
