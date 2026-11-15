@@ -689,6 +689,8 @@ enum LivenessEnd {
 /// server counts; a late ack of an older probe restores nothing.
 #[derive(Debug)]
 struct Liveness {
+    sent_at: Option<tokio::time::Instant>,
+    rtt_ms: Option<u32>,
     missed_limit: u32,
     last_sent: u64,
     awaiting: Option<u64>,
@@ -698,6 +700,8 @@ struct Liveness {
 impl Liveness {
     const fn new(policy: LivenessPolicy) -> Self {
         Self {
+            sent_at: None,
+            rtt_ms: None,
             missed_limit: policy.missed_limit,
             last_sent: 0,
             awaiting: None,
@@ -718,8 +722,13 @@ impl Liveness {
             .checked_add(1)
             .ok_or(LivenessEnd::ProbesExhausted)?;
         self.last_sent = next;
+        self.sent_at = None;
         self.awaiting = Some(next);
         Ok(next)
+    }
+
+    fn probe_sent(&mut self) {
+        self.sent_at = Some(tokio::time::Instant::now());
     }
 
     /// An ack of a probe never sent is a protocol violation.
@@ -728,6 +737,14 @@ impl Liveness {
             return Err(FoundationProtocolError::InvalidWireIdentifier);
         }
         if self.awaiting == Some(probe_id) {
+            if let Some(sent) = self.sent_at.take() {
+                let millis = sent.elapsed().as_micros().div_ceil(1000);
+                if let Ok(sample) = u32::try_from(millis) {
+                    self.rtt_ms = Some(self.rtt_ms.map_or(sample, |old| {
+                        ((u64::from(old) * 7 + u64::from(sample)) / 8) as u32
+                    }));
+                }
+            }
             self.awaiting = None;
             self.missed = 0;
         }

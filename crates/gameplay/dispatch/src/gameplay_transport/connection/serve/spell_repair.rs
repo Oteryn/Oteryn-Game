@@ -60,7 +60,7 @@ where
                     let probe = encode_liveness_probe(generation, id)
                         .map_err(|_| ServeEnd::Disconnected)?;
                     match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
-                        Ok(Ok(())) => {}
+                        Ok(Ok(())) => liveness.probe_sent(),
                         Ok(Err(_)) => return Err(ServeEnd::Disconnected),
                         Err(_) => return Err(ServeEnd::ControlLost("spell_repair_probe_timeout")),
                     }

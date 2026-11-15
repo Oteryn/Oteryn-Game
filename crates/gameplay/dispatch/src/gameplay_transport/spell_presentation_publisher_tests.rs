@@ -712,3 +712,114 @@ fn w18_house_decoration_effects_follow_current_house_custody_and_hide_channel_cu
         "matching coordinates cannot leak House speech"
     );
 }
+
+#[test]
+fn production_transport_preserves_committed_combat_effect_for_each_observer() {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let (mut runtime, caster, other, session) = runtime();
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    commit(&mut owner, &mut runtime, caster, session, 1);
+    let mut publisher = SoundPublisher::default();
+    publisher.capture(&mut owner, &runtime).unwrap();
+    let (cursor, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    let bytes = wire::encode_presentation_batch(&events).unwrap();
+    let events = wire::decode_presentation_batch(&bytes).unwrap();
+    assert_eq!(events.len(), 1);
+    assert!(matches!(
+        events[0].kind,
+        wire::PresentationEventKind::MagicEffect {
+            effect_id: 18,
+            source: wire::PresentationSource::Own,
+            ..
+        }
+    ));
+    let other_session = runtime
+        .positioned_actor_census()
+        .unwrap()
+        .into_iter()
+        .find(|(actor, _, _)| *actor == other)
+        .unwrap()
+        .2
+        .unwrap();
+    let (_, others) = publisher
+        .observe(&runtime, other, other_session, 0, true)
+        .unwrap();
+    assert!(matches!(
+        others[0].kind,
+        wire::PresentationEventKind::MagicEffect {
+            effect_id: 18,
+            source: wire::PresentationSource::Others,
+            ..
+        }
+    ));
+    publisher.capture(&mut owner, &runtime).unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, cursor, true)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    assert!(
+        publisher
+            .observe_for_transport(&runtime, caster, session, 0, true, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+    publisher.record_item_effect(
+        &runtime,
+        caster,
+        runtime.read_actor_position(caster).unwrap().position(),
+        1,
+        false,
+    );
+    let (_, item_only) = publisher
+        .observe_for_transport(&runtime, caster, session, 0, true, false)
+        .unwrap();
+    assert_eq!(item_only.len(), 1);
+    assert!(matches!(
+        item_only[0].kind,
+        wire::PresentationEventKind::MagicEffect { effect_id: 1, .. }
+    ));
+    runtime.remove_test_actor(caster).unwrap();
+    assert!(
+        publisher
+            .observe(&runtime, caster, session, 0, true)
+            .is_none()
+    );
+}
+
+#[test]
+fn production_missile_keeps_both_endpoints_when_only_origin_is_visible() {
+    use oteryn_protocol_oteryn::presentation as wire;
+    let (runtime, caster, _, session) = runtime();
+    let from = runtime.read_actor_position(caster).unwrap().position();
+    let to = MovementLocalPosition {
+        x: from.x + 100,
+        ..from
+    };
+    assert!(!VisibilitySettings::REFERENCE.can_see(view(from).unwrap(), view(to).unwrap()));
+    let mut publisher = SoundPublisher::default();
+    publisher.record_projectile(&runtime, caster, from, to, 7);
+    let (_, events) = publisher
+        .observe(&runtime, caster, session, 0, true)
+        .unwrap();
+    let bytes = wire::encode_presentation_batch(&events).unwrap();
+    let events = wire::decode_presentation_batch(&bytes).unwrap();
+    assert_eq!(events.len(), 1);
+    assert!(
+        matches!(events[0].kind, wire::PresentationEventKind::Missile {
+        from: origin, to: target, missile_id: 7, source: wire::PresentationSource::Own,
+    } if origin == pos(from) && target == pos(to))
+    );
+    assert!(
+        publisher
+            .observe_for_transport(&runtime, caster, session, 0, true, false)
+            .unwrap()
+            .1
+            .is_empty()
+    );
+}

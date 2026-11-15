@@ -22,6 +22,7 @@ mod integrity;
 mod party_skull;
 mod player_trade;
 mod poll;
+mod presentation;
 mod pvp_expert;
 mod refresh;
 mod setup;
@@ -71,6 +72,7 @@ async fn observed<T>(phase: &'static str, work: impl std::future::Future<Output 
 struct ServeState {
     cast_chat_revision: u64,
     spell_catalog: Option<spell_catalog::SessionCatalog>,
+    presentation: Option<presentation::SessionPresentation>,
     integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,

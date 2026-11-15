@@ -273,6 +273,61 @@ impl CandidateCooldownPublisher {
 fn rejected(_error: Error) -> SpellItemError {
     SpellItemError::Rejected("candidate current cooldown source unavailable")
 }
+/// Registered domain 20 reads only the current cast owner's deadlines and book indices.
+pub(crate) fn active_cooldowns(
+    book: &crate::spell::SpellBook,
+    state: &crate::spell::cast::PlayerSpellState,
+    now_ms: u64,
+) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+    use oteryn_protocol_oteryn::presentation as registered;
+    let groups: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tools/content-schema/spell-authoring/cooldown-groups.json"
+    ))
+    .ok()?;
+    let groups = groups.get("groups")?.as_array()?;
+    let mut entries = Vec::new();
+    for (key, deadline) in state.source_cooldown_deadlines() {
+        let expires_at_ms = deadline.checked_add(999)? / 1000;
+        if expires_at_ms <= now_ms {
+            continue;
+        }
+        let (kind, id) = if let Some(key) = key.strip_prefix("spell:") {
+            (
+                registered::ActorCooldownKind::Spell,
+                book.spells
+                    .iter()
+                    .position(|spell| spell.key == key)?
+                    .checked_add(1)?,
+            )
+        } else {
+            let key = key.strip_prefix("group:")?;
+            if key == oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY {
+                continue;
+            }
+            (
+                registered::ActorCooldownKind::Group,
+                groups
+                    .iter()
+                    .position(|group| group.get("key").and_then(|v| v.as_str()) == Some(key))?
+                    .checked_add(1)?,
+            )
+        };
+        entries.push(registered::ActorCooldown {
+            kind,
+            id: u32::try_from(id).ok()?,
+            expires_at_ms,
+        });
+    }
+    entries.sort_by_key(|entry| (entry.kind, entry.id));
+    let value = registered::ActorCooldowns {
+        server_now_ms: now_ms,
+        rtt_ms: None,
+        entries,
+    };
+    registered::encode_actor_cooldowns(&value).ok()?;
+    Some(value)
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]

@@ -167,7 +167,7 @@ where
             // A peer that does not consume even one small probe within a cadence is not
             // in control; an unbounded write would also stall the cadence itself.
             match tokio::time::timeout(session.policy.interval, write_frame(stream, &probe)).await {
-                Ok(Ok(())) => {}
+                Ok(Ok(())) => session.liveness.probe_sent(),
                 Ok(Err(_)) => {
                     return Err(ServeEnd::Disconnected);
                 }

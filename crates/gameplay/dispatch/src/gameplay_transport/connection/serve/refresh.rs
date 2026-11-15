@@ -753,6 +753,17 @@ where
     A: FreshAdmissionAuthority,
 {
     use oteryn_protocol_oteryn::presentation as wire;
+    if let Some(presentation) = &mut session.presentation {
+        presentation
+            .refresh(
+                stream,
+                authority,
+                &mut session.admitted,
+                &mut session.sequence,
+                session.liveness.rtt_ms,
+            )
+            .await?;
+    }
     let presentation_selected = session
         .selected_capabilities
         .contains(wire::CAPABILITY_PRESENTATION_V1);
@@ -766,10 +777,11 @@ where
         return Ok(());
     }
     let Some((cursor, mut events)) = authority
-        .observe_sounds(
+        .observe_presentation_cues(
             session.actor,
             session.admitted.game_session_id,
             session.sound_cursor,
+            presentation_selected,
         )
         .await
     else {
@@ -791,14 +803,14 @@ where
         .iter()
         .copied()
         .filter(|event| {
-            item_selected && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
+            item_selected
+                && !presentation_selected
+                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. })
         })
         .collect();
     events.retain(|event| {
         presentation_selected
             && !matches!(event.kind, wire::PresentationEventKind::AmbientSound { .. })
-            && !(item_selected
-                && matches!(event.kind, wire::PresentationEventKind::MagicEffect { .. }))
     });
     for (index, event) in events.iter_mut().enumerate() {
         event.decision_ordinal = u32::try_from(index + 1).map_err(|_| ServeEnd::Disconnected)?;

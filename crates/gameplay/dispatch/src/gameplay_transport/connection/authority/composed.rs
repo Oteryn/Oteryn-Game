@@ -35,6 +35,26 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(self.root)
     }
 
+    async fn observe_combat_cooldowns(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::presentation::ActorCooldowns> {
+        let actor = admitted.runtime_actor?;
+        let session = admitted.game_session_id;
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.try_lock().ok()?;
+        let state = if runtime.house_actor_state(actor, session).is_ok() {
+            states.house_state_mut(&runtime, actor, session, admitted.item_fence?)?
+        } else {
+            states.get(&runtime, actor, session)?
+        };
+        crate::gameplay_transport::spell_presentation_publisher::cooldowns::active_cooldowns(
+            self.spells,
+            state,
+            self.owner_now().get() / 1000,
+        )
+    }
+
     async fn observe_sounds(
         &self,
         actor: ExactActorRef,
@@ -44,10 +64,31 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         u64,
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
     )> {
+        self.observe_presentation_cues(actor, session, after, false)
+            .await
+    }
+
+    async fn observe_presentation_cues(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+        combat_selected: bool,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
         let mut runtime = self.runtime.lock().await;
         if runtime.house_actor_state(actor, session).is_ok() {
             let states = self.states.spell_states.try_lock().ok()?;
-            return states.sounds.observe(&runtime, actor, session, after, true);
+            return states.sounds.observe_for_transport(
+                &runtime,
+                actor,
+                session,
+                after,
+                true,
+                combat_selected,
+            );
         }
         runtime.player_control_facts(actor, session).ok()?;
         let zone = crate::gameplay_transport::spell_presentation_publisher::ambient_sounds::zone(
@@ -75,7 +116,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         } else if let Some(minute) = minute {
             sounds.ambient(&runtime, actor, session, zone, minute);
         }
-        sounds.observe(&runtime, actor, session, after, true)
+        sounds.observe_for_transport(&runtime, actor, session, after, true, combat_selected)
     }
 
     fn observe_movement_effects(

@@ -5,6 +5,7 @@ use super::*;
 use crate::gameplay_transport::item_view::ItemViewSnapshotDomain as OwnedDomain;
 
 pub(super) struct InitialSnapshot {
+    pub(super) presentation: Option<super::presentation::SessionPresentation>,
     pub(super) spell_catalog: Option<super::spell_catalog::SessionCatalog>,
     pub(super) overlay_served: bool,
     pub(super) overlay_revision: u64,
@@ -170,7 +171,10 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     }
     let spell_catalog =
         super::spell_catalog::SessionCatalog::initial(authority, actor, admitted, domains).await?;
+    let presentation =
+        super::presentation::SessionPresentation::initial(authority, admitted, domains).await?;
     Ok(InitialSnapshot {
+        presentation,
         spell_catalog,
         overlay_served,
         overlay_revision,

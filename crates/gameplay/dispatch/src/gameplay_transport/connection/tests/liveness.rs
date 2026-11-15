@@ -291,3 +291,24 @@ fn idle_liveness_matches_the_registered_provisional_rows() -> Result<(), Box<dyn
     );
     Ok(())
 }
+
+#[tokio::test(start_paused = true)]
+async fn presentation_rtt_uses_only_matched_sent_probes_and_smooths_samples() {
+    let mut liveness = Liveness::new(IDLE_LIVENESS);
+    assert!(liveness.ack(1).is_err());
+    assert_eq!(liveness.tick(), Ok(1));
+    liveness.probe_sent();
+    tokio::time::advance(std::time::Duration::from_millis(20)).await;
+    assert_eq!(liveness.ack(1), Ok(()));
+    assert_eq!(liveness.rtt_ms, Some(20));
+    assert_eq!(liveness.tick(), Ok(2));
+    liveness.probe_sent();
+    tokio::time::advance(std::time::Duration::from_millis(28)).await;
+    assert_eq!(liveness.ack(1), Ok(()));
+    assert_eq!(liveness.rtt_ms, Some(20));
+    assert_eq!(liveness.ack(2), Ok(()));
+    assert_eq!(liveness.rtt_ms, Some(21));
+    tokio::time::advance(std::time::Duration::from_millis(100)).await;
+    assert_eq!(liveness.ack(2), Ok(()));
+    assert_eq!(liveness.rtt_ms, Some(21));
+}

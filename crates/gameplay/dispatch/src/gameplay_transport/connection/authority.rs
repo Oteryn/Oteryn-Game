@@ -53,6 +53,28 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    fn observe_combat_cooldowns(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::presentation::ActorCooldowns>> {
+        async { None }
+    }
+
+    fn observe_presentation_cues(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+        _combat_selected: bool,
+    ) -> impl Future<
+        Output = Option<(
+            u64,
+            Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+        )>,
+    > {
+        self.observe_sounds(actor, session, after)
+    }
+
     fn observe_sounds(
         &self,
         _actor: ExactActorRef,

@@ -554,7 +554,7 @@ pub(super) mod ambient_sounds;
 mod tests;
 
 #[path = "spell_presentation_cooldowns.rs"]
-mod cooldowns;
+pub(super) mod cooldowns;
 
 /// Bounded production fan-out journal. Connections keep independent cursors.
 #[derive(Debug, Default)]
@@ -574,6 +574,8 @@ struct SoundEntry {
     creature: bool,
     effect: bool,
     private: bool,
+    combat: bool,
+    missile_from: Option<MovementLocalPosition>,
     house_scope: Option<(crate::foundation::RuntimeScopeRefV1, u64)>,
 }
 impl SoundPublisher {
@@ -619,6 +621,8 @@ impl SoundPublisher {
             creature: runtime.companion_snapshot_including_dead(actor).is_ok(),
             effect: false,
             private: false,
+            combat: false,
+            missile_from: None,
             house_scope: None,
         });
     }
@@ -669,6 +673,23 @@ impl SoundPublisher {
             entry.house_scope = Some((house.scope, house.generation.get()));
         }
     }
+    fn record_projectile(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        from: MovementLocalPosition,
+        to: MovementLocalPosition,
+        cue: u16,
+    ) {
+        let before = self.revision;
+        self.record(runtime, actor, to, cue, 0);
+        if self.revision != before
+            && let Some(entry) = self.sounds.back_mut()
+        {
+            entry.missile_from = Some(from);
+            entry.combat = true;
+        }
+    }
     pub fn capture(
         &mut self,
         owner: &mut SpellPresentationOwner,
@@ -678,8 +699,31 @@ impl SoundPublisher {
             .take_for_current_publisher(runtime)
             .map_err(|_| Error::Stale)?
         {
-            if let Cue::Sound(cue) = event.event.cue {
-                self.record(runtime, event.cause.actor(), event.event.position, cue, 0);
+            let before_capture = self.revision;
+            match event.event.cue {
+                Cue::Sound(cue) => {
+                    self.record(runtime, event.cause.actor(), event.event.position, cue, 0)
+                }
+                Cue::Effect(cue) => self.record_item_effect(
+                    runtime,
+                    event.cause.actor(),
+                    event.event.position,
+                    cue,
+                    false,
+                ),
+                Cue::Projectile(cue) => self.record_projectile(
+                    runtime,
+                    event.cause.actor(),
+                    event.cause.origin(),
+                    event.event.position,
+                    cue,
+                ),
+            }
+            if self.revision != before_capture
+                && matches!(event.event.cue, Cue::Effect(_))
+                && let Some(entry) = self.sounds.back_mut()
+            {
+                entry.combat = true;
             }
         }
         Ok(())
@@ -693,6 +737,20 @@ impl SoundPublisher {
         session: GameSessionId,
         after: u64,
         selected: bool,
+    ) -> Option<(
+        u64,
+        Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
+    )> {
+        self.observe_for_transport(runtime, actor, session, after, selected, true)
+    }
+    pub fn observe_for_transport(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        after: u64,
+        selected: bool,
+        combat_selected: bool,
     ) -> Option<(
         u64,
         Vec<oteryn_protocol_oteryn::presentation::PresentationEvent>,
@@ -742,13 +800,21 @@ impl SoundPublisher {
             });
         }
         for sound in self.sounds.iter().filter(|sound| sound.revision > after) {
-            if sound.house_scope != house_scope || (sound.private && sound.actor != actor) {
+            if (sound.combat && !combat_selected)
+                || sound.house_scope != house_scope
+                || (sound.private && sound.actor != actor)
+            {
                 continue;
             }
             let Ok(target) = view(sound.position) else {
                 continue;
             };
-            if !VisibilitySettings::REFERENCE.can_see(observer, target) {
+            if !VisibilitySettings::REFERENCE.can_see(observer, target)
+                && !sound
+                    .missile_from
+                    .and_then(|from| view(from).ok())
+                    .is_some_and(|from| VisibilitySettings::REFERENCE.can_see(observer, from))
+            {
                 continue;
             }
             let source = if sound.actor == actor {
@@ -761,7 +827,20 @@ impl SoundPublisher {
             events.push(PresentationEvent {
                 decision_ordinal: u32::try_from(events.len() + 1).ok()?,
                 emission_ordinal: 1,
-                kind: if sound.effect {
+                kind: if let Some(from) = sound.missile_from {
+                    PresentationEventKind::Missile {
+                        from: ActorPosition {
+                            floor: tibia_floor(from.floor)?,
+                            ..pos(from)
+                        },
+                        to: ActorPosition {
+                            floor: tibia_floor(sound.position.floor)?,
+                            ..pos(sound.position)
+                        },
+                        missile_id: u32::from(sound.cue),
+                        source,
+                    }
+                } else if sound.effect {
                     PresentationEventKind::MagicEffect {
                         position: ActorPosition {
                             floor: tibia_floor(sound.position.floor)?,

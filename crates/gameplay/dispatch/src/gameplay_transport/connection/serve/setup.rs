@@ -295,6 +295,7 @@ async fn live<A: FreshAdmissionAuthority>(
         world,
     } = setup;
     let snapshot::InitialSnapshot {
+        presentation,
         spell_catalog,
         overlay_served,
         notices_selected,
@@ -448,7 +449,13 @@ async fn live<A: FreshAdmissionAuthority>(
     {
         observed(
             "sounds",
-            authority.observe_sounds(actor, admitted.game_session_id, u64::MAX),
+            authority.observe_presentation_cues(
+                actor,
+                admitted.game_session_id,
+                u64::MAX,
+                selected_capabilities
+                    .contains(oteryn_protocol_oteryn::presentation::CAPABILITY_PRESENTATION_V1),
+            ),
         )
         .await
         .map_or(0, |(cursor, _)| cursor)
@@ -463,6 +470,7 @@ async fn live<A: FreshAdmissionAuthority>(
         .unwrap_or(0);
     record_join_progress("live_ready", admitted.first_entry);
     Ok(ServeState {
+        presentation,
         input_after_refresh: false,
         next_periodic_refresh: 0,
         activity_ack: None,

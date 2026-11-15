@@ -204,6 +204,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     write_frame(stream, &frame)
                         .await
                         .map_err(|_| ServeEnd::Disconnected)?;
+                    liveness.probe_sent();
                     continue;
                 }
                 house_hireling::step::Event::Input(input) => input,
