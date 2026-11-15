@@ -48,12 +48,6 @@ struct State {
     pending: Option<(Action, Entity)>,
     feedback: Option<String>,
 }
-pub(in crate::bevy_shell) fn shortcut(event: &oteryn_input_actions::NormalizedInputEvent) -> bool {
-    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
-    matches!(event, NormalizedInputEvent::Key {
-        code, state: ButtonState::Pressed, modifiers, repeat: false
-    } if code.get() == 66 && *modifiers == Modifiers::one(Modifier::Control).with(Modifier::Shift))
-}
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
         .add_systems(Startup, setup.after(super::setup))
