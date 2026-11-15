@@ -19,6 +19,7 @@ pub(super) mod party;
 mod projection;
 pub(super) use projection::project;
 mod quick_loot;
+pub(super) mod satellite_map;
 mod reward_wall;
 mod trade;
 pub(super) mod viewport;
@@ -244,6 +245,7 @@ pub(super) fn install(app: &mut App) {
     outfit::install(app);
     party::install(app);
     quick_loot::install(app);
+    satellite_map::install(app);
     reward_wall::install(app);
     trade::install(app);
     app.add_systems(
