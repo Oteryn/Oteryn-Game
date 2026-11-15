@@ -308,3 +308,28 @@ fn stash_amount_keys_in_one_frame_confirm_accumulated_amount() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn stash_numeric_correction_preserves_editor_configuration() -> TestResult {
+    let (mut app, _commands, _) = fixture()?;
+    click(&mut app, Kind::Row(0))?;
+    for mut text in app
+        .world_mut()
+        .query_filtered::<&mut EditableText, With<Quantity>>()
+        .iter_mut(app.world_mut())
+    {
+        text.cursor_width = 0.7;
+        text.max_characters = Some(7);
+        text.visible_lines = Some(3.);
+    }
+    press(&mut app, KeyCode::ArrowUp);
+    let text = app
+        .world_mut()
+        .query_filtered::<&EditableText, With<Quantity>>()
+        .single(app.world())?;
+    assert_eq!(text.value().to_string(), "11");
+    assert_eq!(text.cursor_width, 0.7);
+    assert_eq!(text.max_characters, Some(7));
+    assert_eq!(text.visible_lines, Some(3.));
+    Ok(())
+}

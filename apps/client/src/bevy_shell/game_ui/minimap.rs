@@ -11,6 +11,14 @@ use bevy::{
 };
 use oteryn_client_ui_bevy as source;
 pub(in crate::bevy_shell) const SIZE: UVec2 = UVec2::new(124, 100);
+// The sidebar atlas uses the builtin six-level RGB palette (r * 36 + g * 6 + b).
+pub(super) fn palette_color(index: u8) -> Color {
+    Color::srgb_u8(
+        (index / 36 % 6) * 51,
+        (index / 6 % 6) * 51,
+        (index % 6) * 51,
+    )
+}
 #[derive(Resource)]
 struct State {
     image: Handle<Image>,

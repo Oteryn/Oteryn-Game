@@ -31,7 +31,34 @@ struct State {
     confirmation: Option<u8>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>().add_systems(
+        Update,
+        (escape.after(crate::bevy_shell::input::route), project).chain(),
+    );
+}
+fn escape(
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    mut state: ResMut<State>,
+) {
+    if !keys
+        .as_ref()
+        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+        || owner.modal_active()
+        || !state.root.is_some_and(|root| guard.allows(root))
+        || !state
+            .seen
+            .as_ref()
+            .is_some_and(|seen| seen.0 == owner.generation())
+    {
+        return;
+    }
+    if state.confirmation.take().is_none()
+        && let Some(play) = &owner.play
+    {
+        play.link.prey_set_open(false);
+    }
 }
 fn slot_title(state: u8) -> &'static str {
     match state {
@@ -182,6 +209,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("prey", 0),
         ))
         .id();
     label(&mut commands, &skin, root, "Prey Creatures");

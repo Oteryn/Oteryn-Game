@@ -152,6 +152,7 @@ pub(super) fn build(
         let list = commands
             .spawn((
                 ScrollArea,
+                crate::bevy_shell::game_ui::install::RememberScroll("stash", 0),
                 Node {
                     height: px(230.),
                     min_height: px(0.),

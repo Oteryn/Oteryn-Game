@@ -71,6 +71,7 @@ pub(super) fn render(
     let content = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("wheel", 0),
             Node {
                 flex_direction: FlexDirection::Column,
                 row_gap: px(8.),

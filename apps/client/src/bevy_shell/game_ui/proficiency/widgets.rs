@@ -92,7 +92,7 @@ pub(super) fn render(
         })
         .id();
     commands.entity(window).add_child(body);
-    let list = pane(commands, skin, body, px(280.));
+    let list = pane(commands, skin, body, px(280.), 0);
     text(commands, skin, list, "Weapons");
     if let Some(catalogue) = &panel.catalogue {
         for row in panel.visible_weapons() {
@@ -155,7 +155,7 @@ pub(super) fn render(
     } else {
         text(commands, skin, list, "No weapon catalogue received");
     }
-    let tree = pane(commands, skin, body, Val::Auto);
+    let tree = pane(commands, skin, body, Val::Auto, 1);
     if let Some(entry) = panel.weapon_entry() {
         text(commands, skin, tree, &entry.name);
         let grid = commands
@@ -273,11 +273,12 @@ pub(super) fn render(
         true,
     );
 }
-fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val) -> Entity {
+fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val, role: u32) -> Entity {
     let entity = commands
         .spawn((
             source::frame(skin.inset.clone(), [1.; 4]),
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("proficiency", role),
             Node {
                 width,
                 min_width: px(0.),

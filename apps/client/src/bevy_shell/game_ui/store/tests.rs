@@ -339,3 +339,82 @@ fn store_shortcut_rejects_extra_modifiers() -> ResultTest {
     }
     Ok(())
 }
+
+#[test]
+fn purchase_history_shortcut_opens_visible_history_page() -> ResultTest {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, _rx, _) = fixture(250)?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .store_set_open(false);
+    app.update();
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::new(11)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+            repeat: false,
+        }],
+        false,
+    );
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .store_panel()
+            .open
+    );
+    app.update();
+    assert!(matches!(
+        app.world().resource::<State>().page,
+        Page::History
+    ));
+    assert!(
+        app.world_mut()
+            .query_filtered::<&Node, With<Overlay>>()
+            .iter(app.world())
+            .any(|node| node.display != Display::None)
+    );
+    Ok(())
+}
+
+#[test]
+fn team_finder_shortcut_presents_real_browse_controls() -> ResultTest {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let (mut app, mut rx, outbox) = fixture(250)?;
+    outbox.bevy_team_finder_supported();
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .store_set_open(false);
+    app.update();
+    app.world_mut().non_send_mut::<HostOwner>().route_input(
+        &[NormalizedInputEvent::Key {
+            code: KeyCode::new(23)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control).with(Modifier::Alt),
+            repeat: false,
+        }],
+        false,
+    );
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "Team Finder: Browse teams").then_some(entity))
+        .ok_or("team browse control")?;
+    app.world_mut().trigger(Activate { entity });
+    assert!(std::iter::from_fn(|| rx.try_recv().ok()).any(|command| matches!(command, PlayCommand::ServerMechanic(command) if command.capability == 232)));
+    Ok(())
+}

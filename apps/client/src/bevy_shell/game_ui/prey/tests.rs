@@ -264,3 +264,46 @@ fn prey_reroll_needs_confirmation() -> TestResult {
     ));
     Ok(())
 }
+
+#[test]
+fn prey_blocking_dialog_escape_respects_top_modal() -> TestResult {
+    let (mut app, _commands) = fixture()?;
+    app.init_resource::<ButtonInput<KeyCode>>();
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(300), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .prey_panel()
+            .open
+    );
+    app.world_mut().despawn(higher);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .prey_panel()
+            .open
+    );
+    Ok(())
+}

@@ -464,3 +464,130 @@ fn vip_close_hides_a_saved_visible_sidebar_and_preserves_a_pending_canonical_que
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn vip_double_click_and_secondary_message_open_private_conversation() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let (mut app, _, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    app.update();
+    let row = app
+        .world_mut()
+        .query::<(Entity, &Row)>()
+        .iter(app.world())
+        .find_map(|(entity, row)| (row.entry == 73).then_some(entity))
+        .ok_or("contact row")?;
+    let click = |entity, button, count| PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 100,
+                    height: 100,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count,
+    };
+    app.world_mut()
+        .trigger(click(row, PointerButton::Primary, 1));
+    assert!(app.world().resource::<State>().draft.is_none());
+    app.world_mut()
+        .trigger(click(row, PointerButton::Primary, 2));
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .chat_console_tab(oteryn_client_ui::chat::ConsoleTab::All);
+    app.world_mut()
+        .trigger(click(row, PointerButton::Secondary, 1));
+    app.update();
+    let message = app
+        .world_mut()
+        .query::<(Entity, &Name)>()
+        .iter(app.world())
+        .find_map(|(entity, name)| (name.as_str() == "vip.message").then_some(entity))
+        .ok_or("Message context action")?;
+    app.world_mut().trigger(Activate { entity: message });
+    assert_eq!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .chat_panel()
+            .console
+            .current,
+        Some(oteryn_client_ui::chat::ChannelTab::Conversation(
+            "Alice".into()
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn vip_rows_project_saved_icon_and_description() -> TestResult {
+    let (mut app, _, outbox) = super::super::tests::app()?;
+    publish(&outbox, CONTACTS, 4, VipPresenceStatus::Online);
+    app.update();
+    app.update();
+    let entries = app
+        .world_mut()
+        .query::<(&Name, &Text)>()
+        .iter(app.world())
+        .map(|(name, text)| (name.as_str().to_owned(), text.0.clone()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert!(
+        entries
+            .get("vip.icon.73")
+            .is_some_and(|icon| !icon.is_empty())
+    );
+    assert_eq!(
+        entries.get("vip.description.73").map(String::as_str),
+        Some("Friend")
+    );
+    publish(
+        &outbox,
+        &CONTACTS.replace("Friend\"", "Hunting partner\""),
+        5,
+        VipPresenceStatus::Online,
+    );
+    app.update();
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<(&Name, &Text)>()
+            .iter(app.world())
+            .any(
+                |(name, text)| name.as_str() == "vip.description.73" && text.0 == "Hunting partner"
+            )
+    );
+    Ok(())
+}

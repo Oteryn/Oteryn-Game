@@ -13,7 +13,7 @@ pub(super) struct Pending {
     dialog: ChannelDialog,
     focus_message: bool,
 }
-fn editing(text: &EditableText) -> bool {
+pub(super) fn editing(text: &EditableText) -> bool {
     text.pending_paste.is_some()
         || text
             .pending_edits
@@ -49,10 +49,15 @@ pub(super) fn request(
         state.pending = Some(pending);
         false
     } else {
-        perform(owner, &pending, text)
+        perform(owner, state, &pending, text)
     }
 }
-fn perform(owner: &HostOwner, pending: &Pending, text: &mut EditableText) -> bool {
+fn perform(
+    owner: &HostOwner,
+    state: &mut ChatState,
+    pending: &Pending,
+    text: &mut EditableText,
+) -> bool {
     let Some(play) = &owner.play else {
         return false;
     };
@@ -65,6 +70,15 @@ fn perform(owner: &HostOwner, pending: &Pending, text: &mut EditableText) -> boo
                 pending.mode,
                 &text.value().to_string(),
             ) {
+                let sent = text.value().to_string();
+                if state.history.back() != Some(&sent) {
+                    state.history.push_back(sent);
+                    while state.history.len() > 100 {
+                        state.history.pop_front();
+                    }
+                }
+                state.recall = None;
+                state.draft.clear();
                 set_text(text, "");
                 true
             } else {
@@ -113,7 +127,7 @@ pub(super) fn finish(
         state.pending = Some(pending);
         return;
     }
-    if perform(&owner, &pending, &mut text) && pending.focus_message {
+    if perform(&owner, &mut state, &pending, &mut text) && pending.focus_message {
         for (entity, field, _) in &mut fields {
             if *field == Field::Message {
                 focus.set(entity, FocusCause::Navigated);

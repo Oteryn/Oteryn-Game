@@ -88,7 +88,9 @@ struct State {
     pending: Option<(Action, Entity)>,
 }
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>()
+    app.init_resource::<TeamUi>()
+        .add_systems(Update, project_teams)
+        .init_resource::<State>()
         .add_message::<bevy::input::keyboard::KeyboardInput>()
         .add_systems(Startup, setup.after(super::setup))
         .add_systems(Update, (keyboard, project).chain())
@@ -145,6 +147,14 @@ fn project(
         return;
     };
     node.display = Display::Flex;
+    if snapshot.store.page == store::StorePage::History
+        && state
+            .seen
+            .as_ref()
+            .is_none_or(|seen| seen.store.page != store::StorePage::History)
+    {
+        state.page = Page::History;
+    }
     let generation = owner.generation();
     let same_session = state.key.is_some_and(|key| key.generation == generation);
     if same_session && state.seen.as_ref() == Some(&snapshot) && !state.dirty {
@@ -177,6 +187,9 @@ fn project(
     }
     if focus.get().is_some_and(|id| fields.contains(id)) {
         focus.clear();
+    }
+    if !same_session && snapshot.store.page == store::StorePage::History {
+        state.page = Page::History;
     }
     let key = Key {
         generation,
@@ -269,4 +282,215 @@ fn buy_enabled(panel: &StorePanel) -> bool {
         _ => None,
     };
     balance.is_some_and(|balance| balance >= offer.price)
+}
+
+#[derive(Resource, Default)]
+struct TeamUi {
+    generation: u64,
+    revision: u64,
+    open: bool,
+    root: Option<Entity>,
+    seen: Option<oteryn_client_ui::team_finder::Panel>,
+}
+#[derive(Component, Clone, Copy)]
+struct TeamControl {
+    generation: u64,
+    revision: u64,
+    kind: TeamKind,
+}
+#[derive(Clone, Copy)]
+enum TeamKind {
+    Close,
+    Select(usize),
+    Request(usize),
+}
+fn team_button(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    state: &TeamUi,
+    label: &str,
+    kind: TeamKind,
+    enabled: bool,
+) {
+    let entity = commands
+        .spawn((
+            source::button(skin.buttons.clone(), 170.),
+            Name::new(format!("Team Finder: {label}")),
+            TeamControl {
+                generation: state.generation,
+                revision: state.revision,
+                kind,
+            },
+        ))
+        .observe(team_activate)
+        .id();
+    if !enabled {
+        commands.entity(entity).insert(InteractionDisabled);
+    }
+    let caption = commands
+        .spawn(source::button_caption(label, skin.font.clone()))
+        .id();
+    commands.entity(entity).add_child(caption);
+    commands.entity(parent).add_child(entity);
+}
+fn team_activate(
+    event: On<Activate>,
+    guard: ModalGuard,
+    controls: Query<(&TeamControl, Has<InteractionDisabled>)>,
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<TeamUi>,
+) {
+    let Ok((control, false)) = controls.get(event.entity) else {
+        return;
+    };
+    if !guard.allows(event.entity)
+        || owner.modal_active()
+        || !state.open
+        || control.generation != owner.generation()
+        || control.generation != state.generation
+        || control.revision != state.revision
+    {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    if play.view.gameplay_input_blocked(&play.link) {
+        return;
+    }
+    let panel = play.link.discovery_panel().teams;
+    if state.seen.as_ref() != Some(&panel) {
+        return;
+    }
+    match control.kind {
+        TeamKind::Close => state.open = false,
+        TeamKind::Select(row) => play.link.team_finder_select(row),
+        TeamKind::Request(action) => {
+            play.link
+                .team_finder_control(action, &[], panel.selected_row);
+        }
+    }
+}
+fn project_teams(
+    mut commands: Commands,
+    mut owner: NonSendMut<HostOwner>,
+    skin: Res<Skins>,
+    mut state: ResMut<TeamUi>,
+    keys: Option<Res<ButtonInput<KeyCode>>>,
+    guard: ModalGuard,
+) {
+    let request = owner.take_team_finder_request();
+    let generation = owner.generation();
+    if state.generation != generation || owner.play.is_none() {
+        state.open = false;
+        state.generation = generation;
+        state.seen = None;
+    }
+    if request == Some(generation) && owner.play.is_some() {
+        state.open = true;
+    }
+    if state.open
+        && !owner.modal_active()
+        && state.root.is_some_and(|root| guard.allows(root))
+        && keys
+            .as_ref()
+            .is_some_and(|keys| keys.just_pressed(KeyCode::Escape))
+    {
+        state.open = false;
+    }
+    if !state.open {
+        if let Some(root) = state.root.take() {
+            commands.entity(root).despawn();
+        }
+        state.seen = None;
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.discovery_panel().teams;
+    if state.seen.as_ref() == Some(&panel) {
+        return;
+    }
+    let Some(revision) = state.revision.checked_add(1) else {
+        state.open = false;
+        return;
+    };
+    state.revision = revision;
+    let root = *state.root.get_or_insert_with(|| {
+        commands
+            .spawn((
+                GameModal,
+                GlobalZIndex(155),
+                bevy::ui_widgets::ScrollArea,
+                source::frame(skin.frame.clone(), [4., 17., 4., 4.]),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: percent(20.),
+                    top: percent(10.),
+                    width: percent(60.),
+                    max_height: percent(80.),
+                    padding: px(20.).all(),
+                    row_gap: px(4.),
+                    flex_direction: FlexDirection::Column,
+                    overflow: Overflow::scroll_y(),
+                    ..default()
+                },
+            ))
+            .id()
+    });
+    commands.entity(root).despawn_children();
+    source::dialog_caption(&mut commands, root, "Team Finder", skin.font.clone());
+    let text = commands
+        .spawn(source::text(
+            oteryn_client_ui::team_finder::panel_text(&panel),
+            source::font(skin.font.clone(), false),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(root).add_child(text);
+    let ready = panel.selected && panel.pending.is_none();
+    for (action, label) in [
+        (1, "Browse teams"),
+        (2, "My applicants"),
+        (3, "Next page"),
+        (4, "Apply to selected"),
+        (5, "Cancel application"),
+        (6, "Invite selected"),
+        (7, "Accept selected"),
+        (8, "Deny selected"),
+        (10, "Remove advertisement"),
+    ] {
+        team_button(
+            &mut commands,
+            &skin,
+            root,
+            &state,
+            label,
+            TeamKind::Request(action),
+            ready,
+        );
+    }
+    for (row, name) in panel.visible_names().iter().enumerate() {
+        team_button(
+            &mut commands,
+            &skin,
+            root,
+            &state,
+            name,
+            TeamKind::Select(row),
+            ready,
+        );
+    }
+    team_button(
+        &mut commands,
+        &skin,
+        root,
+        &state,
+        "Close",
+        TeamKind::Close,
+        true,
+    );
+    state.seen = Some(panel);
 }

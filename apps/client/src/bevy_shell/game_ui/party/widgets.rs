@@ -240,6 +240,7 @@ fn list(commands: &mut Commands, parent: Entity) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("party", 0),
             Node {
                 width: percent(100.),
                 max_height: px(180.),

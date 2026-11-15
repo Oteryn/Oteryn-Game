@@ -1,10 +1,6 @@
 use super::*;
+use bevy::picking::hover::Hovered;
 use oteryn_session::VipPresenceStatus;
-#[derive(Component)]
-pub(super) struct NameLabel {
-    generation: u64,
-    entry: u64,
-}
 pub(super) fn setup(
     mut commands: Commands,
     regions: Res<super::super::super::GameRegions>,
@@ -92,11 +88,13 @@ pub(super) fn project(
     skins: Res<Skins>,
     mut state: ResMut<State>,
     lists: Query<Entity, With<List>>,
-    rows: Query<(Entity, &Row)>,
-    mut names: Query<(&NameLabel, &mut Text, &mut TextColor), Without<Message>>,
+    rows: Query<(Entity, &Row, &Hovered, &ComputedNode, &UiGlobalTransform)>,
+    mut names: Query<(&VipNameLabel, &mut Text, &mut TextColor), Without<Message>>,
     mut messages: Query<&mut Text, With<Message>>,
     mut controls: Query<(Entity, &mut Control)>,
     mut entered: Local<Option<u64>>,
+    metadata: Query<(Entity, &VipMetadata, &Text), (Without<VipNameLabel>, Without<Message>)>,
+    guard: ModalGuard,
 ) {
     let generation = owner.generation();
     if state.generation != Some(generation) || owner.play.is_none() {
@@ -105,11 +103,16 @@ pub(super) fn project(
         state.pending = None;
     }
     let Some(play) = &owner.play else {
-        for (entity, _) in &rows {
+        for (entity, _, _, _, _) in &rows {
             commands.entity(entity).despawn();
         }
         for mut message in &mut messages {
             message.0 = "VIP unavailable in this session".into();
+        }
+        for (entity, role, _) in &metadata {
+            if role.description {
+                commands.entity(entity).despawn();
+            }
         }
         *entered = None;
         return;
@@ -140,7 +143,7 @@ pub(super) fn project(
         }
     }
     let mut retained = std::collections::HashSet::new();
-    for (entity, row) in &rows {
+    for (entity, row, _, _, _) in &rows {
         if row.generation != generation || !entries.iter().any(|entry| entry.entry == row.entry) {
             commands.entity(entity).despawn();
         } else {
@@ -158,12 +161,8 @@ pub(super) fn project(
                         generation,
                         entry: entry.entry,
                     },
-                    bevy::ui_widgets::Button,
-                    Control {
-                        generation,
-                        revision: panel.revision,
-                        command: Action::Edit(entry.entry),
-                    },
+                    Pickable::default(),
+                    Hovered::default(),
                     Name::new("vip.entry"),
                     TabIndex(0),
                     Node {
@@ -173,25 +172,122 @@ pub(super) fn project(
                         ..default()
                     },
                 ))
-                .observe(input::activate)
+                .observe(row_click)
+                .observe(row_keyboard)
                 .id();
+            let icon = commands
+                .spawn((
+                    VipMetadata {
+                        generation,
+                        entry: entry.entry,
+                        description: false,
+                    },
+                    Name::new(format!("vip.icon.{}", entry.entry)),
+                    source::text(
+                        vip_icon_text(entry.icon),
+                        source::font(skins.font.clone(), false),
+                    ),
+                    Node {
+                        width: px(16.),
+                        flex_shrink: 0.,
+                        ..default()
+                    },
+                ))
+                .id();
+            commands.entity(row).add_child(icon);
+            commands.spawn((
+                VipMetadata {
+                    generation,
+                    entry: entry.entry,
+                    description: true,
+                },
+                Name::new(format!("vip.description.{}", entry.entry)),
+                source::text(
+                    entry.description.as_deref().unwrap_or(""),
+                    source::font(skins.font.clone(), false),
+                ),
+                Node {
+                    display: Display::None,
+                    ..default()
+                },
+                BackgroundColor(Color::srgb_u8(32, 32, 32)),
+                GlobalZIndex(280),
+            ));
             let name = commands
                 .spawn((
-                    NameLabel {
+                    VipNameLabel {
                         generation,
                         entry: entry.entry,
                     },
                     source::text(&entry.name, source::font(skins.font.clone(), false)),
                     Node {
-                        width: percent(100.),
+                        flex_grow: 1.,
                         min_width: px(0.),
                         overflow: Overflow::clip_x(),
                         ..default()
                     },
                 ))
                 .id();
-            commands.entity(row).add_child(name);
+            let edit = button(
+                &mut commands,
+                &skins,
+                Control {
+                    generation,
+                    revision: panel.revision,
+                    command: Action::Edit(entry.entry),
+                },
+                "…",
+                18.,
+                "vip.edit",
+            );
+            commands.entity(row).add_children(&[name, edit]);
             commands.entity(list).add_child(row);
+        }
+    }
+    for (entity, role, text) in &metadata {
+        let entry = entries
+            .iter()
+            .find(|entry| entry.entry == role.entry && role.generation == generation);
+        let Some(entry) = entry else {
+            if role.description {
+                commands.entity(entity).despawn();
+            }
+            continue;
+        };
+        let value = if role.description {
+            entry.description.as_deref().unwrap_or("")
+        } else {
+            vip_icon_text(entry.icon)
+        };
+        if text.0 != value {
+            commands.entity(entity).insert(Text::new(value));
+        }
+        if role.description {
+            let at = rows
+                .iter()
+                .find(|(entity, row, interaction, _, _)| {
+                    row.entry == role.entry
+                        && interaction.get()
+                        && guard.allows(*entity)
+                        && !owner.modal_active()
+                })
+                .map(|(_, _, _, node, transform)| {
+                    (transform.translation + node.size() * Vec2::new(-0.5, 0.5))
+                        * node.inverse_scale_factor
+                });
+            commands.entity(entity).insert(Node {
+                display: if at.is_some() && !value.is_empty() {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+                position_type: PositionType::Absolute,
+                left: px(at.unwrap_or_default().x),
+                top: px(at.unwrap_or_default().y + 3.),
+                max_width: px(240.),
+                padding: UiRect::all(px(5.)),
+                ..default()
+            });
         }
     }
     for (label, mut text, mut color) in &mut names {
@@ -341,5 +437,153 @@ pub(super) fn dialog(
         if text.0 != value {
             text.0 = value;
         }
+    }
+}
+
+#[derive(Component, Clone, Copy)]
+struct PrivateMessage {
+    generation: u64,
+    revision: u64,
+    entry: u64,
+}
+#[derive(Component)]
+struct ContactMenu;
+fn message(owner: &HostOwner, target: PrivateMessage) {
+    if !available(owner) || target.generation != owner.generation() {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.vip_panel();
+    if !panel.selected || panel.pending || panel.revision != target.revision {
+        return;
+    }
+    if let Ok(snapshot) = Snapshot::read(&panel)
+        && let Some(contact) = snapshot
+            .entries
+            .iter()
+            .find(|contact| contact.entry == target.entry)
+    {
+        play.link.chat_open_conversation(&contact.name);
+    }
+}
+fn row_keyboard(
+    mut event: On<bevy::input_focus::FocusedInput<bevy::input::keyboard::KeyboardInput>>,
+    rows: Query<&Row>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+) {
+    if event.input.state != bevy::input::ButtonState::Pressed
+        || event.input.repeat
+        || !matches!(event.input.key_code, KeyCode::Enter | KeyCode::Space)
+        || !guard.allows(event.focused_entity)
+    {
+        return;
+    }
+    if let Ok(row) = rows.get(event.focused_entity)
+        && let Some(play) = &owner.play
+    {
+        event.propagate(false);
+        message(
+            &owner,
+            PrivateMessage {
+                generation: row.generation,
+                revision: play.link.vip_panel().revision,
+                entry: row.entry,
+            },
+        );
+    }
+}
+fn row_click(
+    event: On<PointerClick>,
+    rows: Query<&Row>,
+    menus: Query<Entity, With<ContactMenu>>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut commands: Commands,
+    skins: Res<Skins>,
+) {
+    use bevy::picking::pointer::PointerButton;
+    let Ok(row) = rows.get(event.entity) else {
+        return;
+    };
+    if !guard.allows(event.entity) || !available(&owner) || row.generation != owner.generation() {
+        return;
+    }
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.vip_panel();
+    if !panel.selected || panel.pending {
+        return;
+    }
+    let target = PrivateMessage {
+        generation: row.generation,
+        revision: panel.revision,
+        entry: row.entry,
+    };
+    let swapped = (owner.settings.preferences.controls.mouse
+        == crate::play::MousePreset::LeftHanded)
+        ^ owner.settings.preferences.swap_mouse_buttons;
+    let primary = if swapped {
+        PointerButton::Secondary
+    } else {
+        PointerButton::Primary
+    };
+    if !matches!(
+        event.button,
+        PointerButton::Primary | PointerButton::Secondary
+    ) {
+        return;
+    }
+    for menu in &menus {
+        commands.entity(menu).despawn();
+    }
+    if event.button == primary {
+        if event.count >= 2 {
+            message(&owner, target);
+        }
+    } else {
+        let menu = commands
+            .spawn((
+                ContactMenu,
+                source::button(skins.buttons.clone(), 100.),
+                target,
+                Name::new("vip.message"),
+                GlobalZIndex(200),
+            ))
+            .insert(Node {
+                position_type: PositionType::Absolute,
+                top: percent(100.),
+                width: px(100.),
+                height: px(20.),
+                ..default()
+            })
+            .observe(message_activate)
+            .id();
+        let caption = commands
+            .spawn(source::button_caption("Message", skins.font.clone()))
+            .id();
+        commands.entity(menu).add_child(caption);
+        commands.entity(event.entity).add_child(menu);
+    }
+}
+fn message_activate(
+    event: On<Activate>,
+    controls: Query<&PrivateMessage>,
+    menus: Query<Entity, With<ContactMenu>>,
+    owner: NonSend<HostOwner>,
+    guard: ModalGuard,
+    mut commands: Commands,
+) {
+    if !guard.allows(event.entity) {
+        return;
+    }
+    if let Ok(target) = controls.get(event.entity) {
+        message(&owner, *target);
+    }
+    for menu in &menus {
+        commands.entity(menu).despawn();
     }
 }

@@ -237,8 +237,7 @@ fn keyboard(
                         if let Some(amount) = &state.amount
                             && let Ok(mut text) = fields.single_mut()
                         {
-                            *text = EditableText::new(amount.value.to_string());
-                            text.max_characters = Some(10);
+                            text.editor_mut().set_text(&amount.value.to_string());
                         }
                     }
                 }

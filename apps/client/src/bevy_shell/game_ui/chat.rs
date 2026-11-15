@@ -28,6 +28,9 @@ struct ChatState {
     focus: bool,
     value: String,
     pending: Option<submission::Pending>,
+    history: std::collections::VecDeque<String>,
+    recall: Option<usize>,
+    draft: String,
 }
 impl Default for ChatState {
     fn default() -> Self {
@@ -39,6 +42,9 @@ impl Default for ChatState {
             focus: false,
             value: String::new(),
             pending: None,
+            history: default(),
+            recall: None,
+            draft: String::new(),
         }
     }
 }
@@ -48,6 +54,10 @@ struct ChatRoot;
 struct Tabs;
 #[derive(Component)]
 struct Transcript;
+#[derive(Component)]
+struct TranscriptRoot;
+#[derive(Component)]
+struct TranscriptRow(usize);
 #[derive(Component)]
 struct HistoryScroll;
 #[derive(Component)]
@@ -96,8 +106,9 @@ fn set_text(text: &mut EditableText, value: &str) {
 
 fn keyboard(
     mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    held: Option<Res<ButtonInput<KeyCode>>>,
     mut focus: ResMut<InputFocus>,
-    mut fields: Query<(Entity, &Field, &mut EditableText)>,
+    mut fields: Query<(Entity, &Field, &mut EditableText), Without<Transcript>>,
     owner: NonSend<HostOwner>,
     mut state: ResMut<ChatState>,
     guard: ModalGuard,
@@ -119,6 +130,42 @@ fn keyboard(
             continue;
         }
         let focused = focus.get();
+        let shift = held
+            .as_ref()
+            .is_some_and(|keys| keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]));
+        if shift && matches!(key.key_code, KeyCode::ArrowUp | KeyCode::ArrowDown) {
+            if state.pending.is_none()
+                && !state.history.is_empty()
+                && let Some(entity) = focused
+                && let Ok((_, Field::Message, mut text)) = fields.get_mut(entity)
+                && !submission::editing(&text)
+            {
+                let next = if key.key_code == KeyCode::ArrowUp {
+                    if state.recall.is_none() {
+                        state.draft = text.value().to_string();
+                    }
+                    Some(
+                        state
+                            .recall
+                            .map_or(state.history.len() - 1, |index| index.saturating_sub(1)),
+                    )
+                } else {
+                    state
+                        .recall
+                        .and_then(|index| (index + 1 < state.history.len()).then_some(index + 1))
+                };
+                if key.key_code == KeyCode::ArrowUp || state.recall.is_some() {
+                    let value = next
+                        .map_or_else(|| state.draft.clone(), |index| state.history[index].clone());
+                    state.recall = next;
+                    set_text(&mut text, &value);
+                }
+            }
+            continue;
+        }
+        if key.text.is_some() || matches!(key.key_code, KeyCode::Backspace | KeyCode::Delete) {
+            state.recall = None;
+        }
         match key.key_code {
             KeyCode::Escape => {
                 state.pending = None;
@@ -154,9 +201,10 @@ fn project(
     skins: Res<Skins>,
     mut state: ResMut<ChatState>,
     mut previous: Local<Option<oteryn_client_ui::chat::ChatPanel>>,
-    mut fields: Query<(Entity, &Field, &mut EditableText)>,
+    mut fields: Query<(Entity, &Field, &mut EditableText), Without<Transcript>>,
     mut focus: ResMut<InputFocus>,
-    mut texts: Query<&mut Text, With<Transcript>>,
+    roots: Query<Entity, With<TranscriptRoot>>,
+    mut texts: Query<(Entity, &TranscriptRow, &mut EditableText, &mut TextColor), With<Transcript>>,
     mut captions: Query<&mut Text, Without<Transcript>>,
     mode_buttons: Query<&Children, With<ModeButton>>,
     chat_mode_buttons: Query<&Children, With<ChatModeButton>>,
@@ -175,6 +223,9 @@ fn project(
                 }
             }
             state.value.clear();
+            state.history.clear();
+            state.recall = None;
+            state.draft.clear();
             state.focus = false;
         }
         return;
@@ -185,6 +236,9 @@ fn project(
         state.mode = Mode::Say;
         state.focus = false;
         state.value.clear();
+        state.history.clear();
+        state.recall = None;
+        state.draft.clear();
         state.tabs.clear();
         for (entity, _, mut text) in &mut fields {
             set_text(&mut text, "");
@@ -198,14 +252,37 @@ fn project(
     let mut changed = false;
     // Cache only the last projection; all edits and commands still belong to PlayLink.
     if previous.as_ref() != Some(&panel) {
-        let transcript = oteryn_client_ui::chat::panel_text(&panel);
-        for mut text in &mut texts {
-            if text.0 != transcript {
-                text.0.clone_from(&transcript);
+        let transcript = widgets::transcript_rows(&panel);
+        let mut retained = std::collections::HashSet::new();
+        for (entity, row, mut editor, mut color) in &mut texts {
+            if let Some((text, next_color)) = transcript.get(row.0) {
+                retained.insert(row.0);
+                if editor.value() != text.as_str() {
+                    set_text(&mut editor, text);
+                    changed = true;
+                }
+                if color.0 != *next_color {
+                    color.0 = *next_color;
+                }
+            } else {
+                if focus.get() == Some(entity) {
+                    focus.clear();
+                }
+                commands.entity(entity).despawn();
                 changed = true;
             }
         }
+        if let Ok(root) = roots.single() {
+            for (index, (text, color)) in transcript.iter().enumerate() {
+                if !retained.contains(&index) {
+                    let row = widgets::transcript_row(&mut commands, &skins, index, text, *color);
+                    commands.entity(root).add_child(row);
+                    changed = true;
+                }
+            }
+        }
     }
+
     // Follow new messages only when the user was already at the end of the log.
     if changed {
         for (node, mut position) in &mut scroll {

@@ -329,3 +329,58 @@ fn measured_tooltip_is_clamped_in_physical_window_at_scaled_ui() -> TestResult {
     assert!(top * 2. + 84. <= 720.);
     Ok(())
 }
+
+#[test]
+fn help_lens_captures_selection_and_finishes_retained_owner() -> TestResult {
+    use bevy::picking::{
+        backend::HitData,
+        events::Pointer,
+        pointer::{Location, PointerButton, PointerId},
+    };
+    let mut app = fixture(0)?;
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .lens_toggle()
+    );
+    app.update();
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Name, &Node)>()
+        .iter(app.world())
+        .find_map(|(entity, name, node)| {
+            (name.as_str() == "Help lens" && node.display != Display::None).then_some(entity)
+        })
+        .ok_or("help lens capture surface")?;
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(
+            PointerId::Mouse,
+            Location {
+                target: bevy::camera::NormalizedRenderTarget::None {
+                    width: 1024,
+                    height: 720,
+                },
+                position: Vec2::ZERO,
+            },
+        ),
+        button: PointerButton::Primary,
+        hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+        duration: std::time::Duration::ZERO,
+        count: 1,
+    });
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .lens_active()
+    );
+    Ok(())
+}

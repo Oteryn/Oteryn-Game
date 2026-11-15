@@ -84,6 +84,7 @@ fn project(
     keys: Res<ButtonInput<KeyCode>>,
     skins: Res<Skins>,
     mut state: ResMut<State>,
+    guard: super::modal::ModalGuard,
 ) {
     let requested = owner.take_satellite_request();
     let Some(play) = owner.play.as_ref() else {
@@ -108,7 +109,8 @@ fn project(
             ..State::at(play.view.satellite_player())
         };
     }
-    if state.open && keys.just_pressed(KeyCode::Escape) {
+    let keyboard = !owner.modal_active() && state.panel.is_some_and(|panel| guard.allows(panel));
+    if state.open && keyboard && keys.just_pressed(KeyCode::Escape) {
         state.open = false;
     }
     if !state.open {
@@ -119,16 +121,16 @@ fn project(
         return;
     }
     let step = 16 / state.scale.max(1);
-    if keys.pressed(KeyCode::ArrowLeft) {
+    if keyboard && keys.pressed(KeyCode::ArrowLeft) {
         state.x = state.x.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowRight) {
+    if keyboard && keys.pressed(KeyCode::ArrowRight) {
         state.x = state.x.saturating_add(step);
     }
-    if keys.pressed(KeyCode::ArrowUp) {
+    if keyboard && keys.pressed(KeyCode::ArrowUp) {
         state.y = state.y.saturating_sub(step);
     }
-    if keys.pressed(KeyCode::ArrowDown) {
+    if keyboard && keys.pressed(KeyCode::ArrowDown) {
         state.y = state.y.saturating_add(step);
     }
     use std::hash::{Hash, Hasher};
@@ -224,7 +226,6 @@ fn project(
     play.view.satellite_map(|cells, markers| {
         for (&(floor, x, y), &color) in cells {
             if let Some((left, top)) = state.point(x, y, floor) {
-                let shade = f32::from(color) / 255.;
                 let cell = commands
                     .spawn((
                         Node {
@@ -235,7 +236,7 @@ fn project(
                             height: px(state.scale as f32),
                             ..default()
                         },
-                        BackgroundColor(Color::srgb(shade, shade, shade)),
+                        BackgroundColor(super::minimap::palette_color(color)),
                     ))
                     .id();
                 commands.entity(canvas).add_child(cell);
@@ -257,6 +258,13 @@ fn project(
                         },
                     ))
                     .id();
+                let color = [180, 5, 30, 210]
+                    .get(usize::from(marker.color))
+                    .copied()
+                    .unwrap_or(0);
+                commands
+                    .entity(label)
+                    .insert(TextColor(super::minimap::palette_color(color)));
                 commands.entity(canvas).add_child(label);
             }
         }
@@ -423,6 +431,71 @@ mod tests {
         );
         open(&mut app)?;
         assert_eq!(modals(&mut app), base + 1);
+        Ok(())
+    }
+    #[test]
+    fn satellite_keyboard_waits_for_top_modal() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(host()?)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .route_input(&[chord()?], false);
+        app.update();
+        let x = app.world().resource::<State>().x;
+        app.world_mut()
+            .spawn((super::super::GameModal, GlobalZIndex(300), Node::default()));
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ArrowRight);
+        app.update();
+        assert!(app.world().resource::<State>().open);
+        assert_eq!(app.world().resource::<State>().x, x);
+        Ok(())
+    }
+
+    #[test]
+    fn satellite_projects_terrain_palette_and_marker_colours()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut owner = host()?;
+        owner
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view
+            .bevy_minimap_colours_fixture();
+        owner.route_input(&[chord()?], false);
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+            .init_asset::<Font>()
+            .init_asset::<Image>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .insert_non_send(owner)
+            .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&BackgroundColor>()
+                .iter(app.world())
+                .any(|color| color.0 == Color::srgb_u8(255, 0, 0)),
+            "terrain must use the sidebar palette"
+        );
+        assert!(
+            app.world_mut()
+                .query::<(&Text, &TextColor)>()
+                .iter(app.world())
+                .any(|(text, color)| text.0.contains("Blue marker")
+                    && color.0 == Color::srgb_u8(0, 0, 255))
+        );
         Ok(())
     }
 }

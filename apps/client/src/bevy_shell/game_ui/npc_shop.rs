@@ -226,6 +226,17 @@ fn project(
         };
         state.widgets = Some(widgets::build(&mut commands, &skins, generation));
     }
+    let quotes = panel.live.quotes();
+    if !quotes.is_empty() && !quotes.iter().any(|quote| Some(quote.side) == state.side) {
+        state.side = Some(
+            if quotes.iter().any(|quote| quote.side == NpcTradeSide::Buy) {
+                NpcTradeSide::Buy
+            } else {
+                NpcTradeSide::Sell
+            },
+        );
+        state.selection = None;
+    }
     let mut amount = "1".to_owned();
     if !fresh {
         for (field, value) in &editors {

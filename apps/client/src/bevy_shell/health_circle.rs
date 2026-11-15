@@ -22,7 +22,7 @@ fn fill(current: u32, maximum: u32) -> f32 {
     }
 }
 
-fn health_colour(current: u32, maximum: u32) -> Color {
+pub(super) fn health_colour(current: u32, maximum: u32) -> Color {
     // OTClient floors the percentage before comparing these strict thresholds.
     let percent = if maximum == 0 {
         0
@@ -87,6 +87,13 @@ fn project(
                 Color::srgb_u8(0, 70, 180),
             ),
         ] {
+            if !(if mana {
+                preferences.arcs.mana
+            } else {
+                preferences.arcs.health
+            }) {
+                continue;
+            }
             let filled = fill(current, maximum) * SEGMENTS as f32;
             for index in 0..SEGMENTS {
                 let portion = (filled - index as f32).clamp(0., 1.);
@@ -185,6 +192,12 @@ mod tests {
             .preferences
             .arcs
             .opacity = 40;
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.settings.preferences.arcs.health = true;
+            owner.settings.preferences.arcs.mana = true;
+        }
+
         app.update();
         let mut lengths = [0.; 2];
         for (segment, sprite) in app
@@ -197,6 +210,27 @@ mod tests {
         }
         assert!((lengths[0] / lengths[1] - 0.5).abs() < 0.001);
         assert!(lengths[0] > 0.);
+        for mana in [false, true] {
+            {
+                let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+                owner.settings.preferences.arcs.health = !mana;
+                owner.settings.preferences.arcs.mana = mana;
+            }
+            app.update();
+            assert!(
+                app.world_mut()
+                    .query::<&CircleSegment>()
+                    .iter(app.world())
+                    .all(|segment| segment.mana == mana)
+            );
+            assert!(segment_count(&mut app) > 0);
+        }
+        {
+            let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+            owner.settings.preferences.arcs.health = true;
+            owner.settings.preferences.arcs.mana = true;
+        }
+
         outbox.bevy_hud_fixture(
             &[],
             Some(ActorVitals {

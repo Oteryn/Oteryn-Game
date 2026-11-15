@@ -241,3 +241,16 @@ fn clear_oldest_utility_survives_session_publish_and_new_chat() -> Result<(), Er
         .join()
         .map_err(|_| "chat clear test thread panicked")?
 }
+
+#[cfg(feature = "bevy-shell")]
+impl crate::play::Outbox {
+    pub(crate) fn bevy_chat_guild_member(&self) {
+        let mut mailbox = crate::play::mailbox::lock(&self.0);
+        mailbox.chat.guild_selected = true;
+        mailbox.chat.guild = oteryn_session::GuildRoomState::Member {
+            guild_id: [1; 16],
+            rank: 1,
+            motd: String::new(),
+        };
+    }
+}

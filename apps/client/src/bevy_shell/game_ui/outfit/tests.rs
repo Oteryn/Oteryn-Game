@@ -144,3 +144,112 @@ fn outfit_shortcut_follows_the_rebound_chord_and_the_input_fence()
     assert!(open(&owner), "the rebound chord opens the outfit window");
     Ok(())
 }
+
+#[test]
+fn outfit_escape_waits_for_top_modal() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut value = panel();
+    value.open = true;
+    outbox.bevy_outfit_test_panel(value);
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    owner.phase = crate::bevy_shell::owner::Phase::Playing;
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let higher = app
+        .world_mut()
+        .spawn((GameModal, GlobalZIndex(300), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    app.world_mut().despawn(higher);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .appearance_panel()
+            .open
+    );
+    Ok(())
+}
+
+#[test]
+fn outfit_content_updates_preserve_scroll_position() -> Result<(), Box<dyn std::error::Error>> {
+    let (link, _commands, outbox) = crate::play::play_channel();
+    let mut value = panel();
+    value.open = true;
+    outbox.bevy_outfit_test_panel(value);
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let root = app
+        .world_mut()
+        .query_filtered::<Entity, (With<bevy::ui_widgets::ScrollArea>, With<Window>)>()
+        .single(app.world())?;
+    app.world_mut()
+        .entity_mut(root)
+        .insert(ScrollPosition(Vec2::new(0., 100.)));
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .appearance_edit(1, "1".into());
+    app.update();
+    let root = app
+        .world_mut()
+        .query_filtered::<Entity, (With<bevy::ui_widgets::ScrollArea>, With<Window>)>()
+        .single(app.world())?;
+    assert_eq!(
+        app.world()
+            .get::<ScrollPosition>(root)
+            .ok_or("scroll position")?
+            .0,
+        Vec2::new(0., 100.)
+    );
+    Ok(())
+}

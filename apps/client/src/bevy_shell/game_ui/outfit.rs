@@ -31,6 +31,7 @@ struct State {
     image: Option<Handle<Image>>,
 }
 pub(super) fn install(app: &mut App) {
+    super::install::install_scroll_memory(app);
     app.init_resource::<State>().add_systems(Update, project);
 }
 fn outfits(panel: &Panel) -> Vec<&str> {
@@ -164,6 +165,7 @@ fn project(
     skin: Res<Skins>,
     mut state: ResMut<State>,
     mut images: ResMut<Assets<Image>>,
+    guard: ModalGuard,
 ) {
     let Some(play) = &owner.play else {
         for entity in &windows {
@@ -172,7 +174,10 @@ fn project(
         state.rendered = None;
         return;
     };
-    if keys.just_pressed(KeyCode::Escape) {
+    if keys.just_pressed(KeyCode::Escape)
+        && !owner.modal_active()
+        && windows.iter().any(|entity| guard.allows(entity))
+    {
         play.link.appearance_close();
     }
     let panel = play.link.appearance_panel();
@@ -207,6 +212,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("outfit", 0),
             BackgroundColor(Color::srgb(0.16, 0.16, 0.16)),
         ))
         .id();

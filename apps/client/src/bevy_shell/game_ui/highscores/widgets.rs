@@ -141,6 +141,7 @@ pub(super) fn body(
     let scroll = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("highscores", 0),
             Node {
                 width: percent(100.),
                 flex_grow: 1.,

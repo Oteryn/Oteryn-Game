@@ -128,6 +128,7 @@ pub(super) fn render(
     let rows = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("cyclopedia", 0),
             source::frame(skin.inset.clone(), [1.; 4]),
             Node {
                 width: percent(100.),

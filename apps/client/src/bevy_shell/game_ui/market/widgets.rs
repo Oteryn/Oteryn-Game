@@ -77,7 +77,7 @@ pub(super) fn render(
     commands.entity(root).add_child(content);
     let left = pane(commands, skin, content, px(160.));
     label(commands, skin, left, "Categories");
-    let categories = scroll(commands, left, px(137.));
+    let categories = scroll(commands, left, px(137.), 0);
     button(
         commands,
         skin,
@@ -123,7 +123,7 @@ pub(super) fn render(
         .id();
     commands.entity(left).add_child(field);
     button(commands, skin, left, key, Kind::Search, "Search", 140.);
-    let items = scroll(commands, left, Val::Auto);
+    let items = scroll(commands, left, Val::Auto, 1);
     for (index, ware) in panel.details.items.iter().enumerate() {
         button(
             commands,
@@ -164,7 +164,7 @@ pub(super) fn render(
         70.,
     );
     let right = pane(commands, skin, content, Val::Auto);
-    let right = scroll(commands, right, Val::Auto);
+    let right = scroll(commands, right, Val::Auto, 2);
     label(
         commands,
         skin,
@@ -183,7 +183,7 @@ pub(super) fn render(
                 let book = pane(commands, skin, books, percent(49.));
                 label(commands, skin, book, title);
                 label(commands, skin, book, "Amount       Price       Total");
-                let offers = scroll(commands, book, px(190.));
+                let offers = scroll(commands, book, px(190.), 2 + u32::from(side));
                 let mut count = 0;
                 for (index, offer) in
                     panel.rows.iter().enumerate().filter(|(_, offer)| {
@@ -237,7 +237,7 @@ pub(super) fn render(
                 "Refresh offers",
                 110.,
             );
-            let stats = scroll(commands, right, px(130.));
+            let stats = scroll(commands, right, px(130.), 5);
             label(
                 commands,
                 skin,
@@ -318,10 +318,11 @@ pub(super) fn row(commands: &mut Commands, parent: Entity) -> Entity {
     commands.entity(parent).add_child(entity);
     entity
 }
-pub(super) fn scroll(commands: &mut Commands, parent: Entity, height: Val) -> Entity {
+pub(super) fn scroll(commands: &mut Commands, parent: Entity, height: Val, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("market", role),
             Node {
                 width: percent(100.),
                 height,

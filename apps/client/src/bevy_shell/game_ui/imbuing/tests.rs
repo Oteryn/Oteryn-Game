@@ -281,3 +281,55 @@ fn imbuing_stale_controls_cannot_send_or_confirm() -> TestResult {
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn imbuing_blocking_dialog_escape_respects_top_modal() -> Result<(), Box<dyn std::error::Error>> {
+    let (owner, _commands, _outbox) = host()?;
+    owner.play.as_ref().ok_or("play")?.link.open_imbue();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    let higher = app
+        .world_mut()
+        .spawn((super::super::GameModal, GlobalZIndex(300), Node::default()))
+        .id();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
+    app.world_mut().despawn(higher);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Escape);
+    app.update();
+    assert!(
+        !app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .imbue_panel()
+            .open
+    );
+    Ok(())
+}

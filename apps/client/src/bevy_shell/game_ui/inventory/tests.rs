@@ -208,6 +208,7 @@ fn live_inventory_delta_updates_visible_cells_without_inventing_items() -> TestR
         Startup,
         (super::super::super::ui::setup, super::super::setup).chain(),
     );
+    app.add_systems(Update, super::super::project);
     install(&mut app);
     app.update();
     let visible: Vec<_> = app
@@ -217,6 +218,22 @@ fn live_inventory_delta_updates_visible_cells_without_inventing_items() -> TestR
         .map(|icon| icon.0)
         .collect();
     assert_eq!(visible, vec![item]);
+    let (slot_entity, slot) = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .find_map(|(entity, slot)| (slot.item == Some(item)).then_some((entity, *slot)))
+        .ok_or("visible slot")?;
+    app.world_mut().trigger(Activate {
+        entity: slot_entity,
+    });
+    assert_eq!(app.world().resource::<InventoryUi>().selection, Some(slot));
+    app.update();
+    assert_eq!(
+        app.world().get::<Slot>(slot_entity),
+        Some(&slot),
+        "selection must retain picking identity"
+    );
     let changed = entry(11, 4)?;
     inventory(&outbox, vec![changed]);
     app.update();
@@ -378,3 +395,24 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
 
 #[path = "tests/amount.rs"]
 mod amount;
+
+#[test]
+fn fallback_backpack_contents_can_be_dragged() -> TestResult {
+    let (link, _commands, outbox) = play_channel();
+    let item = entry(71, 3)?;
+    inventory(&outbox, vec![item]);
+    let owner = host(link)?;
+    let slot = Slot {
+        generation: owner.generation(),
+        location: Location::Inventory,
+        item: Some(item),
+        destination: Some(ItemMoveDestination::MainBackpack),
+    };
+    assert_eq!(
+        slot.drag(&owner)
+            .ok_or("contents must be draggable")?
+            .handle,
+        item.handle
+    );
+    Ok(())
+}

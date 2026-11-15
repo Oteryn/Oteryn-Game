@@ -35,7 +35,12 @@ pub(in super::super) fn list(
             "Offer History"
         },
     );
-    let list = super::super::widgets::scroll(commands, parent, Val::Auto);
+    let list = super::super::widgets::scroll(
+        commands,
+        parent,
+        Val::Auto,
+        if panel.view == MarketView::Own { 6 } else { 7 },
+    );
     for index in oteryn_client_ui::market::visible_rows(panel) {
         let offer = &panel.rows[index];
         label(

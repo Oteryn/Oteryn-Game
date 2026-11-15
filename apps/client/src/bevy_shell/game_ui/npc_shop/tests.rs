@@ -216,3 +216,49 @@ fn floating_shop_remains_nonmodal_and_actual_controls_respect_higher_modal() -> 
 mod conversation_tests;
 #[path = "text_tests.rs"]
 mod text_tests;
+
+#[test]
+fn sell_only_catalogue_initially_selects_available_side() -> Result {
+    let (host, _, outbox) = fixture()?;
+    outbox.push(vec![SessionEvent::NpcTradeWindow(AppliedDelta {
+        server_sequence: 8,
+        base_revision: 7,
+        new_revision: 8,
+        value: npc_service::NpcTradeWindow {
+            open: Some((
+                EntityRef {
+                    identity: [9; 16],
+                    generation: 2,
+                },
+                8,
+            )),
+            offers: vec![npc_service::NpcOffer {
+                item_definition_ref: 42,
+                side: NpcTradeSide::Sell,
+                count: 1,
+                unit_price: 12,
+            }],
+        },
+    })]);
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        source::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<InputFocus>()
+    .insert_non_send(host)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install(&mut app);
+    app.update();
+    assert_eq!(
+        app.world().resource::<State>().side,
+        Some(NpcTradeSide::Sell)
+    );
+    assert!(app.world_mut().query::<&Action>().iter(app.world()).any(
+        |action| matches!(action.kind, Kind::Select(quote) if quote.side == NpcTradeSide::Sell)
+    ));
+    Ok(())
+}

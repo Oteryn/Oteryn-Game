@@ -384,6 +384,7 @@ fn project(
                 ..default()
             },
             bevy::ui_widgets::ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("task_board", 0),
         ))
         .id();
     commands.entity(root).add_child(frame);

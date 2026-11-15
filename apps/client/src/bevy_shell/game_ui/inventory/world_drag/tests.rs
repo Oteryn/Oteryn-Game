@@ -386,3 +386,37 @@ mod fence_tests;
 
 #[path = "tests/modes.rs"]
 mod mode_tests;
+
+#[test]
+fn world_drag_accepts_configured_left_handed_button() -> TestResult {
+    let (mut owner, mut ui, mut gesture, viewport, point, _rx) = fixture(false, false)?;
+    owner.settings.preferences.controls.mouse = crate::play::MousePreset::LeftHanded;
+    let press = NormalizedInputEvent::MouseButton {
+        button: MouseButton::SECONDARY,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::NONE,
+    };
+    step(
+        &mut owner,
+        &mut ui,
+        &mut gesture,
+        viewport,
+        point,
+        motion(point)?,
+    )?;
+    step(&mut owner, &mut ui, &mut gesture, viewport, point, press)?;
+    assert!(
+        gesture.candidate.is_some(),
+        "configured drag press must reach bridge"
+    );
+    step(
+        &mut owner,
+        &mut ui,
+        &mut gesture,
+        viewport,
+        point + Vec2::new(8., 0.),
+        motion(point + Vec2::new(8., 0.))?,
+    )?;
+    assert!(gesture.active);
+    Ok(())
+}

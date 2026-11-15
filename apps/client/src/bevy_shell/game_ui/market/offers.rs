@@ -281,7 +281,7 @@ fn validate(
                 && let Some(amount) = amount(panel, row, &text.value().to_string())
                 && text.value().to_string() != amount.to_string()
             {
-                *text = EditableText::new(amount.to_string());
+                text.editor_mut().set_text(&amount.to_string());
             }
         }
     }

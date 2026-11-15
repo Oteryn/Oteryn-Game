@@ -42,7 +42,7 @@ pub(super) fn render(
     state: &State,
     snapshot: &Snapshot,
 ) -> Entity {
-    let root = column(commands, frame, Val::Auto);
+    let root = column(commands, frame, Val::Auto, 0);
     let panel = &snapshot.store;
     if let Some(quote) = &state.confirmation {
         label(commands, skin, root, "Confirm purchase");
@@ -141,7 +141,7 @@ pub(super) fn render(
                     || snapshot.history.selected && !snapshot.history.pending),
         );
     }
-    let body = column(commands, root, Val::Auto);
+    let body = column(commands, root, Val::Auto, 1);
     match state.page {
         Page::Products => products(commands, skin, body, key, panel, &state.fields),
         Page::Gift | Page::Transfer => gift(commands, skin, body, key, state, panel),
@@ -245,11 +245,11 @@ fn products(
         column_gap: px(8.),
         ..default()
     });
-    let categories = column(commands, content, px(170.));
+    let categories = column(commands, content, px(170.), 2);
     label(commands, skin, categories, "Categories");
-    let list = column(commands, content, px(270.));
+    let list = column(commands, content, px(270.), 3);
     label(commands, skin, list, "Products");
-    let details = column(commands, content, Val::Auto);
+    let details = column(commands, content, Val::Auto, 4);
     label(commands, skin, details, "Description / offer details");
     let ready = panel.selected && !panel.pending && panel.confirmed_purchase.is_none();
     if let Some(page) = &panel.browser.page {
@@ -446,10 +446,11 @@ fn gift(
         );
     }
 }
-fn column(commands: &mut Commands, parent: Entity, width: Val) -> Entity {
+fn column(commands: &mut Commands, parent: Entity, width: Val, role: u32) -> Entity {
     let entity = commands
         .spawn((
             ScrollArea,
+            crate::bevy_shell::game_ui::install::RememberScroll("store", role),
             Node {
                 width,
                 min_width: px(0.),

@@ -34,13 +34,21 @@ pub(super) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {
         Control::Panel(id) => {
             if let Some(play) = &owner.play {
                 let mut preferences = owner.settings.preferences.clone();
-                if !preferences.panel_visible(id) {
+                let visible =
+                    preferences.panel_visible(id) || id == "vip" && play.link.vip_is_open();
+                if visible {
+                    preferences.visible_panels.retain(|panel| panel != id);
+                } else {
                     preferences.visible_panels.push(id.into());
-                    owner.settings.apply(preferences);
                 }
+                owner.settings.apply(preferences);
                 if id == "vip" {
-                    play.link
-                        .vip_request(oteryn_client_ui::vip::Intent::Query(0));
+                    if visible {
+                        play.link.vip_close();
+                    } else {
+                        play.link
+                            .vip_request(oteryn_client_ui::vip::Intent::Query(0));
+                    }
                 }
             }
         }
@@ -138,5 +146,38 @@ pub(in crate::bevy_shell) fn project_toolbar(
                 Display::Flex
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn sidebar_toolbar_buttons_toggle_the_settings_owner() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut owner = HostOwner::new(None)?;
+        let (link, _commands, _outbox) = crate::play::play_channel();
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+            link,
+            view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        });
+        for id in ["battle", "chat", "inventory", "minimap", "vip"] {
+            let mut preferences = owner.settings.preferences.clone();
+            if !preferences.panel_visible(id) {
+                preferences.visible_panels.push(id.into());
+            }
+            owner.settings.apply(preferences);
+            assert!(open_toolbar(&mut owner, Control::Panel(id)));
+            assert!(
+                !owner.settings.preferences.panel_visible(id),
+                "{id} must close"
+            );
+            assert!(open_toolbar(&mut owner, Control::Panel(id)));
+            assert!(
+                owner.settings.preferences.panel_visible(id),
+                "{id} must reopen"
+            );
+        }
+        Ok(())
     }
 }
