@@ -315,6 +315,7 @@ fn slot_node(
         .id();
     commands.entity(parent).add_child(entity);
     if let Some(item) = slot.item {
+        super::tooltips::attach(commands, skins, entity, item);
         commands
             .entity(entity)
             .insert(super::super::ItemDragSource {

@@ -13,6 +13,7 @@ mod bulk_tests;
 mod dialogs;
 #[cfg(test)]
 mod tests;
+mod tooltips;
 mod view;
 mod world_drag;
 pub(in crate::bevy_shell) use world_drag::ItemPointerCapture;
@@ -158,6 +159,14 @@ pub(super) fn install(app: &mut App) {
         )
             .chain(),
     );
+    app.init_resource::<tooltips::HoverTarget>()
+        .init_resource::<UiScale>()
+        .add_systems(
+            Update,
+            (tooltips::hover, tooltips::project)
+                .chain()
+                .after(view::project),
+        );
     amount::install(app);
     bulk::install(app);
     world_drag::install(app);
