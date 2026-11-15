@@ -63,14 +63,14 @@ impl PreferenceStore {
             }
         }
         preferences.validate().map_err(io::Error::other)?;
+        preferences.reconcile_controls(None);
         Ok(preferences)
     }
 
     /// Exports never replace existing files, including the active preferences.
     pub fn export_to(preferences: &ReferencePreferences, path: &Path) -> io::Result<()> {
         use std::io::Write;
-        preferences.validate().map_err(io::Error::other)?;
-        let bytes = serde_json::to_vec_pretty(preferences).map_err(io::Error::other)?;
+        let bytes = Self::serialized(preferences)?;
         let mut file = std::fs::OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -82,6 +82,15 @@ impl PreferenceStore {
         Ok(())
     }
 
+    fn serialized(preferences: &ReferencePreferences) -> io::Result<Vec<u8>> {
+        preferences.validate().map_err(io::Error::other)?;
+        let bytes = serde_json::to_vec_pretty(preferences).map_err(io::Error::other)?;
+        if bytes.len() > 1 << 20 {
+            return Err(io::Error::other(tr!("Settings file exceeds 1 MiB")));
+        }
+        Ok(bytes)
+    }
+
     pub fn backup_path(&self) -> PathBuf {
         self.path.with_extension("backup.json")
     }
@@ -91,7 +100,11 @@ impl PreferenceStore {
         preferences: ReferencePreferences,
         previous: &ReferencePreferences,
     ) -> io::Result<()> {
-        preferences.validate().map_err(io::Error::other)?;
+        Self::serialized(&preferences)?;
+        Self::serialized(previous)?;
+        if self.path.try_exists()? {
+            Self::read_transfer(&self.path)?;
+        }
         let mut backup = Self::defaults(self.backup_path());
         backup.apply(previous.clone())?;
         self.apply(preferences)
@@ -120,11 +133,13 @@ impl PreferenceStore {
     }
 
     pub fn apply(&mut self, preferences: ReferencePreferences) -> io::Result<()> {
-        preferences.validate().map_err(io::Error::other)?;
+        let bytes = Self::serialized(&preferences)?;
+        if self.path.try_exists()? {
+            Self::read_transfer(&self.path)?;
+        }
         if let Some(parent) = self.path.parent().filter(|p| !p.as_os_str().is_empty()) {
             std::fs::create_dir_all(parent)?;
         }
-        let bytes = serde_json::to_vec_pretty(&preferences).map_err(io::Error::other)?;
         let temporary = self.path.with_extension("json.tmp");
         {
             use std::io::Write;
@@ -345,5 +360,83 @@ mod native_configuration_path_tests {
             ),
             Some(native)
         );
+    }
+}
+
+#[cfg(test)]
+mod size_limit_tests {
+    use super::*;
+    #[test]
+    fn oversized_writes_preserve_existing_stores() -> Result<(), Box<dyn std::error::Error>> {
+        let root = std::env::temp_dir().join(format!("preference-size-{}", std::process::id()));
+        std::fs::create_dir_all(&root)?;
+        let path = root.join("settings.json");
+        let mut store = PreferenceStore::defaults(path.clone());
+        store.apply(ReferencePreferences::default())?;
+        let original = std::fs::read(&path)?;
+        let mut oversized = ReferencePreferences::default();
+        oversized.custom_hotkeys.clear();
+        for modifier in ["SUPER+", "CTRL+SUPER+", "ALT+SUPER+"] {
+            for key in 'A'..='Z' {
+                if oversized.custom_hotkeys.len() == 64 {
+                    break;
+                }
+                let chord = format!("{modifier}{key}");
+                let _ = oversized.assign_custom_hotkey(
+                    &chord,
+                    super::super::CustomAction::Text {
+                        text: "x".repeat(1020),
+                        send: true,
+                    },
+                );
+            }
+        }
+        for index in 0..16 {
+            oversized.save_hotkey_profile(&format!("Snapshot {index}"))?;
+        }
+        oversized.validate()?;
+        assert!(serde_json::to_vec_pretty(&oversized)?.len() > 1 << 20);
+        assert!(store.apply(oversized.clone()).is_err());
+        assert_eq!(std::fs::read(&path)?, original);
+        assert_eq!(store.preferences(), &ReferencePreferences::default());
+        let export = root.join("export.json");
+        assert!(PreferenceStore::export_to(&oversized, &export).is_err());
+        assert!(!export.exists());
+        std::fs::write(store.backup_path(), b"previous backup")?;
+        assert!(
+            store
+                .replace_with_backup(oversized.clone(), &ReferencePreferences::default())
+                .is_err()
+        );
+        assert_eq!(std::fs::read(store.backup_path())?, b"previous backup");
+        assert!(
+            store
+                .replace_with_backup(ReferencePreferences::default(), &oversized)
+                .is_err()
+        );
+        assert_eq!(std::fs::read(&path)?, original);
+        std::fs::write(&path, vec![b' '; (1 << 20) + 1])?;
+        let rejected = std::fs::read(&path)?;
+        let mut recovered = super::super::SettingsState::new(Some(path.clone()));
+        recovered.apply(ReferencePreferences::default());
+        assert_eq!(std::fs::read(&path)?, rejected);
+        let backup_preferences = ReferencePreferences {
+            ui_scale: 130,
+            ..Default::default()
+        };
+        let backup_bytes = serde_json::to_vec_pretty(&backup_preferences)?;
+        std::fs::write(store.backup_path(), &backup_bytes)?;
+        assert!(
+            store
+                .replace_with_backup(
+                    ReferencePreferences::default(),
+                    &ReferencePreferences::default()
+                )
+                .is_err()
+        );
+        assert_eq!(std::fs::read(store.backup_path())?, backup_bytes);
+        assert_eq!(std::fs::read(&path)?, rejected);
+        std::fs::remove_dir_all(root)?;
+        Ok(())
     }
 }

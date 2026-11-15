@@ -219,3 +219,38 @@ fn screenshot_editors_reconcile_destinations_and_independent_backlog_modes() {
     assert_eq!(disabled.backlog_seconds, 0);
     assert_eq!(original.backlog_seconds, 3);
 }
+
+#[test]
+fn screenshot_alias_manual_capture_uses_the_effective_absolute_directory()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root =
+        std::env::temp_dir().join(format!("effective-manual-capture-{}", std::process::id()));
+    let mut state = SettingsState::new(None);
+    let mut preferences = state.preferences.clone();
+    preferences.screenshots.directory = root.to_string_lossy().into_owned();
+    preferences.screenshots.folder = format!("ignored-relative-capture-{}", std::process::id());
+    state.apply(preferences);
+    state.request_screenshot();
+    let path = state
+        .take_screenshot(&mut Source(Vec::new()))?
+        .ok_or("capture missing")?;
+    let actual = path.parent().ok_or("capture directory")?.to_path_buf();
+    std::fs::remove_file(path)?;
+    std::fs::remove_dir(&actual)?;
+    assert_eq!(actual, root);
+    Ok(())
+}
+
+#[test]
+fn screenshot_alias_pixel_writer_rejects_relative_folders() -> Result<(), Box<dyn std::error::Error>>
+{
+    let folder = format!("relative-pixel-capture-{}", std::process::id());
+    let result = Pixels::new(1, 1, vec![0, 0, 0, 255])?.save(&folder);
+    if let Ok(path) = &result {
+        std::fs::remove_file(path)?;
+        std::fs::remove_dir(&folder)?;
+    }
+    assert!(result.is_err());
+    assert!(!std::path::Path::new(&folder).exists());
+    Ok(())
+}

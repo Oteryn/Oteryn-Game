@@ -51,6 +51,12 @@ impl Pixels {
         if folder.trim().is_empty() {
             return Err(io::Error::other(tr!("Choose a screenshot folder")));
         }
+        if !std::path::Path::new(folder).is_absolute() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Choose an absolute screenshot folder",
+            ));
+        }
         std::fs::create_dir_all(folder)?;
         static SEQUENCE: AtomicU64 = AtomicU64::new(0);
         let stamp = std::time::SystemTime::now()
@@ -120,9 +126,10 @@ impl SettingsState {
         if !std::mem::take(&mut self.screenshot_requested) {
             return Ok(None);
         }
+        let preferences = self.preferences.screenshots.effective();
         source
-            .capture(self.preferences.screenshots.game_only)?
-            .save(&self.preferences.screenshots.folder)
+            .capture(preferences.game_only)?
+            .save(&preferences.directory)
             .map(Some)
     }
 }

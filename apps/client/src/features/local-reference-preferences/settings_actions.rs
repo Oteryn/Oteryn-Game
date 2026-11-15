@@ -190,6 +190,7 @@ impl SettingsState {
             store,
             preferences: {
                 let mut preferences = preferences;
+                preferences.reconcile_controls(None);
                 preferences.miscellaneous = base_path
                     .as_ref()
                     .and_then(|path| super::super::MiscellaneousPreferences::read(&path.with_extension("session-options.json")).ok())
@@ -229,12 +230,25 @@ impl SettingsState {
         chat_open: bool,
         now: std::time::Duration,
     ) -> Vec<NormalizedInputEvent> {
-        self.control_input
-            .route(&self.preferences.controls, events, chat_open, now)
+        let mut controls = self.preferences.controls.clone();
+        if self.preferences.swap_mouse_buttons {
+            controls.mouse = super::super::MousePreset::LeftHanded;
+        }
+        if controls.rotation == super::super::RotationModifier::Control {
+            controls.rotation = match self.preferences.rotation_modifier.as_str() {
+                "ALT" => super::super::RotationModifier::Alt,
+                "SHIFT" => super::super::RotationModifier::Shift,
+                _ => super::super::RotationModifier::Control,
+            };
+        }
+        controls.keyboard_delay_ms = controls
+            .keyboard_delay_ms
+            .max(self.preferences.keyboard_delay_ms);
+        self.control_input.route(&controls, events, chat_open, now)
     }
 
     pub fn input(&mut self, events: &[NormalizedInputEvent]) -> (Vec<NormalizedInputEvent>, bool) {
-        self.input_in_context(events, self.preferences.hotkey_contexts.chat_on)
+        self.input_in_context_inner(events, self.preferences.hotkey_contexts.chat_on, false)
     }
 
     pub fn input_from_play(
@@ -250,22 +264,43 @@ impl SettingsState {
         events: &[NormalizedInputEvent],
         chat_on: bool,
     ) -> (Vec<NormalizedInputEvent>, bool) {
+        self.input_in_context_inner(events, chat_on, true)
+    }
+
+    fn input_in_context_inner(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        chat_on: bool,
+        controls_applied: bool,
+    ) -> (Vec<NormalizedInputEvent>, bool) {
         let mut routed = self
             .input
             .route_chat(&self.preferences, events, chat_on)
             .unwrap_or_default();
-        use oteryn_input_actions::{ButtonState, MouseButton};
+        use oteryn_input_actions::{ButtonState, Modifier, Modifiers};
         let now = std::time::Instant::now();
         routed.retain_mut(|event| {
+            if controls_applied
+                && let NormalizedInputEvent::Key {
+                    code, modifiers, ..
+                } = event
+                && (79..=82).contains(&code.get())
+                && *modifiers == Modifiers::one(Modifier::Control)
+            {
+                *modifiers = Modifiers::one(match self.preferences.rotation_modifier.as_str() {
+                    "ALT" => Modifier::Alt,
+                    "SHIFT" => Modifier::Shift,
+                    _ => Modifier::Control,
+                });
+            }
             match event {
                 NormalizedInputEvent::MouseButton { button, .. }
-                    if self.preferences.swap_mouse_buttons =>
+                    if !controls_applied
+                        && (self.preferences.swap_mouse_buttons
+                            || self.preferences.controls.mouse
+                                == super::super::MousePreset::LeftHanded) =>
                 {
-                    *button = match *button {
-                        MouseButton::PRIMARY => MouseButton::SECONDARY,
-                        MouseButton::SECONDARY => MouseButton::PRIMARY,
-                        other => other,
-                    };
+                    *button = super::super::controls::swap_button(*button);
                 }
                 NormalizedInputEvent::Key {
                     code,
@@ -303,11 +338,12 @@ impl SettingsState {
         }
     }
 
-    pub fn apply(&mut self, preferences: ReferencePreferences) {
+    pub fn apply(&mut self, mut preferences: ReferencePreferences) {
         if let Err(error) = preferences.validate() {
             self.feedback = error.to_string();
             return;
         }
+        preferences.reconcile_controls(Some(&self.preferences));
         let result = self
             .store
             .as_mut()

@@ -276,7 +276,18 @@ impl PlayLink {
                     return false;
                 }
                 let mut selection = None;
-                let target = match target {
+                let target_mode = if *target == ObjectTarget::CurrentTarget
+                    && mailbox
+                        .battle
+                        .combat
+                        .and_then(|combat| combat.target)
+                        .is_none()
+                {
+                    ObjectTarget::Cursor
+                } else {
+                    *target
+                };
+                let target = match &target_mode {
                     ObjectTarget::Use => Target::Item(item.handle),
                     ObjectTarget::Cursor => {
                         let rune = mailbox

@@ -51,13 +51,14 @@ impl ScreenshotPreferences {
         }
     }
     pub fn valid(&self) -> bool {
-        self.backlog_seconds <= 10
-            && self.backlog_frames <= 10
-            && self.directory.len() <= 1024
-            && !self.directory.chars().any(char::is_control)
-            && self.folder.len() <= 1024
-            && !self.folder.chars().any(char::is_control)
-            && (self.directory.is_empty() || Path::new(&self.directory).is_absolute())
+        let effective = self.effective();
+        effective.backlog_seconds <= 10
+            && effective.backlog_frames <= 10
+            && effective.directory.len() <= 1024
+            && !effective.directory.chars().any(char::is_control)
+            && effective.folder.len() <= 1024
+            && !effective.folder.chars().any(char::is_control)
+            && (effective.directory.is_empty() || Path::new(&effective.directory).is_absolute())
     }
     pub fn apply_policy(&self, capture: &mut CaptureController) {
         capture.policy.level = self.on_level;
@@ -104,5 +105,55 @@ impl ScreenshotPreferences {
         };
         capture.save(&path, frame.width, frame.height, frame.bgra, crop)?;
         Ok(path)
+    }
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+    #[test]
+    fn screenshot_alias_validation_rejects_relative_effective_folders() {
+        let preferences = ScreenshotPreferences {
+            folder: "relative-captures".into(),
+            ..Default::default()
+        };
+        assert!(!preferences.valid());
+        let absolute = ScreenshotPreferences {
+            directory: std::env::temp_dir().to_string_lossy().into_owned(),
+            ..preferences
+        };
+        assert!(absolute.valid());
+    }
+    #[test]
+    fn screenshot_alias_frame_writer_rejects_relative_folders()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let folder = format!("relative-frame-capture-{}", std::process::id());
+        let preferences = ScreenshotPreferences {
+            folder: folder.clone(),
+            ..Default::default()
+        };
+        let frame = Frame {
+            width: 1,
+            height: 1,
+            bgra: &[0, 0, 0, 255],
+            game: Rect {
+                x: 0,
+                y: 0,
+                width: 1,
+                height: 1,
+            },
+        };
+        let result = preferences.save_frame(
+            &mut CaptureController::default(),
+            &std::env::temp_dir(),
+            frame,
+        );
+        if let Ok(path) = &result {
+            std::fs::remove_file(path)?;
+            std::fs::remove_dir(&folder)?;
+        }
+        assert!(result.is_err());
+        assert!(!Path::new(&folder).exists());
+        Ok(())
     }
 }

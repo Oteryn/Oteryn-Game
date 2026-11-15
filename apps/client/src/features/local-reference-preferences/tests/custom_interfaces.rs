@@ -251,3 +251,41 @@ fn custom_object_picker_uses_open_container_handles_and_current_combat_generatio
     ));
     Ok(())
 }
+
+#[test]
+fn current_target_object_hotkey_without_target_arms_cursor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::{CustomAction, ObjectTarget};
+    let (link, mut commands, outbox) = play_channel();
+    let play = view()?;
+    outbox.targeting_initialize(true);
+    outbox.inventory_initialize(
+        Some(oteryn_session::CharacterInventory {
+            main_backpack: None,
+            entries: vec![oteryn_session::ItemEntry {
+                handle: 77u64.try_into()?,
+                item_definition_ref: 900u32.try_into()?,
+                count: 1u32.try_into()?,
+                sub_type: 7,
+            }],
+            equipment: vec![],
+        }),
+        false,
+    );
+    let action = CustomAction::Object {
+        definition: 900,
+        sub_type: 7,
+        target: ObjectTarget::CurrentTarget,
+    };
+    assert!(link.custom_hotkey_action(&play, &action));
+    assert_eq!(
+        crate::play::mailbox::lock(&link.mailbox)
+            .world_context
+            .targeting,
+        Some(77u64.try_into()?)
+    );
+    assert!(commands.try_recv().is_err());
+    outbox.inventory_end();
+    assert!(!link.custom_hotkey_action(&play, &action));
+    Ok(())
+}
