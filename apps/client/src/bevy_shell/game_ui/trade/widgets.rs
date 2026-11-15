@@ -84,6 +84,23 @@ pub(super) fn build(
             );
         }
     }
+    // Keep inspection discoverable and keyboard reachable even without artwork.
+    let inspections = row(commands, root);
+    for (counter, caption) in [(false, "Inspect yours"), (true, "Inspect theirs")] {
+        button(
+            commands,
+            skins,
+            inspections,
+            Action {
+                generation,
+                revision,
+                kind: Kind::Look(counter),
+            },
+            caption,
+            80.,
+            panel,
+        );
+    }
     // Server Look text is bounded by the protocol, but may still be longer than
     // the sidebar. Keep the canonical action row reachable below its scroll area.
     let details = commands
