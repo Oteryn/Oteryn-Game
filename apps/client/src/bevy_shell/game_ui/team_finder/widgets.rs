@@ -8,24 +8,29 @@ use bevy::{
 use oteryn_client_ui::team_finder::{MemberStatus, TeamFinderResult};
 use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
 use oteryn_client_ui_bevy as source;
-/// The leader listing editors, in the field order the session parses.
-pub(super) const LISTING_FIELDS: [&str; 9] = [
-    "Minimum level",
-    "Maximum level",
-    "Vocation mask (0 = any)",
-    "Team size",
-    "Free slots",
-    "Party members join (0 or 1)",
-    "Activity (1 boss, 2 hunt, 3 quest)",
-    "Boss, hunt or quest id",
-    "Hunting area (hunts only)",
-];
+/// How many leader listing editors there are, in the field order the session parses.
+pub(super) const LISTING_FIELDS: usize = 9;
+/// The leader listing editor captions, in the field order the session parses.
+fn listing_captions() -> [&'static str; LISTING_FIELDS] {
+    [
+        tr!("Minimum level"),
+        tr!("Maximum level"),
+        tr!("Vocation mask (1-255, at least one vocation)"),
+        tr!("Team size"),
+        tr!("Free slots"),
+        tr!("Party members join (0 or 1)"),
+        tr!("Activity (1 boss, 2 hunt, 3 quest)"),
+        tr!("Boss, hunt or quest id"),
+        tr!("Hunting area (hunts only)"),
+    ]
+}
 pub(super) fn build(
     commands: &mut Commands,
     skins: &Skins,
     key: Key,
     panel: &Panel,
     leader: &Leader,
+    values: &[String; LISTING_FIELDS],
 ) -> Entity {
     let root = commands
         .spawn((
@@ -64,11 +69,21 @@ pub(super) fn build(
     commands.entity(root).add_child(dialog);
     let enabled = panel.selected && panel.pending.is_none();
     if panel.applicants {
-        source::dialog_caption(commands, dialog, "Social — Manage Team", skins.font.clone());
-        manage(commands, skins, key, dialog, panel, leader, enabled);
+        source::dialog_caption(
+            commands,
+            dialog,
+            tr!("Social — Manage Team"),
+            skins.font.clone(),
+        );
+        manage(commands, skins, key, dialog, panel, leader, values);
         return root;
     }
-    source::dialog_caption(commands, dialog, "Social — Join Team", skins.font.clone());
+    source::dialog_caption(
+        commands,
+        dialog,
+        tr!("Social — Join Team"),
+        skins.font.clone(),
+    );
     let tabs = row(commands, dialog);
     button(
         commands,
@@ -76,14 +91,16 @@ pub(super) fn build(
         tabs,
         key,
         Kind::Applicants(false),
-        "Manage Team",
+        tr!("Manage Team"),
         enabled,
     );
     label(
         commands,
         skins,
         dialog,
-        "Search this page by leader name and level (blank = any level). Filters apply to each page.",
+        tr!(
+            "Search this page by leader name and level (blank = any level). Filters apply to each page."
+        ),
     );
     for (field, value) in [
         (Field::Name, panel.filter.name.clone()),
@@ -105,7 +122,7 @@ pub(super) fn build(
         filters,
         key,
         Kind::Filter(panel.filter.clone()),
-        "Search",
+        tr!("Search"),
         enabled,
     );
     let mut open = panel.filter.clone();
@@ -117,9 +134,9 @@ pub(super) fn build(
         key,
         Kind::Filter(open),
         if panel.filter.only_open {
-            "Open slots only"
+            tr!("Open slots only")
         } else {
-            "All capacities"
+            tr!("All capacities")
         },
         enabled,
     );
@@ -131,7 +148,12 @@ pub(super) fn build(
         filters,
         key,
         Kind::Filter(target),
-        ["All activities", "Boss", "Hunt", "Quest"][usize::from(panel.filter.target.min(3))],
+        [
+            tr!("All activities"),
+            tr!("Boss"),
+            tr!("Hunt"),
+            tr!("Quest"),
+        ][usize::from(panel.filter.target.min(3))],
         enabled,
     );
     let list = commands
@@ -153,16 +175,16 @@ pub(super) fn build(
             commands,
             skins,
             list,
-            "Team discovery is unavailable in this session",
+            tr!("Team discovery is unavailable in this session"),
         );
     } else if panel.result.is_none() && panel.pending.is_none() {
-        label(commands, skins, list, "Refresh to search for teams.");
+        label(commands, skins, list, tr!("Refresh to search for teams."));
     } else if panel.result.is_some() && panel.visible_indices().is_empty() {
         label(
             commands,
             skins,
             list,
-            "No teams match on this page. Adjust filters or browse the next page.",
+            tr!("No teams match on this page. Adjust filters or browse the next page."),
         );
     }
     for (index, name) in panel.visible_names().iter().enumerate() {
@@ -193,7 +215,7 @@ pub(super) fn build(
         footer,
         key,
         Kind::Browse(false),
-        "Refresh",
+        tr!("Refresh"),
         enabled,
     );
     button(
@@ -202,7 +224,7 @@ pub(super) fn build(
         footer,
         key,
         Kind::Browse(true),
-        "Next page",
+        tr!("Next page"),
         enabled && panel.next().is_some(),
     );
     let selected = match &panel.result {
@@ -228,7 +250,7 @@ pub(super) fn build(
         footer,
         key,
         Kind::Apply(false),
-        "Apply to team",
+        tr!("Apply to team"),
         enabled && apply,
     );
     button(
@@ -237,10 +259,18 @@ pub(super) fn build(
         footer,
         key,
         Kind::Apply(true),
-        "Cancel application",
+        tr!("Cancel application"),
         enabled && cancel,
     );
-    button(commands, skins, footer, key, Kind::Close, "Close", true);
+    button(
+        commands,
+        skins,
+        footer,
+        key,
+        Kind::Close,
+        tr!("Close"),
+        true,
+    );
     root
 }
 /// The leader's applicants page and advertisement editor.
@@ -251,8 +281,9 @@ fn manage(
     dialog: Entity,
     panel: &Panel,
     leader: &Leader,
-    ready: bool,
+    values: &[String; LISTING_FIELDS],
 ) {
+    let ready = panel.selected && panel.pending.is_none();
     let tabs = row(commands, dialog);
     button(
         commands,
@@ -260,14 +291,14 @@ fn manage(
         tabs,
         key,
         Kind::Browse(false),
-        "Join Team",
+        tr!("Join Team"),
         ready,
     );
     label(
         commands,
         skins,
         dialog,
-        "Players who applied to or were invited to your team. Select one to decide.",
+        tr!("Players who applied to or were invited to your team. Select one to decide."),
     );
     let list = commands
         .spawn((
@@ -288,12 +319,17 @@ fn manage(
             commands,
             skins,
             list,
-            "Team discovery is unavailable in this session",
+            tr!("Team discovery is unavailable in this session"),
         );
     } else if panel.result.is_none() && panel.pending.is_none() {
-        label(commands, skins, list, "Refresh to see your applicants.");
+        label(
+            commands,
+            skins,
+            list,
+            tr!("Refresh to see your applicants."),
+        );
     } else if panel.result.is_some() && panel.visible_indices().is_empty() {
-        label(commands, skins, list, "No applicants on this page.");
+        label(commands, skins, list, tr!("No applicants on this page."));
     }
     for (index, name) in panel.visible_names().iter().enumerate() {
         let caption = format!(
@@ -323,7 +359,7 @@ fn manage(
         decisions,
         key,
         Kind::Applicants(false),
-        "Refresh",
+        tr!("Refresh"),
         ready,
     );
     button(
@@ -332,11 +368,11 @@ fn manage(
         decisions,
         key,
         Kind::Applicants(true),
-        "Next page",
+        tr!("Next page"),
         ready && panel.next().is_some(),
     );
     let chosen = ready && panel.handle().is_some();
-    for (action, caption) in [(2, "Invite"), (3, "Accept"), (4, "Decline")] {
+    for (action, caption) in [(2, tr!("Invite")), (3, tr!("Accept")), (4, tr!("Decline"))] {
         button(
             commands,
             skins,
@@ -347,16 +383,11 @@ fn manage(
             chosen,
         );
     }
-    let current = match &panel.result {
-        Some(TeamFinderResult::Applicants { listing, .. }) => (*listing).or(leader.confirmed),
-        _ => leader.confirmed,
-    };
-    label(commands, skins, dialog, "Your team listing");
-    let values = listing_values(current);
-    for (index, (caption, value)) in LISTING_FIELDS.iter().zip(values).enumerate() {
+    label(commands, skins, dialog, tr!("Your team listing"));
+    for (index, (caption, value)) in listing_captions().into_iter().zip(values).enumerate() {
         let line = row(commands, dialog);
         label(commands, skins, line, caption);
-        input(commands, skins, line, Field::Listing(index), value);
+        input(commands, skins, line, Field::Listing(index), value.clone());
     }
     label(commands, skins, dialog, &leader.feedback);
     let editable = leader.selected && !leader.pending;
@@ -367,7 +398,7 @@ fn manage(
         footer,
         key,
         Kind::Publish(Vec::new()),
-        "Publish listing",
+        tr!("Publish listing"),
         editable,
     );
     button(
@@ -376,13 +407,21 @@ fn manage(
         footer,
         key,
         Kind::Withdraw,
-        "Remove listing",
-        editable && current.is_some(),
+        tr!("Remove listing"),
+        editable && leader.confirmed.is_some(),
     );
-    button(commands, skins, footer, key, Kind::Close, "Close", true);
+    button(
+        commands,
+        skins,
+        footer,
+        key,
+        Kind::Close,
+        tr!("Close"),
+        true,
+    );
 }
 /// The editor values for a listing, empty without one.
-fn listing_values(listing: Option<LeaderListing>) -> [String; 9] {
+pub(super) fn listing_values(listing: Option<LeaderListing>) -> [String; LISTING_FIELDS] {
     let Some(listing) = listing else {
         return Default::default();
     };

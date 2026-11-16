@@ -104,6 +104,25 @@ pub(in crate::play) fn listing_from_fields(
     })
 }
 
+/// Why the listing protocol refuses an otherwise parsed listing, as the leader should read it.
+#[cfg(bevy_shell)]
+fn listing_problem(
+    listing: &oteryn_client_ui::team_finder_leader::LeaderListing,
+) -> Option<&'static str> {
+    if listing.min_level == 0 || listing.min_level > listing.max_level {
+        Some(tr!(
+            "The minimum level must be at least 1 and not above the maximum level"
+        ))
+    } else if listing.vocation_mask == 0 {
+        Some(tr!("Choose at least one vocation (mask 1-255)"))
+    } else if listing.slots == 0 {
+        Some(tr!("The team size must be at least 1"))
+    } else if listing.free_slots > listing.slots {
+        Some(tr!("Free slots cannot exceed the team size"))
+    } else {
+        None
+    }
+}
 /// Snapshot-bound actions for the shared Social dialog.
 #[cfg(bevy_shell)]
 #[derive(Clone, PartialEq, Eq)]
@@ -148,6 +167,10 @@ impl PlayLink {
                         panel.feedback = tr!("Enter a valid team listing").into();
                         return false;
                     };
+                    if let Some(problem) = listing_problem(&listing) {
+                        panel.feedback = problem.into();
+                        return false;
+                    }
                     Some(listing)
                 }
                 _ => None,

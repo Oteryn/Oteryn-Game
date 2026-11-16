@@ -3,6 +3,7 @@ use crate::{
     combat_input::PlayCommand,
     play::{Outbox, PlayView, play_channel},
 };
+use bevy::ui::InteractionDisabled;
 use oteryn_client_runtime::server_mechanic::{ServerMechanicCommand, ServerMechanicResponse};
 use oteryn_client_ui::team_finder::*;
 use oteryn_client_ui::team_finder_leader::{LeaderListing, TeamTarget};
@@ -240,7 +241,7 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
         TeamFinderQuery::Applicants { after: None }
     );
     let applicants = TeamFinderResult::Applicants {
-        listing: None,
+        listing: Some(advertised(10)),
         occupied_slots: 1,
         members: vec![Applicant {
             handle: 5,
@@ -268,18 +269,19 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
     reply(&outbox, vec![]);
     app.update();
     // An incomplete listing stays local and says why.
+    listing_texts(&mut app, [""; 9]);
     click(&mut app, Kind::Publish(Vec::new()))?;
     assert!(rx.try_recv().is_err());
     app.update();
     assert!(shown(&mut app, tr!("Enter a valid team listing")));
-    listing_texts(&mut app, ["10", "100", "0", "4", "3", "1", "2", "7", "12"]);
+    listing_texts(&mut app, ["10", "100", "15", "4", "3", "1", "2", "7", "12"]);
     click(&mut app, Kind::Publish(Vec::new()))?;
     let sent = command(&mut rx)?;
     assert_eq!((sent.capability, sent.command_type), (200, 390));
     let listing = LeaderListing {
         min_level: 10,
         max_level: 100,
-        vocation_mask: 0,
+        vocation_mask: 15,
         slots: 4,
         free_slots: 3,
         party_members_join: true,
@@ -327,5 +329,246 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
         decode_query(&command(&mut rx)?.payload).map_err(|error| format!("{error:?}"))?,
         TeamFinderQuery::Browse { after: None }
     );
+    Ok(())
+}
+fn editors(app: &mut App) -> [String; 9] {
+    let mut values: [String; 9] = Default::default();
+    for (field, text) in app
+        .world_mut()
+        .query::<(&Field, &EditableText)>()
+        .iter(app.world())
+    {
+        if let Field::Listing(index) = field
+            && let Some(value) = values.get_mut(*index)
+        {
+            *value = text.value().to_string();
+        }
+    }
+    values
+}
+fn withdraw_enabled(app: &mut App) -> Result<bool> {
+    let (entity, _) = app
+        .world_mut()
+        .query::<(Entity, &Control)>()
+        .iter(app.world())
+        .find(|(_, control)| control.kind == Kind::Withdraw)
+        .ok_or("remove control absent")?;
+    Ok(app.world().get::<InteractionDisabled>(entity).is_none())
+}
+fn leader_reply(outbox: &Outbox, status: oteryn_session::CommandStatus) {
+    outbox.bevy_team_leader_response(&ServerMechanicResponse {
+        command_id: 2,
+        status,
+        server_sequence: 2,
+        payload: vec![],
+    });
+}
+fn advertised(min_level: u16) -> LeaderListing {
+    LeaderListing {
+        min_level,
+        max_level: 100,
+        vocation_mask: 15,
+        slots: 4,
+        free_slots: 3,
+        party_members_join: false,
+        timestamp: 0,
+        target: TeamTarget::Boss(1),
+    }
+}
+fn applicants_page(listing: Option<LeaderListing>) -> TeamFinderResult {
+    let member = |handle: u64, name: &str| Applicant {
+        handle,
+        name: name.into(),
+        level: 50,
+        vocation: 1,
+        status: MemberStatus::Pending,
+    };
+    // The wire carries applicants only under an active listing.
+    let members = if listing.is_some() {
+        vec![member(5, "Ally"), member(6, "Brave")]
+    } else {
+        Vec::new()
+    };
+    TeamFinderResult::Applicants {
+        listing,
+        occupied_slots: u16::from(listing.is_some()),
+        members,
+        next: None,
+    }
+}
+/// Opens Manage Team through its tab and answers the applicants query with `listing`.
+fn manage_team(listing: Option<LeaderListing>) -> Result<Fixture> {
+    let (mut app, mut rx, outbox) = fixture(true)?;
+    outbox.bevy_team_leader_selected(true);
+    app.update();
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&applicants_page(listing)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    Ok((app, rx, outbox))
+}
+#[test]
+fn publish_explains_every_listing_the_protocol_refuses() -> Result {
+    let (mut app, mut rx, _) = manage_team(None)?;
+    assert!(shown(
+        &mut app,
+        tr!("Vocation mask (1-255, at least one vocation)")
+    ));
+    assert!(!shown(&mut app, "0 = any"));
+    for (values, problem) in [
+        (
+            ["10", "100", "0", "4", "3", "1", "2", "7", "12"],
+            tr!("Choose at least one vocation (mask 1-255)"),
+        ),
+        (
+            ["0", "100", "15", "4", "3", "1", "2", "7", "12"],
+            tr!("The minimum level must be at least 1 and not above the maximum level"),
+        ),
+        (
+            ["101", "100", "15", "4", "3", "1", "1", "7", ""],
+            tr!("The minimum level must be at least 1 and not above the maximum level"),
+        ),
+        (
+            ["10", "100", "15", "0", "0", "0", "3", "7", ""],
+            tr!("The team size must be at least 1"),
+        ),
+        (
+            ["10", "100", "15", "4", "5", "0", "1", "7", ""],
+            tr!("Free slots cannot exceed the team size"),
+        ),
+    ] {
+        listing_texts(&mut app, values);
+        click(&mut app, Kind::Publish(Vec::new()))?;
+        assert!(rx.try_recv().is_err());
+        app.update();
+        assert!(shown(&mut app, problem), "{problem}");
+    }
+    Ok(())
+}
+#[test]
+fn manage_team_editors_follow_the_latest_server_listing() -> Result {
+    use oteryn_session::CommandStatus::Accepted;
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    assert_eq!(editors(&mut app)[0], "10");
+    listing_texts(&mut app, ["20", "100", "15", "4", "3", "0", "1", "1", ""]);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    app.update();
+    leader_reply(&outbox, Accepted);
+    app.update();
+    assert!(shown(&mut app, tr!("Advertisement confirmed")));
+    assert_eq!(editors(&mut app)[0], "20");
+    click(&mut app, Kind::Withdraw)?;
+    command(&mut rx)?;
+    app.update();
+    leader_reply(&outbox, Accepted);
+    app.update();
+    assert_eq!(editors(&mut app), <[String; 9]>::default());
+    assert!(!withdraw_enabled(&mut app)?);
+    listing_texts(&mut app, ["30", "100", "15", "4", "3", "0", "1", "1", ""]);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    app.update();
+    leader_reply(&outbox, Accepted);
+    app.update();
+    assert_eq!(editors(&mut app)[0], "30");
+    assert!(withdraw_enabled(&mut app)?);
+    // The server's applicants page says the listing is gone: the older confirmation must not win.
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&applicants_page(None)).map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    assert_eq!(editors(&mut app), <[String; 9]>::default());
+    assert!(!withdraw_enabled(&mut app)?);
+    Ok(())
+}
+#[test]
+fn manage_team_keeps_the_listing_draft_across_selection_queries_and_rejection() -> Result {
+    let (mut app, mut rx, outbox) = manage_team(Some(advertised(10)))?;
+    let draft = ["40", "90", "15", "5", "2", "1", "2", "7", "12"];
+    let typed = draft.map(String::from);
+    listing_texts(&mut app, draft);
+    click(&mut app, Kind::Select(1))?;
+    app.update();
+    assert!(shown(&mut app, "> Brave"));
+    assert_eq!(editors(&mut app), typed);
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    app.update();
+    assert_eq!(editors(&mut app), typed);
+    reply(
+        &outbox,
+        encode_result(&applicants_page(Some(advertised(10))))
+            .map_err(|error| format!("{error:?}"))?,
+    );
+    app.update();
+    assert_eq!(editors(&mut app), typed);
+    let invalid = ["40", "90", "x", "5", "2", "1", "2", "7", "12"];
+    listing_texts(&mut app, invalid);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    assert!(rx.try_recv().is_err());
+    app.update();
+    assert!(shown(&mut app, tr!("Enter a valid team listing")));
+    assert_eq!(editors(&mut app), invalid.map(String::from));
+    listing_texts(&mut app, draft);
+    click(&mut app, Kind::Publish(Vec::new()))?;
+    command(&mut rx)?;
+    app.update();
+    assert!(shown(&mut app, tr!("Waiting for the server")));
+    assert_eq!(editors(&mut app), typed);
+    leader_reply(&outbox, oteryn_session::CommandStatus::Rejected);
+    app.update();
+    assert!(shown(
+        &mut app,
+        tr!("Advertisement refused or invalid reply")
+    ));
+    assert_eq!(editors(&mut app), typed);
+    Ok(())
+}
+#[test]
+fn manage_team_renders_in_the_selected_language() -> Result {
+    use oteryn_client_ui::localization::{Language, translate, with_language};
+    let (mut app, mut rx, outbox) = fixture(true)?;
+    // Systems run on the test thread, where the language override applies.
+    app.edit_schedule(Update, |schedule| {
+        schedule.set_executor(bevy::ecs::schedule::SingleThreadedExecutor::new());
+    });
+    outbox.bevy_team_leader_selected(true);
+    app.update();
+    click(&mut app, Kind::Applicants(false))?;
+    command(&mut rx)?;
+    reply(
+        &outbox,
+        encode_result(&applicants_page(None)).map_err(|error| format!("{error:?}"))?,
+    );
+    with_language(Language::De, || app.update());
+    for source in [
+        "Social — Manage Team",
+        "Join Team",
+        "Players who applied to or were invited to your team. Select one to decide.",
+        "Decline",
+        "Your team listing",
+        "Vocation mask (1-255, at least one vocation)",
+        "Team size",
+        "Party members join (0 or 1)",
+        "Activity (1 boss, 2 hunt, 3 quest)",
+        "Boss, hunt or quest id",
+        "Hunting area (hunts only)",
+        "Minimum level",
+        "Publish listing",
+        "Remove listing",
+        "Close",
+    ] {
+        let german = translate(Language::De, source);
+        assert_ne!(german, source);
+        assert!(shown(&mut app, german), "{german}");
+        assert!(!shown(&mut app, source), "{source}");
+    }
     Ok(())
 }
