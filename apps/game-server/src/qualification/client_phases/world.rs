@@ -209,6 +209,7 @@ include!("full_row_p13_mount.rs");
 include!("full_row_p12c_mount.rs");
 include!("full_row_p12a_mount.rs");
 include!("full_row_p11_mount.rs");
+include!("full_row_p10_mount.rs");
 include!("full_row_p09_mount.rs");
 include!("full_row_p08_mount.rs");
 include!("full_row_p06_mount.rs");
@@ -1834,6 +1835,11 @@ pub(super) async fn journeys(
             if e2e_row_selected(165) {
                 verdict::indexed("P10.client", async {
                     client_row_p10::run_packet(clients).await;
+                    release_row_characters(clients).await
+                })
+                .await;
+                verdict::indexed("P10.full", async {
+                    full_row_p10::run_packet(clients).await;
                     release_row_characters(clients).await
                 })
                 .await;
