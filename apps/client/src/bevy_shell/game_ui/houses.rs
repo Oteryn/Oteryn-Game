@@ -63,7 +63,9 @@ fn keyboard(
     if (requested
         || (open
             && keys.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
-            && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])))
+            && keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight])
+            // Ctrl+Alt+Shift+H keeps its registered default, the cast chat window.
+            && !keys.any_pressed([KeyCode::AltLeft, KeyCode::AltRight])))
         && !state.open
         && !owner.modal_active()
         && guard.allows_focus(focus.get())
