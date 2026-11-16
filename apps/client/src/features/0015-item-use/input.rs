@@ -97,7 +97,7 @@ impl PlayView {
         tile: TileCoord,
         link: &PlayLink,
     ) -> Result<(), oteryn_renderer::BatchError> {
-        if !self.use_with_click(tile, link) {
+        if !self.hireling_pick(tile, link) && !self.use_with_click(tile, link) {
             self.click(tile)?;
         }
         Ok(())

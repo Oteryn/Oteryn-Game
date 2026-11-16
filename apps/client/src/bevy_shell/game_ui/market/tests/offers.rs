@@ -539,3 +539,51 @@ fn parity_a_market_preview_includes_placement_fee_and_debit() -> TestResult {
     );
     Ok(())
 }
+/// An expired own offer gets no push from the server, so the shown My Offers list is
+/// re-queried a minute after its last reply and again whenever the market reopens.
+#[test]
+fn market_own_offers_requery_after_the_interval_and_on_reopen() -> TestResult {
+    let (mut app, mut commands, outbox, _) = setup()?;
+    app.init_resource::<Time>()
+        .init_resource::<super::super::refresh::Refresh>()
+        .add_systems(Update, super::super::refresh::own.before(project));
+    app.update();
+    assert!(commands.try_recv().is_err());
+    click(&mut app, "market.tab.own")?;
+    assert_eq!(command(&mut commands)?.action, 3);
+    reply(&outbox, 3, vec![row()]);
+    app.update();
+    let shown = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("amount 5"))
+    };
+    assert!(shown(&mut app));
+    app.world_mut()
+        .resource_mut::<Time>()
+        .advance_by(super::super::refresh::INTERVAL - std::time::Duration::from_secs(1));
+    app.update();
+    assert!(commands.try_recv().is_err());
+    app.world_mut()
+        .resource_mut::<Time>()
+        .advance_by(std::time::Duration::from_secs(1));
+    app.update();
+    let refresh = command(&mut commands)?;
+    assert_eq!((refresh.action, refresh.page), (3, 0));
+    reply(&outbox, 3, vec![]);
+    app.update();
+    assert!(!shown(&mut app), "the expired offer leaves My Offers");
+    for open in [false, true] {
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .market_set_open(open);
+        app.update();
+    }
+    assert_eq!(command(&mut commands)?.action, 3);
+    Ok(())
+}

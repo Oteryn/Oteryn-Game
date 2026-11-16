@@ -253,6 +253,8 @@ pub(super) struct Mailbox {
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
+    /// The banker form waits for the player to click an adjacent summon tile.
+    pub(super) hireling_picking: bool,
     /// The shared frontend's reviewed hireling configuration purchase, awaiting its Confirm press.
     pub(super) hireling_review:
         Option<crate::play::feature_0250_hireling_management::input::configuration::Review>,

@@ -2,6 +2,7 @@
 mod actions;
 mod offers;
 mod purchase;
+mod refresh;
 mod statistics;
 #[cfg(test)]
 mod tests;
@@ -60,8 +61,9 @@ pub(super) fn install(app: &mut App) {
     offers::install(app);
     purchase::install(app);
     app.init_resource::<State>()
+        .init_resource::<refresh::Refresh>()
         .add_systems(Startup, setup.after(super::setup))
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, (keyboard, refresh::own, project).chain())
         .add_systems(
             PostUpdate,
             actions::finish.after(bevy::text::EditableTextSystems),

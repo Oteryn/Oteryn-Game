@@ -10,3 +10,11 @@ impl Outbox {
         oteryn_client_ui::hireling::apply_result(&mut lock(&self.0).hireling, response);
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// Admits the banker hireling (165) without its management window (250).
+    pub(crate) fn bevy_hireling_selected(&self) {
+        self.hireling_initialize(true);
+    }
+}
