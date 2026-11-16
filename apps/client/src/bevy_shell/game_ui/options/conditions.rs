@@ -1,5 +1,5 @@
 //! Row 158: the HUD page's condition matrix; each condition shows or hides on the HUD above the
-//! character and in the status bar independently.
+//! character and in the status bar independently, and Up / Down set the order both use.
 use super::*;
 use crate::play::ReferencePreferences;
 use bevy::ui_widgets::Activate;
@@ -8,6 +8,11 @@ use bevy::ui_widgets::Activate;
 pub(super) struct Toggle {
     key: String,
     hud: bool,
+}
+#[derive(Component, Clone, Copy)]
+pub(super) struct Shift {
+    index: usize,
+    down: bool,
 }
 
 fn visible(p: &ReferencePreferences, key: &str, hud: bool) -> bool {
@@ -29,7 +34,7 @@ pub(super) fn build(
         commands,
         parent,
         skins,
-        "Conditions: choose which conditions show on the HUD and in the status bar.",
+        "Conditions: choose which conditions show on the HUD and in the status bar, and their order.",
     );
     let list = commands
         .spawn((
@@ -45,9 +50,24 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(parent).add_child(list);
-    for key in draft.ordered_condition_keys() {
+    for (index, key) in draft.ordered_condition_keys().into_iter().enumerate() {
         let bar = section::bar(commands, list);
         section::label(commands, bar, skins, &key);
+        for (caption, down) in [("Up", false), ("Down", true)] {
+            let button = section::action(
+                commands,
+                bar,
+                skins,
+                caption,
+                60.,
+                &format!("hud.conditions.order.{index}.{caption}"),
+                false,
+            );
+            commands
+                .entity(button)
+                .insert(Shift { index, down })
+                .observe(shift);
+        }
         for (caption, hud, column) in [("HUD", true, "hud"), ("Status Bar", false, "status")] {
             let button = section::action(
                 commands,
@@ -86,6 +106,25 @@ fn toggle(
     owner.edit_preferences(|draft| {
         let shown = visible(draft, &key, hud);
         draft.set_condition_visible(&key, hud, !shown);
+    });
+    state.revision = state.revision.wrapping_add(1);
+}
+
+fn shift(
+    event: On<Activate>,
+    shifts: Query<&Shift>,
+    mut owner: NonSendMut<HostOwner>,
+    mut state: ResMut<OptionsState>,
+    guard: ModalGuard,
+) {
+    if !section::editable(&owner, &state, &guard, event.entity, Page::Hud) {
+        return;
+    }
+    let Ok(&Shift { index, down }) = shifts.get(event.entity) else {
+        return;
+    };
+    owner.edit_preferences(|draft| {
+        draft.move_special_condition(index, down);
     });
     state.revision = state.revision.wrapping_add(1);
 }
@@ -142,6 +181,40 @@ mod tests {
             let (link, _commands, _outbox) = crate::play::play_channel();
             stored.sync_local_preferences(&link);
             assert_eq!(link.condition_status_panel().hidden, [1]);
+            Ok(())
+        })();
+        let _ = std::fs::remove_file(&path);
+        result
+    }
+
+    #[test]
+    fn condition_rows_move_apply_and_reach_the_status_order() -> TestResult {
+        let path = std::env::temp_dir().join(format!(
+            "bevy-options-condition-order-{}.json",
+            std::process::id()
+        ));
+        let result = (|| -> TestResult {
+            let mut app = super::super::tests::app(Page::Hud, Some(path.clone()))?;
+            let button = app
+                .world_mut()
+                .spawn(Shift {
+                    index: 0,
+                    down: true,
+                })
+                .observe(shift)
+                .id();
+            app.world_mut().trigger(Activate { entity: button });
+            let owner = app.world().non_send::<HostOwner>();
+            let draft = owner.preferences_draft().ok_or("draft")?;
+            assert_eq!(
+                draft.ordered_condition_keys()[..2],
+                [icon_key(2), icon_key(1)]
+            );
+            app.world_mut().non_send_mut::<HostOwner>().apply(true);
+            let stored = crate::play::SettingsState::new(Some(path.clone()));
+            let (link, _commands, _outbox) = crate::play::play_channel();
+            stored.sync_local_preferences(&link);
+            assert_eq!(link.condition_status_panel().order[..2], [2, 1]);
             Ok(())
         })();
         let _ = std::fs::remove_file(&path);

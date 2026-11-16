@@ -1,5 +1,6 @@
 //! Row 164: the Misc page exports and imports the preferences, restores the last backup or
-//! resets to defaults. Each action saves at once and reloads the open draft from the result.
+//! resets to defaults. Export writes the saved options and keeps the open draft's pending edits;
+//! the other actions replace the saved options and reload the draft from the result.
 use super::*;
 use bevy::{text::EditableText, ui_widgets::Activate};
 use std::path::Path;
@@ -83,8 +84,10 @@ fn activate(
     };
     match result {
         Ok(()) => {
-            let saved = owner.settings.preferences.clone();
-            owner.edit_preferences(|draft| *draft = saved);
+            if !matches!(action, Action::Export) {
+                let saved = owner.settings.preferences.clone();
+                owner.edit_preferences(|draft| *draft = saved);
+            }
             owner.settings.feedback = match action {
                 Action::Export => "Options exported",
                 Action::Import => "Options imported and saved",
@@ -118,6 +121,46 @@ mod tests {
                 .clone(),
             owner.settings.preferences.audio_device.clone(),
         ))
+    }
+
+    #[test]
+    fn export_keeps_the_pending_draft_edits() -> TestResult {
+        let id = std::process::id();
+        let path = std::env::temp_dir().join(format!("bevy-options-export-draft-{id}.json"));
+        let export =
+            std::env::temp_dir().join(format!("bevy-options-export-draft-{id}.export.json"));
+        let result = (|| -> TestResult {
+            let mut app = super::super::tests::app(Page::Misc, Some(path.clone()))?;
+            app.world_mut()
+                .non_send_mut::<HostOwner>()
+                .edit_preferences(|draft| draft.audio_device = "Pending".into());
+            app.world_mut().spawn((
+                PathField,
+                EditableText::new(export.to_str().ok_or("export path")?),
+            ));
+            press(&mut app, Action::Export);
+            assert_eq!(
+                app.world().non_send::<HostOwner>().settings.feedback,
+                "Options exported"
+            );
+            assert!(
+                PreferenceStore::read_transfer(&export)?
+                    .audio_device
+                    .is_empty()
+            );
+            assert_eq!(device(&app)?, ("Pending".into(), String::new()));
+            app.world_mut().non_send_mut::<HostOwner>().apply(true);
+            assert_eq!(
+                SettingsState::new(Some(path.clone()))
+                    .preferences
+                    .audio_device,
+                "Pending"
+            );
+            Ok(())
+        })();
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(&export);
+        result
     }
 
     #[test]

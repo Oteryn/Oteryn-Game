@@ -14,6 +14,13 @@ pub(super) enum Action {
     Default,
 }
 
+/// The bindings a keyboard chord can edit; the mouse-backed world actions have no chord.
+fn keyboard_bindings() -> Vec<PreferenceBinding> {
+    let mut bindings = preference_bindings().unwrap_or_default();
+    bindings.retain(|binding| !binding.default_chord.starts_with("MOUSE"));
+    bindings
+}
+
 /// "0013-paced-movement-move-north" reads as "paced movement move north".
 fn caption(binding: &PreferenceBinding, p: &ReferencePreferences) -> String {
     let name = binding
@@ -59,7 +66,7 @@ pub(super) fn build(
         ))
         .id();
     commands.entity(parent).add_child(list);
-    let bindings = preference_bindings().unwrap_or_default();
+    let bindings = keyboard_bindings();
     for binding in &bindings {
         let button = section::action(
             commands,
@@ -75,9 +82,10 @@ pub(super) fn build(
             .insert(Action::Pick(binding.id))
             .observe(activate);
     }
-    let chord = selected
-        .and_then(|id| bindings.iter().find(|binding| binding.id == id))
-        .map_or("", |binding| draft.binding_chord(binding));
+    let selected = selected.and_then(|id| bindings.iter().find(|binding| binding.id == id));
+    let chord = selected.map_or("", |binding| draft.binding_chord(binding));
+    // Extra action-bar slots keep a single key, so they offer no secondary controls.
+    let single = selected.is_some_and(PreferenceBinding::is_extra_action_bar_slot);
     let field = section::field(commands, parent, skins, "hotkeys.binding.chord", chord);
     commands.entity(field).insert(ChordField);
     let bar = section::bar(commands, parent);
@@ -95,13 +103,20 @@ pub(super) fn build(
         ),
         ("Default", Action::Default, "hotkeys.binding.default"),
     ] {
+        if single && matches!(action, Action::Secondary | Action::ClearSecondary) {
+            continue;
+        }
         let button = section::action(commands, bar, skins, text, 110., id, false);
         commands.entity(button).insert(action).observe(activate);
     }
 }
 
 /// Restores an action's default primary chord; an action without one becomes unbound again.
+/// Extra action-bar slots are unbound in their own action-bar storage.
 fn restore(p: &mut ReferencePreferences, binding: &PreferenceBinding) -> Result<(), String> {
+    if binding.is_extra_action_bar_slot() {
+        return p.rebind(binding.id, "").map_err(|error| error.to_string());
+    }
     if binding.default_chord.is_empty() {
         p.keybindings.remove(binding.id);
         return Ok(());
@@ -130,8 +145,7 @@ pub(super) fn activate(
         return;
     }
     let Some(binding) = state.binding.and_then(|id| {
-        preference_bindings()
-            .ok()?
+        keyboard_bindings()
             .into_iter()
             .find(|binding| binding.id == id)
     }) else {
@@ -150,6 +164,9 @@ pub(super) fn activate(
             Action::Primary => p
                 .rebind(binding.id, &chord)
                 .map_err(|error| error.to_string()),
+            Action::Secondary | Action::ClearSecondary if binding.is_extra_action_bar_slot() => {
+                Err("Action bar slots take a single key".into())
+            }
             Action::Secondary => p
                 .rebind_secondary(binding.id, &chord)
                 .map_err(|error| error.to_string()),
@@ -258,5 +275,82 @@ mod tests {
         })();
         let _ = std::fs::remove_file(&path);
         result
+    }
+
+    #[test]
+    fn extra_action_bar_slots_default_and_secondary_use_their_own_storage() -> TestResult {
+        let path = std::env::temp_dir().join(format!(
+            "bevy-options-keys-slots-{}.json",
+            std::process::id()
+        ));
+        let result = (|| -> TestResult {
+            let mut app = super::super::tests::app(Page::GeneralHotkeys, Some(path.clone()))?;
+            let field = app
+                .world_mut()
+                .spawn((ChordField, EditableText::new("CTRL+ALT+SHIFT+F9")))
+                .id();
+            for slot in [5, 36, 450] {
+                let id = keyboard_bindings()
+                    .into_iter()
+                    .find(|binding| binding.id == format!("local-spell-action-bar-spell-{slot}"))
+                    .ok_or("slot binding")?
+                    .id;
+                press(&mut app, Action::Pick(id));
+                press(&mut app, Action::Primary);
+                let chord = |app: &App| -> Result<String, Box<dyn std::error::Error>> {
+                    let owner = app.world().non_send::<HostOwner>();
+                    let draft = owner.preferences_draft().ok_or("draft")?;
+                    let binding = keyboard_bindings()
+                        .into_iter()
+                        .find(|binding| binding.id == id)
+                        .ok_or("binding")?;
+                    Ok(draft.binding_chord(&binding).to_owned())
+                };
+                assert_eq!(chord(&app)?, "CTRL+ALT+SHIFT+F9", "slot {slot}");
+                app.world_mut()
+                    .get_mut::<EditableText>(field)
+                    .ok_or("field")?
+                    .editor_mut()
+                    .set_text("CTRL+ALT+SHIFT+F8");
+                press(&mut app, Action::Secondary);
+                assert_eq!(
+                    app.world().non_send::<HostOwner>().settings.feedback,
+                    "Action bar slots take a single key"
+                );
+                press(&mut app, Action::Default);
+                assert_eq!(chord(&app)?, "", "slot {slot}");
+                app.world_mut().non_send_mut::<HostOwner>().apply(false);
+                let stored = crate::play::SettingsState::new(Some(path.clone())).preferences;
+                assert!(stored.action_keys.0.is_empty(), "slot {slot}");
+                assert!(stored.secondary_keybindings.is_empty(), "slot {slot}");
+                app.world_mut()
+                    .get_mut::<EditableText>(field)
+                    .ok_or("field")?
+                    .editor_mut()
+                    .set_text("CTRL+ALT+SHIFT+F9");
+            }
+            Ok(())
+        })();
+        let _ = std::fs::remove_file(&path);
+        result
+    }
+
+    #[test]
+    fn mouse_actions_are_not_offered_by_the_keyboard_editor() -> TestResult {
+        let mut app = super::super::tests::app(Page::GeneralHotkeys, None)?;
+        app.world_mut().spawn((ChordField, EditableText::new("F9")));
+        for id in [
+            "0011-world-interaction-click",
+            "0011-world-interaction-context",
+        ] {
+            assert!(keyboard_bindings().iter().all(|binding| binding.id != id));
+            press(&mut app, Action::Pick(id));
+            press(&mut app, Action::Primary);
+            assert_eq!(
+                app.world().non_send::<HostOwner>().settings.feedback,
+                "Choose an action first"
+            );
+        }
+        Ok(())
     }
 }

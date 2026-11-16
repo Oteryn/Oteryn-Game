@@ -26,6 +26,10 @@ pub(super) fn extra_bindings() -> Vec<PreferenceBinding> {
     .collect()
 }
 impl PreferenceBinding {
+    /// Action-bar slots 5 and above keep one key in the action-bar storage, with no secondary.
+    pub fn is_extra_action_bar_slot(&self) -> bool {
+        extra_slot(self.id).is_some()
+    }
     pub fn label(&self) -> String {
         if let Some(slot) = self
             .id

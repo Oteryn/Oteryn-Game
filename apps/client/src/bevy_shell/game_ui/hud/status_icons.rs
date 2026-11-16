@@ -104,6 +104,22 @@ pub(super) fn project(
                 next.push(Icon::new("Hungry", "Hungry", 1));
             }
         }
+        if let Some(taints) = play.link.boss_taints() {
+            if taints.soul_war > 0 {
+                next.push(Icon::new(
+                    "Soul War",
+                    &format!("Soul War {}", taints.soul_war),
+                    1,
+                ));
+            }
+            if taints.rotten_blood > 0 || taints.rotten_blood_final {
+                next.push(Icon::new(
+                    "Rotten Blood",
+                    &format!("Rotten Blood {}", taints.rotten_blood),
+                    1,
+                ));
+            }
+        }
         if battle.selected
             && battle.error.is_none()
             && let Some(status) = battle.snapshot
@@ -141,11 +157,13 @@ pub(super) fn project(
                 next.push(Icon::new(&timer.key, label, 1));
             }
         }
+        // The status bar honours the HUD page's Status Bar column; the HUD column belongs to
+        // the Conditions HUD pane (`PlayView::hud_conditions_text`).
         next.retain(|icon| {
             !play
                 .view
                 .preferences()
-                .condition_hud_hidden
+                .condition_status_hidden
                 .contains(&icon.key)
         });
     } else {

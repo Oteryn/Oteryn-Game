@@ -368,3 +368,106 @@ fn remember_device_checkbox_keeps_the_session_and_persists_the_login_choices() -
     assert!(!saved.remember_device && !saved.stay_logged_in && saved.quick_login);
     Ok(())
 }
+#[test]
+fn page_reset_restores_the_section_editors_of_its_page() -> TestResult {
+    let mut app = app(Page::GeneralHotkeys, None)?;
+    let defaults = crate::play::ReferencePreferences::default();
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .edit_preferences(|p| {
+            p.keybindings
+                .insert("0165-hireling-open".into(), "CTRL+ALT+SHIFT+F11".into());
+            p.secondary_keybindings
+                .insert("0165-hireling-open".into(), "CTRL+ALT+SHIFT+F10".into());
+            p.action_keys.0.insert(35, "CTRL+ALT+SHIFT+F9".into());
+            p.hotkey_contexts.chat_on = !p.hotkey_contexts.chat_on;
+            p.audio_device = "Headset".into();
+            p.condition_hud_hidden = vec!["Soul War".into()];
+            p.condition_status_hidden = vec!["Resting Area".into()];
+            p.move_special_condition(0, true);
+            p.move_status_entry(true, 0, true);
+            p.set_language(oteryn_client_ui::localization::Language::Sv);
+            p.resource_hud.soul = false;
+        });
+    let reset = app.world_mut().spawn(Control::Reset).observe(activate).id();
+    for page in [
+        Page::GeneralHotkeys,
+        Page::Sound,
+        Page::Hud,
+        Page::Interface,
+    ] {
+        app.world_mut().resource_mut::<OptionsState>().page = page;
+        let revision = app.world().resource::<OptionsState>().revision;
+        app.world_mut().trigger(Activate { entity: reset });
+        assert_ne!(
+            app.world().resource::<OptionsState>().revision,
+            revision,
+            "{page:?} rebuilds its sections"
+        );
+    }
+    let owner = app.world().non_send::<HostOwner>();
+    let draft = owner.preferences_draft().ok_or("draft")?;
+    assert_eq!(draft.keybindings, defaults.keybindings);
+    assert_eq!(draft.secondary_keybindings, defaults.secondary_keybindings);
+    assert_eq!(draft.action_keys, defaults.action_keys);
+    assert_eq!(draft.hotkey_contexts, defaults.hotkey_contexts);
+    assert_eq!(draft.audio_device, defaults.audio_device);
+    assert_eq!(draft.condition_hud_hidden, defaults.condition_hud_hidden);
+    assert_eq!(
+        draft.condition_status_hidden,
+        defaults.condition_status_hidden
+    );
+    assert_eq!(
+        draft.ordered_condition_keys(),
+        defaults.ordered_condition_keys()
+    );
+    assert_eq!(draft.skill_order, defaults.skill_order);
+    assert_eq!(draft.language(), defaults.language());
+    assert!(draft.resource_hud.soul);
+    Ok(())
+}
+#[test]
+fn hud_resource_toggles_edit_apply_and_save_each_display() -> TestResult {
+    let path = std::env::temp_dir().join(format!(
+        "bevy-options-resource-hud-{}.json",
+        std::process::id()
+    ));
+    let result = (|| -> TestResult {
+        let mut app = app(Page::Hud, Some(path.clone()))?;
+        for (id, value) in [
+            ("hud.resource_values", false),
+            ("hud.resource_soul", false),
+            ("hud.resource_stamina", false),
+            ("hud.resource_conditions", false),
+            ("hud.resource_rest", false),
+            ("hud.resource_combo", true),
+        ] {
+            let checkbox = app
+                .world_mut()
+                .spawn(Control::Check(id))
+                .observe(toggle)
+                .id();
+            app.world_mut().trigger(ValueChange {
+                source: checkbox,
+                value,
+                is_final: true,
+            });
+        }
+        app.world_mut().non_send_mut::<HostOwner>().apply(true);
+        let stored = crate::play::SettingsState::new(Some(path.clone())).preferences;
+        assert_eq!(
+            stored.resource_hud,
+            crate::play::ResourceHudOptions {
+                combo: true,
+                values: false,
+                soul: false,
+                stamina: false,
+                conditions: false,
+                rest: false,
+            }
+        );
+        Ok(())
+    })();
+    let _ = std::fs::remove_file(&path);
+    result
+}
