@@ -612,9 +612,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             shown.push(entity.entity);
             // Recheck positions after the async census. An invisibility change
             // cannot turn a stale hidden position into a released public frame.
+            // Census floors are legacy depths; spatial entity floors are native.
             if position.x != entity.position.x
                 || position.y != entity.position.y
-                || position.floor != entity.position.floor
+                || position.floor.checked_neg()? != entity.position.floor
             {
                 return None;
             }

@@ -147,6 +147,8 @@ fn scenario(case: u8) -> TestResult {
                         let mut picture=oteryn_client_runtime::cast_view::Picture::default();
                         picture.apply(Message::Ready{epoch:watching.epoch(),chat:watching.chat_allowed(),delay:watching.delay()},std::time::Instant::now())?;
                         peer.observe(tokio::time::timeout(Duration::from_secs(10),async {while picture.floor.is_none(){picture.apply(next_observation(&mut watching,&mut observer,"map").await?,std::time::Instant::now())?;}Ok::<(),Box<dyn std::error::Error>>(())})).await???;
+                        assert_eq!(before.floor,7,"the movement census retains its legacy floor");
+                        assert_eq!(picture.floor,Some(-7),"the public cast camera uses the native view floor");
                         assert!(picture.tiles.values().any(|items|items.contains(&1629)),"actual donor door appearance reaches native view");
                         assert!(!picture.actors.is_empty(),"caster creature picture is projected");
                         let text="Hello from the caster";
