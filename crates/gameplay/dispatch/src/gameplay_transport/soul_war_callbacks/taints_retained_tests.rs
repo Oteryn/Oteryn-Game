@@ -63,7 +63,11 @@ fn srx3_actual_native_retained_foam_component_keeps_current_policy_after_lethal(
         let source=crate::content::native_monster_callbacks::qualify_native_callback(&native,&record.profile.target,4,crate::content::native_monster_callbacks::NativeCallbackList::Attack).map_err(setup_error)?.ok_or("actual native callback source")?;
         let stage=source.stage(0).map_err(setup_error)?.ok_or("actual first callback stage")?;
         let pin=crate::foundation::ChannelContentPin::from_activation(world,1,native.source_digest(),[2;32],[3;32],[4;32],(100,100,7));
-        let mut runtime=ChannelRuntimeV1::from_committed_assignment(world,crate::foundation::ChannelId::decode(&id(91)).map_err(setup_error)?,crate::foundation::NodeId::decode(&id(92)).map_err(setup_error)?,1,1,1,"runtime-scope-assignment:1",8,pin).map_err(setup_error)?;
+        let mut runtime=ChannelRuntimeV1::from_committed_scope_assignment(crate::foundation::RuntimeScopeRefV1::channel(world,crate::foundation::ChannelId::decode(&id(91)).map_err(setup_error)?),crate::foundation::NodeId::decode(&id(92)).map_err(setup_error)?,1,1,1,"runtime-scope-assignment:1",8,pin).map_err(setup_error)?;
+        // This case exercises native logical death, including the qualified
+        // empty handler vector. The ordinary Channel constructor selects the
+        // separate classic death path and cannot complete a native task.
+        assert!(!runtime.uses_classic_creature_deaths());
         native.install_companion_policies(&mut runtime).map_err(setup_error)?;
         let maximum=runtime.companion_policy(key).map_err(setup_error)?.maximum_health;
         let actor=runtime.admit_source_pinned_lab_creature(MovementLocalPosition{x:100,y:100,floor:7},key,maximum).map_err(setup_error)?;

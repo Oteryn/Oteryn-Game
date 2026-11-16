@@ -194,7 +194,7 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/m26_rotten_wave_production.rs",
                 1,
             ),
-            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 1),
+            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 2),
             // Primal cadence uses the actual activated Source combat seam.
             (
                 "gameplay_transport/postgres_tests/primal_menace_native.rs",
@@ -246,9 +246,9 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             ("gameplay_transport/soul_war_callbacks/taint_five.rs", 1),
-            ("gameplay_transport/soul_war_world.rs", 1),
+            ("gameplay_transport/soul_war_world.rs", 2),
             ("gameplay_transport/soul_war_world_raid.rs", 1),
-            ("gameplay_transport/source_death.rs", 1),
+            ("gameplay_transport/source_death.rs", 2),
             ("gameplay_transport/source_death/heart.rs", 1),
             ("gameplay_transport/spite_global.rs", 1),
         ],
@@ -331,6 +331,8 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/field_removal.rs", 1),
             ("gameplay_transport/field_step_ingress.rs", 2),
+            // Paced movement admits the native blood listener only through this field gate.
+            ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/postgres_tests/field_runes.rs", 2),
             // SRX-3: source-owned Primal Pod creation and expiry use the existing Ground gate.
             ("gameplay_transport/primal_callbacks.rs", 2),
@@ -346,8 +348,8 @@ const INVENTORY: &[Entry] = &[
                 1,
             ),
             ("gameplay_transport/primal_entry.rs", 1),
-            ("gameplay_transport/rotten_blood_entry.rs", 1),
-            ("gameplay_transport/soul_war_entry.rs", 1),
+            ("gameplay_transport/rotten_blood_entry.rs", 2),
+            ("gameplay_transport/soul_war_entry.rs", 2),
             ("gameplay_transport/spite_step.rs", 3),
             ("gameplay_transport/spite_step/megalomania.rs", 1),
         ],
@@ -376,7 +378,6 @@ const INVENTORY: &[Entry] = &[
             owners: &["MAP-CUTOVER-1c"],
         },
         calls: &[
-            ("gameplay_transport/postgres_tests/m26_spite_chain.rs", 1),
             (
                 "gameplay_transport/postgres_tests/m26_static_instance.rs",
                 1,

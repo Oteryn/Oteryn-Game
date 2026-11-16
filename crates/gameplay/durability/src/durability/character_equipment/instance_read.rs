@@ -56,11 +56,6 @@ pub(super) async fn read_instance_equipment_in_transaction(
     super::super::character_progression::assert_gameplay_fence(tx, &gameplay, node)
         .await?
         .map_err(|_| rejected("equipment current Instance lifecycle fence"))?;
-    let current:Option<Vec<u8>>=sqlx::query_scalar("SELECT server_artifact_digest FROM game_content_activations WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid ORDER BY activation_sequence DESC LIMIT 1")
-        .bind(world_id.as_bytes().as_slice()).bind(channel.as_slice()).fetch_optional(&mut **tx).await?;
-    if current.as_deref() != Some(content_digest.as_slice()) {
-        return Err(rejected("equipment independent active Content"));
-    }
     let authority = EquipmentAuthority {
         physical_transaction: sqlx::query_scalar("SELECT pg_current_xact_id()::text")
             .fetch_one(&mut **tx)
