@@ -341,7 +341,7 @@ pub mod cui3 {
     pub use oteryn_session::property_services::house_podium;
     pub use oteryn_session::{
         battle_metadata, browse_field, container_tree, daily_boost, depot_search, hotkey_equip,
-        item_forge, item_view, store,
+        item_forge, item_view, refusal_detail, store,
     };
 }
 

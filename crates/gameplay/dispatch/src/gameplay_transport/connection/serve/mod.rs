@@ -32,6 +32,7 @@ mod target_move;
 use command::CommandOutcome;
 mod effects;
 mod outbound;
+use outbound::write_frame;
 mod result;
 mod route;
 mod use_effects;
