@@ -1,4 +1,4 @@
-//! Bounded RGBA composition used by the native podium preview.
+//! Bounded RGBA composition of the podium artwork preview the Bevy podium window shows.
 pub fn compose(cells: impl IntoIterator<Item = (i32, i32, Vec<u8>)>) -> Vec<u8> {
     let mut image = vec![32; 128 * 128 * 4];
     for pixel in image.as_chunks_mut::<4>().0 {

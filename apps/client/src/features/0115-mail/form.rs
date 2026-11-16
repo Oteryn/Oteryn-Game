@@ -225,4 +225,148 @@ impl crate::play::Outbox {
         mailbox.chat_party_room.selected = true;
         mailbox.party_effects.selected = true;
     }
+
+    /// Selects the capabilities of the forms the intent-mapping tests drive.
+    pub(crate) fn bevy_feature_form_capabilities(&self) {
+        self.achievements_initialize();
+        self.arena_initialize(true);
+        self.boss_difficulty_initialize(true, false);
+        self.chat_public_initialize(true, None);
+        self.exiva_initialize(true);
+        self.guild_initialize(true);
+        self.hireling_initialize(true);
+        self.hireling_management_initialize(true);
+        self.hotkey_equip_initialize(true);
+        self.hotkey_equip_items(vec![3031, 3035]);
+        let mut mailbox = lock(&self.0);
+        mailbox.properties.house_podium.selected = true;
+        mailbox.chat_private.selected = true;
+        mailbox.chat.selected = true;
+    }
+
+    /// Answers the public-channel, boss-difficulty and store requests in flight.
+    pub(crate) fn bevy_feature_forms_answered(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.chat_public.pending = false;
+        mailbox.boss_difficulty.pending = false;
+        mailbox.store.pending = false;
+        mailbox.store.confirmed_purchase = None;
+    }
+
+    /// The private-channel list the server reports: own channel `own`, an invitation to `invited`.
+    pub(crate) fn bevy_private_channels_listed(&self, own: u16, invited: u16) {
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.chat_private;
+        panel.list = Some(oteryn_session::ChatChannelList {
+            own_channel: Some(own),
+            invited: vec![oteryn_session::InvitedChannel {
+                channel_id: invited,
+                owner_name: "Friend".into(),
+            }],
+            ..Default::default()
+        });
+        panel.pending = false;
+        panel.pending_intent = None;
+    }
+
+    /// The private-channel request in flight is answered.
+    pub(crate) fn bevy_private_channels_answered(&self) {
+        let mut mailbox = lock(&self.0);
+        mailbox.chat_private.pending = false;
+        mailbox.chat_private.pending_intent = None;
+    }
+
+    /// The guild the server reports: own guild `[1; 16]`, members A and B, an invitation to C.
+    pub(crate) fn bevy_guild_listed(&self) {
+        use oteryn_client_ui::guild::guild;
+        let mut mailbox = lock(&self.0);
+        let panel = &mut mailbox.guild;
+        panel.pending = false;
+        panel.own = Some(guild::GuildSummary {
+            guild: [1; 16],
+            name: "Own".into(),
+            state: 1,
+            revision: 3,
+            own_rank: 1,
+            title: String::new(),
+            message: String::new(),
+            ranks: vec!["Leader".into(), "Member".into()],
+        });
+        for (character, name) in [([2; 16], "A"), ([3; 16], "B")] {
+            panel.roster.push(guild::GuildMember {
+                character,
+                name: name.into(),
+                level: 2,
+                title: String::new(),
+            });
+        }
+        panel.invitations.push(guild::GuildInvitation {
+            guild: [4; 16],
+            name: "C".into(),
+            expires_at_unix_ms: 10,
+        });
+    }
+
+    /// Answers the guild request in flight.
+    pub(crate) fn bevy_guild_answered(&self) {
+        lock(&self.0).guild.pending = false;
+    }
+
+    /// Answers the arena request in flight.
+    pub(crate) fn bevy_arena_answered(&self) {
+        lock(&self.0).arena.pending = None;
+    }
+
+    /// Delivers an Exiva reply through the session's result route.
+    pub(crate) fn bevy_exiva_result(&self, result: &oteryn_session::GatedCommandResult) {
+        self.exiva_result(result);
+    }
+
+    /// Delivers an account-achievements page through the session's result route.
+    pub(crate) fn bevy_achievements_result(
+        &self,
+        response: &oteryn_client_runtime::account_achievements::Response,
+    ) {
+        self.achievements_result(response);
+    }
+
+    /// The owned hireling's identity the configuration tests seed: a UUIDv7 of ones.
+    pub(crate) const BEVY_HIRELING: [u8; 16] = [1, 1, 1, 1, 1, 1, 0x70, 1, 0x80, 1, 1, 1, 1, 1, 1, 1];
+
+    /// One owned hireling named Alice and the six configuration offers priced.
+    pub(crate) fn bevy_hireling_configuration_priced(&self) {
+        use oteryn_client_runtime::cui3::store;
+        let mut mailbox = lock(&self.0);
+        mailbox.hireling_management.pending = None;
+        mailbox
+            .hireling_management
+            .entries
+            .push(oteryn_client_ui::hireling_management::wire::Entry {
+                hireling: Self::BEVY_HIRELING,
+                name: "Alice".into(),
+                sex: 2,
+                look_type: 1107,
+                colors: [1, 2, 3, 4],
+                skills: 0,
+                outfits: 0,
+                position: None,
+            });
+        mailbox.store.selected = true;
+        mailbox.store.catalogue_category = "houses.hirelings".into();
+        let offers = ["25438", "25437", "1001", "1002", "1003", "1004"]
+            .map(|key| store::StoreOffer {
+                offer_key: format!("store:hireling:{key}"),
+                title: key.into(),
+                price: 5,
+                currency: "coins".into(),
+            })
+            .to_vec();
+        mailbox.store.catalogue = Some(store::StoreCataloguePage {
+            catalog_revision: "r1".into(),
+            total_coins: 100,
+            transferable_coins: 100,
+            next_page_cursor: String::new(),
+            offers,
+        });
+    }
 }

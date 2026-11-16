@@ -140,8 +140,10 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                 .and_then(|row| row.checked_sub(1));
             let intent = match action {
                 0 => {
-                    if let Some(row) = row {
-                        select(p, row);
+                    if row.is_some_and(|row| select(p, row)) {
+                        p.feedback = None;
+                    } else {
+                        p.feedback = Some(tr!("Enter a hireling number from the list"));
                     }
                     None
                 }

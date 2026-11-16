@@ -58,8 +58,9 @@ struct FormWindow {
 
 pub(super) fn install(app: &mut App) {
     app.init_resource::<FormWindow>()
+        .init_resource::<podium::PodiumArtwork>()
         .add_message::<KeyboardInput>()
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, (keyboard, project, podium::project).chain())
         .add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
 }
 
@@ -419,6 +420,9 @@ fn build(
     }
     root
 }
+
+#[path = "feature_forms/podium.rs"]
+mod podium;
 
 #[cfg(test)]
 #[path = "feature_forms/tests.rs"]

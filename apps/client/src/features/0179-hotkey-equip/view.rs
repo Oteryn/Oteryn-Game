@@ -53,12 +53,17 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         submit: |mailbox, commands, action, values| {
             use crate::play::feature_0115_mail::view::form::field;
             let panel = &mut mailbox.hotkey_equip;
-            let slot = match field(&values, 0) {
-                "" => Some(0),
-                key => key.parse::<usize>().ok().and_then(|key| key.checked_sub(1)),
-            }
-            .filter(|slot| *slot < ITEM_HOTKEY_SLOTS);
+            // A key must be typed explicitly: an empty field never stands for F1.
+            let slot = field(&values, 0)
+                .parse::<usize>()
+                .ok()
+                .and_then(|key| key.checked_sub(1))
+                .filter(|slot| *slot < ITEM_HOTKEY_SLOTS);
             let command = match (action, slot) {
+                (0..=2, None) => {
+                    panel.feedback = Some(tr!("Enter a key number from 1 to 12").into());
+                    None
+                }
                 (0, Some(slot)) => {
                     if let Some(&definition) = field(&values, 1)
                         .parse::<usize>()
@@ -67,12 +72,16 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                         .and_then(|row| panel.items.get(row))
                         && assign(panel, slot, definition)
                     {
+                        panel.feedback = None;
                         edited(panel);
+                    } else {
+                        panel.feedback = Some(tr!("Enter an item row from the list").into());
                     }
                     None
                 }
                 (1, Some(slot)) => {
                     if assign(panel, slot, 0) {
+                        panel.feedback = None;
                         edited(panel);
                     }
                     None
@@ -82,6 +91,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                         panel.item_definition = definition.get();
                         control_request(panel)
                     } else {
+                        panel.feedback = Some(tr!("No item is assigned to this key").into());
                         None
                     }
                 }

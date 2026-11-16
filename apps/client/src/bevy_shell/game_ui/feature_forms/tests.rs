@@ -686,6 +686,9 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
     Ok(())
 }
 
+#[path = "intent_tests.rs"]
+mod intent_tests;
+
 /// Opens Character titles through its key and applies a self query reply that earns
 /// `earned`; `None` is a refused query that leaves the titles unloaded.
 fn titles_window(

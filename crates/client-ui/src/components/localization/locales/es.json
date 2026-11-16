@@ -444,5 +444,15 @@
  "The minimum level must be at least 1 and not above the maximum level": "El nivel mínimo debe ser al menos 1 y no superar el nivel máximo",
  "Choose at least one vocation (mask 1-255)": "Elige al menos una vocación (máscara 1-255)",
  "The team size must be at least 1": "El tamaño del equipo debe ser al menos 1",
- "Free slots cannot exceed the team size": "Las plazas libres no pueden superar el tamaño del equipo"
+ "Free slots cannot exceed the team size": "Las plazas libres no pueden superar el tamaño del equipo",
+ "Enter a room number from the list": "Introduce un número de sala de la lista",
+ "Enter a player row from the list": "Introduce una fila de jugador de la lista",
+ "Enter a key number from 1 to 12": "Introduce un número de tecla del 1 al 12",
+ "Enter an item row from the list": "Introduce una fila de objeto de la lista",
+ "No item is assigned to this key": "No hay ningún objeto asignado a esta tecla",
+ "Enter a reward rank from 1 to 3": "Introduce un rango de recompensa del 1 al 3",
+ "Enter a Drome reward number from 1 to 18": "Introduce un número de recompensa del Drome del 1 al 18",
+ "Enter a member row and a rank level": "Introduce una fila de miembro y un nivel de rango",
+ "Enter a row number from the list": "Introduce un número de fila de la lista",
+ "Enter a hireling number from the list": "Introduce un número de contratado de la lista"
 }
