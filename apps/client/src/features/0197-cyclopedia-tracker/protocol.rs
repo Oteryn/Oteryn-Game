@@ -5,17 +5,18 @@ impl Outbox {
         lock(&self.0).cyclopedia_tracker.selected = selected;
     }
     pub(in crate::play) fn cyclopedia_tracker_result(&self, result: &GatedCommandResult) {
-        oteryn_client_ui::cyclopedia_tracker::apply_result(
-            &mut lock(&self.0).cyclopedia_tracker,
-            result,
-        );
+        let panel = &mut lock(&self.0).cyclopedia_tracker;
+        // The answered request is the one sent last, for the tracker `boss` names.
+        let slot = usize::from(panel.boss);
+        oteryn_client_ui::cyclopedia_tracker::apply_result(panel, result);
+        panel.widget_feedback[slot] = panel.feedback;
     }
     pub(in crate::play) fn cyclopedia_tracker_push(&self, payload: Vec<u8>) {
-        let mut mailbox = lock(&self.0);
-        oteryn_client_ui::cyclopedia_tracker::apply_snapshot(
-            &mut mailbox.cyclopedia_tracker,
-            &payload,
-        );
+        let panel = &mut lock(&self.0).cyclopedia_tracker;
+        if !oteryn_client_ui::cyclopedia_tracker::apply_snapshot(panel, &payload) {
+            // A domain-98 push carries both trackers.
+            panel.widget_feedback = [panel.feedback; 2];
+        }
     }
 }
 

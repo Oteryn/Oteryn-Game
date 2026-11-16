@@ -15,6 +15,10 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
             owner.request_toolbar_house();
             return true;
         }
+        "bestiary_tracker" | "bosstiary_tracker" => {
+            crate::bevy_shell::game_ui::toggle_cyclopedia_tracker(owner, id == "bosstiary_tracker");
+            return true;
+        }
         "bars" => {
             let mut preferences = owner.settings.preferences.clone();
             preferences.action_bar.visible = !preferences.action_bar.visible;
@@ -82,14 +86,6 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
         }
         "tasks" => {
             link.task_board_set_open(true);
-            true
-        }
-        "bestiary_tracker" => {
-            link.cyclopedia_tracker_widget_toggle(false);
-            true
-        }
-        "bosstiary_tracker" => {
-            link.cyclopedia_tracker_widget_toggle(true);
             true
         }
         "bug" => {

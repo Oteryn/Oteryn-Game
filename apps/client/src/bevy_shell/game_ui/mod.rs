@@ -12,6 +12,7 @@ mod cyclopedia_map;
 #[path = "cyclopedia/tests.rs"]
 mod cyclopedia_tests;
 mod cyclopedia_tracker;
+pub(super) use cyclopedia_tracker::toggle as toggle_cyclopedia_tracker;
 mod depot;
 mod feature_dialogs;
 mod feature_forms;
