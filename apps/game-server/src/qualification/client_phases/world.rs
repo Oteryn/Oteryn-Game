@@ -2800,6 +2800,11 @@ pub(super) async fn journeys(
             clients.accounts.len()
         ));
     }
+    if groups.runs("mp") {
+        #[path = "mp/mount.rs"]
+        mod mp;
+        mp::run(clients, packet_clients, world, &metadata.manifest.subareas).await;
+    }
     // The core/profile pair has not inherited packet movement, loot or death.
     if !groups.runs("core") {
         evidence("e2e_groups core=skipped");
