@@ -12,6 +12,7 @@ use bevy::{
 };
 
 mod catalog;
+mod objects;
 #[cfg(test)]
 mod tests;
 
@@ -141,7 +142,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     commands.entity(panel).add_child(description);
     for (index, caption) in [
         "Search spells by name or words",
-        "Drag an object onto an unlocked action slot to assign it.",
+        "Objects carried (choose one, then an object action)",
         "Text",
         "Keyboard chord",
         "Item subtype (blank: any)",
@@ -212,6 +213,24 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
                 ))
                 .id();
             commands.entity(panel).add_child(choices);
+        }
+        if index == 1 {
+            let objects = commands
+                .spawn((
+                    objects::ObjectsRoot,
+                    Node {
+                        width: percent(100.),
+                        max_height: px(62.),
+                        flex_wrap: FlexWrap::Wrap,
+                        column_gap: px(3.),
+                        row_gap: px(3.),
+                        overflow: Overflow::scroll_y(),
+                        ..default()
+                    },
+                    bevy::ui_widgets::ScrollArea,
+                ))
+                .id();
+            commands.entity(panel).add_child(objects);
         }
     }
     let actions = commands
@@ -681,4 +700,5 @@ pub(super) fn install(app: &mut App) {
     app.add_systems(Update, keyboard.before(project));
     app.add_systems(PostUpdate, finish.after(bevy::text::EditableTextSystems));
     app.add_systems(Update, catalog::project.after(project));
+    app.add_systems(Update, objects::project.after(project));
 }

@@ -1,9 +1,23 @@
 use super::*;
-use std::{
-    sync::mpsc::Sender,
-    time::{Duration, Instant},
-};
+use std::sync::mpsc::Sender;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+/// Every operation a test window started, in order; tests never reach the network.
+static STARTED: Mutex<Vec<(PathBuf, Action)>> = Mutex::new(Vec::new());
+
+/// A deterministic operation: verification reports a mismatch, anything else succeeds.
+fn scripted(directory: PathBuf, action: Action) -> Receiver<Outcome> {
+    let (tx, rx) = mpsc::channel();
+    let result = match action {
+        Action::Verify => Err(UpdateError::Verification),
+        _ => Ok(format!("{action:?} finished")),
+    };
+    let _ = tx.send(result);
+    if let Ok(mut started) = STARTED.lock() {
+        started.push((directory, action));
+    }
+    rx
+}
 
 fn app(directory: PathBuf) -> (App, Sender<Outcome>, Arc<Mutex<Option<Outcome>>>) {
     let (tx, rx) = mpsc::channel();
@@ -20,6 +34,7 @@ fn app(directory: PathBuf) -> (App, Sender<Outcome>, Arc<Mutex<Option<Outcome>>>
             pending: Some((Action::Check, rx)),
             report: "Checking the signed stable release…".into(),
             outcome: outcome.clone(),
+            start: scripted,
         },
     );
     app.update();
@@ -57,7 +72,7 @@ fn click(app: &mut App, choice: Choice) -> TestResult {
 #[test]
 fn maintenance_window_checks_then_verifies_offers_repair_and_closes() -> TestResult {
     let directory = std::env::temp_dir().join(format!("oteryn-maintenance-{}", std::process::id()));
-    let (mut app, check, outcome) = app(directory);
+    let (mut app, check, outcome) = app(directory.clone());
     assert!(
         shown(&mut app).is_empty(),
         "nothing is offered while checking"
@@ -85,16 +100,13 @@ fn maintenance_window_checks_then_verifies_offers_repair_and_closes() -> TestRes
         "a hidden choice does nothing"
     );
 
-    // Verification runs on the real maintenance caller; this build has no signing root.
+    // The Verify button starts the injected operation, never the signed-release transport.
     click(&mut app, Choice::Verify)?;
-    let deadline = Instant::now() + Duration::from_secs(30);
-    while app.world().non_send::<Maintenance>().stage == Stage::Working {
-        if Instant::now() >= deadline {
-            return Err("verification did not finish".into());
-        }
-        std::thread::sleep(Duration::from_millis(10));
-        app.update();
-    }
+    assert_eq!(
+        STARTED.lock().map_err(|_| "started")?.as_slice(),
+        [(directory.clone(), Action::Verify)]
+    );
+    app.update();
     assert!(report(&mut app)?.starts_with("Verification failed"));
     assert_eq!(shown(&mut app), vec![Choice::Repair, Choice::Close]);
     assert!(matches!(
