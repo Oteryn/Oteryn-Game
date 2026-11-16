@@ -74,6 +74,11 @@ impl PlayLink {
     pub fn container_manual_sort_active(&self) -> bool {
         lock(&self.mailbox).container_manual_sort.active()
     }
+    /// Whether the session negotiated the mode (510) and whether it is on, for the sort menu.
+    #[must_use]
+    pub fn container_manual_sort_mode(&self) -> oteryn_client_ui::container_manual_sort::ManualSort {
+        lock(&self.mailbox).container_manual_sort
+    }
     pub fn item_movement(&self) -> oteryn_client_ui::inventory::movement::Movement {
         lock(&self.mailbox).item_movement.clone()
     }

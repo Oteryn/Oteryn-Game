@@ -170,6 +170,11 @@ enum ToolAction {
         key: oteryn_client_runtime::container_sort::SortKey,
         descending: bool,
     },
+    /// Tibia Global's "Use Manual Sort Mode" checkbox of the sort menu; `checked` is the mode
+    /// the control shows.
+    ManualSort {
+        checked: bool,
+    },
 }
 #[derive(Component)]
 struct ToolControl {
@@ -208,6 +213,16 @@ fn tool_button(
         .id();
     if !enabled {
         commands.entity(entity).insert(InteractionDisabled);
+    }
+    if let ToolAction::ManualSort { checked } = action {
+        let indicator = commands
+            .spawn(source::checkbox_indicator(if checked {
+                skin.checked.clone()
+            } else {
+                skin.unchecked.clone()
+            }))
+            .id();
+        commands.entity(entity).add_child(indicator);
     }
     let caption = commands
         .spawn(source::button_caption(label, skin.font.clone()))
@@ -311,7 +326,7 @@ fn tool_activate(
                 key,
                 descending,
             },
-            ToolSnapshot::Sort(_, containers),
+            ToolSnapshot::Sort(_, containers, _),
         ) => {
             if !containers.views.as_ref().is_some_and(|views| {
                 views.views.iter().any(|entry| {
@@ -333,6 +348,10 @@ fn tool_activate(
             }
             play.link
                 .container_sort_request(oteryn_client_ui::container_sort::Intent::Sort);
+        }
+        // The same per-session mode as the ToggleManualSortMode hotkey (Shift+S).
+        (ToolAction::ManualSort { .. }, ToolSnapshot::Sort(_, _, mode)) if mode.selected => {
+            play.link.toggle_container_manual_sort();
         }
         _ => {
             return;
