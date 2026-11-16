@@ -85,7 +85,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         reservation: Option<&mut personal_encounter::Reservation<'_>>,
     ) -> UseDisposition {
-        eprintln!("QMR4_TEMP_ENCOUNTER preflight={preflight} personal={}", callback.has_personal_state());
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
@@ -103,13 +102,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         state.character_facts().level >= encounter.minimum_level
                     })
                     && self.personal_trial_ready(runtime, callback, key);
-                eprintln!(
-                    "QMR4_TEMP_PREFLIGHT admitted={} players={} level={:?} ready={}",
-                    oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(callback),
-                    encounter.players.is_empty(),
-                    states.get(runtime, actor, session).map(|s| s.character_facts().level),
-                    self.personal_trial_ready(runtime, callback, key)
-                );
                 return if ready {
                     UseDisposition::Committed
                 } else {
