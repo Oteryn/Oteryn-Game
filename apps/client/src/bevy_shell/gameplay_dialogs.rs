@@ -47,6 +47,8 @@ enum Choice {
     Browse,
     Talk,
     NpcTrade,
+    Rotate,
+    Wrap,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -166,6 +168,22 @@ impl HostOwner {
             );
         }
     }
+    /// Tibia Global offers Rotate and Wrap/Unwrap on a clicked item; the session's house
+    /// furniture lists (capabilities 445 and 207) then name the eligible furniture.
+    fn furniture(&self, menu: Option<&Menu>) -> (bool, bool) {
+        use oteryn_client_ui::world_interaction::menu::Target;
+        let Some(play) = self.play.as_ref().filter(|_| {
+            menu.is_some_and(|menu| matches!(menu.target, Target::Item(_) | Target::Object(_)))
+        }) else {
+            return (false, false);
+        };
+        let rotation = play.link.house_rotation_panel();
+        let wrap = play.link.house_furniture_panel();
+        (
+            rotation.selected && !rotation.pending,
+            wrap.selected && !wrap.pending,
+        )
+    }
     fn choose_dialog(&mut self, id: u64, choice: Choice) -> bool {
         if self
             .dialogs
@@ -268,6 +286,23 @@ impl HostOwner {
                 },
                 Choice::Report,
             ) => rule_violation::open(self, &target),
+            (Content::Context { menu, .. }, Choice::Rotate | Choice::Wrap) => {
+                let (rotate, wrap) = self.furniture(menu.as_deref());
+                if self.modal_active() {
+                    return false;
+                }
+                self.play.as_ref().is_some_and(|play| {
+                    if play.view.gameplay_input_blocked(&play.link) {
+                        return false;
+                    }
+                    match choice {
+                        Choice::Rotate if rotate => play.link.house_rotation_open(),
+                        Choice::Wrap if wrap => play.link.house_furniture_open(),
+                        _ => return false,
+                    }
+                    true
+                })
+            }
             _ => false,
         }
     }
@@ -484,6 +519,15 @@ fn project(
                     Choice::Context(index),
                 );
             }
+            let (rotate, wrap) = owner.furniture(menu.as_deref());
+            for (shown, caption, choice) in [
+                (rotate, "Rotate", Choice::Rotate),
+                (wrap, "Wrap / Unwrap", Choice::Wrap),
+            ] {
+                if shown {
+                    button(&mut commands, &skin, window, request.id, caption, choice);
+                }
+            }
             if inspection.is_some() {
                 button(
                     &mut commands,
@@ -566,6 +610,9 @@ fn button(
 }
 
 mod npc;
+
+#[cfg(test)]
+mod furniture_tests;
 
 #[cfg(test)]
 mod tests;
