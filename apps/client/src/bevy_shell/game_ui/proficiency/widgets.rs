@@ -2,7 +2,9 @@ use super::*;
 use bevy::{
     input_focus::tab_navigation::TabGroup, ui::InteractionDisabled, ui_widgets::ScrollArea,
 };
-use oteryn_client_ui::weapon_proficiency::{mastery_target, progress_level, progress_percent};
+use oteryn_client_ui::weapon_proficiency::{
+    Intent, mastery_target, progress_level, progress_percent,
+};
 use oteryn_client_ui_bevy as source;
 
 pub(super) struct Widgets {
@@ -221,6 +223,7 @@ pub(super) fn render(
     } else {
         text(commands, skin, tree, "Select a weapon to view its perks");
     }
+    shaping(commands, skin, tree, key, panel);
     let mut status = Vec::new();
     if !panel.selected {
         status.push("Weapon proficiency is unavailable in this session");
@@ -274,6 +277,170 @@ pub(super) fn render(
             world.despawn(window);
         });
         widgets.content = Some(previous);
+    }
+}
+/// Committed slot shaping (modify, rank, reshape, clear) over the server's state projection.
+fn shaping(
+    commands: &mut Commands,
+    skin: &Skins,
+    parent: Entity,
+    key: Key,
+    panel: &WeaponProficiencyPanel,
+) {
+    let Some(state) = panel
+        .shaping
+        .as_ref()
+        .filter(|state| state.definition == panel.weapon)
+    else {
+        if panel.state_selected && panel.weapon != 0 {
+            text(
+                commands,
+                skin,
+                parent,
+                "Shaping: waiting for the committed slot state",
+            );
+        }
+        return;
+    };
+    let enabled = panel.selected && !panel.pending && !panel.mutation_uncertain;
+    let control = |kind| Control { key, kind };
+    text(
+        commands,
+        skin,
+        parent,
+        &format!("Shaping (revision {})", state.revision),
+    );
+    for (number, slot) in (1u8..).zip(&state.slots) {
+        let marker = if panel.slot == number { "> " } else { "" };
+        let line = match slot {
+            Some(slot) => format!(
+                "{marker}Slot {number}: level {}, rank {}\nCurrent: {}\nNext: {}\nMaximum: {}",
+                slot.level + 1,
+                slot.rank,
+                slot.current,
+                slot.next,
+                slot.maximum
+            ),
+            None => format!("{marker}Slot {number}: empty"),
+        };
+        text(commands, skin, parent, &line);
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Slot(number)),
+            &format!("Select slot {number}"),
+            enabled && panel.slot != number,
+        );
+    }
+    let rank_dust = state
+        .rank_dust
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(" / ");
+    text(
+        commands,
+        skin,
+        parent,
+        &format!(
+            "Modify dust: {} / {} | Rank dust: {rank_dust}\nReshape dust: {} | Clear dust: {} | Orbs: {}",
+            state.modify_dust[0],
+            state.modify_dust[1],
+            state.reshape_dust,
+            state.clear_dust,
+            state.orbs
+        ),
+    );
+    if !(1..=2).contains(&panel.slot) {
+        text(commands, skin, parent, "Select a slot to shape it");
+        return;
+    }
+    let current = state
+        .slots
+        .get(usize::from(panel.slot - 1))
+        .and_then(Option::as_ref);
+    let offers = current.map_or(&[][..], |slot| slot.offers.as_slice());
+    for (choice, offer) in (0u8..).zip(offers) {
+        let chosen = panel.shaping_choice == choice;
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Offer(choice)),
+            &format!(
+                "{}Offer {}: {offer}",
+                if chosen { "Chosen: " } else { "" },
+                choice + 1
+            ),
+            enabled && !chosen,
+        );
+    }
+    if let Some(entry) = panel.weapon_entry() {
+        for (level, data) in entry.levels.iter().enumerate() {
+            if data.selected.is_some() {
+                button(
+                    commands,
+                    skin,
+                    parent,
+                    control(Kind::Modify(level)),
+                    &format!("Modify slot with level {} perk", level + 1),
+                    enabled,
+                );
+            }
+        }
+    }
+    let shaped = enabled && current.is_some();
+    for (intent, caption, allowed) in [
+        (Intent::RankUp, "Rank up", shaped),
+        (Intent::OrbRank, "Rank up with orb", shaped),
+        (Intent::ReshapeOffer, "Request reshape offers", shaped),
+        (
+            Intent::ReshapeChoose,
+            "Choose selected offer",
+            shaped && !offers.is_empty(),
+        ),
+        (
+            Intent::DeclineOffer,
+            "Decline offers",
+            shaped && !offers.is_empty(),
+        ),
+    ] {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(intent)),
+            caption,
+            allowed,
+        );
+    }
+    if panel.clear_confirmation.is_some() {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::ConfirmClear)),
+            &format!("Confirm clear ({} clear dust)", state.clear_dust),
+            enabled,
+        );
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::CancelClear)),
+            "Cancel clear",
+            true,
+        );
+    } else {
+        button(
+            commands,
+            skin,
+            parent,
+            control(Kind::Shape(Intent::Clear)),
+            "Clear slot",
+            shaped,
+        );
     }
 }
 fn pane(commands: &mut Commands, skin: &Skins, parent: Entity, width: Val, role: u32) -> Entity {
@@ -366,6 +533,10 @@ fn control_identity(control: &Control) -> (u8, usize, usize) {
         Kind::SaveClose => (6, 0, 0),
         Kind::DiscardClose => (7, 0, 0),
         Kind::CancelClose => (8, 0, 0),
+        Kind::Slot(slot) => (9, usize::from(slot), 0),
+        Kind::Offer(choice) => (10, usize::from(choice), 0),
+        Kind::Modify(level) => (11, level, 0),
+        Kind::Shape(intent) => (12, intent as usize, 0),
     }
 }
 fn same_role(world: &World, target: Entity, source: Entity) -> bool {

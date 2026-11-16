@@ -27,4 +27,7 @@ impl Outbox {
     pub(crate) fn bevy_proficiency_result(&self, result: &GatedCommandResult) {
         self.weapon_proficiency_result(result);
     }
+    pub(crate) fn bevy_proficiency_state_initialize(&self) {
+        self.weapon_proficiency_state_initialize(true);
+    }
 }

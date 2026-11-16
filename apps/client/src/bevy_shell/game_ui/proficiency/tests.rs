@@ -467,3 +467,168 @@ fn restored_proficiency_preview_allows_switch_and_refresh_then_apply() -> Result
     }
     Ok(())
 }
+
+fn reply(outbox: &crate::play::Outbox, sequence: u64, payload: Vec<u8>) {
+    outbox.bevy_proficiency_result(&GatedCommandResult {
+        command_id: sequence,
+        status: CommandStatus::Accepted,
+        server_sequence: sequence,
+        payload,
+    });
+}
+fn shaping_state(revision: u64) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::weapon_proficiency_state::{Slot, State};
+    Ok(State {
+        definition: 258,
+        revision,
+        slots: [
+            Some(Slot {
+                level: 0,
+                rank: 1,
+                current: "Attack +1".into(),
+                next: "Attack +2".into(),
+                maximum: "Attack +10".into(),
+                offers: vec!["Defence +2".into(), "Skill +2".into(), "Health +2".into()],
+            }),
+            None,
+        ],
+        modify_dust: [10, 20],
+        rank_dust: [5; 10],
+        reshape_dust: 30,
+        clear_dust: 40,
+        orbs: 2,
+    }
+    .encode()
+    .ok_or("shaping state encoding")?)
+}
+#[test]
+fn proficiency_shapes_slot_through_modify_rank_reshape_and_confirmed_clear() -> Result {
+    use oteryn_client_runtime::weapon_proficiency::{
+        ModificationOperation, ModificationReply, ModificationRequest, ModificationResult,
+        ModifiedSlot,
+    };
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_proficiency_state_initialize();
+    click(&mut app, |kind| matches!(kind, Kind::Weapon(0)))?;
+    let query = command(&mut commands)?;
+    assert_eq!((query.capability, query.kind), (448, 732));
+    assert_eq!(query.payload, 258u32.to_be_bytes());
+    let mut revision = 9;
+    reply(&outbox, 2, shaping_state(revision)?);
+    app.update();
+    let shown = texts(&mut app);
+    assert!(shown.iter().any(|text| text == "Shaping (revision 9)"));
+    assert!(
+        shown
+            .iter()
+            .any(|text| text.contains("Slot 1: level 1, rank 1") && text.contains("Attack +10"))
+    );
+    assert!(shown.iter().any(|text| text.contains("Orbs: 2")));
+    click(&mut app, |kind| matches!(kind, Kind::Slot(2)))?;
+    assert!(commands.try_recv().is_err(), "selecting a slot is local");
+    app.update();
+    assert!(texts(&mut app).iter().any(|text| text == "> Slot 2: empty"));
+    click(&mut app, |kind| matches!(kind, Kind::Slot(1)))?;
+    app.update();
+    click(&mut app, |kind| matches!(kind, Kind::Offer(2)))?;
+    assert!(commands.try_recv().is_err(), "choosing an offer is local");
+    app.update();
+    assert!(
+        texts(&mut app)
+            .iter()
+            .any(|text| text == "Chosen: Offer 3: Health +2")
+    );
+    type Matcher = fn(Kind) -> bool;
+    let steps: [(Matcher, ModificationOperation); 7] = [
+        (
+            |kind| matches!(kind, Kind::Modify(0)),
+            ModificationOperation::Modify { level: 0 },
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::RankUp)),
+            ModificationOperation::RankUp,
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::OrbRank)),
+            ModificationOperation::OrbRank,
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::ReshapeOffer)),
+            ModificationOperation::ReshapeOffer,
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::ReshapeChoose)),
+            ModificationOperation::ReshapeChoose { choice: Some(2) },
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::DeclineOffer)),
+            ModificationOperation::ReshapeChoose { choice: None },
+        ),
+        (
+            |kind| matches!(kind, Kind::Shape(Intent::ConfirmClear)),
+            ModificationOperation::Clear,
+        ),
+    ];
+    let mut sequence = 3;
+    for (target, operation) in steps {
+        if operation == ModificationOperation::Clear {
+            click(&mut app, |kind| matches!(kind, Kind::Shape(Intent::Clear)))?;
+            assert!(
+                commands.try_recv().is_err(),
+                "Clear first asks for confirmation"
+            );
+            app.update();
+            assert!(
+                texts(&mut app)
+                    .iter()
+                    .any(|text| text == "Confirm clear (40 clear dust)")
+            );
+        }
+        click(&mut app, target)?;
+        let sent = command(&mut commands)?;
+        assert_eq!(
+            (sent.capability, sent.kind),
+            (195, operation.command_type())
+        );
+        let request =
+            ModificationRequest::decode(sent.kind, &sent.payload).ok_or("modification request")?;
+        assert_eq!(request.definition.get(), 258);
+        assert_eq!(request.slot, 1);
+        assert_eq!(request.operation, operation);
+        assert_eq!(request.expected_revision, revision);
+        let slot = (operation != ModificationOperation::Clear).then_some(ModifiedSlot {
+            level: 0,
+            entry_index: 4,
+            rank: 2,
+            pending_offer: None,
+        });
+        reply(
+            &outbox,
+            sequence,
+            ModificationReply {
+                result: ModificationResult::Accepted,
+                slot,
+            }
+            .encode(),
+        );
+        app.update();
+        assert!(
+            texts(&mut app)
+                .iter()
+                .any(|text| text.contains("Modification: Accepted"))
+        );
+        // The accepted change invalidates the projection; the window re-reads committed state.
+        let refresh = command(&mut commands)?;
+        assert_eq!(refresh.kind, 732);
+        revision += 1;
+        reply(&outbox, sequence + 1, shaping_state(revision)?);
+        sequence += 2;
+        app.update();
+        assert!(
+            texts(&mut app)
+                .iter()
+                .any(|text| *text == format!("Shaping (revision {revision})"))
+        );
+    }
+    Ok(())
+}
