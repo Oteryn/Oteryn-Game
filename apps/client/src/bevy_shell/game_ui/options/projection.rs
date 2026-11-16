@@ -103,12 +103,15 @@ pub(super) fn project(
                 commands.entity(parent).add_child(button);
             }
         }
+        let help = state
+            .help_topic
+            .map(|topic| (topic, owner.settings.help_text(topic)));
         for parent in &bodies {
             commands.entity(parent).despawn_children();
             widgets::page(
                 &mut commands,
                 parent,
-                (state.page, state.binding),
+                (state.page, state.binding, help.as_ref()),
                 &skins,
                 &checks,
                 draft,

@@ -17,11 +17,14 @@ mod commands;
 mod conditions;
 #[cfg(test)]
 mod frame_tests;
+mod guide;
 mod keys;
+mod language;
 mod metadata;
 mod minimap_transfer;
 #[cfg(test)]
 mod navigation_tests;
+mod order;
 mod profiles;
 mod projection;
 mod screenshots;
@@ -44,6 +47,8 @@ struct OptionsState {
     revision: u64,
     /// The key binding selected on the General Hotkeys page.
     binding: Option<&'static str>,
+    /// The help topic shown on the Misc page.
+    help_topic: Option<crate::play::help::Topic>,
 }
 #[derive(Resource)]
 struct CheckSkins {
@@ -161,9 +166,7 @@ fn activate(
         Control::Reset => {
             let defaults = crate::play::ReferencePreferences::default();
             owner.edit_preferences(|draft| {
-                if state.page == Page::Screenshots {
-                    draft.screenshots = defaults.screenshots.clone();
-                }
+                reset_sections(state.page, draft, &defaults);
                 // Reset never signs this device out; the login choices change only by hand.
                 for row in metadata::rows(state.page) {
                     if !metadata::LOGIN_CHOICES.contains(&row.id) {
@@ -171,11 +174,51 @@ fn activate(
                     }
                 }
             });
+            // The section editors are rebuilt from the reset draft.
+            state.revision = state.revision.wrapping_add(1);
         }
         Control::Apply => owner.apply(false),
         Control::Ok => owner.apply(true),
         Control::Cancel => owner.cancel(),
         _ => {}
+    }
+}
+/// Page Reset also restores the preferences owned by the page's section editors.
+fn reset_sections(
+    page: Page,
+    draft: &mut crate::play::ReferencePreferences,
+    defaults: &crate::play::ReferencePreferences,
+) {
+    if page == Page::Screenshots {
+        draft.screenshots.clone_from(&defaults.screenshots);
+    }
+    if page == Page::GeneralHotkeys {
+        draft.keybindings.clone_from(&defaults.keybindings);
+        draft
+            .secondary_keybindings
+            .clone_from(&defaults.secondary_keybindings);
+        draft.hotkey_contexts.clone_from(&defaults.hotkey_contexts);
+        draft.action_keys.clone_from(&defaults.action_keys);
+    }
+    if page == Page::Interface {
+        draft.language_code.clone_from(&defaults.language_code);
+        draft.english = defaults.english;
+    }
+    if page == Page::Hud {
+        draft
+            .condition_hud_hidden
+            .clone_from(&defaults.condition_hud_hidden);
+        draft
+            .condition_status_hidden
+            .clone_from(&defaults.condition_status_hidden);
+        draft.condition_order.clone_from(&defaults.condition_order);
+        draft
+            .special_condition_order
+            .clone_from(&defaults.special_condition_order);
+        draft.skill_order.clone_from(&defaults.skill_order);
+    }
+    if page == Page::Sound {
+        draft.audio_device.clone_from(&defaults.audio_device);
     }
 }
 fn toggle(

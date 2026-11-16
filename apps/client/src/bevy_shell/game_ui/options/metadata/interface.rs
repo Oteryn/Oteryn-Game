@@ -23,7 +23,7 @@ pub(super) const MAIN: [Row; 4] = [
         cursor_crosshair
     ),
 ];
-pub(super) const HUD: [Row; 17] = [
+pub(super) const HUD: [Row; 23] = [
     check!("hud.health", "Show Health", hud_health),
     check!("hud.mana", "Show Mana", hud_mana),
     check!("hud.own_name", "Show Own Name", hud_names[0]),
@@ -77,6 +77,24 @@ pub(super) const HUD: [Row; 17] = [
         100,
         u8,
         boss_area_opacity
+    ),
+    check!(
+        "hud.resource_values",
+        "Show Hit Point and Mana Values",
+        resource_hud.values
+    ),
+    check!("hud.resource_soul", "Show Soul Points", resource_hud.soul),
+    check!("hud.resource_stamina", "Show Stamina", resource_hud.stamina),
+    check!(
+        "hud.resource_conditions",
+        "Show Condition Icons",
+        resource_hud.conditions
+    ),
+    check!("hud.resource_rest", "Show Rest Icons", resource_hud.rest),
+    check!(
+        "hud.resource_combo",
+        "Show Harmony Combo",
+        resource_hud.combo
     ),
 ];
 pub(super) const CONSOLE: [Row; 10] = [

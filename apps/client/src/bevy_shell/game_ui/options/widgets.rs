@@ -284,7 +284,11 @@ fn checkbox(
 pub(super) fn page(
     commands: &mut Commands,
     parent: Entity,
-    (page, binding): (Page, Option<&'static str>),
+    (page, binding, help): (
+        Page,
+        Option<&'static str>,
+        Option<&(crate::play::help::Topic, String)>,
+    ),
     skins: &Skins,
     checks: &CheckSkins,
     draft: &crate::play::ReferencePreferences,
@@ -312,11 +316,16 @@ pub(super) fn page(
     if page == Page::Sound {
         super::audio_device::build(commands, parent, skins, draft);
     }
+    if page == Page::Interface {
+        super::language::build(commands, parent, skins, draft);
+    }
     if page == Page::Hud {
         super::conditions::build(commands, parent, skins, draft);
+        super::order::build(commands, parent, skins, draft);
     }
     if page == Page::Misc {
         super::transfer::build(commands, parent, skins);
+        super::guide::build(commands, parent, skins, help);
     }
     if page == Page::Screenshots {
         super::screenshots::build(commands, parent, skins, draft);

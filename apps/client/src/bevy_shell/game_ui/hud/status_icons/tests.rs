@@ -282,3 +282,66 @@ fn status_icons_request_the_existing_view_models() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn status_icons_follow_only_the_status_bar_column_for_every_condition() -> TestResult {
+    let (mut app, _commands, _outbox) = super::super::tests::app()?;
+    let rest = RestStatusPanel {
+        selected: true,
+        snapshot: Some(RestStatus {
+            inside_resting_area: true,
+            food_remaining_ms: 1000,
+            ..default()
+        }),
+        ..default()
+    };
+    publish(
+        &app,
+        conditions(&[(1, 0)]),
+        rest.clone(),
+        default(),
+        default(),
+    )?;
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .bevy_taints_fixture(oteryn_client_runtime::boss_encounter::Taints {
+            soul_war: 3,
+            rotten_blood: 2,
+            rotten_blood_flags: 0,
+            rotten_blood_final: false,
+        });
+    let everything = ["Poison", "Resting Area", "Soul War", "Rotten Blood"];
+    let hide = |app: &mut App, hud: bool, keys: &[&str]| -> TestResult {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let play = host.play.as_mut().ok_or("play")?;
+        let mut preferences = play.view.preferences().clone();
+        preferences.condition_hud_hidden.clear();
+        preferences.condition_status_hidden.clear();
+        for key in keys {
+            preferences.set_condition_visible(key, hud, false);
+        }
+        play.view.set_preferences(preferences)?;
+        Ok(())
+    };
+    app.update();
+    assert_eq!(keys(&mut app)?, everything);
+    // Hiding every HUD column leaves the status bar untouched.
+    hide(&mut app, true, &everything)?;
+    app.update();
+    assert_eq!(keys(&mut app)?, everything);
+    // Each Status Bar column hides exactly its own icon.
+    for key in everything {
+        hide(&mut app, false, &[key])?;
+        app.update();
+        let expected: Vec<_> = everything
+            .into_iter()
+            .filter(|other| *other != key)
+            .collect();
+        assert_eq!(keys(&mut app)?, expected, "{key}");
+    }
+    Ok(())
+}

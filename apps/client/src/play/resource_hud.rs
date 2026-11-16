@@ -56,6 +56,27 @@ pub(super) fn stamina_command() -> oteryn_client_runtime::raw_feature::FeatureCo
     }
 }
 impl PlayLink {
+    /// The confirmed Soul War and Rotten Blood taints, read by the HUD and the status bar.
+    pub(crate) fn boss_taints(&self) -> Option<oteryn_client_runtime::boss_encounter::Taints> {
+        let mailbox = lock(&self.mailbox);
+        let panel = &mailbox.boss_encounter;
+        panel
+            .feedback
+            .is_none()
+            .then(|| panel.snapshot.as_ref().and_then(|snapshot| snapshot.taints))
+            .flatten()
+    }
+    #[cfg(all(test, bevy_shell))]
+    pub(crate) fn bevy_taints_fixture(
+        &self,
+        taints: oteryn_client_runtime::boss_encounter::Taints,
+    ) {
+        lock(&self.mailbox).boss_encounter.snapshot =
+            Some(oteryn_client_runtime::boss_encounter::Snapshot {
+                taints: Some(taints),
+                ..Default::default()
+            });
+    }
     fn request_hud_stamina(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
         let state = &mut mailbox.hud_resource;
@@ -106,22 +127,15 @@ impl PlayView {
     pub(super) fn sync_resource_hud(&mut self, link: &PlayLink) {
         let conditions = link.condition_status_panel();
         let rest = link.rest_status_panel();
-        let (taints, refresh_taints) = {
+        let taints = link.boss_taints();
+        let refresh_taints = {
             let mailbox = lock(&link.mailbox);
             let panel = &mailbox.boss_encounter;
-            let taints = panel
-                .feedback
-                .is_none()
-                .then(|| panel.snapshot.as_ref().and_then(|snapshot| snapshot.taints))
-                .flatten();
-            (
-                taints,
-                panel.selected
-                    && !panel.pending
-                    && !panel.open
-                    && !panel.cooldowns_open
-                    && !panel.gallery_open,
-            )
+            panel.selected
+                && !panel.pending
+                && !panel.open
+                && !panel.cooldowns_open
+                && !panel.gallery_open
         };
         self.resource_hud.taints = taints;
         self.resource_hud.conditions = conditions
