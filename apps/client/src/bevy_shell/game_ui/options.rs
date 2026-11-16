@@ -14,6 +14,7 @@ use oteryn_client_ui_bevy as source;
 mod audio_feedback;
 mod commands;
 mod metadata;
+mod minimap_transfer;
 #[cfg(test)]
 mod navigation_tests;
 mod projection;
