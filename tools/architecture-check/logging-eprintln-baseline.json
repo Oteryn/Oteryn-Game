@@ -19,11 +19,10 @@
     "apps/game-server/src/node/serve/world_reset.rs:98"
   ],
   "crates/error-codes": [
-    "crates/error-codes/build.rs:20",
+    "crates/error-codes/build.rs:12",
+    "crates/error-codes/build.rs:18",
+    "crates/error-codes/build.rs:23",
     "crates/error-codes/build.rs:25",
-    "crates/error-codes/build.rs:43",
-    "crates/error-codes/build.rs:49",
-    "crates/error-codes/build.rs:51",
     "crates/error-codes/src/hook.rs:52"
   ],
   "crates/gameplay/content": [

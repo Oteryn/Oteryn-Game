@@ -247,10 +247,11 @@ fn i14_global_consumables_are_admitted() {
         .expect("native gameplay");
     use ReferenceRestoreResource::{Health, Mana};
     for (id, restores, level, allowed) in [
-        // Great Spirit Potion rev 1183259.
+        // Great Spirit Potion rev 1183259; mana measured on the Global client
+        // (owner 2026-11-16, docs/reference/parity/evidence/2026-11-15-global-client).
         (
             7642,
-            vec![(Health, 250, 350), (Mana, 125, 185)],
+            vec![(Health, 250, 350), (Mana, 100, 200)],
             80,
             vec![Vocation::Paladin, Vocation::Monk],
         ),

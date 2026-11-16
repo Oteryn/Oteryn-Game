@@ -1,0 +1,5 @@
+1538 27 You gained 172 mana.
+1538 27 You healed yourself for 472 hitpoints.
+153829 Using one of 493 ultimate spirit potions...
+15338 29 You healed yourself for 538 hitpoints.
+DONE

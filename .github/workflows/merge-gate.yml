@@ -682,7 +682,7 @@ jobs:
     # rust.yml cache, so one PR no longer builds the same test binaries three times on the PC.
     # Forks and dependabot stay hosted because PR code would run on the owner's machine.
     runs-on: ${{ (needs.runner_route.outputs.rust_runner_mode == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
     strategy:

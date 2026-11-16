@@ -1,0 +1,21 @@
+exura gran tio | 15:50 22 Using one of 57 great spirit potions...
+exura gran tio | 13:50-22 You gained 129 mana.
+exura gran tio | 15:50 24 Using one of 56 great spirit potions...
+exura gran tio | 13:50:24 You gained 185 mana.
+exura gran tio | 15:50 24 Using one of 56 great spirit potions
+exura gran tio | 15:50 24 You gained 185 mana.
+exura gran tio | 15:52:52 Screenshot for event LowHealth has heen saved to location 'fhomef moles local/share/CipSoft GmhH/Tihia/packages/T ihiaBtternal/screenshot
+exura gran tio | 13:52:59 You healed yourself for 789 hitpoints.
+exura gran tio | 15:52:52 Screenshot for event LowHealth has heen saved to location 'fhome/ moles _local/share/CipSoft GmhH/Tihia/packages/T ihiaBxternal/screenshot
+exura gran tio | 15:52:59 You healed yourself for 789 hitpoints.
+exura gran tio | 15:53:11 Screenshot for event LowHealth has heen saved to location 'fhomefmole/ local/share/CipSoft GmhH/Tihia/packages/T ihiaBxternal/screenshot
+exura gran tio | 15:53:18 You healed yourself for 799 hitpoints.
+exura gran tio | 15:53:11 Screenshot for event LowHealth has heen saved to location 'fhomef moles _local/share/CipSoft GmhH/Tihia/packayges/T ihiaBtternal/screenshot
+exura gran tio | 15:55 29 Screenshot for event LowHealth has heen saved to location 'fhomefmole/ local/share/CipSoft GmhH/Tihia/packages/T ihiaBrternal/screenshot
+exura gran tio | 15:53 36 You healed yourself for 685 hitpoints.
+exura gran tio | 15:55 29 Screenshot for event LowHealth has heen saved to location 'fhomefmole/-local/share/CipSoft GmhH/Tihia/packages/T ihiaBrternal/screenshot
+exura gran tio | 15:55 36 You healed yourself for 683 hitpoints.
+exura gran tio | 15:53:47 Screenshot for event LowHealth has heen saved to location 'fhome/mole/-local/share/CipSoft GmhH/Tihia/packages/T ihiaExternal/screenshot
+exura gran tio | 15:53 29 Screenshot for event LowHealth has heen saved to location 'fhomef moles _local/share/CipSoft GmhH/Tihia/packages/T ihiaBtternal/screenshot
+exura gran tio | 15:53 47 Screenshot for event LowHealth has heen saved to location 'fhomefmole/local/share/CipSoft GmhH/Tihia/packages/T ihiaBrternal/screenshot
+exura gran tio | 15:54205 You healed yourself for 750 hitpoints.

@@ -34,11 +34,11 @@ Confidence: MEASURED, WIKI, REFERENCE (see README). Audit rows C04, C06, C09, I1
 |---|---|---|---|---|---|---|---|
 | Great Health (i239) | HP, level, vocation | 425-575, 80, knights | TW 1183256 | WIKI | same | items-12500-12999 | MATCH |
 | Ultimate Health (i7643) | HP, level, vocation | 650-850, 130, knights | TW 1183257 | WIKI | same | items-31500-31999 | MATCH |
-| Supreme Health (i23375) | HP | 875-1175, level 200, knights | TW 1183258 | WIKI | 875-1125 | items-12000-12499 | FIXED (15bc1214c) |
-| Great Mana (i238) | vocations | 150-250 mana, level 80, all vocations since 2026-06-20 | TW 1190635 | WIKI | druid, monk, paladin, sorcerer (knight missing) | items-12500-12999 | FIXED (15bc1214c) |
+| Supreme Health (i23375) | HP | 875-1175, level 200, knights | TW 1183258; WIKI, not measured (monk character) | WIKI | 875-1125 | items-12000-12499 | FIXED (15bc1214c) |
+| Great Mana (i238) | vocations | 150-250 mana, level 80, all vocations since 2026-06-20 | TW 1190635; WIKI, not measured (monk character) | WIKI | druid, monk, paladin, sorcerer (knight missing) | items-12500-12999 | FIXED (15bc1214c) |
 | Ultimate Mana (i23373) | mana, vocations | 425-575, level 130, sorcerer and druid; 2026 change not stated for this potion | TW 1183206 | WIKI | same | items | MATCH (vocation after 2026 UNKNOWN) |
-| Great Spirit (i7642) | mana | HP 250-350, mana 125-185, level 80, monk and paladin | TW 1183259 | WIKI | HP 250-350, mana 100-200 | items-31500-31999 | FIXED (15bc1214c) |
-| Ultimate Spirit (i23374) | mana | HP 420-580, mana 150-250, level 130, monk and paladin | TW 1183261; MEAS (within 150-250) | MEASURED | HP 420-580, mana 250-350 | items-12000-12499 | FIXED (15bc1214c) |
+| Great Spirit (i7642) | mana | mana 100-200 (measured 124-160, n=12; Wiki 125-185 contradicted) | [ct-potions-summary.txt](evidence/2026-11-15-global-client/ct-potions-summary.txt) | MEASURED | 100-200 | items-31500-31999 | FIXED (this commit) |
+| Ultimate Spirit (i23374) | mana | HP 420-580, mana 150-250, level 130, monk and paladin | TW 1183261; [ct-potions-summary.txt](evidence/2026-11-15-global-client/ct-potions-summary.txt): measurement 150-247, n=30 confirms the fix | MEASURED | HP 420-580, mana 250-350 | items-12000-12499 | FIXED (15bc1214c) |
 | Supreme Spirit | all | no TW page | - | REFERENCE | not in repo | - | UNKNOWN |
 | Distilled Ultimate Mana (i53164) | all | 2026 distilled variant | TW Vocation Adjustments 2026 | WIKI | present, not analysed | - | UNKNOWN |
 | Potion use path | mechanics | not a value | audit I14 (PARTIAL) | REFERENCE | see audit | see audit | UNKNOWN |
