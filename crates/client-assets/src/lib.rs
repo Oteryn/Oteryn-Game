@@ -13,6 +13,8 @@ mod error;
 pub use effects::EffectCatalog;
 mod sheets;
 mod store;
+/// Tibia's game font and creature HUD flags from the official graphics bundle.
+pub mod tibia_graphics;
 /// Bounded map-window appearance loading.
 pub mod window;
 /// Immutable world placement formats.

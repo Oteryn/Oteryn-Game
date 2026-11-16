@@ -583,3 +583,6 @@ fn parity_a_health_updates_recolour_cached_name_glyphs() -> Result<(), BatchErro
     );
     Ok(())
 }
+
+#[path = "tibia_font.rs"]
+mod tibia_font;

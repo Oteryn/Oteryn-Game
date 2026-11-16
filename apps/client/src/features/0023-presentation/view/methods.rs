@@ -87,12 +87,15 @@ impl PlayView {
                 .map(|entry| entry.entity.entity)
         });
         let age = now.saturating_duration_since(self.party_icon_epoch);
+        let (graphics, icon_cells) = self.scene.hud_graphics();
+        let font = graphics.as_deref().map(|graphics| graphics.font());
         let actor_options = actor_hud::Options::new(
             self.preferences(),
             self.floor,
             own_ref,
             age,
             self.shared_frontend,
+            icon_cells,
         );
         let hit_flash = self.hit_flash;
         let (view, atlas, batch) = self.scene.presentation_base()?;
@@ -165,9 +168,9 @@ impl PlayView {
                     let top = y - progress * 32.0 - 12.0 * *line as f32;
                     *line += 1 + u32::from(secondary.is_some());
                     let start = batch.len();
-                    number(batch, view, atlas, [center, top], primary)?;
+                    number(batch, view, atlas, font, [center, top], primary)?;
                     if let Some(value) = secondary {
-                        number(batch, view, atlas, [center, top - 12.0], value)?;
+                        number(batch, view, atlas, font, [center, top - 12.0], value)?;
                     }
                     if progress > 1. / 1.2 && batch.len() > start {
                         let alpha = ((1. - progress) * 6. * 100.).clamp(0., 100.) as u8;
@@ -257,7 +260,7 @@ impl PlayView {
                     position, spell, ..
                 } if position.floor == self.floor && progress < 1.0 => {
                     if let Some(words) = self.spell_words.get(&spell) {
-                        visual::words(batch, view, atlas, position, words, progress)?;
+                        visual::words(batch, view, atlas, font, position, words, progress)?;
                     }
                 }
                 PresentationEventKind::Missile { from, to, source, .. }

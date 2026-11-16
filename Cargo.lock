@@ -4932,9 +4932,11 @@ dependencies = [
 name = "oteryn-client-assets"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "lzma-rs",
  "oteryn-client-domain",
  "oteryn-world-bundle",
+ "png",
  "prost",
  "serde",
  "serde_json",

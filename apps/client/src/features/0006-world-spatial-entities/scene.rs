@@ -26,6 +26,16 @@ impl Scene {
         self.npc_names = npc_names;
     }
 
+    /// Tibia's game font and the atlas cells of its HUD flags, once the bundle loaded.
+    pub(crate) fn hud_graphics(
+        &self,
+    ) -> (
+        Option<Arc<oteryn_client_assets::tibia_graphics::TibiaGraphics>>,
+        Option<super::HudIconCells>,
+    ) {
+        self.cache.hud_graphics()
+    }
+
     pub(crate) fn set_name_visibility(&mut self, visibility: [bool; 3]) {
         self.name_visibility = visibility;
     }
@@ -39,7 +49,7 @@ impl Scene {
         &self,
         indicator: &oteryn_client_ui::player_typing::TypingIndicator,
     ) -> Option<[f32; 2]> {
-        let (entity, (tile, cells)) =
+        let (entity, (tile, label)) =
             self.name_entities
                 .iter()
                 .zip(&self.names)
@@ -51,7 +61,7 @@ impl Scene {
         let [dx, dy] = self.actor_offset(*entity);
         let (x, y) = (x + dx, y + dy);
         let scale = f32::from(self.label_scale) / 100.;
-        let half_width = cells.len() as f32 * 4. * scale;
+        let half_width = label.width / 2. * scale;
         let left = (x + self.view.tile_px() as f32 / 2. - half_width).max(0.);
         Some([left + half_width + 2., (y - 14. * scale).max(0.) - 4.])
     }
