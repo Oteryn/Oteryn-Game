@@ -19,3 +19,6 @@ mod console;
 #[cfg(test)]
 #[path = "filter_tests.rs"]
 mod filter_tests;
+
+#[path = "lists.rs"]
+pub(in crate::play) mod lists;

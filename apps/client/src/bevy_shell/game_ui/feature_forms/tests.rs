@@ -212,3 +212,36 @@ fn cast_settings_reject_invalid_values_without_reaching_the_session() -> TestRes
     );
     Ok(())
 }
+
+#[test]
+fn communication_lists_form_edits_the_chat_lists_it_was_opened_for() -> TestResult {
+    let (mut app, mut commands, _outbox) = fixture()?;
+    let lists = |app: &App| -> Result<_, Box<dyn std::error::Error>> {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        Ok(link.chat_panel().console.communication)
+    };
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        link.chat_lists_open(Some("Alice"));
+    }
+    app.update();
+    assert!(form_open(&app, "Communication lists")?);
+    assert!(
+        app.world_mut()
+            .query::<(&Field, &EditableText)>()
+            .iter(app.world())
+            .any(|(field, text)| field.0 == 0 && text.value().to_string() == "Alice")
+    );
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Some(1))?;
+    assert!(lists(&app)?.whitelist.contains("alice"));
+    click(&mut app, Some(3))?;
+    let after = lists(&app)?;
+    assert!(!after.whitelist.contains("alice") && !after.ignored.contains("alice"));
+    assert!(commands.try_recv().is_err(), "the lists stay local");
+    click(&mut app, None)?;
+    assert!(!form_open(&app, "Communication lists")?);
+    Ok(())
+}

@@ -128,6 +128,8 @@ pub(super) struct Mailbox {
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
     pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
+    /// The communication-lists form: open, and the player name being edited.
+    pub(super) chat_lists: (bool, String),
     pub(super) custom_chat_paste: Option<String>,
     pub(super) custom_hotkeys_ended: bool,
     pub(super) tracked_custom_passive: Option<crate::play::PassiveAbility>,

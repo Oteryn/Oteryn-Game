@@ -4,7 +4,8 @@ impl PlayView {
     pub fn selected_npc(&self) -> Option<EntityRef> {
         self.npc_at(self.scene.target()?.tile)
     }
-    pub(in crate::play) fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
+    /// The NPC standing on the tile of the current floor.
+    pub fn npc_at(&self, tile: oteryn_renderer::TileCoord) -> Option<EntityRef> {
         self.entities
             .iter()
             .rev()

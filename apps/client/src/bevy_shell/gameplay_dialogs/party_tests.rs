@@ -427,3 +427,49 @@ fn world_browse_field_choice_retains_native_tile_and_session() -> Result {
     assert_eq!(request.generation, owner.generation());
     Ok(())
 }
+
+#[test]
+fn npc_context_talk_and_trade_greet_the_npc_on_that_tile() -> Result {
+    let npc = WorldSpatialEntity {
+        kind: EntityKind::Npc,
+        display_name: EntityDisplayName::new("Visible NPC").ok(),
+        entity: EntityRef {
+            identity: [9; 16],
+            generation: 2,
+        },
+        ..player()
+    };
+    for (caption, said) in [("Talk", "hi"), ("Trade", "trade")] {
+        let (mut app, mut commands, events) = app()?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .play
+            .as_mut()
+            .ok_or("play")?
+            .view = PlayView::new(TileCoord::new(100, 100), 7, &[])?.with_entities(vec![npc])?;
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .request_world_context(TileCoord::new(101, 100));
+        app.update();
+        assert!(
+            choose(&mut app, caption).is_err(),
+            "no NPC entries before the session admits NPC dialogue"
+        );
+        app.world_mut().non_send_mut::<HostOwner>().dialogs.clear();
+        app.update();
+        events.bevy_npc_dialogue_supported();
+        app.world_mut()
+            .non_send_mut::<HostOwner>()
+            .request_world_context(TileCoord::new(101, 100));
+        app.update();
+        choose(&mut app, caption)?;
+        let PlayCommand::NpcTalk(intent) = commands.try_recv()? else {
+            return Err("NPC greeting".into());
+        };
+        assert_eq!(intent.npc_actor, npc.entity);
+        assert_eq!(intent.text, said);
+        assert!(!app.world().non_send::<HostOwner>().dialogs.active());
+        assert!(commands.try_recv().is_err());
+    }
+    Ok(())
+}

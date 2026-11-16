@@ -55,6 +55,7 @@ const fn entry(build: fn(&PlayLink) -> Form, tick: Option<Tick>) -> FeatureForm 
 /// The forms the shared frontend presents with its generic form window, in feature order.
 /// Every feature with its own Bevy presenter stays out of this list.
 const FORMS: &[FeatureForm] = &[
+    entry(crate::play::feature_0007_chat::view::lists::form, None),
     entry(crate::play::feature_0008_achievement_notices::view::form, None),
     entry(crate::play::feature_0025_appearance::view::memorial::form, None),
     entry(crate::play::feature_0039_timed_item::view::form, None),

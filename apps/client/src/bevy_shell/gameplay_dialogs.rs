@@ -31,6 +31,7 @@ enum Content {
         report: Option<Box<rule_violation::Target>>,
         trade: Option<(TileCoord, oteryn_session::EntityRef)>,
         browse: Option<(TileCoord, i16)>,
+        npc: Option<(TileCoord, oteryn_session::EntityRef)>,
     },
 }
 #[derive(Clone, Copy, Component)]
@@ -44,6 +45,8 @@ enum Choice {
     Report,
     Trade,
     Browse,
+    Talk,
+    NpcTrade,
 }
 impl Dialogs {
     pub fn active(&self) -> bool {
@@ -102,8 +105,10 @@ impl HostOwner {
                 panel.selected && !panel.pending
             })
             .map(|play| (tile, play.view.satellite_player().2));
+        let npc = npc::target(self, tile).map(|entity| (tile, entity));
         if self.phase == Phase::Playing
             && (menu.is_some()
+                || npc.is_some()
                 || party.is_some()
                 || report.is_some()
                 || inspection.is_some()
@@ -119,6 +124,7 @@ impl HostOwner {
                     report,
                     trade,
                     browse,
+                    npc,
                 },
             );
         }
@@ -155,6 +161,7 @@ impl HostOwner {
                     report: None,
                     trade: None,
                     browse: None,
+                    npc: None,
                 },
             );
         }
@@ -213,6 +220,13 @@ impl HostOwner {
                 Some((tile.x, tile.y, floor)),
                 None,
             ),
+            (
+                Content::Context {
+                    npc: Some((tile, entity)),
+                    ..
+                },
+                Choice::Talk | Choice::NpcTrade,
+            ) => npc::talk(self, tile, entity, matches!(choice, Choice::NpcTrade)),
             (_, Choice::Cancel) => true,
             (Content::Logout, Choice::Logout) => self.play.as_mut().is_some_and(|play| {
                 play.view.logout();
@@ -422,7 +436,13 @@ fn project(
             report,
             trade,
             browse,
+            npc,
         } => {
+            if npc.is_some() {
+                for (caption, choice) in [("Talk", Choice::Talk), ("Trade", Choice::NpcTrade)] {
+                    button(&mut commands, &skin, window, request.id, caption, choice);
+                }
+            }
             if browse.is_some() {
                 button(
                     &mut commands,
@@ -544,6 +564,8 @@ fn button(
     commands.entity(parent).add_child(button);
     button
 }
+
+mod npc;
 
 #[cfg(test)]
 mod tests;

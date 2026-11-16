@@ -81,6 +81,7 @@ fn previous_generation_and_wrong_context_target_cannot_dispatch() -> Result {
             report: None,
             trade: None,
             browse: None,
+            npc: None,
         },
     );
     let id = host.dialogs.pending.as_ref().ok_or("context")?.id;
