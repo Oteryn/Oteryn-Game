@@ -54,11 +54,12 @@ pub(in crate::gameplay_transport::actor_spell::native_combat_cast) async fn use_
         return U::ProtectionZone;
     }
     let target = match intent.intent.target {
-        SpellTarget::Position(p) => Some(crate::spell::chain::TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        }),
+        SpellTarget::Position(p) => {
+            let Ok(target) = super::super::spell_target_tile(runtime, p) else {
+                return U::TargetIllegal;
+            };
+            Some(target)
+        }
         SpellTarget::AttackTarget => legacy.creature.and_then(|wanted| {
             runtime
                 .visible_entities()

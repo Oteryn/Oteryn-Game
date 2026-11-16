@@ -82,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             AutoWalkTarget::Cell(at) => MovementLocalPosition {
                 x: at.x,
                 y: at.y,
-                floor: at.floor,
+                floor: at.floor.checked_neg().ok_or(())?,
             },
             AutoWalkTarget::Follow(target) => {
                 let census = runtime.visible_entities();

@@ -246,7 +246,8 @@ impl Harness {
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
         let pool = sqlx::PgPool::connect(&database.url).await?;
-        let retained = fence_parent(tag)?;
+        // Several cases share a tag in one process; never replace another case's fence store.
+        let retained = fence_parent(&format!("{tag}_{}", database.name))?;
         let recovery = CharacterRecoveryStore::open(&retained, "character-primary", "game-ops")
             .map_err(debug)?;
         {

@@ -168,3 +168,17 @@ impl PlayView {
         self.rebuild()
     }
 }
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+    #[test]
+    fn builtin_world_anchors_native_view_floor() -> Result<(), BatchError> {
+        let world = Arc::new(World::builtin()?);
+        let mut view = PlayView::new(TileCoord::new(0, 0), -7, &[])?;
+        view.set_world(world)?;
+        assert_eq!(view.map_floor, Some(-7));
+        assert_eq!(view.local.world().center().2, -7);
+        Ok(())
+    }
+}

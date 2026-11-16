@@ -48,7 +48,9 @@ use crate::spell::owned_cast_facts::{OwnedCastFacts, OwnedFactsError};
 use crate::spell::{Execution, OperationalCastFacts, SpellBook, SpellDefinition};
 use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_durability::durability::native_world_items::SpellGroundTarget;
-use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent, SpellTarget};
+use oteryn_protocol_oteryn::actor_spell::{
+    SpellCastDisposition, SpellCastIntent, SpellTarget, SpellTargetPosition,
+};
 use oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent;
 use oteryn_protocol_oteryn::actor_spell_v2::{
     ParameterSpellCastIntent, ParameterSpellCastResult, decode_parameter_spell_cast_result,
@@ -1492,6 +1494,27 @@ fn cell(p: TilePosition) -> MovementLocalPosition {
         floor: p.floor,
     }
 }
+/// Wire spell targets are native. Bundle/laboratory movement pins use legacy depths;
+/// retained source-profile pins already carry native negative entry floors.
+fn spell_target_tile(
+    runtime: &ChannelRuntimeV1,
+    position: SpellTargetPosition,
+) -> Result<TilePosition, SpellCastDisposition> {
+    let floor = if runtime.content_pin().entry_start().floor < 0 {
+        position.floor
+    } else {
+        position
+            .floor
+            .checked_neg()
+            .ok_or(SpellCastDisposition::TargetIllegal)?
+    };
+    Ok(TilePosition {
+        x: position.x,
+        y: position.y,
+        floor,
+    })
+}
+
 fn tile(p: MovementLocalPosition) -> TilePosition {
     TilePosition {
         x: p.x,

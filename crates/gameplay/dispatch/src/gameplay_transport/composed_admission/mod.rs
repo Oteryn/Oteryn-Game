@@ -30,4 +30,4 @@ mod training;
 mod vitals;
 mod wheel;
 mod wheel_gift;
-mod world_map;
+pub(super) mod world_map;

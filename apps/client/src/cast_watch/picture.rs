@@ -147,7 +147,7 @@ impl Assets {
             {
                 // Presentation batches retain the playing protocol's positive depth.
                 // Crystal protocolgame.cpp:7846; map display planes use negative floors.
-                let shift = i32::from(-position.floor.saturating_abs() - camera);
+                let shift = i32::from(crate::map::legacy_floor_to_native(position.floor) - camera);
                 sprites
                     .push(
                         &view,
@@ -215,6 +215,42 @@ mod tests {
             .collect();
         for corner in [[0.0, 0.0], [544.0, 0.0], [0.0, 416.0], [544.0, 416.0]] {
             assert!(positions.contains(&corner), "public corner {corner:?}");
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod floor_tests {
+    use super::*;
+    #[test]
+    fn legacy_cast_effects_project_on_native_camera() -> Result<(), String> {
+        let now = Instant::now();
+        for z in 0..=15 {
+            let mut picture = Picture::default();
+            picture.floor = Some(-z);
+            picture.effects.push((
+                now,
+                oteryn_session::PresentationEvent {
+                    decision_ordinal: 1,
+                    emission_ordinal: 1,
+                    kind: oteryn_session::PresentationEventKind::MagicEffect {
+                        position: oteryn_session::ActorPosition {
+                            x: 25,
+                            y: 23,
+                            floor: z,
+                        },
+                        effect_id: 1,
+                        source: oteryn_session::PresentationSource::Global,
+                    },
+                },
+            ));
+            let drawn = Assets { source: None }.draw(&picture, now)?;
+            assert_eq!(drawn.sprites.len(), 1);
+            assert_eq!(
+                drawn.sprites.instances().first().map(|quad| quad.position),
+                Some([544.0, 416.0])
+            );
         }
         Ok(())
     }

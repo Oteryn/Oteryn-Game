@@ -26,7 +26,7 @@ pub use oteryn_renderer::world::{BLACK_CELL, MARKER_CELL, TARGET_CELL};
 const FACINGS: [StepDir; 4] = [StepDir::North, StepDir::East, StepDir::South, StepDir::West];
 
 /// Domain values used to compose the map and its scene.
-pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
+pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR, legacy_floor_to_native};
 
 #[derive(Debug, Clone)]
 pub struct World {
@@ -57,8 +57,12 @@ impl World {
         let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             effects: Default::default(),
-            center: (START.0, START.1, i16::from(START_FLOOR)),
-            first_visible_floor: i16::from(START_FLOOR),
+            center: (
+                START.0,
+                START.1,
+                legacy_floor_to_native(i16::from(START_FLOOR)),
+            ),
+            first_visible_floor: legacy_floor_to_native(i16::from(START_FLOOR)),
             atlas,
             layers: BTreeMap::new(),
             tiles: HashMap::new(),
@@ -84,9 +88,17 @@ impl World {
 
     /// Decodes the start area from an asset root laid out like the repository.
     pub fn load(root: &Path) -> Result<Self, String> {
-        Self::load_around(root, (START.0, START.1, i16::from(START_FLOOR)))
+        Self::load_around(
+            root,
+            (
+                START.0,
+                START.1,
+                legacy_floor_to_native(i16::from(START_FLOOR)),
+            ),
+        )
     }
 
+    /// Native view coordinates; local region depths are converted at the asset boundary.
     pub const fn center(&self) -> (i32, i32, i16) {
         self.center
     }
@@ -98,7 +110,14 @@ impl World {
             entries,
             player,
             mut sheets,
-        } = ResolvedWindow::load_around(root, center)?;
+        } = ResolvedWindow::load_around(
+            root,
+            (
+                center.0,
+                center.1,
+                center.2.checked_neg().ok_or("map center floor overflow")?,
+            ),
+        )?;
 
         let atlas = WorldAtlas::prepare(
             entries

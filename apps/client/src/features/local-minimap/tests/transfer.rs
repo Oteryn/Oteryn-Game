@@ -61,3 +61,33 @@ fn minimap_settings_transfer_is_bound_validated_and_persistent()
     std::fs::remove_dir_all(root)?;
     Ok(())
 }
+
+#[test]
+fn old_format_positive_floors_import_as_native() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("floorframe-old-import-{}", std::process::id()));
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    let binding = ([1u8; 32], [2u8; 32], 1u64);
+    map.binding = Some(binding);
+    std::fs::create_dir_all(&root)?;
+    let portable = root.join("old.json");
+    std::fs::write(
+        &portable,
+        serde_json::to_vec(&serde_json::json!({
+            "world": "11111111-1111-4111-8111-111111111111", "binding": binding,
+            "saved": { "version": 1, "cells": [[7, 100, 200, 55]],
+                "markers": [{ "x": 100, "y": 200, "floor": 7, "label": "Old Home", "color": 1 }] }
+        }))?,
+    )?;
+    map.import_from(&portable)?;
+    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(map.markers[0].floor, -7);
+    let canonical: Saved =
+        serde_json::from_slice(&std::fs::read(map.path().ok_or("active path")?)?)?;
+    assert_eq!(canonical.cells, vec![[-7, 100, 200, 55]]);
+    assert_eq!(canonical.markers[0].floor, -7);
+    drop(map);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

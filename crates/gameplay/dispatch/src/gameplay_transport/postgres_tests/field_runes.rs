@@ -1194,7 +1194,7 @@ async fn field_scenario_inner(
             use_with_position: Some(SpellTargetPosition {
                 x: start.x + 1,
                 y: start.y,
-                floor: start.floor,
+                floor: -start.floor,
             }),
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
@@ -1364,7 +1364,7 @@ async fn field_scenario_inner(
                     use_with_position: Some(SpellTargetPosition {
                         x: start.x + dx,
                         y: start.y,
-                        floor,
+                        floor: -floor,
                     }),
                 };
                 let command = test_command(
@@ -1428,7 +1428,7 @@ async fn field_scenario_inner(
                     use_with_position: Some(SpellTargetPosition {
                         x: start.x + 2,
                         y: start.y,
-                        floor: start.floor,
+                        floor: -start.floor,
                     }),
                     ..intent.clone()
                 };

@@ -34,7 +34,7 @@ pub(super) fn entities(
             position: ActorPosition {
                 x: entry.position.x,
                 y: entry.position.y,
-                floor: entry.position.floor,
+                floor: native_floor(entry.position.floor),
             },
             revision: entry.revision,
         });
@@ -53,7 +53,7 @@ pub(super) fn entities(
                 position: ActorPosition {
                     x: entry.position.x,
                     y: entry.position.y,
-                    floor: entry.position.floor,
+                    floor: native_floor(entry.position.floor),
                 },
                 revision: entry.revision,
             }),

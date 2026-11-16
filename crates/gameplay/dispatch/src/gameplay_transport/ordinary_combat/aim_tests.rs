@@ -34,12 +34,12 @@ fn at(x: i32, y: i32) -> TilePosition {
     TilePosition { x, y, floor: 7 }
 }
 
+fn cursor_position(x: i32, y: i32) -> SpellTargetPosition {
+    SpellTargetPosition { x, y, floor: -7 }
+}
+
 fn cursor(x: i32, y: i32) -> SpellTarget {
-    SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
-        x,
-        y,
-        floor: 7,
-    })
+    SpellTarget::Position(cursor_position(x, y))
 }
 
 fn wave_tiles(
@@ -96,7 +96,7 @@ fn wave_cursor_mode_keeps_caster_facing_and_breaks_ties_east_west() {
     let caster = at(100, 100);
     assert_eq!(
         aim(&wave, &cast(cursor(97, 97), true)),
-        Ok(Some(Aim::Cursor(at(97, 97))))
+        Ok(Some(Aim::Cursor(cursor_position(97, 97))))
     );
     // A diagonal cursor goes west; north-facing stays the character's own facing.
     assert_eq!(
@@ -119,7 +119,7 @@ fn directional_position_target_keeps_caster_adjacent_origin() {
     let wave = source("candidate:spell/terra_wave");
     assert_eq!(
         aim(&wave, &cast(cursor(110, 100), true)),
-        Ok(Some(Aim::Cursor(at(110, 100))))
+        Ok(Some(Aim::Cursor(cursor_position(110, 100))))
     );
     let (origin, d) =
         aimed_origin(at(100, 100), Some(Direction::West), Some(at(110, 100))).unwrap();
@@ -184,4 +184,49 @@ fn cursor_on_another_floor_is_target_illegal_not_the_facing() {
         ),
         Ok((at(100, 99), Direction::North))
     );
+}
+
+#[test]
+fn native_cursor_is_resolved_in_the_legacy_movement_frame() -> Result<(), String> {
+    let (mut runtime, actor, _) =
+        crate::gameplay_transport::actor_spell::tests::runtime_with_capacity(0x71, 8);
+    runtime
+        .initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    let caster = runtime
+        .read_actor_position(actor)
+        .map_err(|error| format!("{error:?}"))?
+        .position();
+    let wave = source("candidate:spell/ice_wave");
+    let intent = cast(
+        SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            x: 104,
+            y: 101,
+            floor: -7,
+        }),
+        true,
+    );
+    let requested = aim(&wave, &intent)
+        .map_err(|error| format!("{error:?}"))?
+        .ok_or("cursor aim")?;
+    assert_eq!(
+        aim_point(
+            &runtime,
+            &ChannelSpellStates::default(),
+            actor,
+            caster,
+            requested,
+            None,
+            SemanticTimeMicros::from_micros(0)
+        ),
+        Ok(Some(at(104, 101)))
+    );
+    Ok(())
 }

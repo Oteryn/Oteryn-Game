@@ -325,7 +325,7 @@ async fn field_case(admin: String, enabled: bool) -> TestResult {
             use_with_position: Some(SpellTargetPosition {
                 x: 101,
                 y: 100,
-                floor: 7,
+                floor: -7,
             }),
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;

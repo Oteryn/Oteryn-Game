@@ -87,12 +87,13 @@ impl Minimap {
         if bytes.len() as u64 > MAX_BYTES {
             return Err(io::Error::other(tr!("Minimap file is too large")));
         }
-        let portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut portable: Portable = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         if self.world.as_ref() != Some(&portable.world) || self.binding != Some(portable.binding) {
             return Err(io::Error::other(tr!(
                 "This minimap belongs to a different world or content generation"
             )));
         }
+        portable.saved.normalize_legacy_floors();
         portable.saved.validate()?;
         portable.saved.write_to(&active)?;
         self.cells = portable
@@ -110,6 +111,24 @@ impl Minimap {
 }
 
 impl Saved {
+    /// Earlier version-1 caches used positive legacy depths. Keep validation native and strict.
+    pub(super) fn normalize_legacy_floors(&mut self) -> bool {
+        let mut migrated = false;
+        for [floor, ..] in &mut self.cells {
+            if (1..=15).contains(floor) {
+                *floor = -*floor;
+                migrated = true;
+            }
+        }
+        for marker in &mut self.markers {
+            if (1..=15).contains(&marker.floor) {
+                marker.floor = crate::map::legacy_floor_to_native(marker.floor);
+                migrated = true;
+            }
+        }
+        migrated
+    }
+
     pub(super) fn validate(&self) -> io::Result<()> {
         if self.version != 1
             || self.cells.len() > MAX_CELLS

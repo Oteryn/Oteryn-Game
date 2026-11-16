@@ -614,7 +614,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // cannot turn a stale hidden position into a released public frame.
             if position.x != entity.position.x
                 || position.y != entity.position.y
-                || position.floor != entity.position.floor
+                || composed_admission::world_map::native_floor(position.floor)
+                    != entity.position.floor
             {
                 return None;
             }

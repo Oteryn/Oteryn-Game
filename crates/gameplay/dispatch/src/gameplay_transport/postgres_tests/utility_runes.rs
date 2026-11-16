@@ -23,6 +23,7 @@ use crate::foundation::{
 use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, RUNE_USE_OFFERED, SelectedCapabilities, test_command,
 };
+use crate::gameplay_transport::composed_admission::world_map::native_floor;
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
 };
@@ -460,7 +461,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 Some(SpellTargetPosition {
                     x: VICTIM.x,
                     y: VICTIM.y,
-                    floor: VICTIM.floor,
+                    floor: -VICTIM.floor,
                 })
             } else {
                 None
@@ -743,7 +744,7 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
         y: start.1,
         floor: start.2,
     };
-    let target = SpellTargetPosition {
+    let target = MovementLocalPosition {
         x: target.0,
         y: target.1,
         floor: target.2,
@@ -997,7 +998,11 @@ async fn utility_inner(admin: String, case: WorldItemCase) -> TestResult {
             use_with_position: if creature_target.is_some() {
                 None
             } else {
-                Some(target)
+                Some(SpellTargetPosition {
+                    x: target.x,
+                    y: target.y,
+                    floor: native_floor(target.floor),
+                })
             },
         })
         .map_err(debug)?;

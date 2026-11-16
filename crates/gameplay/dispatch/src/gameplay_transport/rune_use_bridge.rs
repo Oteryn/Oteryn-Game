@@ -15,6 +15,7 @@ use super::connection::{EarnedNotice, FreshAdmissionAuthority, UseCommand, UseOu
 use super::item_view::{ItemKey, SessionItemView};
 use super::world_spatial::SessionVisibility;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
+use crate::gameplay_transport::composed_admission::world_map::native_floor;
 use crate::spell::SpellDefinition;
 use oteryn_protocol_oteryn::actor_spell::{
     SpellCastDisposition, SpellCastIntent, SpellTarget, SpellTargetPosition,
@@ -138,7 +139,7 @@ fn target(
         .map_err(|_| UseDisposition::Rejected)?;
     if original
         .use_with_position
-        .is_some_and(|p| p.floor != caster.position().floor)
+        .is_some_and(|p| p.floor != native_floor(caster.position().floor))
     {
         return Err(UseDisposition::TargetIllegal);
     }
@@ -186,7 +187,7 @@ fn target(
             .filter(|(a, at, _)| {
                 let at = at.position();
                 entity(*a).is_some()
-                    && (at.x, at.y, at.floor) == (p.x, p.y, p.floor)
+                    && (at.x, at.y, native_floor(at.floor)) == (p.x, p.y, p.floor)
                     && super::attack::sees(caster.position(), at)
             })
             .min_by_key(|(a, _, _)| a.actor_local_id())
@@ -209,7 +210,7 @@ fn target(
         let position = original.use_with_position.unwrap_or(SpellTargetPosition {
             x: at.x,
             y: at.y,
-            floor: at.floor,
+            floor: native_floor(at.floor),
         });
         if spell.needs_target && original.use_with_position.is_some() {
             return Err(UseDisposition::NoTarget);

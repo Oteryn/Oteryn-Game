@@ -107,7 +107,7 @@ impl PlayView {
                     primary,
                     secondary,
                     ..
-                } if position.floor == self.floor && progress < 1.0 => {
+                } if crate::map::legacy_floor_to_native(position.floor) == self.floor && progress < 1.0 => {
                     let tile = TileCoord::new(position.x, position.y);
                     if !view.contains(tile) {
                         continue;
@@ -126,7 +126,7 @@ impl PlayView {
                     position,
                     effect_id,
                     source,
-                } if position.floor == self.floor => {
+                } if crate::map::legacy_floor_to_native(position.floor) == self.floor => {
                     let alpha = if world.effects().is_boss_area(effect_id) { boss_opacity } else {
                         match source {
                             oteryn_session::PresentationSource::Own => opacity[0],
@@ -203,13 +203,13 @@ impl PlayView {
                 }
                 PresentationEventKind::SpellWords {
                     position, spell, ..
-                } if position.floor == self.floor && progress < 1.0 => {
+                } if crate::map::legacy_floor_to_native(position.floor) == self.floor && progress < 1.0 => {
                     if let Some(words) = self.spell_words.get(&spell) {
                         visual::words(batch, view, atlas, position, words, progress)?;
                     }
                 }
                 PresentationEventKind::Missile { from, to, .. }
-                    if from.floor == self.floor && to.floor == self.floor =>
+                    if crate::map::legacy_floor_to_native(from.floor) == self.floor && crate::map::legacy_floor_to_native(to.floor) == self.floor =>
                 {
                     visual::missile(batch, view, atlas, from, to, progress, frame)?;
                 }

@@ -330,3 +330,32 @@ mod visual_sprites;
 
 #[path = "boss_area.rs"]
 mod boss_area;
+
+#[test]
+fn legacy_combat_values_render_on_native_floor() -> Result<(), Box<dyn std::error::Error>> {
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
+    let base = view.scene().sprites().len();
+    let now = std::time::Instant::now();
+    view.receive_presentation(&[value_event(6)], now);
+    view.project_presentation(now)?;
+    assert_eq!(view.scene().sprites().len(), base);
+    view.receive_presentation(&[value_event(7)], now);
+    view.project_presentation(now)?;
+    let before = view.scene().sprites().instances()[base..].to_vec();
+    assert!(!before.is_empty());
+    assert!(
+        before
+            .iter()
+            .any(|quad| quad.position[1] < before[0].position[1])
+    );
+    view.advance_presentation(now + std::time::Duration::from_millis(250))?;
+    let after = &view.scene().sprites().instances()[base..];
+    assert_eq!(before.len(), after.len());
+    for (a, b) in before.iter().zip(after) {
+        assert_eq!(a.position[0], b.position[0]);
+        assert_eq!(a.position[1] - 8.0, b.position[1]);
+    }
+    view.advance_presentation(now + VISUAL_LIFETIME)?;
+    assert_eq!(view.scene().sprites().len(), base);
+    Ok(())
+}

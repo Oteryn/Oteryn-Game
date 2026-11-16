@@ -393,11 +393,7 @@ async fn prepare_spatial(
         origin
     } else {
         match intent.target {
-            SpellTarget::Position(p) => TilePosition {
-                x: p.x,
-                y: p.y,
-                floor: p.floor,
-            },
+            SpellTarget::Position(p) => spell_target_tile(runtime, p)?,
             SpellTarget::None if needs_direction => {
                 let (dx, dy) = delta(facing_direction);
                 offset(position, dx, dy)?

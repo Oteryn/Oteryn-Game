@@ -154,3 +154,36 @@ fn t076_floor_and_zoom_controls_stop_following_and_recentre_on_the_player() {
     map.follow(x, y, floor);
     assert_eq!((map.x, map.y, map.floor), (101, 200, -7));
 }
+
+#[test]
+fn old_format_positive_floors_load_as_native() -> Result<(), Box<dyn std::error::Error>> {
+    let root = std::env::temp_dir().join(format!("floorframe-old-load-{}", std::process::id()));
+    let mut map = Minimap::default();
+    map.root = Some(root.clone());
+    map.bind_world("11111111-1111-4111-8111-111111111111");
+    map.binding = Some(([1; 32], [2; 32], 1));
+    let path = map.path().ok_or("active path")?;
+    let saved = Saved {
+        version: 1,
+        cells: vec![[7, 100, 200, 55]],
+        markers: vec![Marker {
+            x: 100,
+            y: 200,
+            floor: 7,
+            label: "Old Home".into(),
+            color: 1,
+        }],
+    };
+    saved.write_to(&path)?;
+    map.load()?;
+    assert_eq!(map.cells.get(&(-7, 100, 200)), Some(&55));
+    assert_eq!(map.markers[0].floor, -7);
+    assert_eq!(map.markers[0].label, "Old Home");
+    map.save()?;
+    let canonical: Saved = serde_json::from_slice(&std::fs::read(path)?)?;
+    assert_eq!(canonical.cells, vec![[-7, 100, 200, 55]]);
+    assert_eq!(canonical.markers[0].floor, -7);
+    drop(map);
+    std::fs::remove_dir_all(root)?;
+    Ok(())
+}

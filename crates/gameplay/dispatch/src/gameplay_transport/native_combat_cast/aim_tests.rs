@@ -35,12 +35,12 @@ fn at(x: i32, y: i32) -> TilePosition {
     TilePosition { x, y, floor: 7 }
 }
 
+fn cursor_position(x: i32, y: i32) -> SpellTargetPosition {
+    SpellTargetPosition { x, y, floor: -7 }
+}
+
 fn cursor(x: i32, y: i32) -> SpellTarget {
-    SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
-        x,
-        y,
-        floor: 7,
-    })
+    SpellTarget::Position(cursor_position(x, y))
 }
 
 #[test]
@@ -61,7 +61,7 @@ fn native_waves_and_beams_accept_target_and_cursor_aim() {
         );
         assert_eq!(
             native_aim(native, &spell, &cast(cursor(104, 101), true)),
-            Ok(Some(Aim::Cursor(at(104, 101)))),
+            Ok(Some(Aim::Cursor(cursor_position(104, 101)))),
             "{key}"
         );
         // A facing cast and ATTACK_TARGET keep their native handling.

@@ -14,6 +14,7 @@ use crate::foundation::{
     decode_wire_envelope,
 };
 use crate::gameplay_transport::capabilities::{SelectedCapabilities, test_command};
+use crate::gameplay_transport::composed_admission::world_map::native_floor;
 use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
@@ -615,7 +616,7 @@ pub(super) fn scenario(mode: i16) -> TestResult {
                 target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
                     x: 1,
                     y: 11,
-                    floor,
+                    floor: native_floor(floor),
                 }),
                 aim_at_target: true,
             };

@@ -112,7 +112,9 @@ pub(super) fn visible_corpses(
                 position: ActorPosition {
                     x: corpse.position.x,
                     y: corpse.position.y,
-                    floor: corpse.position.floor,
+                    floor: super::composed_admission::world_map::native_floor(
+                        corpse.position.floor,
+                    ),
                 },
                 revision: corpse.revision,
             })

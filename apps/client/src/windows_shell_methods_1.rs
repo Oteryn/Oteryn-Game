@@ -38,7 +38,7 @@ impl ApplicationHandler for Application {
         let center = self
             .play
             .as_ref()
-            .map_or((START.0, START.1, 7), |play| play.view.map_center());
+            .map_or((START.0, START.1, -7), |play| play.view.map_center());
         let world = if let Some(world) = &self.world
             && world.center() == center
         {

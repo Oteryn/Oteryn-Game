@@ -2,6 +2,7 @@
 //! as native combat. Actor identities, map flags and target predecessors come
 //! from the actual owners; the client supplies only a spatial proposal.
 use super::*;
+use crate::gameplay_transport::composed_admission::world_map::native_floor;
 use crate::gameplay_transport::spell_presentations::{
     CueTarget, LocatedCueRequest, QualifiedCueTile,
 };
@@ -280,7 +281,7 @@ pub(super) async fn prepare_named(
         target: SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
             x: p.x,
             y: p.y,
-            floor: p.floor,
+            floor: native_floor(p.floor),
         }),
         ..*intent
     };

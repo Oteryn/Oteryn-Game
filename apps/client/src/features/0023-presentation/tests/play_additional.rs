@@ -101,7 +101,7 @@ fn novelty_server_effects_decode_into_distinct_native_bursts_and_expire()
         let decoded = decode_item_effect_batch(&bytes).map_err(|e| format!("{e:?}"))?;
         assert_eq!(decoded, vec![event]);
         let (link, _commands, outbox) = crate::play::play_channel();
-        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+        let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), -7, &[])?;
         let base = view.scene().sprites().len();
         outbox.push(vec![oteryn_session::SessionEvent::ItemEffects(
             AppliedDelta {

@@ -185,11 +185,7 @@ pub(super) async fn prepare_direct(
             None
         };
         let p = match intent.target {
-            SpellTarget::Position(p) => TilePosition {
-                x: p.x,
-                y: p.y,
-                floor: p.floor,
-            },
+            SpellTarget::Position(p) => spell_target_tile(runtime, p)?,
             SpellTarget::AttackTarget => {
                 let actor = runtime
                     .visible_entities()
@@ -566,11 +562,7 @@ pub(super) async fn prepare_with_current_restrictions(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let origin = tile(position.position());
     let target = match intent.target {
-        SpellTarget::Position(p) => TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        },
+        SpellTarget::Position(p) => spell_target_tile(runtime, p)?,
         _ => return Err(SpellCastDisposition::TargetRequired),
     };
     let mut tiles = BTreeMap::new();

@@ -73,7 +73,7 @@ mod tests {
             position: Position {
                 x: 1,
                 y: 2,
-                floor: 7,
+                floor: -7,
             },
             display_name: "Synthetic Rat".to_owned(),
         }))?;

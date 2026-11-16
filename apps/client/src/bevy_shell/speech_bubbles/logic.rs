@@ -38,7 +38,11 @@ impl Speech {
             name: speaker_name.clone(),
             mode: *mode,
             text: text.clone(),
-            position: (position.x, position.y, position.floor),
+            position: (
+                position.x,
+                position.y,
+                crate::map::legacy_floor_to_native(position.floor),
+            ),
         })
     }
 }
@@ -175,12 +179,8 @@ impl Texts {
         self.0.clear();
     }
 
-    /// Only the texts of the camera floor are drawn. Chat positions carry the legacy floor
-    /// (surface 7) while a live map view is on its native floor (`-z`, surface -7); both name
-    /// the same level, so the floors are compared by magnitude.
+    /// Speech positions have already crossed the legacy chat boundary into native view floors.
     pub fn on_floor(&self, floor: i16) -> impl Iterator<Item = &StaticText> {
-        self.0
-            .iter()
-            .filter(move |t| t.position.2.unsigned_abs() == floor.unsigned_abs())
+        self.0.iter().filter(move |t| t.position.2 == floor)
     }
 }

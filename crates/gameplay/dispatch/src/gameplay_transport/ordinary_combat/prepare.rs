@@ -24,8 +24,8 @@ struct SpatialPhase {
 pub(in crate::gameplay_transport) enum Aim {
     /// Towards the held attack target, or the facing without one.
     Target,
-    /// Towards the tile under the cursor.
-    Cursor(TilePosition),
+    /// The native wire proposal for the tile under the cursor.
+    Cursor(SpellTargetPosition),
 }
 
 /// WU26-14: the target option of `intent`. A wave or beam (`needs_direction`) honours TARGET and
@@ -37,11 +37,7 @@ pub(in crate::gameplay_transport) fn aim(
 ) -> Result<Option<Aim>, SpellCastDisposition> {
     let aim = match (intent.target, intent.aim_at_target) {
         (SpellTarget::None, true) => Aim::Target,
-        (SpellTarget::Position(p), true) => Aim::Cursor(TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        }),
+        (SpellTarget::Position(p), true) => Aim::Cursor(p),
         _ => return Ok(None),
     };
     if spell
@@ -95,7 +91,7 @@ pub(in crate::gameplay_transport) fn aim_point(
             attack_target,
             now,
         )),
-        Aim::Cursor(p) => cursor_point(caster, p),
+        Aim::Cursor(p) => cursor_point(caster, spell_target_tile(runtime, p)?),
     }
 }
 
@@ -482,11 +478,7 @@ async fn prepare_spatial(
     let directional = profile.header.targeting.needs_direction || spell.target_or_direction;
     let origin = match (aimed, intent.target) {
         (Some((origin, _)), _) => origin,
-        (None, SpellTarget::Position(p)) => TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        },
+        (None, SpellTarget::Position(p)) => spell_target_tile(runtime, p)?,
         (None, SpellTarget::None)
             if profile.header.targeting.needs_direction || spell.target_or_direction =>
         {

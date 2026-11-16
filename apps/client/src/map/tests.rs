@@ -94,3 +94,20 @@ fn the_legacy_facade_keeps_the_composed_world_type_and_constants() -> Result<(),
     assert_eq!(draws[0].cell, MARKER_CELL);
     Ok(())
 }
+
+#[test]
+fn native_map_center_loads_legacy_region_files() -> Result<(), String> {
+    let center = (START.0, START.1, -7);
+    let world = World::load_around(&repo(), center)?;
+    assert_eq!(world.center(), center);
+    assert_eq!(world.first_visible_floor, -7);
+    assert!(world.tile_count() > 10_000);
+    assert!(
+        !world
+            .tile(START.0, START.1)
+            .ok_or("start tile")?
+            .under
+            .is_empty()
+    );
+    Ok(())
+}

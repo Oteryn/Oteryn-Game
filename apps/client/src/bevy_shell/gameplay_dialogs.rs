@@ -440,7 +440,7 @@ mod tests {
         let mut host = HostOwner::new(None)?;
         let (link, mut commands, _events) = play_channel();
         host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+            view: PlayView::new(TileCoord::new(100, 100), -7, &[])?,
             link,
         });
         host.phase = Phase::Playing;
@@ -480,7 +480,7 @@ mod tests {
         let mut host = HostOwner::new(None)?;
         let (link, mut commands, _events) = play_channel();
         host.play = Some(super::super::owner::ActivePlay {
-            view: PlayView::new(TileCoord::new(100, 100), 7, &[])?,
+            view: PlayView::new(TileCoord::new(100, 100), -7, &[])?,
             link,
         });
         host.phase = Phase::Playing;
@@ -496,7 +496,7 @@ mod tests {
                 oteryn_session::ActorPosition {
                     x: 100,
                     y: 100,
-                    floor: 7,
+                    floor: -7,
                 },
             ),
             entries: vec![(

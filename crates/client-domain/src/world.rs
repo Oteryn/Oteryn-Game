@@ -21,7 +21,14 @@ pub struct MapTile {
 
 /// The tutorial islet temple, where the offline view starts.
 pub const START: (i32, i32) = (32534, 32513);
+/// Legacy asset-region depth; view floors are native.
 pub const START_FLOOR: u8 = 7;
+
+/// Convert a validated legacy protocol or asset depth (0..=15) to a native view floor.
+#[must_use]
+pub const fn legacy_floor_to_native(z: i16) -> i16 {
+    -z
+}
 
 /// One 32x32 cell to draw, with its pixel offset from the top-left of the tile. The offset
 /// includes the sprite's anchoring at the tile's bottom-right and the displacement; elevation

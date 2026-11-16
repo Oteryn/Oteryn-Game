@@ -187,11 +187,7 @@ pub(super) async fn prepare(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let origin = tile(source.position());
     let target = match intent.target {
-        SpellTarget::Position(p) => TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        },
+        SpellTarget::Position(p) => spell_target_tile(runtime, p)?,
         SpellTarget::AttackTarget => return Err(SpellCastDisposition::TargetIllegal),
         _ => return Err(SpellCastDisposition::TargetRequired),
     };
@@ -580,11 +576,7 @@ async fn prepare_barrier(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let origin = tile(source.position());
     let target = match intent.target {
-        SpellTarget::Position(p) => TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        },
+        SpellTarget::Position(p) => spell_target_tile(runtime, p)?,
         _ => return Err(SpellCastDisposition::TargetRequired),
     };
     let mut tiles = BTreeMap::new();
