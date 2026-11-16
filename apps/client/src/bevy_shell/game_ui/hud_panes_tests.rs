@@ -8,13 +8,14 @@ use bevy::{
     camera::NormalizedRenderTarget,
     picking::{
         backend::HitData,
-        pointer::{Location, Pointer, PointerId},
+        events::Pointer,
+        pointer::{Location, PointerId},
     },
     window::WindowRef,
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn app(preferences: std::path::PathBuf) -> Result<App, Box<dyn std::error::Error>> {
+fn playing_app(preferences: std::path::PathBuf) -> Result<App, Box<dyn std::error::Error>> {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, AssetPlugin::default()))
         .init_asset::<Image>()
@@ -106,7 +107,7 @@ fn hud_panes_show_dock_and_drag_then_come_back_after_a_restart() -> TestResult {
         std::fs::create_dir_all(directory)?;
     }
     let _ = std::fs::remove_file(&path);
-    let mut app = app(path.clone())?;
+    let mut app = playing_app(path.clone())?;
     assert_eq!(
         pane_node(&mut app, HudPanel::Combat)?.display,
         Display::None
@@ -175,7 +176,7 @@ fn hud_panes_show_dock_and_drag_then_come_back_after_a_restart() -> TestResult {
             .pane(HudPanel::Combat),
         &expected
     );
-    let mut again = app(path.clone())?;
+    let mut again = playing_app(path.clone())?;
     {
         let mut owner = again.world_mut().non_send_mut::<HostOwner>();
         let preferences = owner.settings.preferences.clone();
