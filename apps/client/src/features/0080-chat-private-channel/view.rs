@@ -78,8 +78,16 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                         || list.invited.iter().any(|invite| invite.channel_id == *channel)
                 })
             });
-            if channel.is_some() {
-                mailbox.chat_private.channel = channel;
+            match channel {
+                Some(channel) => mailbox.chat_private.channel = Some(channel),
+                // A typed channel that is neither the own channel nor an invitation is
+                // refused; the earlier pick is never used in its place.
+                None if matches!(intent, Intent::Join | Intent::Leave | Intent::Send) => {
+                    mailbox.chat_private.feedback =
+                        Some(tr!("Select your channel or an invitation").into());
+                    return;
+                }
+                None => {}
             }
             mailbox.chat_private.name = field(&values, 1).to_owned();
             mailbox.chat_private.text = values.get(2).cloned().unwrap_or_default();

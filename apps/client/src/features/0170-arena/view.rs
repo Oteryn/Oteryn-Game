@@ -67,7 +67,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                         9 => (3, 3),
                         _ => (4, 1),
                     };
-                    number(0)
+                    let intent = number(0)
                         .filter(|rank| (1..=3).contains(rank))
                         .and_then(|rank| u8::try_from(rank).ok())
                         .map(|rank| {
@@ -76,10 +76,23 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                                 category,
                                 choice,
                             })
-                        })
+                        });
+                    if intent.is_none() {
+                        mailbox.arena.feedback = Some(tr!("Enter a reward rank from 1 to 3"));
+                    }
+                    intent
                 }
                 11..=15 => drome_intent(action + 189, 0),
-                16 => number(1).and_then(|reward| drome_intent(205, reward - 1)),
+                16 => {
+                    let intent = number(1)
+                        .and_then(|reward| reward.checked_sub(1))
+                        .and_then(|reward| drome_intent(205, reward));
+                    if intent.is_none() {
+                        mailbox.arena.feedback =
+                            Some(tr!("Enter a Drome reward number from 1 to 18"));
+                    }
+                    intent
+                }
                 _ => None,
             };
             if let Some(intent) = intent

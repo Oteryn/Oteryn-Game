@@ -28,6 +28,7 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             "Found",
             "Invite",
             "Set rank",
+            "Guild chat",
         ],
         snapshot: |mailbox| {
             let panel = &mailbox.guild;
@@ -46,6 +47,13 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         set_open: |mailbox, value| mailbox.guild.open = value,
         submit: |mailbox, commands, action, values| {
             use crate::play::feature_0115_mail::view::form::field;
+            if action == 11 {
+                if !crate::play::feature_0036_chat_guild_room::input::open_locked(mailbox) {
+                    mailbox.guild.feedback =
+                        Some(tr!("Guild chat unavailable or waiting for the server").into());
+                }
+                return;
+            }
             let row = field(&values, 2)
                 .parse::<usize>()
                 .ok()
@@ -78,8 +86,18 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                     }),
                 _ => None,
             };
-            if let Some(intent) = intent
-                && let Some(command) = request(&mut mailbox.guild, intent)
+            let Some(intent) = intent else {
+                mailbox.guild.feedback = Some(
+                    if action == 10 {
+                        tr!("Enter a member row and a rank level")
+                    } else {
+                        tr!("Enter a row number from the list")
+                    }
+                    .into(),
+                );
+                return;
+            };
+            if let Some(command) = request(&mut mailbox.guild, intent)
                 && commands.send(PlayCommand::Guild(command)).is_err()
             {
                 mailbox.guild.pending = false;

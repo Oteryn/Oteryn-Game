@@ -504,3 +504,6 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
     );
     Ok(())
 }
+
+#[path = "intent_tests.rs"]
+mod intent_tests;

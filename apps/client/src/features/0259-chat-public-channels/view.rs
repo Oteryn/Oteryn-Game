@@ -55,15 +55,17 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                 crate::play::feature_local_movement_spells::input::enqueue(mailbox, commands, spell);
                 return;
             }
-            if let Some(room) = field(&values, 0)
+            let Some(&room) = field(&values, 0)
                 .parse::<usize>()
                 .ok()
                 .and_then(|row| row.checked_sub(1))
                 .and_then(|row| ChatRoom::ALL.get(row))
-            {
-                mailbox.chat_public.room = *room;
-            }
-            let room = mailbox.chat_public.room;
+            else {
+                // An unknown room number is refused; the earlier room is never used instead.
+                mailbox.chat_public.feedback = Some(tr!("Enter a room number from the list").into());
+                return;
+            };
+            mailbox.chat_public.room = room;
             let intent = match action {
                 0 => Intent::Open(room),
                 1 => Intent::Close(room),

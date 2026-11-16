@@ -44,7 +44,8 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
             text.push_str(&panel_text(panel));
             (
                 panel.open && !mailbox.quest_shutdown,
-                panel.pending || !panel.selected || panel.list.is_none(),
+                // Refresh stays usable after a refused read; the other buttons need the list.
+                panel.pending || !panel.selected,
                 vec![String::new(); 2],
                 text,
             )
@@ -52,6 +53,10 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         set_open: |mailbox, value| mailbox.exiva.open = value,
         submit: |mailbox, commands, action, values| {
             use crate::play::feature_0115_mail::view::form::field;
+            if action != 2 && mailbox.exiva.list.is_none() {
+                mailbox.exiva.error = Some(tr!("Exiva request refused; refresh the list"));
+                return;
+            }
             let payload = match action {
                 0 => {
                     let mut payload = vec![6];
@@ -59,16 +64,22 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                     payload.extend(name.as_bytes());
                     Some(payload)
                 }
-                1 => field(&values, 1)
-                    .parse::<usize>()
-                    .ok()
-                    .and_then(|row| row.checked_sub(1))
-                    .and_then(|row| mailbox.exiva.list.as_ref()?.players.get(row))
-                    .map(|(id, _)| {
-                        let mut bytes = vec![2];
-                        bytes.extend(id);
-                        bytes
-                    }),
+                1 => {
+                    let payload = field(&values, 1)
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(|row| row.checked_sub(1))
+                        .and_then(|row| mailbox.exiva.list.as_ref()?.players.get(row))
+                        .map(|(id, _)| {
+                            let mut bytes = vec![2];
+                            bytes.extend(id);
+                            bytes
+                        });
+                    if payload.is_none() {
+                        mailbox.exiva.error = Some(tr!("Enter a player row from the list"));
+                    }
+                    payload
+                }
                 2 => Some(vec![5]),
                 3..=7 => mailbox
                     .exiva

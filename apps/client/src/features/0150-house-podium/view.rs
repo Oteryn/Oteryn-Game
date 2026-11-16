@@ -1,6 +1,11 @@
-#[cfg(test)]
+#[cfg(any(test, bevy_shell))]
 #[path = "preview.rs"]
 mod preview;
+#[cfg(bevy_shell)]
+#[path = "preview_assets.rs"]
+pub(crate) mod preview_assets;
+/// The podium form's title; the Bevy form window shows the artwork preview beside it.
+pub(crate) const TITLE: &str = "House podium";
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_podium_panel(&self) -> oteryn_client_ui::house_podium::Panel {
@@ -11,7 +16,7 @@ impl PlayLink {
 pub(in crate::play) fn form(link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;
     Form {
-        title: "House podium",
+        title: TITLE,
         labels: &[
             "Podium item UUID",
             "Display: 1 outfit, 2 mount, 3 creature",
