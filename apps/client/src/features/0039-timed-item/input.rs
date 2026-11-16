@@ -76,6 +76,8 @@ pub(in crate::play) fn retarget(
     if panel.fields[0] != value {
         edit(panel, 0, value);
         edit(panel, 1, "0".into());
+        // The previous item's details never describe the new one, even if its inspection fails.
+        panel.summary.clear();
     }
 }
 
@@ -104,9 +106,5 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
-        // The previous item's details never describe a new target, even if its inspection fails.
-        if field == 0 {
-            panel.summary.clear();
-        }
     }
 }
