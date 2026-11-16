@@ -113,6 +113,8 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
     // CL26s1: public channels.
     chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
+    // Tibia Global's hireling management window, command 470 (requires 165).
+    hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
     oteryn_protocol_oteryn::vip_presence::CAPABILITY_VIP_PRESENCE_V1,
     chat::public_channels::CAPABILITY_CHAT_PUBLIC_CHANNELS_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
@@ -268,6 +270,7 @@ const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1,
     oteryn_protocol_oteryn::team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1,
     player_typing::CAPABILITY_PLAYER_TYPING_V1,
+    hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
     atelier::resources::CAPABILITY_ATELIER_RESOURCES_V1,
     loyalty_skills::CAPABILITY_LOYALTY_SKILLS_V1,
     condition_status::CAPABILITY_CONDITION_STATUS_V1,
@@ -355,6 +358,24 @@ mod weapon_proficiency_tests {
             assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
         }
         assert!(gated_routes().any(|(id, commands, _)| id == 195 && commands.contains(&641)));
+    }
+}
+
+#[cfg(test)]
+mod hireling_management_tests {
+    use super::*;
+
+    #[test]
+    fn hireling_management_is_advertised_and_routed_with_its_prerequisite() {
+        for capability in [
+            hireling::CAPABILITY_HIRELING_V1,
+            hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1,
+        ] {
+            assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&capability));
+        }
+        assert!(gated_routes().any(|(id, commands, _)| id
+            == hireling::management::CAPABILITY_HIRELING_MANAGEMENT_V1
+            && commands.contains(&hireling::management::COMMAND_TYPE_HIRELING_MANAGEMENT)));
     }
 }
 
