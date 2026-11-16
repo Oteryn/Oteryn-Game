@@ -12,6 +12,9 @@ mod audit_collector;
 mod channel_boot;
 mod public_house_catalogue;
 mod qualification_fixture;
+#[cfg(test)]
+#[path = "serve/postgres_tests/readiness.rs"]
+mod readiness_postgres_tests;
 mod supervision;
 mod t94;
 mod world_reset;
@@ -2502,19 +2505,17 @@ struct Readiness<'a> {
 }
 
 impl Readiness<'_> {
-    /// Shutdown has stopped the maintenance pump. Replenish or observe the real
-    /// holder here; requesting maintenance and sleeping alone cannot do so.
-    /// Keep the caller's existing shutdown deadline authoritative.
+    /// Replenish or observe the real holder within the boot or shutdown budget;
+    /// requesting maintenance and sleeping alone cannot do so.
     async fn await_holder(
         &self,
         budget: Option<tokio::time::Instant>,
     ) -> Result<(), DurabilityError> {
-        match budget {
-            Some(deadline) => tokio::time::timeout_at(deadline, self.root.await_ready())
-                .await
-                .map_err(|_| DurabilityError::RootUnavailable)?,
-            None => self.root.await_ready().await,
-        }
+        let deadline = budget
+            .unwrap_or_else(|| tokio::time::Instant::now() + self.config.boot_pass_deadline());
+        tokio::time::timeout_at(deadline, self.root.await_ready())
+            .await
+            .map_err(|_| DurabilityError::RootUnavailable)?
     }
 
     /// Prepare the exact successor of the current Runtime guard chain.
@@ -2630,9 +2631,24 @@ impl Readiness<'_> {
     }
 
     /// Publish; a stale or conflicting CAS rereads once. An ambiguous outcome
-    /// replays the exact prepared publication until it is definite (or the
-    /// shutdown budget ends).
+    /// replays the exact prepared publication within the boot retry ceiling or
+    /// shutdown deadline. Holder waits and database passes are bounded too.
     async fn publish(
+        &self,
+        ready: bool,
+        budget: Option<tokio::time::Instant>,
+    ) -> Result<AdmissionAuthorityPublicationV1, BootError> {
+        match budget {
+            Some(deadline) => {
+                tokio::time::timeout_at(deadline, self.publish_with_budget(ready, budget))
+                    .await
+                    .map_err(|_| BootError::Readiness("publication budget"))?
+            }
+            None => self.publish_with_budget(ready, None).await,
+        }
+    }
+
+    async fn publish_with_budget(
         &self,
         ready: bool,
         budget: Option<tokio::time::Instant>,
@@ -2641,8 +2657,12 @@ impl Readiness<'_> {
             let publication = self.prepare(ready, budget).await?;
             let mut attempt = 0;
             loop {
-                if budget.is_some_and(|deadline| tokio::time::Instant::now() >= deadline) {
-                    return Err(BootError::Readiness("shutdown budget"));
+                let exhausted = match budget {
+                    Some(deadline) => tokio::time::Instant::now() >= deadline,
+                    None => attempt >= PENDING_RECONCILE_ATTEMPTS,
+                };
+                if exhausted {
+                    return Err(BootError::Readiness("publication budget"));
                 }
                 let outcome = match self.await_holder(budget).await {
                     Ok(()) => {
@@ -3655,6 +3675,13 @@ async fn boot_and_serve(
         return Ok(());
     };
     let proof = proof?;
+    // Serving configuration must reject boot before any ready publication.
+    let cast = crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
+        *proof.fact().node_id().as_bytes(),
+    )
+    .map_err(|_| BootError::Serve)?;
+    let coins = crate::native_admission_source::coins::CoinClient::configured()
+        .map_err(|_| BootError::Serve)?;
     with_retries(
         root,
         "staff trust configuration",
@@ -3808,7 +3835,23 @@ async fn boot_and_serve(
         stopped_before_ready();
         return Ok(());
     }
-    let committed = readiness.publish(true, None).await?;
+    let committed = match first(readiness.publish(true, None), signalled.cancelled()).await {
+        Some(Ok(publication)) => publication,
+        failure => {
+            // Cancellation or a lost response can follow a committed ready=true.
+            // Withdraw even when the publication's outcome is still unknown.
+            let withdrawn = readiness
+                .publish(false, Some(tokio::time::Instant::now() + SHUTDOWN_BUDGET))
+                .await;
+            let _ = std::fs::remove_file(&config.control.socket_path);
+            withdrawn?;
+            if let Some(Err(error)) = failure {
+                return Err(error);
+            }
+            stopped_before_ready();
+            return Ok(());
+        }
+    };
     // Contract §8.1: report the committed publication; never gates serving.
     let reporter = material.runtime_status.as_ref().map(|(descriptor, epoch)| {
         super::runtime_status::start_platform(
@@ -3862,10 +3905,7 @@ async fn boot_and_serve(
     );
     let owners = GameplaySeamOwners {
         platform_enforcement_enabled: enforcement_clients.is_some(),
-        cast: crate::gameplay_transport::cast::CastRuntimeConfig::from_env(
-            *proof.fact().node_id().as_bytes(),
-        )
-        .map_err(|_| BootError::Serve)?,
+        cast,
         activity_templates: &activity_templates,
         soulpit_template: soulpit_template.as_ref(),
         gameplay_idle_policy: config.gameplay_idle,
@@ -3879,10 +3919,7 @@ async fn boot_and_serve(
                 ),
                 material.store.source_authority().to_owned(),
             )
-            .with_coins(
-                crate::native_admission_source::coins::CoinClient::configured()
-                    .map_err(|_| BootError::Serve)?,
-            ),
+            .with_coins(coins),
         ),
         emit,
         root,
@@ -5218,5 +5255,26 @@ source_authority = "OTERYN_GAME_JOURNAL"
             assert!(result.is_ok(), "{result:?}");
             Ok(())
         })
+    }
+
+    #[test]
+    fn serving_configuration_is_validated_before_readiness() {
+        // Guard the composition boundary: either fallible environment loader must
+        // finish before publishing a ready node, including on early boot errors.
+        let source = include_str!("serve.rs");
+        let boot = source
+            .split_once("async fn boot_and_serve(")
+            .expect("boot entry")
+            .1;
+        let boot = boot.split_once("#[cfg(test)]").expect("test boundary").0;
+        let publication = boot
+            .find("readiness.publish(true,")
+            .expect("ready publication");
+        for loader in ["CastRuntimeConfig::from_env(", "CoinClient::configured()"] {
+            assert!(
+                boot.find(loader).expect("serving configuration loader") < publication,
+                "{loader} can reject boot after ready=true was committed"
+            );
+        }
     }
 }

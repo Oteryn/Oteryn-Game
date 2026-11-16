@@ -1167,9 +1167,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         converter: item_view::ItemKey,
         coin: item_view::ItemKey,
-    ) -> Option<UseOutcome> {
+    ) -> Result<Option<UseOutcome>, ()> {
         self.use_gold_converter(actor, command, converter, coin)
             .await
+            .transpose()
     }
 
     async fn use_fluid_container(

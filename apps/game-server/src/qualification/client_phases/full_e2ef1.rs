@@ -684,7 +684,18 @@ mod e2ef1 {
                 "E2EF1_GAP row=M04 case=push-creature error={error}"
             ));
         }
-        player.and(creature)
+        // Leave the rat spawn before the row's logout waits out the in-fight lock:
+        // left there, the live rats kill this core Character, which then respawns
+        // at the home temple beyond the core's town route budget.
+        let left: TestResult = async {
+            let back = route(world, tile(client.world_spatial().actor_position)?, |at| {
+                at == TOWN
+            })
+            .ok_or("push-creature return route")?;
+            walk(client, world, &back).await
+        }
+        .await;
+        player.and(creature).and(left)
     }
     async fn player_push(
         client: &mut DevClientSession,

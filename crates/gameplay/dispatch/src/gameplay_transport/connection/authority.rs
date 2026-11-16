@@ -662,8 +662,8 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _converter: ItemKey,
         _coin: ItemKey,
-    ) -> impl Future<Output = Option<UseOutcome>> {
-        async { None }
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// I10a: a carried fluid container used on another carried one; `None` when either is not.

@@ -79,6 +79,7 @@ fn coin_market_session_loop_applies_only_the_confirmed_server_receipt()->Result<
    link.coin_market_control(6,fields);
    tokio::time::timeout(std::time::Duration::from_secs(3),request).await??;
    assert!(link.market_panel().coins.view.is_none());
+   assert!(link.market_panel().coins.pending.is_some());
    release.send(()).map_err(|_|"coin receipt receiver closed")?;
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while link.market_panel().coins.pending.is_some() || link.market_panel().coins.view.is_none(){tokio::task::yield_now().await;}}).await?;
    let panel=link.market_panel();assert!(panel.coins.confirmed.is_none());assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Balance after: 75")));assert!(panel.coins.view.as_deref().is_some_and(|s|s.contains("Receipt:")));

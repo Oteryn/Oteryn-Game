@@ -30,23 +30,23 @@ impl<S: SessionStream> Session<S> {
                 status: result.status,
             })
         } else {
-            (|| {
-                let (payload, detail) = self.item_result_payload(&result.payload)?;
-                let outcome =
-                    hotkey_equip::decode_reply(payload).map_err(SessionError::ItemView)?;
-                if outcome == ItemMoveOutcome::Moved && detail.is_some() {
-                    return Err(SessionError::ItemView(
-                        item_view::ItemViewWireError::Malformed,
-                    ));
-                }
-                self.last_refusal_detail = detail;
-                Ok(ItemMoveOutcomeResult {
-                    command_id: result.command_id,
-                    status: result.status,
-                    outcome,
-                    result_server_sequence: result.server_sequence,
+            self.item_result_payload(&result.payload)
+                .and_then(|(payload, detail)| {
+                    let outcome =
+                        hotkey_equip::decode_reply(payload).map_err(SessionError::ItemView)?;
+                    if outcome == ItemMoveOutcome::Moved && detail.is_some() {
+                        return Err(SessionError::ItemView(
+                            item_view::ItemViewWireError::Malformed,
+                        ));
+                    }
+                    self.last_refusal_detail = detail;
+                    Ok(ItemMoveOutcomeResult {
+                        command_id: result.command_id,
+                        status: result.status,
+                        outcome,
+                        result_server_sequence: result.server_sequence,
+                    })
                 })
-            })()
         };
         self.poison_on_error(decoded)
     }
