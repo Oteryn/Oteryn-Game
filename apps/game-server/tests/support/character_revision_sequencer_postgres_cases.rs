@@ -148,6 +148,7 @@ impl Database {
             None => Self::migrated_template(&mut admin, &admin_url).await?,
         };
         Self::clone_database(&mut admin, &name, &template).await?;
+        // Clones share the template's random decision roots; tests must not depend on them differing between databases.
         // CREATE DATABASE copies schema ACLs, but not the database's own
         // ACL. Preserve migration 0006's cross-database isolation boundary.
         admin
@@ -165,6 +166,7 @@ impl Database {
         oteryn_gameplay_durability::GAME_MIGRATOR
             .run(&mut connection)
             .await?;
+        Self::refresh_migration_seeds(&mut connection).await?;
         let public_connect: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM pg_database d, \
              LATERAL aclexplode(COALESCE(d.datacl,acldefault('d',d.datdba))) a \
@@ -182,6 +184,18 @@ impl Database {
             name,
             url,
         })
+    }
+
+    async fn refresh_migration_seeds(connection: &mut PgConnection) -> TestResult {
+        // Migration 2833 seeds this at migration time; give each clone a fresh resync start.
+        sqlx::query(
+            "UPDATE game_character_service_feed \
+             SET resync_started_at_ms = floor(extract(epoch FROM transaction_timestamp())*1000)::bigint \
+             WHERE singleton AND phase = 1",
+        )
+        .execute(connection)
+        .await?;
+        Ok(())
     }
 
     async fn migrated_template(admin: &mut PgConnection, admin_url: &str) -> TestResult<String> {
