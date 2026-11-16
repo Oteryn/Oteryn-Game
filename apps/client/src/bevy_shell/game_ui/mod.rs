@@ -18,6 +18,7 @@ mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
+mod hud_panes;
 mod imbuement_tracker;
 mod imbuing;
 mod install;

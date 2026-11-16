@@ -268,13 +268,15 @@ fn activate(
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn project(
     mut commands: Commands,
-    owner: NonSend<HostOwner>,
+    (owner, playback): (
+        NonSend<HostOwner>,
+        Option<NonSend<crate::bevy_shell::audio::Playback>>,
+    ),
     mut labels: Query<(&VitalLabel, &mut Text), Without<InfoText>>,
     mut info: Query<(&InfoText, &mut Text), Without<VitalLabel>>,
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor)>,
     mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>)>,
     mut entered: Local<Option<u64>>,
-    playback: Option<NonSend<crate::bevy_shell::audio::Playback>>,
 ) {
     let Some(play) = &owner.play else {
         *entered = None;
@@ -362,7 +364,10 @@ fn project(
 }
 /// The combined status line: custom hotkeys, item movement, the HUD status, audio, the
 /// movement keys and movement feedback.
-fn status_line(play: &crate::bevy_shell::owner::ActivePlay, audio: Option<&str>) -> String {
+pub(super) fn status_line(
+    play: &crate::bevy_shell::owner::ActivePlay,
+    audio: Option<&str>,
+) -> String {
     let settings = play.view.preferences().audio;
     let audio = format!(
         "Audio {}%{} ({})",

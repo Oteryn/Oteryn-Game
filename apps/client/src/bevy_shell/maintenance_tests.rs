@@ -88,7 +88,7 @@ fn maintenance_window_checks_then_verifies_offers_repair_and_closes() -> TestRes
     // Verification runs on the real maintenance caller; this build has no signing root.
     click(&mut app, Choice::Verify)?;
     let deadline = Instant::now() + Duration::from_secs(30);
-    while app.world().non_send_resource::<Maintenance>().stage == Stage::Working {
+    while app.world().non_send::<Maintenance>().stage == Stage::Working {
         if Instant::now() >= deadline {
             return Err("verification did not finish".into());
         }

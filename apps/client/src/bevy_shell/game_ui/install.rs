@@ -3,9 +3,9 @@ mod tools;
 use super::{
     actions, analyser, bestiary, bosstiary, bug_report, chat, cyclopedia, cyclopedia_items,
     cyclopedia_map, depot, feature_dialogs, feature_forms, forge, highscores, hotkeys, hud,
-    imbuement_tracker, imbuing, inventory, item_details, journal, layout, market, minimap, modal,
-    npc_shop, options, outfit, party, prey, proficiency, project, projection, quick_loot,
-    reward_wall, rule_violation, satellite_map, stash, store, store_inbox, task_board,
+    hud_panes, imbuement_tracker, imbuing, inventory, item_details, journal, layout, market,
+    minimap, modal, npc_shop, options, outfit, party, prey, proficiency, project, projection,
+    quick_loot, reward_wall, rule_violation, satellite_map, stash, store, store_inbox, task_board,
     task_tracker, team_finder, trade, tutorial, unjustified_points, wheel,
 };
 use bevy::prelude::*;
@@ -30,6 +30,7 @@ pub(in crate::bevy_shell) fn install(app: &mut App) {
     forge::install(app);
     hotkeys::install(app);
     hud::install(app);
+    hud_panes::install(app);
     imbuement_tracker::install(app);
     imbuing::install(app);
     inventory::install(app);

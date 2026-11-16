@@ -15,7 +15,7 @@ fn key(logical_key: Key, text: Option<&str>) -> KeyboardInput {
 }
 
 fn canvas_pixels(app: &App) -> Result<Vec<u8>, &'static str> {
-    let handle = app.world().non_send_resource::<Viewer>().image.clone();
+    let handle = app.world().non_send::<Viewer>().image.clone();
     let image = app
         .world()
         .resource::<Assets<Image>>()

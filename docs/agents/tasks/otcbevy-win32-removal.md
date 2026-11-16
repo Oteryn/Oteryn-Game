@@ -145,7 +145,7 @@ in the follow-up pass on the PC. Every test below is **written, not run**.
 | Miniwindow docking and saved window bounds | apps/client/src/miniwindow.rs, miniwindow/*.rs, window_layout.rs | `apps/client/src/bevy_shell/game_ui/layout.rs`, `window_drag.rs` |
 | Game notifications popup | apps/client/src/features/local-game-notifications/state.rs | `apps/client/src/bevy_shell/game_ui/feature_dialogs/notices.rs` |
 | Minimap window | apps/client/src/features/local-minimap/native*.rs | `apps/client/src/bevy_shell/game_ui/minimap.rs`, `satellite_map.rs` |
-| Cast watch HUD (`--watch`) | apps/client/src/cast_watch/native_hud.rs | KEPT: `--watch` still runs the native winit/Win32 spectator (owner question) |
+| Cast watch HUD (`--watch`) | apps/client/src/cast_watch/native_hud.rs (removed) | `apps/client/src/cast_watch/viewer.rs` (Bevy) |
 
 ## Non-UI Windows platform pieces that stay
 
@@ -166,12 +166,11 @@ An independent inventory against `origin/main` 641a191c92 listed 173 player-visi
 78 present in Bevy and 95 MISSING. `apps/client/src` is the same at that commit and at
 this branch's base. Status of the 95 MISSING rows on this branch:
 
-- P: ported on this branch (43)
+- P: ported on this branch (54)
 - S: Bevy already presented it; the row was stale (24)
 - B: pre-game account screens moved to a separate lane (4)
-- K: kept as a Windows-native path (2)
-- N: not ported (22): by design 16, 138, 152; in scope but not ported 35, 50, 52, 73,
-  119, 140, 141, 144, 147, 149, 150, 155, 158, 162-166, 173
+- N: not ported (13): by design 16, 138, 152; in scope but not ported 147, 149, 150,
+  155, 158, 162-166
 
 | row | status | where / why |
 |---|---|---|
@@ -193,12 +192,12 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 31 | S | game_ui/inventory.rs:270 |
 | 32 | S | game_ui/inventory.rs:268, context Browse Field |
 | 33 | P | form 0593fe242b |
-| 35 | N | battle-list editor (Bevy selects saved lists only) |
+| 35 | P | 82721336 battle-list editor in the Bevy battle panel |
 | 38 | P | coin market form 0593fe242b |
 | 40 | S | gameplay_dialogs.rs Trade with |
-| 50 | N | Bevy uses its fixed console font |
+| 50 | P | 463c6303 chat transcript font size |
 | 51 | S | chat message menu Save messages (appends chat.log; no path/overwrite choice) |
-| 52 | N | channel mirror |
+| 52 | P | 463c6303 console tab mirror |
 | 53 | P | f7eec7087c Communication lists form |
 | 58 | P | form |
 | 59 | P | form |
@@ -207,7 +206,7 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 62 | S | game_ui/hud/battle.rs (pvp_expert_edit) |
 | 63 | S | game_ui/unjustified_points.rs |
 | 65 | P | form |
-| 73 | N | multiaction editor |
+| 73 | P | 63a4427a multiaction editor in the Bevy action editor |
 | 75 | P | form |
 | 80 | P | form |
 | 81 | P | form |
@@ -236,7 +235,7 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 115 | P | form |
 | 116 | P | form |
 | 117 | S | game_ui/houses.rs (ownership and access lists) |
-| 119 | N | house map window |
+| 119 | P | 56f1a02d house entrance map in the houses window |
 | 120 | P | form |
 | 121 | P | form |
 | 122 | P | form |
@@ -246,12 +245,12 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 126 | P | form b6305c1c41 |
 | 135 | P | form b6305c1c41 |
 | 136 | P | form b6305c1c41 |
-| 137 | K | --watch keeps cast_watch/native.rs (owner question) |
+| 137 | P | 8b71ce35 `--watch` runs cast_watch/viewer.rs on Bevy; native.rs and native_hud.rs removed |
 | 138 | N | touch controls |
-| 140 | N | window geometry persistence |
-| 141 | N | editable HUD-pane layout |
+| 140 | P | 10401660 HUD region sizes and main window geometry persisted |
+| 141 | P | game_ui/hud_panes.rs: the four play/hud_layout.rs panes shown, docked, ordered and dragged; saved with the preferences |
 | 143 | S | game_ui/minimap/markers.rs; create-mark key wired 70a75a0d36 |
-| 144 | N | minimap import/export (backend kept, no Bevy caller) |
+| 144 | P | 28ac068e Misc options page import/export |
 | 147 | N | options parity |
 | 149 | N | options parity |
 | 150 | N | options parity |
@@ -268,8 +267,8 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 167 | P | a255b39a78 login About |
 | 168 | P | a255b39a78 login Survey (Windows) |
 | 169 | S | desktop_startup.rs:16 (Windows) |
-| 171 | K | Windows --updates maintenance dialog kept; bevy_shell/updater.rs in game |
-| 173 | N | combined status line |
+| 171 | P | 2f3ab335 `--updates` opens bevy_shell/maintenance.rs; updater/window.rs removed |
+| 173 | P | fa0ed410 game_ui/hud.rs `status_line` |
 
 ## Counts
 
@@ -280,8 +279,8 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 - Later ports outside the form window: character-picker batch training, NPC Talk/Trade
   context entries, the communication-lists form, device sign-out, About, the survey, the
   Support and Cookies links, the minimap create-mark key and the remembered-login toggles.
-- Independent inventory, 95 MISSING rows: 43 ported, 24 stale, 4 other lane, 2 kept, 22 not
-  ported (3 by design, 19 in scope).
+- Independent inventory, 95 MISSING rows: 54 ported, 24 stale, 4 other lane, 13 not
+  ported (3 by design, 10 in scope).
 
 ## Assumptions
 
@@ -290,10 +289,7 @@ this branch's base. Status of the 95 MISSING rows on this branch:
   presenter shows the same title, labels, fields, buttons and summary, so a combo box
   of the Win32 window becomes a text field with the same accepted values.
 - The in-scope rows left as N are options-page parity (147, 149, 150, 155, 158,
-  162-166), layout persistence (140, 141), the house map window (119), the battle-list
-  editor (35), the multiaction editor (73), the chat font and mirror (50, 52), minimap
-  import/export (144) and the combined status line (173). Their client-ui and `PlayLink`
-  back ends stay for a later port. Offline world (16), touch (138) and renderer
+  162-166). Their client-ui and `PlayLink` back ends stay for a later port. Offline world (16), touch (138) and renderer
   selection (152) are by design.
 - Row 12 keeps the Win32 rules and labels: remembering the device implies staying logged
   in, and applying with either turned off forgets the device on the Platform and logs the
