@@ -19,6 +19,8 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+#[cfg(bevy_shell)]
+pub mod desktop_startup;
 pub mod device_login;
 pub mod hud_error;
 pub mod input;

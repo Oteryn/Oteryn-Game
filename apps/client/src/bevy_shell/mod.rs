@@ -55,21 +55,15 @@ impl Options {
                 smoke = true;
                 continue;
             }
-            // Handled by the executable before the host starts.
-            if argument == "--check-packages" {
-                continue;
-            }
-            let target =
-                match argument.to_str() {
-                    Some("--ui-assets") => &mut ui_assets,
-                    Some("--preferences") => &mut preferences,
-                    Some("--ui-audit") => &mut ui_audit,
-                    Some("--login-settings") => &mut login_settings,
-                    _ => return Err(
-                        "Use [--ui-assets <directory>] [--preferences <path>] [--ui-audit <path>] [--login-settings <path>] [--smoke]"
-                            .into(),
-                    ),
-                };
+            let target = match argument.to_str() {
+                Some("--ui-assets") => &mut ui_assets,
+                Some("--preferences") => &mut preferences,
+                Some("--ui-audit") => &mut ui_audit,
+                Some("--login-settings") => &mut login_settings,
+                // The launcher passes its own arguments through, and the executable handles
+                // --check-packages before the host starts: like the earlier shell, ignore them.
+                _ => continue,
+            };
             let value = args
                 .next()
                 .filter(|v| !v.is_empty())
@@ -107,6 +101,7 @@ impl Options {
 /// Called only by the executable. Headless tests never install WinitPlugin or run this loop.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::error::Error>> {
     let options = Options::parse(args)?;
+    crate::desktop_startup::prepare(options.preferences.clone(), options.smoke);
     let mut owner = HostOwner::new(options.preferences.clone())?;
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
