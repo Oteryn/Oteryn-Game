@@ -132,13 +132,13 @@ Current selected Linux evidence includes:
 
 Current selected Windows evidence includes:
 
-- exact release `oteryn-client` build and strict client Clippy;
+- exact release `oteryn-client` build (on Windows `oteryn-client.exe` is the Bevy host) and strict client Clippy;
 - smoke against that exact release artifact plus synthetic harness;
 - unsigned installer build, install/reinstall, concurrency and uninstall checks using the existing lifecycle script and hash-verified Inno Setup; release identity is derived from the exact MQ SHA before the client build;
 - `oteryn-input-platform` package tests on `x86_64-pc-windows-msvc`;
 - `oteryn-simulation-determinism` golden tests on the same target.
 
-Windows smoke exits before renderer construction; it is shell/package evidence, not renderer or gameplay E2E. Affected renderer/UI work still needs its named native fixtures/platform tests.
+Windows smoke starts the Bevy host, opens its window and exits after three frames; it is shell/package evidence, not gameplay E2E. Affected renderer/UI work still needs its named native fixtures/platform tests.
 
 ## Protected-main post-merge
 
