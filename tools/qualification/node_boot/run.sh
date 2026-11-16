@@ -10,6 +10,8 @@
 # SEAM stage against its own bound port.
 set -Eeuo pipefail
 umask 077
+# Hosted qualification group selection (scratch branch only).
+export NODE_BOOT_WORLD=0
 
 readonly PLATFORM_SHA=3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 readonly TOPOLOGY_REVISION=wp5-node-boot-v1
