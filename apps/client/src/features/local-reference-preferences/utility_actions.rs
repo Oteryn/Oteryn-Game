@@ -24,10 +24,11 @@ pub enum UtilityAction {
     ShowPrey,
     ToggleVipWidget,
     ToggleSkillsWidget,
+    ShowOptionsHotkeys,
 }
 
 impl UtilityAction {
-    pub const ALL: [Self; 18] = [
+    pub const ALL: [Self; 19] = [
         Self::ToggleCreatureHuds,
         Self::ToggleFpsLagIndicator,
         Self::NextHotkeyPreset,
@@ -46,6 +47,7 @@ impl UtilityAction {
         Self::ShowPrey,
         Self::ToggleVipWidget,
         Self::ToggleSkillsWidget,
+        Self::ShowOptionsHotkeys,
     ];
 
     pub fn label(self) -> &'static str {
@@ -68,6 +70,7 @@ impl UtilityAction {
             Self::ShowPrey => "Utility: show the Prey dialog",
             Self::ToggleVipWidget => "Utility: show or hide the VIP list",
             Self::ToggleSkillsWidget => "Utility: show or hide the skills window",
+            Self::ShowOptionsHotkeys => "Utility: show the hotkey options",
         }
     }
 }

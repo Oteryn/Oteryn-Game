@@ -68,7 +68,7 @@ pub(super) fn run(
         let hwnd = CreateWindowExW(
             0,
             wide("STATIC").as_ptr(),
-            wide(tr!("VIP management — Ctrl+V")).as_ptr(),
+            wide(tr!("VIP management — Ctrl+P")).as_ptr(),
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,

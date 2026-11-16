@@ -241,8 +241,9 @@ fn prey_shortcut_dispatch_respects_input_fence() -> TestResult {
     let (mut app, mut commands) = fixture()?;
     let mut host = app.world_mut().non_send_mut::<HostOwner>();
     host.play.as_ref().ok_or("play")?.link.prey_set_open(false);
+    // Global's ShowPrey chord is Ctrl+Y.
     let event = NormalizedInputEvent::Key {
-        code: KeyCode::new(19)?,
+        code: KeyCode::new(28)?,
         state: ButtonState::Pressed,
         modifiers: Modifiers::one(Modifier::Control),
         repeat: false,

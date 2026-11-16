@@ -54,6 +54,42 @@ fn ctrl_m_toggles_server_messages_only_outside_blocked_input() -> TestResult {
     Ok(())
 }
 
+/// Tibia Global binds Ctrl+K to ShowOptionsHotkeys in every hotkey set of the installed client
+/// options (%LOCALAPPDATA%/Tibia/packages/Tibia/conf/clientoptions.json).
+#[test]
+fn ctrl_k_opens_the_hotkey_options_only_outside_blocked_input() -> TestResult {
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let mut host = HostOwner::new(None)?;
+    let (view, link) = admitted_view([9; 16])?;
+    host.install_play(view, link);
+    let mut shortcut = NormalizedInputEvent::Key {
+        code: KeyCode::new(14)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Control),
+        repeat: false,
+    };
+    let mut press = |host: &mut HostOwner, blocked: bool| {
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Pressed;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Released;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+    };
+    press(&mut host, true);
+    assert!(host.preferences_draft().is_none());
+    assert_eq!(host.hotkey_options, 0);
+    press(&mut host, false);
+    assert!(
+        host.preferences_draft().is_some(),
+        "Ctrl+K opens the options"
+    );
+    assert_eq!(host.hotkey_options, 1, "on the hotkey page");
+    Ok(())
+}
+
 #[test]
 fn taskboard_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};

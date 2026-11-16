@@ -135,12 +135,23 @@ impl HostOwner {
         }
         play.view.observe_creature_pointer(&routed);
         play.view.observe_bar_pointer(&play.link);
+        let mut hotkey_options = false;
         for action in custom {
-            if let crate::play::CustomAction::Utility { action } = &action {
-                self.settings.run_utility(&play.link, *action);
-            } else {
-                play.link.custom_hotkey_action(&play.view, &action);
+            match &action {
+                crate::play::CustomAction::Utility {
+                    action: crate::play::UtilityAction::ShowOptionsHotkeys,
+                } => hotkey_options = true,
+                crate::play::CustomAction::Utility { action } => {
+                    self.settings.run_utility(&play.link, *action);
+                }
+                _ => {
+                    play.link.custom_hotkey_action(&play.view, &action);
+                }
             }
+        }
+        if hotkey_options {
+            self.show_hotkey_options();
+            return;
         }
         if play.link.custom_hotkeys_input(&routed)
             || play.view.target_move_input(&play.link, &routed)

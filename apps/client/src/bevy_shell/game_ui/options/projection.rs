@@ -36,7 +36,13 @@ pub(super) fn project(
     mut indicators: Query<(&Indicator, &mut ImageNode)>,
     mut captions: Captions<'_, '_>,
     mut held: Local<Option<(u64, Page, bool)>>,
+    mut hotkey_options: Local<u64>,
 ) {
+    if *hotkey_options != owner.hotkey_options {
+        *hotkey_options = owner.hotkey_options;
+        state.advanced = true;
+        state.page = Page::Controls;
+    }
     let draft = owner.preferences_draft();
     let visible = draft.is_some();
     for mut dialog in &mut dialogs {

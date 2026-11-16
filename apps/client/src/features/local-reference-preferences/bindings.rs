@@ -29,12 +29,18 @@ pub fn preference_bindings() -> Result<Vec<PreferenceBinding>, PreferenceError> 
 /// Features whose input chord belongs to a Global channel, help or console command by default;
 /// the player can still bind them, and the feature keeps reading its own chord internally.
 /// Global opens the Market only from the depot locker, and its Ctrl+M toggles server messages.
+/// Prey, VIP and skills open through Global's own window actions (Ctrl+Y, Ctrl+P, Alt+S), Ctrl+K
+/// shows the hotkey options, and Global gives the boss slots no chord.
 const UNBOUND_BY_DEFAULT: &[&str] = &[
     "0009-highscores-open",
+    "0043-vip-open",
     "0060-player-trade-open",
     "0063-market-open",
     "0072-task-board-open",
+    "0140-prey-open",
     "0147-exiva-settings-open",
+    "0225-boss-difficulty-open",
+    "0274-loyalty-skills-open",
 ];
 
 fn unbound_by_default(id: &str) -> bool {

@@ -128,7 +128,9 @@ With no text field focused, the existing gameplay shortcuts open:
   accepts an item number shown in the report: Track item / Untrack item changes
   the local selection; Show tracked only / Show all drops filters the live report
   without changing confirmed counters. Selection survives closing and session reset.
-- **Ctrl+V:** VIP contacts and group management through the existing server requests.
+- **Alt+S:** skills window (show or hide).
+- **Ctrl+P:** VIP list (show or hide): contacts and group management through the existing server
+  requests.
 - **Ctrl+I:** Imbuing shrine: choose a carried item, then a slot and imbuement.
   Clear asks for confirmation. Refresh queries the existing shrine command;
   costs include apply/clear gold, material requirements and success/failure chance.
@@ -187,7 +189,7 @@ With no text field focused, the existing gameplay shortcuts open:
 - **Ctrl+U:** Cyclopedia character: general and combat stats, recent deaths and PvP
   kills, achievements, item summary, outfits/mounts, store summary, inspection and
   badges. Selecting a tab requests its data; Escape or Close dismisses the window.
-- **Ctrl+P:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
+- **Ctrl+Y:** Prey Creatures, with three server-confirmed slots and reroll confirmation.
 - **Ctrl+Shift+F:** Exaltation Forge: Fusion, Transfer, Conversion and History.
   Opens locally and requests current forge candidates; this protocol has no server-open event.
 - **Ctrl+S:** Supply Stash, with search/category/trader filters, name/stock sort,
@@ -231,7 +233,8 @@ for 400 ms, holds for 3 seconds, then fades out for 300 ms, matching OTClient's
 notification timing constants. Click a banner to dismiss it and start the next.
 The queue belongs to the current play session and clears when that session ends.
 
-Ctrl+V in a focused text field remains the native paste action. Click an exposed
+Ctrl+V has no gameplay chord, as in Global; in a focused text field it is the native paste
+action. Click an exposed
 world area to leave a text field before using a gameplay shortcut. Map/item drag
 currently supports the desktop primary mouse pointer; touch qualification is later.
 
@@ -249,7 +252,8 @@ details; the client does not guess a mapping.
 
 ## Hotkeys
 
-Open Options (Ctrl+Shift+O), enable Advanced, and select Controls. The hotkey manager
+Press Ctrl+K (Global's Options-Hotkeys chord), or open Options (Ctrl+Shift+O), enable Advanced
+and select Controls. The hotkey manager
 lists key chords, actions and text. Select a row to edit it, or New to add a
 binding. Action cycles between text, use on self, use on target, use with
 crosshair, and ordinary object use. Object actions take the existing item
