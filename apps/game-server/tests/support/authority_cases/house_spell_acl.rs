@@ -112,6 +112,8 @@ async fn edit(
         let pool = &h.pool;
         Box::pin(async move {
             let mut tx = items::begin_spell_owner_transaction(holder, deadline).await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx).await?;
             let role: String = sqlx::query_scalar("SELECT current_user::text").fetch_one(&mut *tx).await?;
             assert_eq!(role, "oteryn_game_runtime");
             let result = async {
@@ -137,4 +139,179 @@ async fn edit(
             Ok(result)
         })
     }).await?)
+}
+
+const OTHER: &str = "oteryn:content.house.runtime_acl_z";
+
+#[test]
+fn house_spell_acl_opposite_house_lock_order_postgres() -> TestResult {
+    lock_order_case(false)
+}
+
+#[test]
+fn house_spell_acl_property_before_editor_lock_postgres() -> TestResult {
+    lock_order_case(true)
+}
+
+fn lock_order_case(editor: bool) -> TestResult {
+    let Ok(admin) = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || {
+            (|| -> TestResult {
+                runtime()?.block_on(async {
+                    let h = Harness::create(
+                        admin,
+                        if editor {
+                            "acl_editor_order"
+                        } else {
+                            "acl_house_order"
+                        },
+                        true,
+                    )
+                    .await?;
+                    sqlx::query(include_str!("../owned_house_fixture.sql"))
+                        .bind(id(42).as_slice())
+                        .bind(HOUSE)
+                        .bind(id(41).as_slice())
+                        .execute(&h.pool)
+                        .await?;
+                    let result = if editor {
+                        editor_order(&h).await
+                    } else {
+                        property_order(&h).await
+                    };
+                    h.cleanup().await?;
+                    result
+                })
+            })()
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "House lock-order PostgreSQL worker failed")?
+        .map_err(Into::into)
+}
+
+// Observe the actual database lock wait, rather than relying on scheduler timing.
+async fn property_wait(
+    pool: &sqlx::PgPool,
+    completed: &mut tokio::sync::oneshot::Receiver<()>,
+) -> TestResult {
+    loop {
+        let waiting: bool = tokio::select! {
+            waiting = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND state='active' AND wait_event_type='Lock' AND query LIKE '%FROM game_house_property_lock(%')").fetch_one(pool) => waiting?,
+            _ = &mut *completed => return Err("operation ended before the property lock wait".into()),
+        };
+        if waiting {
+            return Ok(());
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn property_order(h: &Harness) -> TestResult {
+    sqlx::query("WITH property AS (INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,$2,'private_house',1,100,decode(repeat('01',32),'hex')) RETURNING *) INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) SELECT world_id,house_key,NULL,ownership_generation,game_character_uuid_v7() FROM property")
+        .bind(id(42).as_slice()).bind(OTHER).execute(&h.pool).await?;
+    let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let mut blocker = h.pool.begin().await?;
+    // One role starts from H1; the other requests H2 then H1. Once it is
+    // observed waiting for H1, it must not hold H2. The duplicate H1 also
+    // exercises the same-House request supported by the production kick path.
+    acl::lock_house_properties(&mut blocker, world, [HOUSE])
+        .await
+        .map_err(debug)?;
+    let (completed, mut completion) = tokio::sync::oneshot::channel();
+    let opposite = async {
+        let result = async {
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                .execute(&mut *tx)
+                .await?;
+            acl::lock_house_properties(&mut tx, world, [OTHER, HOUSE, HOUSE])
+                .await
+                .map_err(debug)?;
+            tx.rollback().await?;
+            Ok::<_, Box<dyn std::error::Error>>(())
+        }
+        .await;
+        let _ = completed.send(());
+        result
+    };
+    let probe = async {
+        property_wait(&h.pool, &mut completion).await?;
+        let mut tx = h.pool.begin().await?;
+        let free = sqlx::query(
+            "SELECT house_key FROM game_house_properties WHERE house_key=$1 FOR UPDATE NOWAIT",
+        )
+        .bind(OTHER)
+        .fetch_one(&mut *tx)
+        .await;
+        tx.rollback().await?;
+        blocker.rollback().await?;
+        Ok::<_, Box<dyn std::error::Error>>(free.is_ok())
+    };
+    let (opposite, probe) = tokio::join!(opposite, probe);
+    opposite?;
+    assert!(
+        probe?,
+        "opposite caster/target order locked H2 before waiting for H1"
+    );
+    eprintln!("HOUSE_ACL_PG_EXECUTED opposite_house_lock_order PASS");
+    Ok(())
+}
+
+async fn editor_order(h: &Harness) -> TestResult {
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let recovery = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let editor = edit(h, &recovery, 1, None).await?.map_err(debug)?;
+    let mut blocker = h.pool.begin().await?;
+    sqlx::query("SELECT house_key FROM game_house_properties WHERE house_key=$1 FOR UPDATE")
+        .bind(HOUSE)
+        .fetch_one(&mut *blocker)
+        .await?;
+    let (completed, mut completion) = tokio::sync::oneshot::channel();
+    let save = async {
+        let result = edit(h, &recovery, 2, Some((&editor, "*"))).await;
+        let _ = completed.send(());
+        result
+    };
+    let probe = async {
+        property_wait(&h.pool, &mut completion).await?;
+        let mut tx = h.pool.begin().await?;
+        let free = sqlx::query("SELECT editor_id FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid FOR UPDATE NOWAIT").bind(editor.editor_id.as_slice()).fetch_one(&mut *tx).await;
+        let unlocked = free.is_ok();
+        if unlocked {
+            // Model release deleting the token while it holds the property.
+            sqlx::query("DELETE FROM game_house_editors WHERE editor_id=encode($1,'hex')::uuid")
+                .bind(editor.editor_id.as_slice())
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+        } else {
+            tx.rollback().await?;
+        }
+        blocker.rollback().await?;
+        Ok::<_, Box<dyn std::error::Error>>(unlocked)
+    };
+    let (save, probe) = tokio::join!(save, probe);
+    let save = save?;
+    assert!(
+        probe?,
+        "save locked the editor before waiting for its property"
+    );
+    assert!(
+        matches!(
+            save,
+            Err(SpellItemError::Rejected("House editor/session expired"))
+        ),
+        "deleted editor was not revalidated: {save:?}"
+    );
+    eprintln!("HOUSE_ACL_PG_EXECUTED property_before_editor_lock PASS");
+    Ok(())
 }
