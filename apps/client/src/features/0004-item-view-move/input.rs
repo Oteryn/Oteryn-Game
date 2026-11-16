@@ -66,9 +66,16 @@ impl PlayLink {
         outbox.container_manual_sort_initialize(selected);
     }
     /// Tibia Global's `ToggleManualSortMode`; `false` when the session lacks capability 510.
+    /// Turning the mode off drops a depot deposit held for its slot.
     pub fn toggle_container_manual_sort(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
-        !mailbox.inventory_shutdown && mailbox.container_manual_sort.toggle()
+        if mailbox.inventory_shutdown || !mailbox.container_manual_sort.toggle() {
+            return false;
+        }
+        if !mailbox.container_manual_sort.active() && mailbox.depot.held.take().is_some() {
+            mailbox.depot.feedback = "";
+        }
+        true
     }
     #[must_use]
     pub fn container_manual_sort_active(&self) -> bool {
