@@ -31,3 +31,43 @@ impl PlayLink {
         lock(&self.mailbox).hireling.target = Some((x, y, floor));
     }
 }
+
+impl crate::play::PlayView {
+    /// While the banker form waits for a summon location, a primary click on a tile next
+    /// to the player becomes the summon target; any other tile keeps the form waiting.
+    pub(in crate::play) fn hireling_pick(
+        &self,
+        tile: oteryn_renderer::TileCoord,
+        link: &PlayLink,
+    ) -> bool {
+        let target = {
+            let mut mailbox = lock(&link.mailbox);
+            if !mailbox.hireling_picking {
+                return false;
+            }
+            let adjacent = tile != self.own
+                && (tile.x - self.own.x).abs() <= 1
+                && (tile.y - self.own.y).abs() <= 1;
+            match (
+                adjacent,
+                u16::try_from(tile.x),
+                u16::try_from(tile.y),
+                i8::try_from(self.floor),
+            ) {
+                (true, Ok(x), Ok(y), Ok(floor)) => {
+                    mailbox.hireling_picking = false;
+                    mailbox.hireling.feedback = None;
+                    Some((x, y, floor))
+                }
+                _ => {
+                    mailbox.hireling.feedback = Some(tr!("Select an adjacent summon location"));
+                    None
+                }
+            }
+        };
+        if let Some((x, y, floor)) = target {
+            link.hireling_target(x, y, floor);
+        }
+        true
+    }
+}

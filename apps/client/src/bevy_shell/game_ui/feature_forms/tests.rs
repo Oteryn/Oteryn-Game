@@ -281,3 +281,65 @@ fn hireling_management_banker_button_opens_the_banker_service() -> TestResult {
     );
     Ok(())
 }
+
+fn primary_click(app: &mut App, x: i32, y: i32) -> TestResult {
+    let mut owner = app.world_mut().non_send_mut::<HostOwner>();
+    let play = owner.play.as_mut().ok_or("play")?;
+    play.view
+        .primary_click(oteryn_renderer::TileCoord::new(x, y), &play.link)?;
+    Ok(())
+}
+
+/// Summon needs a picked location: the banker form's Map location button arms a crosshair
+/// pick, a map click next to the player sets the target and Summon sends it.
+#[test]
+fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
+    use oteryn_client_runtime::hireling::{
+        CommandStatus, HirelingCommand, HirelingResponse, hireling::Request,
+    };
+    let (mut app, mut commands, outbox) = fixture()?;
+    outbox.bevy_hireling_selected();
+    press(
+        &mut app,
+        11,
+        Modifiers::one(Modifier::Control).with(Modifier::Shift),
+    )?;
+    assert!(form_open(&app, "Banker Hireling")?);
+    assert!(matches!(
+        commands.try_recv()?,
+        PlayCommand::Hireling(HirelingCommand(Request::Query))
+    ));
+    outbox.bevy_hireling_result(&HirelingResponse {
+        status: CommandStatus::Accepted,
+        active: Some(false),
+    });
+    app.update();
+
+    click(&mut app, Some(0))?;
+    assert!(commands.try_recv().is_err());
+    let refused = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Select an adjacent summon location"))
+    };
+    assert!(refused(&mut app));
+
+    click(&mut app, Some(3))?;
+    primary_click(&mut app, 103, 100)?;
+    click(&mut app, Some(0))?;
+    assert!(commands.try_recv().is_err());
+    assert!(refused(&mut app));
+
+    primary_click(&mut app, 101, 100)?;
+    click(&mut app, Some(0))?;
+    assert_eq!(
+        commands.try_recv()?,
+        PlayCommand::Hireling(HirelingCommand(Request::Summon {
+            x: 101,
+            y: 100,
+            floor: 7
+        }))
+    );
+    Ok(())
+}
