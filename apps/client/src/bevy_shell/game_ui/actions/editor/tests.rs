@@ -20,6 +20,14 @@ fn set(app: &mut App, index: usize, value: &str) {
         }
     }
 }
+/// The visible button whose caption reads `caption`, as a player sees it in the editor.
+fn captioned(app: &mut App, caption: &str) -> Result<Entity, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+        .ok_or_else(|| format!("no button captioned {caption}").into())
+}
 #[test]
 fn assignment_buttons_reach_real_local_owner_and_reserved_key_validation() -> TestResult {
     let (mut app, mut commands) = super::super::tests::fixture()?;
@@ -329,8 +337,8 @@ fn use_button_saves_subtype_and_activates_direct_item_use() -> TestResult {
         .resource_mut::<EditorState>()
         .open(0, generation);
     app.update();
-    set(&mut app, 1, "42");
-    set(&mut app, 4, "7");
+    let object = captioned(&mut app, "Object 42 (7)")?;
+    app.world_mut().trigger(Activate { entity: object });
     let save = control(&mut app, |edit| matches!(edit, Edit::Use))?;
     app.world_mut().trigger(Activate { entity: save });
     let owner = app.world().non_send::<HostOwner>();
@@ -460,8 +468,8 @@ fn multiaction_button_collects_objects_and_saves_them_as_one_slot() -> TestResul
             .message
             .starts_with("Assign at least one")
     );
-    set(&mut app, 1, "42");
-    set(&mut app, 4, "7");
+    let object = captioned(&mut app, "Object 42 (7)")?;
+    app.world_mut().trigger(Activate { entity: object });
     for wanted in [
         (|edit| matches!(edit, Edit::Use)) as fn(Edit) -> bool,
         |edit| matches!(edit, Edit::SelfActor),
@@ -502,5 +510,94 @@ fn multiaction_button_collects_objects_and_saves_them_as_one_slot() -> TestResul
         })
     );
     assert!(commands.try_recv().is_err(), "editing never uses the item");
+    Ok(())
+}
+
+#[test]
+fn empty_slot_multiaction_takes_objects_from_the_visible_object_picker() -> TestResult {
+    use crate::play::{BarAction, ItemUseMode, PlayLink, SettingsState, play_channel};
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, mut commands, outbox) = play_channel();
+    let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
+        handle: 9.try_into()?,
+        item_definition_ref: 3031.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 0,
+    };
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![item],
+            ..Default::default()
+        }),
+        Some(Default::default()),
+        true,
+        true,
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(2, generation);
+    app.update();
+    let multi = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+    app.world_mut().trigger(Activate { entity: multi });
+    let equip = control(&mut app, |edit| matches!(edit, Edit::Equip))?;
+    let cursor = control(&mut app, |edit| matches!(edit, Edit::Cursor))?;
+    // Without a chosen object the object actions refuse, as before.
+    app.world_mut().trigger(Activate { entity: equip });
+    assert_eq!(app.world().resource::<EditorState>().message, REFUSED);
+    // The player picks the carried object in the editor itself.
+    let object = captioned(&mut app, "Object 3031")?;
+    app.world_mut().trigger(Activate { entity: object });
+    assert!(
+        app.world()
+            .resource::<EditorState>()
+            .message
+            .starts_with("Selected Object 3031")
+    );
+    for button in [equip, cursor] {
+        app.world_mut().trigger(Activate { entity: button });
+        app.update();
+    }
+    let message = app.world().resource::<EditorState>().message.clone();
+    assert!(
+        message.contains("I: Equip object 3031") && message.contains("II: Use object 3031"),
+        "{message}"
+    );
+    app.world_mut().trigger(Activate { entity: multi });
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Multiaction saved"
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let mut settings = SettingsState::new(None);
+    settings.sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+    assert_eq!(
+        settings.preferences.bar_actions.0.get(&2),
+        Some(&BarAction::Multi {
+            actions: vec![
+                BarAction::Equip {
+                    definition: item.item_definition_ref,
+                    upgrade_tier: 0,
+                },
+                BarAction::Use {
+                    definition: item.item_definition_ref,
+                    sub_type: Some(0),
+                    mode: ItemUseMode::Cursor,
+                },
+            ],
+        })
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "choosing an object never uses it"
+    );
     Ok(())
 }

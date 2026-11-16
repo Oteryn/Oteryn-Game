@@ -232,8 +232,17 @@ pub(super) fn current_drag_item(
     if play.link.server_modal_active() {
         return None;
     }
-    let inventory = play.link.inventory_panel();
-    let containers = play.link.container_panel();
+    carried_items(&play.link).into_iter().find(|item| {
+        item.handle == source.item.handle
+            && item.item_definition_ref == source.item.item_definition_ref
+            && item.sub_type == source.item.sub_type
+    })
+}
+
+/// Every item this session carries: the backpack, its entries, equipment and open containers.
+pub(super) fn carried_items(link: &crate::play::PlayLink) -> Vec<ItemEntry> {
+    let inventory = link.inventory_panel();
+    let containers = link.container_panel();
     inventory
         .inventory
         .iter()
@@ -251,12 +260,8 @@ pub(super) fn current_drag_item(
                 .flat_map(|views| &views.views)
                 .flat_map(|view| &view.entries),
         )
-        .find(|item| {
-            item.handle == source.item.handle
-                && item.item_definition_ref == source.item.item_definition_ref
-                && item.sub_type == source.item.sub_type
-        })
         .copied()
+        .collect()
 }
 
 use super::super::controls::ContainerTool;

@@ -36,6 +36,8 @@ struct Maintenance {
     report: String,
     /// The latest finished operation; the launcher reports it after the window closes.
     outcome: Arc<Mutex<Option<Outcome>>>,
+    /// Starts one operation; the window uses [`start`], tests a deterministic operation.
+    start: fn(PathBuf, Action) -> Receiver<Outcome>,
 }
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 enum Choice {
@@ -83,6 +85,7 @@ pub fn run(directory: &Path, args: &[OsString]) -> Outcome {
             pending: Some((Action::Check, start(directory.to_path_buf(), Action::Check))),
             report: "Checking the signed stable release…".into(),
             outcome: outcome.clone(),
+            start,
         },
     );
     let _ = app.run();
@@ -241,7 +244,7 @@ fn activate(
         _ => "Downloading and repairing from the signed release…",
     }
     .into();
-    state.pending = Some((action, start(state.directory.clone(), action)));
+    state.pending = Some((action, (state.start)(state.directory.clone(), action)));
 }
 
 /// Closing the window waits for a running operation to finish.
