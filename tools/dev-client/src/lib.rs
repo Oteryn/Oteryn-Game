@@ -24,7 +24,7 @@ use oteryn_protocol_oteryn::{CharacterId, FoundationProtocolError};
 /// Default support sent by this harness, shared with the native session.
 pub use oteryn_session::CLIENT_SUPPORTED_CAPABILITIES;
 pub use oteryn_session::SessionError;
-use oteryn_session::{Admission, Session};
+pub use oteryn_session::{Admission, Session};
 pub use oteryn_session::{
     AppliedDelta, CastOutcome, CharacterInventory, ChatDisposition, ChatIntent, ChatLine, ChatLog,
     ChatOutcome, ChatRoom, ChatRoomSet, ChatSpeaker, ChatSpeechMode, ChatWireError, CommandOutcome,

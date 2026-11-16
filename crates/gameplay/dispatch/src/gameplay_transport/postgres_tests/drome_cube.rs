@@ -25,6 +25,8 @@ mod cases;
 mod fixture;
 #[path = "drome_cube/kooldown_aid.rs"]
 mod kooldown_aid;
+#[path = "drome_cube/session_client.rs"]
+mod session_client;
 #[path = "drome_cube/wire.rs"]
 mod wire;
 
@@ -35,6 +37,7 @@ enum Case {
     ExistingStack,
     ConcurrentLastUnit,
     KooldownAid,
+    SessionClient,
 }
 
 fn scenario(case: Case) -> TestResult {
@@ -77,6 +80,11 @@ fn drome_cube_two_commands_compete_for_the_last_unit_without_a_second_reward() -
 #[test]
 fn kooldown_aid_lost_ack_replays_once_and_keeps_its_durable_cooldown() -> TestResult {
     scenario(Case::KooldownAid)
+}
+
+#[test]
+fn drome_cube_client_session_use_applies_reward_and_relog_reads_it_back() -> TestResult {
+    scenario(Case::SessionClient)
 }
 
 struct WireOwner<'a, 'b, 'f, 's>(&'a ComposedFreshAdmission<'b, 'f, 's>);

@@ -8,6 +8,7 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
         Case::ExistingStack => "drome_cube_stack",
         Case::ConcurrentLastUnit => "drome_cube_concurrent",
         Case::KooldownAid => "kooldown_aid",
+        Case::SessionClient => "drome_cube_client",
     };
     let harness = Harness::create(admin, label, true).await?;
     let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -60,9 +61,19 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
                  VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
         .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice())
         .bind(id(82).as_slice()).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
-                 VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
-        .bind(id(110).as_slice()).bind(id(42).as_slice()).bind(id(80).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+    if matches!(case, Case::SessionClient) {
+        // The client's inventory view lists the main backpack's own entries; nested container
+        // views (capability 14) are offered only on bundle Worlds, so the cube sits in the
+        // backpack where the client can see it.
+        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
+                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($5,'hex')::uuid)")
+            .bind(id(110).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice())
+            .bind(id(112).as_slice()).execute(&mut *tx).await?;
+    } else {
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) \
+                     VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(id(110).as_slice()).bind(id(42).as_slice()).bind(id(80).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     let channel_pin = crate::content::channel_content_pin::ChannelContentPin::from_activation(
         world,
@@ -157,6 +168,9 @@ pub(super) async fn scenario(admin: String, case: Case) -> TestResult {
             super::kooldown_aid::run(&owner, &harness, actor, session, index).await
         }
         Case::FullRetry => super::run(&owner, &harness, actor, session, index).await,
+        Case::SessionClient => {
+            super::session_client::run(&owner, &harness, actor, session, index).await
+        }
         Case::HandleReplay => super::cases::handle_replay(&owner, &harness, actor, session).await,
         Case::ExistingStack => super::cases::stack(&owner, &harness, actor, session, index).await,
         Case::ConcurrentLastUnit => {
