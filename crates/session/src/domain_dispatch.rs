@@ -69,6 +69,35 @@ impl<S: SessionStream> Session<S> {
                 }
                 Ok(event)
             }
+            stash::DOMAIN_STASH => {
+                // The server mirrors every stash reply into domain 27 after its CommandResult;
+                // there is no join snapshot, so the first delta is based on revision 0.
+                if !self.is_selected(stash::CAPABILITY_STASH_V1) {
+                    return Err(SessionError::UnselectedDomain { domain_id });
+                }
+                let revision = self
+                    .gated_revisions
+                    .iter()
+                    .find(|(id, _)| *id == domain_id)
+                    .map_or(0, |(_, revision)| *revision);
+                check_delta(&delta, 1, revision)?;
+                let value = stash::decode_stash_reply(delta.payload)
+                    .map_err(|_| SessionError::SessionUnusable)?;
+                match self
+                    .gated_revisions
+                    .iter_mut()
+                    .find(|(id, _)| *id == domain_id)
+                {
+                    Some((_, revision)) => *revision = new_revision,
+                    None => self.gated_revisions.push((domain_id, new_revision)),
+                }
+                Ok(SessionEvent::Stash(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
             52 => crate::pvp_expert::apply(self, server_sequence, payload),
             18 => crate::world_light::apply(self, server_sequence, payload),
             22 => crate::weather::apply(self, server_sequence, payload),

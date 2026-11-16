@@ -457,3 +457,85 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
         .join()
         .map_err(|_| "highscores session test panicked")?
 }
+
+#[test]
+fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let reply = |outcome, page| stash::StashReply {
+                    outcome,
+                    stowed_quantity: 0,
+                    transaction: None,
+                    page,
+                    has_more: false,
+                    rows: Vec::new(),
+                };
+                let opened = reply(stash::StashOutcome::Opened, 0);
+                let refreshed = reply(stash::StashOutcome::Opened, 1);
+                let (first, second) = (opened.clone(), refreshed.clone());
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer(&mut server, &[62], &[62], &[]).await?;
+                    // Like the dispatch outbound path: CommandResult, then the domain 27 mirror.
+                    for (sequence, base, value) in [(41, 0, first), (43, 1, second)] {
+                        let frame = read_frame(&mut server).await?;
+                        let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                        assert_eq!(command.command_type, stash::COMMAND_TYPE_STASH_INTENT);
+                        let payload = stash::encode_stash_reply(&value)
+                            .map_err(|e| format!("stash reply: {e:?}"))?;
+                        write_frame(
+                            &mut server,
+                            &encode_command_result(
+                                1,
+                                sequence,
+                                command.command_id,
+                                CommandStatus::Accepted,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                        write_frame(
+                            &mut server,
+                            &encode_state_delta(
+                                1,
+                                sequence + 1,
+                                stash::DOMAIN_STASH,
+                                base,
+                                base + 1,
+                                1,
+                                &payload,
+                            )?,
+                        )
+                        .await?;
+                    }
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[62])?).await?;
+                for expected in [&opened, &refreshed] {
+                    let result = session
+                        .gated_command(
+                            stash::CAPABILITY_STASH_V1,
+                            stash::COMMAND_TYPE_STASH_INTENT,
+                            &[],
+                        )
+                        .await?;
+                    assert_eq!(
+                        &stash::decode_stash_reply(&result.payload)
+                            .map_err(|e| format!("stash decode: {e:?}"))?,
+                        expected
+                    );
+                }
+                assert!(matches!(
+                    session.take_events().as_slice(),
+                    [SessionEvent::Stash(delta)]
+                        if delta.base_revision == 0 && delta.new_revision == 1 && delta.value == opened
+                ));
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "stash session test thread panicked")?
+}
