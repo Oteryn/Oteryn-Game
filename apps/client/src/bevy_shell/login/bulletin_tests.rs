@@ -154,3 +154,31 @@ fn bulletin_escape_respects_frontmost_modal_and_keeps_login_open() -> TestResult
     assert!(host.login.visible);
     Ok(())
 }
+#[test]
+fn login_sign_out_device_turns_the_remembered_login_off() -> TestResult {
+    let mut app = app()?;
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let misc = &mut host.settings.preferences.miscellaneous;
+        misc.stay_logged_in = true;
+        misc.remember_device = true;
+        misc.quick_login = true;
+    }
+    let button = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "login.forget_device").then_some(entity))
+        .ok_or("missing login sign-out button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let host = app.world().non_send::<HostOwner>();
+    let misc = host.settings.preferences.miscellaneous;
+    assert!(!misc.stay_logged_in && !misc.remember_device && !misc.quick_login);
+    assert!(host.login.form.message().contains("no longer remembered"));
+    assert!(
+        host.login.visible,
+        "signing out keeps the login window open"
+    );
+    Ok(())
+}

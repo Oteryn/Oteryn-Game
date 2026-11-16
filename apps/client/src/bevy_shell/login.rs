@@ -99,11 +99,13 @@ pub(super) enum LoginControl {
     Submit,
     Cancel,
     News,
+    ForgetDevice,
 }
 impl LoginControl {
     pub fn id(self) -> &'static str {
         match self {
             Self::News => "login.news",
+            Self::ForgetDevice => "login.forget_device",
             Self::Submit => "login.submit",
             Self::Cancel => "login.cancel",
         }
@@ -231,6 +233,7 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         .id();
     for (control, caption, width) in [
         (LoginControl::News, "News", 60.),
+        (LoginControl::ForgetDevice, "Sign out device", 130.),
         (LoginControl::Submit, "Save and sign in", 130.),
         (LoginControl::Cancel, "Cancel", 60.),
     ] {
@@ -270,6 +273,7 @@ fn activate(
     if let Ok(control) = controls.get(event.entity) {
         match control {
             LoginControl::News => owner.login.bulletin.visible = true,
+            LoginControl::ForgetDevice => owner.sign_out_device(),
             LoginControl::Submit => {
                 submission::request(&mut owner, &fields);
             }

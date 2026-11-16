@@ -288,6 +288,25 @@ impl HostOwner {
             entry.cancel_entry();
         }
     }
+    /// The login window's explicit sign-out: turns the remembered-login choices off, cancels
+    /// any entry and forgets the remembered device. A normal game logout keeps the device.
+    pub fn sign_out_device(&mut self) {
+        if self.play.is_some() {
+            return;
+        }
+        let mut preferences = self.settings.preferences.clone();
+        preferences.miscellaneous.stay_logged_in = false;
+        preferences.miscellaneous.remember_device = false;
+        preferences.miscellaneous.quick_login = false;
+        self.settings.apply(preferences);
+        self.cancel_login();
+        if let Some(entry) = &mut self.entry {
+            entry.native_sign_out();
+        }
+        self.login
+            .form
+            .feedback("Signed out; this device is no longer remembered.".into());
+    }
     pub fn poll(&mut self, viewport: [u32; 2]) {
         if self.phase == Phase::Closed {
             return;
