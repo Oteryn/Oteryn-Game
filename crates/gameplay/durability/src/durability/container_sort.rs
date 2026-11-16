@@ -242,8 +242,13 @@ async fn reorder<C: ContainerSortContent>(
     .await
 }
 
+const SORT_CONSTRAINTS_DEFERRED: &str = "SET CONSTRAINTS game_item_container_sort_proven,game_item_container_entries_sort_ordinals,game_item_nested_entries_sort_ordinals,game_item_character_depot_locations_sort_ordinals DEFERRED";
+const SORT_CONSTRAINTS_IMMEDIATE: &str = "SET CONSTRAINTS game_item_container_sort_proven,game_item_container_entries_sort_ordinals,game_item_nested_entries_sort_ordinals,game_item_character_depot_locations_sort_ordinals IMMEDIATE";
+
 /// The receipt first (its triggers prove the current and the successor ordinals), then the
-/// ordinal-only UPDATE under the deferred uniqueness constraints.
+/// ordinal-only UPDATE under the deferred uniqueness constraints. A slotted move has already set
+/// all constraints IMMEDIATE, so the successor proof is deferred here and both are checked
+/// before returning: a violation is a refusal inside the attempt, not a commit error.
 async fn commit_permutation(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
@@ -253,12 +258,12 @@ async fn commit_permutation(
     intent: &[u8],
     permutation: &serde_json::Value,
 ) -> LoopResult<()> {
+    sqlx::query(SORT_CONSTRAINTS_DEFERRED).execute(&mut **tx).await?;
     sqlx::query("INSERT INTO game_item_container_sort_receipts(game_session_id,command_id,character_id,world_id,connection_generation,lease_generation,scope_generation,content_digest,intent,permutation) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,$9,$10)")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string()).bind(fence.scope_ownership_generation.get().to_string())
         .bind(content_digest.as_slice()).bind(intent).bind(permutation).execute(&mut **tx).await?;
-    sqlx::query("SET CONSTRAINTS game_item_container_entries_sort_ordinals,game_item_nested_entries_sort_ordinals DEFERRED").execute(&mut **tx).await?;
     for table in ["game_item_container_entries", "game_item_nested_entries"] {
         let nested = table == "game_item_nested_entries";
         let sql = format!(
@@ -270,6 +275,20 @@ async fn commit_permutation(
             .execute(&mut **tx)
             .await?;
     }
+    // Depot entries (migration 2856) carry their box instead of a parent.
+    sqlx::query(
+        "UPDATE game_item_character_depot_locations d SET ordinal=(x->>'after')::numeric FROM jsonb_array_elements($1::jsonb) x \
+         WHERE x ? 'depot' AND d.item_instance_id=(x->>'item')::uuid AND d.character_id=encode($2,'hex')::uuid \
+           AND d.town_id=(x->'depot'->>'town')::int AND d.box_number=(x->'depot'->>'box')::int \
+           AND d.ordinal<>(x->>'after')::numeric",
+    )
+    .bind(permutation)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query(SORT_CONSTRAINTS_IMMEDIATE)
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 
