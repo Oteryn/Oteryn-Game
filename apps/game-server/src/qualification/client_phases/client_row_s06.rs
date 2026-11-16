@@ -122,7 +122,25 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
         "outfit={}\naddons=0\ncolours={head},{body},{legs},{feet}\ncommitted={committed}\ncontent_revision={revision}\n",
         selection.outfit_key
     );
-    let _ = client.session_mut().logout().await;
+    // Durable check: the committed selection survives a logout and a fresh login, read back
+    // through the same client snapshot decoder.
+    let (logout, observed, attempts, _) = logout_retrying_busy(&mut client).await?;
+    if logout != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
+        return Err(format!("step=logout attempts={attempts} observed={observed}").into());
+    }
+    drop(client);
+    let mut fresh = connect_world(clients, 0x6a).await?;
+    let (_, persisted) = raw_snapshot(&mut fresh)?;
+    let _ = fresh.session_mut().logout().await;
+    if persisted.catalogue.selected.as_ref().map(|s| &s.selection) != Some(&selection)
+        || persisted.catalogue.root_revision != committed
+    {
+        return Err(format!(
+            "step=relog selection={:?} root_revision={} expected {selection:?} at {committed}",
+            persisted.catalogue.selected, persisted.catalogue.root_revision
+        )
+        .into());
+    }
     Ok(Observed {
         before: before_bytes,
         after: after_bytes,

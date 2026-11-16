@@ -193,10 +193,13 @@ async fn flow(clients: &SeamClients<'_>) -> TestResult<Observed> {
     };
     let index = spell_index(words)?;
 
-    // The party gate: the same spell cast while solo must not be cast.
+    // The party gate: the same spell cast while solo must be refused. The server maps the
+    // party-gate rejection (`CastRejection::NoPartyMembers`) to `Rejected`
+    // (`crates/gameplay/spell/src/spell/cast/gate.rs`, `disposition`); a level, mana or
+    // availability refusal has its own disposition and must not pass as the party gate.
     let vitals = caster.actor_vitals().copied().ok_or("caster vitals absent")?;
     let solo = cast_through_cooldown(&mut caster, index).await?;
-    if solo.disposition == casts::SpellCastDisposition::Cast
+    if solo.disposition != casts::SpellCastDisposition::Rejected
         || caster.actor_vitals().copied() != Some(vitals)
     {
         return Err(format!("step=solo-gate observed {solo:?}, expected a refusal without a vitals change").into());
