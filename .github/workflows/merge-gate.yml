@@ -967,8 +967,10 @@ jobs:
           priority = 50
           TOML
           code=0
-          mapfile -t package_args < "$RUNNER_TEMP/rust-fast-package-args.txt"
-          cargo +1.100.0 nextest run --locked "${package_args[@]}" --lib --bins \
+          # Build with --workspace like the protected-main cache producer: `-p` resolves features
+          # per selected package, so dependency units got other fingerprints and were rebuilt on
+          # every shard. The -E package filter below still selects exactly the same tests.
+          cargo +1.100.0 nextest run --locked --workspace --lib --bins \
             --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
             --partition "hash:${SHARD}" --no-tests=pass --no-fail-fast < /dev/null || code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
