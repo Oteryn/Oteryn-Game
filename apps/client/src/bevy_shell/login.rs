@@ -100,12 +100,16 @@ pub(super) enum LoginControl {
     Cancel,
     News,
     ForgetDevice,
+    About,
+    Survey,
 }
 impl LoginControl {
     pub fn id(self) -> &'static str {
         match self {
             Self::News => "login.news",
             Self::ForgetDevice => "login.forget_device",
+            Self::About => "login.about",
+            Self::Survey => "login.survey",
             Self::Submit => "login.submit",
             Self::Cancel => "login.cancel",
         }
@@ -234,6 +238,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     for (control, caption, width) in [
         (LoginControl::News, "News", 60.),
         (LoginControl::ForgetDevice, "Sign out device", 130.),
+        (LoginControl::About, "About", 60.),
+        (LoginControl::Survey, "Survey", 60.),
         (LoginControl::Submit, "Save and sign in", 130.),
         (LoginControl::Cancel, "Cancel", 60.),
     ] {
@@ -274,6 +280,18 @@ fn activate(
         match control {
             LoginControl::News => owner.login.bulletin.visible = true,
             LoginControl::ForgetDevice => owner.sign_out_device(),
+            LoginControl::About => owner
+                .login
+                .form
+                .feedback(crate::about::about_text().replace("\r\n", "\n")),
+            // The optional questionnaire reviews its answer and asks for consent in OS dialogs.
+            #[cfg(windows)]
+            LoginControl::Survey => crate::about::run_survey(),
+            #[cfg(not(windows))]
+            LoginControl::Survey => owner
+                .login
+                .form
+                .feedback("The optional survey is offered by the Windows client.".into()),
             LoginControl::Submit => {
                 submission::request(&mut owner, &fields);
             }

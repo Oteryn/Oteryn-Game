@@ -182,3 +182,20 @@ fn login_sign_out_device_turns_the_remembered_login_off() -> TestResult {
     );
     Ok(())
 }
+#[test]
+fn login_about_shows_release_build_and_license() -> TestResult {
+    let mut app = app()?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "login.about").then_some(entity))
+        .ok_or("missing login About button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let host = app.world().non_send::<HostOwner>();
+    let message = host.login.form.message();
+    assert!(message.starts_with("Oteryn Game Client\nRelease: "));
+    assert!(message.contains("License: MPL-2.0") && !message.contains('\r'));
+    Ok(())
+}
