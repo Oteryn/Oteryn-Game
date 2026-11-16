@@ -149,6 +149,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // never grants the signed-envelope authority it requires.
     // gapd adds 508 (inventory capacity, Tibia's Cap) and 509 (guild emblems).
     // Hireling management (250, command 470) joins its prerequisite 165.
+    // The item inscription read (511, command 6246) lets Write... open with the item's text.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
         &[
@@ -160,7 +161,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
             285, 286, 287, 288, 290, 291, 292, 330, 350, 370, 371, 381, 382, 383, 384, 445, 446,
             447, 448, 449, 450, 461, 462, 463, 470, 474, 479, 480, 483, 485, 486, 487, 488, 489,
             490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506,
-            507, 508, 509, 510
+            507, 508, 509, 510, 511
         ]
     );
 }

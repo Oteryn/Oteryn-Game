@@ -64,6 +64,7 @@ impl Panels {
             ..Default::default()
         };
         self.mail_deferred = None;
+        self.mail_inscription = Default::default();
         self.timed_item_deferred = None;
         for (open, pending, feedback) in [
             (

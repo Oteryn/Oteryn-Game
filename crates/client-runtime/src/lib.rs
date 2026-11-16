@@ -359,4 +359,5 @@ pub mod server_modal;
 pub use oteryn_session::coin_market;
 pub use oteryn_session::coin_transfer;
 
+pub use oteryn_session::item_inscription;
 pub use oteryn_session::server_info;

@@ -148,7 +148,7 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
                         14 => outbox.player_trade_container_result(&result),
                         25 | 67 | 87 => outbox.properties_result(&command, &result),
                         53 => outbox.world_event_result(&result),
-                        54 | 55 | 115 | 150 | 207 => outbox.properties_result(&command, &result),
+                        54 | 55 | 115 | 150 | 207 | 511 => outbox.properties_result(&command, &result),
                         39 | 57 | 134 => outbox.properties_result(&command, &result),
                         97 if command.kind == 113 && command.payload == [5] => outbox.premium_game_result(&command,&result),
                         97 | 149 => outbox.properties_result(&command, &result),

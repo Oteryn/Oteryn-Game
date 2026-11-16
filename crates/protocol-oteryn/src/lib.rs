@@ -98,6 +98,7 @@ pub mod imbuement_details;
 pub mod inspection;
 pub mod inventory_capacity;
 pub mod item_forge;
+pub mod item_inscription;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
