@@ -84,6 +84,14 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
             link.task_board_set_open(true);
             true
         }
+        "bestiary_tracker" => {
+            link.cyclopedia_tracker_widget_toggle(false);
+            true
+        }
+        "bosstiary_tracker" => {
+            link.cyclopedia_tracker_widget_toggle(true);
+            true
+        }
         "bug" => {
             link.bug_report_open();
             true

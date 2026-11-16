@@ -18,3 +18,19 @@ impl Outbox {
         );
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// Admits capability 197 for the Bevy tracker window tests.
+    pub(crate) fn bevy_cyclopedia_tracker_initialize(&self) {
+        self.cyclopedia_tracker_initialize(true);
+    }
+    /// Applies a tracker command reply through the session's reducer.
+    pub(crate) fn bevy_cyclopedia_tracker_result(&self, result: &GatedCommandResult) {
+        self.cyclopedia_tracker_result(result);
+    }
+    /// Applies a pushed domain-98 tracker snapshot through the session's reducer.
+    pub(crate) fn bevy_cyclopedia_tracker_push(&self, payload: Vec<u8>) {
+        self.cyclopedia_tracker_push(payload);
+    }
+}
