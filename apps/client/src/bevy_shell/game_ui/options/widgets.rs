@@ -306,6 +306,9 @@ pub(super) fn page(
             .id();
         commands.entity(parent).add_child(status);
     }
+    if page == Page::Misc {
+        super::minimap_transfer::build(commands, parent, skins);
+    }
     if page == Page::Sound {
         super::audio_device::build(commands, parent, skins, draft);
     }

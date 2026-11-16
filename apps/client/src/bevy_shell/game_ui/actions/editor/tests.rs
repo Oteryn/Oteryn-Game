@@ -410,3 +410,97 @@ fn assignment_waits_for_pending_edits_and_revalidates_slot() -> TestResult {
     assert!(app.world().resource::<EditorState>().message.is_empty());
     Ok(())
 }
+
+#[test]
+fn multiaction_button_collects_objects_and_saves_them_as_one_slot() -> TestResult {
+    use crate::play::{BarAction, ItemUseMode, PlayLink, SettingsState, play_channel};
+    let (mut app, _) = super::super::tests::fixture()?;
+    let (link, mut commands, outbox) = play_channel();
+    let item = oteryn_session::ItemEntry {
+        appearance_id: 0,
+        handle: 7.try_into()?,
+        item_definition_ref: 42.try_into()?,
+        count: 1.try_into()?,
+        sub_type: 7,
+    };
+    PlayLink::bevy_items_fixture(
+        &outbox,
+        Some(oteryn_session::CharacterInventory {
+            entries: vec![item],
+            ..Default::default()
+        }),
+        Some(Default::default()),
+        true,
+        true,
+    );
+    app.world_mut()
+        .non_send_mut::<HostOwner>()
+        .play
+        .as_mut()
+        .ok_or("play")?
+        .link = link;
+    let generation = app.world().non_send::<HostOwner>().generation();
+    app.world_mut()
+        .resource_mut::<EditorState>()
+        .open(0, generation);
+    app.update();
+    let multi = control(&mut app, |edit| matches!(edit, Edit::Multi))?;
+    app.world_mut().trigger(Activate { entity: multi });
+    assert!(
+        app.world()
+            .resource::<EditorState>()
+            .message
+            .starts_with("Multiaction I: Empty")
+    );
+    // An empty draft is refused and stays open.
+    app.world_mut().trigger(Activate { entity: multi });
+    assert!(
+        app.world()
+            .resource::<EditorState>()
+            .message
+            .starts_with("Assign at least one")
+    );
+    set(&mut app, 1, "42");
+    set(&mut app, 4, "7");
+    for wanted in [
+        (|edit| matches!(edit, Edit::Use)) as fn(Edit) -> bool,
+        |edit| matches!(edit, Edit::SelfActor),
+    ] {
+        let button = control(&mut app, wanted)?;
+        app.world_mut().trigger(Activate { entity: button });
+    }
+    let message = app.world().resource::<EditorState>().message.clone();
+    assert!(message.contains("I: Use object 42") && message.contains("II: Use object 42"));
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let mut settings = SettingsState::new(None);
+        settings.sync_bar_actions(&owner.play.as_ref().ok_or("play")?.link);
+        assert_eq!(
+            settings.preferences.bar_actions.0.get(&0),
+            None,
+            "the draft is not saved before Multiaction is pressed again"
+        );
+    }
+    app.world_mut().trigger(Activate { entity: multi });
+    assert_eq!(
+        app.world().resource::<EditorState>().message,
+        "Multiaction saved"
+    );
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let mut settings = SettingsState::new(None);
+    settings.sync_bar_actions(link);
+    let use_with = |mode| BarAction::Use {
+        definition: item.item_definition_ref,
+        sub_type: Some(7),
+        mode,
+    };
+    assert_eq!(
+        settings.preferences.bar_actions.0.get(&0),
+        Some(&BarAction::Multi {
+            actions: vec![use_with(ItemUseMode::Use), use_with(ItemUseMode::SelfActor)],
+        })
+    );
+    assert!(commands.try_recv().is_err(), "editing never uses the item");
+    Ok(())
+}

@@ -69,6 +69,7 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
         &RenderedRow {
             text: String::new(),
             line: None,
+            font_px: oteryn_client_ui::chat::ConsoleDisplay::default().font_px,
         },
     );
     commands.entity(transcript).add_child(text);
@@ -114,9 +115,38 @@ pub(super) fn setup(mut commands: Commands, regions: Res<GameRegions>, skins: Re
     commands
         .entity(compose)
         .add_children(&[mode, frame, send, channels, close, chat_mode]);
+    // The read-only mirror covers the right third of the transcript, as the drop target did.
+    let mirror = commands
+        .spawn((
+            MirrorPane,
+            ScrollArea,
+            ScrollPosition::default(),
+            source::frame(skins.inset.clone(), [1.; 4]),
+            Node {
+                display: Display::None,
+                position_type: PositionType::Absolute,
+                right: px(0.),
+                top: px(TAB_HEIGHT),
+                bottom: px(23.),
+                width: percent(100. / 3.),
+                overflow: Overflow::scroll(),
+                padding: UiRect::all(px(2.)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb_u8(20, 20, 20)),
+        ))
+        .id();
+    let mirror_text = commands
+        .spawn((
+            MirrorText,
+            source::text("", source::font(skins.font.clone(), false)),
+        ))
+        .insert(TextLayout::default())
+        .id();
+    commands.entity(mirror).add_child(mirror_text);
     commands
         .entity(root)
-        .add_children(&[tabs, history, compose]);
+        .add_children(&[tabs, history, compose, mirror]);
     super::channels::setup(&mut commands, root, &skins);
 }
 
@@ -262,14 +292,18 @@ pub(super) fn activate(
 pub(super) struct RenderedRow {
     text: String,
     line: Option<oteryn_session::ChatLine>,
+    /// The console font size in pixels; a change re-renders the transcript.
+    font_px: u16,
 }
 pub(super) fn transcript_rows(panel: &oteryn_client_ui::chat::ChatPanel) -> Vec<RenderedRow> {
     let mut single = panel.clone();
     single.lines.clear();
     single.recipients.clear();
+    let font_px = panel.console.display.font_px;
     let mut rows = vec![RenderedRow {
         text: oteryn_client_ui::chat::panel_text(&single),
         line: None,
+        font_px,
     }];
     single.feedback = None;
     single.console.show_server_messages = false;
@@ -298,6 +332,7 @@ pub(super) fn transcript_rows(panel: &oteryn_client_ui::chat::ChatPanel) -> Vec<
                     panel.console.metadata.prefix(panel.console.display, index)
                 ),
                 line: Some(line.clone()),
+                font_px,
             });
         }
     }
@@ -325,7 +360,13 @@ pub(super) fn message_row(
             EditableText::new(&row.text),
             bevy::text::TextReadWriteMode::ReadOnly,
             TextCursorStyle::default(),
-            source::text(&row.text, source::font(skins.font.clone(), false)),
+            source::text(
+                &row.text,
+                bevy::text::TextFont {
+                    font_size: bevy::text::FontSize::Px(f32::from(row.font_px)),
+                    ..source::font(skins.font.clone(), false)
+                },
+            ),
             Node {
                 width: percent(100.),
                 flex_shrink: 0.,
@@ -336,6 +377,7 @@ pub(super) fn message_row(
         .insert((
             Pickable::default(),
             TextColor(speech_color(row.line.as_ref())),
+            bevy::text::LineHeight::RelativeToFont(1.2),
         ))
         .observe(message_menu)
         .id()
@@ -383,6 +425,8 @@ enum MessageAction {
     Report,
     Lists,
     Save,
+    Mirror,
+    CloseMirror,
     Close,
 }
 #[derive(Component)]
@@ -443,8 +487,19 @@ fn message_menu(
     actions.extend([
         (MessageAction::Lists, "Communication lists".into()),
         (MessageAction::Save, "Save messages".into()),
-        (MessageAction::Close, "Close".into()),
     ]);
+    actions.push(
+        if owner
+            .play
+            .as_ref()
+            .is_some_and(|play| play.link.chat_panel().console.mirror.is_some())
+        {
+            (MessageAction::CloseMirror, "Close mirrored tab".into())
+        } else {
+            (MessageAction::Mirror, "Mirror this tab".into())
+        },
+    );
+    actions.push((MessageAction::Close, "Close".into()));
     for (action, label) in actions {
         let button = commands
             .spawn((
@@ -523,6 +578,10 @@ fn message_action(
                 .link
                 .chat_save_log(std::path::Path::new("chat.log"), true);
         }
+        MessageAction::Mirror => {
+            let _ = play.link.chat_console_mirror();
+        }
+        MessageAction::CloseMirror => play.link.chat_console_mirror_close(),
         MessageAction::Close => {
             if let Some(menu) = state.menu.take() {
                 commands.entity(menu).despawn();

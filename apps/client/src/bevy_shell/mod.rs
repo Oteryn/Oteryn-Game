@@ -13,6 +13,7 @@ mod hints;
 mod input;
 mod live_assets;
 mod login;
+pub(crate) mod maintenance;
 mod owner;
 mod scene;
 mod screenshots;
@@ -119,6 +120,30 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     if options.smoke {
         app.add_systems(Update, smoke_exit);
     }
+    // A packaging smoke run leaves the player's layout file alone.
+    let layout = game_ui::layout::LayoutStore::load(
+        options
+            .preferences
+            .as_ref()
+            .filter(|_| !options.smoke)
+            .map(|path| path.with_file_name("client-window-layout.json")),
+    );
+    let mut window = Window {
+        title: "Oteryn".into(),
+        resolution: (1024, 720).into(),
+        resize_constraints: bevy::window::WindowResizeConstraints {
+            min_width: 1020.,
+            min_height: 650.,
+            ..default()
+        },
+        ..default()
+    };
+    if let Some([x, y, width, height]) = layout.window()
+        && let (Ok(width), Ok(height)) = (u32::try_from(width), u32::try_from(height))
+    {
+        window.position = bevy::window::WindowPosition::At(IVec2::new(x, y));
+        window.resolution = (width, height).into();
+    }
     app.add_plugins(
         DefaultPlugins
             .set(AssetPlugin {
@@ -131,16 +156,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .set(ImagePlugin::default_nearest())
             .set(WindowPlugin {
                 close_when_requested: false,
-                primary_window: Some(Window {
-                    title: "Oteryn".into(),
-                    resolution: (1024, 720).into(),
-                    resize_constraints: bevy::window::WindowResizeConstraints {
-                        min_width: 1020.,
-                        min_height: 650.,
-                        ..default()
-                    },
-                    ..default()
-                }),
+                primary_window: Some(window),
                 ..default()
             }),
     )
@@ -150,6 +166,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     ))
     .insert_resource(ClearColor(Color::BLACK))
     .insert_non_send(owner)
+    .insert_resource(layout)
     .insert_resource(audit::AuditOutput::new(options.ui_audit))
     .init_resource::<scene::SceneCache>()
     .init_resource::<speech_bubbles::SpeechBubbles>()

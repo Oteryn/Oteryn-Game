@@ -399,6 +399,106 @@ fn house_window_action(caption: &str, field_index: usize, value: &str) -> TestRe
 }
 
 #[test]
+fn house_browser_shows_and_closes_the_entrance_map_of_the_selected_row() -> TestResult {
+    use crate::play::{PlayView, play_channel};
+    use bevy::input::keyboard::{Key as LogicalKey, KeyboardInput};
+    let (link, mut receiver, _) = play_channel();
+    link.use_shared_frontend();
+    link.bevy_house_map_fixture();
+    let mut owner = HostOwner::new(None)?;
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .init_resource::<InputFocus>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<KeyboardInput>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::super::modal::install(&mut app);
+    super::super::houses::install(&mut app);
+    app.update();
+    {
+        let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+        keys.press(KeyCode::ControlLeft);
+        keys.press(KeyCode::ShiftLeft);
+    }
+    app.world_mut().write_message(KeyboardInput {
+        key_code: KeyCode::KeyH,
+        logical_key: LogicalKey::Character("H".into()),
+        state: bevy::input::ButtonState::Pressed,
+        text: None,
+        repeat: false,
+        window: Entity::PLACEHOLDER,
+    });
+    app.update();
+    let button = |app: &mut App, caption: &str| {
+        app.world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == caption).then_some(parent.parent()))
+            .ok_or(format!("missing button {caption}"))
+    };
+    let texts = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect::<Vec<_>>()
+    };
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&super::super::houses::Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 2 {
+            text.editor_mut().set_text("2");
+        }
+    }
+    let show = button(&mut app, "Show entrance map")?;
+    app.world_mut().trigger(Activate { entity: show });
+    app.update();
+    app.update();
+    let shown = texts(&mut app);
+    for expected in [
+        "House entrances — north up",
+        "Floor 7 · selected entrance ◆ · other entrances ⌂ · page fitted to view",
+        "◆ 2: Harbour Home\n120,130,7",
+        "⌂ 1: Home\n100,110,7",
+        "Edit House List — Harbour Home",
+    ] {
+        assert!(
+            shown.iter().any(|text| text == expected),
+            "missing entrance map text: {expected}"
+        );
+    }
+    assert!(
+        !shown.iter().any(|text| text.contains("Cellar Flat")),
+        "an entrance on another floor stays off the map"
+    );
+    assert!(receiver.try_recv().is_err(), "the map sends no request");
+    let close = button(&mut app, "Close map")?;
+    app.world_mut().trigger(Activate { entity: close });
+    app.update();
+    let closed = texts(&mut app);
+    assert!(
+        !closed
+            .iter()
+            .any(|text| text == "House entrances — north up")
+    );
+    assert!(
+        closed
+            .iter()
+            .any(|text| text == "Edit House List — Harbour Home"),
+        "closing the map keeps the house window"
+    );
+    Ok(())
+}
+
+#[test]
 fn house_list_window_uses_selected_house_name() -> TestResult {
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))

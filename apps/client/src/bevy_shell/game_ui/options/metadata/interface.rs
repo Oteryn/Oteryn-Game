@@ -79,7 +79,7 @@ pub(super) const HUD: [Row; 17] = [
         boss_area_opacity
     ),
 ];
-pub(super) const CONSOLE: [Row; 9] = [
+pub(super) const CONSOLE: [Row; 10] = [
     check!("console.local", "Show Local Speech", console.visible[0]),
     check!(
         "console.private",
@@ -104,6 +104,14 @@ pub(super) const CONSOLE: [Row; 9] = [
         console.dropped
     ),
     check!("console.feedback", "Show Server Feedback", console.feedback),
+    number!(
+        "console.font_size",
+        "Console Font Size (px)",
+        10,
+        32,
+        u16,
+        console_font_px
+    ),
     number!(
         "console.lines",
         "Recent Received Lines",

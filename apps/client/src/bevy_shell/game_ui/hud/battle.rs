@@ -286,6 +286,15 @@ pub(super) fn project(
         );
         commands.entity(regions.battle).add_child(selector);
     }
+    let editor = button(
+        &mut commands,
+        &skins,
+        generation,
+        Command::BattleListEditor,
+        "Edit lists",
+        174.,
+    );
+    commands.entity(regions.battle).add_child(editor);
     let modes = commands
         .spawn(Node {
             width: percent(100.),

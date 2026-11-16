@@ -135,3 +135,17 @@ impl Saved {
         Ok(())
     }
 }
+
+#[cfg(test)]
+impl crate::play::PlayView {
+    /// Binds the minimap to a test world and content generation under `root`, with one
+    /// remembered cell, as a joined world does.
+    pub(crate) fn bind_test_minimap(&mut self, root: std::path::PathBuf) {
+        let mut map = Minimap::default();
+        map.root = Some(root);
+        map.bind_world("11111111-1111-4111-8111-111111111111");
+        map.binding = Some(([1; 32], [2; 32], 1));
+        map.cells.insert((-7, 500, 500), 55);
+        self.minimap = std::sync::Arc::new(std::sync::Mutex::new(map));
+    }
+}

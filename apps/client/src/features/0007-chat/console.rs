@@ -106,6 +106,25 @@ impl PlayLink {
     pub fn chat_console_drop(&self, tab: ConsoleTab, x: i32, width: i32) -> bool {
         drop_tab(&mut lock(&self.mailbox), tab, x, width)
     }
+    /// Mirrors the selected tab read-only beside the console; a channel tab mirrors Private,
+    /// whose filter shows it. Refused while the console is closed.
+    pub fn chat_console_mirror(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.chat.open {
+            return false;
+        }
+        let console = &mut mailbox.chat.console;
+        console.mirror = Some(if console.current.is_some() {
+            ConsoleTab::Private
+        } else {
+            console.tab
+        });
+        true
+    }
+    /// Closes the read-only mirror; the original console stays.
+    pub fn chat_console_mirror_close(&self) {
+        lock(&self.mailbox).chat.console.close();
+    }
     pub fn chat_console_filter(&self) {
         toggle_filter(&mut lock(&self.mailbox));
     }
@@ -285,7 +304,11 @@ impl Outbox {
             match event {
                 oteryn_session::SessionEvent::ChatLine(delta) => {
                     mailbox.chat.pending_lines = mailbox.chat.pending_lines.wrapping_add(1);
-                    mailbox.chat.console.metadata.received(&delta.value, received);
+                    mailbox
+                        .chat
+                        .console
+                        .metadata
+                        .received(&delta.value, received);
                 }
                 oteryn_session::SessionEvent::ServerMessage(delta) => {
                     use oteryn_client_ui::chat::NoticeClass;

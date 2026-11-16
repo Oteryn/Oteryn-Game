@@ -247,6 +247,82 @@ fn communication_lists_form_edits_the_chat_lists_it_was_opened_for() -> TestResu
 }
 
 #[test]
+fn battle_list_editor_saves_adds_and_removes_lists_through_the_form() -> TestResult {
+    let (mut app, mut commands, _outbox) = fixture()?;
+    let lists = |app: &App| -> Result<_, Box<dyn std::error::Error>> {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        Ok((link.active_battle_list(), link.battle_list_preferences()))
+    };
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        owner
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .battle_list_editor_open();
+    }
+    app.update();
+    assert!(form_open(&app, "Battle lists")?);
+    assert!(has_text(&mut app, "Battle lists"));
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Some(1))?;
+    let (active, added) = lists(&app)?;
+    assert_eq!((active, added.len()), (1, 2));
+    assert_eq!(added[1].name, "List 1");
+    app.update();
+    let values = ["Hunt", "dragon", "60", "no", "yes", "low", "any", "any"];
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        *text = EditableText::new(values.get(field.0).copied().unwrap_or(""));
+    }
+    click(&mut app, Some(0))?;
+    let (_, saved) = lists(&app)?;
+    let hunt = &saved[1];
+    assert_eq!(
+        (
+            hunt.name.as_str(),
+            hunt.search.as_str(),
+            hunt.max_health,
+            hunt.players,
+            hunt.creatures,
+            hunt.sort,
+        ),
+        (
+            "Hunt",
+            "dragon",
+            60,
+            false,
+            true,
+            crate::play::feature_0017_attack::view::BattleSort::HealthAscending
+        )
+    );
+    app.update();
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 2 {
+            *text = EditableText::new("150");
+        }
+    }
+    click(&mut app, Some(0))?;
+    assert_eq!(lists(&app)?.1[1].max_health, 60, "an invalid HP is refused");
+    click(&mut app, Some(2))?;
+    let (active, left) = lists(&app)?;
+    assert_eq!((active, left.len()), (0, 1));
+    assert!(commands.try_recv().is_err(), "the lists stay local");
+    click(&mut app, None)?;
+    assert!(!form_open(&app, "Battle lists")?);
+    Ok(())
+}
+
+#[test]
 fn boss_rewards_key_browses_the_typed_death_and_shows_the_server_rows() -> TestResult {
     use oteryn_client_runtime::boss_rewards::{
         BossRewardsCommand, BossRewardsReply, BossRewardsResponse, CommandStatus, boss_rewards,

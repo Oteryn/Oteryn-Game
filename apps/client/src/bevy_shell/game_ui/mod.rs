@@ -19,6 +19,7 @@ mod forge;
 pub(super) mod highscores;
 mod hotkeys;
 mod hud;
+mod hud_panes;
 mod imbuement_tracker;
 mod imbuing;
 mod install;
@@ -29,7 +30,7 @@ pub(super) use inventory::ItemPointerCapture;
 pub(super) use inventory::initialize_item_pointer_test_state;
 pub(super) mod item_details;
 mod journal;
-mod layout;
+pub(super) mod layout;
 mod market;
 pub(super) mod minimap;
 pub(super) mod modal;
@@ -228,9 +229,9 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let skills = region(&mut commands);
     let vip = region(&mut commands);
     let analyzers = region(&mut commands);
-    let console_splitter = layout::spawn(&mut commands, chat, true);
-    let panels_splitter = layout::spawn(&mut commands, panels, false);
-    let inventory_splitter = layout::spawn(&mut commands, inventory, false);
+    let console_splitter = layout::spawn(&mut commands, chat, true, "console");
+    let panels_splitter = layout::spawn(&mut commands, panels, false, "sidebar.panels");
+    let inventory_splitter = layout::spawn(&mut commands, inventory, false, "sidebar.inventory");
     commands.entity(root).add_children(&[vitals, middle]);
     commands.entity(middle).add_children(&[
         main,

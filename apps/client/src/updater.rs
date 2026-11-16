@@ -1,7 +1,5 @@
 //! T005 maintenance caller. Only a build-pinned TUF target may install bytes.
 mod install;
-#[cfg(windows)]
-mod window;
 pub use install::verify_archive;
 use oteryn_platform_client::updates::{UpdateClient, UpdateConfig, UpdateError};
 use std::path::Path;
@@ -73,7 +71,7 @@ pub async fn maintain(
         .map_err(|_| UpdateError::Storage)?;
     lock.try_lock().map_err(|_| UpdateError::Unavailable)?;
     #[cfg(windows)]
-    let _maintenance = window::acquire_maintenance()?;
+    let _maintenance = acquire_maintenance()?;
     let update = UpdateClient::check(config, &directory.join(".updates")).await?;
     let current = std::fs::read_to_string(directory.join("current.txt")).unwrap_or_default();
     if action == Action::Check {
@@ -106,6 +104,22 @@ pub async fn maintain(
         "Installed verified release {installed}. Start the launcher to play."
     ))
 }
+/// Refuses maintenance while setup or the client runs (the install/client mutex handshake).
+#[cfg(windows)]
+fn acquire_maintenance() -> Result<crate::win_mutex::NamedMutex, UpdateError> {
+    let sid = crate::win_mutex::current_user_sid().map_err(|_| UpdateError::Unavailable)?;
+    let name = crate::win_mutex::setup_mutex_name(&sid);
+    if crate::win_mutex::exists(&name).map_err(|_| UpdateError::Unavailable)? {
+        return Err(UpdateError::Unavailable);
+    }
+    let guard = crate::win_mutex::create(&name).map_err(|_| UpdateError::Unavailable)?;
+    if crate::win_mutex::exists(&crate::win_mutex::client_mutex_name(&sid))
+        .map_err(|_| UpdateError::Unavailable)?
+    {
+        return Err(UpdateError::Unavailable);
+    }
+    Ok(guard)
+}
 /// Returns true when a maintenance command was consumed, without starting gameplay.
 pub fn requested(
     directory: &Path,
@@ -120,9 +134,9 @@ pub fn requested(
     } else if args.iter().any(|a| a == "--update") {
         Action::Update
     } else {
-        #[cfg(windows)]
+        #[cfg(bevy_shell)]
         if args.iter().any(|a| a == "--updates") {
-            return Some(window::show(directory));
+            return Some(crate::bevy_shell::maintenance::run(directory, args));
         }
         return None;
     };

@@ -31,6 +31,7 @@ enum Command {
     Expert(u8),
     Skills,
     BattleList(usize),
+    BattleListEditor,
     Analyser(oteryn_client_ui::analyser::Tool),
 }
 #[derive(Component)]
@@ -257,6 +258,7 @@ fn activate(
         Command::BattleList(index) => {
             let _ = play.link.battle_select_list(index);
         }
+        Command::BattleListEditor => play.link.battle_list_editor_open(),
         Command::Analyser(tool) => {
             super::analyser::open(&owner, tool);
         }
@@ -266,7 +268,10 @@ fn activate(
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn project(
     mut commands: Commands,
-    owner: NonSend<HostOwner>,
+    (owner, playback): (
+        NonSend<HostOwner>,
+        Option<NonSend<crate::bevy_shell::audio::Playback>>,
+    ),
     mut labels: Query<(&VitalLabel, &mut Text), Without<InfoText>>,
     mut info: Query<(&InfoText, &mut Text), Without<VitalLabel>>,
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor)>,
@@ -324,7 +329,7 @@ fn project(
                 if owner.settings.preferences.compact_status {
                     oteryn_client_ui::spell_action_bar::vitals_text(vitals.as_ref())
                 } else {
-                    play.view.hud_status()
+                    status_line(play, playback.as_ref().and_then(|audio| audio.status()))
                 }
             }
             InfoText::Analyser => play.link.analyser_text().replace("\r\n", "\n"),
@@ -356,6 +361,28 @@ fn project(
             }
         }
     }
+}
+/// The combined status line: custom hotkeys, item movement, the HUD status, audio, the
+/// movement keys and movement feedback.
+pub(super) fn status_line(
+    play: &crate::bevy_shell::owner::ActivePlay,
+    audio: Option<&str>,
+) -> String {
+    let settings = play.view.preferences().audio;
+    let audio = format!(
+        "Audio {}%{} ({})",
+        settings.master_volume,
+        if settings.muted { " muted" } else { "" },
+        audio.unwrap_or("ready")
+    );
+    let status = lfmt!(
+        "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
+        play.view.hud_status(),
+        play.link.movement_feedback().unwrap_or(""),
+        movement = play.link.item_movement_status(),
+        audio = audio
+    );
+    format!("{} — {status}", play.link.custom_hotkey_status())
 }
 #[cfg(test)]
 #[path = "hud/tests.rs"]

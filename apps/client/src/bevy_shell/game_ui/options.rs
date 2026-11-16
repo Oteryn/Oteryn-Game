@@ -19,6 +19,7 @@ mod conditions;
 mod frame_tests;
 mod keys;
 mod metadata;
+mod minimap_transfer;
 #[cfg(test)]
 mod navigation_tests;
 mod profiles;
