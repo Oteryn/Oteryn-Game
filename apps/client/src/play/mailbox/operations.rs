@@ -69,6 +69,10 @@ impl Outbox {
         let notices = std::mem::take(&mut mailbox.pushed.achievements);
         mailbox.reduce_achievement_notices(notices);
         for text in std::mem::take(&mut mailbox.pushed.notices.tutorial) {
+            // The server's walk refusal (USE-AUTOWALK-1 canonical text).
+            if text == "There is no way." {
+                oteryn_client_ui::target_move::no_way(&mut mailbox.target_walk);
+            }
             mailbox
                 .notices
                 .apply(oteryn_client_runtime::tutorial_notices::Notice::Tutorial(
@@ -267,10 +271,12 @@ impl PlayLink {
     }
 
     pub fn request(&self, direction: StepDir) {
-        let mailbox = lock(&self.mailbox);
+        let mut mailbox = lock(&self.mailbox);
         if mailbox.world_input_blocked() {
             return;
         }
+        // A manual step ends a click or minimap walk.
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
         // A closed task has already reported or will report `Ended`.
         let _ = self.commands.send(PlayCommand::Step(direction));
     }

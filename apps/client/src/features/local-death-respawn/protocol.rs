@@ -82,6 +82,7 @@ impl Mailbox {
                 self.target_walk.pending = false;
                 self.target_walk.response = None;
                 self.target_walk.feedback = None;
+                oteryn_client_ui::target_move::cancel(&mut self.target_walk);
             }
             if self.death.dead && !dead {
                 self.death.refresh = true;

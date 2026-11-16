@@ -93,6 +93,11 @@ impl PlayView {
             self.battle_instinct_refresh = Some(now);
         }
 
+        link.target_walk_follow_up(oteryn_session::ActorPosition {
+            x: self.own.x,
+            y: self.own.y,
+            floor: self.floor,
+        });
         self.target_walk_feedback = link.target_walk_feedback();
         self.pump_touch_step(link);
         // One chronological queue: each input goes out in the order it was given. A step still

@@ -168,6 +168,7 @@ impl Outbox {
         mailbox.appearance_state.clear();
         mailbox.target_walk.pending = false;
         mailbox.target_walk.response = None;
+        oteryn_client_ui::target_move::cancel(&mut mailbox.target_walk);
         mailbox.cancel_activity_requests();
         // Destination ChatLog sequences and notices start over at the handoff.
         mailbox.chat.console.reset_extensions();
