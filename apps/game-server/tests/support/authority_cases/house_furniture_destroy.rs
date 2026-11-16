@@ -171,6 +171,11 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
                         "remains":definition(&active_definition(&shards, remains)?),"decay":definition(&active_definition(&shards, id)?),
                         "revision":"1","acl":"1","roll":10,"attack":0,"succeeds":true,"duration":duration}))
     };
+    // DB clock before the first destruction: every timer is armed at or after it.
+    let armed_after_ms: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&h.pool)
+            .await?;
     role(h, Some("OWNER")).await?;
     let first = input(1, 4995, 4996, 300000)?;
     let reply = call(h, 1, first.clone()).await?;
@@ -256,11 +261,14 @@ async fn exercise_case(h: &Harness, started: Instant) -> TestResult {
     assert_eq!(receipts, 7);
     assert_eq!(remains, 3);
     assert_eq!(durations, vec![120000, 120000, 300000]);
-    let deadlines: Vec<(i64, i64)> = sqlx::query_as("SELECT remaining_ms,deadline_at-floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_item_timed_states")
+    // Each deadline is exactly the production duration after a DB-clock instant inside
+    // [armed_after_ms, now]: never early, never late.
+    let deadlines: Vec<(i64, i64, i64)> = sqlx::query_as("SELECT remaining_ms,deadline_at,floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_item_timed_states")
         .fetch_all(&h.pool).await?;
-    for (remaining_ms, deadline_remaining_ms) in deadlines {
-        assert!(deadline_remaining_ms > remaining_ms - 60000);
-        assert!(deadline_remaining_ms <= remaining_ms);
+    assert_eq!(deadlines.len(), 3);
+    for (remaining_ms, deadline_at, now_ms) in deadlines {
+        assert!(deadline_at >= armed_after_ms + remaining_ms);
+        assert!(deadline_at <= now_ms + remaining_ms);
     }
     assert_eq!(
         h.root
