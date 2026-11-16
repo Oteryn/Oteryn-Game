@@ -352,3 +352,192 @@ fn cyclopedia_map_bevy_resets_pois_donates_and_pages_the_region_atlas()
     assert!(has_text(&mut app, "(complete)"));
     Ok(())
 }
+
+type Ready = (
+    App,
+    tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+    crate::play::Outbox,
+);
+/// An open, selected Cyclopedia Map window whose region list the server already answered.
+fn ready() -> Result<Ready, Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map::geometry as wire;
+    let (link, mut rx, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_cyclopedia_map_selected();
+    link.cyclopedia_atlas_open();
+    let mut app = fixture(link)?;
+    let regions = feature(&mut rx)?;
+    reply(
+        &outbox,
+        &regions,
+        wire::encode_reply(&wire::Reply::Areas(wire::AreaPage {
+            parent: 0,
+            after: 0,
+            next: None,
+            areas: vec![wire::Area {
+                id: 1,
+                parent: 0,
+                name: "Harbour".into(),
+            }],
+        }))
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    Ok((app, rx, outbox))
+}
+fn feature(
+    rx: &mut tokio::sync::mpsc::UnboundedReceiver<crate::combat_input::PlayCommand>,
+) -> Result<oteryn_client_runtime::raw_feature::FeatureCommand, Box<dyn std::error::Error>> {
+    let crate::combat_input::PlayCommand::Feature(command) = rx.try_recv()? else {
+        return Err("feature command".into());
+    };
+    assert_eq!(command.capability, 57);
+    Ok(command)
+}
+fn reply(
+    outbox: &crate::play::Outbox,
+    command: &oteryn_client_runtime::raw_feature::FeatureCommand,
+    payload: Vec<u8>,
+) {
+    use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
+    outbox.bevy_cyclopedia_map_reply(
+        command,
+        &GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: CommandStatus::Accepted,
+            payload,
+        },
+    );
+}
+fn press(app: &mut App, kind: Kind) -> Result<(), Box<dyn std::error::Error>> {
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| (a.kind == kind).then_some(e))
+        .ok_or("missing control")?;
+    app.world_mut().trigger(Activate { entity });
+    app.update();
+    Ok(())
+}
+fn gold(app: &mut App) -> Result<String, Box<dyn std::error::Error>> {
+    Ok(app
+        .world_mut()
+        .query_filtered::<&EditableText, With<Donation>>()
+        .single(app.world())?
+        .value()
+        .to_string())
+}
+
+#[test]
+fn cyclopedia_map_donate_waits_for_the_pending_paste_and_sends_the_pasted_gold()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map as map;
+    use std::sync::{Arc, Mutex};
+    let (mut app, mut rx, _outbox) = ready()?;
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<Donation>>()
+        .single(app.world())?;
+    {
+        let mut text = app
+            .world_mut()
+            .get_mut::<EditableText>(field)
+            .ok_or("gold")?;
+        *text = EditableText::new("500");
+        text.queue_edit(bevy::text::TextEdit::SelectAll);
+        text.pending_paste = Some(bevy::clipboard::ClipboardRead::Pending(Arc::new(
+            Mutex::new(None),
+        )));
+    }
+    press(&mut app, Kind::Explore(Intent::Donate))?;
+    assert!(rx.try_recv().is_err(), "Donate spent the unsettled amount");
+    app.world_mut()
+        .entity_mut(field)
+        .insert(EditableText::new("50"));
+    app.update();
+    let donate = feature(&mut rx)?;
+    assert_eq!(
+        (donate.kind, &donate.payload),
+        (73, &map::request(4, 50).map_err(|e| format!("{e:?}"))?.1)
+    );
+    assert!(rx.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_map_keeps_the_typed_donation_across_a_window_redraw()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut rx, _outbox) = ready()?;
+    for mut text in app
+        .world_mut()
+        .query_filtered::<&mut EditableText, With<Donation>>()
+        .iter_mut(app.world_mut())
+    {
+        *text = EditableText::new("750");
+    }
+    press(&mut app, Kind::Explore(Intent::Query))?;
+    let query = feature(&mut rx)?;
+    let expected =
+        oteryn_client_runtime::cyclopedia_map::request(0, 0).map_err(|e| format!("{e:?}"))?;
+    assert_eq!((query.kind, query.payload), expected);
+    assert!(
+        app.world()
+            .non_send::<HostOwner>()
+            .play
+            .as_ref()
+            .ok_or("play")?
+            .link
+            .cyclopedia_map_panel()
+            .pending,
+        "the status request redraws the window"
+    );
+    assert_eq!(gold(&mut app)?, "750");
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_map_floor_controls_reach_every_region_atlas_floor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map::region_atlas;
+    let (mut app, mut rx, outbox) = ready()?;
+    press(&mut app, Kind::Explore(Intent::RegionAtlas))?;
+    let atlas = feature(&mut rx)?;
+    let area = |id, parent, name: &str| region_atlas::Area {
+        id,
+        parent,
+        name: name.into(),
+    };
+    let run = |area, floor| region_atlas::Run {
+        area,
+        x: 100,
+        end: 103,
+        y: 100,
+        floor,
+    };
+    reply(
+        &outbox,
+        &atlas,
+        region_atlas::encode(&region_atlas::Page {
+            next: None,
+            areas: vec![
+                area(1, 0, "Harbour"),
+                area(2, 1, "Quays"),
+                area(3, 1, "Cellars"),
+            ],
+            runs: vec![run(2, -7), run(3, -6)],
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(has_text(&mut app, "Harbour > Quays [#2]"));
+    assert!(!has_text(&mut app, "Harbour > Cellars [#3]"));
+    press(&mut app, Kind::Floor { previous: false })?;
+    assert!(has_text(&mut app, "Harbour > Cellars [#3]"));
+    assert!(!has_text(&mut app, "Harbour > Quays [#2]"));
+    press(&mut app, Kind::Floor { previous: true })?;
+    assert!(has_text(&mut app, "Harbour > Quays [#2]"));
+    assert!(rx.try_recv().is_err(), "floor selection stays local");
+    Ok(())
+}

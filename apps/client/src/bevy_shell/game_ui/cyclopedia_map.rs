@@ -18,6 +18,8 @@ struct State {
     root: Option<Entity>,
     snapshot: Option<Panel>,
     serial: u64,
+    /// A pressed Donate button (its window serial), sent once the gold editor settled.
+    donate: Option<u64>,
 }
 #[derive(Component, Clone, Copy)]
 struct Action {
@@ -32,19 +34,24 @@ struct Donation;
 enum Kind {
     Atlas(usize),
     Explore(Intent),
+    /// Cycles the floors present in the confirmed exploration result and region atlas.
+    Floor {
+        previous: bool,
+    },
     Close,
 }
 
 pub(super) fn install(app: &mut App) {
-    app.init_resource::<State>().add_systems(Update, project);
+    app.init_resource::<State>()
+        .add_systems(Update, project)
+        .add_systems(PostUpdate, donate.after(bevy::text::EditableTextSystems));
 }
 fn activate(
     event: On<Activate>,
     actions: Query<&Action>,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
     guard: ModalGuard,
-    donation: Query<&EditableText, With<Donation>>,
 ) {
     if !guard.allows(event.entity) || owner.modal_active() {
         return;
@@ -66,16 +73,50 @@ fn activate(
     match action.kind {
         Kind::Close => play.link.cyclopedia_atlas_close(),
         Kind::Atlas(index) => play.link.cyclopedia_atlas_action(index),
-        Kind::Explore(intent) => {
-            if intent == Intent::Donate
-                && let Ok(gold) = donation.single()
-            {
-                play.link
-                    .cyclopedia_map_edit(0, gold.value().to_string().trim().to_owned());
-            }
-            play.link.cyclopedia_map_request(intent);
-        }
+        Kind::Floor { previous } => play.link.cyclopedia_map_floor(previous),
+        Kind::Explore(Intent::Donate) => state.donate = Some(state.serial),
+        Kind::Explore(intent) => play.link.cyclopedia_map_request(intent),
     }
+}
+/// Sends a pressed Donate once pending edits and a pending paste reached the gold editor.
+fn donate(
+    owner: NonSend<HostOwner>,
+    mut state: ResMut<State>,
+    guard: ModalGuard,
+    donation: Query<(Entity, &EditableText), With<Donation>>,
+) {
+    let Some(serial) = state.donate else {
+        return;
+    };
+    let Ok((field, gold)) = donation.single() else {
+        state.donate = None;
+        return;
+    };
+    if gold.pending_paste.is_some()
+        || gold
+            .pending_edits
+            .iter()
+            .any(bevy::text::TextEdit::is_destructive)
+    {
+        return;
+    }
+    state.donate = None;
+    let Some(play) = &owner.play else {
+        return;
+    };
+    let panel = play.link.cyclopedia_map_panel();
+    if serial != state.serial
+        || state.generation != owner.generation()
+        || owner.modal_active()
+        || !guard.allows(field)
+        || !panel.geometry.open
+        || state.snapshot.as_ref() != Some(&panel)
+    {
+        return;
+    }
+    play.link
+        .cyclopedia_map_edit(0, gold.value().to_string().trim().to_owned());
+    play.link.cyclopedia_map_request(Intent::Donate);
 }
 fn label(commands: &mut Commands, skins: &Skins, parent: Entity, text: impl Into<String>) {
     let child = commands
@@ -111,6 +152,7 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<bevy::input_focus::InputFocus>,
     parents: Query<&ChildOf>,
+    donation: Query<&EditableText, With<Donation>>,
 ) {
     let panel = owner
         .play
@@ -131,6 +173,11 @@ fn project(
     if state.snapshot.as_ref() == Some(&panel) {
         return;
     }
+    // The typed gold survives a redraw of the same window; only Donate submits it.
+    let draft = state
+        .root
+        .and_then(|_| donation.single().ok())
+        .map(|gold| gold.value().to_string());
     remove_root(&mut state, &mut commands, &mut focus, &parents);
     state.serial = state.serial.wrapping_add(1);
     let root = commands
@@ -170,6 +217,8 @@ fn project(
         ("Next area", Kind::Atlas(2)),
         ("Subareas", Kind::Atlas(3)),
         ("Load footprint", Kind::Atlas(5)),
+        ("Previous floor", Kind::Floor { previous: true }),
+        ("Next floor", Kind::Floor { previous: false }),
         ("Previous page", Kind::Atlas(13)),
         ("Next page", Kind::Atlas(12)),
         ("Exploration status", Kind::Explore(Intent::Query)),
@@ -201,7 +250,7 @@ fn project(
         commands.entity(bar).add_child(button);
     }
     label(&mut commands, &skins, root, "Donation gold (1-10000000)");
-    let mut gold = EditableText::new(&panel.fields[0]);
+    let mut gold = EditableText::new(draft.as_deref().unwrap_or(&panel.fields[0]));
     gold.max_characters = Some(64);
     gold.visible_lines = Some(1.);
     let field = commands
