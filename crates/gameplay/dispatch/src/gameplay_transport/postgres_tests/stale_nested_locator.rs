@@ -199,7 +199,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 let destination = if matches!(mutation, Mutation::Merge) {
                     ItemMoveDestination::MainBackpack
                 } else {
-                    ItemMoveDestination::Container(shadow)
+                    ItemMoveDestination::Container(shadow, None)
                 };
                 move_item(
                     &mut client,
@@ -232,7 +232,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                     &mut client,
                     4,
                     sibling,
-                    ItemMoveDestination::Container(bag),
+                    ItemMoveDestination::Container(bag, None),
                     protocol::item_view::ItemMoveOutcome::Stale,
                 )
                 .await?;
@@ -285,7 +285,7 @@ fn exercise(mutation: Mutation) -> TestResult {
                 &mut client,
                 command,
                 source,
-                ItemMoveDestination::Container(bag),
+                ItemMoveDestination::Container(bag, None),
                 protocol::item_view::ItemMoveOutcome::Moved,
             )
             .await?;
@@ -368,6 +368,7 @@ async fn move_item(
         equip_drop: true,
         container_tree: true,
         world_interaction: false,
+        manual_sort: false,
     };
     let payload = protocol::item_view::encode_item_move_intent_for(
         &ItemMoveIntent {

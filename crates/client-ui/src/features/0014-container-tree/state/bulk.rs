@@ -39,7 +39,7 @@ impl ContainerPanel {
             .iter()
             .map(|item| MoveRequest {
                 source: item.handle,
-                destination: ItemMoveDestination::Container(destination.container_handle),
+                destination: ItemMoveDestination::Container(destination.container_handle, None),
                 count: None,
             })
             .collect();

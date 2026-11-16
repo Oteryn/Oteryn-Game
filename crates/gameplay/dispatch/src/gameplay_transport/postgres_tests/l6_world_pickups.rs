@@ -119,6 +119,7 @@ pub(super) async fn refuse_old_epoch(
                 },
                 count: None,
                 target: LoopTarget::MainBackpack,
+                slot: None,
             },
         )
         .await;

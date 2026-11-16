@@ -17,6 +17,8 @@ struct Snapshot {
     sort_available: bool,
     windows: std::collections::BTreeMap<u8, presentation::Window>,
     browse: bool,
+    /// Tibia Global's Manual Sort Mode: orange container titles, and drops name their slot.
+    manual_sort: bool,
 }
 #[derive(Component)]
 pub(super) struct Projection;
@@ -97,6 +99,7 @@ pub(super) fn project(
         menu: ui.menu,
         world_feedback: play.link.world_context_feedback(),
         sort_available: play.link.container_sort_panel().selected,
+        manual_sort: play.link.container_manual_sort_active(),
     };
     // Selection changes decoration, not the pointer identities used for double clicks.
     for (slot, mut border) in &mut cells {
@@ -124,6 +127,7 @@ pub(super) fn project(
             && old.sort_available == snapshot.sort_available
             && old.windows == snapshot.windows
             && old.browse == snapshot.browse
+            && old.manual_sort == snapshot.manual_sort
     }) {
         previous.0 = Some(snapshot);
         return;
@@ -151,6 +155,14 @@ pub(super) fn project(
         });
         if !open && !inventory.entries.is_empty() {
             let panel = panel(&mut commands, &skins, regions.containers, "Backpack");
+            // In Manual Sort Mode the main backpack is named by its handle, so a slot drop sends
+            // the slot (capability 510); otherwise it is the main backpack as before.
+            let destination = match inventory.main_backpack {
+                Some(backpack) if snapshot.manual_sort => {
+                    ItemMoveDestination::Container(backpack.handle, None)
+                }
+                _ => ItemMoveDestination::MainBackpack,
+            };
             grid(
                 &mut commands,
                 &skins,
@@ -159,7 +171,7 @@ pub(super) fn project(
                 Location::Inventory,
                 &inventory.entries,
                 inventory.entries.len(),
-                Some(ItemMoveDestination::MainBackpack),
+                Some(destination),
                 snapshot.selection,
             );
         }
@@ -184,6 +196,15 @@ pub(super) fn project(
     previous.0 = Some(snapshot);
 }
 fn panel(commands: &mut Commands, skins: &Skins, parent: Entity, title: &str) -> Entity {
+    titled_panel(commands, skins, parent, title, source::TEXT_COLOR)
+}
+fn titled_panel(
+    commands: &mut Commands,
+    skins: &Skins,
+    parent: Entity,
+    title: &str,
+    color: Color,
+) -> Entity {
     let entity = commands
         .spawn((
             Projection,
@@ -207,6 +228,7 @@ fn panel(commands: &mut Commands, skins: &Skins, parent: Entity, title: &str) ->
                 ..default()
             },
         ))
+        .insert(TextColor(color))
         .id();
     commands.entity(entity).add_child(title);
     entity
@@ -320,6 +342,13 @@ fn grid(
         .id();
     commands.entity(parent).add_child(grid);
     for index in 0..capacity {
+        // A container slot names its index; the drop sends it only in Manual Sort Mode.
+        let destination = match destination {
+            Some(ItemMoveDestination::Container(handle, _)) => Some(
+                ItemMoveDestination::Container(handle, u32::try_from(index).ok()),
+            ),
+            destination => destination,
+        };
         slot_node(
             commands,
             skins,
@@ -417,7 +446,13 @@ fn container(
             view.capacity
         )
     };
-    let panel = panel(commands, skins, parent, &title);
+    let panel = if snapshot.manual_sort && view.browse.is_none() {
+        // Tibia Global renders container names orange while Manual Sort Mode is on.
+        let [r, g, b] = oteryn_client_ui::container_manual_sort::ACTIVE_TITLE_RGB;
+        titled_panel(commands, skins, parent, &title, Color::srgb_u8(r, g, b))
+    } else {
+        panel(commands, skins, parent, &title)
+    };
     let row = commands
         .spawn(Node {
             column_gap: px(3.),
@@ -492,7 +527,7 @@ fn container(
         },
         &view.entries,
         usize::from(view.capacity),
-        Some(ItemMoveDestination::Container(view.container_handle)),
+        Some(ItemMoveDestination::Container(view.container_handle, None)),
         snapshot.selection,
     );
 }

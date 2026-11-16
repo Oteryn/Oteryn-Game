@@ -717,7 +717,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::depot::DepotIntent,
         item: Option<item_view::ItemKey>,
     ) -> Option<connection::DepotObservation> {
-        depot::execute(self, actor, command, intent, item).await
+        depot::execute(self, actor, command, intent, None, item).await
+    }
+
+    async fn depot_at(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        slot: Option<u32>,
+        item: Option<item_view::ItemKey>,
+    ) -> Option<connection::DepotObservation> {
+        depot::execute(self, actor, command, intent, slot, item).await
     }
 
     async fn committed_loop_move(

@@ -225,7 +225,16 @@ pub(super) fn project_tools(
                 }
             }
         }
-        ToolSnapshot::Sort(_, containers) => {
+        ToolSnapshot::Sort(_, containers, mode) => {
+            if mode.selected {
+                button(
+                    "Use Manual Sort Mode",
+                    ToolAction::ManualSort {
+                        checked: mode.active(),
+                    },
+                    ready,
+                );
+            }
             if let Some(views) = &containers.views {
                 for view in &views.views {
                     if view.browse.is_some()

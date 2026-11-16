@@ -1,0 +1,34 @@
+[
+  {
+    "mechanic": "0510-container-manual-sort",
+    "kind": "handlers",
+    "id": "0510-container-manual-sort-move-slot",
+    "status": "supported",
+    "commands": [],
+    "direction": "server_to_client",
+    "capability": 510,
+    "entry": "input.rs::drop_destination",
+    "push_messages": [
+      "OpenContainer"
+    ],
+    "reducer": "input.rs::admitted",
+    "test": "tests.rs::a_slot_is_sent_only_while_the_negotiated_mode_is_on",
+    "shared_commands": [
+      9,
+      36
+    ],
+    "not_applicable": {
+      "state": "The per-session mode is a flag of the play mailbox, off at session start; the reordered entries arrive in the existing open container view.",
+      "protocol": "The shared session command9 codec sends the container slot only with 510 negotiated.",
+      "view": "The Bevy container windows render their titles orange while the mode is on.",
+      "settings": "The ToggleManualSortMode hotkey uses the shared hotkey preferences."
+    }
+  },
+  {
+    "mechanic": "0510-container-manual-sort",
+    "kind": "panels",
+    "id": "0510-container-manual-sort-title",
+    "status": "supported",
+    "entry": "input.rs::drop_destination"
+  }
+]

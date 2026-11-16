@@ -75,7 +75,7 @@ fn click(app: &mut App, kind: Kind) -> TestResult {
 #[test]
 fn depot_shortcut_projects_seventeen_boxes_and_pages_confirmed_contents() -> TestResult {
     let (mut app, mut commands, outbox) = fixture()?;
-    let PlayCommand::Depot(initial) = commands.try_recv()? else {
+    let PlayCommand::Depot(initial, None) = commands.try_recv()? else {
         return Err("missing initial browse".into());
     };
     assert_eq!(
@@ -119,7 +119,7 @@ fn depot_shortcut_projects_seventeen_boxes_and_pages_confirmed_contents() -> Tes
             page: 1,
         }),
     )?;
-    let PlayCommand::Depot(next) = commands.try_recv()? else {
+    let PlayCommand::Depot(next, None) = commands.try_recv()? else {
         return Err("missing next page".into());
     };
     assert_eq!((next.box_number, next.page, next.town), (17, 1, Some(2)));
@@ -164,7 +164,7 @@ fn depot_withdraw_uses_displayed_ordinal_and_rejects_changed_snapshot() -> TestR
     assert!(commands.try_recv().is_err());
     app.update();
     click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
-    let PlayCommand::Depot(withdraw) = commands.try_recv()? else {
+    let PlayCommand::Depot(withdraw, None) = commands.try_recv()? else {
         return Err("missing withdrawal".into());
     };
     assert_eq!(withdraw.action, DepotAction::Withdraw(82));
@@ -185,6 +185,65 @@ fn depot_withdraw_uses_displayed_ordinal_and_rejects_changed_snapshot() -> TestR
             .iter(app.world())
             .count(),
         0
+    );
+    Ok(())
+}
+
+/// Tibia Global's Manual Sort Mode (Shift+S, capability 510) in the depot: the deposit button
+/// holds the item, and the clicked box row sends the deposit with that row's box slot.
+#[test]
+fn manual_sort_mode_deposits_at_the_clicked_depot_row_slot() -> TestResult {
+    let (mut app, mut commands, outbox) = fixture()?;
+    while commands.try_recv().is_ok() {}
+    crate::play::PlayLink::bevy_manual_sort_fixture(&outbox, true);
+    let handle = std::num::NonZeroU64::MIN;
+    let mut items = oteryn_client_runtime::depot::Items::default();
+    items.inventory.main_backpack = Some(oteryn_client_runtime::depot::ItemEntry {
+        appearance_id: 0,
+        handle,
+        item_definition_ref: std::num::NonZeroU32::MIN,
+        count: std::num::NonZeroU32::MIN,
+        sub_type: 0,
+    });
+    outbox.bevy_depot_items(items);
+    let mut page = reply();
+    page.page = 1;
+    outbox.bevy_depot_result(Some(page));
+    app.update();
+    // Without the mode a deposit goes out at once, at the first slot.
+    click(&mut app, Kind::Request(Intent::Deposit(handle)))?;
+    let PlayCommand::Depot(plain, None) = commands.try_recv()? else {
+        return Err("missing plain deposit".into());
+    };
+    assert_eq!(plain.action, DepotAction::Deposit(handle));
+    let mut page = reply();
+    page.page = 1;
+    outbox.bevy_depot_result(Some(page));
+    let link = &app
+        .world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link;
+    assert!(link.toggle_container_manual_sort());
+    app.update();
+    click(&mut app, Kind::Request(Intent::Deposit(handle)))?;
+    assert!(commands.try_recv().is_err());
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0.contains("Item 9 ×3 — place here"))
+    );
+    click(&mut app, Kind::Request(Intent::Withdraw(0)))?;
+    let PlayCommand::Depot(slotted, Some(slot)) = commands.try_recv()? else {
+        return Err("missing slotted deposit".into());
+    };
+    assert_eq!(
+        (slotted.action, slotted.page, slot),
+        (DepotAction::Deposit(handle), 1, 32)
     );
     Ok(())
 }

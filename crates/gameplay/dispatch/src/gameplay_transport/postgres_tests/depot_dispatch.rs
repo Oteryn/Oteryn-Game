@@ -5,6 +5,8 @@ mod depot_list;
 mod mail_capacity;
 #[path = "depot_dispatch/mail_cases.rs"]
 mod mail_cases;
+#[path = "depot_dispatch/manual_sort_cases.rs"]
+mod manual_sort_cases;
 #[path = "depot_dispatch/retrieve_cases.rs"]
 mod retrieve_cases;
 #[path = "depot_dispatch/stash_cases.rs"]
@@ -83,6 +85,20 @@ fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestR
         })?
         .join()
         .map_err(|_| "depot search retrieval e2e panicked")?
+        .map_err(Into::into)
+}
+
+/// CONTAINER-MANUAL-SORT-1 (capability 510): a slotted deposit takes its depot box slot.
+#[test]
+fn depot_manual_sort_deposit_takes_its_box_slot_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::ManualSort)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "depot manual sort e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -211,6 +227,7 @@ enum Mode {
     List,
     Mail,
     MailCapacity,
+    ManualSort,
     Retrieve,
 }
 
@@ -517,7 +534,7 @@ fn scenario_with_premium(
             5
         } else if retrieve {
             22
-        } else if stash || ground_container || mail {
+        } else if stash || ground_container || mail || mode == Mode::ManualSort {
             3
         } else {
             1
@@ -670,6 +687,22 @@ fn scenario_with_premium(
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if mode == Mode::ManualSort {
+            let handles = stacks
+                .iter()
+                .map(|item| {
+                    view.table()
+                        .handle(&ItemKey::Instance(*item))
+                        .map(|handle| (handle, *item))
+                        .ok_or("stack handle")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            manual_sort_cases::exercise(&owner, admitted, &harness.pool, &handles).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if retrieve {
             let handles = stacks
                 .iter()

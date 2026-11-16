@@ -74,6 +74,9 @@ pub(super) fn target(
             world_interaction: session
                 .selected_capabilities
                 .contains(CAPABILITY_WORLD_INTERACTION_V1),
+            manual_sort: session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1),
         };
         let intent = if session
             .selected_capabilities

@@ -103,7 +103,7 @@ fn begin_for(
         .iter()
         .map(|entry| MoveRequest {
             source: entry.handle,
-            destination: ItemMoveDestination::Container(destination.container_handle),
+            destination: ItemMoveDestination::Container(destination.container_handle, None),
             count: None,
         })
         .collect();

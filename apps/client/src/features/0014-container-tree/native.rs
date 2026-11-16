@@ -359,7 +359,7 @@ pub(in crate::play) fn open_shared(
                                 entries,
                                 panel.rows(),
                                 oteryn_session::ItemMoveDestination::Container(
-                                    view.container_handle,
+                                    view.container_handle, None,
                                 ),
                             );
                             super::super::super::feature_0004_item_view_move::view::view_surfaces(

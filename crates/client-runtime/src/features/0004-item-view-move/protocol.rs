@@ -32,7 +32,7 @@ pub async fn send<S: oteryn_session::SessionStream>(
     if !crate::equipment::available(request.destination, session.is_selected(12))
         || !session.is_selected(4)
         || (request.count.is_some() && !session.is_selected(61))
-        || (matches!(request.destination, ItemMoveDestination::Container(_))
+        || (matches!(request.destination, ItemMoveDestination::Container(..))
             && !session.is_selected(14))
         || (matches!(request.destination, ItemMoveDestination::Ground(_))
             && !session.is_selected(12)

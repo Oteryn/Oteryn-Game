@@ -158,6 +158,8 @@ pub(super) struct Mailbox {
     pub(super) inventory_shutdown: bool,
     pub(super) item_movement: oteryn_client_ui::inventory::movement::Movement,
     pub(super) item_count_selected: bool,
+    /// Tibia Global's Manual Sort Mode of this session (capability 510).
+    pub(super) container_manual_sort: oteryn_client_ui::container_manual_sort::ManualSort,
     pub(super) equipment_selected: bool,
     #[cfg(windows)]
     pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,

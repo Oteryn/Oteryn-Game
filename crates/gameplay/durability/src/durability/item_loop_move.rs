@@ -1686,7 +1686,39 @@ impl DurabilityRoot {
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         self.commit_loop_with_depot(
-            permit, recovery, node, fence, command, content, request, None, None,
+            permit, recovery, node, fence, command, content, request, None, None, None,
+        )
+        .await
+    }
+
+    /// CONTAINER-MANUAL-SORT-1 (capability 510): [`Self::commit_item_loop_move`], then, in the
+    /// same transaction, the entry it placed in the carried destination container takes `slot`
+    /// of its view order (`container_sort::place_at_slot`). The slot is part of the receipt
+    /// intent, so a replay with another slot is rejected.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_item_loop_move_to_slot<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: LoopMoveRequest,
+        slot: u32,
+    ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
+    {
+        self.commit_loop_with_depot(
+            permit,
+            recovery,
+            node,
+            fence,
+            command,
+            content,
+            request,
+            None,
+            None,
+            Some(slot),
         )
         .await
     }
@@ -1703,6 +1735,7 @@ impl DurabilityRoot {
         request: LoopMoveRequest,
         depot: Option<DepotMove>,
         house: Option<house::HouseLoopContext>,
+        slot: Option<u32>,
     ) -> std::result::Result<std::result::Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError>
     {
         if house.is_none() {
@@ -1732,13 +1765,26 @@ impl DurabilityRoot {
                                     if context.capacity_limit()>GAMEITEM01_CONTAINER_ENTRIES_MAX {
                                         intent["capacity_limit"]=json!(context.capacity_limit());
                                     }
+                                    // Capability 510; absent keeps the earlier receipt bytes.
+                                    if let Some(slot) = slot {
+                                        intent["slot"]=json!(slot);
+                                    }
                                     serde_json::to_vec(&intent)
                                 }
                                     .map_err(|_| DurabilityError::InvalidStoredState)?
                             } else { match depot {
-                                Some(access) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access}))
-                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
-                                None => intent_bytes(fence.character_id, &request)?,
+                                Some(access) => {
+                                    let mut intent=json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access});
+                                    if let Some(slot) = slot {
+                                        intent["slot"]=json!(slot);
+                                    }
+                                    serde_json::to_vec(&intent).map_err(|_| DurabilityError::InvalidStoredState)?
+                                }
+                                None => match slot {
+                                    Some(slot) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "slot": slot}))
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                    None => intent_bytes(fence.character_id, &request)?,
+                                },
                             }};
                             lock_loop_command(&mut tx, command).await?;
                             if let Some(replay) =
@@ -1747,12 +1793,36 @@ impl DurabilityRoot {
                             {
                                 return Ok(replay);
                             }
-                            apply_loop_move(
+                            let receipt = apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
                                 &request, &intent, depot, None, None, house.as_ref(),
                             )
-                            .await
-                            .map(Ok)
+                            .await?;
+                            if let Some((slot, access)) = slot.zip(depot) {
+                                if access.deposit {
+                                    container_sort::place_at_depot_slot(
+                                        &mut tx, &fence, command, content.loop_content_digest(),
+                                        access.town, access.box_number, receipt.transaction_id, slot,
+                                    )
+                                    .await?;
+                                }
+                            } else if let Some(slot) = slot {
+                                let parent = match request.destination {
+                                    LoopDestination::Container(parent) => Some(parent),
+                                    LoopDestination::MainBackpack => load_slot(&mut tx, fence.character_id)
+                                        .await?
+                                        .map(|backpack| backpack.item_instance_id),
+                                    LoopDestination::Ground(_) => None,
+                                };
+                                if let Some(parent) = parent {
+                                    container_sort::place_at_slot(
+                                        &mut tx, &fence, command, content.loop_content_digest(),
+                                        parent, receipt.transaction_id, slot,
+                                    )
+                                    .await?;
+                                }
+                            }
+                            Ok(Ok(receipt))
                         }
                         .await;
                     match attempt {

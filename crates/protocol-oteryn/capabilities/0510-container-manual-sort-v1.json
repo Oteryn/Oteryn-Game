@@ -1,0 +1,17 @@
+{
+  "id": 510,
+  "name": "CONTAINER_MANUAL_SORT_V1",
+  "constant": "item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1",
+  "requires": [
+    14
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

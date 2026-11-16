@@ -405,6 +405,9 @@ pub mod server_modal_defaults;
 #[path = "features/0507-highscores-catalogue/protocol.rs"]
 pub mod highscores_catalogue;
 
+#[path = "features/0510-container-manual-sort/input.rs"]
+pub mod container_manual_sort;
+
 #[path = "features/0506-holdings-search/protocol.rs"]
 pub mod holdings_search;
 

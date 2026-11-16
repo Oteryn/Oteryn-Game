@@ -27,8 +27,9 @@ impl Outbox {
         &self,
         session: &mut impl Stepper,
         intent: DepotIntent,
+        slot: Option<u32>,
     ) -> Result<(), SessionError> {
-        let reply = session.depot(intent).await?;
+        let reply = session.depot(intent, slot).await?;
         self.depot_publish(session);
         self.depot_result(reply);
         Ok(())
@@ -43,7 +44,7 @@ macro_rules! session_trait {
                 async { Ok(None) }
             }
             fn depot_items(&self) -> oteryn_client_runtime::depot::Items { Default::default() }
-            fn depot(&mut self, _intent: oteryn_session::DepotIntent) -> impl std::future::Future<Output = Result<Option<oteryn_session::DepotReply>, oteryn_session::SessionError>> + Send {
+            fn depot(&mut self, _intent: oteryn_session::DepotIntent, _slot: Option<u32>) -> impl std::future::Future<Output = Result<Option<oteryn_session::DepotReply>, oteryn_session::SessionError>> + Send {
                 async { Ok(None) }
             }
         }
@@ -60,8 +61,8 @@ macro_rules! dispatch {
                     Err(error) => error,
                 }
             }
-            Ok(crate::combat_input::PlayCommand::Depot(intent)) => {
-                match $outbox.depot_run(&mut $session, intent).await {
+            Ok(crate::combat_input::PlayCommand::Depot(intent, slot)) => {
+                match $outbox.depot_run(&mut $session, intent, slot).await {
                     Ok(()) => { $publish(&mut $session, &$outbox, &mut $held); continue; }
                     Err(error) => error,
                 }
@@ -79,5 +80,8 @@ impl Outbox {
     }
     pub(crate) fn bevy_depot_result(&self, reply: Option<DepotReply>) {
         self.depot_result(reply);
+    }
+    pub(crate) fn bevy_depot_items(&self, items: oteryn_client_runtime::depot::Items) {
+        lock(&self.0).depot.items = items;
     }
 }

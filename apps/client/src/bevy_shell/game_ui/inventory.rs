@@ -11,6 +11,8 @@ mod bulk;
 #[cfg(test)]
 mod bulk_tests;
 mod dialogs;
+#[cfg(test)]
+mod manual_sort_tests;
 mod presentation;
 #[cfg(test)]
 mod tests;
@@ -257,6 +259,7 @@ pub(super) enum ToolSnapshot {
     Sort(
         oteryn_client_ui::container_sort::Panel,
         oteryn_client_ui::container_tree::ContainerPanel,
+        oteryn_client_ui::container_manual_sort::ManualSort,
     ),
 }
 impl ToolSnapshot {
@@ -265,7 +268,11 @@ impl ToolSnapshot {
             ContainerTool::BrowseField => Self::Browse(link.browse_field_panel()),
             ContainerTool::Depot => Self::Depot(link.depot_panel()),
             ContainerTool::Search => Self::Search(link.depot_search_panel()),
-            ContainerTool::Sort => Self::Sort(link.container_sort_panel(), link.container_panel()),
+            ContainerTool::Sort => Self::Sort(
+                link.container_sort_panel(),
+                link.container_panel(),
+                link.container_manual_sort_mode(),
+            ),
         }
     }
     pub(super) fn ready(&self) -> bool {
@@ -273,7 +280,7 @@ impl ToolSnapshot {
             Self::Browse(panel) => panel.selected && !panel.pending,
             Self::Depot(panel) => panel.selected && !panel.pending,
             Self::Search(panel) => panel.selected && !panel.pending,
-            Self::Sort(panel, _) => panel.selected && !panel.pending,
+            Self::Sort(panel, ..) => panel.selected && !panel.pending,
         }
     }
     pub(super) fn text(&self) -> String {
@@ -281,7 +288,7 @@ impl ToolSnapshot {
             Self::Browse(panel) => oteryn_client_ui::browse_field::panel_text(panel),
             Self::Depot(panel) => oteryn_client_ui::depot::panel_text(panel),
             Self::Search(panel) => oteryn_client_ui::depot_search::panel_text(panel),
-            Self::Sort(panel, _) => oteryn_client_ui::container_sort::panel_text(panel),
+            Self::Sort(panel, ..) => oteryn_client_ui::container_sort::panel_text(panel),
         }
     }
 }

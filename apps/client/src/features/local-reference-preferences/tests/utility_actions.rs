@@ -415,21 +415,11 @@ fn global_ctrl_m_toggles_server_messages_and_the_market_has_no_default_chord()
     Ok(())
 }
 
-/// Global's hotkey manager offers ShowPrey, ToggleVipWidget and ToggleSkillsWidget as actions;
-/// the feature chords stay their defaults.
+/// Global's hotkey manager offers ShowPrey, ToggleVipWidget and ToggleSkillsWidget as actions.
 #[test]
 fn n021_prey_vip_and_skills_are_assignable_hotkey_actions() -> Result<(), Box<dyn std::error::Error>>
 {
     use crate::play::UtilityAction::{ShowPrey, ToggleSkillsWidget, ToggleVipWidget};
-    let bindings = crate::play::preference_bindings()?;
-    for (id, chord) in [
-        ("0140-prey-open", "CTRL+P"),
-        ("0043-vip-open", "CTRL+V"),
-        ("0274-loyalty-skills-open", "CTRL+K"),
-    ] {
-        let binding = bindings.iter().find(|b| b.id == id).ok_or("binding")?;
-        assert_eq!(binding.default_chord, chord, "{id}");
-    }
     let (link, mut commands, _outbox) = play_channel();
     let play = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
     let mut settings = bare();
@@ -467,5 +457,184 @@ fn n021_prey_vip_and_skills_are_assignable_hotkey_actions() -> Result<(), Box<dy
     assert!(lock(&link.mailbox).loyalty_skills.open);
     assert!(fire(64));
     assert!(!lock(&link.mailbox).loyalty_skills.open);
+    Ok(())
+}
+
+/// The installed Tibia Global client options (%LOCALAPPDATA%/Tibia/packages/Tibia/conf/
+/// clientoptions.json, every hotkey set, chat on and chat off) bind Ctrl+Y to ShowPrey, Ctrl+P to
+/// ToggleVipWidget, Alt+S to ToggleSkillsWidget and Ctrl+K to ShowOptionsHotkeys; they bind
+/// nothing to Ctrl+V and give the boss slots no chord.
+#[test]
+fn global_default_chords_for_prey_vip_skills_and_hotkey_options()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::{
+        ShowOptionsHotkeys, ShowPrey, ToggleSkillsWidget, ToggleVipWidget,
+    };
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    let defaults = crate::play::default_custom_hotkeys();
+    for (chord, action) in [
+        ("CTRL+Y", ShowPrey),
+        ("CTRL+P", ToggleVipWidget),
+        ("ALT+S", ToggleSkillsWidget),
+        ("CTRL+K", ShowOptionsHotkeys),
+    ] {
+        assert_eq!(
+            defaults.get(chord),
+            Some(&CustomAction::Utility { action }),
+            "{chord}"
+        );
+    }
+    assert!(!defaults.contains_key("CTRL+V"));
+    let bindings = crate::play::preference_bindings()?;
+    for id in [
+        "0043-vip-open",
+        "0140-prey-open",
+        "0225-boss-difficulty-open",
+        "0274-loyalty-skills-open",
+    ] {
+        let binding = bindings.iter().find(|b| b.id == id).ok_or("binding")?;
+        assert_eq!(binding.default_chord, "", "{id}");
+    }
+
+    let (link, mut commands, _outbox) = play_channel();
+    lock(&link.mailbox).prey.selected = true;
+    lock(&link.mailbox).vip.selected = true;
+    let mut settings = bare();
+    let mut fire = |code: u16, modifier: Modifier| {
+        let mut event = NormalizedInputEvent::Key {
+            code: KeyCode::new(code).unwrap_or_else(|_| unreachable!("a fixed key code")),
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(modifier),
+            repeat: false,
+        };
+        let (routed, _) = settings.input(std::slice::from_ref(&event));
+        let actions = settings.take_custom_actions();
+        if let NormalizedInputEvent::Key { state, .. } = &mut event {
+            *state = ButtonState::Released;
+        }
+        let _ = settings.input(&[event]);
+        let ran = actions.iter().all(|action| match action {
+            CustomAction::Utility { action } => settings.run_utility(&link, *action),
+            _ => false,
+        });
+        (routed, actions, ran)
+    };
+    // Y, P, S, K and V are key codes 28, 19, 22, 14 and 25.
+    let (routed, actions, ran) = fire(28, Modifier::Control);
+    assert_eq!(actions, vec![CustomAction::Utility { action: ShowPrey }]);
+    assert!(ran && lock(&link.mailbox).prey.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Prey(_)));
+    assert!(!link.boss_difficulty_input(&routed));
+    assert!(!lock(&link.mailbox).boss_difficulty.open);
+    let (_, actions, ran) = fire(19, Modifier::Control);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleVipWidget
+        }]
+    );
+    assert!(ran && lock(&link.mailbox).vip.open);
+    let (_, actions, ran) = fire(22, Modifier::Alt);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleSkillsWidget
+        }]
+    );
+    assert!(ran && lock(&link.mailbox).loyalty_skills.open);
+    let (_, actions, _) = fire(14, Modifier::Control);
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ShowOptionsHotkeys
+        }]
+    );
+    lock(&link.mailbox).vip.open = false;
+    let (routed, actions, _) = fire(25, Modifier::Control);
+    assert!(actions.is_empty());
+    assert!(!link.vip_input(&routed));
+    assert!(!lock(&link.mailbox).vip.open);
+    Ok(())
+}
+
+/// Tibia Global's ToggleManualSortMode (docs/reference/tibia-manual/controls.md:79; Shift+S in
+/// every hotkey set of the installed Global client options): the hotkey toggles the session's
+/// mode, and while it is on a drop on a container slot sends that slot (capability 510).
+#[test]
+fn shift_s_toggles_manual_sort_mode_and_a_container_drop_sends_its_slot()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::ToggleManualSortMode;
+    use oteryn_client_ui::inventory::movement::DragItem;
+    use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
+    use oteryn_session::ItemMoveDestination;
+    assert_eq!(
+        crate::play::default_custom_hotkeys().get("SHIFT+S"),
+        Some(&CustomAction::Utility {
+            action: ToggleManualSortMode
+        })
+    );
+    for selected in [false, true] {
+        let (link, mut commands, outbox) = play_channel();
+        outbox.inventory_initialize(None, false);
+        outbox.container_manual_sort_initialize(selected);
+        let mut settings = bare();
+        let mut shift_s = || {
+            let mut event = NormalizedInputEvent::Key {
+                code: KeyCode::new(22).unwrap_or_else(|_| unreachable!("a fixed key code")),
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::one(Modifier::Shift),
+                repeat: false,
+            };
+            let _ = settings.input(std::slice::from_ref(&event));
+            let actions = settings.take_custom_actions();
+            if let NormalizedInputEvent::Key { state, .. } = &mut event {
+                *state = ButtonState::Released;
+            }
+            let _ = settings.input(&[event]);
+            assert_eq!(
+                actions,
+                vec![CustomAction::Utility {
+                    action: ToggleManualSortMode
+                }]
+            );
+            settings.run_utility(&link, ToggleManualSortMode)
+        };
+        let drop = |commands: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>| {
+            assert!(link.item_drag_begin(DragItem {
+                equipped: false,
+                handle: 5.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                count: 1,
+            }));
+            link.item_drag_drop(Some(ItemMoveDestination::Container(
+                9.try_into().unwrap_or_else(|_| unreachable!("non-zero")),
+                Some(2),
+            )));
+            match commands.try_recv() {
+                Ok(PlayCommand::MoveItem(request)) => Some(request.destination),
+                _ => None,
+            }
+        };
+        let container = 9.try_into()?;
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected, "510 negotiated: {selected}");
+        assert_eq!(link.container_manual_sort_active(), selected);
+        let slot = selected.then_some(2);
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, slot))
+        );
+        lock(&link.mailbox).item_movement.pending = false;
+        assert_eq!(shift_s(), selected);
+        assert!(!link.container_manual_sort_active());
+        assert_eq!(
+            drop(&mut commands),
+            Some(ItemMoveDestination::Container(container, None))
+        );
+    }
     Ok(())
 }

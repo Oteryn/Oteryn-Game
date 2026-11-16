@@ -343,7 +343,7 @@ fn vip_native_checkbox_uses_typed_value_change_and_missing_edit_metadata_is_not_
 }
 
 #[test]
-fn vip_default_hidden_sidebar_is_reachable_through_real_host_ctrl_v_and_region_projection()
+fn vip_default_hidden_sidebar_is_reachable_through_real_host_ctrl_p_and_region_projection()
 -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let (mut app, mut commands, outbox) = super::super::tests::app()?;
@@ -377,9 +377,10 @@ fn vip_default_hidden_sidebar_is_reachable_through_real_host_ctrl_v_and_region_p
             .link
             .vip_is_open()
     );
+    // Global's ToggleVipWidget chord is Ctrl+P.
     app.world_mut().non_send_mut::<HostOwner>().route_input(
         &[NormalizedInputEvent::Key {
-            code: KeyCode::new(25)?,
+            code: KeyCode::new(19)?,
             state: ButtonState::Pressed,
             modifiers: Modifiers::one(Modifier::Control),
             repeat: false,

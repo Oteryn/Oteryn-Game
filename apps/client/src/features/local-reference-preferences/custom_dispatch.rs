@@ -141,9 +141,12 @@ impl PlayLink {
                 let open = std::mem::take(&mut lock(&self.mailbox).loyalty_skills.open);
                 open || self.activate_shortcut("skills")
             }
+            UtilityAction::ToggleManualSortMode => self.toggle_container_manual_sort(),
+            // Preference and options-window actions belong to the settings owner.
             UtilityAction::ToggleCreatureHuds
             | UtilityAction::ToggleFpsLagIndicator
-            | UtilityAction::NextHotkeyPreset => false,
+            | UtilityAction::NextHotkeyPreset
+            | UtilityAction::ShowOptionsHotkeys => false,
         }
     }
 

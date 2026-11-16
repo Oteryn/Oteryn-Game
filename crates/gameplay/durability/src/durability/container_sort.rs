@@ -230,11 +230,34 @@ async fn reorder<C: ContainerSortContent>(
         }
     }
     let permutation = permutation(&entries, target, request);
+    commit_permutation(
+        tx,
+        fence,
+        command,
+        content.loop_content_digest(),
+        world,
+        intent,
+        &permutation,
+    )
+    .await
+}
+
+/// The receipt first (its triggers prove the current and the successor ordinals), then the
+/// ordinal-only UPDATE under the deferred uniqueness constraints.
+async fn commit_permutation(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content_digest: [u8; 32],
+    world: WorldId,
+    intent: &[u8],
+    permutation: &serde_json::Value,
+) -> LoopResult<()> {
     sqlx::query("INSERT INTO game_item_container_sort_receipts(game_session_id,command_id,character_id,world_id,connection_generation,lease_generation,scope_generation,content_digest,intent,permutation) VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,$8,$9,$10)")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice())
         .bind(fence.connection_generation.get().to_string()).bind(fence.character_lease_generation.to_string()).bind(fence.scope_ownership_generation.get().to_string())
-        .bind(content.loop_content_digest().as_slice()).bind(intent).bind(&permutation).execute(&mut **tx).await?;
+        .bind(content_digest.as_slice()).bind(intent).bind(permutation).execute(&mut **tx).await?;
     sqlx::query("SET CONSTRAINTS game_item_container_entries_sort_ordinals,game_item_nested_entries_sort_ordinals DEFERRED").execute(&mut **tx).await?;
     for table in ["game_item_container_entries", "game_item_nested_entries"] {
         let nested = table == "game_item_nested_entries";
@@ -242,12 +265,151 @@ async fn reorder<C: ContainerSortContent>(
             "UPDATE {table} e SET placement_ordinal=(x->>'after')::numeric FROM jsonb_array_elements($1::jsonb) x WHERE e.item_instance_id=(x->>'item')::uuid AND (x->>'nested')::boolean=$2 AND e.placement_ordinal<>(x->>'after')::numeric"
         );
         sqlx::query(sqlx::AssertSqlSafe(sql.as_str()))
-            .bind(&permutation)
+            .bind(permutation)
             .bind(nested)
             .execute(&mut **tx)
             .await?;
     }
     Ok(())
+}
+
+/// CONTAINER-MANUAL-SORT-1 (capability 510): the entry this move transaction placed first in
+/// `parent` takes `slot` of the view order (newest first) and the entries before that slot move
+/// up one. A slot past the last entry is last. A merge placed no entry, so nothing changes. The
+/// rotation keeps the parent's ordinals and is admitted by a sort receipt under the move's
+/// CommandRef, exactly as a container sort is.
+pub(super) async fn place_at_slot(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content_digest: [u8; 32],
+    parent: [u8; 16],
+    transaction: [u8; 16],
+    slot: u32,
+) -> LoopResult<()> {
+    // A carried tree holds at most ITEM_LOOP_TREE_ITEMS_MAX (500) items, the receipt's limit.
+    let wanted = i64::from(slot).min(ITEM_LOOP_TREE_ITEMS_MAX - 1) + 1;
+    let rows = sqlx::query(
+        "SELECT item_instance_id::text, placement_ordinal::text, placed_transaction_id::text, nested FROM ( \
+           SELECT item_instance_id,placement_ordinal,placed_transaction_id,false AS nested FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+           UNION ALL SELECT item_instance_id,placement_ordinal,placed_transaction_id,true FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid \
+         ) e ORDER BY placement_ordinal DESC LIMIT $2",
+    )
+    .bind(parent.as_slice())
+    .bind(wanted)
+    .fetch_all(&mut **tx)
+    .await?;
+    let Some(first) = rows.first() else {
+        return Ok(());
+    };
+    if uuid_text(first.try_get("placed_transaction_id")?)? != transaction || rows.len() < 2 {
+        return Ok(());
+    }
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in &rows {
+        entries.push((
+            uuid_text(row.try_get("item_instance_id")?)?,
+            stored_u64(row.try_get("placement_ordinal")?)?,
+            row.try_get::<bool, _>("nested")?,
+        ));
+    }
+    // Slot k (newest first): entries 1..=k take the ordinals of 0..k, the placed entry k's.
+    let mut placed = entries.clone();
+    placed.rotate_left(1);
+    let permutation: Vec<_> = placed
+        .iter()
+        .zip(&entries)
+        .map(|((item, before, nested), (_, after, _))| {
+            json!({
+                "item": uuid_string(*item), "parent": uuid_string(parent),
+                "nested": nested, "before": before.to_string(), "after": after.to_string(),
+            })
+        })
+        .collect();
+    let permutation = json!(permutation);
+    let mut intent = parent.to_vec();
+    intent.extend(slot.to_be_bytes());
+    commit_permutation(
+        tx,
+        fence,
+        command,
+        content_digest,
+        fence.runtime_scope.world_id(),
+        &intent,
+        &permutation,
+    )
+    .await
+}
+
+/// CONTAINER-MANUAL-SORT-1 for a depot deposit: the entry this move transaction placed in the
+/// depot box (`town`, `box_number`) of the Character takes `slot` of the box's view order (newest
+/// first), as [`place_at_slot`] does in a container. Migration 2856 admits the depot permutation
+/// only with this command's own depot move receipt of the same transaction. A slot past the
+/// receipt bound (500 entries) is clamped to it.
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn place_at_depot_slot(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content_digest: [u8; 32],
+    town: u16,
+    box_number: u8,
+    transaction: [u8; 16],
+    slot: u32,
+) -> LoopResult<()> {
+    let wanted = i64::from(slot).min(ITEM_LOOP_TREE_ITEMS_MAX - 1) + 1;
+    let rows = sqlx::query(
+        "SELECT d.item_instance_id::text, d.ordinal::text, \
+                (i.last_transaction_id=encode($4,'hex')::uuid OR i.minted_transaction_id=encode($4,'hex')::uuid) AS placed \
+           FROM game_item_character_depot_locations d JOIN game_item_instances i USING(item_instance_id,world_id) \
+          WHERE d.character_id=encode($1,'hex')::uuid AND d.town_id=$2 AND d.box_number=$3 \
+          ORDER BY d.ordinal DESC LIMIT $5",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(i32::from(town))
+    .bind(i16::from(box_number))
+    .bind(transaction.as_slice())
+    .bind(wanted)
+    .fetch_all(&mut **tx)
+    .await?;
+    let Some(first) = rows.first() else {
+        return Ok(());
+    };
+    if !first.try_get::<Option<bool>, _>("placed")?.unwrap_or(false) || rows.len() < 2 {
+        return Ok(());
+    }
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in &rows {
+        entries.push((
+            uuid_text(row.try_get("item_instance_id")?)?,
+            stored_u64(row.try_get("ordinal")?)?,
+        ));
+    }
+    let mut placed = entries.clone();
+    placed.rotate_left(1);
+    let depot = json!({"town": town, "box": box_number});
+    let permutation: Vec<_> = placed
+        .iter()
+        .zip(&entries)
+        .map(|((item, before), (_, after))| {
+            json!({
+                "item": uuid_string(*item), "depot": depot,
+                "before": before.to_string(), "after": after.to_string(),
+            })
+        })
+        .collect();
+    let mut intent = entries[0].0.to_vec();
+    intent.extend(slot.to_be_bytes());
+    commit_permutation(
+        tx,
+        fence,
+        command,
+        content_digest,
+        fence.runtime_scope.world_id(),
+        &intent,
+        &json!(permutation),
+    )
+    .await
 }
 
 fn request_intent(target: [u8; 16], request: Request) -> Vec<u8> {

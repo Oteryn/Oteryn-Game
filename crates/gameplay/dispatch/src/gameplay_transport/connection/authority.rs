@@ -936,6 +936,24 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Capability 510: a deposit naming its box slot. An owner without slot placement answers
+    /// only an unslotted request.
+    fn depot_at(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::depot::DepotIntent,
+        slot: Option<u32>,
+        item: Option<ItemKey>,
+    ) -> impl Future<Output = Option<DepotObservation>> {
+        async move {
+            if slot.is_some() {
+                return None;
+            }
+            self.depot(actor, command, intent, item).await
+        }
+    }
+
     /// ITEM-LOOP-1 replay: the item loop receipt of this command 9's CommandRef, read after the
     /// equipment replay and before its handle is resolved. `None` when it cannot be read: the
     /// connection ends before the CommandId is sequenced.

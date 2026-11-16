@@ -62,6 +62,7 @@ impl PreferenceStore {
                 let _ = preferences.assign_custom_hotkey(&chord, action);
             }
         }
+        preferences.upgrade_schema();
         preferences.validate().map_err(io::Error::other)?;
         preferences.reconcile_controls(None);
         Ok(preferences)
@@ -274,8 +275,93 @@ mod legacy_chords {
             let loaded = loaded?;
             assert!(!loaded.custom_hotkeys.contains_key(chord));
             assert_eq!(serde_json::to_value(&loaded)?[field], value);
-            assert_eq!(loaded.custom_hotkeys.len(), 6);
+            assert_eq!(loaded.custom_hotkeys.len(), 11);
         }
+        Ok(())
+    }
+
+    /// A profile saved before the Global Prey/VIP/skills/options/server-messages/manual-sort
+    /// defaults gains each of those chords once, unless the player already uses the chord.
+    #[test]
+    fn saved_custom_profiles_gain_unused_global_chords_once_without_overriding_the_player()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use super::super::{CustomAction, UtilityAction};
+        let text = |text: &str| CustomAction::Text {
+            text: text.into(),
+            send: false,
+        };
+        let utility = |action| CustomAction::Utility { action };
+        let path = std::env::current_dir()?
+            .join(format!("global-chords-upgrade-{}.json", std::process::id()));
+        let mut doc = serde_json::to_value(ReferencePreferences::default())?;
+        let fields = doc.as_object_mut().ok_or("object")?;
+        fields.remove("schema_version");
+        fields.insert(
+            "custom_hotkeys".into(),
+            serde_json::json!({
+                "CTRL+Y": {"kind": "text", "text": "hi", "send": false},
+                "F5": {"kind": "utility", "action": "show_prey"},
+            }),
+        );
+        fields.insert(
+            "keybindings".into(),
+            serde_json::json!({"0009-highscores-open": "CTRL+K"}),
+        );
+        fields.insert("hotkey_profiles".into(), serde_json::json!({"Knight": {}}));
+        fields.insert(
+            "custom_hotkey_profiles".into(),
+            serde_json::json!({"Knight": {"CTRL+P": {"kind": "text", "text": "exura", "send": true}}}),
+        );
+        std::fs::write(&path, serde_json::to_vec(&doc)?)?;
+        let mut store = PreferenceStore::load(path.clone());
+        let loaded = store
+            .as_ref()
+            .map(|store| store.preferences().clone())
+            .map_err(|error| error.to_string());
+        let upgraded = loaded.clone()?;
+        let hotkeys = &upgraded.custom_hotkeys;
+        assert_eq!(hotkeys.get("CTRL+Y"), Some(&text("hi")));
+        assert_eq!(hotkeys.get("F5"), Some(&utility(UtilityAction::ShowPrey)));
+        assert!(!hotkeys.contains_key("CTRL+K"));
+        for (chord, action) in [
+            ("CTRL+M", UtilityAction::ToggleServerMessages),
+            ("CTRL+P", UtilityAction::ToggleVipWidget),
+            ("ALT+S", UtilityAction::ToggleSkillsWidget),
+            ("SHIFT+S", UtilityAction::ToggleManualSortMode),
+        ] {
+            assert_eq!(hotkeys.get(chord), Some(&utility(action)), "{chord}");
+        }
+        assert_eq!(hotkeys.len(), 6);
+        let knight = upgraded
+            .custom_hotkey_profiles
+            .get("Knight")
+            .ok_or("Knight profile")?;
+        assert_eq!(
+            knight.get("CTRL+P"),
+            Some(&CustomAction::Text {
+                text: "exura".into(),
+                send: true
+            })
+        );
+        for (chord, action) in [
+            ("CTRL+M", UtilityAction::ToggleServerMessages),
+            ("CTRL+Y", UtilityAction::ShowPrey),
+            ("ALT+S", UtilityAction::ToggleSkillsWidget),
+            ("CTRL+K", UtilityAction::ShowOptionsHotkeys),
+            ("SHIFT+S", UtilityAction::ToggleManualSortMode),
+        ] {
+            assert_eq!(knight.get(chord), Some(&utility(action)), "Knight {chord}");
+        }
+        // The upgrade runs once: a chord the player removes afterwards stays removed.
+        let mut edited = upgraded;
+        edited.custom_hotkeys.remove("CTRL+P");
+        let saved = store.as_mut().map(|store| store.apply(edited));
+        let reloaded = PreferenceStore::load(path.clone()).map(|store| store.preferences().clone());
+        std::fs::remove_file(&path)?;
+        saved.map_err(|error| error.to_string())??;
+        let reloaded = reloaded?;
+        assert!(!reloaded.custom_hotkeys.contains_key("CTRL+P"));
+        assert_eq!(reloaded.custom_hotkeys.len(), 5);
         Ok(())
     }
 }

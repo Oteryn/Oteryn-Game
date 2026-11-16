@@ -14,7 +14,14 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     item_view: &mut Option<SessionItemView>,
 ) -> Option<Dispatch> {
     Some({
-        if let Ok(intent) = oteryn_protocol_oteryn::depot::decode_depot_intent(command.payload) {
+        // Capability 510 admits a deposit's box slot (Manual Sort Mode).
+        let manual_sort = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_CONTAINER_MANUAL_SORT_V1);
+        if let Ok((intent, slot)) =
+            oteryn_protocol_oteryn::depot::decode_depot_intent_at(command.payload, manual_sort)
+        {
             let item = match intent.action {
                 oteryn_protocol_oteryn::depot::DepotAction::Deposit(handle) => {
                     item_view.as_ref().and_then(|view| view.resolve(handle))
@@ -28,7 +35,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 view.depot_items.clear();
             }
             let observation = authority
-                .depot(
+                .depot_at(
                     actor,
                     UseCommand {
                         game_session_id: admitted.game_session_id,
@@ -36,6 +43,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                         item_fence: admitted.item_fence,
                     },
                     intent,
+                    slot,
                     item,
                 )
                 .await?;

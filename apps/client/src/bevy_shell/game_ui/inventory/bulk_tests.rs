@@ -102,7 +102,7 @@ fn container_header_and_destination_choice_dispatch_ordered_real_handles_once() 
     assert_eq!(requests.len(), 2);
     assert_eq!(requests[0].source, 11.try_into()?);
     assert_eq!(requests[1].source, 12.try_into()?);
-    let destination = ItemMoveDestination::Container(20.try_into()?);
+    let destination = ItemMoveDestination::Container(20.try_into()?, None);
     assert!(
         requests
             .iter()

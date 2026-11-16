@@ -65,6 +65,8 @@ pub(super) struct HostOwner {
     selector: crate::character_selection::CharacterSelector,
     pub(super) services: super::account_services::Services,
     pub(super) dialogs: super::gameplay_dialogs::Dialogs,
+    /// Counts ShowOptionsHotkeys requests; the options window turns to its hotkey page on a new one.
+    pub(super) hotkey_options: u64,
 }
 impl HostOwner {
     pub fn new(path: Option<PathBuf>) -> Result<Self, Box<dyn std::error::Error>> {
@@ -89,6 +91,7 @@ impl HostOwner {
             selector,
             services: super::account_services::Services::new(),
             dialogs: Default::default(),
+            hotkey_options: 0,
         })
     }
     pub fn accepted(&self) -> GraphicsDraft {
@@ -113,6 +116,13 @@ impl HostOwner {
             scope: self.scope,
             values: self.settings.preferences.clone(),
         });
+    }
+    /// Global's ShowOptionsHotkeys: the options window, opened on its hotkey page.
+    pub fn show_hotkey_options(&mut self) {
+        self.open_graphics();
+        if self.draft.is_some() {
+            self.hotkey_options += 1;
+        }
     }
     pub fn edit(&mut self, edit: impl FnOnce(&mut GraphicsDraft)) {
         let Some(mut graphics) = self.preferences_draft().map(GraphicsDraft::from) else {
