@@ -132,6 +132,15 @@ impl PlayLink {
                 self.open_chat();
                 true
             }
+            UtilityAction::ShowPrey => self.activate_shortcut("prey"),
+            UtilityAction::ToggleVipWidget => {
+                let open = std::mem::take(&mut lock(&self.mailbox).vip.open);
+                open || self.activate_shortcut("vip")
+            }
+            UtilityAction::ToggleSkillsWidget => {
+                let open = std::mem::take(&mut lock(&self.mailbox).loyalty_skills.open);
+                open || self.activate_shortcut("skills")
+            }
             UtilityAction::ToggleCreatureHuds
             | UtilityAction::ToggleFpsLagIndicator
             | UtilityAction::NextHotkeyPreset => false,

@@ -373,3 +373,99 @@ fn server_message_utility_preserves_player_lines_across_console_tabs() {
         }
     }
 }
+
+/// Tibia Global binds Ctrl+M to ToggleShowServermessagesInCurrentChannel
+/// (docs/reference/tibia-manual/controls.md:93, and the Global client options file) and opens the
+/// Market only from the depot locker (docs/reference/tibia-manual/controls_trading.md:29).
+#[test]
+fn global_ctrl_m_toggles_server_messages_and_the_market_has_no_default_chord()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::UtilityAction::ToggleServerMessages;
+    assert_eq!(
+        crate::play::default_custom_hotkeys().get("CTRL+M"),
+        Some(&CustomAction::Utility {
+            action: ToggleServerMessages
+        })
+    );
+    let bindings = crate::play::preference_bindings()?;
+    let market = bindings
+        .iter()
+        .find(|b| b.id == "0063-market-open")
+        .ok_or("market binding")?;
+    assert_eq!(market.default_chord, "");
+    // The player can still give the Market a free chord.
+    ReferencePreferences::default().rebind("0063-market-open", "CTRL+SHIFT+F9")?;
+
+    let (link, _commands, _outbox) = play_channel();
+    let play = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    let mut settings = bare();
+    let (routed, _) = settings.input(&[press(16, false, true)]);
+    let actions = settings.take_custom_actions();
+    assert_eq!(
+        actions,
+        vec![CustomAction::Utility {
+            action: ToggleServerMessages
+        }]
+    );
+    assert!(!link.market_input(&routed));
+    let shown = lock(&link.mailbox).chat.console.show_server_messages;
+    assert!(link.custom_hotkey_action(&play, &actions[0]));
+    assert_eq!(lock(&link.mailbox).chat.console.show_server_messages, !shown);
+    assert!(!link.market_panel().open);
+    Ok(())
+}
+
+/// Global's hotkey manager offers ShowPrey, ToggleVipWidget and ToggleSkillsWidget as actions;
+/// the feature chords stay their defaults.
+#[test]
+fn n021_prey_vip_and_skills_are_assignable_hotkey_actions() -> Result<(), Box<dyn std::error::Error>>
+{
+    use crate::play::UtilityAction::{ShowPrey, ToggleSkillsWidget, ToggleVipWidget};
+    let bindings = crate::play::preference_bindings()?;
+    for (id, chord) in [
+        ("0140-prey-open", "CTRL+P"),
+        ("0043-vip-open", "CTRL+V"),
+        ("0274-loyalty-skills-open", "CTRL+K"),
+    ] {
+        let binding = bindings.iter().find(|b| b.id == id).ok_or("binding")?;
+        assert_eq!(binding.default_chord, chord, "{id}");
+    }
+    let (link, mut commands, _outbox) = play_channel();
+    let play = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(0, 0), 7, &[])?;
+    let mut settings = bare();
+    let mut preferences = settings.preferences.clone();
+    for (chord, action) in [
+        ("CTRL+SHIFT+F5", ShowPrey),
+        ("CTRL+SHIFT+F6", ToggleVipWidget),
+        ("CTRL+SHIFT+F7", ToggleSkillsWidget),
+    ] {
+        preferences.assign_custom_hotkey(chord, CustomAction::Utility { action })?;
+    }
+    settings.apply(preferences);
+    lock(&link.mailbox).prey.selected = true;
+    lock(&link.mailbox).vip.selected = true;
+    let mut fire = |code: u16| {
+        let mut event = press(code, true, true);
+        let _ = settings.input(std::slice::from_ref(&event));
+        let actions = settings.take_custom_actions();
+        if let oteryn_input_actions::NormalizedInputEvent::Key { state, .. } = &mut event {
+            *state = oteryn_input_actions::ButtonState::Released;
+        }
+        let _ = settings.input(&[event]);
+        actions.len() == 1 && link.custom_hotkey_action(&play, &actions[0])
+    };
+    // F5..F7 are key codes 62..64.
+    assert!(fire(62));
+    assert!(lock(&link.mailbox).prey.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Prey(_)));
+    assert!(fire(63));
+    assert!(lock(&link.mailbox).vip.open);
+    assert!(matches!(commands.try_recv()?, PlayCommand::Vip(_)));
+    assert!(fire(63));
+    assert!(!lock(&link.mailbox).vip.open);
+    assert!(fire(64));
+    assert!(lock(&link.mailbox).loyalty_skills.open);
+    assert!(fire(64));
+    assert!(!lock(&link.mailbox).loyalty_skills.open);
+    Ok(())
+}

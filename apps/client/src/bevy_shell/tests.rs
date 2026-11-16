@@ -3,34 +3,54 @@ use std::sync::atomic::{AtomicU64, Ordering};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
+/// Tibia Global binds Ctrl+M to ToggleShowServermessagesInCurrentChannel
+/// (docs/reference/tibia-manual/controls.md:93); the Market opens from the depot locker.
 #[test]
-fn market_shortcut_opens_the_portable_owner_only_outside_blocked_input() -> TestResult {
+fn ctrl_m_toggles_server_messages_only_outside_blocked_input() -> TestResult {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
     let mut host = HostOwner::new(None)?;
     let (view, link) = admitted_view([9; 16])?;
     host.install_play(view, link);
-    let shortcut = NormalizedInputEvent::Key {
+    let mut shortcut = NormalizedInputEvent::Key {
         code: KeyCode::new(16)?,
         state: ButtonState::Pressed,
         modifiers: Modifiers::one(Modifier::Control),
         repeat: false,
     };
-    let is_open = |host: &HostOwner| {
+    let shown = |host: &HostOwner| {
+        host.play
+            .as_ref()
+            .is_some_and(|play| play.link.chat_panel().console.show_server_messages)
+    };
+    let market_open = |host: &HostOwner| {
         host.play
             .as_ref()
             .is_some_and(|play| play.link.market_panel().open)
     };
-    host.route_input(std::slice::from_ref(&shortcut), true);
-    assert!(!is_open(&host));
+    let mut press = |host: &mut HostOwner, blocked: bool| {
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Pressed;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+        if let NormalizedInputEvent::Key { state, .. } = &mut shortcut {
+            *state = ButtonState::Released;
+        }
+        host.route_input(std::slice::from_ref(&shortcut), blocked);
+    };
+    let before = shown(&host);
+    press(&mut host, true);
+    assert_eq!(shown(&host), before);
     host.open_graphics();
-    host.route_input(std::slice::from_ref(&shortcut), false);
-    assert!(!is_open(&host));
+    press(&mut host, false);
+    assert_eq!(shown(&host), before);
     host.cancel();
-    host.route_input(std::slice::from_ref(&shortcut), false);
-    assert!(
-        is_open(&host),
-        "Ctrl+M must reach the portable Market owner"
+    press(&mut host, false);
+    assert_eq!(
+        shown(&host),
+        !before,
+        "Ctrl+M must toggle the server messages"
     );
+    assert!(!market_open(&host), "Global has no Market chord");
     Ok(())
 }
 

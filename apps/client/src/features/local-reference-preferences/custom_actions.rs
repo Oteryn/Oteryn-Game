@@ -94,14 +94,16 @@ impl ReferencePreferences {
 }
 
 /// The chat and help chords of Tibia Global, bound on a fresh profile. The features that held
-/// Ctrl+E, Ctrl+O, Ctrl+T and Ctrl+H before have no default key now; Global gives them none.
+/// Ctrl+E, Ctrl+O, Ctrl+T, Ctrl+H and Ctrl+M before have no default key now; Global gives them
+/// none.
 pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomAction> {
     use super::UtilityAction::{
         CloseCurrentChannel, NextChannel, OpenChannelList, OpenHelpChannel, PreviousChannel,
-        ToggleLensHelp,
+        ToggleLensHelp, ToggleServerMessages,
     };
     [
         ("CTRL+E", CloseCurrentChannel),
+        ("CTRL+M", ToggleServerMessages),
         ("TAB", NextChannel),
         ("SHIFT+TAB", PreviousChannel),
         ("CTRL+O", OpenChannelList),

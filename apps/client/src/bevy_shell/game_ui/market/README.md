@@ -1,7 +1,8 @@
 # Market visual parity
 
-The Market toolbar button / Ctrl+M opens this presenter. Selecting a catalogue
-ware requests its offer book and completed-trade statistics through command 6126.
+The Market toolbar button or the depot opens this presenter (Global gives it no
+chord). Selecting a catalogue ware requests its offer book and completed-trade
+statistics through command 6126.
 The price-range chart compares buy and sell offers on one zero-based gold axis;
 colored lines show minimum–maximum and white markers show the unit average.
 The existing exact text statistics remain available. Empty sides have no line.

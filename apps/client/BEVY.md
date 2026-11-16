@@ -145,7 +145,8 @@ With no text field focused, the existing gameplay shortcuts open:
   85/731 do not carry these fields. Artwork and shrine-driven opening remain absent.
 - **Ctrl+D:** Daily Reward wall, free/premium catalogue, streak and account/World
   history. Collect uses the server-confirmed shrine availability.
-- **Ctrl+M:** Market catalogue, named wares, offer books and statistics, My Offers
+- **Market** (toolbar button or depot; no default chord, Ctrl+M toggles server messages as in
+  Global): Market catalogue, named wares, offer books and statistics, My Offers
   and Offer History. Create buy/sell offers, cancel selected own offers, and accept
   buy/sell offers through the existing server intents. Accept quantities clamp to
   the remaining offer amount and, for buy offers, the item's known depot stock.

@@ -98,6 +98,8 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
         let mut owner = app.world_mut().non_send_mut::<HostOwner>();
         let mut preferences = owner.settings.preferences.clone();
         preferences.toolbar_order = Some(Vec::new());
+        // Global gives the Market no chord; a player-bound one stays on the input path.
+        preferences.rebind("0063-market-open", "CTRL+SHIFT+F9")?;
         owner.settings.apply(preferences);
     }
     app.update();
@@ -117,12 +119,12 @@ fn manage_buttons_persists_visibility_order_and_restores_defaults() -> TestResul
             assert_eq!(node.display, Display::None);
         }
     }
-    // Hiding the Market button leaves Ctrl+M on the production input path.
+    // Hiding the Market button leaves the player's Market chord on the production input path.
     use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
     let event = NormalizedInputEvent::Key {
-        code: oteryn_input_actions::KeyCode::new(16)?,
+        code: oteryn_input_actions::KeyCode::new(66)?,
         state: ButtonState::Pressed,
-        modifiers: Modifiers::one(Modifier::Control),
+        modifiers: Modifiers::one(Modifier::Control).with(Modifier::Shift),
         repeat: false,
     };
     let mut owner = app.world_mut().non_send_mut::<HostOwner>();
