@@ -78,6 +78,7 @@ pub(super) fn words(
     batch: &mut SpriteBatch,
     view: &TileView,
     atlas: &AtlasImage,
+    font: Option<&GameFont>,
     position: ActorPosition,
     text: &str,
     progress: f32,
@@ -87,7 +88,12 @@ pub(super) fn words(
         return Ok(());
     }
     let [left, top] = view.tile_to_screen(tile);
-    let text: Vec<_> = text.chars().take(64).collect();
+    if let Some(font) = font {
+        let at = [left + view.tile_px() as f32 / 2.0, top - 12.0 - progress * 20.0];
+        return game_text(batch, view, atlas, font, text, at, rgb(PresentationColor::Orange));
+    }
+    // Tibia does not cap spell words; the catalogue wire bounds them.
+    let text: Vec<_> = text.chars().collect();
     for (index, character) in text.iter().enumerate() {
         let glyph = oteryn_renderer::name_text::glyph_rgba(*character);
         for y in 0..7usize {
@@ -136,7 +142,7 @@ impl PlayView {
                     .find(|entry| entry.cast_index == spell)
             {
                 self.spell_words
-                    .insert(spell, entry.words.chars().take(64).collect());
+                    .insert(spell, entry.words.clone());
             }
         }
     }

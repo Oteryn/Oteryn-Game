@@ -14,6 +14,8 @@ struct Assets {
 #[derive(Clone, Default)]
 pub(super) struct PresentationCache {
     assets: Option<Arc<Mutex<Assets>>>,
+    graphics: Option<Arc<TibiaGraphics>>,
+    icon_cells: Option<HudIconCells>,
     attempted: bool,
     pixels: Vec<u8>,
     glyphs: BTreeMap<(char, [u8; 3]), u16>,
@@ -27,6 +29,9 @@ pub(super) struct PresentationCache {
     items: BTreeMap<(u16, u32, u32), Vec<Draw>>,
     #[cfg(test)]
     counts: [usize; 3], // asset loads, base unpacks, atlas packs
+    /// Generated bundles carry their own entry pins.
+    #[cfg(test)]
+    pub(crate) graphics_pins: Option<oteryn_client_assets::tibia_graphics::GraphicsPins>,
 }
 
 impl std::fmt::Debug for PresentationCache {
@@ -46,6 +51,7 @@ impl PresentationCache {
         self.outfits.clear();
         self.outfit_free.clear();
         self.visuals.clear();
+        self.icon_cells = None;
         #[cfg(feature = "bevy-shell")]
         self.items.clear();
         self.image = None;
@@ -62,6 +68,15 @@ impl PresentationCache {
         }
         if !self.attempted {
             self.attempted = true;
+            #[cfg(not(test))]
+            let pins = oteryn_client_assets::tibia_graphics::GraphicsPins::default();
+            #[cfg(test)]
+            let pins = self.graphics_pins.clone().unwrap_or_default();
+            self.graphics = root.as_ref().and_then(|root| {
+                TibiaGraphics::load_pinned(&root.join("content/assets/files"), &pins)
+                    .ok()
+                    .map(Arc::new)
+            });
             self.assets = root.and_then(|root| {
                 #[cfg(test)]
                 {
@@ -80,6 +95,9 @@ impl PresentationCache {
                     sheets: SpriteSheets::new(store, catalog),
                 })))
             });
+        }
+        if self.icon_cells.is_none() {
+            self.icon_cells = self.append_icons();
         }
     }
 
@@ -252,7 +270,7 @@ impl PresentationCache {
         });
     }
 
-    pub(super) fn name(&mut self, name: &str, health: u8) -> Vec<u16> {
+    pub(super) fn name(&mut self, name: &str, health: u8) -> NameLabel {
         let colour = match health {
             93.. => [0, 188, 0],
             61..=92 => [80, 161, 80],
@@ -261,26 +279,36 @@ impl PresentationCache {
             4..=8 => [145, 15, 15],
             _ => [133, 12, 12],
         };
-        let mut cells = Vec::new();
+        let graphics = self.graphics.clone();
+        let mut label = NameLabel::default();
         for character in name.chars() {
+            let glyph = graphics
+                .as_deref()
+                .and_then(|graphics| graphics.font().glyph(character));
             let cell = if let Some(cell) = self.glyphs.get(&(character, colour)) {
                 *cell
             } else {
-                let mut pixels = oteryn_renderer::name_text::glyph_rgba(character);
-                for pixel in pixels.as_chunks_mut::<4>().0 {
-                    if pixel[3] == 255 {
-                        pixel[..3].copy_from_slice(&colour);
-                    }
-                }
+                let pixels = glyph.map_or_else(
+                    || {
+                        let mut pixels = oteryn_renderer::name_text::glyph_rgba(character);
+                        for pixel in pixels.as_chunks_mut::<4>().0 {
+                            if pixel[3] == 255 {
+                                pixel[..3].copy_from_slice(&colour);
+                            }
+                        }
+                        pixels
+                    },
+                    |glyph| glyph_cell(glyph, colour),
+                );
                 let Some(cell) = self.append(&pixels) else {
                     break;
                 };
                 self.glyphs.insert((character, colour), cell);
                 cell
             };
-            cells.push(cell);
+            label.push(cell, glyph);
         }
-        cells
+        label
     }
 
     pub(super) fn image(&mut self) -> Result<Arc<AtlasImage>, BatchError> {
@@ -326,6 +354,7 @@ fn unpack(atlas: &AtlasImage) -> Vec<u8> {
     cells
 }
 
+include!("cache_graphics.rs");
 include!("cache_visuals.rs");
 include!("cache_outfits.rs");
 

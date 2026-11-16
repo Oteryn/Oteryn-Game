@@ -26,6 +26,7 @@ pub(super) struct Options {
     own: Option<EntityRef>,
     scale: u16,
     age: std::time::Duration,
+    icon_cells: Option<HudIconCells>,
 }
 impl Options {
     pub(super) fn new(
@@ -34,9 +35,11 @@ impl Options {
         own: Option<EntityRef>,
         age: std::time::Duration,
         shared_frontend: bool,
+        icon_cells: Option<HudIconCells>,
     ) -> Self {
         Self {
             age,
+            icon_cells,
             pvp_frame: preferences.game_window.pvp_frame,
             loot_highlight: preferences.game_window.loot_highlight,
             health: preferences.creature_bars && !shared_frontend,
@@ -61,6 +64,7 @@ pub(super) fn draw(
 ) -> Result<Vec<std::ops::Range<usize>>, BatchError> {
     let mut fixed = Vec::new();
     let scale = f32::from(options.scale) / 100.0;
+    let icon_cells = options.icon_cells.as_ref();
     for entity in entities {
         let tile = TileCoord::new(entity.position.x, entity.position.y);
         if entity.position.floor != options.floor || !view.contains(tile) {
@@ -106,15 +110,17 @@ pub(super) fn draw(
             && Some(entity.entity) != options.own
             && let Some(icon) = icons.iter().find(|icon| icon.entity == entity.entity)
         {
-            icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+            icons::draw(batch, view, atlas, icon_cells, [x, y], icon.shield, false, options.age, scale)?;
             icons::draw(
                 batch,
                 view,
                 atlas,
+                icon_cells,
                 [x + 16.0 * scale, y],
                 icon.skull,
                 true,
                 options.age,
+                scale,
             )?;
         }
         if options.npc && entity.kind == EntityKind::Npc {
@@ -146,15 +152,17 @@ pub(super) fn draw(
         && let Some(icon) = icons.iter().find(|icon| icon.entity == own_ref)
     {
         let [x, y] = view.tile_to_screen(own);
-        icons::draw(batch, view, atlas, [x, y], icon.shield, false, options.age)?;
+        icons::draw(batch, view, atlas, icon_cells, [x, y], icon.shield, false, options.age, scale)?;
         icons::draw(
             batch,
             view,
             atlas,
+            icon_cells,
             [x + 16.0 * scale, y],
             icon.skull,
             true,
             options.age,
+            scale,
         )?;
     }
     fixed.push(start..batch.len());
@@ -178,7 +186,7 @@ mod health_tests {
                 detail: EntityDetail::Actor { direction: oteryn_session::StepDirection::South, appearance_ref: 1, health_percent: health },
             };
             let mut batch = SpriteBatch::new();
-            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false))?;
+            draw(&mut batch, &view, world.atlas(), TileCoord::new(0,0), &[entity], &[], Options::new(&preferences, 0, None, std::time::Duration::ZERO, false, None))?;
             let mut expected = SpriteBatch::new();
             super::super::pixel_rgb(&mut expected, &view, world.atlas(), [0.0;2], [1.0;2], [0;3])?;
             assert_eq!(batch.instances().first().map(|q| q.uv), expected.instances().first().map(|q| q.uv));

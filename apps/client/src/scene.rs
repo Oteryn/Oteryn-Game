@@ -73,7 +73,7 @@ pub struct Scene {
     own_draws: Option<Vec<Draw>>,
     actor_draws: Vec<ActorDraw>,
     pub(crate) floor_visuals: Vec<(i16, Vec<oteryn_renderer::QuadInstance>, u8)>,
-    names: Vec<(TileCoord, Vec<u16>)>,
+    names: Vec<(TileCoord, appearance_cache::NameLabel)>,
     name_entities: Vec<oteryn_session::EntityRef>,
     name_visibility: [bool; 3],
     name_marks: bool,
@@ -281,7 +281,7 @@ impl Scene {
         let _ = floor_quads;
         let atlas = self.atlas();
         let mut player_quads: Vec<_> = player_quads.into_iter().collect();
-        for (index, (tile, cells)) in self.names.iter().enumerate() {
+        for (index, (tile, label)) in self.names.iter().enumerate() {
             let [dx, dy] = self
                 .name_entities
                 .get(index)
@@ -290,19 +290,17 @@ impl Scene {
             let (x, y) = (x + dx, y + dy);
             let name_start = sprites.len();
             let scale = f32::from(self.label_scale) / 100.0;
-            let left =
-                (x + self.view.tile_px() as f32 / 2.0 - cells.len() as f32 * 4.0 * scale).max(0.0);
-            for (index, cell) in cells.iter().enumerate() {
-                oteryn_renderer::name_text::label_quad_scaled(
-                    &mut sprites,
-                    atlas,
-                    *cell,
-                    [
-                        left + index as f32 * 8.0 * scale,
-                        (y - 14.0 * scale).max(0.0),
-                    ],
-                    self.label_scale,
-                )?;
+            if !(1..=200).contains(&self.label_scale) {
+                return Err(BatchError::InvalidView);
+            }
+            let left = (x + self.view.tile_px() as f32 / 2.0 - label.width / 2.0 * scale).max(0.0);
+            let top = (y - 14.0 * scale).max(0.0);
+            for glyph in &label.glyphs {
+                sprites.push_quad(oteryn_renderer::QuadInstance {
+                    position: [left + glyph.at[0] * scale, top + glyph.at[1] * scale],
+                    size: glyph.size.map(|value| value * scale),
+                    uv: atlas.uv_rect(glyph.cell)?,
+                })?;
             }
             if *tile == self.own {
                 player_quads.push(name_start..sprites.len());
@@ -395,6 +393,7 @@ mod reference_hud;
 
 #[path = "features/0006-world-spatial-entities/cache.rs"]
 mod appearance_cache;
+pub(crate) use appearance_cache::HudIconCells;
 
 #[path = "features/0023-presentation/scene.rs"]
 mod visual_scene;

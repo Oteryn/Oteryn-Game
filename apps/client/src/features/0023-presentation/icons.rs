@@ -1,6 +1,7 @@
-//! Original compact glyphs for the observer-relative party and skull wire values.
-use super::{party_icon_rgb, pixel_rgb};
-use oteryn_renderer::{AtlasImage, BatchError, SpriteBatch, TileView};
+//! Tibia's flag artwork for the observer-relative party and skull wire values; original compact
+//! glyphs when the graphics bundle is absent.
+use super::{HudIconCells, party_icon_rgb, pixel_rgb};
+use oteryn_renderer::{AtlasImage, BatchError, QuadInstance, SpriteBatch, TileView};
 use std::time::Duration;
 
 const OUTLINE: [u8; 8] = [0x7e, 0x42, 0x42, 0x42, 0x42, 0x24, 0x18, 0];
@@ -9,16 +10,39 @@ const SHARED: [u8; 8] = [0x7e, 0x42, 0x5a, 0x7e, 0x5a, 0x24, 0x18, 0];
 const INACTIVE: [u8; 8] = [0x7e, 0x46, 0x4a, 0x52, 0x62, 0x24, 0x18, 0];
 const SKULL: [u8; 8] = [0x3c, 0x7e, 0xdb, 0xdb, 0xff, 0x66, 0x3c, 0x24];
 
+// The artwork route adds the cells and scale to the wire values the glyph route already takes.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn draw(
     batch: &mut SpriteBatch,
     view: &TileView,
     atlas: &AtlasImage,
+    cells: Option<&HudIconCells>,
     at: [f32; 2],
     value: u8,
     skull: bool,
     age: Duration,
+    scale: f32,
 ) -> Result<(), BatchError> {
     if value == 0 || (!skull && matches!(value, 7 | 8) && age.as_millis() / 500 % 2 == 1) {
+        return Ok(());
+    }
+    let index = usize::from(value) - 1;
+    let cell = cells.and_then(|cells| {
+        if skull {
+            cells.skulls.get(index)
+        } else {
+            cells.shields.get(index)
+        }
+    });
+    // The icon fills the top left of its cell; an atlas built before the bundle lacks it.
+    if let Some(&cell) = cell.filter(|cell| u32::from(**cell) < atlas.cell_count()) {
+        if batch.len() < oteryn_renderer::MAX_BATCH_QUADS {
+            batch.push_quad(QuadInstance {
+                position: at,
+                size: [32.0 * scale; 2],
+                uv: atlas.uv_rect(cell)?,
+            })?;
+        }
         return Ok(());
     }
     let pattern = if skull {

@@ -84,6 +84,15 @@ impl Scene {
     pub(crate) fn prime_visual_assets(&mut self, root: std::path::PathBuf) {
         self.cache.begin(self.world.atlas(), Some(root));
     }
+
+    pub(crate) fn prime_tibia_graphics(
+        &mut self,
+        root: std::path::PathBuf,
+        pins: oteryn_client_assets::tibia_graphics::GraphicsPins,
+    ) {
+        self.cache.graphics_pins = Some(pins);
+        self.cache.begin(self.world.atlas(), Some(root));
+    }
 }
 
 include!("scene_lights.rs");

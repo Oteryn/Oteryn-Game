@@ -360,3 +360,6 @@ fn ground_floor_presentation_wire_events_reach_native_scene() -> Result<(), Box<
     }
     Ok(())
 }
+
+#[path = "tibia_graphics.rs"]
+mod tibia_graphics;
