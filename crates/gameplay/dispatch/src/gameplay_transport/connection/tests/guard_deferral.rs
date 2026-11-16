@@ -98,7 +98,13 @@ fn guard_case(failure: fn() -> DurabilityError, transient: bool) -> Result<(), B
                             "busy guard must keep the command stream open"
                         );
                         assert_eq!(results[0].status, CommandStatus::Rejected);
-                        assert!(results[0].payload.is_empty());
+                        // The client's strict step decoder must accept the deferred refusal.
+                        assert_eq!(
+                            oteryn_protocol_oteryn::world_spatial::decode_step_result(
+                                &results[0].payload
+                            ),
+                            Ok(oteryn_protocol_oteryn::world_spatial::StepDisposition::Rejected)
+                        );
                         assert_eq!(results[1].status, CommandStatus::DuplicateReplay);
                         assert_eq!(results[1].payload, results[0].payload);
                         assert_eq!(results[2].status, CommandStatus::Accepted);

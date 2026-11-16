@@ -26,14 +26,19 @@ fn doors(bytes: &[u8], world: &BundleWorld) -> TestResult<Vec<Door>> {
                     y: tile.y,
                     floor: sector.floor,
                 };
-                if appearance.is_some_and(|appearance| matches!(appearance, 1638 | 1629))
-                    && world.facts().doors().at(at)
+                let ordinal = u8::try_from(ordinal).map_err(|_| {
+                    oteryn_world_bundle::Error::Limit("M05 client door ordinal".into())
+                })?;
+                // The DoorBook entry of this exact placement, outside House tiles (sealed):
+                // the unlocked closed key-door forms 1632/1629, as in E2EF1 M02/M05.
+                if appearance.is_some_and(|appearance| matches!(appearance, 1632 | 1629))
+                    && crate::map::view::placement_key(at, ordinal)
+                        .is_some_and(|key| world.facts().doors().contains(key))
+                    && world.facts().house_id(at).is_none()
                 {
                     found.push(Door {
                         at,
-                        ordinal: u8::try_from(ordinal).map_err(|_| {
-                            oteryn_world_bundle::Error::Limit("M05 client door ordinal".into())
-                        })?,
+                        ordinal,
                         appearance: appearance.unwrap_or_default(),
                     });
                 }
@@ -107,7 +112,7 @@ async fn journey(clients: &SeamClients<'_>) -> TestResult {
     let doors = doors(&bytes, world)?;
     let mut client = connect_world(clients, 0xc5).await?;
     let mut captured = Vec::new();
-    for (appearance, family) in [(1638, "basic"), (1629, "key")] {
+    for (appearance, family) in [(1632, "basic"), (1629, "key")] {
         let door = doors
             .iter()
             .copied()

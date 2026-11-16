@@ -137,6 +137,13 @@ mod e2ef1 {
             floor: -i16::from(at.floor),
         }
     }
+    /// The native-frame cell (`floor = -z`) of a WORLD_SPATIAL actor position (legacy `z`).
+    fn native(at: ActorPosition) -> ActorPosition {
+        ActorPosition {
+            floor: -at.floor,
+            ..at
+        }
+    }
     fn distance(a: TilePos, b: TilePos) -> u16 {
         if a.floor == b.floor {
             a.x.abs_diff(b.x).max(a.y.abs_diff(b.y))
@@ -269,11 +276,23 @@ mod e2ef1 {
         wanted: impl Fn(Object) -> bool,
         range: u16,
     ) -> TestResult<Object> {
+        approach_across(client, world, objects, wanted, range, 0).await
+    }
+    /// [`approach`] to a target up to `floors` floors away; `route` itself spans two.
+    async fn approach_across(
+        client: &mut DevClientSession,
+        world: &BundleWorld,
+        objects: &[Object],
+        wanted: impl Fn(Object) -> bool,
+        range: u16,
+        floors: u8,
+    ) -> TestResult<Object> {
         let from = tile(client.world_spatial().actor_position)?;
-        for &object in objects
-            .iter()
-            .filter(|object| wanted(**object) && distance(from, object.at) <= 160)
-        {
+        for &object in objects.iter().filter(|object| {
+            object.at.floor.abs_diff(from.floor) <= floors
+                && object.at.x.abs_diff(from.x).max(object.at.y.abs_diff(from.y)) <= 160
+                && wanted(**object)
+        }) {
             if let Some(path) = route(world, from, |at| {
                 distance(at, object.at) == range
                     && (range != 1 || at.x == object.at.x || at.y == object.at.y)
@@ -281,6 +300,16 @@ mod e2ef1 {
                 walk(client, world, &path).await?;
                 return Ok(object);
             }
+        }
+        {
+            let all: Vec<Object> = objects.iter().copied().filter(|o| wanted(*o)).collect();
+            let near: Vec<Object> = all.iter().copied().filter(|o| distance(from, o.at) <= 160).collect();
+            evidence(&format!(
+                "[DBG-m] approach_none from={from:?} range={range} objects={} wanted={} near={} sample={:?} far={:?}",
+                objects.len(), all.len(), near.len(),
+                near.iter().take(6).collect::<Vec<_>>(),
+                all.iter().take(4).collect::<Vec<_>>()
+            ));
         }
         Err("no reachable exact authored target within town budget".into())
     }
@@ -428,12 +457,20 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // 1638/1639 is a plain door family (not a key, level or quest door).
+        // A closed, unlocked door the channel DoorBook registered for this exact entry: the
+        // plain 1638 pair or the unlocked closed forms 1629/1632 of Canary's key-door triples
+        // (doors.lua; direct USE opens them, `DoorBook::toggle`). The authored world places
+        // 1638 only on House tiles (sealed) or with source bindings, so Thais and Newhaven
+        // ordinary doors are 1629/1632; never a locked form, level or quest door.
         let object = approach(
             client,
             world,
             objects,
-            |o| o.appearance == 1638 && world.facts().doors().at(o.at),
+            |o| {
+                matches!(o.appearance, 1629 | 1632 | 1638)
+                    && crate::map::view::placement_key(o.at, o.ordinal)
+                        .is_some_and(|key| world.facts().doors().contains(key))
+            },
             3,
         )
         .await?;
@@ -474,7 +511,10 @@ mod e2ef1 {
             .ok_or(
                 "FAIL: no ordinarily acquired backpack item for far MOVE; no fixture mint allowed",
             )?;
-        let ground = client.world_spatial().actor_position;
+        let at = client.world_spatial().actor_position;
+        // A Ground drop and the WORLD_MAP tile that shows it name the native floor (`-z`);
+        // WORLD_SPATIAL reports the legacy `z`, so the actor's own floor is negated.
+        let ground = native(at);
         let dropped = client
             .move_item(&ItemMoveIntent {
                 source: item.handle,
@@ -522,7 +562,7 @@ mod e2ef1 {
             }
             client.service_liveness(Duration::from_millis(25)).await?;
         };
-        let from = tile(ground)?;
+        let from = tile(at)?;
         let path =
             route(world, from, |at| distance(at, from) == 3).ok_or("far MOVE retreat route")?;
         walk(client, world, &path).await?;
@@ -551,6 +591,16 @@ mod e2ef1 {
         Ok(())
     }
 
+    /// The no-target, level-1 aggressive instants of the starter vocations (Canary
+    /// `data/scripts/spells/attack/{scorch,chill_out,lesser_front_sweep}.lua`). Canary gates
+    /// every aggressive instant by vocation, so a no-vocation character has none; the stairhop
+    /// gate precedes the vocation, level and weapon checks, so every one is refused in the window.
+    const STARTER_AGGRESSION: [&str; 3] = [
+        "exevo infir flam hur",
+        "exevo infir frigo hur",
+        "exori infir min",
+    ];
+
     async fn m03(
         client: &mut DevClientSession,
         world: &BundleWorld,
@@ -559,38 +609,46 @@ mod e2ef1 {
     ) -> TestResult {
         use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellTarget};
         let book = native_spell_book()?;
-        let spell = book
-            .spoken("exevo flam hur")
-            .ok_or("aggressive spell content absent: flame wave")?
-            .spell;
-        if !spell.aggressive {
-            return Err("flame wave is not aggressive".into());
+        let mut spells = Vec::new();
+        for words in STARTER_AGGRESSION {
+            let spell = book
+                .spoken(words)
+                .ok_or_else(|| format!("aggressive spell content absent: {words}"))?
+                .spell;
+            if !spell.aggressive {
+                return Err(format!("{words} is not aggressive").into());
+            }
+            let index = (1..=book.source_len())
+                .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+                .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
+                .ok_or_else(|| format!("{words} source index"))?;
+            let cooldown = Duration::from_micros(
+                spell
+                    .groups
+                    .iter()
+                    .map(|g| g.cooldown_micros)
+                    .chain([spell.cooldown_micros])
+                    .max()
+                    .unwrap_or(0),
+            );
+            spells.push((words, index, cooldown));
         }
-        let index = (1..=book.source_len())
-            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-            .find(|i| book.indexed(*i).is_some_and(|s| s.key == spell.key))
-            .ok_or("flame wave source index")?;
-        let cooldown = Duration::from_micros(
-            spell
-                .groups
-                .iter()
-                .map(|g| g.cooldown_micros)
-                .chain([spell.cooldown_micros])
-                .max()
-                .unwrap_or(0),
-        );
         let mut ready = tokio::time::Instant::now();
-        let mut exhausted = 0;
+        let mut exhausted = Vec::new();
         for teleport in [false, true] {
             // Settle the spell's own cooldown before starting a distinct floor experiment.
             while tokio::time::Instant::now() < ready {
                 pump(client).await?;
             }
-            let result: TestResult = async {
+            let result: TestResult<&str> = async {
                 let from = tile(client.world_spatial().actor_position)?;
                 let outside = |at: TilePos| world.base().tile(at.x, at.y, at.floor).is_some_and(|tile| !tile.protection_zone());
                 if teleport {
-                    let object = approach(client, world, objects, |o| world.floors().teleport(o.at).is_some_and(|to| to.floor != o.at.floor && outside(to)), 1).await?;
+                    // Canary Player::onCreatureMove starts the stairhop window on `teleport || z
+                    // change`. The node-boot slice's only floor-changing teleport that lands
+                    // outside a protection zone is far beyond the town budget, so any authored
+                    // teleport whose landing is outside one and leads back to this leg's start.
+                    let object = approach_across(client, world, objects, |o| world.floors().teleport(o.at).is_some_and(|to| outside(to) && route(world, to, |at| at == from).is_some()), 1, 2).await?;
                     let at = tile(client.world_spatial().actor_position)?;
                     let expected = world.floors().teleport(object.at).ok_or("teleport destination")?;
                     let direction = DIRS.into_iter().find(|d| destination(world, at, *d) == Some(expected)).ok_or("no automatic teleport entry edge")?;
@@ -604,30 +662,44 @@ mod e2ef1 {
                 }
                 let changed = std::time::Instant::now();
                 let before = client.actor_vitals().copied().ok_or("floor exhaust vitals")?;
-                let result = client.cast_spell(index, SpellTarget::None, false).await?;
-                if result.disposition != SpellCastDisposition::CoolingDown || result.actor_vitals_delta.is_some() || client.actor_vitals() != Some(&before) { return Err(format!("floor action did not refuse without resource spend: {result:?}").into()); }
+                let unspent = |client: &DevClientSession| client.actor_vitals().is_some_and(|v| v.mana == before.mana && v.soul == before.soul);
+                for (words, index, _) in &spells {
+                    let result = client.cast_spell(*index, SpellTarget::None, false).await?;
+                    if result.disposition != SpellCastDisposition::CoolingDown || result.actor_vitals_delta.is_some() || client.actor_vitals() != Some(&before) { return Err(format!("floor action {words} did not refuse without resource spend: {result:?}").into()); }
+                }
                 let deadline = tokio::time::Instant::now() + Duration::from_secs(4);
+                let mut refused = Vec::new();
                 loop {
                     client.service_liveness(Duration::from_millis(100)).await?;
                     client.take_events();
-                    let result = client.cast_spell(index, SpellTarget::None, false).await?;
-                    if result.disposition == SpellCastDisposition::Cast {
-                        if changed.elapsed() < Duration::from_millis(1800) || client.actor_vitals().is_none_or(|v| v.mana >= before.mana) || result.actor_vitals_delta.is_none() { return Err("floor exhaust expired early or post-window cast spent no mana".into()); }
-                        ready = tokio::time::Instant::now() + cooldown;
-                        break;
+                    for (words, index, cooldown) in &spells {
+                        if refused.iter().any(|(done, _)| done == words) { continue; }
+                        let result = client.cast_spell(*index, SpellTarget::None, false).await?;
+                        let expired = changed.elapsed() >= Duration::from_millis(1800);
+                        match result.disposition {
+                            SpellCastDisposition::Cast => {
+                                if !expired || client.actor_vitals().is_none_or(|v| v.mana >= before.mana) || result.actor_vitals_delta.is_none() { return Err(format!("floor exhaust expired early or post-window {words} spent no mana").into()); }
+                                ready = tokio::time::Instant::now() + *cooldown;
+                                return Ok(*words);
+                            }
+                            SpellCastDisposition::CoolingDown if unspent(&*client) => {}
+                            // Past the window the character's own requirement answers instead.
+                            refusal if expired && unspent(&*client) => refused.push((*words, refusal)),
+                            _ => return Err(format!("aggressive action {words} left the floor exhaust early or spent resources: {result:?}").into()),
+                        }
                     }
-                    if result.disposition != SpellCastDisposition::CoolingDown || client.actor_vitals().is_none_or(|v| v.mana != before.mana || v.soul != before.soul) || tokio::time::Instant::now() >= deadline { return Err(format!("aggressive action did not become executable after floor exhaust: {result:?}").into()); }
+                    if refused.len() == spells.len() { return Err(format!("no aggressive action of this character became executable after floor exhaust: {refused:?}; every aggressive instant needs a vocation (the knight sweep also a weapon), set through the real character path").into()); }
+                    if tokio::time::Instant::now() >= deadline { return Err(format!("aggressive action did not become executable after floor exhaust: refused={refused:?}").into()); }
                 }
-                exhausted += 1;
-                Ok(())
             }.await;
-            if let Err(error) = result {
-                evidence(&format!(
+            match result {
+                Ok(words) => exhausted.push(words),
+                Err(error) => evidence(&format!(
                     "E2EF1_GAP row=M03 teleport={teleport} error={error}"
-                ));
+                )),
             }
         }
-        if exhausted != 2 {
+        if exhausted.len() != 2 {
             return Err(
                 "stairs and teleport must each prove two-second aggressive exhaust and recovery"
                     .into(),
@@ -635,7 +707,7 @@ mod e2ef1 {
         }
         checks.pass(
             "aggressive-exhaust",
-            "both_transitions_refuse_then_allow_same_cast",
+            ("both_transitions_refuse_then_allow_same_cast", exhausted),
         );
         Ok(())
     }
@@ -903,16 +975,24 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // Exact production registry families: plain 1638/1639 and key triple
-        // locked 1628, unlocked 1629, open 1630. No name/keyword classification.
+        // Exact production registry families: Canary's key-door triples, locked 1628 /
+        // unlocked 1629 / open 1630 and the unlocked closed form 1632 (doors.lua). The
+        // authored world places the plain 1638 pair only on sealed House tiles, so the
+        // basic case uses the DoorBook entry of an exact 1632 placement off House tiles.
+        // No name/keyword classification.
         let mut families_ok = true;
-        for (appearance, case) in [(1638, "basic-door"), (1629, "unlocked-key-door")] {
+        for (appearance, case) in [(1632, "basic-door"), (1629, "unlocked-key-door")] {
             let result: TestResult = async {
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| o.appearance == appearance && world.facts().doors().at(o.at),
+                    |o| {
+                        o.appearance == appearance
+                            && crate::map::view::placement_key(o.at, o.ordinal)
+                                .is_some_and(|key| world.facts().doors().contains(key))
+                            && world.facts().house_id(o.at).is_none()
+                    },
                     1,
                 )
                 .await?;
@@ -1185,6 +1265,17 @@ mod e2ef1 {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn ground_drop_names_the_native_floor_of_the_actor_tile() -> TestResult {
+            let spatial = position(TOWN);
+            let ground = native(spatial);
+            assert_eq!(spatial.floor, 7);
+            assert_eq!(ground.floor, i16::from(TOWN.floor));
+            assert_eq!((ground.x, ground.y), (spatial.x, spatial.y));
+            assert_eq!(tile(spatial)?, TOWN);
+            Ok(())
+        }
+
         #[test]
         fn full_rows_require_every_named_action() {
             for (_, required) in ROWS {

@@ -17,7 +17,11 @@ pub(super) async fn observe<A: FreshAdmissionAuthority>(
     selected: SelectedCapabilities,
 ) -> Result<ChannelEntities, ObservationError> {
     if selected.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES_V2) {
-        authority.observe_named_visible_entities(actor).await
+        let r = authority.observe_named_visible_entities(actor).await;
+        if let Err(e) = &r {
+            crate::gameplay_transport::operator_event(&format!("[DBG-prof] named_observe_err {e:?}"));
+        }
+        r
     } else {
         authority
             .observe_visible_entities(actor)

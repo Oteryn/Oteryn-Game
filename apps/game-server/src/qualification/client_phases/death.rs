@@ -24,7 +24,7 @@ pub(super) async fn death(
         client.service_liveness(Duration::from_millis(100)).await?;
         for event in client.take_events() {
             if let oteryn_dev_client::SessionEvent::ActorVitals(delta) = event {
-                damaged |= delta.value.health < before;
+                damaged |= delta.value.health < before || delta.value.health == 0;
             }
         }
         let position = client.world_spatial().actor_position;
