@@ -160,10 +160,36 @@ debug-assertions = true
 overflow-checks = true
 
 # Every test qualifies the native content fixture in its own nextest process; unoptimized
-# dependencies made that take 30-50 s per test. Optimize third-party dependencies and the
-# content qualification crates only; workspace test code stays at opt-level 0, and debug
-# assertions and overflow checks stay on for every package.
-[profile.dev.package."*"]
+# parsing and decompression made that take 30-50 s per test. Optimize the dependencies of
+# the content qualification crates and those crates only (not every dependency: that
+# rebuilt the whole client stack cold in the unit-test shards). Workspace test code stays
+# at opt-level 0, and debug assertions and overflow checks stay on for every package.
+[profile.dev.package.serde]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.serde_json]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-safe]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.zstd-sys]
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev.package.lzma-rs]
 opt-level = 2
 debug-assertions = true
 overflow-checks = true
