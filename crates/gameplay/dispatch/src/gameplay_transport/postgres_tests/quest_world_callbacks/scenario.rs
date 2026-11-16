@@ -1531,6 +1531,8 @@ fn scenario_case(
             pin,
         )
         .map_err(debug)?;
+        // This generic bundle view has no qualified native onDeath source room.
+        runtime.use_classic_creature_deaths().map_err(debug)?;
         let reservation = runtime
             .reserve_fresh_session(deps.admitted.game_session_id)
             .map_err(debug)?;
@@ -2115,6 +2117,8 @@ fn scenario_case(
                     reset_pin,
                 )
                 .map_err(debug)?;
+                // This generic bundle view has no qualified native onDeath source room.
+                runtime.use_classic_creature_deaths().map_err(debug)?;
                 let reserved = runtime
                     .reserve_fresh_session(next.game_session_id)
                     .map_err(debug)?;

@@ -1293,8 +1293,6 @@ impl ChannelRuntimeV1 {
             explicit_capacity,
             content,
         )?;
-        // Ordinary Channels are not qualified source rooms. Source activities
-        // construct their independently assigned runtime through the scope API.
         runtime.use_classic_creature_deaths()?;
         Ok(runtime)
     }

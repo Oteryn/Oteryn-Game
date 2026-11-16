@@ -213,11 +213,6 @@ pub(super) async fn enter(h: &fixture::Harness, scope: RuntimeScopeRefV1) -> Tes
         signing_key_id: KEY.into(),
     };
     let signing = SigningKey::from_bytes(&[31; 32]);
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
-            .fetch_one(&h.pool)
-            .await?;
-    observe_source(h, &subject, &signing, now).await?;
     assert_eq!(
         h.root
             .publish_runtime_readiness(&h.node, &readiness(h, source_scope, 1, 1).await?)
@@ -231,6 +226,13 @@ pub(super) async fn enter(h: &fixture::Harness, scope: RuntimeScopeRefV1) -> Tes
         .open_character_authority(&seal)
         .await
         .map_err(fixture::debug)?;
+    // Fresh evidence admits at most 5 s of source age at the commit decision
+    // (fnd04 fresh_source_deadline). Observe it only after the slower setup.
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    observe_source(h, &subject, &signing, now).await?;
     assert_eq!(
         h.root
             .publish_fresh_admission_sources(&authority, &h.node, &subject, now)

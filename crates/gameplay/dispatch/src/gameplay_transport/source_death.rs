@@ -770,12 +770,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await?;
             }
-            Some((SourceWorkFamily::Greed, due)) => {
+            Some((SourceWorkFamily::Greed, mut due)) => loop {
                 super::soul_war_callbacks::greed::drive_due_through(
                     runtime, states, room, native, map, due, now,
                 )
                 .await?;
-            }
+                // Later Greed addEvent deadlines continue in this turn while
+                // they remain the earliest source work before the cutoff.
+                let cutoff = source_work_cutoff(runtime, states)?.unwrap_or(now);
+                match next_source_work(runtime, states, native)? {
+                    Some((SourceWorkFamily::Greed, next)) if next <= cutoff && next <= now => {
+                        due = next;
+                    }
+                    _ => break,
+                }
+            },
             Some((SourceWorkFamily::Physical, due)) => {
                 super::monster_profile_cycle::physical_spell::drain_due_through(
                     runtime,

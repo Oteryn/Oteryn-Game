@@ -435,7 +435,7 @@ fn tile(position: ActorPosition) -> TestResult<TilePos> {
     Ok(TilePos {
         x: u16::try_from(position.x)?,
         y: u16::try_from(position.y)?,
-        floor: i8::try_from(position.floor)?,
+        floor: -i8::try_from(position.floor)?,
     })
 }
 
@@ -2875,7 +2875,7 @@ pub(super) async fn journeys(
     .map(|at| ActorPosition {
         x: i32::from(at.x),
         y: i32::from(at.y),
-        floor: i16::from(at.floor),
+        floor: -i16::from(at.floor),
     });
     client = client_disconnect_resume::recover(client, clients, after).await?;
     travel_to_spawn(&mut client, world, &metadata.spawns, "oteryn:creature.rat").await?;
