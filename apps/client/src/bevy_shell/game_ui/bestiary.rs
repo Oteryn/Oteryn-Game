@@ -28,8 +28,15 @@ enum Kind {
     Charm(u32),
     /// Unlock, assign to the selected creature, remove, or reset all charms.
     CharmAction(Intent),
+    /// Pay the shown gold fee and send the pending Remove or ResetAll.
+    Confirm(Intent),
+    /// Drop the pending Remove or ResetAll without sending it.
+    Cancel,
     Close,
 }
+/// A Remove or ResetAll awaiting the player's confirmation, with the fee shown for it
+/// (`None` while the character level is not yet reported).
+type Pending = (Intent, Option<u64>);
 #[derive(Resource, Default)]
 struct State {
     generation: u64,
@@ -37,6 +44,43 @@ struct State {
     snapshot: Option<Panel>,
     root: Option<Entity>,
     load_catalogue: bool,
+    /// Every charm catalogue page is still to be loaded for this opening.
+    load_charms: bool,
+    /// The `after` cursor of the last charm catalogue page requested for this opening.
+    charm_cursor: Option<u16>,
+    confirm: Option<Pending>,
+    shown: Option<Pending>,
+}
+/// The gold the server charges for a Remove or ResetAll: removal is the level times 100 gold
+/// (75 with the Charm Expansion, `charm_state::removal_fee_gold`); a reset is 100,000 gold plus
+/// 11,000 per level above 100, a quarter less with the Expansion (`charm::reset_all_fee`).
+/// The reply reports the Expansion as no assignment slot limit.
+fn fee(intent: Intent, level: u32, expansion: bool) -> Option<u64> {
+    let level = u64::from(level);
+    match intent {
+        Intent::Remove => level.checked_mul(if expansion { 75 } else { 100 }),
+        Intent::ResetAll => {
+            let fee = level
+                .saturating_sub(100)
+                .checked_mul(11_000)?
+                .checked_add(100_000)?;
+            if expansion {
+                fee.checked_mul(75).map(|n| n / 100)
+            } else {
+                Some(fee)
+            }
+        }
+        Intent::Query | Intent::Unlock | Intent::Assign => None,
+    }
+}
+fn current_fee(
+    play: &super::super::owner::ActivePlay,
+    panel: &Panel,
+    intent: Intent,
+) -> Option<u64> {
+    let expansion = panel.reply.as_ref()?.charms.assignment_slot_limit.is_none();
+    let level = play.link.skill_progress_panel().complete?.level;
+    fee(intent, level, expansion)
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -65,6 +109,10 @@ fn project(
         }
         state.snapshot = None;
         state.load_catalogue = false;
+        state.load_charms = false;
+        state.charm_cursor = None;
+        state.confirm = None;
+        state.shown = None;
         state.generation = owner.generation();
     }
     let Some(mut panel) = panel else {
@@ -75,6 +123,8 @@ fn project(
     };
     if state.root.is_none() && state.snapshot.is_none() {
         state.load_catalogue = true;
+        state.load_charms = true;
+        state.charm_cursor = None;
         if panel.selected && !panel.pending {
             play.link.charm_progression_request(Intent::Query);
         }
@@ -85,7 +135,34 @@ fn project(
         state.load_catalogue = false;
         panel = play.link.charm_progression_panel();
     }
-    if state.snapshot.as_ref() == Some(&panel) {
+    // Charm names and effect descriptions: every catalogue page, one at a time, after the
+    // creature catalogue. A page the server refuses leaves the cursor unchanged and stops.
+    if state.load_charms && !state.load_catalogue && panel.selected && !panel.pending {
+        let browser = &panel.charm_browser;
+        let request = match state.charm_cursor {
+            None => Some((false, 0)),
+            Some(last) => browser
+                .next
+                .filter(|next| browser.loaded && *next != last)
+                .map(|next| (true, next)),
+        };
+        if let Some((next, after)) = request {
+            play.link.charm_catalogue_request(next);
+            state.charm_cursor = Some(after);
+            panel = play.link.charm_progression_panel();
+        } else {
+            state.load_charms = false;
+        }
+    }
+    if state.snapshot.as_ref() != Some(&panel) {
+        state.confirm = None;
+    } else if let Some((intent, shown)) = state.confirm {
+        let fee = current_fee(play, &panel, intent);
+        if fee != shown {
+            state.confirm = Some((intent, fee));
+        }
+    }
+    if state.snapshot.as_ref() == Some(&panel) && state.shown == state.confirm {
         return;
     }
     if let Some(root) = state.root.take() {
@@ -98,10 +175,17 @@ fn project(
         serial: state.serial,
         kind: Kind::Close,
     };
-    state.root = Some(widgets::build(&mut commands, &skins, control, &panel));
+    state.root = Some(widgets::build(
+        &mut commands,
+        &skins,
+        control,
+        &panel,
+        state.confirm,
+    ));
     state.snapshot = Some(panel);
+    state.shown = state.confirm;
 }
-fn perform(owner: &HostOwner, state: &State, control: Control) {
+fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     if owner.phase != Phase::Playing
         || owner.modal_active()
         || owner.generation() != control.generation
@@ -144,10 +228,34 @@ fn perform(owner: &HostOwner, state: &State, control: Control) {
         {
             play.link.charm_progression_edit(0, charm.to_string());
         }
-        Kind::CharmAction(intent) if intent != Intent::Query => {
+        Kind::CharmAction(intent @ (Intent::Remove | Intent::ResetAll)) => {
+            let fee = current_fee(play, &panel, intent);
+            if fee.is_none() {
+                // The fee follows the character level; ask for it and show it once reported.
+                play.link.skill_progress_request();
+            }
+            state.confirm = Some((intent, fee));
+        }
+        Kind::CharmAction(intent @ (Intent::Unlock | Intent::Assign)) => {
             play.link.charm_progression_request(intent);
         }
-        Kind::Select(_) | Kind::Charm(_) | Kind::CharmAction(_) | Kind::Close => {}
+        Kind::Confirm(intent)
+            if state.shown == state.confirm
+                && state.confirm.is_some_and(|(pending, shown)| {
+                    pending == intent
+                        && shown.is_some()
+                        && shown == current_fee(play, &panel, intent)
+                }) =>
+        {
+            state.confirm = None;
+            play.link.charm_progression_request(intent);
+        }
+        Kind::Cancel => state.confirm = None,
+        Kind::Select(_)
+        | Kind::Charm(_)
+        | Kind::CharmAction(Intent::Query)
+        | Kind::Confirm(_)
+        | Kind::Close => {}
     }
 }
 fn activate(
@@ -155,19 +263,19 @@ fn activate(
     controls: Query<&Control>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
 ) {
     if guard.allows(event.entity)
         && let Ok(control) = controls.get(event.entity)
     {
-        perform(&owner, &state, *control);
+        perform(&owner, &mut state, *control);
     }
 }
 fn keyboard(
     mut events: MessageReader<bevy::input::keyboard::KeyboardInput>,
     guard: ModalGuard,
     owner: NonSend<HostOwner>,
-    state: Res<State>,
+    mut state: ResMut<State>,
 ) {
     for event in events.read() {
         if event.key_code == KeyCode::Escape
@@ -175,15 +283,12 @@ fn keyboard(
             && !event.repeat
             && state.root.is_some_and(|root| guard.allows(root))
         {
-            perform(
-                &owner,
-                &state,
-                Control {
-                    generation: state.generation,
-                    serial: state.serial,
-                    kind: Kind::Close,
-                },
-            );
+            let control = Control {
+                generation: state.generation,
+                serial: state.serial,
+                kind: Kind::Close,
+            };
+            perform(&owner, &mut state, control);
         }
     }
 }

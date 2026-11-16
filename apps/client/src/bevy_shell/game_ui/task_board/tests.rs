@@ -422,7 +422,37 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     use crate::combat_input::PlayCommand;
     let (mut app, mut commands, outbox) = extra_fixture(panel())?;
     extra_click(&mut app, |kind| matches!(kind, Kind::Tab(Tab::Talisman)))?;
+    let shown = |app: &mut App| -> Vec<String> {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .map(|text| text.0.clone())
+            .collect()
+    };
+    assert!(
+        shown(&mut app)
+            .iter()
+            .any(|t| t == "Buy Bounty Talisman (5000 gold)")
+    );
     extra_click(&mut app, |kind| matches!(kind, Kind::BuyTalisman))?;
+    assert!(
+        commands.try_recv().is_err(),
+        "the gold purchase waits for confirmation"
+    );
+    assert!(
+        shown(&mut app)
+            .iter()
+            .any(|t| t == "Buy a Bounty Talisman for 5000 gold?")
+    );
+    extra_click(&mut app, |kind| matches!(kind, Kind::Cancel))?;
+    assert!(commands.try_recv().is_err(), "cancel sends nothing");
+    assert!(
+        !shown(&mut app)
+            .iter()
+            .any(|t| t == "Buy a Bounty Talisman for 5000 gold?")
+    );
+    extra_click(&mut app, |kind| matches!(kind, Kind::BuyTalisman))?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::ConfirmTalisman))?;
     let PlayCommand::Feature(buy) = commands.try_recv()? else {
         return Err("talisman purchase".into());
     };
@@ -464,7 +494,7 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     };
     reply.talisman[0] = TalismanPath {
         level: 1,
-        bonus: 1,
+        bonus: 300,
         next_cost: 10,
     };
     let result = |reply: &Reply| -> Result<_, Box<dyn std::error::Error>> {
@@ -477,18 +507,11 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     };
     outbox.bevy_task_board_full_result(&result(&reply)?);
     app.update();
-    let shown = |app: &mut App| -> Vec<String> {
-        app.world_mut()
-            .query::<&Text>()
-            .iter(app.world())
-            .map(|text| text.0.clone())
-            .collect()
-    };
     let texts = shown(&mut app);
     assert!(
         texts
             .iter()
-            .any(|t| t == "Talisman 1 (Damage): level 1, bonus 1, next cost 10")
+            .any(|t| t == "Talisman 1 (Damage): level 1, bonus 3.00%, next cost 10")
     );
     assert!(texts.iter().any(|t| t == "Bounty points: 25"));
     extra_click(&mut app, |kind| matches!(kind, Kind::UpgradeTalisman(0)))?;
@@ -500,7 +523,7 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     reply.bounty_points = 15;
     reply.talisman[0] = TalismanPath {
         level: 2,
-        bonus: 2,
+        bonus: 625,
         next_cost: 20,
     };
     outbox.bevy_task_board_full_result(&result(&reply)?);
@@ -508,7 +531,7 @@ fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
     assert!(
         shown(&mut app)
             .iter()
-            .any(|t| t == "Talisman 1 (Damage): level 2, bonus 2, next cost 20")
+            .any(|t| t == "Talisman 1 (Damage): level 2, bonus 6.25%, next cost 20")
     );
     Ok(())
 }

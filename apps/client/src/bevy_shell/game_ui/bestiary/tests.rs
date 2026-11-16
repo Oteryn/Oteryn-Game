@@ -35,6 +35,44 @@ fn labels(app: &mut App) -> String {
         .collect::<Vec<_>>()
         .join("\n")
 }
+fn enabled(app: &mut App, kind: Kind) -> std::result::Result<bool, Box<dyn std::error::Error>> {
+    app.world_mut()
+        .query::<(&Control, Has<bevy::ui::InteractionDisabled>)>()
+        .iter(app.world())
+        .find(|(control, _)| control.kind == kind)
+        .map(|(_, disabled)| !disabled)
+        .ok_or_else(|| "control missing".into())
+}
+/// The real charm catalogue, served in two pages: names, categories and effect descriptions.
+fn charm_page(after: u16) -> wire::Page {
+    let card = |race: u16, name: &str, category: &str, detail: &str| wire::Card {
+        race,
+        name: name.into(),
+        category: category.into(),
+        outfit_look_type: 0,
+        object_look_type: None,
+        detail: detail.into(),
+        echo_warden_completed: None,
+    };
+    if after == 0 {
+        wire::Page {
+            next: Some(1),
+            categories: vec!["Major".into()],
+            cards: vec![card(
+                1,
+                "Dodge",
+                "Major",
+                "Avoid a qualifying creature attack.",
+            )],
+        }
+    } else {
+        wire::Page {
+            next: None,
+            categories: vec!["Minor".into()],
+            cards: vec![card(2, "Gut", "Minor", "More creature products.")],
+        }
+    }
+}
 #[test]
 fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result {
     let mut owner = HostOwner::new(None)?;
@@ -135,6 +173,17 @@ fn bestiary_catalogue_selection_details_and_close_use_retained_owner() -> Result
     };
     publish(&catalogue, &page)?;
     app.update();
+    // Opening also loads the charm catalogue, page after page.
+    for after in [0, 1] {
+        let charms = command(&mut receiver).map_err(|error| format!("charms: {error}"))?;
+        assert_eq!(
+            wire::decode_charm_request(&charms.payload).map_err(|e| format!("{e:?}"))?,
+            after
+        );
+        publish(&charms, &charm_page(after))?;
+        app.update();
+    }
+    assert!(receiver.try_recv().is_err(), "every charm page is loaded");
     assert!(labels(&mut app).contains("Toad [Amphibic]"));
     assert!(labels(&mut app).contains("Progress not reported"));
     click(&mut app, Kind::Select(9))?;
@@ -339,12 +388,35 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
         wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
     );
     app.update();
+    // The real opening path loads every charm catalogue page before any charm is acted on.
+    for after in [0, 1] {
+        let charms = command(&mut receiver).map_err(|error| format!("charms: {error}"))?;
+        assert_eq!(
+            wire::decode_charm_request(&charms.payload).map_err(|e| format!("{e:?}"))?,
+            after
+        );
+        publish(
+            &charms,
+            wire::encode_page(&charm_page(after)).map_err(|e| format!("{e:?}"))?,
+        );
+        app.update();
+    }
+    assert!(receiver.try_recv().is_err(), "every charm page is loaded");
     assert!(labels(&mut app).contains("Charms — points: 500 | minor echoes: 60"));
-    assert!(labels(&mut app).contains("Charm 1 (Major) — stage 0/3, next cost 100, unassigned"));
-    click(&mut app, Kind::Charm(1))?;
+    assert!(labels(&mut app).contains("Dodge (Major) — stage 0/3, next cost 100, unassigned"));
+    assert!(labels(&mut app).contains("Gut (Minor) — stage 1/3, next cost 50, race 7"));
+    assert!(!labels(&mut app).contains("Charm 1"));
+    click(&mut app, Kind::Charm(2))?;
     assert!(receiver.try_recv().is_err(), "choosing a charm is local");
     app.update();
-    assert!(labels(&mut app).contains("> Charm 1 (Major)"));
+    assert!(labels(&mut app).contains("Gut — Minor"));
+    assert!(labels(&mut app).contains("More creature products."));
+    assert!(!labels(&mut app).contains("Avoid a qualifying creature attack."));
+    click(&mut app, Kind::Charm(1))?;
+    app.update();
+    assert!(labels(&mut app).contains("> Dodge (Major)"));
+    assert!(labels(&mut app).contains("Dodge — Major"));
+    assert!(labels(&mut app).contains("Avoid a qualifying creature attack."));
     click(&mut app, Kind::CharmAction(Intent::Unlock))?;
     let unlock = command(&mut receiver).map_err(|error| format!("unlock: {error}"))?;
     assert_eq!((unlock.capability, unlock.kind), (67, 84));
@@ -367,7 +439,7 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     );
     app.update();
     assert!(labels(&mut app).contains("Completed: Unlock(Unlocked)"));
-    assert!(labels(&mut app).contains("> Charm 1 (Major) — stage 1/3, next cost 200"));
+    assert!(labels(&mut app).contains("> Dodge (Major) — stage 1/3, next cost 200"));
     click(&mut app, Kind::Select(9))?;
     let detail = command(&mut receiver).map_err(|error| format!("detail: {error}"))?;
     publish(
@@ -398,6 +470,23 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     assert!(labels(&mut app).contains("Completed: Assign(Assigned)"));
     assert!(labels(&mut app).contains("stage 1/3, next cost 200, Frog"));
     click(&mut app, Kind::CharmAction(Intent::Remove))?;
+    assert!(
+        receiver.try_recv().is_err(),
+        "the gold fee waits for confirmation"
+    );
+    app.update();
+    assert!(labels(&mut app).contains(
+        "Remove Dodge from its creature? The gold fee depends on your level, which is not reported yet."
+    ));
+    assert!(!enabled(&mut app, Kind::Confirm(Intent::Remove))?);
+    click(&mut app, Kind::Confirm(Intent::Remove))?;
+    assert!(receiver.try_recv().is_err(), "no fee shown, nothing sent");
+    // The character level arrives through the skill display owner: level 30, two slots.
+    outbox.bevy_hud_skills_fixture()?;
+    app.update();
+    assert!(labels(&mut app).contains("Remove Dodge from its creature for 3000 gold?"));
+    assert!(enabled(&mut app, Kind::Confirm(Intent::Remove))?);
+    click(&mut app, Kind::Confirm(Intent::Remove))?;
     let remove = command(&mut receiver).map_err(|error| format!("remove: {error}"))?;
     assert_eq!(
         progression::decode_charm_progression_request(&remove.payload)
@@ -410,14 +499,30 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
         &remove,
         charm_reply(
             Outcome::Remove(Removed::Removed),
-            1000,
+            3000,
             (1, None, 200),
-            Some(7),
+            None,
         )?,
     );
     app.update();
-    assert!(labels(&mut app).contains("Completed: Remove(Removed); fee: 1000 gold"));
+    assert!(labels(&mut app).contains("Completed: Remove(Removed); fee: 3000 gold"));
+    assert!(!labels(&mut app).contains("for 3000 gold?"));
+    // No charm is assigned, but unlocked stages remain to be refunded.
+    assert!(enabled(&mut app, Kind::CharmAction(Intent::ResetAll))?);
     click(&mut app, Kind::CharmAction(Intent::ResetAll))?;
+    assert!(
+        receiver.try_recv().is_err(),
+        "the reset fee waits for confirmation"
+    );
+    app.update();
+    assert!(labels(&mut app).contains("Reset all charms for 100000 gold?"));
+    click(&mut app, Kind::Cancel)?;
+    assert!(receiver.try_recv().is_err(), "cancel sends nothing");
+    app.update();
+    assert!(!labels(&mut app).contains("Reset all charms for 100000 gold?"));
+    click(&mut app, Kind::CharmAction(Intent::ResetAll))?;
+    app.update();
+    click(&mut app, Kind::Confirm(Intent::ResetAll))?;
     let reset = command(&mut receiver).map_err(|error| format!("reset: {error}"))?;
     assert_eq!(
         progression::decode_charm_progression_request(&reset.payload)
@@ -428,16 +533,16 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
         &reset,
         charm_reply(
             Outcome::ResetAll(Removed::Removed),
-            500,
+            100_000,
             (1, None, 200),
             None,
         )?,
     );
     app.update();
-    assert!(labels(&mut app).contains("Completed: ResetAll(Removed); fee: 500 gold"));
+    assert!(labels(&mut app).contains("Completed: ResetAll(Removed); fee: 100000 gold"));
     assert!(
         labels(&mut app)
-            .contains("Charm 2 (Minor) — stage 1/3, next cost 50, unassigned, not yet active")
+            .contains("Gut (Minor) — stage 1/3, next cost 50, unassigned, not yet active")
     );
     Ok(())
 }
