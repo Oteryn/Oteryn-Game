@@ -1050,21 +1050,36 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn item_use_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        let pending = {
-            let states = self.states.spell_states.lock().await;
-            states
-                .pending_gourmet
-                .iter()
-                .any(|pending| pending.actor == actor && pending.session == session)
-                || states
-                    .pending_hireling_lamps
+        loop {
+            let pending = {
+                let states = self.states.spell_states.lock().await;
+                states
+                    .pending_gourmet
                     .iter()
                     .any(|pending| pending.actor == actor && pending.session == session)
-                || states.pending_item_effects.iter().any(|pending| {
-                    pending.actor == actor && pending.request.command.game_session_id() == session
-                })
-        };
-        pending || self.condition_potion_pending(actor, session).await
+                    || states
+                        .pending_hireling_lamps
+                        .iter()
+                        .any(|pending| pending.actor == actor && pending.session == session)
+                    || states.pending_item_effects.iter().any(|pending| {
+                        pending.actor == actor
+                            && pending.request.command.game_session_id() == session
+                    })
+            };
+            if pending {
+                return true;
+            }
+            // A lane holder can publish an ordinary item memo while this query
+            // waits. Observe it without waiting for that holder's database pass.
+            if let Ok(pending) = tokio::time::timeout(
+                std::time::Duration::from_millis(10),
+                self.condition_potion_pending(actor, session),
+            )
+            .await
+            {
+                return pending;
+            }
+        }
     }
 
     async fn use_event_item(
