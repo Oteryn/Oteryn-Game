@@ -1,4 +1,4 @@
-//! Local HUD sidebars. General game miniwindows have their own independent owner.
+//! Local HUD sidebars. The Bevy shell presents the game windows beside them.
 use super::PlayView;
 use super::feature_local_reference_preferences::settings::PreferenceError;
 use serde::{Deserialize, Serialize};

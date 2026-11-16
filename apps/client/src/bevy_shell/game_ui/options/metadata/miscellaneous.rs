@@ -1,5 +1,26 @@
 use super::*;
-pub(super) const MAIN: [Row; 3] = [
+pub(super) const MAIN: [Row; 6] = [
+    // A remembered device keeps the session, so remembering implies staying logged in.
+    Row {
+        id: "misc.stay_logged_in",
+        label: "Stay Logged In",
+        editor: Editor::Check {
+            read: |p| p.miscellaneous.stay_logged_in,
+            write: |p, v| p.miscellaneous.stay_logged_in = v || p.miscellaneous.remember_device,
+        },
+    },
+    Row {
+        id: "misc.remember_device",
+        label: "Remember This Device",
+        editor: Editor::Check {
+            read: |p| p.miscellaneous.remember_device,
+            write: |p, v| {
+                p.miscellaneous.remember_device = v;
+                p.miscellaneous.stay_logged_in |= v;
+            },
+        },
+    },
+    check!("misc.quick_login", "Quick Login", miscellaneous.quick_login),
     check!(
         "misc.logout",
         "Ask Before Logging Out",

@@ -166,12 +166,12 @@ An independent inventory against `origin/main` 641a191c92 listed 173 player-visi
 78 present in Bevy and 95 MISSING. `apps/client/src` is the same at that commit and at
 this branch's base. Status of the 95 MISSING rows on this branch:
 
-- P: ported on this branch (42)
+- P: ported on this branch (43)
 - S: Bevy already presented it; the row was stale (24)
 - B: pre-game account screens moved to a separate lane (4)
 - K: kept as a Windows-native path (2)
-- N: not ported (23): by design 16, 138, 152; in scope but not ported 12, 35, 50, 52,
-  73, 119, 140, 141, 144, 147, 149, 150, 155, 158, 162-166, 173
+- N: not ported (22): by design 16, 138, 152; in scope but not ported 35, 50, 52, 73,
+  119, 140, 141, 144, 147, 149, 150, 155, 158, 162-166, 173
 
 | row | status | where / why |
 |---|---|---|
@@ -181,7 +181,7 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 | 8 | B | lane (b) |
 | 9 | B | entry overview lane (b); in-game premium form ported 0593fe242b |
 | 11 | S | bevy_shell/login/bulletin.rs (News) |
-| 12 | N | toggles not in Bevy options; Sign out device turns remember-device off |
+| 12 | P | Misc options page; turning one off forgets the device (see Assumptions) |
 | 13 | P | 2e80440985, 70a75a0d36 login Sign out device (configured Platform sign-out) |
 | 14 | P | 70a75a0d36 login Support and Cookies links |
 | 16 | N | no pre-login offline world in Bevy (scene.rs:1, by design) |
@@ -279,9 +279,9 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 - Sub-windows and status panels: 13 listed, 3 already in Bevy, 10 MISSING ported.
 - Later ports outside the form window: character-picker batch training, NPC Talk/Trade
   context entries, the communication-lists form, device sign-out, About, the survey, the
-  Support and Cookies links and the minimap create-mark key.
-- Independent inventory, 95 MISSING rows: 42 ported, 24 stale, 4 other lane, 2 kept, 23 not
-  ported (3 by design, 20 in scope).
+  Support and Cookies links, the minimap create-mark key and the remembered-login toggles.
+- Independent inventory, 95 MISSING rows: 43 ported, 24 stale, 4 other lane, 2 kept, 22 not
+  ported (3 by design, 19 in scope).
 
 ## Assumptions
 
@@ -289,12 +289,16 @@ this branch's base. Status of the 95 MISSING rows on this branch:
   edit fields, buttons, a read-only summary; `features/0115-mail/native.rs`). The Bevy
   presenter shows the same title, labels, fields, buttons and summary, so a combo box
   of the Win32 window becomes a text field with the same accepted values.
-- The rows left as N are options-page parity (147-166), layout persistence (140-141),
-  touch (138), the house map window (119), the battle-list editor (35), the multiaction
-  editor (73), the chat font, mirror and log path (50-52), minimap import/export (144),
-  remembered-login toggles (12), and the combined status line (173). Offline world (16),
-  touch (138) and renderer selection (152) are by design.
-  Their client-ui and `PlayLink` back ends stay for a later port.
+- The in-scope rows left as N are options-page parity (147, 149, 150, 155, 158,
+  162-166), layout persistence (140, 141), the house map window (119), the battle-list
+  editor (35), the multiaction editor (73), the chat font and mirror (50, 52), minimap
+  import/export (144) and the combined status line (173). Their client-ui and `PlayLink`
+  back ends stay for a later port. Offline world (16), touch (138) and renderer
+  selection (152) are by design.
+- Row 12 keeps the Win32 rules: remembering the device implies staying logged in, and
+  turning either off forgets the device on the Platform (`HostOwner::apply`). The Win32
+  checkboxes were disabled unless `OTERYN_NATIVE_REMEMBERED_DEVICES_ENABLED=true`; the
+  Bevy rows are always editable, and the native entry still applies that switch.
 - Workflows, installer and packaging, the exe manifest, `[[bin]]`/`[features]` wiring and
   the build and shipping docs (`apps/client/BEVY.md` build section) moved to a separate
   lane, as did the pre-game account screens (bazaar, transfer, coin packages, premium
@@ -302,7 +306,8 @@ this branch's base. Status of the 95 MISSING rows on this branch:
 
 ## Closeout
 
-Partial. This lane ported 42 of the 95 independent MISSING rows; 20 in-scope rows stay
+Partial. This lane ported 43 of the 95 independent MISSING rows; 19 in-scope rows stay
 unported (listed above) and need an owner decision or a follow-up task. The record closes
-when the batch PR with the workflow and account-screen lanes merges. Not compiled in the authoring container (no
-`cargo build/check/test` there); the PC compile pass reports errors back.
+when the batch PR with the workflow and account-screen lanes merges. Not compiled in the
+authoring container (no `cargo build/check/test` there); the PC compile pass reports
+errors back.

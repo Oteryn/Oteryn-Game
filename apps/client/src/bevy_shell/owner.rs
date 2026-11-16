@@ -158,10 +158,17 @@ impl HostOwner {
         }
         // The retained owner alone validates, saves and installs preferences. Invalid edits
         // remain in the transient draft; a disk failure still accepts the live values.
+        let before = self.settings.preferences.miscellaneous;
         self.settings.apply(draft.values.clone());
         if self.settings.preferences != draft.values {
             self.draft = Some(draft);
             return;
+        }
+        let after = self.settings.preferences.miscellaneous;
+        if before.stay_logged_in && !after.stay_logged_in
+            || before.remember_device && !after.remember_device
+        {
+            self.forget_device();
         }
         if close {
             self.settings.open = false;
@@ -315,6 +322,19 @@ impl HostOwner {
              on the Platform."
                 .into()
         });
+    }
+    /// Turning stay-logged-in or remember-device off in the options forgets this device on the
+    /// Platform; the session in play keeps running.
+    fn forget_device(&mut self) {
+        if self.phase == Phase::Offline
+            && let Ok(config) = self.login.form.settings.config()
+            && let Some(entry) = &mut self.entry
+        {
+            entry.configure(config);
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.native_sign_out();
+        }
     }
     /// Opens a Platform page (support tickets, cookie policy) from the login window with the
     /// Platform the connection settings name.
