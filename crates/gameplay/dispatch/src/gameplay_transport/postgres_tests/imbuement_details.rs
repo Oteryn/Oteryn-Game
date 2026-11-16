@@ -89,6 +89,32 @@ pub(super) async fn exercise(
             quantity: 20
         }]
     );
+    let mut extended = admitted;
+    let mut selected = admitted
+        .continuity
+        .selected_capabilities
+        .as_slice()
+        .to_vec();
+    selected.push(oteryn_protocol_oteryn::imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1);
+    extended.continuity.selected_capabilities =
+        crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+            crate::gameplay_transport::connection::FreshAdmissionAuthority::offered_capabilities(
+                owner,
+            ),
+            &selected,
+        )
+        .ok_or("success capability")?;
+    let ImbuementReply::Payload(bytes) = crate::gameplay_transport::imbuement_details::query(
+        owner,
+        &extended,
+        command,
+        Some(&views),
+    )
+    .await
+    else {
+        return Err("missing success-percentage material projection".into());
+    };
+    assert_eq!(wire::decode_reply(&bytes).map_err(debug)?, reply);
     let mut stale = admitted;
     stale.continuity.connection_generation += 1;
     assert!(matches!(

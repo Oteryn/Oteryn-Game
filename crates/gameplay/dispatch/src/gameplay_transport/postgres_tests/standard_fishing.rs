@@ -24,7 +24,37 @@ fn m09_standard_fishing_wire_consumes_bait_and_replays_without_duplicate_fish() 
     Ok(())
 }
 
+#[test]
+fn fishing_reaches_visible_water_two_tiles_away() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_at(5, false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "far fishing panic")??;
+    Ok(())
+}
+
+#[test]
+fn fishing_cannot_cross_a_projectile_blocker() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario_at(5, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "blocked fishing panic")??;
+    Ok(())
+}
+
 fn scenario() -> TestResult {
+    scenario_at(6, false)
+}
+
+fn scenario_at(actor_x: i32, blocked: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "standard_fishing", true, false).await?;
@@ -80,7 +110,7 @@ fn scenario() -> TestResult {
             Some(crate::map::facts::ItemDefinition {
                 reference: reference(key)?,
                 solid: policy.and_then(|p| p.attributes.blocks_movement),
-                blocks_projectile: policy.and_then(|p| p.attributes.blocks_projectile).unwrap_or(true),
+                blocks_projectile: (blocked && key == bag) || policy.and_then(|p| p.attributes.blocks_projectile).unwrap_or(true),
                 pickupable: policy.is_some_and(|p| matches!(&p.semantics.physical, crate::content::ReferenceItemField::Known(physical) if physical.pickupable == crate::content::ReferenceItemField::Known(true))),
                 door: false,
             })
@@ -125,7 +155,7 @@ fn scenario() -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: 6,
+                    x: actor_x,
                     y: 0,
                     floor: 7,
                 },
@@ -179,6 +209,14 @@ fn scenario() -> TestResult {
             use_with_position: None,
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
+        if blocked {
+            let (_, result, _) = exchange(&owner, admitted, 1, &payload, reference(rod)).await?;
+            assert_eq!(result, UseDisposition::NotPossible);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let mut caught = None;
         for command_id in 1..=128 {
             let (next, result, actual) =
@@ -288,7 +326,44 @@ fn run_gathering_at(tool: u16, target: u16, after: Option<u16>, yield_item: Opti
     Ok(())
 }
 
+#[test]
+fn ordinary_fishing_without_bait_does_not_train() -> TestResult {
+    fishing_without_bait(3483)
+}
+
+#[test]
+fn mechanical_fishing_without_bait_does_not_train() -> TestResult {
+    fishing_without_bait(9306)
+}
+
+fn fishing_without_bait(tool: u16) -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(move || {
+            gathering_scenario_with_bait(tool, 4597, None, None, false, true, false)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "baitless fishing panic")??;
+    Ok(())
+}
+
 fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item: Option<u16>, committed: bool, in_sewers: bool) -> TestResult {
+    gathering_scenario_with_bait(tool, target_id, after, yield_item, committed, in_sewers, true)
+}
+
+fn gathering_scenario_with_bait(
+    tool: u16,
+    target_id: u16,
+    after: Option<u16>,
+    yield_item: Option<u16>,
+    committed: bool,
+    in_sewers: bool,
+    has_bait: bool,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "m09_gathering", true, false).await?;
@@ -442,8 +517,11 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[(rod, 1), (bait_key, 3)])
-            .await?;
+        let mut carried = vec![(rod, 1)];
+        if has_bait {
+            carried.push((bait_key, 3));
+        }
+        super::item_look::seed_main_backpack(&harness, &carried).await?;
         super::achievement_granters::seed_gathering(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -474,6 +552,81 @@ fn gathering_scenario(tool: u16, target_id: u16, after: Option<u16>, yield_item:
             use_with_map_item: Some(MapUseTarget::Object(target.clone())),
             use_with_position: None,
         };
+        if !has_bait {
+            let inventory = owner
+                .root
+                .read_item_use_inventory(owner.character, owner.holder, fence)
+                .await
+                .map_err(debug)?;
+            let source = inventory
+                .backpack
+                .as_ref()
+                .and_then(|bag| {
+                    bag.entries
+                        .iter()
+                        .find(|entry| entry.item.definition.production_key == rod)
+                })
+                .ok_or("carried rod")?
+                .item
+                .item_instance_id;
+            {
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get_mut(&runtime, deps.actor, admitted.game_session_id)
+                    .ok_or("player state")?;
+                let facts = state.character_facts();
+                let build = crate::durability::character_build::DurableBuildState::new(
+                    "monk",
+                    (u16::try_from(facts.magic_level)?, 0),
+                    [(10, 0); 7],
+                )
+                .map_err(debug)?;
+                state.load_owned_build(&build).map_err(debug)?;
+                state
+                    .enable_owned_training(&build, native.training_formula().ok_or("training formula")?)
+                    .map_err(debug)?;
+                assert!(!state.has_training_to_flush());
+            }
+            let outcome = owner
+                .use_cooking_conversion(
+                    deps.actor,
+                    crate::gameplay_transport::connection::UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: 1,
+                        item_fence: Some(fence),
+                    },
+                    intent,
+                    Some(crate::gameplay_transport::item_view::ItemKey::Instance(
+                        source,
+                    )),
+                    None,
+                )
+                .await
+                .ok_or("fishing outcome")?;
+            assert_eq!(outcome.disposition, UseDisposition::NothingToUse);
+            {
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                assert!(
+                    !states
+                        .get(&runtime, deps.actor, admitted.game_session_id)
+                        .ok_or("player state")?
+                        .has_training_to_flush(),
+                    "baitless tool {tool} granted skill attempts"
+                );
+            }
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                0
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
 
         // A pickup may already be prepared when the tool changes/removes the map item.

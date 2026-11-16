@@ -687,6 +687,23 @@ async fn case(h: &Harness) -> TestResult {
     let mut owner = deps.owner(h, &authority);
     owner.movement_cells = (&cells).into();
     owner.evidence = &recovery_source.evidence;
+    {
+        let runtime = owner.runtime.lock().await;
+        owner.states.attack.lock().await.record_hit_taken(
+            &runtime,
+            deps.actor,
+            admitted.game_session_id,
+            owner.owner_now(),
+        );
+    }
+    let combat = owner
+        .combat_lock_fact(deps.actor, admitted.game_session_id)
+        .await;
+    assert!(combat.pve_in_fight_until.is_some());
+    assert_eq!(
+        combat.pvp,
+        crate::gameplay_transport::combat_lock_fact::PvpLockSource::NotWiredInRuntime
+    );
     let (inside, status, ack) = drive(&owner, admitted, false)
         .await
         .map_err(|error| format!("House current source entry: {error}"))?;

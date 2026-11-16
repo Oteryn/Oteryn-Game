@@ -114,7 +114,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         if spells.is_dead(actor)
             || spells.has_pending_spell_commit(actor, admitted.game_session_id)
-            || locks.pve_in_fight_until.is_some()
             || locks.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked
         {
             return refuse();

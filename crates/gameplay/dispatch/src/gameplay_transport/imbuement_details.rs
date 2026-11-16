@@ -73,7 +73,16 @@ pub(super) async fn query<A: super::connection::FreshAdmissionAuthority>(
         .await
     {
         Outcome::Payload(bytes) => {
-            let Ok(reply) = imbuement::decode_imbuement_reply(&bytes) else {
+            let reply = if admitted
+                .continuity
+                .selected_capabilities
+                .contains(imbuement::CAPABILITY_IMBUEMENT_SUCCESS_CHANCE_V1)
+            {
+                imbuement::decode_imbuement_reply_with_success(&bytes).map(|(reply, _)| reply)
+            } else {
+                imbuement::decode_imbuement_reply(&bytes)
+            };
+            let Ok(reply) = reply else {
                 return Outcome::Unavailable;
             };
             let Some(window) = reply.window else {

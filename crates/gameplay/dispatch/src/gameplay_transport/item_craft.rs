@@ -237,17 +237,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some((pos, key)) = resolved else {
                     return disposition(UseDisposition::StaleState);
                 };
-                if i16::from(pos.floor) != at.at.floor
-                    || at.at.x.abs_diff(i32::from(pos.x)) > 1
-                    || at.at.y.abs_diff(i32::from(pos.y)) > 1
-                {
-                    return disposition(UseDisposition::TooFar);
-                }
                 let tile = view::compose_tile(&at.map.overlay, &facts, pos).ok()??;
                 let entry = tile.entries.iter().find(|e| e.source.key() == key)?;
                 let MapDefinition::Item(reference) = entry.facts.definition else {
                     return disposition(UseDisposition::NothingToUse);
                 };
+                let station = super::item_look::typed_definition(index, reference)?;
+                let fishing = oteryn_gameplay_items::fishing::is_water(&station.production_key);
+                let (range_x, range_y) = if fishing { (7, 5) } else { (1, 1) };
+                if i16::from(pos.floor) != at.at.floor
+                    || at.at.x.abs_diff(i32::from(pos.x)) > range_x
+                    || at.at.y.abs_diff(i32::from(pos.y)) > range_y
+                {
+                    return disposition(UseDisposition::TooFar);
+                }
+                if fishing {
+                    let clear = crate::spell::world_execution::source_sight_steps(
+                        crate::foundation::MovementLocalPosition {
+                            x: at.at.x,
+                            y: at.at.y,
+                            floor: at.at.floor,
+                        },
+                        crate::foundation::MovementLocalPosition {
+                            x: i32::from(pos.x),
+                            y: i32::from(pos.y),
+                            floor: i16::from(pos.floor),
+                        },
+                    )
+                    .is_ok_and(|steps| {
+                        steps.into_iter().all(|(cell, exempt)| {
+                            if exempt {
+                                return true;
+                            }
+                            let (Ok(x), Ok(y), Ok(floor)) = (
+                                u16::try_from(cell.x),
+                                u16::try_from(cell.y),
+                                i8::try_from(cell.floor),
+                            ) else {
+                                return false;
+                            };
+                            view::compose_tile(
+                                &at.map.overlay,
+                                &facts,
+                                crate::map::overlay::TilePos { x, y, floor },
+                            )
+                            .ok()
+                            .flatten()
+                            .is_some_and(|tile| {
+                                tile.entries
+                                    .iter()
+                                    .all(|entry| !entry.facts.blocks_projectile)
+                            })
+                        })
+                    });
+                    if !clear {
+                        return disposition(UseDisposition::NotPossible);
+                    }
+                }
                 let map_target = (
                     key,
                     facts.object_revision(match key {
@@ -260,10 +306,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         || entry.facts.sub_type != 0,
                     pos,
                 );
-                (
-                    super::item_look::typed_definition(index, reference)?,
-                    map_target,
-                )
+                (station, map_target)
             }
         };
         request.station = Some(station);
@@ -321,6 +364,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     entry.item.definition.production_key == oteryn_gameplay_items::fishing::NAIL
                 })
                 .map(|entry| entry.item.item_instance_id);
+            let consumable = if mechanical_sewer { nail } else { worm };
+            let Some(consumable) = consumable else {
+                return disposition(UseDisposition::NothingToUse);
+            };
             let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
             let skill = {
                 let runtime = self.runtime.lock().await;
@@ -366,12 +413,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
             self.save_trained_levels(due).await;
-            let consumable = if mechanical_sewer { nail } else { worm };
-            if !oteryn_gameplay_items::fishing::catches(skill, roll) || consumable.is_none() {
+            if !oteryn_gameplay_items::fishing::catches(skill, roll) {
                 return disposition(UseDisposition::NothingToUse);
             }
             request.tool = Some(rod);
-            request.source = consumable?;
+            request.source = consumable;
         }
         let inventory = self
             .root
