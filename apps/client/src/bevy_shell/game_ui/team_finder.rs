@@ -144,7 +144,7 @@ fn activate(
                 if let Field::Listing(index) = field
                     && let Some(value) = values.get_mut(*index)
                 {
-                    *value = text.value().trim().to_string();
+                    *value = text.value().to_string().trim().to_string();
                 }
             }
         }
