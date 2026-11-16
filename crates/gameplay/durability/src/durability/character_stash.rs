@@ -321,7 +321,8 @@ async fn plan<C: ItemLoopContent>(
         }
     }
     // The balance is last in the lock order, after root, items and backpack slot.
-    sqlx::query("SELECT item_instance_id FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    // Slot rows are INSERT/DELETE only and the runtime has no UPDATE on them: lock the slot's item row.
+    sqlx::query("SELECT s.item_instance_id FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF i").bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     let balance=sqlx::query("SELECT quantity,last_entry_id::text AS previous FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND definition_key=$3 AND definition_revision=$4 FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&definition.production_key).bind(&definition.revision_ref).fetch_optional(&mut **tx).await?;
     let (before, previous) = if let Some(balance) = balance {
