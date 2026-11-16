@@ -331,7 +331,12 @@ impl Settings {
         link: &oteryn_client::play::PlayLink,
         action: oteryn_client::play::UtilityAction,
     ) -> bool {
-        lock(&self.shared).run_utility(link, action)
+        let ran = lock(&self.shared).run_utility(link, action);
+        // Ctrl+K opens the options window; an open one turns to its hotkey page.
+        if ran && action == oteryn_client::play::UtilityAction::ShowOptionsHotkeys {
+            super::open(Arc::clone(&self.shared));
+        }
+        ran
     }
     pub(in super::super) fn confirm_exit(&self) -> bool {
         !lock(&self.shared).preferences.miscellaneous.confirm_exit

@@ -542,18 +542,27 @@ fn global_default_chords_for_prey_vip_skills_and_hotkey_options()
         }]
     );
     assert!(ran && lock(&link.mailbox).loyalty_skills.open);
-    let (_, actions, _) = fire(14, Modifier::Control);
+    // The native shell runs Ctrl+K through the settings owner: it opens the options window
+    // on its hotkey page (`Settings::run_utility`).
+    let (_, actions, ran) = fire(14, Modifier::Control);
     assert_eq!(
         actions,
         vec![CustomAction::Utility {
             action: ShowOptionsHotkeys
         }]
     );
+    assert!(ran, "Ctrl+K is consumed by opening the hotkey options");
     lock(&link.mailbox).vip.open = false;
     let (routed, actions, _) = fire(25, Modifier::Control);
     assert!(actions.is_empty());
     assert!(!link.vip_input(&routed));
     assert!(!lock(&link.mailbox).vip.open);
+    assert_eq!(settings.page, crate::play::SettingsPage::Hotkeys);
+    assert_eq!(
+        settings.take_page_request(),
+        Some(crate::play::SettingsPage::Hotkeys)
+    );
+    assert_eq!(settings.take_page_request(), None);
     Ok(())
 }
 

@@ -37,6 +37,8 @@ pub struct SettingsState {
     hud_toggle: Option<crate::play::HudPanel>,
     battle_edit: u64,
     magical_archive_requested: bool,
+    /// A page the options window turns to when it next runs (Ctrl+K: the hotkey page).
+    page_request: Option<SettingsPage>,
     store: Option<PreferenceStore>,
     input: PreferenceInput,
     control_input: super::controls::ControlInput,

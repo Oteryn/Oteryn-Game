@@ -1,5 +1,5 @@
 //! Utility actions a player can assign to a custom hotkey. Each runs an existing client behaviour.
-use super::{PreferenceError, ReferencePreferences, SettingsState};
+use super::{PreferenceError, ReferencePreferences, SettingsPage, SettingsState};
 use crate::play::PlayLink;
 use serde::{Deserialize, Serialize};
 
@@ -121,6 +121,10 @@ impl SettingsState {
                 if preferences.next_hotkey_preset().is_err() {
                     return false;
                 }
+            }
+            UtilityAction::ShowOptionsHotkeys => {
+                self.request_page(SettingsPage::Hotkeys);
+                return true;
             }
             _ => return link.utility_action(action),
         }
