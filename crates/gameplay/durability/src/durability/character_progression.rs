@@ -548,14 +548,18 @@ async fn check_runtime_scope_fence(
     // neither projection is then current authority. The native validator holds
     // the writer's share lock until this semantic transaction ends, serializing
     // its history proof with assignment successors before we lock their rows.
-    let history_valid: bool =
-        sqlx::query_scalar(if lock {
-            "SELECT game_runtime_scope_assignment_history_valid()"
-        } else {
-            "SELECT game_runtime_scope_assignment_observation_valid()"
-        })
+    // An advisory observation proves its own scope's history by index lookups only.
+    let assignment_key = assignment_scope_key(scope);
+    let history_valid: bool = if lock {
+        sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
             .fetch_one(&mut **tx)
-            .await?;
+            .await?
+    } else {
+        sqlx::query_scalar("SELECT game_runtime_scope_assignment_observation_valid($1)")
+            .bind(assignment_key.as_slice())
+            .fetch_one(&mut **tx)
+            .await?
+    };
     if !history_valid {
         return Ok(false);
     }
@@ -565,7 +569,6 @@ async fn check_runtime_scope_fence(
     };
     // Assignment kind 3 and runtime kind 2 name the same activity. Neither
     // identity is its origin Channel or the house assignment namespace.
-    let assignment_key = assignment_scope_key(scope);
     let mut runtime_key = assignment_key;
     runtime_key[0] = runtime_kind;
     let fact = node.fact();
