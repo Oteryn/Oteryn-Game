@@ -88,10 +88,18 @@ impl PlayLink {
         }) {
             return false;
         }
-        lock(&self.mailbox).world_context.cancel_targeting()
+        let use_with = lock(&self.mailbox).world_context.cancel_targeting();
+        self.hireling_pick_cancel() || use_with
     }
 }
 impl PlayView {
+    /// Tibia Global cancels an armed crosshair (Use with, a cursor spell or the banker's
+    /// location pick) on a secondary click instead of opening the context menu or looting.
+    pub fn secondary_click_cancels_targeting(&mut self, link: &PlayLink) -> bool {
+        let use_with = lock(&link.mailbox).world_context.cancel_targeting();
+        let spell = self.cursor_spell.take().is_some();
+        link.hireling_pick_cancel() || use_with || spell
+    }
     pub fn primary_click(
         &mut self,
         tile: TileCoord,

@@ -317,6 +317,9 @@ impl HostOwner {
                 }
                 continue;
             }
+            if click.secondary && play.view.secondary_click_cancels_targeting(&play.link) {
+                continue;
+            }
             if suppress_primary && !click.secondary {
                 continue;
             }

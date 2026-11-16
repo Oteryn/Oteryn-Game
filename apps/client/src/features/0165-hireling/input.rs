@@ -13,7 +13,19 @@ impl PlayLink {
             return true;
         }
         self.hireling_request(Intent::Refresh);
-        lock(&self.mailbox).hireling.open = true;
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.hireling.open = true;
+        mailbox.hireling_picking = false;
+        true
+    }
+
+    /// Leaves an armed summon-location pick; the banker form shows again.
+    pub(in crate::play) fn hireling_pick_cancel(&self) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if !std::mem::take(&mut mailbox.hireling_picking) {
+            return false;
+        }
+        mailbox.hireling.feedback = None;
         true
     }
 

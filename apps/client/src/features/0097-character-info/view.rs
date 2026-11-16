@@ -121,6 +121,12 @@ pub(in crate::play) fn titles_form(
         set_open: |mailbox, value| mailbox.properties.character_info.titles_open = value,
         submit: |mailbox, commands, action, values| {
             let p = &mut mailbox.properties.character_info;
+            // The row number names a row of the displayed list, before the draft filters apply.
+            let chosen = field(&values, 2)
+                .parse::<usize>()
+                .ok()
+                .and_then(|row| row.checked_sub(1))
+                .and_then(|row| title_rows(p).get(row).cloned());
             p.title_search = field(&values, 0).to_owned();
             if let Some(filter) = field(&values, 1)
                 .parse::<usize>()
@@ -130,11 +136,6 @@ pub(in crate::play) fn titles_form(
             {
                 p.title_filter = *filter;
             }
-            let chosen = field(&values, 2)
-                .parse::<usize>()
-                .ok()
-                .and_then(|row| row.checked_sub(1))
-                .and_then(|row| title_rows(p).get(row).cloned());
             let intent = match action {
                 1 => {
                     p.fields[0] = "0".into();
