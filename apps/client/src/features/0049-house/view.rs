@@ -3,9 +3,26 @@ impl PlayLink {
     pub fn house_panel(&self) -> super::state::Panel {
         lock(&self.mailbox).properties.house.clone()
     }
+    /// Selects the catalogue row the house-row field names and returns the north-up entrance
+    /// map of its floor; with no entrance there it leaves the feedback that says why.
+    pub fn house_map(&self, row: &str) -> Vec<oteryn_client_ui::house::MapHouse> {
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.properties.house;
+        if let Some(index) = row
+            .trim()
+            .parse::<usize>()
+            .ok()
+            .and_then(|n| n.checked_sub(1))
+        {
+            panel.model.index = index;
+        }
+        let houses = oteryn_client_ui::house::map_houses(&panel.model);
+        if houses.is_empty() {
+            panel.model.feedback = "Query houses and select a row to view its floor".into();
+        }
+        houses
+    }
 }
-
-
 
 #[cfg(all(test, bevy_shell))]
 impl PlayLink {
@@ -22,14 +39,42 @@ impl PlayLink {
         panel.initialize(true);
         panel.model.world = [1, 1, 1, 1, 1, 1, 0x71, 1, 0x81, 1, 1, 1, 1, 1, 1, 1];
         panel.model.town = "oteryn:content.area.city.thais".into();
-        panel.model.page.rows.push(oteryn_client_runtime::house::Row {
-            house: "oteryn:house.test".into(),
-            acl_revision: 7,
-            owned: true,
-            ..Default::default()
-        });
+        panel
+            .model
+            .page
+            .rows
+            .push(oteryn_client_runtime::house::Row {
+                house: "oteryn:house.test".into(),
+                acl_revision: 7,
+                owned: true,
+                ..Default::default()
+            });
         panel.fields[0] = "01010101-0101-7101-8101-010101010101".into();
         panel.fields[1] = panel.model.town.clone();
         panel.fields[2] = "1".into();
+    }
+    /// The list fixture with three entrances: two on floor 7, one a floor below.
+    pub(crate) fn bevy_house_map_fixture(&self) {
+        self.bevy_house_list_fixture();
+        let mut mailbox = lock(&self.mailbox);
+        let rows = &mut mailbox.properties.house.model.page.rows;
+        for row in rows.iter_mut() {
+            row.name = "Home".into();
+            row.entrance = Some((100, 110, 7));
+        }
+        for (name, entrance) in [
+            ("Harbour Home", (120, 130, 7)),
+            ("Cellar Flat", (100, 100, 6)),
+        ] {
+            rows.push(oteryn_client_runtime::house::Row {
+                name: name.into(),
+                house: format!(
+                    "oteryn:house.{}",
+                    name.to_ascii_lowercase().replace(' ', "_")
+                ),
+                entrance: Some(entrance),
+                ..Default::default()
+            });
+        }
     }
 }
