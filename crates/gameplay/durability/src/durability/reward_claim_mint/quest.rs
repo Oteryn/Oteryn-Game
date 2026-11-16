@@ -384,7 +384,7 @@ pub(crate) async fn apply(
         if payment.command != command {
             return Ok(false);
         }
-        let current: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+        let current: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(s.item_instance_id) FROM game_item_container_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid FOR UPDATE OF i")
             .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
         if current.as_deref() != payment.expected_backpack.as_ref().map(|id| id.as_slice()) {
             return Ok(false);
