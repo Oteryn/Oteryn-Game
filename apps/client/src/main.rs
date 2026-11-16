@@ -80,6 +80,17 @@ fn main() -> std::process::ExitCode {
     if let Some(result) = installation_check() {
         return result;
     }
+    #[cfg(bevy_shell)]
+    if std::env::args().any(|arg| arg == "--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(()) => std::process::ExitCode::SUCCESS,
+            Err(error) => {
+                leprintln!("Oteryn Watch: {error}", error = error);
+                std::process::ExitCode::FAILURE
+            }
+        };
+    }
+    #[cfg(not(bevy_shell))]
     if std::env::args().any(|arg| arg == "--watch") {
         leprintln!("Oteryn Watch uses the native Windows desktop shell");
         return std::process::ExitCode::SUCCESS;

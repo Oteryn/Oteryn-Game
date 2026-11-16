@@ -26,6 +26,15 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::FAILURE;
         }
     }
+    if std::env::args_os().any(|arg| arg == "--watch") {
+        return match oteryn_client::cast_watch::run() {
+            Ok(()) => std::process::ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("Oteryn Watch: {error}");
+                std::process::ExitCode::FAILURE
+            }
+        };
+    }
     match oteryn_client::bevy_shell::run(std::env::args_os().skip(1)) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
