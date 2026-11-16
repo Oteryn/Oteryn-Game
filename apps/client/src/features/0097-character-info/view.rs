@@ -87,11 +87,17 @@ pub(in crate::play) fn titles_form(
                 .and_then(|own| own.selected)
                 .map_or(tr!("None"), |title| title.name());
             let message = if !p.selected {
-                tr!("Feature unavailable in this session")
+                tr!("Feature unavailable in this session").to_owned()
             } else if p.own_titles.is_none() {
-                tr!("Refresh to load your earned titles")
+                // The load hint stays; a refused action's feedback shows under it.
+                let hint = tr!("Refresh to load your earned titles");
+                if p.feedback.is_empty() {
+                    hint.to_owned()
+                } else {
+                    format!("{hint}\n{}", p.feedback)
+                }
             } else {
-                &p.feedback
+                p.feedback.clone()
             };
             let mut text = format!("{current}\n{message}");
             for (row, choice) in title_rows(p).iter().enumerate() {
@@ -149,6 +155,12 @@ pub(in crate::play) fn titles_form(
                         return;
                     };
                     if (action == 2) == row.earned {
+                        p.feedback = if row.earned {
+                            tr!("Already owned")
+                        } else {
+                            tr!("Locked or ineligible")
+                        }
+                        .into();
                         return;
                     }
                     p.fields[3] = row.title.id().to_string();
@@ -158,7 +170,11 @@ pub(in crate::play) fn titles_form(
                         Intent::Select
                     }
                 }
-                4 if p.own_titles.is_some() => {
+                4 => {
+                    if p.own_titles.is_none() {
+                        p.feedback = tr!("Refresh first and settle any pending request").into();
+                        return;
+                    }
                     p.fields[3] = "0".into();
                     Intent::Select
                 }

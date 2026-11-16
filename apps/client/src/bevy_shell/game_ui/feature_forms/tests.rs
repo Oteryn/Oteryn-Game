@@ -669,9 +669,10 @@ fn banker_summon_uses_the_adjacent_tile_the_player_picked() -> TestResult {
     Ok(())
 }
 
-/// Opens Character titles through its key and applies a self query reply that earns `earned`.
+/// Opens Character titles through its key and applies a self query reply that earns
+/// `earned`; `None` is a refused query that leaves the titles unloaded.
 fn titles_window(
-    earned: &[oteryn_client_runtime::character_info_panel::CharacterTitle],
+    earned: Option<&[oteryn_client_runtime::character_info_panel::CharacterTitle]>,
 ) -> Result<Fixture, Box<dyn std::error::Error>> {
     use oteryn_client_runtime::raw_feature::{CommandStatus, GatedCommandResult};
     let (mut app, mut commands, outbox) = fixture()?;
@@ -687,19 +688,25 @@ fn titles_window(
     let PlayCommand::Feature(query) = commands.try_recv()? else {
         return Err("title query missing".into());
     };
-    // CHARACTER-INFO-1 self reply: tag, eight counters, padding, earned ids, selected id.
-    let mut payload = vec![0];
-    for value in [37i64, 120_500, 4, 6, 12, 3, 1, 0] {
-        payload.extend(value.to_le_bytes());
-    }
-    payload.extend([0, 0, 0, 0, u8::try_from(earned.len())?]);
-    payload.extend(earned.iter().map(|title| title.id()));
-    payload.push(0);
+    let (status, payload) = match earned {
+        Some(earned) => {
+            // CHARACTER-INFO-1 self reply: tag, eight counters, padding, earned ids, selected.
+            let mut payload = vec![0];
+            for value in [37i64, 120_500, 4, 6, 12, 3, 1, 0] {
+                payload.extend(value.to_le_bytes());
+            }
+            payload.extend([0, 0, 0, 0, u8::try_from(earned.len())?]);
+            payload.extend(earned.iter().map(|title| title.id()));
+            payload.push(0);
+            (CommandStatus::Accepted, payload)
+        }
+        None => (CommandStatus::Rejected, Vec::new()),
+    };
     outbox.bevy_properties_result(
         &query,
         &GatedCommandResult {
             command_id: 1,
-            status: CommandStatus::Accepted,
+            status,
             server_sequence: 1,
             payload,
         },
@@ -736,7 +743,7 @@ fn title_row_actions_resolve_the_displayed_row_not_the_unapplied_search() -> Tes
         ),
         (2, vec![], CharacterInfoOperation::Unlock(first)),
     ] {
-        let (mut app, mut commands, _outbox) = titles_window(&earned)?;
+        let (mut app, mut commands, _outbox) = titles_window(Some(&earned))?;
         assert!(
             app.world_mut()
                 .query::<&Text>()
@@ -761,4 +768,50 @@ fn title_row_actions_resolve_the_displayed_row_not_the_unapplied_search() -> Tes
         assert_eq!(command.payload, encode_operation(expected));
     }
     Ok(())
+}
+
+/// Row actions the state refuses say why: Unlock on an earned title, Use on a locked one and
+/// Clear selection before the titles loaded each show feedback and send nothing.
+#[test]
+fn refused_title_actions_show_why_instead_of_doing_nothing() -> TestResult {
+    use oteryn_client_runtime::character_info_panel::CharacterTitle;
+    let first = *CharacterTitle::ALL
+        .iter()
+        .min_by_key(|title| title.name())
+        .ok_or("no titles")?;
+    for (earned, action, row, expected) in [
+        (Some(vec![first]), 2, "1", "Already owned"),
+        (Some(vec![]), 3, "1", "Locked or ineligible"),
+        (None, 4, "", "Refresh first and settle any pending request"),
+    ] {
+        let (mut app, mut commands, _outbox) = titles_window(earned.as_deref())?;
+        for (field, mut text) in app
+            .world_mut()
+            .query::<(&Field, &mut EditableText)>()
+            .iter_mut(app.world_mut())
+        {
+            if field.0 == 2 {
+                *text = EditableText::new(row);
+            }
+        }
+        assert!(!has_summary(&mut app, expected));
+        click(&mut app, Some(action))?;
+        app.update();
+        assert!(
+            commands.try_recv().is_err(),
+            "{expected}: a command was sent"
+        );
+        assert!(
+            has_summary(&mut app, expected),
+            "{expected}: no feedback shown"
+        );
+    }
+    Ok(())
+}
+
+fn has_summary(app: &mut App, value: &str) -> bool {
+    app.world_mut()
+        .query_filtered::<&Text, With<Summary>>()
+        .iter(app.world())
+        .any(|text| text.0.contains(value))
 }
