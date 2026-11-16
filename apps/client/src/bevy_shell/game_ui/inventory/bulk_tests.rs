@@ -697,3 +697,202 @@ fn item_menu_timed_item_inspects_the_item_then_uses_the_shown_revision() -> Resu
     );
     Ok(())
 }
+
+#[test]
+fn item_menu_write_while_waiting_targets_the_newly_chosen_item_after_the_reply() -> Result {
+    use oteryn_session::property_services::mail::{MailIntent, decode_intent};
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    app.update();
+    item_menu(&mut app, 11, true)?;
+    let window = {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let window = property_form(link, "Writing and mail")?;
+        link.feature_form_submit(window, 0, vec!["11".into(), String::new(), "first".into()]);
+        link.feature_form_close(window);
+        window
+    };
+    let first = property_command(&mut commands)?;
+    // The real inventory menu reopens the pending form for another item.
+    item_menu(&mut app, 12, true)?;
+    assert!(
+        commands.try_recv().is_err(),
+        "nothing is sent while waiting"
+    );
+    outbox.bevy_properties_result(&first, &property_reply(vec![2]));
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let view = link.feature_form_view(window);
+    assert!(view.open);
+    assert_eq!(view.fields[0], "12");
+    assert!(
+        view.fields[2].is_empty(),
+        "item 11's text must not carry over"
+    );
+    link.feature_form_submit(window, 0, view.fields);
+    let write = property_command(&mut commands)?;
+    assert_eq!(
+        decode_intent(&write.payload).map_err(|e| format!("{e:?}"))?,
+        MailIntent::WriteText {
+            item_handle: 12,
+            text: String::new(),
+        }
+    );
+    Ok(())
+}
+
+fn timed_ok(revision: u64) -> Result<Vec<u8>> {
+    use oteryn_client_runtime::timed_item as wire;
+    Ok(wire::encode_timed_item_result(wire::TimedItemResult {
+        disposition: wire::TimedDisposition::Ok,
+        revision,
+        charges: Some(8),
+        remaining_ms: Some(1000),
+        retired: false,
+        fee_gold: 0,
+    })
+    .map_err(|e| format!("{e:?}"))?)
+}
+
+#[test]
+fn item_menu_timed_item_while_waiting_inspects_the_newly_chosen_item_after_the_reply() -> Result {
+    use oteryn_client_runtime::timed_item as wire;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    app.update();
+    item_menu(&mut app, 11, false)?;
+    let inspect = property_command(&mut commands)?;
+    outbox.bevy_properties_result(&inspect, &property_reply(timed_ok(5)?));
+    let window = {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let window = property_form(link, "Timed items")?;
+        let fields = link.feature_form_view(window).fields;
+        link.feature_form_submit(window, 1, fields);
+        link.feature_form_close(window);
+        window
+    };
+    let used = property_command(&mut commands)?;
+    item_menu(&mut app, 12, false)?;
+    assert!(
+        commands.try_recv().is_err(),
+        "nothing is sent while waiting"
+    );
+    outbox.bevy_properties_result(&used, &property_reply(timed_ok(6)?));
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let view = link.feature_form_view(window);
+    assert!(view.open);
+    assert_eq!(view.fields[..2], ["12".to_string(), "0".to_string()]);
+    // The form window's per-frame upkeep sends the deferred inspection.
+    link.feature_form_tick(window);
+    let next = property_command(&mut commands)?;
+    let intent = wire::decode_timed_item_intent(&next.payload).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        (intent.action, intent.target.get(), intent.expected_revision),
+        (wire::TimedAction::Inspect, 12, 0)
+    );
+    Ok(())
+}
+
+#[test]
+fn item_menu_timed_item_for_another_item_drops_the_previous_details_on_rejection() -> Result {
+    use oteryn_client_runtime::timed_item as wire;
+    let (mut app, mut commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    app.update();
+    item_menu(&mut app, 11, false)?;
+    let inspect = property_command(&mut commands)?;
+    outbox.bevy_properties_result(&inspect, &property_reply(timed_ok(5)?));
+    let window = {
+        let owner = app.world().non_send::<HostOwner>();
+        let link = &owner.play.as_ref().ok_or("play")?.link;
+        let window = property_form(link, "Timed items")?;
+        assert!(link.feature_form_view(window).text.contains("Charges"));
+        link.feature_form_close(window);
+        window
+    };
+    item_menu(&mut app, 12, false)?;
+    let other = property_command(&mut commands)?;
+    let mut rejected = property_reply(
+        wire::encode_timed_item_result(wire::TimedItemResult::refused(
+            wire::TimedDisposition::Rejected,
+        ))
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    rejected.status = oteryn_client_runtime::raw_feature::CommandStatus::Rejected;
+    outbox.bevy_properties_result(&other, &rejected);
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    let view = link.feature_form_view(window);
+    assert_eq!(view.fields[0], "12");
+    assert!(
+        !view.text.contains("Charges") && !view.text.contains("Revision 5"),
+        "item 11's details must not describe item 12: {}",
+        view.text
+    );
+    Ok(())
+}
+
+#[test]
+fn item_context_menu_near_the_bottom_keeps_every_row_inside_the_viewport() -> Result {
+    use bevy::window::PrimaryWindow;
+    let (mut app, _commands, outbox) = app()?;
+    outbox.bevy_property_items_selected();
+    let window = Window::default();
+    let height = window.height();
+    app.world_mut().spawn((window, PrimaryWindow));
+    app.update();
+    let slot = app
+        .world_mut()
+        .query::<(Entity, &Slot)>()
+        .iter(app.world())
+        .find(|(_, slot)| slot.item.is_some_and(|item| item.handle.get() == 11))
+        .map(|(entity, _)| entity)
+        .ok_or("item slot")?;
+    app.world_mut()
+        .trigger(bevy::picking::events::PointerClick {
+            entity: slot,
+            pointer: bevy::picking::events::Pointer::new(
+                bevy::picking::pointer::PointerId::Mouse,
+                bevy::picking::pointer::Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 1280,
+                        height: 720,
+                    },
+                    position: Vec2::new(10., height - 2.),
+                },
+            ),
+            button: bevy::picking::pointer::PointerButton::Secondary,
+            hit: bevy::picking::backend::HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+    app.update();
+    let (_, position) = app
+        .world()
+        .resource::<InventoryUi>()
+        .menu
+        .ok_or("the secondary click opens the menu")?;
+    let rows = app
+        .world_mut()
+        .query::<&Control>()
+        .iter(app.world())
+        .filter(|control| {
+            matches!(
+                control,
+                Control::Open(_)
+                    | Control::Context(..)
+                    | Control::Write(_)
+                    | Control::Timed(_)
+                    | Control::Cancel { prompt: None, .. }
+            )
+        })
+        .count();
+    assert_eq!(rows, 8, "Write… and Timed item… are shown");
+    // Eight 20-pixel rows, seven 2-pixel gaps and 5-pixel padding on both edges.
+    let bottom = position.y + 8. * 20. + 7. * 2. + 10.;
+    assert!(bottom <= height, "menu ends at {bottom}, viewport {height}");
+    Ok(())
+}

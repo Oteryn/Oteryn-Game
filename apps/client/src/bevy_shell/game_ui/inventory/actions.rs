@@ -80,13 +80,21 @@ pub(super) fn click(
     if event.button == PointerButton::Secondary {
         select_slot(*slot, &owner, &mut ui);
         let mut position = event.pointer.position / scale.0;
+        // The same capability flags decide which rows the menu shows (view::project).
+        let extra = owner.play.as_ref().map_or((false, false), |play| {
+            (
+                play.link.mail_panel().selected,
+                play.link.timed_item_panel().selected,
+            )
+        });
         if let Ok(window) = windows.single() {
             position.x = position
                 .x
                 .clamp(0., (window.width() / scale.0 - 145.).max(0.));
-            position.y = position
-                .y
-                .clamp(0., (window.height() / scale.0 - 150.).max(0.));
+            position.y = position.y.clamp(
+                0.,
+                (window.height() / scale.0 - super::dialogs::menu_height(extra)).max(0.),
+            );
         }
         ui.menu = Some((*slot, position));
     } else if event.button == PointerButton::Primary && event.count >= 2 {

@@ -53,11 +53,15 @@ impl PlayLink {
     /// Opens the writing window for one item, as Tibia Global's Use on a writable item.
     pub fn mail_write_item(&self, handle: oteryn_session::ItemHandle) {
         let mut mailbox = lock(&self.mailbox);
-        let panel = &mut mailbox.properties.mail;
-        if !panel.pending {
-            edit(panel, 0, handle.get().to_string());
+        let properties = &mut mailbox.properties;
+        if properties.mail.pending {
+            // The in-flight request keeps its item; the reply retargets the form to this one.
+            properties.mail_deferred = Some(handle);
+        } else {
+            properties.mail_deferred = None;
+            edit(&mut properties.mail, 0, handle.get().to_string());
         }
-        panel.open = true;
+        properties.mail.open = true;
     }
     pub fn mail_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if self.staff_input(events) {

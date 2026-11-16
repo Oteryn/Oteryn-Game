@@ -46,16 +46,16 @@ impl PlayLink {
     /// the reply fills the revision that Use and Repair then send.
     pub fn timed_item_inspect(&self, handle: oteryn_session::ItemHandle) {
         let mut mailbox = lock(&self.mailbox);
-        let panel = &mut mailbox.properties.timed_item;
-        panel.open = true;
-        if panel.pending {
+        let properties = &mut mailbox.properties;
+        properties.timed_item.open = true;
+        if properties.timed_item.pending {
+            // The in-flight request keeps its item; its reply retargets the form and the next
+            // form tick inspects this one.
+            properties.timed_item_deferred = Some(handle);
             return;
         }
-        let value = handle.get().to_string();
-        if panel.fields[0] != value {
-            edit(panel, 0, value);
-            edit(panel, 1, "0".into());
-        }
+        properties.timed_item_deferred = None;
+        retarget(&mut properties.timed_item, handle);
         submit(&mut mailbox, &self.commands, Intent::Inspect);
     }
     pub fn timed_item_input(&self, events: &[NormalizedInputEvent]) -> bool {
@@ -65,6 +65,30 @@ impl PlayLink {
         self.timed_item_open();
         true
     }
+}
+
+/// Points the form at `handle`; a new target starts from revision 0 until it is inspected.
+pub(in crate::play) fn retarget(
+    panel: &mut oteryn_client_ui::timed_item::Panel,
+    handle: oteryn_session::ItemHandle,
+) {
+    let value = handle.get().to_string();
+    if panel.fields[0] != value {
+        edit(panel, 0, value);
+        edit(panel, 1, "0".into());
+    }
+}
+
+/// Inspects the item chosen while an earlier request was pending, once its reply has arrived.
+pub(in crate::play) fn tick(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>) {
+    if mailbox.properties.timed_item.pending {
+        return;
+    }
+    let Some(handle) = mailbox.properties.timed_item_deferred.take() else {
+        return;
+    };
+    retarget(&mut mailbox.properties.timed_item, handle);
+    submit(mailbox, commands, Intent::Inspect);
 }
 
 pub(in crate::play) fn edit(
@@ -80,5 +104,9 @@ pub(in crate::play) fn edit(
             return;
         }
         *slot = value;
+        // The previous item's details never describe a new target, even if its inspection fails.
+        if field == 0 {
+            panel.summary.clear();
+        }
     }
 }

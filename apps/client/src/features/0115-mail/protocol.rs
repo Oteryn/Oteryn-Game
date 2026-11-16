@@ -21,10 +21,15 @@ pub(in crate::play) struct Panels {
     pub player_report: oteryn_client_ui::player_report::Panel,
     pub pvp_expert: oteryn_client_ui::pvp_expert::Panel,
     pub mail: Panel,
+    /// The item chosen for the writing window while a request was pending; applied on its reply.
+    pub mail_deferred: Option<oteryn_session::ItemHandle>,
     pub house_furniture_rotation: oteryn_client_ui::house_furniture_rotation::Panel,
     pub house_furniture_wrap: oteryn_client_ui::house_furniture_wrap::Panel,
     pub house_podium: oteryn_client_ui::house_podium::Panel,
     pub timed_item: oteryn_client_ui::timed_item::Panel,
+    /// The item chosen for the timed item window while a request was pending; targeted on its
+    /// reply and inspected by the form's next tick.
+    pub timed_item_deferred: Option<oteryn_session::ItemHandle>,
     pub training: oteryn_client_ui::training::Panel,
     pub guild_bank: oteryn_client_ui::guild_bank::Panel,
 }
@@ -153,11 +158,22 @@ impl Outbox {
                 command,
                 result,
             ),
-            39 => super::super::feature_0039_timed_item::protocol::apply(
-                &mut shared.properties.timed_item,
-                command,
-                result,
-            ),
+            39 => {
+                let properties = &mut shared.properties;
+                super::super::feature_0039_timed_item::protocol::apply(
+                    &mut properties.timed_item,
+                    command,
+                    result,
+                );
+                if !properties.timed_item.pending
+                    && let Some(handle) = properties.timed_item_deferred
+                {
+                    super::super::feature_0039_timed_item::input::retarget(
+                        &mut properties.timed_item,
+                        handle,
+                    );
+                }
+            }
             54 => super::super::feature_0054_training::protocol::apply(
                 &mut shared.properties.training,
                 command,
@@ -223,7 +239,15 @@ impl Outbox {
                 command,
                 result,
             ),
-            115 => apply(&mut shared.properties.mail, command, result),
+            115 => {
+                let properties = &mut shared.properties;
+                apply(&mut properties.mail, command, result);
+                if !properties.mail.pending
+                    && let Some(handle) = properties.mail_deferred.take()
+                {
+                    super::input::edit(&mut properties.mail, 0, handle.get().to_string());
+                }
+            }
             134 => super::super::feature_0134_party_skull::protocol::apply(
                 &mut shared.properties.party_skull,
                 command,

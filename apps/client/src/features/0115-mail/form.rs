@@ -65,7 +65,10 @@ const FORMS: &[FeatureForm] = &[
         crate::play::feature_0025_appearance::view::memorial::form,
         None,
     ),
-    entry(crate::play::feature_0039_timed_item::view::form, None),
+    entry(
+        crate::play::feature_0039_timed_item::view::form,
+        Some(crate::play::feature_0039_timed_item::input::tick),
+    ),
     entry(crate::play::feature_0040_guild::view::form, None),
     entry(crate::play::feature_0043_vip::input::account::form, None),
     entry(crate::play::feature_0051_staff::view::form, None),
