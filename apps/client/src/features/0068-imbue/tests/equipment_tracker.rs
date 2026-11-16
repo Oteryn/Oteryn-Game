@@ -81,7 +81,6 @@ fn equipment_tracker_reads_real_inspection_commands_and_prunes_unequipped_items(
     Ok(())
 }
 
-#[cfg(not(windows))]
 #[test]
 fn equipped_imbuement_widget_shortcut_and_time_filters_use_the_confirmed_feed() -> Result<(), String>
 {

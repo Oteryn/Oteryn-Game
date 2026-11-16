@@ -5,7 +5,7 @@ use crate::{
         mailbox::{Mailbox, lock},
     },
 };
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 use oteryn_client_runtime::container_tree::ContainerView;
 use oteryn_client_runtime::inventory::MoveRequest;
 use oteryn_session::ItemMoveDestination;
@@ -17,7 +17,7 @@ impl PlayLink {
         begin(&mut lock(&self.mailbox), &self.commands, destination_view)
     }
     /// Bind both displayed containers and the command to one current session mailbox snapshot.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn container_move_all_bound(
         &self,
         source: &ContainerView,

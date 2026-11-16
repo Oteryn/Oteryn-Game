@@ -2,7 +2,7 @@ use crate::combat_input::PlayCommand;
 use crate::play::PlayLink;
 use crate::play::mailbox::{Mailbox, lock};
 use oteryn_input_actions::NormalizedInputEvent;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel, index: usize) {
     if let Some(tool) = oteryn_client_ui::analyser::Tool::CYCLOPEDIA.get(index) {
         panel.tool = *tool;
@@ -15,7 +15,7 @@ pub(in crate::play) fn select_tool(panel: &mut oteryn_client_ui::analyser::Panel
 }
 
 use tokio::sync::mpsc::UnboundedSender;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "input/bosses.rs"]
 mod bosses;
 #[path = "input/party_import.rs"]
@@ -67,7 +67,7 @@ impl PlayLink {
             price,
         )
     }
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn analyser_item_price_for(
         &self,
         tool: oteryn_client_ui::analyser::Tool,
@@ -100,17 +100,11 @@ impl PlayLink {
     }
     pub fn analyser_open(&self) {
         self.analyser_resolve_items();
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            let mut mailbox = lock(&self.mailbox);
-            mailbox.analyser.open = true;
-            let tool = mailbox.analyser.tool;
-            if !mailbox.analyser.open_tools.contains(&tool) {
-                mailbox.analyser.open_tools.push(tool);
-            }
+        let mut mailbox = lock(&self.mailbox);
+        mailbox.analyser.open = true;
+        let tool = mailbox.analyser.tool;
+        if !mailbox.analyser.open_tools.contains(&tool) {
+            mailbox.analyser.open_tools.push(tool);
         }
     }
 }
@@ -129,7 +123,7 @@ pub(in crate::play) fn resolve_items(
 }
 
 /// Preserve the seven cyclopedia selector actions alongside the expanded analytics controls.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn submit(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
@@ -268,7 +262,7 @@ impl PlayLink {
 }
 
 /// Prepare a window without constructing a second session-owning PlayLink.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn begin_shared_window(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
@@ -281,7 +275,7 @@ pub(in crate::play) fn begin_shared_window(
     true
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn submit_shared(
     shared: &crate::play::mailbox::SharedMailbox,
     commands: &UnboundedSender<PlayCommand>,

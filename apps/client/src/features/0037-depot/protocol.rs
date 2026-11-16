@@ -73,7 +73,7 @@ macro_rules! dispatch {
 }
 pub(in crate::play) use dispatch;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_depot_initialize(&self, selected: bool) {
         self.depot_initialize(selected);

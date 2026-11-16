@@ -19,7 +19,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_proficiency_initialize(&self) {
         self.weapon_proficiency_initialize(true);

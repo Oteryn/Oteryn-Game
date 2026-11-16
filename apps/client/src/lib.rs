@@ -5,10 +5,10 @@ extern crate oteryn_client_ui;
 pub mod about;
 #[path = "features/local-account-services/mod.rs"]
 pub mod account_services;
-#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[cfg(any(test, bevy_shell))]
 #[path = "features/0025-appearance/mount_binding.rs"]
 mod appearance_mount_binding;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub mod bevy_shell;
 pub mod bulletin;
 pub mod cast_watch;
@@ -19,11 +19,12 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+#[cfg(bevy_shell)]
+pub mod desktop_startup;
 pub mod device_login;
 pub mod hud_error;
 pub mod input;
 pub mod map;
-pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
 pub mod package_integrity;
@@ -40,7 +41,6 @@ pub mod updater;
 pub mod web_links;
 #[cfg(windows)]
 pub mod win_mutex;
-pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 

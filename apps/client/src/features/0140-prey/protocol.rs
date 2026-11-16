@@ -11,7 +11,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_prey_initialize(&self, selected: bool) {
         self.prey_initialize(selected);
@@ -22,7 +22,7 @@ impl Outbox {
 }
 
 /// Native controls ask before any action that can spend gold or wildcard cards.
-#[cfg_attr(not(windows), allow(dead_code, reason = "Native confirmation is exercised by play tests"))]
+#[allow(dead_code, reason = "Native confirmation is exercised by play tests")]
 pub(in crate::play) fn confirm_action(
     intent: oteryn_client_ui::prey::Intent,
     confirm: impl FnOnce(&str) -> bool,

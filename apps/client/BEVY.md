@@ -1,9 +1,10 @@
 # Shared Bevy desktop client
 
-`oteryn-client-bevy` is the opt-in desktop presentation over the existing Rust
-admission, session, gameplay, preferences, scene and audio owners. It is a partial
-replacement for the legacy presentation. Build it from the same checkout as the
-server and its pinned content.
+The Bevy host is the desktop presentation over the existing Rust admission,
+session, gameplay, preferences, scene and audio owners. On Windows it is
+`oteryn-client.exe` itself; on Linux and macOS it is the opt-in
+`oteryn-client-bevy`. Build it from the same checkout as the server and its pinned
+content.
 
 The accepted login bulletin opens after admission. Reopen it with **News** in the
 connection form or **Ctrl+Alt+Shift+L** while playing. Its read-only news/calendar
@@ -11,15 +12,22 @@ view supports month navigation, scrolling, and Close/Escape dismissal.
 
 ## Build
 
-On Windows, Linux or macOS, from the repository root:
+On Windows, from the repository root:
+
+```powershell
+cargo build --locked -p oteryn-client --bin oteryn-client
+```
+
+The output is `target\debug\oteryn-client.exe`; the Windows installer ships the release
+build of the same executable (`apps/client/installer/`). On Linux or macOS:
 
 ```sh
 cargo build --locked -p oteryn-client --bin oteryn-client-bevy --features bevy-shell
 ```
 
 `--features bevy-shell` is a Cargo option, not an executable option. The output is
-`target/debug/oteryn-client-bevy` (`.exe` on Windows), unless Cargo's target directory
-is configured separately. Native Linux needs the X11 and ALSA development libraries
+`target/debug/oteryn-client-bevy`, unless Cargo's target directory is configured
+separately. Native Linux needs the X11 and ALSA development libraries
 used by upstream winit and audio. Cross-compilation alone does not qualify native
 window, graphics or audio behavior.
 
@@ -48,7 +56,7 @@ On Windows PowerShell:
 
 ```powershell
 $env:OTERYN_ASSET_DIR = 'C:\explicit\world-asset-root'
-.\target\debug\oteryn-client-bevy.exe --ui-assets 'C:\explicit\ui-art-root'
+.\target\debug\oteryn-client.exe --ui-assets 'C:\explicit\ui-art-root'
 ```
 
 The paths above are placeholders, not defaults. Obtain the actual roots and the

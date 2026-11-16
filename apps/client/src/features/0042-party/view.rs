@@ -8,15 +8,8 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::context_menu;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Clone, Copy)]
 pub(crate) enum PartyViewAction {
     Member(u64),
@@ -32,7 +25,7 @@ impl PlayLink {
         lock(&self.mailbox).party.open = false;
     }
     /// Re-proves the displayed typed view before selecting a handle or preparing a request.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn party_action_bound(
         &self,
         expected: &PartyPanel,
@@ -103,7 +96,7 @@ impl PlayLink {
         true
     }
 }
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::PlayView {
     /// A context label is only the exact visible player's server-supplied display name.
     pub(crate) fn party_context_target(

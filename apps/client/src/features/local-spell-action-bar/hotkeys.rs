@@ -165,7 +165,7 @@ impl PlayLink {
 }
 
 /// Battle-list child windows deliver native key messages rather than winit events.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn native_key(
     mailbox: &mut Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,

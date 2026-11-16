@@ -52,13 +52,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn house_transfer_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.house_transfer.open = true;
-        }
+        lock(&self.mailbox).properties.house_transfer.open = true;
     }
     pub fn house_transfer_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::house_transfer::open_key(events) {

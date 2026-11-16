@@ -19,13 +19,7 @@ impl PlayLink {
 
     pub fn open_party(&self) {
         self.party_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            self.open_shared_party();
-        }
+        self.open_shared_party();
     }
 
     pub(in crate::play) fn open_shared_party(&self) {
@@ -100,11 +94,6 @@ impl PlayLink {
                         continue;
                     };
                     consumed = true;
-                    #[cfg(windows)]
-                    if !self.uses_shared_frontend() {
-                        super::view::context_menu(self, target);
-                    }
-                    #[cfg(not(windows))]
                     let _ = target;
                 }
             }

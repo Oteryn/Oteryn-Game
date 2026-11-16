@@ -28,13 +28,7 @@ impl PlayLink {
             return false;
         }
         self.prey_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).prey.open = true;
-        }
+        lock(&self.mailbox).prey.open = true;
         true
     }
 }

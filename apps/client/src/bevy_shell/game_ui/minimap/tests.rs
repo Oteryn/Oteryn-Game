@@ -415,3 +415,26 @@ fn secondary_minimap_cancel_does_not_persist_a_mark() -> TestResult {
         .satellite_map(|_, marks| assert!(marks.is_empty()));
     Ok(())
 }
+#[test]
+fn create_mark_key_marks_the_player_position_through_the_router() -> TestResult {
+    use oteryn_input_actions::{ButtonState, Modifier, Modifiers, NormalizedInputEvent};
+    let (link, _, _) = play_channel();
+    let view = PlayView::new(oteryn_renderer::TileCoord::new(100, 200), -7, &[])?;
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    let key = NormalizedInputEvent::Key {
+        code: oteryn_input_actions::KeyCode::new(16)?,
+        state: ButtonState::Pressed,
+        modifiers: Modifiers::one(Modifier::Alt).with(Modifier::Shift),
+        repeat: false,
+    };
+    owner.route_input(&[key], false);
+    let play = owner.play.as_ref().ok_or("play")?;
+    assert!(play.view.satellite_map(|_, marks| {
+        marks
+            .iter()
+            .any(|mark| (mark.x, mark.y, mark.floor) == (100, 200, -7))
+    }));
+    Ok(())
+}

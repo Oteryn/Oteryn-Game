@@ -40,15 +40,15 @@ struct ActorDraw {
 pub struct Scene {
     actor_clocks: actor_motion::ActorClocks,
     minimap: bool,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     minimap_quads: std::ops::Range<usize>,
     /// Fixed sprite ranges: the own actor and screen overlays.
     pub(crate) player_quads: Vec<std::ops::Range<usize>>,
     /// Retained corner gauges and circles omitted by the Bevy HUD.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) native_hud_quads: std::ops::Range<usize>,
     floor_separator: u8,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     floor_quads: Vec<(std::ops::Range<usize>, i16)>,
     minimap_state: Option<crate::play::feature_local_minimap::state::SharedMinimap>,
     pub(crate) minimap_memory: crate::play::MinimapMemory,
@@ -129,13 +129,13 @@ impl Scene {
             .collect();
         let mut scene = Self {
             minimap: false,
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             minimap_quads: 0..0,
             player_quads: Vec::new(),
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             native_hud_quads: 0..0,
             floor_separator: 0,
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             floor_quads: Vec::new(),
             minimap_state: None,
             minimap_floor: -7,
@@ -273,11 +273,11 @@ impl Scene {
     /// Painter order over the scrolled viewport and guard tiles; the target is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let (mut sprites, dimmed, floor_quads, player_quads) = self.world_sprites()?;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         {
             self.floor_quads = floor_quads;
         }
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         let _ = floor_quads;
         let atlas = self.atlas();
         let mut player_quads: Vec<_> = player_quads.into_iter().collect();
@@ -312,12 +312,12 @@ impl Scene {
         sprites.lighting.opacity = opacity;
         sprites.lighting.dimmed = dimmed;
         self.sprites = sprites;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         let start = self.sprites.instances().len();
         if self.minimap {
             self.draw_minimap()?;
         }
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         {
             self.minimap_quads = start..self.sprites.instances().len();
             self.native_hud_quads = 0..0;
@@ -360,12 +360,12 @@ impl Scene {
     }
 
     /// Exact overlay partition for frontends which place the minimap in a sidebar.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn minimap_quad_range(&self) -> std::ops::Range<usize> {
         self.minimap_quads.clone()
     }
 
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn health_circle_center(&self) -> [f32; 2] {
         let [x, y] = self.view.tile_to_screen(self.own);
         let half = self.view.tile_px() as f32 / 2.;

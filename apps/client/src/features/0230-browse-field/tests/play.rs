@@ -74,11 +74,9 @@ fn browse_field_selects_the_first_visible_server_window() {
     assert_eq!(link.browse_field_panel().view_id, 3);
 }
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native;
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_controls_and_results() {
     use oteryn_client_runtime::cui3::browse_field::{
@@ -130,7 +128,6 @@ fn browse_field_native_controls_and_results() {
     assert!(!native::enabled(&p));
 }
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_item_controls_preserve_move_and_up_routes()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -246,7 +243,7 @@ fn browse_panel_accepts_negotiated_house_views_and_keeps_legacy_bound()
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_browse_field_supported(&self) {
         crate::play::mailbox::lock(&self.0).browse_field.selected = true;

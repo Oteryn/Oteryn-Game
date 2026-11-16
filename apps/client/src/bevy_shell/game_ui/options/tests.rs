@@ -312,3 +312,59 @@ fn ask_before_exit_checkbox_round_trips_through_the_existing_settings_owner() ->
     );
     Ok(())
 }
+
+#[test]
+fn remember_device_checkbox_keeps_the_session_and_persists_the_login_choices() -> TestResult {
+    struct Directory(std::path::PathBuf);
+    impl Drop for Directory {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    let directory = Directory(std::env::temp_dir().join(format!(
+        "bevy-options-remember-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    )));
+    std::fs::create_dir_all(&directory.0)?;
+    let path = directory.0.join("preferences.json");
+    let mut app = app(Page::Misc, Some(path.clone()))?;
+    let set = |app: &mut App, id: &'static str, value: bool| {
+        let checkbox = app
+            .world_mut()
+            .spawn(Control::Check(id))
+            .observe(toggle)
+            .id();
+        app.world_mut().trigger(ValueChange {
+            source: checkbox,
+            value,
+            is_final: true,
+        });
+    };
+    set(&mut app, "misc.remember_device", true);
+    set(&mut app, "misc.quick_login", true);
+    set(&mut app, "misc.stay_logged_in", false);
+    let draft = app
+        .world()
+        .non_send::<HostOwner>()
+        .preferences_draft()
+        .ok_or("draft")?
+        .miscellaneous;
+    assert!(draft.remember_device && draft.stay_logged_in && draft.quick_login);
+    let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: ok });
+    let saved = crate::play::SettingsState::new(Some(path.clone()))
+        .preferences
+        .miscellaneous;
+    assert!(saved.remember_device && saved.stay_logged_in && saved.quick_login);
+    app.world_mut().non_send_mut::<HostOwner>().open_graphics();
+    set(&mut app, "misc.remember_device", false);
+    set(&mut app, "misc.stay_logged_in", false);
+    let ok = app.world_mut().spawn(Control::Ok).observe(activate).id();
+    app.world_mut().trigger(Activate { entity: ok });
+    let saved = crate::play::SettingsState::new(Some(path))
+        .preferences
+        .miscellaneous;
+    assert!(!saved.remember_device && !saved.stay_logged_in && saved.quick_login);
+    Ok(())
+}

@@ -99,11 +99,21 @@ pub(super) enum LoginControl {
     Submit,
     Cancel,
     News,
+    ForgetDevice,
+    About,
+    Survey,
+    Support,
+    Cookies,
 }
 impl LoginControl {
     pub fn id(self) -> &'static str {
         match self {
             Self::News => "login.news",
+            Self::ForgetDevice => "login.forget_device",
+            Self::About => "login.about",
+            Self::Survey => "login.survey",
+            Self::Support => "login.support",
+            Self::Cookies => "login.cookies",
             Self::Submit => "login.submit",
             Self::Cancel => "login.cancel",
         }
@@ -225,12 +235,19 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let footer = commands
         .spawn(Node {
             justify_content: JustifyContent::End,
+            flex_wrap: FlexWrap::Wrap,
             column_gap: px(5.),
+            row_gap: px(5.),
             ..default()
         })
         .id();
     for (control, caption, width) in [
         (LoginControl::News, "News", 60.),
+        (LoginControl::ForgetDevice, "Sign out device", 130.),
+        (LoginControl::About, "About", 60.),
+        (LoginControl::Survey, "Survey", 60.),
+        (LoginControl::Support, "Support", 70.),
+        (LoginControl::Cookies, "Cookie policy", 110.),
         (LoginControl::Submit, "Save and sign in", 130.),
         (LoginControl::Cancel, "Cancel", 60.),
     ] {
@@ -270,6 +287,31 @@ fn activate(
     if let Ok(control) = controls.get(event.entity) {
         match control {
             LoginControl::News => owner.login.bulletin.visible = true,
+            LoginControl::ForgetDevice => {
+                owner.login.pending_submit = None;
+                read_fields(&mut owner, &fields);
+                owner.sign_out_device();
+            }
+            LoginControl::About => owner
+                .login
+                .form
+                .feedback(crate::about::about_text().replace("\r\n", "\n")),
+            // The optional questionnaire reviews its answer and asks for consent in OS dialogs.
+            #[cfg(windows)]
+            LoginControl::Survey => crate::about::run_survey(),
+            #[cfg(not(windows))]
+            LoginControl::Survey => owner
+                .login
+                .form
+                .feedback("The optional survey is offered by the Windows client.".into()),
+            LoginControl::Support | LoginControl::Cookies => {
+                read_fields(&mut owner, &fields);
+                owner.open_web_link(if matches!(control, LoginControl::Support) {
+                    crate::web_links::WebLink::SupportTickets
+                } else {
+                    crate::web_links::WebLink::CookiePolicy
+                });
+            }
             LoginControl::Submit => {
                 submission::request(&mut owner, &fields);
             }

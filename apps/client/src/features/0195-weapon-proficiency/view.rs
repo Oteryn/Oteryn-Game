@@ -12,11 +12,9 @@ impl PlayLink {
         lock(&self.mailbox).weapon_proficiency.clone()
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// Actions from a presentation bound to the exact observed catalogue.
 #[derive(Clone, Copy)]

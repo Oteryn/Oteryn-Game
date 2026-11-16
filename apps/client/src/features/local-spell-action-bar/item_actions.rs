@@ -139,7 +139,7 @@ pub(in crate::play) fn item_target(
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn editor_items(
     mailbox: &Mailbox,
 ) -> impl Iterator<Item = oteryn_session::ItemEntry> + '_ {

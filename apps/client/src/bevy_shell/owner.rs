@@ -158,10 +158,17 @@ impl HostOwner {
         }
         // The retained owner alone validates, saves and installs preferences. Invalid edits
         // remain in the transient draft; a disk failure still accepts the live values.
+        let before = self.settings.preferences.miscellaneous;
         self.settings.apply(draft.values.clone());
         if self.settings.preferences != draft.values {
             self.draft = Some(draft);
             return;
+        }
+        let after = self.settings.preferences.miscellaneous;
+        if before.stay_logged_in && !after.stay_logged_in
+            || before.remember_device && !after.remember_device
+        {
+            self.forget_device();
         }
         if close {
             self.settings.open = false;
@@ -286,6 +293,69 @@ impl HostOwner {
         self.services.cancel();
         if let Some(entry) = &mut self.entry {
             entry.cancel_entry();
+        }
+    }
+    /// The login window's explicit sign-out, as the Win32 options offered it: turns
+    /// remember-device off, cancels any entry and forgets the remembered device on the
+    /// Platform the connection settings name. A normal game logout keeps the device.
+    pub fn sign_out_device(&mut self) {
+        if self.play.is_some() {
+            return;
+        }
+        let mut preferences = self.settings.preferences.clone();
+        preferences.miscellaneous.remember_device = false;
+        self.settings.apply(preferences);
+        self.cancel_login();
+        // Before the first sign-in of this process the entry has no Platform yet.
+        let configured = self.login.form.settings.config().is_ok_and(|config| {
+            self.entry
+                .as_mut()
+                .is_some_and(|entry| entry.configure(config))
+        });
+        if let Some(entry) = &mut self.entry {
+            entry.native_sign_out();
+        }
+        self.login.form.feedback(if configured {
+            "Signed out; this device is no longer remembered.".into()
+        } else {
+            "Remember-device is off. Correct the connection settings to also forget this device \
+             on the Platform."
+                .into()
+        });
+    }
+    /// Turning stay-logged-in or remember-device off in the options forgets this device on the
+    /// Platform and, as the Win32 page did, logs the character in play out.
+    fn forget_device(&mut self) {
+        if self.phase == Phase::Offline
+            && let Ok(config) = self.login.form.settings.config()
+            && let Some(entry) = &mut self.entry
+        {
+            entry.configure(config);
+        }
+        if let Some(entry) = &mut self.entry {
+            entry.native_sign_out();
+        }
+        if let Some(play) = &mut self.play {
+            play.view.logout();
+        }
+    }
+    /// Opens a Platform page (support tickets, cookie policy) from the login window with the
+    /// Platform the connection settings name.
+    pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
+        if self.phase == Phase::Offline
+            && let Ok(config) = self.login.form.settings.config()
+            && let Some(entry) = &mut self.entry
+        {
+            entry.configure(config);
+        }
+        if !self
+            .entry
+            .as_ref()
+            .is_some_and(|entry| entry.open_web_link(link))
+        {
+            self.login.form.feedback(
+                "Correct the connection settings to open Platform pages in the browser.".into(),
+            );
         }
     }
     pub fn poll(&mut self, viewport: [u32; 2]) {

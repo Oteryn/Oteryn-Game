@@ -86,7 +86,7 @@ impl PlayLink {
 }
 
 /// Snapshot-bound actions for the shared Social dialog.
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Clone, PartialEq, Eq)]
 pub enum TeamControl {
     Browse(bool),
@@ -95,7 +95,7 @@ pub enum TeamControl {
     Filter(oteryn_client_ui::team_finder::TeamFilter),
     Close,
 }
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl PlayLink {
     pub fn team_dispatch_bound(
         &self,
@@ -168,7 +168,7 @@ impl PlayLink {
         true
     }
 }
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::Outbox {
     pub(crate) fn bevy_team_selected(&self, selected: bool) {
         lock(&self.0).discovery.teams.selected = selected;

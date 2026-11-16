@@ -44,32 +44,8 @@ impl Outbox {
     }
 }
 
-#[cfg(windows)]
-pub(in crate::play) fn enqueue_book(
-    mailbox: &mut Mailbox,
-    commands: &UnboundedSender<PlayCommand>,
-    intent: oteryn_client_ui::market::Intent,
-) -> bool {
-    use oteryn_client_ui::market::Intent;
-    if mailbox.market.pending.is_some() {
-        return false;
-    }
-    let page = match intent {
-        Intent::Browse => 0,
-        Intent::NextPage => {
-            if !mailbox.market.details.book_has_next {
-                return false;
-            }
-            mailbox.market.page.saturating_add(1)
-        }
-        Intent::PreviousPage => mailbox.market.page.saturating_sub(1),
-        _ => mailbox.market.page,
-    };
-    let definition = mailbox.market.definition;
-    enqueue(mailbox, commands, Query::Book { definition, page })
-}
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_market_initialize(&self, selected: bool) {
         self.market_initialize(selected);
@@ -83,7 +59,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_market_response(
         &self,

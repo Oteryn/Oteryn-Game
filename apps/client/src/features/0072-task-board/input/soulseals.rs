@@ -41,7 +41,7 @@ impl PlayLink {
 }
 
 impl PlayLink {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn soulseal_fight_bound(&self, expected: &oteryn_client_ui::task_board::TaskBoardPanel, race: u16) -> bool {
         let mut m = lock(&self.mailbox);
         if m.world_input_blocked() || !m.task_board.open || &m.task_board != expected || !fights::select(&mut m.task_board, race) { return false; }

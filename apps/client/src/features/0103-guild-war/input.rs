@@ -40,13 +40,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn guild_war_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.guild_war.open = true;
-        }
+        lock(&self.mailbox).properties.guild_war.open = true;
     }
     pub fn guild_war_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::guild_war::open_key(events) {

@@ -303,7 +303,7 @@ fn a_finished_loot_run_posts_one_loot_notice_when_loot_messages_are_on()
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_team_finder_supported(&self) {
         crate::play::mailbox::lock(&self.0).discovery.teams.selected = true;

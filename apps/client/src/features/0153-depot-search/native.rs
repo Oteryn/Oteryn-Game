@@ -173,11 +173,6 @@ fn activate_panel(
     }
 }
 
-#[cfg(windows)]
-pub(in crate::play) use windows::open_window;
-#[cfg(windows)]
-#[path = "native_windows.rs"]
-mod windows;
 
 #[cfg(test)]
 #[path = "tests/e2e_n03.rs"]

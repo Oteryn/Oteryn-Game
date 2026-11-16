@@ -1,20 +1,19 @@
 //! Timed outfit composition uses the same verified sheets as the world view.
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 use crate::appearance_mount_binding as mount_binding;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 use oteryn_client_assets::{AppearanceIndex, AssetStore, Catalog, SpriteSheets};
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 use oteryn_client_ui::appearance::Preview;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 use std::path::Path;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 pub struct Assets {
     index: AppearanceIndex,
     sheets: SpriteSheets,
-    #[cfg(feature = "bevy-shell")]
     mounts: Option<([u8; 32], std::collections::BTreeMap<String, u32>)>,
 }
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 impl Assets {
     pub fn load(root: &Path) -> Result<Self, String> {
         use oteryn_client_assets::world::{MANIFEST_PATH, MANIFEST_SHA256};
@@ -28,7 +27,6 @@ impl Assets {
         let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
         Ok(Self {
             index,
-            #[cfg(feature = "bevy-shell")]
             mounts: mount_binding::load(root).ok(),
             sheets: SpriteSheets::new(store, catalog),
         })
@@ -45,7 +43,6 @@ impl Assets {
         )?;
         Ok(pixels)
     }
-    #[cfg(feature = "bevy-shell")]
     pub fn draw_panel(
         &mut self,
         panel: &oteryn_client_ui::appearance::Panel,
@@ -169,7 +166,7 @@ impl Assets {
         Ok(())
     }
 }
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 fn frame_index(
     [width, height, depth, layers]: [u32; 4],
     phase_ms: &[u32],
@@ -221,7 +218,7 @@ fn tint(base: &mut [u8], mask: &[u8], colours: [[u8; 3]; 4]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(any(windows, feature = "bevy-shell"))]
+    #[cfg(bevy_shell)]
     #[test]
     fn preview_frames_follow_direction_duration_and_full_pattern_stride() {
         let frame_index = |addon, direction, elapsed| {

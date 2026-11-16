@@ -193,7 +193,7 @@ fn vip_window_closes_when_the_play_link_is_dropped() {
     assert!(!crate::play::mailbox::lock(&shared).vip.open);
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_vip_fixture(
         &self,
@@ -218,7 +218,7 @@ impl crate::play::Outbox {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[test]
 fn shared_vip_visibility_uses_the_canonical_shortcut_and_close_preserves_pending_data()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -250,7 +250,7 @@ fn shared_vip_visibility_uses_the_canonical_shortcut_and_close_preserves_pending
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_vip_refusal_fixture(&self, code: u8) {
         let revision = crate::play::mailbox::lock(&self.0).vip.revision;

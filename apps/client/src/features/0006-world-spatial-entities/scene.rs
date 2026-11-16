@@ -44,7 +44,7 @@ impl Scene {
     }
 
     /// Position relative to the actual visible name, fenced by entity generation.
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn typing_position(
         &self,
         indicator: &oteryn_client_ui::player_typing::TypingIndicator,
@@ -247,7 +247,7 @@ impl Scene {
 #[path = "tests/scene.rs"]
 mod tests;
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl Scene {
     pub(crate) fn item_icon(&self, item: &oteryn_session::ItemEntry) -> Option<&[Draw]> {
         self.cache.item(item)

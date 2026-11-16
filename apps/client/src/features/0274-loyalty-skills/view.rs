@@ -1,7 +1,7 @@
 use crate::play::{PlayLink, mailbox::lock};
 #[path = "layout.rs"]
 mod layout;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub use layout::SkillsNumbers;
 pub use layout::{SkillsLayout, SkillsLayoutState, SkillsWidget};
 
@@ -34,8 +34,3 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;

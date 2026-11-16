@@ -493,7 +493,7 @@ fn nx8_influenced_and_fiendish_markers_follow_creature_presentation() -> Result<
     Ok(())
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[test]
 fn item_icons_reuse_loaded_assets_and_packed_cells() -> Result<(), Box<dyn std::error::Error>> {
     let mut scene = Scene::centered_on(

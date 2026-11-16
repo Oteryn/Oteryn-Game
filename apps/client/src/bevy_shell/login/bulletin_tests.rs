@@ -154,3 +154,78 @@ fn bulletin_escape_respects_frontmost_modal_and_keeps_login_open() -> TestResult
     assert!(host.login.visible);
     Ok(())
 }
+#[test]
+fn login_sign_out_device_turns_remember_device_off() -> TestResult {
+    let mut app = app()?;
+    {
+        let mut host = app.world_mut().non_send_mut::<HostOwner>();
+        let misc = &mut host.settings.preferences.miscellaneous;
+        misc.stay_logged_in = true;
+        misc.remember_device = true;
+        misc.quick_login = true;
+    }
+    let button = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "login.forget_device").then_some(entity))
+        .ok_or("missing login sign-out button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let host = app.world().non_send::<HostOwner>();
+    let misc = host.settings.preferences.miscellaneous;
+    assert!(!misc.remember_device);
+    assert!(
+        misc.stay_logged_in && misc.quick_login,
+        "only the Win32 choice changes"
+    );
+    // The fixture has no connection settings, so the Platform part cannot run yet.
+    assert!(
+        host.login
+            .form
+            .message()
+            .contains("Correct the connection settings")
+    );
+    assert!(
+        host.login.visible,
+        "signing out keeps the login window open"
+    );
+    Ok(())
+}
+#[test]
+fn login_about_shows_release_build_and_license() -> TestResult {
+    let mut app = app()?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "login.about").then_some(entity))
+        .ok_or("missing login About button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let host = app.world().non_send::<HostOwner>();
+    let message = host.login.form.message();
+    assert!(message.starts_with("Oteryn Game Client\nRelease: "));
+    assert!(message.contains("License: MPL-2.0") && !message.contains('\r'));
+    Ok(())
+}
+#[test]
+fn login_support_link_needs_connection_settings_before_opening_a_browser() -> TestResult {
+    let mut app = app()?;
+    let button = app
+        .world_mut()
+        .query::<(Entity, &LoginControl)>()
+        .iter(app.world())
+        .find_map(|(entity, control)| (control.id() == "login.support").then_some(entity))
+        .ok_or("missing login Support button")?;
+    app.world_mut().trigger(Activate { entity: button });
+    app.update();
+    let host = app.world().non_send::<HostOwner>();
+    assert!(
+        host.login
+            .form
+            .message()
+            .contains("Correct the connection settings to open Platform pages")
+    );
+    Ok(())
+}

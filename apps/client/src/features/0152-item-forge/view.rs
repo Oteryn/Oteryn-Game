@@ -1,6 +1,6 @@
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 mod bevy;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub(crate) use bevy::{ForgeControl, forge_action_enabled};
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
@@ -9,16 +9,7 @@ impl PlayLink {
         lock(&self.mailbox).item_forge.clone()
     }
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "native.rs"]
 pub(in crate::play) mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
-#[cfg(windows)]
-pub(in crate::play) fn poll_resource_dialog(
-    mailbox: &crate::play::mailbox::SharedMailbox,
-    commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
-) {
-    native::open_resource_dialog(mailbox, commands);
-}

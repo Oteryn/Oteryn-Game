@@ -381,6 +381,7 @@ enum MessageAction {
     Private,
     Ignore,
     Report,
+    Lists,
     Save,
     Close,
 }
@@ -440,6 +441,7 @@ fn message_menu(
         ]);
     }
     actions.extend([
+        (MessageAction::Lists, "Communication lists".into()),
         (MessageAction::Save, "Save messages".into()),
         (MessageAction::Close, "Close".into()),
     ]);
@@ -515,6 +517,7 @@ fn message_action(
                 play.link.rule_violation_open(name);
             }
         }
+        MessageAction::Lists => play.link.chat_lists_open(name),
         MessageAction::Save => {
             let _ = play
                 .link

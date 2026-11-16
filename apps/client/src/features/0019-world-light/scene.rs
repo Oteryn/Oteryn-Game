@@ -37,9 +37,9 @@ impl Scene {
         let mut player = None::<std::ops::Range<usize>>;
         let mut floor_quads = Vec::new();
         let limit = MAX_BATCH_QUADS - usize::from(self.target.is_some() && self.target_frame);
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         let floors = self.world.all_draw_floors();
-        #[cfg(not(feature = "bevy-shell"))]
+        #[cfg(not(bevy_shell))]
         let floors = self.world.draw_floors();
         for floor in floors {
             let own_floor = floor == self.world.center().2;
@@ -144,7 +144,7 @@ impl Scene {
     }
 }
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl Scene {
     pub(crate) fn floor_quad_ranges(&self) -> &[(std::ops::Range<usize>, i16)] {
         &self.floor_quads
@@ -156,7 +156,7 @@ impl Scene {
 }
 
 /// OTClient's default floor fading interval is 500 ms; reversals retain current opacity.
-#[cfg(any(feature = "bevy-shell", test))]
+#[cfg(any(bevy_shell, test))]
 pub(crate) fn fade_alpha(alpha: f32, visible: bool, elapsed_seconds: f32) -> f32 {
     let step = elapsed_seconds / 0.5;
     if visible {

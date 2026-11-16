@@ -39,11 +39,8 @@ fn controls_encode_exact_request_and_reply_and_refusal_are_visible() {
     assert!(p.feedback.is_some());
 }
 
-#[cfg(not(windows))]
-#[path = "../native.rs"]
-mod native;
+use crate::play::feature_0225_boss_difficulty::view::native;
 
-#[cfg(not(windows))]
 #[test]
 fn boss_difficulty_native_controls_validate_and_send() {
     let mut p = BossDifficultyPanel {
@@ -101,7 +98,6 @@ fn boss_difficulty_native_controls_validate_and_send() {
     assert!(!native::enabled(&p));
 }
 
-#[cfg(not(windows))]
 #[test]
 fn boss_difficulty_native_actions_use_admitted_commands() {
     use crate::combat_input::PlayCommand;
@@ -165,7 +161,6 @@ fn boss_difficulty_native_actions_use_admitted_commands() {
 #[path = "context.rs"]
 mod context;
 
-#[cfg(not(windows))]
 #[test]
 fn difficulty_dropdown_uses_the_server_confirmed_maximum() {
     for maximum in [25, 28] {

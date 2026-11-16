@@ -7,15 +7,12 @@ impl PlayLink {
         }
         if self.uses_shared_frontend() {
             lock(&self.mailbox).vip_presence.open = true;
-        } else {
-            #[cfg(windows)]
-            super::view::open_window(self);
         }
         true
     }
 }
 
-#[cfg(all(test, not(windows)))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers};

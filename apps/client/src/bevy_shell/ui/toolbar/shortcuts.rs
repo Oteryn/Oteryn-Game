@@ -92,6 +92,26 @@ pub(super) fn open(owner: &mut HostOwner, id: &str) -> bool {
             link.rule_violation_open("");
             true
         }
+        "memorial" => {
+            link.memorial_open();
+            true
+        }
+        "premium" => {
+            link.premium_overview_open();
+            true
+        }
+        "private" => {
+            link.chat_private_open();
+            true
+        }
+        "returner" => {
+            link.open_returner_reward();
+            true
+        }
+        "sanctions" => {
+            link.sanctions_open();
+            true
+        }
         _ => false,
     }
 }

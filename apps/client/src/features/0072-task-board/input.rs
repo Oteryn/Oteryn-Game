@@ -126,19 +126,13 @@ impl PlayLink {
             }
         };
         if show {
-            #[cfg(windows)]
-            if !self.uses_shared_frontend() {
-                super::view::weekly_results_window::open(self);
-            }
-            if cfg!(not(windows)) || self.uses_shared_frontend() {
-                lock(&self.mailbox).task_board.weekly_results_open = true;
-            }
+            lock(&self.mailbox).task_board.weekly_results_open = true;
         }
     }
 }
 
 impl PlayLink {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn task_board_preferences_bound(&self, expected: &oteryn_client_ui::task_board::TaskBoardPanel, intent: oteryn_client_ui::task_board::FullIntent) -> bool {
         use oteryn_client_ui::task_board::{FullIntent,full_request};
         let mut m = lock(&self.mailbox);

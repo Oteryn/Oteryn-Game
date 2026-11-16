@@ -254,7 +254,7 @@ fn received_lower_floor_effect_is_projected_before_foreground_terrain()
     let now = view.visuals.first().ok_or("cue")?.received;
     view.project_presentation(now)?;
     let baseline = view.scene().sprites().len();
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     {
         let ranges = view.scene().floor_quad_ranges();
         let lower = ranges.iter().find(|(_,floor)| *floor == -7).ok_or("lower floor")?;
@@ -288,7 +288,7 @@ fn received_lower_floor_actor_is_painted_in_its_floor_and_removed_with_observati
     outbox.appearances(vec![actor.clone()]);
     view.tick(&link).map_err(|e|format!("{e:?}"))?;
     assert_eq!(view.scene().sprites().len(),before+1);
-    #[cfg(feature="bevy-shell")]
+    #[cfg(bevy_shell)]
     assert_eq!(view.scene().floor_quad_ranges().iter().find(|(_,floor)| *floor == -7).ok_or("lower floor")?.0.len(),2);
     actor.entity.position.floor = -5; // No terrain observation for this floor: do not fabricate it.
     outbox.appearances(vec![actor]);

@@ -41,26 +41,14 @@ impl PlayLink {
     pub fn boss_encounter_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if oteryn_client_ui::boss_encounter::cooldowns_key(events) {
             self.boss_encounter_request(Intent::Refresh);
-            #[cfg(windows)]
-            if !self.uses_shared_frontend() {
-                super::view::cooldown_window(self);
-            }
-            if cfg!(not(windows)) || self.uses_shared_frontend() {
-                lock(&self.mailbox).boss_encounter.cooldowns_open = true;
-            }
+            lock(&self.mailbox).boss_encounter.cooldowns_open = true;
             return true;
         }
         if !oteryn_client_ui::boss_encounter::open_key(events) {
             return false;
         }
         self.boss_encounter_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).boss_encounter.open = true;
-        }
+        lock(&self.mailbox).boss_encounter.open = true;
         true
     }
 }

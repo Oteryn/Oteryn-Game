@@ -210,8 +210,3 @@ pub(in crate::play) fn visual_submit(
     submit(p, id, values.each_ref().map(String::as_str), clear)
 }
 
-#[cfg(windows)]
-pub(in crate::play) use window::open_window;
-#[cfg(windows)]
-#[path = "native_window.rs"]
-mod window;

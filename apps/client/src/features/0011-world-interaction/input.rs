@@ -41,7 +41,7 @@ use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_runtime::world_interaction::{Action, Command};
 use oteryn_client_ui::world_interaction::menu::Menu;
 impl PlayView {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(crate) fn creature_context(
         &self,
         target: oteryn_session::EntityRef,

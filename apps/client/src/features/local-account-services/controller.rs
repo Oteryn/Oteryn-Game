@@ -9,8 +9,6 @@ pub(super) async fn execute(
     token: &AccessToken,
     cancel: CancellationToken,
 ) {
-    #[cfg(windows)]
-    let _progress = super::window::Progress::open(cancel.clone());
     let refresh = matches!(
         action,
         Action::Bid {

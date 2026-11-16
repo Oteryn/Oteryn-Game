@@ -160,11 +160,9 @@ fn boss_reward_actions_emit_exact_payloads_and_apply_server_projection() -> Resu
         .map_err(|_| "boss rewards UI test thread panicked")?
 }
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native;
 
-#[cfg(not(windows))]
 #[test]
 fn reward_death_id_rejects_unicode_without_panicking() {
     assert_eq!(native::parse_death(&format!("a€{}", "0".repeat(28))), None);
@@ -177,7 +175,6 @@ fn reward_death_id_rejects_unicode_without_panicking() {
     );
 }
 
-#[cfg(not(windows))]
 #[test]
 fn reopened_reward_form_uses_the_retained_death_and_ordinal() {
     let panel = oteryn_client_ui::boss_rewards::BossRewardsPanel {

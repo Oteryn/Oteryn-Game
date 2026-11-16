@@ -158,7 +158,7 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
@@ -221,7 +221,7 @@ impl Outbox {
         mailbox.depot = Default::default();
         mailbox.depot_shutdown = true;
         mailbox.imbue_shutdown = true;
-        #[cfg(feature = "bevy-shell")]
+        #[cfg(bevy_shell)]
         mailbox.achievement_banners.clear();
         mailbox.achievement_notices = Default::default();
         mailbox.achievements = Default::default();
@@ -295,18 +295,6 @@ impl PlayLink {
     /// The next event: pushes older than the step outcome, the outcome, coalesced pushes, then end.
     pub fn poll(&self) -> Option<PlayEvent> {
         self.poll_weekly_results();
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::super::feature_0148_wheel_allocation::view::poll_gems(
-                &self.mailbox,
-                &self.commands,
-            );
-            super::super::feature_0152_item_forge::view::poll_resource_dialog(
-                &self.mailbox,
-                &self.commands,
-            );
-            super::super::feature_0081_npc_shop::view::open_window(&self.mailbox, &self.commands);
-        }
         let mut mailbox = lock(&self.mailbox);
         if mailbox.before != Pushed::default() {
             return Some(PlayEvent::Pushed(Box::new(std::mem::take(

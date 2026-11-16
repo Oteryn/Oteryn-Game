@@ -275,7 +275,6 @@ fn player_trade_unsolicited_incoming_and_terminal_updates_reach_panel_and_reset_
     assert!(!link.player_trade_panel().selected);
 }
 
-#[cfg(not(windows))]
 #[test]
 fn player_trade_secondary_click_uses_pointer_and_focus_loss_clears_it() -> Result<(), Error> {
     use oteryn_input_actions::{

@@ -10,8 +10,6 @@ pub(super) async fn execute(
     browser: &Browser,
     cancel: CancellationToken,
 ) {
-    #[cfg(windows)]
-    let _progress = crate::account_services::window::Progress::open(cancel.clone());
     if let Err(error) = apply(view, action, client, token, browser, cancel).await {
         view.feedback = lfmt!(
             "Coin service unavailable ({:?}). Pending requests keep their identity; check status or retry. No browser result credits coins.",

@@ -119,7 +119,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(super) screen_look: Option<super::feature_local_text_messages::view::LookMessage>,
     pub(super) shared_frontend: bool,
     pub(super) command_latency: Option<(std::time::Instant, std::time::Duration)>,
@@ -128,6 +128,8 @@ pub(super) struct Mailbox {
     pub(super) ui_sounds: Vec<super::UiSound>,
     pub(super) ui_vip_status: std::collections::BTreeMap<u64, oteryn_session::VipPresenceStatus>,
     pub(super) bar_actions: super::feature_local_spell_action_bar::view::BarActionsState,
+    /// The communication-lists form: open, and the player name being edited.
+    pub(super) chat_lists: (bool, String),
     pub(super) custom_chat_paste: Option<String>,
     pub(super) custom_hotkeys_ended: bool,
     pub(super) tracked_custom_passive: Option<crate::play::PassiveAbility>,
@@ -161,8 +163,6 @@ pub(super) struct Mailbox {
     /// Tibia Global's Manual Sort Mode of this session (capability 510).
     pub(super) container_manual_sort: oteryn_client_ui::container_manual_sort::ManualSort,
     pub(super) equipment_selected: bool,
-    #[cfg(windows)]
-    pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
@@ -171,7 +171,7 @@ pub(super) struct Mailbox {
     pub(super) depot: oteryn_client_ui::depot::DepotPanel,
     pub(super) depot_shutdown: bool,
     pub(super) target_walk: oteryn_client_ui::target_move::WalkState,
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     pub(super) achievement_banners: std::collections::VecDeque<String>,
     pub(super) achievement_notices: oteryn_client_ui::achievement_notices::AchievementNoticesPanel,
     pub(super) vitals: Option<oteryn_session::ActorVitals>,
@@ -237,15 +237,11 @@ pub(super) struct Mailbox {
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
     pub(super) dialogue: oteryn_client_ui::npc_dialogue::DialoguePanel,
-    #[cfg(any(windows, test))]
+    #[cfg(test)]
     pub(super) dialogue_pointer: Option<(f64, f64)>,
-    #[cfg(windows)]
-    pub(super) dialogue_window: bool,
     pub(super) dialogue_shutdown: bool,
     /// Session-local shared NPC presentation dismissal; server reducers do not reopen it.
     pub(super) npc_dialog_dismissed: bool,
-    #[cfg(windows)]
-    pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,
@@ -257,6 +253,9 @@ pub(super) struct Mailbox {
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
+    /// The shared frontend's reviewed hireling configuration purchase, awaiting its Confirm press.
+    pub(super) hireling_review:
+        Option<crate::play::feature_0250_hireling_management::input::configuration::Review>,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     pub(super) lens: oteryn_client_ui::lens_help::LensHelp,
@@ -264,6 +263,8 @@ pub(super) struct Mailbox {
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
+    /// The shared frontend's private-channel window; the native chat embeds these controls.
+    pub(super) chat_private_open: bool,
     pub(super) chat_public_shutdown: bool,
     pub(super) motion_selected: bool,
     pub(super) mount_pending: bool,

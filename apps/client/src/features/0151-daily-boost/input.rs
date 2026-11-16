@@ -16,17 +16,11 @@ impl PlayLink {
         if !oteryn_client_ui::daily_boost::open_key(events) {
             return false;
         }
-        #[cfg(all(windows, not(test)))]
-        let was_open = lock(&self.mailbox).daily_boost.open;
         {
             let mut mailbox = lock(&self.mailbox);
             mailbox.daily_boost.open = true;
         }
         refresh(&mut lock(&self.mailbox), &self.commands);
-        #[cfg(all(windows, not(test)))]
-        if !was_open && !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
         true
     }
 }

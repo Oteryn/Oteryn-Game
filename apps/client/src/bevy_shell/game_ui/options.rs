@@ -151,8 +151,11 @@ fn activate(
                 if state.page == Page::Screenshots {
                     draft.screenshots = defaults.screenshots.clone();
                 }
+                // Reset never signs this device out; the login choices change only by hand.
                 for row in metadata::rows(state.page) {
-                    row.reset(draft, &defaults);
+                    if !metadata::LOGIN_CHOICES.contains(&row.id) {
+                        row.reset(draft, &defaults);
+                    }
                 }
             });
         }

@@ -198,8 +198,6 @@ use crate::play::feature_0154_store::view::native;
 
 #[test]
 fn native_store_confirmation_and_server_quote() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(windows)]
-    let _open: fn(&crate::play::PlayLink) = native::open_window;
     use oteryn_client_runtime::cui3::store::*;
     let mut p = oteryn_client_ui::store::StorePanel {
         selected: true,

@@ -1,5 +1,6 @@
 //! Shared desktop character picker over server-owned rows and the existing selector callback.
 mod bridge;
+mod training;
 use super::{
     game_ui::{GameModal, modal::ModalGuard},
     owner::HostOwner,
@@ -31,6 +32,10 @@ enum Choice {
     Next,
     Play,
     Train,
+    /// Adds or removes the selected row in the offline-training batch.
+    Mark,
+    /// Trains every marked character, one after another.
+    TrainMarked,
     Refresh,
     Create,
     Account,
@@ -51,6 +56,8 @@ pub(super) struct PickerState {
     revision: u64,
     rendered: Option<(u64, u64)>,
     last_click: Option<(u64, usize, std::time::Instant)>,
+    /// Rows marked for offline training with the channel chosen when marked, in marking order.
+    marked: Vec<(usize, Option<usize>)>,
 }
 #[derive(Resource)]
 pub(super) struct Skin {
@@ -122,6 +129,7 @@ pub(super) fn project(
             .position(|row| row.available && row.character.character_id == request.preselect)
             .or_else(|| request.rows.iter().position(|row| row.available));
         state.channel = None;
+        state.marked.clear();
         state.page = state.selected.unwrap_or(0) / PAGE_ROWS;
         state.revision = 0;
         state.rendered = None;
@@ -188,10 +196,11 @@ pub(super) fn project(
             .take(page_rows)
         {
             let label = format!(
-                "{} — {}{}",
+                "{} — {}{}{}",
                 row.character.name,
                 row.world_name,
-                if row.available { "" } else { " (unavailable)" }
+                if row.available { "" } else { " (unavailable)" },
+                training::suffix(&state, index)
             );
             let button = add_button(
                 &mut commands,
@@ -247,9 +256,11 @@ pub(super) fn project(
                 source::font(skin.font.clone(), false),
             ))
             .id();
+        let [mark, train_marked] =
+            training::buttons(&mut commands, &skin, request.id, &state, &request.rows);
         commands
             .entity(navigation)
-            .add_children(&[previous, page, next]);
+            .add_children(&[previous, page, next, mark, train_marked]);
         commands.entity(panel).add_child(navigation);
         let row = state.selected.and_then(|index| request.rows.get(index));
         let channel = row
@@ -334,6 +345,8 @@ fn add_button(
         Choice::Next => "selection.next".into(),
         Choice::Play => "selection.play".into(),
         Choice::Train => "selection.training".into(),
+        Choice::Mark => "selection.training.mark".into(),
+        Choice::TrainMarked => "selection.training.batch".into(),
         Choice::Refresh => "selection.refresh".into(),
         Choice::Account => "selection.account".into(),
         Choice::Create => "selection.create".into(),
@@ -433,6 +446,11 @@ fn activate(
                     channel_id,
                 }
             }),
+        Choice::Mark => {
+            training::toggle(&mut state, &request.rows);
+            None
+        }
+        Choice::TrainMarked => training::batch(&state, &request.rows),
         Choice::Account => Some(SelectionAction::AccountServices),
         Choice::Create => Some(SelectionAction::Create),
         Choice::Refresh => Some(SelectionAction::Refresh),

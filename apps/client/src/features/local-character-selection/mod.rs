@@ -5,7 +5,7 @@ use oteryn_platform_contracts::DirectorySnapshot;
 mod training;
 pub use training::{TrainingQueue, TrainingSelection};
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 mod native;
 
 #[derive(Debug, Clone)]
@@ -79,11 +79,6 @@ pub fn select(
     preselect: &str,
     cancellation: oteryn_foundation::CancellationToken,
 ) -> SelectionAction {
-    #[cfg(windows)]
-    {
-        native::select(rows, preselect, cancellation)
-    }
-    #[cfg(not(windows))]
     {
         let _ = (rows, preselect, cancellation);
         SelectionAction::Cancel

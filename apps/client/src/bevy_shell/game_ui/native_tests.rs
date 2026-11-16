@@ -82,6 +82,7 @@ fn native_game_shell_renders_retained_owners() -> Result<(), Box<dyn std::error:
         preferences: None,
         login_settings: None,
         ui_audit: None,
+        smoke: false,
     };
     let mut app = bevy_shell::build_app(options, owner);
     // Exercise real letterboxing: at the minimum width the 15x11 map nearly fills

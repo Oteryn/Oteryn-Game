@@ -1,4 +1,4 @@
-//! Opt-in Bevy desktop host over the production client owners.
+//! The Bevy desktop host over the production client owners; `oteryn-client.exe` on Windows.
 mod account_services;
 mod audio;
 mod audit;
@@ -37,7 +37,11 @@ pub struct Options {
     /// Optional diagnostic state; F12 also writes a rendered PNG beside this path.
     pub ui_audit: Option<PathBuf>,
     pub login_settings: Option<PathBuf>,
+    /// `--smoke`: open the window, run a few frames and exit, for packaging checks.
+    pub smoke: bool,
 }
+/// Overrides the packaged `ui-assets` directory beside the executable.
+const UI_ASSETS_ENV: &str = "OTERYN_UI_ASSETS";
 impl Options {
     pub fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Self, String> {
         let mut args = args.into_iter();
@@ -45,18 +49,21 @@ impl Options {
         let mut preferences = crate::play::PreferenceStore::path();
         let mut ui_audit = None;
         let mut login_settings = crate::native_login::settings_path().ok();
+        let mut smoke = false;
         while let Some(argument) = args.next() {
-            let target =
-                match argument.to_str() {
-                    Some("--ui-assets") => &mut ui_assets,
-                    Some("--preferences") => &mut preferences,
-                    Some("--ui-audit") => &mut ui_audit,
-                    Some("--login-settings") => &mut login_settings,
-                    _ => return Err(
-                        "Use --ui-assets <directory> [--preferences <path>] [--ui-audit <path>] [--login-settings <path>]"
-                            .into(),
-                    ),
-                };
+            if argument == "--smoke" {
+                smoke = true;
+                continue;
+            }
+            let target = match argument.to_str() {
+                Some("--ui-assets") => &mut ui_assets,
+                Some("--preferences") => &mut preferences,
+                Some("--ui-audit") => &mut ui_audit,
+                Some("--login-settings") => &mut login_settings,
+                // The launcher passes its own arguments through, and the executable handles
+                // --check-packages before the host starts: like the earlier shell, ignore them.
+                _ => continue,
+            };
             let value = args
                 .next()
                 .filter(|v| !v.is_empty())
@@ -64,15 +71,29 @@ impl Options {
             *target = Some(PathBuf::from(value));
         }
         let ui_assets = ui_assets
-            .ok_or("--ui-assets <directory> is required; source skins/fonts are external")?
-            .canonicalize()
-            .map_err(|_| "Cannot open --ui-assets directory")?;
-        ui::validate_assets(&ui_assets)?;
+            .or_else(|| std::env::var_os(UI_ASSETS_ENV).map(PathBuf::from))
+            .or_else(|| {
+                std::env::current_exe()
+                    .ok()
+                    .and_then(|exe| exe.parent().map(|directory| directory.join("ui-assets")))
+            })
+            .ok_or("Pass --ui-assets <directory>; source skins/fonts are external")?;
+        // A packaging smoke run starts without the external skins when none are installed.
+        let ui_assets = if smoke && !ui_assets.is_dir() {
+            ui_assets
+        } else {
+            let ui_assets = ui_assets
+                .canonicalize()
+                .map_err(|_| "Cannot open --ui-assets directory")?;
+            ui::validate_assets(&ui_assets)?;
+            ui_assets
+        };
         Ok(Self {
             ui_assets,
             preferences,
             ui_audit,
             login_settings,
+            smoke,
         })
     }
 }
@@ -80,6 +101,7 @@ impl Options {
 /// Called only by the executable. Headless tests never install WinitPlugin or run this loop.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::error::Error>> {
     let options = Options::parse(args)?;
+    crate::desktop_startup::prepare(options.preferences.clone(), options.smoke);
     let mut owner = HostOwner::new(options.preferences.clone())?;
     owner.configure_login(options.login_settings.clone(), |name| {
         std::env::var(name).ok()
@@ -93,6 +115,9 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<(), Box<dyn std::
 }
 fn build_app(options: Options, owner: HostOwner) -> App {
     let mut app = App::new();
+    if options.smoke {
+        app.add_systems(Update, smoke_exit);
+    }
     app.add_plugins(
         DefaultPlugins
             .set(AssetPlugin {
@@ -106,7 +131,7 @@ fn build_app(options: Options, owner: HostOwner) -> App {
             .set(WindowPlugin {
                 close_when_requested: false,
                 primary_window: Some(Window {
-                    title: "Oteryn — Bevy host (opt-in)".into(),
+                    title: "Oteryn".into(),
                     resolution: (1024, 720).into(),
                     resize_constraints: bevy::window::WindowResizeConstraints {
                         min_width: 1020.,
@@ -187,6 +212,14 @@ fn build_app(options: Options, owner: HostOwner) -> App {
     updater::install(&mut app);
     window_drag::install(&mut app);
     app
+}
+
+/// Ends a `--smoke` run once the window has drawn a few frames.
+fn smoke_exit(mut frames: Local<u8>, mut exit: MessageWriter<AppExit>) {
+    *frames = frames.saturating_add(1);
+    if *frames == 3 {
+        exit.write(AppExit::Success);
+    }
 }
 
 fn poll_owner(

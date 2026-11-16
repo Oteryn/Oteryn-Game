@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU32;
 
 /// Actual step replies observed by this view, never inferred from input or position.
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 pub(crate) struct StepReceipt {
     reply_count: u64,
@@ -33,7 +33,7 @@ pub(crate) struct StepReceipt {
 
 #[derive(Debug, Clone)]
 pub struct PlayView {
-    #[cfg(feature = "bevy-shell")]
+    #[cfg(bevy_shell)]
     last_step: Option<StepReceipt>,
     shared_frontend: bool,
     game_notifications: feature_local_game_notifications::state::State,
@@ -111,8 +111,6 @@ mod resource_hud;
 pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
-#[cfg(windows)]
-mod status_window;
 mod stepper;
 mod tick;
 pub use feature_0233_touch_controls::promoted::is_touch_promoted;
@@ -123,8 +121,6 @@ pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
-#[cfg(windows)]
-pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 mod preferences;
 pub use preferences::*;
 
@@ -144,9 +140,10 @@ use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
-#[cfg(feature = "bevy-shell")]
+pub use feature_0115_mail::view::form::{FeatureForm, FormView};
+#[cfg(bevy_shell)]
 pub(crate) use feature_0148_wheel_allocation::input::gem_presentation::Action as GemControl;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 pub use feature_0148_wheel_allocation::input::shared::WheelControl;
 pub use feature_0450_server_modal::protocol::ServerModalPanel;
 pub use mailbox::{Outbox, PlayEvent, PlayLink, Pushed, play_channel};
@@ -159,7 +156,7 @@ mod tests;
 #[path = "screenshots_live_tests.rs"]
 mod screenshots_live_tests;
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 pub(crate) fn audit_step_reply(outbox: &Outbox, outcome: oteryn_session::StepOutcome) {
     outbox.stepped(outcome);
 }

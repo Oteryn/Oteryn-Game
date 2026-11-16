@@ -71,7 +71,7 @@ impl Outbox {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_party_selected(&self, selected: bool, chat: bool, name: &str) {
         self.party_initialize(selected, chat);

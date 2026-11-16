@@ -11,15 +11,9 @@ impl PlayLink {
         if !oteryn_client_ui::inventory::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            let mut mailbox = lock(&self.mailbox);
-            if !mailbox.inventory_shutdown {
-                mailbox.inventory.open = true;
-            }
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.inventory_shutdown {
+            mailbox.inventory.open = true;
         }
         true
     }
@@ -61,7 +55,7 @@ impl PlayLink {
         };
         send_move(&mut mailbox, &self.commands, request);
     }
-    #[cfg(all(test, feature = "bevy-shell"))]
+    #[cfg(all(test, bevy_shell))]
     pub(crate) fn bevy_manual_sort_fixture(outbox: &crate::play::Outbox, selected: bool) {
         outbox.container_manual_sort_initialize(selected);
     }

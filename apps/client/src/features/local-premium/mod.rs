@@ -2,8 +2,6 @@
 pub(crate) mod game;
 #[cfg(test)]
 mod game_tests;
-#[cfg(windows)]
-mod native;
 #[cfg(test)]
 mod tests;
 use oteryn_foundation::CancellationToken;
@@ -88,11 +86,6 @@ impl View {
 }
 pub type Presenter = Arc<dyn Fn(&View, CancellationToken) -> Action + Send + Sync>;
 pub fn present(view: &View, cancel: CancellationToken) -> Action {
-    #[cfg(windows)]
-    {
-        native::present(view, cancel)
-    }
-    #[cfg(not(windows))]
     {
         let _ = (view, cancel);
         Action::Back
@@ -104,8 +97,6 @@ async fn refresh(
     token: &AccessToken,
     cancel: CancellationToken,
 ) {
-    #[cfg(windows)]
-    let _progress = crate::account_services::window::Progress::open(cancel.clone());
     let at = Instant::now();
     let result = client.premium_status(token, cancel).await;
     match result {

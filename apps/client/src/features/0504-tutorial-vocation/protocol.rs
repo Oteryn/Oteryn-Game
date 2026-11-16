@@ -30,7 +30,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(all(test, feature = "bevy-shell"))]
+#[cfg(all(test, bevy_shell))]
 impl Outbox {
     pub(crate) fn bevy_tutorial_vocation_initialize(&self) {
         self.tutorial_vocation_initialize(true);

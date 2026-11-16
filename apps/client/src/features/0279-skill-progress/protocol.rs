@@ -40,15 +40,7 @@ impl PlayLink {
             return false;
         }
         self.skill_progress_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Skill progress — Ctrl+Alt+Shift+K"),
-            |mailbox| &mut mailbox.skill_progress,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).skill_progress.open = true;
-        }
+        lock(&self.mailbox).skill_progress.open = true;
         true
     }
     pub(in crate::play) fn refresh_skill_progress_if_due(&self) {

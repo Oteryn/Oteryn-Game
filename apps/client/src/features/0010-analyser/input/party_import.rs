@@ -8,7 +8,7 @@ use std::{
     io::{self, Read},
     path::Path,
 };
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn import(panel: &mut Panel, path: &Path) -> io::Result<()> {
     if !panel.selected {
         return Err(io::Error::other(tr!("No active analyser session")));
@@ -46,7 +46,7 @@ pub(super) fn export(panel: &Panel, path: &Path) -> io::Result<()> {
     .map_err(io::Error::other)?;
     std::fs::write(path, text)
 }
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(super) fn submit(panel: &mut Panel, importing: bool, path: Option<&str>) -> bool {
     let Some(path) = path.filter(|path| !path.trim().is_empty()) else {
         panel.feedback = Some(tr!("Choose a party summary file path"));

@@ -3,7 +3,7 @@
 //! Magic effects and missiles resolve the verified catalog, with bounded offline placeholders.
 #[path = "actor_hud.rs"]
 mod actor_hud;
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 #[path = "view/creature_bars.rs"]
 mod creature_bars;
 #[path = "icons.rs"]
@@ -16,7 +16,7 @@ mod visual;
 mod numbers;
 #[path = "view/floors.rs"]
 mod floors;
-#[cfg(any(windows, feature = "bevy-shell"))]
+#[cfg(bevy_shell)]
 pub(crate) use actor_hud::health_rgb;
 use super::state::{MAX_VISUAL_CUES, VISUAL_LIFETIME, VisualCue};
 use crate::play::PlayView;

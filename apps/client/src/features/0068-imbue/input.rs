@@ -140,7 +140,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn enqueue_confirmed(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,

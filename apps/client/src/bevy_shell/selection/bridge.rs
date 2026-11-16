@@ -205,7 +205,21 @@ fn allowed(request: &SelectionRequest, action: &SelectionAction) -> bool {
         | SelectionAction::Refresh
         | SelectionAction::Create
         | SelectionAction::AccountServices => true,
-        SelectionAction::TrainMany { .. } => false,
+        SelectionAction::TrainMany { characters } => {
+            let mut seen = std::collections::HashSet::new();
+            !characters.is_empty()
+                && characters.len() <= request.rows.len()
+                && characters.iter().all(|selection| {
+                    seen.insert(selection.character_id.as_str())
+                        && request.rows.iter().any(|row| {
+                            row.available
+                                && row.character.character_id == selection.character_id
+                                && selection.channel_id.as_ref().is_none_or(|id| {
+                                    row.channels.iter().any(|channel| &channel.0 == id)
+                                })
+                        })
+                })
+        }
     }
 }
 

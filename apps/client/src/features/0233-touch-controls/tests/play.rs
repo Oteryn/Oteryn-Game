@@ -26,35 +26,11 @@ fn touch_overlay_is_hidden_until_touch_and_highlights_the_selected_mode() -> Res
     Ok(())
 }
 
-#[cfg(not(windows))]
 fn touch(view: &mut PlayView, link: &PlayLink, id: u64, phase: Phase, at: [f64; 2]) {
     assert!(view.touch_input(link, id, phase, at).is_ok());
 }
 
 // On the native target these same queue tests drive the actual winit event adapter.
-#[cfg(windows)]
-fn touch(view: &mut PlayView, link: &PlayLink, id: u64, phase: Phase, at: [f64; 2]) {
-    use winit::event::{DeviceId, Touch, TouchPhase, WindowEvent};
-    let phase = match phase {
-        Phase::Started => TouchPhase::Started,
-        Phase::Moved => TouchPhase::Moved,
-        Phase::Ended => TouchPhase::Ended,
-        Phase::Cancelled => TouchPhase::Cancelled,
-    };
-    assert_eq!(
-        view.touch_window_event(
-            link,
-            &WindowEvent::Touch(Touch {
-                device_id: DeviceId::dummy(),
-                phase,
-                location: winit::dpi::PhysicalPosition::new(at[0], at[1]),
-                force: None,
-                id,
-            })
-        ),
-        Ok(true)
-    );
-}
 
 #[test]
 fn touch_joystick_uses_paced_keyboard_steps_and_release_stops()

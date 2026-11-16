@@ -57,13 +57,7 @@ impl PlayLink {
         if !oteryn_client_ui::player_trade::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).player_trade.open = true;
-        }
+        lock(&self.mailbox).player_trade.open = true;
         true
     }
 }
@@ -94,13 +88,7 @@ impl crate::play::PlayView {
                 && let Some(partner) = self.player_trade_context_target(tile)
             {
                 consumed = true;
-                #[cfg(windows)]
-                if !link.uses_shared_frontend() {
-                    super::view::context_menu(link, partner);
-                }
-                if cfg!(not(windows)) || link.uses_shared_frontend() {
-                    let _ = link.player_trade_choose_partner(partner);
-                }
+                let _ = link.player_trade_choose_partner(partner);
             }
         }
         consumed

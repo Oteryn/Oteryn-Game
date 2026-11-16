@@ -359,7 +359,7 @@ fn auxiliary_analyser_launch_preserves_session_owner_and_existing_measurements()
 #[path = "activity.rs"]
 mod activity;
 
-#[cfg(feature = "bevy-shell")]
+#[cfg(bevy_shell)]
 impl crate::play::Outbox {
     pub(crate) fn bevy_analyser_catalogue_result(&self, result: &oteryn_session::GatedCommandResult) {
         self.analyser_catalogue_result(result);

@@ -20,7 +20,7 @@ impl PlayView {
         let anchor = TileCoord::new(0, 0);
         let minimap = Default::default();
         let mut view = Self {
-            #[cfg(feature = "bevy-shell")]
+            #[cfg(bevy_shell)]
             last_step: None,
             shared_frontend: false,
             game_notifications: Default::default(),
