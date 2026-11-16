@@ -136,7 +136,7 @@ impl Saved {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, bevy_shell))]
 impl crate::play::PlayView {
     /// Binds the minimap to a test world and content generation under `root`, with one
     /// remembered cell, as a joined world does.

@@ -356,7 +356,9 @@ mod tests {
                 .world_mut()
                 .query::<(Entity, &Action)>()
                 .iter(app.world())
-                .find_map(|(entity, action)| (action.kind == Kind::Request(intent)).then_some(entity))
+                .find_map(|(entity, action)| {
+                    (action.kind == Kind::Request(intent)).then_some(entity)
+                })
                 .ok_or("hazard button missing")?;
             app.world_mut().trigger(Activate { entity });
             Ok(())

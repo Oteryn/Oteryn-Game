@@ -236,7 +236,7 @@ mod tests {
             let opened = key("CTRL+SHIFT+H")?;
             assert_eq!(
                 stored.route_input(&[key("CTRL+ALT+SHIFT+F11")?])?,
-                [opened.clone()]
+                std::slice::from_ref(&opened)
             );
             assert_eq!(stored.route_input(&[key("CTRL+ALT+SHIFT+F10")?])?, [opened]);
             assert!(stored.route_input(&[key("CTRL+SHIFT+H")?])?.is_empty());

@@ -271,7 +271,7 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
     click(&mut app, Kind::Publish(Vec::new()))?;
     assert!(rx.try_recv().is_err());
     app.update();
-    assert!(shown(&mut app, &tr!("Enter a valid team listing")));
+    assert!(shown(&mut app, tr!("Enter a valid team listing")));
     listing_texts(&mut app, ["10", "100", "0", "4", "3", "1", "2", "7", "12"]);
     click(&mut app, Kind::Publish(Vec::new()))?;
     let sent = command(&mut rx)?;
@@ -301,13 +301,12 @@ fn manage_team_decides_applicants_and_publishes_and_removes_the_listing() -> Res
         payload: vec![],
     });
     app.update();
-    assert!(shown(&mut app, &tr!("Advertisement confirmed")));
+    assert!(shown(&mut app, tr!("Advertisement confirmed")));
     assert!(
         app.world_mut()
             .query::<(&Field, &EditableText)>()
             .iter(app.world())
-            .any(|(field, text)| matches!(field, Field::Listing(8))
-                && text.value().to_string() == "12")
+            .any(|(field, text)| matches!(field, Field::Listing(8)) && text.value() == "12")
     );
     click(&mut app, Kind::Withdraw)?;
     let sent = command(&mut rx)?;

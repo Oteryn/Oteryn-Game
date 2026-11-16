@@ -425,7 +425,7 @@ fn modal_fence_context_menu_blocks_background_and_keeps_its_own_open_command() -
         .id();
     app.world_mut()
         .run_system_once(move |mut commands: Commands, skins: Res<Skins>| {
-            dialogs::context(&mut commands, &skins, slot, Vec2::ZERO)
+            dialogs::context(&mut commands, &skins, slot, Vec2::ZERO, (false, false))
         })
         .map_err(|error| format!("context menu fixture: {error:?}"))?;
     app.world_mut().trigger(Activate { entity: outside });

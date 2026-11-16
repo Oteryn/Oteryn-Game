@@ -84,7 +84,11 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
     let pixels = canvas_pixels(&app)?;
     assert_eq!(pixels.len(), (WIDTH * HEIGHT * 4) as usize);
     assert!(
-        pixels.chunks_exact(4).any(|pixel| pixel[..3] != [0, 0, 0]),
+        pixels
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|pixel| pixel[..3] != [0, 0, 0]),
         "the map tile and the creature are drawn into the window"
     );
     let (_, panel) = link.snapshot().ok_or("watch panel")?;
@@ -112,7 +116,9 @@ fn watch_window_draws_the_cast_and_sends_chat_then_leaves_on_escape()
     app.update();
     assert!(
         canvas_pixels(&app)?
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .all(|pixel| pixel[..3] == [0, 0, 0]),
         "an ended cast blanks the picture"
     );
