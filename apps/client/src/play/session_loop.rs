@@ -97,6 +97,19 @@ pub(in crate::play) async fn run_session_with_modal<T: Stepper>(
             }
             publish(&mut session, &outbox, &mut held);
         }
+        if let Some(command) = outbox.highscores_continuation_command() {
+            match session.server_mechanic(&command).await {
+                Ok(result) => outbox.highscores_result(&result),
+                Err(error) => {
+                    if recover_handoff(&error, &mut session, &outbox, &mut held, &mut modal) {
+                        continue;
+                    }
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+            publish(&mut session, &outbox, &mut held);
+        }
         let ended = super::feature_0014_container_tree::protocol::dispatch! {
             outbox.death_command(&mut commands), session, outbox, held, publish;
             Ok(PlayCommand::HudStamina) => match session.feature(&super::resource_hud::stamina_command()).await {

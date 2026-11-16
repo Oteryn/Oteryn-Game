@@ -1,5 +1,10 @@
 use crate::play::{Outbox, mailbox::lock};
 impl Outbox {
+    pub(in crate::play) fn highscores_continuation_command(
+        &self,
+    ) -> Option<oteryn_client_runtime::server_mechanic::ServerMechanicCommand> {
+        oteryn_client_ui::highscores::catalogue_continuation(&mut lock(&self.0).highscores)
+    }
     pub(in crate::play) fn highscores_initialize(&self, selected: bool, loyalty: bool) {
         let mut mailbox = lock(&self.0);
         mailbox.highscores.selected = selected;

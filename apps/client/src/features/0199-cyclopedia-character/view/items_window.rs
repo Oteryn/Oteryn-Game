@@ -195,14 +195,12 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>, generation: u64) {
                 }
                 (p.items.clone(), p.pending, p.feedback)
             };
-            let signature = (items.page.clone(), items.location, items.search.clone());
+            let signature = (items.page.clone(), items.location, items.search.clone(), items.names.clone());
             if painted.as_ref() != Some(&signature) {
                 SendMessageW(list, LB_RESETCONTENT, 0, 0);
                 shown = items.rows().into_iter().cloned().collect::<Vec<_>>();
                 for row in &shown {
-                    let q = row.quantities;
-                    let text =
-                        format!("{}\t{}\t{}\t{}\t{}", row.definition, q[0], q[1], q[2], q[3]);
+                    let text = super::item_summary_row_text(&items, row);
                     SendMessageW(list, LB_ADDSTRING, 0, wide(&text).as_ptr() as isize);
                 }
                 painted = Some(signature);
@@ -212,16 +210,7 @@ fn run(weak: Shared, commands: UnboundedSender<PlayCommand>, generation: u64) {
                 .and_then(|i| shown.get(i));
             let text = chosen.map_or_else(
                 || "Select a row for its complete definition and quantities".into(),
-                |r| {
-                    format!(
-                        "{}\r\nInventory: {} · Depot: {} · Stash: {} · Inboxes: {}",
-                        r.definition,
-                        r.quantities[0],
-                        r.quantities[1],
-                        r.quantities[2],
-                        r.quantities[3]
-                    )
-                },
+                |row| super::item_summary_detail_text(&items, row),
             );
             SetWindowTextW(detail, wide(&text).as_ptr());
             let page = items.page.as_ref().map_or(String::new(), |p| {

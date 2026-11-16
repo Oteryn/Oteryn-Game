@@ -2,6 +2,25 @@
 use oteryn_client_runtime::raw_feature::FeatureCommand;
 use oteryn_client_ui::cyclopedia_character::{CyclopediaCharacterPanel, Intent, request};
 
+pub(in crate::play) fn item_summary_row_text(
+    items: &oteryn_client_ui::cyclopedia_character::ItemSummary,
+    row: &oteryn_client_runtime::cyclopedia_character::items::Row,
+) -> String {
+    let q = row.quantities;
+    format!("{}\t{}\t{}\t{}\t{}", items.display_name(row), q[0], q[1], q[2], q[3])
+}
+
+pub(in crate::play) fn item_summary_detail_text(
+    items: &oteryn_client_ui::cyclopedia_character::ItemSummary,
+    row: &oteryn_client_runtime::cyclopedia_character::items::Row,
+) -> String {
+    format!(
+        "{}\r\nInventory: {} · Depot: {} · Stash: {} · Inboxes: {}",
+        items.display_name(row),
+        row.quantities[0], row.quantities[1], row.quantities[2], row.quantities[3]
+    )
+}
+
 pub(in crate::play) const OVERVIEW_CARD_COUNT: usize = 15;
 
 pub(in crate::play) fn initial_character_fields(p: &CyclopediaCharacterPanel) -> [String; 3] {

@@ -5,6 +5,20 @@ use oteryn_client_runtime::{
 };
 use oteryn_client_ui::cyclopedia_character::Intent;
 #[test]
+fn review_native_holdings_row_and_detail_use_display_names() {
+    use crate::play::feature_0199_cyclopedia_character::view::native::{
+        item_summary_detail_text, item_summary_row_text,
+    };
+    let mut items = oteryn_client_ui::cyclopedia_character::ItemSummary::default();
+    let row = Row { definition: "oteryn:item/arrow".into(), quantities: [2, 3, 4, 5] };
+    items.names.insert(row.definition.clone(), "Golden arrow".into());
+    assert_eq!(item_summary_row_text(&items, &row), "Golden arrow\t2\t3\t4\t5");
+    assert_eq!(item_summary_detail_text(&items, &row), "Golden arrow\r\nInventory: 2 · Depot: 3 · Stash: 4 · Inboxes: 5");
+    items.names.clear();
+    assert_eq!(item_summary_row_text(&items, &row), "oteryn:item/arrow\t2\t3\t4\t5");
+    assert_eq!(item_summary_detail_text(&items, &row), "oteryn:item/arrow\r\nInventory: 2 · Depot: 3 · Stash: 4 · Inboxes: 5");
+}
+#[test]
 fn t095_item_summary_caller_requests_all_locations_and_filters_confirmed_rows()
 -> Result<(), &'static str> {
     let (link, mut commands, outbox) = play_channel();

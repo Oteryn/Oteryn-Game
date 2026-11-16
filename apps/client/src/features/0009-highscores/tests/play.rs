@@ -12,7 +12,11 @@ use oteryn_session::{
 };
 use std::time::{Duration, Instant};
 
-struct HighscoresPeer;
+#[derive(Default)]
+struct HighscoresPeer {
+    catalogue: bool,
+    commands: std::sync::Arc<std::sync::Mutex<Vec<u32>>>,
+}
 impl Stepper for HighscoresPeer {
     fn drain(&mut self) -> Vec<SessionEvent> {
         vec![]
@@ -30,6 +34,9 @@ impl Stepper for HighscoresPeer {
         tokio::time::sleep(duration).await;
         Ok(())
     }
+    fn feature_selected(&self, capability: u32) -> bool {
+        capability == 507 && self.catalogue
+    }
     fn server_mechanic_selected(&self, capability: u32) -> bool {
         capability == 9
     }
@@ -37,9 +44,32 @@ impl Stepper for HighscoresPeer {
         &mut self,
         command: &ServerMechanicCommand,
     ) -> Result<ServerMechanicResponse, SessionError> {
-        assert_eq!((command.capability, command.command_type), (9, 14));
-        let query = wire::decode_highscores_query(&command.payload)
-            .map_err(|_| SessionError::SessionUnusable)?;
+        self.commands.lock().map_err(|_| SessionError::SessionUnusable)?.push(command.command_type);
+        let query = if self.catalogue {
+            use oteryn_client_runtime::highscores::catalogue::{self, Entry, WorldType};
+            assert_eq!(command.capability, 507);
+            if command.command_type == 6244 {
+                return Ok(ServerMechanicResponse {
+                    command_id: 1,
+                    server_sequence: 2,
+                    status: CommandStatus::Accepted,
+                    payload: catalogue::encode_catalogue(&[Entry {
+                        world: wire::WorldId::decode(&[1, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, 1])
+                            .map_err(|_| SessionError::SessionUnusable)?,
+                        world_type: WorldType::Optional,
+                    }]).map_err(|_| SessionError::SessionUnusable)?,
+                });
+            }
+            assert_eq!(command.command_type, 6245);
+            let (query, kind) = catalogue::decode_query(&command.payload)
+                .map_err(|_| SessionError::SessionUnusable)?;
+            assert_eq!(kind, None);
+            query
+        } else {
+            assert_eq!((command.capability, command.command_type), (9, 14));
+            wire::decode_highscores_query(&command.payload)
+                .map_err(|_| SessionError::SessionUnusable)?
+        };
         let result = wire::HighscoresResult {
             world: query.details.then_some(
                 query.world.unwrap_or(
@@ -106,7 +136,7 @@ fn scenario() -> Result<(), String> {
     let (link, commands, outbox) = play_channel();
     let runtime = ClientRuntime::new().map_err(|e| e.to_string())?;
     runtime
-        .spawn(run_session(HighscoresPeer, commands, outbox))
+        .spawn(run_session(HighscoresPeer::default(), commands, outbox))
         .map_err(|e| e.to_string())?;
     let wait = |done: &dyn Fn() -> bool| -> Result<(), String> {
         let deadline = Instant::now() + Duration::from_secs(5);
@@ -249,4 +279,33 @@ fn phosphorus_record_category_uses_real_play_queue_and_displays_victory() -> Res
     let text = highscores::panel_text(&link.highscores_panel());
     assert!(text.contains("Phosphorus Record") && text.contains("Victor") && text.contains("28"));
     Ok(())
+}
+
+#[test]
+fn review_shared_highscores_caller_continues_catalogue_with_exactly_one_query() -> Result<(), String> {
+    std::thread::Builder::new().stack_size(64 << 20).spawn(|| {
+        let runtime = ClientRuntime::new().map_err(|e| e.to_string())?;
+        runtime.block_on(async {
+            let peer = HighscoresPeer { catalogue: true, ..Default::default() };
+            let seen = std::sync::Arc::clone(&peer.commands);
+            let (link, commands, outbox) = play_channel();
+            let task = tokio::spawn(run_session(peer, commands, outbox));
+            tokio::time::timeout(Duration::from_secs(5), async {
+                while !link.highscores_panel().catalogue_selected {
+                    tokio::task::yield_now().await;
+                }
+            }).await.map_err(|e| e.to_string())?;
+            link.highscores_request(Action::Refresh);
+            let complete = tokio::time::timeout(Duration::from_secs(5), async {
+                while link.highscores_panel().reply.is_none() || link.highscores_panel().pending {
+                    tokio::task::yield_now().await;
+                }
+            }).await;
+            drop(link);
+            task.await.map_err(|e| e.to_string())?;
+            assert_eq!(*seen.lock().map_err(|_| "command log poisoned".to_string())?, [6244, 6245]);
+            complete.map_err(|e| e.to_string())?;
+            Ok::<_, String>(())
+        }).map_err(|e| e.to_string())?
+    }).map_err(|e| e.to_string())?.join().map_err(|_| "catalogue scenario panicked".to_string())?
 }

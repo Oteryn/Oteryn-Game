@@ -134,17 +134,6 @@ fn project(
             })
             .collect();
     }
-    if panel.catalogue_selected
-        && !panel.pending
-        && panel.feedback.is_none()
-        && let Some(play) = &owner.play
-    {
-        if !panel.catalogue_loaded {
-            play.link.highscores_request(Request::Catalogue);
-        } else if panel.reply.is_none() {
-            play.link.highscores_request(Request::Refresh);
-        }
-    }
     let now = now_millis();
     if state.seen.as_ref() == Some(&panel) {
         let value = updated_text(&panel, now);

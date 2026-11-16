@@ -49,11 +49,47 @@ unsafe fn control(
         )
     }
 }
-#[cfg(all(windows, not(test)))]
 #[derive(Default)]
 struct Action {
     button: Option<usize>,
     close: bool,
+    confirm: bool,
+}
+impl Action {
+    fn command(&mut self, command: usize) -> bool {
+        // Win32 LBN_DBLCLK is 2 and the choice list's control ID is 11.
+        if (command >> 16) & 0xffff == 2 && command & 0xffff == 11 {
+            self.confirm = true;
+            return true;
+        }
+        // BN_CLICKED is zero; keep notification decoding testable without Win32.
+        if (command >> 16) & 0xffff == 0 {
+            self.button = (command & 0xffff).checked_sub(100);
+            return true;
+        }
+        false
+    }
+
+    fn take_button_id(
+        &mut self,
+        dialog: &oteryn_client_ui::server_modal::Dialog,
+        selected: Option<usize>,
+    ) -> Option<u8> {
+        let clicked = self.button.take();
+        let confirm = std::mem::take(&mut self.confirm);
+        if std::mem::take(&mut self.close) {
+            return dialog.cancel_button;
+        }
+        let index = if confirm {
+            match key_action(dialog, 13, selected, true) {
+                KeyAction::Confirm(index) => Some(index),
+                _ => None,
+            }
+        } else {
+            clicked
+        }?;
+        dialog.buttons.get(index).map(|(id, _)| *id)
+    }
 }
 #[cfg(all(windows, not(test)))]
 unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
@@ -64,8 +100,7 @@ unsafe extern "system" fn procedure(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) 
                 (*action).close = true;
                 return 0;
             }
-            if msg == WM_COMMAND && (w >> 16) & 0xffff == BN_CLICKED as usize {
-                (*action).button = (w & 0xffff).checked_sub(100);
+            if msg == WM_COMMAND && (*action).command(w) {
                 return 0;
             }
         }
@@ -238,15 +273,8 @@ pub(super) fn run(
                     Err(oneshot::error::TryRecvError::Empty) => {}
                 }
             }
-            let clicked = action
-                .button
-                .take()
-                .and_then(|index| dialog.buttons.get(index).map(|(id, _)| *id));
-            let button = if std::mem::take(&mut action.close) {
-                dialog.cancel_button
-            } else {
-                clicked
-            };
+            let selected = usize::try_from(SendMessageW(list, LB_GETCURSEL, 0, 0)).ok();
+            let button = action.take_button_id(&dialog, selected);
             if pending.is_none()
                 && let Some(button_id) = button
             {
@@ -329,15 +357,18 @@ fn key_action(
     }
     if key == 13
         && allow_confirm
-        && let Some(index) = dialog
-            .buttons
-            .iter()
-            .position(|(id, _)| Some(*id) != dialog.cancel_button)
+        && let Some(index) = dialog.default_button
+            .and_then(|button| dialog.buttons.iter().position(|(id, _)| *id == button))
+            .or_else(|| dialog.buttons.iter().position(|(id, _)| Some(*id) != dialog.cancel_button))
     {
         let answer = oteryn_client_ui::server_modal::Answer {
             dialog_id: dialog.id,
             button_id: dialog.buttons[index].0,
-            choice_id: selected.and_then(|row| dialog.choices.get(row).map(|(id, _)| *id)),
+            choice_id: if Some(dialog.buttons[index].0) == dialog.cancel_button {
+                None
+            } else {
+                selected.and_then(|row| dialog.choices.get(row).map(|(id, _)| *id))
+            },
         };
         if dialog.accepts(answer) {
             return KeyAction::Confirm(index);
@@ -361,6 +392,32 @@ mod tests {
             cancel_button: Some(8),
             image: None,
         }
+    }
+    #[test]
+    fn review_native_modal_enter_submits_the_server_default_even_when_it_is_close() {
+        let mut dialog = dialog();
+        dialog.choices.clear();
+        dialog.buttons = vec![(1, "Close".into())];
+        dialog.default_button = Some(1);
+        dialog.cancel_button = Some(1);
+        assert_eq!(key_action(&dialog, 13, None, true), KeyAction::Confirm(0));
+        assert_eq!(key_action(&dialog, 27, None, true), KeyAction::Close);
+        let mut action = Action { button: Some(0), ..Default::default() };
+        assert_eq!(action.take_button_id(&dialog, None), Some(1));
+    }
+
+    #[test]
+    fn review_native_modal_choice_double_click_submits_the_server_default() {
+        let mut dialog = dialog();
+        dialog.buttons.push((7, "Apply".into()));
+        dialog.default_button = Some(7);
+        let mut action = Action::default();
+        assert!(action.command(11 | (2 << 16)));
+        assert_eq!(action.take_button_id(&dialog, Some(0)), Some(7));
+        assert_eq!(action.take_button_id(&dialog, Some(0)), None);
+        assert_eq!(key_action(&dialog, 27, Some(0), true), KeyAction::Close);
+        action.close = true;
+        assert_eq!(action.take_button_id(&dialog, Some(0)), Some(8));
     }
     #[test]
     fn native_modal_initially_selects_first_server_choice() {

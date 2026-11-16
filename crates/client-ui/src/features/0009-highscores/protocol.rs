@@ -182,6 +182,14 @@ pub fn apply_result(p: &mut HighscoresPanel, r: &ServerMechanicResponse) {
     }
 }
 
+/// Continue a successful catalogue refresh in the shared session, once per pending query.
+pub fn catalogue_continuation(p: &mut HighscoresPanel) -> Option<ServerMechanicCommand> {
+    if !p.catalogue_selected || !p.catalogue_loaded || p.reply.is_some() || p.feedback.is_some() {
+        return None;
+    }
+    request(p, Action::Refresh)
+}
+
 pub fn world_choices(
     p: &HighscoresPanel,
 ) -> impl Iterator<Item = &oteryn_client_runtime::highscores::catalogue::Entry> {
