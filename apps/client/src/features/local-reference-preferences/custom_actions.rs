@@ -120,3 +120,45 @@ pub fn default_custom_hotkeys() -> std::collections::BTreeMap<String, CustomActi
     .map(|(chord, action)| (chord.to_owned(), CustomAction::Utility { action }))
     .collect()
 }
+
+/// Version 1 added the Global chords below to the default custom hotkeys.
+pub(super) const PREFERENCES_SCHEMA_VERSION: u32 = 1;
+const GLOBAL_CHORDS_V1: [&str; 6] = ["CTRL+M", "CTRL+Y", "CTRL+P", "ALT+S", "CTRL+K", "SHIFT+S"];
+
+impl ReferencePreferences {
+    /// One-time upgrade of a file written before `schema_version` 1: the active custom hotkeys
+    /// and every saved hotkey profile gain each version 1 Global chord that no binding of the
+    /// player already uses. A player binding is never replaced.
+    pub(super) fn upgrade_schema(&mut self) {
+        if self.schema_version >= PREFERENCES_SCHEMA_VERSION {
+            return;
+        }
+        let defaults = default_custom_hotkeys();
+        let added: Vec<_> = GLOBAL_CHORDS_V1
+            .iter()
+            .filter_map(|chord| Some((*chord, defaults.get(*chord)?.clone())))
+            .collect();
+        for (chord, action) in &added {
+            let _ = self.assign_custom_hotkey(chord, action.clone());
+        }
+        for (name, bindings) in self.hotkey_profiles.clone() {
+            let Some(saved) = self.custom_hotkey_profiles.get(&name) else {
+                continue;
+            };
+            let mut profile = self.clone();
+            profile.custom_hotkeys = saved.clone();
+            profile.action_keys = self
+                .bar_hotkey_profiles
+                .get(&name)
+                .cloned()
+                .unwrap_or_default();
+            profile.keybindings = bindings;
+            for (chord, action) in &added {
+                let _ = profile.assign_custom_hotkey(chord, action.clone());
+            }
+            self.custom_hotkey_profiles
+                .insert(name, profile.custom_hotkeys);
+        }
+        self.schema_version = PREFERENCES_SCHEMA_VERSION;
+    }
+}

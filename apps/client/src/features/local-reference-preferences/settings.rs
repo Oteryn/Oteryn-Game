@@ -96,6 +96,9 @@ use defaults::*;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferencePreferences {
+    /// Missing in files written before versioning (0); `read_transfer` upgrades older files.
+    #[serde(default)]
+    pub schema_version: u32,
     #[serde(default)]
     pub performance: PerformanceSettings,
     #[serde(default)]
@@ -278,6 +281,7 @@ pub struct ReferencePreferences {
 impl Default for ReferencePreferences {
     fn default() -> Self {
         Self {
+            schema_version: custom_actions::PREFERENCES_SCHEMA_VERSION,
             performance: PerformanceSettings::default(),
             stash_stock_order: false,
             miscellaneous: Default::default(),
