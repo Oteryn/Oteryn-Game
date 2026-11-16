@@ -251,9 +251,11 @@ fn scenario() -> TestResult {
                 .actor_motion(dependencies.actor)
                 .ok_or("reconciled motion")?;
             let (_, content) = owner.appearance_context().ok_or("cosmetics")?;
+            let (look, speed_bonus, _) =
+                content.mount_metadata(&mount_key).ok_or("selected mount")?;
             assert_eq!(
                 (motion.2, motion.3),
-                content.mount_metadata(&mount_key).ok_or("selected mount")?,
+                (look, speed_bonus),
                 "retry installs the selected mount and replaces the old speed bonus"
             );
         }
