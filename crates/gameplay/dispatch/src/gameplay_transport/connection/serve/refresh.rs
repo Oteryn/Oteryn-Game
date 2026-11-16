@@ -627,29 +627,32 @@ where
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
     };
-    let Some(channel) = crate::gameplay_transport::entity_names::observe(
+    // A busy holder on the named read skips this tick's entities like the appearance read.
+    let projection = match crate::gameplay_transport::entity_names::observe(
         authority,
         session.actor,
         session.admitted.continuity.selected_capabilities,
     )
     .await
-    else {
-        return Err(ServeEnd::Disconnected);
+    {
+        Ok(channel) => {
+            session
+                .appearances
+                .refresh_result(
+                    stream,
+                    authority,
+                    session.actor,
+                    &mut session.admitted,
+                    view,
+                    &channel,
+                    session.item_view.as_mut(),
+                    session.sequence,
+                    session.revision,
+                )
+                .await
+        }
+        Err(error) => Err(error),
     };
-    let projection = session
-        .appearances
-        .refresh_result(
-            stream,
-            authority,
-            session.actor,
-            &mut session.admitted,
-            view,
-            &channel,
-            session.item_view.as_mut(),
-            session.sequence,
-            session.revision,
-        )
-        .await;
     match projection {
         Ok((to_sequence, to_revision)) => {
             session.sequence = to_sequence;
@@ -913,3 +916,7 @@ async fn item_effects<S: AsyncRead + AsyncWrite + Unpin>(
     session.item_effects_revision = revision;
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "refresh_tests.rs"]
+mod tests;

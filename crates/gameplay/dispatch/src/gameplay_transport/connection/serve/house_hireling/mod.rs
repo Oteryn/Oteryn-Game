@@ -400,7 +400,7 @@ impl State {
                 admitted.continuity.selected_capabilities,
             )
             .await
-            .ok_or(ServeEnd::Disconnected)?;
+            .map_err(|_| ServeEnd::Disconnected)?;
             let sequence = admitted.continuity.server_sequence;
             let projection = self
                 .appearances

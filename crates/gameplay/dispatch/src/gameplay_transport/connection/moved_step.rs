@@ -33,7 +33,8 @@ where
             actor,
             admitted.continuity.selected_capabilities,
         )
-        .await?;
+        .await
+        .ok()?;
         // The step's committed position is the observer's own.
         let observer = channel.observer;
         for own in channel
