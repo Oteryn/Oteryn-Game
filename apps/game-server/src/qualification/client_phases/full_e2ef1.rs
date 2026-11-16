@@ -975,24 +975,16 @@ mod e2ef1 {
         checks: &mut Checks,
         revisions: &mut BTreeMap<(TilePos, u8), u64>,
     ) -> TestResult {
-        // Exact production registry families: Canary's key-door triples, locked 1628 /
-        // unlocked 1629 / open 1630 and the unlocked closed form 1632 (doors.lua). The
-        // authored world places the plain 1638 pair only on sealed House tiles, so the
-        // basic case uses the DoorBook entry of an exact 1632 placement off House tiles.
-        // No name/keyword classification.
+        // Exact production registry families: plain 1638/1639 and key triple
+        // locked 1628, unlocked 1629, open 1630. No name/keyword classification.
         let mut families_ok = true;
-        for (appearance, case) in [(1632, "basic-door"), (1629, "unlocked-key-door")] {
+        for (appearance, case) in [(1638, "basic-door"), (1629, "unlocked-key-door")] {
             let result: TestResult = async {
                 let object = approach(
                     client,
                     world,
                     objects,
-                    |o| {
-                        o.appearance == appearance
-                            && crate::map::view::placement_key(o.at, o.ordinal)
-                                .is_some_and(|key| world.facts().doors().contains(key))
-                            && world.facts().house_id(o.at).is_none()
-                    },
+                    |o| o.appearance == appearance && world.facts().doors().at(o.at),
                     1,
                 )
                 .await?;
