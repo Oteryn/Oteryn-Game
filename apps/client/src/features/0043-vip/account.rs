@@ -58,7 +58,6 @@ fn submit(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>, action
         mailbox.vip.feedback = Some("Select a valid friend handle or page".into());
     }
 }
-#[cfg(any(windows, test))]
 fn text(mailbox: &Mailbox) -> String {
     let mut text = String::from(
         "Account Friends — current World\r\nAccepting shares your chosen main character with this account.\r\n",
