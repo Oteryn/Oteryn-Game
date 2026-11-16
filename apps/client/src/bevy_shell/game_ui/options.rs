@@ -16,9 +16,11 @@ mod audio_feedback;
 mod commands;
 #[cfg(test)]
 mod frame_tests;
+mod keys;
 mod metadata;
 #[cfg(test)]
 mod navigation_tests;
+mod profiles;
 mod projection;
 mod screenshots;
 mod section;
@@ -37,6 +39,8 @@ struct OptionsState {
     generation: Option<u64>,
     /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
     revision: u64,
+    /// The key binding selected on the General Hotkeys page.
+    binding: Option<&'static str>,
 }
 #[derive(Resource)]
 struct CheckSkins {
