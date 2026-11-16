@@ -19,10 +19,12 @@ use oteryn_client_ui_bevy as source;
 use std::path::PathBuf;
 mod bulletin;
 mod submission;
+mod survey;
 
 pub(super) struct LoginState {
     pub form: LoginForm,
     pub bulletin: bulletin::State,
+    pub survey: survey::State,
     pub visible: bool,
     pub revision: u64,
     path: Option<PathBuf>,
@@ -33,6 +35,7 @@ impl Default for LoginState {
         Self {
             form: LoginForm::new(LoginSettings::default()),
             bulletin: Default::default(),
+            survey: Default::default(),
             visible: false,
             revision: 0,
             path: None,
@@ -122,6 +125,7 @@ impl LoginControl {
 
 pub(super) fn install(app: &mut App) {
     bulletin::install(app);
+    survey::install(app);
     app.add_systems(
         PostUpdate,
         submission::finish.after(bevy::text::EditableTextSystems),
@@ -130,6 +134,7 @@ pub(super) fn install(app: &mut App) {
 
 pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     bulletin::setup(&mut commands, &skins);
+    survey::setup(&mut commands, &skins);
     let modal = commands
         .spawn((
             LoginDialog,
@@ -296,14 +301,8 @@ fn activate(
                 .login
                 .form
                 .feedback(crate::about::about_text().replace("\r\n", "\n")),
-            // The optional questionnaire reviews its answer and asks for consent in OS dialogs.
-            #[cfg(windows)]
-            LoginControl::Survey => crate::about::run_survey(),
-            #[cfg(not(windows))]
-            LoginControl::Survey => owner
-                .login
-                .form
-                .feedback("The optional survey is offered by the Windows client.".into()),
+            // The optional questionnaire reviews its answer and asks for consent in-client.
+            LoginControl::Survey => owner.login.survey.open(),
             LoginControl::Support | LoginControl::Cookies => {
                 read_fields(&mut owner, &fields);
                 owner.open_web_link(if matches!(control, LoginControl::Support) {
