@@ -103,6 +103,41 @@ pub(super) async fn assert_recovery(
         item_fence_of(store.current_session_at(admitted.game_session_id).await?.0),
         admitted.item_fence
     );
+    // A quest callback already owns this lane and next needs the same
+    // character revision. Recovery must wait without holding that revision.
+    {
+        let lane = destination.spell_lane_permit().await.ok_or("held spell lane")?;
+        let barrier = std::sync::Arc::new(RecoveryCommittedTestBarrier::default());
+        let credential = token(202)?;
+        let recovering = crate::gameplay_transport::activity_recovery_admission::RECOVERY_LOCK_TEST_BARRIER.scope(
+            std::sync::Arc::clone(&barrier),
+            owner.resume_session(ResumeAttempt {
+                game_session_id: source.game_session_id,
+                recovery_material: credential.as_bytes(),
+                transport: transport(202)?,
+                last_applied_server_sequence: 0,
+                supported_capabilities: &supported,
+            }),
+        );
+        tokio::pin!(recovering);
+        assert!(crate::gameplay_transport::first(recovering.as_mut(), barrier.entered.notified()).await.is_none());
+        barrier.proceed.notify_one();
+        // Exactly one poll proceeds from the barrier to the unavailable lane.
+        std::future::poll_fn(|cx| {
+            assert!(std::future::Future::poll(recovering.as_mut(), cx).is_pending());
+            std::task::Poll::Ready(())
+        }).await;
+        let character = admitted.item_fence.ok_or("Instance fence")?.character_id;
+        let revision = destination.revision_sequencer.acquire(character);
+        tokio::pin!(revision);
+        let revision = std::future::poll_fn(|cx| {
+            std::task::Poll::Ready(std::future::Future::poll(revision.as_mut(), cx))
+        }).await;
+        assert!(revision.is_ready(),
+            "activity recovery holds the revision while waiting for the callback's spell lane");
+        drop(revision);
+        drop(lane);
+    }
     let mut resumed = resume_wire(owner, source.game_session_id, &token(203)?, 203).await?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.runtime_actor, admitted.runtime_actor);

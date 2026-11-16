@@ -1878,7 +1878,7 @@ async fn ground_entries(
         if delta.server_sequence <= reply.server_sequence {
             continue;
         }
-        let views = tree::decode_container_views_for(&delta.payload, true)
+        let views = selected_container_views(client.selected_capabilities(), &delta.payload)
             .map_err(|error| format!("death ground view: {error:?}"))?;
         let view = views
             .views
@@ -2036,7 +2036,7 @@ async fn item_loss(
         loop {
             let delta = client.session_mut().read_gated_delta(tree::STATE_DOMAIN_CONTAINER_VIEWS, tree::DELTA_TYPE_CONTAINER_VIEWS_V1).await?;
             if delta.server_sequence <= reply.server_sequence { continue; }
-            let views = tree::decode_container_views_for(&delta.payload, true).map_err(|error| format!("lost bag view: {error:?}"))?;
+            let views = selected_container_views(client.selected_capabilities(), &delta.payload).map_err(|error| format!("lost bag view: {error:?}"))?;
             let view = views.views.iter().find(|view| view.container_handle == bag.handle).ok_or("lost bag container delta absent")?;
             let observed = CharacterInventory { entries: view.entries.clone(), ..Default::default() };
             let expected = CharacterInventory { entries: inventory.entries.clone(), ..Default::default() };

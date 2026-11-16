@@ -854,6 +854,14 @@ def main(*, items_only: bool = False) -> int:
         ROOT, 'ed788c4bb1e2b420c8bfbd7a9bd68e36ea8ebfeb',
         packet_path=condition_potion_profiles.PATH,
         keys={f'oteryn:item.tibia.i{i}' for i in condition_potion_profiles.IDS})
+    # Weight imports may change a shared shard without changing the qualified rod.
+    import gathering_item_profiles
+    gathering_item_profiles.refresh_qualified_proof(ROOT)
+    # These recipe captures select unchanged records from the same shared shards.
+    from refresh_item_overlay_inputs import refresh
+    for name in ('quest-batch3-item-profiles.json', 'qnpcfx-item-profiles.json'):
+        relative = 'tools/content-schema/native-gameplay/' + name
+        (ROOT / relative).write_bytes(refresh(relative, root=ROOT))
     refresh_bestiary_inventory(ROOT)
     # Reference-only source successors (including the approved Cake bridge) must
     # enter the sorted native lookup without implying an inventory Item policy.

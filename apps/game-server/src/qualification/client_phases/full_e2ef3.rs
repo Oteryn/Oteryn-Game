@@ -236,7 +236,7 @@ async fn open_backpack(client: &mut oteryn_dev_client::DevClientSession) -> Test
             tree::DELTA_TYPE_CONTAINER_VIEWS_V1,
         )
         .await?;
-    let views = tree::decode_container_views(&delta.payload)
+    let views = selected_container_views(client.selected_capabilities(), &delta.payload)
         .map_err(|error| format!("container delta: {error:?}"))?;
     let view = views
         .views

@@ -29,6 +29,11 @@ tokio::task_local! {
     pub(super) static RECOVERY_COMMITTED_TEST_BARRIER: Arc<RecoveryCommittedTestBarrier>;
 }
 
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static RECOVERY_LOCK_TEST_BARRIER: Arc<RecoveryCommittedTestBarrier>;
+}
+
 /// Inserted before the first possible durable mutation. Cancellation changes
 /// only `phase`; the stream exclusion and exact proposed transport stay owned
 /// by the registry until an admission-serialized read proves the outcome.
@@ -237,8 +242,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(fence)) = (retained.runtime_actor, retained.item_fence) else {
             return Err(Rejected);
         };
-        let _revision = owner.revision_sequencer.acquire(fence.character_id).await;
+        #[cfg(test)]
+        if let Ok(barrier) = RECOVERY_LOCK_TEST_BARRIER.try_with(Arc::clone) {
+            barrier.entered.notify_one();
+            barrier.proceed.notified().await;
+        }
+        // The lane precedes character revisions, as in quest/death settlement.
         let _lane = owner.spell_lane_permit().await.ok_or(Unavailable)?;
+        let _revision = owner.revision_sequencer.acquire(fence.character_id).await;
         let mut runtime = owner.runtime.lock().await;
         let mut spells = owner.states.spell_states.lock().await;
         runtime.owner_fence().map_err(|_| Rejected)?;
@@ -414,8 +425,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Unavailable)?;
         drop(spells);
         drop(runtime);
-        drop(_lane);
         drop(_revision);
+        drop(_lane);
         drop(_transition);
         // Keep the cancellation record across the existing reconnect follow-up
         // awaits. Its serving phase still excludes a concurrent room return.
@@ -518,8 +529,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let scoped = self.resolve_runtime_view(pending.next).await?;
         let owner = scoped.as_ref().unwrap_or(self);
         let fence = pending.next.item_fence.ok_or(())?;
-        let _revision = owner.revision_sequencer.acquire(fence.character_id).await;
         let _lane = owner.spell_lane_permit().await.ok_or(())?;
+        let _revision = owner.revision_sequencer.acquire(fence.character_id).await;
         let mut runtime = owner.runtime.lock().await;
         let mut spells = owner.states.spell_states.lock().await;
         let (current, _) = store
@@ -535,8 +546,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         pending.release_stream()?;
         drop(spells);
         drop(runtime);
-        drop(_lane);
         drop(_revision);
+        drop(_lane);
         drop(_transition);
         self.release_activity_recovery_socket(pending).await
     }

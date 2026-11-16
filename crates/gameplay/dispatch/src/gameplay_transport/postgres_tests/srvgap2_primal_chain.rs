@@ -1,9 +1,9 @@
 //! Production Primal region, qualified template, native cadence/death and durable return.
 use super::fixture::{Harness, debug, id};
-use super::srx3_activity_source_fixture::{SourceScene, install_scene};
 use super::{Dependencies, TestResult};
-use crate::content::bosses::activity_template::PinnedActivitySourceRoom;
-use crate::durability::activity_handoff::ActivityReturnReason;
+use crate::content::channel_content_pin::ChannelContentPin;
+use crate::content::native_gameplay::NativeGameplayInput;
+use crate::durability::activity_handoff::{ActivityHandoffOwner, ActivityReturnReason};
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::runtime_actor_spell_types::{
     OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
@@ -15,12 +15,11 @@ use crate::gameplay_transport::capabilities::{
     BUNDLE_WORLD_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::FirstEntryOutcome;
-use crate::gameplay_transport::item_fence_of;
 use crate::gameplay_transport::kill_reward::{DrainOutcome, KillSink, record_batch_kills};
 use crate::gameplay_transport::native_activity::NativeActivityOutcome;
+use crate::gameplay_transport::{SeamRooms, item_fence_of};
 use oteryn_gameplay_encounters::bosses::hazard_primal::primal_menace_think as rules;
 use oteryn_protocol_oteryn::boss_encounter as wire;
-use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
 
 #[test]
@@ -31,28 +30,36 @@ fn srvgap2_primal_production_entry_cadence_death_settlement_and_return() -> Test
 async fn scenario(admin: String) -> TestResult {
     let started = Instant::now();
     super::reset();
-    // Qualify the real source scene before creating short-lived admission proofs.
-    let (scene, activation_pin) = SourceScene::new_with_activation(
-        PinnedActivitySourceRoom::Primal,
-        MovementLocalPosition {
-            x: 33548,
-            y: 32752,
-            floor: 14,
-        },
-    )?;
-    let active = scene
-        .controller
-        .active()
-        .ok_or("active production content")?;
-    let native = active
-        .native_gameplay()
-        .ok_or("native production content")?;
-    let template = active
-        .qualify_primal_activity_template(&scene.room, "content-1")
-        .map_err(debug)?;
     let h = Harness::create_with_admission_seed(admin, "srvgap2_primal_chain", true, false).await?;
     let evidence = super::house_transfer::RecoverySource::start(&h).await?;
     super::house_transfer::prepare_owned_session(&h).await?;
+    let world = super::fixture::fence(1)?.runtime_scope.world_id();
+    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../content/spells.manifest.json");
+    let mut input = NativeGameplayInput::from_manifest(&manifest).map_err(debug)?;
+    // Rebind only the harness's historical Character interpretation. Keep every
+    // production creature, source region, hook, room policy and reward unchanged.
+    input
+        .build_training
+        .as_mut()
+        .ok_or("training")?
+        .content_revision = "content-1".into();
+    let (controller, source_pin) =
+        crate::content::native_gameplay::test_support::try_activate_input(world, &input)
+            .map_err(debug)?;
+    let active = controller.active().ok_or("active production content")?;
+    let native = active
+        .native_gameplay()
+        .ok_or("native production content")?;
+    let room = source_pin.qualified_room().clone();
+    let candidate = crate::content::bosses::activity_template::captured_boss_levers()
+        .map_err(debug)?
+        .into_iter()
+        .find(|row| row.creature_key.as_deref() == Some(rules::PRIMAL_MENACE_KEY))
+        .ok_or("Primal source candidate")?;
+    let template = controller
+        .qualify_activity_template(&room, &room, "content-1", &candidate)
+        .map_err(debug)?;
     assert_eq!(
         (
             template.minimum_level(),
@@ -62,9 +69,19 @@ async fn scenario(admin: String) -> TestResult {
         (500, 1, 60)
     );
     let lever = *template.lever_positions().first().ok_or("source lever")?;
+    let pin = source_pin.into_channel_pin();
+    let pin = ChannelContentPin::from_activation(
+        world,
+        pin.activation_sequence(),
+        pin.server_artifact_digest(),
+        pin.client_artifact_digest(),
+        pin.frame_binding_digest(),
+        pin.map_revision_digest(),
+        (lever.x, lever.y, i16::try_from(lever.z)?),
+    );
     let deps = Dependencies::with_content_and_capacity(
-        scene.pin.clone(),
-        scene.room.clone(),
+        pin.clone(),
+        room,
         native.spell_book().clone(),
         64,
     )?;
@@ -76,7 +93,8 @@ async fn scenario(admin: String) -> TestResult {
         .map_err(debug)?;
     let mut owner = deps.owner(&h, &authority);
     owner.evidence = &evidence.evidence;
-    install_scene(&mut owner, &scene, PinnedActivitySourceRoom::Primal)?;
+    owner.active_generation = Some(active);
+    owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
     // A qualified level-500 participant, with the actual native progression policy.
     let progression = native
         .progression()
@@ -177,22 +195,14 @@ async fn scenario(admin: String) -> TestResult {
         .activity_runtimes
         .remember(admitted)
         .map_err(|_| "remember origin")?;
-    // Activation uses the accepted source artifact pin; runtime movement uses
-    // scene.pin's actual source-room frame. Admission owns catalogue publication.
-    let map_revision = crate::map::overlay::map_revision(
-        owner
-            .bundle_map()
-            .ok_or("actual source bundle map")?
-            .overlay
-            .base(),
-    );
-    super::boss_activity::issue_content_and_reset_with_runtime_pin(
-        &h,
-        &activation_pin,
-        &scene.pin,
-        &map_revision,
-    )
-    .await?;
+    super::boss_activity::issue_content_and_reset(&h, &pin).await?;
+    ActivityHandoffOwner::new(h.root.clone())
+        .publish_qualified_boss_rooms(&h.node, std::slice::from_ref(&template))
+        .await?;
+    owner
+        .activity_runtimes
+        .register_template(&template)
+        .map_err(|_| "register source template")?;
     let instance = super::activity_runtime::allocate_ready_instance(&h, 88).await?;
     let origin_session = admitted.game_session_id;
     let (_, reply, barrier) = super::boss_activity::exchange_command(
@@ -225,7 +235,7 @@ async fn scenario(admin: String) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("Instance player")?;
     // Crystal :195-206 varies the count, rather than promising three beasts.
     // Resolve the source oracle against this exact native boss occurrence.
-    let boss_identity = {
+    let (boss, boss_position) = {
         let runtime = destination.runtime.lock().await;
         runtime
             .positioned_melee_census()
@@ -236,87 +246,134 @@ async fn scenario(admin: String) -> TestResult {
                     .companion_snapshot(*actor)
                     .is_ok_and(|row| row.state.policy.definition_key == rules::PRIMAL_MENACE_KEY)
             })
-            .map(|row| row.0.placement_identity())
+            .map(|row| (row.0, row.1.position()))
             .ok_or("source boss identity")?
     };
-    let now = destination.owner_now();
-    super::srx3_primal::drain_actual_native_through(&destination, now.get(), true).await?;
-    assert!(
-        destination
-            .states
-            .spell_states
-            .lock()
-            .await
-            .primal_callbacks
-            .source_started_for_test(),
-        "the real reserved onThink initializes the source wave clock"
-    );
-    let later =
-        |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
-    // The qualified callback uses os.time: its strictly-greater ten-second
-    // boundary is crossed at eleven seconds, followed by the same 3s warmup.
-    let wave_at = later(11_000_000);
-    let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
-        Sha256::new()
-            .chain_update(b"srx3:primal:callbacks:v1")
-            .chain_update(native.source_digest())
-            .chain_update(boss_identity)
-            .finalize()
-            .into(),
-    );
-    let mut occurrence = [0; 16];
-    occurrence[..8].copy_from_slice(&wave_at.get().to_be_bytes());
-    let occurrence = oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(occurrence);
-    let mut ordinal = 0;
-    let mut draw = || -> TestResult<u32> {
-        // Match the qualified source stream's bounded unbiased integer draw.
-        let limit = u64::MAX - u64::MAX % u64::from(rules::DRAW_PPM);
-        for _ in 0..64 {
-            let value = oteryn_simulation_determinism::deterministic_decision_u64(
-                &root,
-                occurrence,
-                "primal_waves",
-                ordinal,
-            )
-            .map_err(debug)?;
-            ordinal += 1;
-            if value < limit {
-                return Ok((value % u64::from(rules::DRAW_PPM)) as u32);
-            }
-        }
-        Err("qualified source wave draw refused".into())
+    let root =
+        oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(native.source_digest());
+    let occurrence =
+        oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(boss.placement_identity());
+    let draw = |ordinal| -> TestResult<u32> {
+        let value = oteryn_simulation_determinism::deterministic_decision_u64(
+            &root,
+            occurrence,
+            "primal-menace-think",
+            ordinal,
+        )
+        .map_err(debug)?;
+        Ok(((u128::from(value) * u128::from(rules::DRAW_PPM)) >> 64) as u32)
     };
-    let expected_wave = usize::try_from(rules::wave_count(
+    let requested_wave = usize::try_from(rules::wave_count(
         &rules::BEAST_WAVE,
         rules::hazard_points(&[]),
-        draw()?,
-        draw()?,
+        draw(0)?,
+        draw(1)?,
     ))?;
-    super::srx3_primal::drain_actual_native_through(&destination, wave_at.get(), true).await?;
+    let now = destination.owner_now();
+    destination.drain_monster_melee_at(now).await;
+    let later =
+        |delta| oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now.get() + delta);
+    destination.drain_monster_melee_at(later(10_001_000)).await;
     assert_eq!(beasts(&destination).await?, 0, "source three-second warmup");
-    super::srx3_primal::drain_actual_native_through(&destination, later(14_000_000).get(), true)
-        .await?;
+    let duplicate_cell = MovementLocalPosition {
+        x: 27708,
+        y: 27459,
+        floor: -15,
+    };
+    let expected_cells = {
+        let runtime = destination.runtime.lock().await;
+        let snapshot = runtime.companion_snapshot(boss).map_err(debug)?;
+        let health = u64::try_from(snapshot.health)?;
+        let max_health = u64::try_from(snapshot.maximum_health)?;
+        let tile_free = |at| {
+            crate::gameplay_transport::arena_match::walkable(&destination, &runtime, at)
+                && runtime.native_summon_cell_free(at)
+        };
+        // Replay the source schedule, including its six placement attempts. The
+        // three-second delay means earlier requests have not occupied cells yet.
+        let draw_budget =
+            2 + u64::from(rules::BEAST_WAVE.count_max) * u64::from(rules::SPAWN_ATTEMPTS) * 4;
+        let mut draws = (0..draw_budget)
+            .map(draw)
+            .collect::<TestResult<Vec<_>>>()?
+            .into_iter();
+        let mut next_draw = || draws.next().unwrap_or(rules::DRAW_PPM);
+        let mut schedule = rules::PrimalMenaceThinkOwner::default();
+        let facts = |now_ms| rules::PrimalMenaceThinkFacts {
+            position: boss_position,
+            now_ms,
+            health,
+            max_health,
+            damage_map_levels: &[],
+        };
+        schedule
+            .think(&facts(0), &mut next_draw, tile_free, |_| None)
+            .map_err(debug)?;
+        let scheduled_cells: Vec<_> = schedule
+            .think(&facts(10_001), &mut next_draw, tile_free, |_| None)
+            .map_err(debug)?
+            .into_iter()
+            .filter_map(|effect| match effect {
+                rules::PrimalMenaceEffect::ScheduledSpawn {
+                    kind: rules::WaveKind::Beast,
+                    position,
+                    ..
+                } => Some(position),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            scheduled_cells.len(),
+            requested_wave,
+            "source wave requests"
+        );
+        assert_eq!(
+            scheduled_cells
+                .iter()
+                .filter(|at| **at == duplicate_cell)
+                .count(),
+            2,
+            "corrected content schedules the duplicate cell twice"
+        );
+        // Crystal spawnMonster calls Game.createMonster without force=true:
+        // existing occupants and earlier successful requests prevent admission.
+        let mut admitted_cells = std::collections::BTreeSet::new();
+        for at in scheduled_cells {
+            if tile_free(at) {
+                admitted_cells.insert((at.x, at.y, at.floor));
+            }
+        }
+        admitted_cells
+    };
+    let expected_wave = expected_cells.len();
+    destination.drain_monster_melee_at(later(13_001_000)).await;
+    let spawned = beast_positions(&destination).await?;
     assert_eq!(
-        beasts(&destination).await?,
+        spawned.len(),
         expected_wave,
         "actual scheduled native Primal beasts match the source oracle"
     );
-    super::srx3_primal::drain_actual_native_through(&destination, later(14_000_000).get(), true)
-        .await?;
+    assert_eq!(
+        spawned.iter().filter(|at| **at == duplicate_cell).count(),
+        1,
+        "the duplicate scheduled cell admits exactly one beast"
+    );
+    assert_eq!(
+        spawned
+            .iter()
+            .map(|at| (at.x, at.y, at.floor))
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected_cells,
+        "native beast positions match successful source admissions"
+    );
+    destination.drain_monster_melee_at(later(13_001_000)).await;
     assert_eq!(
         beasts(&destination).await?,
         expected_wave,
         "same owner turn cannot duplicate a wave"
     );
     eprintln!("SRVGAP2_PRIMAL_STAGE native_cadence_spawned_exact_wave");
-    destination.clock_origin = destination
-        .clock_origin
-        .checked_sub(Duration::from_micros(
-            later(14_001_000)
-                .get()
-                .saturating_sub(destination.owner_now().get()),
-        ))
-        .ok_or("actual native death follows the played source wave")?;
+    destination.clock_origin -= Duration::from_millis(13_002);
     let now = destination.owner_now();
     let boss_policy = native
         .policies()
@@ -433,13 +490,9 @@ async fn scenario(admin: String) -> TestResult {
     let RuntimeScopeRefV1::Instance { instance_id, .. } = instance else {
         return Err("actual corpse Instance".into());
     };
-    let corpse = rewards
-        .corpse_item
-        .as_ref()
-        .ok_or("actual source Primal corpse")?;
     assert_eq!(sqlx::query_scalar::<_,i64>(
         "SELECT count(*) FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.instance_id=encode($1,'hex')::uuid AND g.channel_id IS NULL AND i.definition_production_key=$2")
-        .bind(instance_id.as_slice()).bind(&corpse.production_key).fetch_one(&h.pool).await?,1,
+        .bind(instance_id.as_slice()).bind(&rewards.corpse_item.production_key).fetch_one(&h.pool).await?,1,
         "the source corpse is durably placed in this exact Instance");
     // Wait for the real durable source deadline; never shorten the captured policy.
     tokio::time::timeout(Duration::from_secs(90), async {
@@ -502,15 +555,23 @@ async fn scenario(admin: String) -> TestResult {
 async fn beasts(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
 ) -> TestResult<usize> {
+    Ok(beast_positions(owner).await?.len())
+}
+
+async fn beast_positions(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult<Vec<MovementLocalPosition>> {
     let runtime = owner.runtime.lock().await;
     Ok(runtime
         .positioned_melee_census()
         .map_err(debug)?
         .iter()
-        .filter(|(actor, _, _)| {
-            runtime.companion_snapshot(*actor).is_ok_and(|row| {
-                rules::PRIMAL_BEAST_POOL.contains(&row.state.policy.definition_key.as_str())
+        .filter_map(|(actor, position, _)| {
+            runtime.companion_snapshot(*actor).ok().and_then(|row| {
+                rules::PRIMAL_BEAST_POOL
+                    .contains(&row.state.policy.definition_key.as_str())
+                    .then_some(position.position())
             })
         })
-        .count())
+        .collect())
 }

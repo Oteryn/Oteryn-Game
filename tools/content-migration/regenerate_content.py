@@ -835,6 +835,7 @@ def main() -> int:
     run(["python3", "tools/content-schema/world-object-authoring/feroxa_static.py"])
     refresh_source_cohort_extent()
     repin_rust_inventory()
+    run(["python3", "tools/content-migration/import_cyclopedia_global.py"])
     run(["python3", "tools/content-migration/world_project_v2_to_tree.py"])
     # Native policies seal the complete regenerated creature root. Keep their
     # bounded, independently reviewed source witnesses in the same generation.
@@ -850,6 +851,9 @@ def main() -> int:
     # Callback witnesses add authored props to the native index; rooms must pin that final index.
     run(["python3", "tools/content-schema/quest-authoring/qengine_rewards.py"])
     for tool in AUTHORING_TOOLS:
+        if tool.endswith("/reward_claim_authoring.py"):
+            run(["python3", "tools/content-migration/refresh_reward_stack_weight_proof.py"])
+            run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_variant_migration.py"])
         if (ROOT / tool).is_file():
             run(["python3", tool, "content"])
     # These standalone compilers consume the final Quest and placement inputs;
@@ -882,6 +886,20 @@ def main() -> int:
                  "quest_explore_area_candidates.py", "quest_talk_npc_candidates.py",
                  "quest_reward_only_binding_candidates.py"):
         run(["python3", "tools/content-schema/quest-authoring/" + name])
+    run(["python3", "tools/content-schema/quest-authoring/quest_tree_authoring.py", "content",
+         "--source-packet", "tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json"])
+    # Restore branch-owned completion transitions before lowering their claims
+    # or checking evidence which binds those exact claim bodies.
+    run(["python3", "tools/content-schema/quest-authoring/quest_state_lowering.py"])
+    run(["python3", "tools/content-schema/quest-authoring/qmech_m24_kill_bindings.py"])
+    run(["python3", "tools/content-schema/reward-claim-authoring/reward_claim_authoring.py", "content"])
+    for script in (
+        "quest_binding_authoring", "quest_completion_matrix", "quest_rollout_authoring",
+        "quest_v2_export", "source_lowered_binding_plan", "quest_completion_import",
+        "collect_claim_candidates", "use_trigger_candidates", "quest_native_binding_preflight",
+        "quest_reward_only_binding_candidates",
+    ):
+        run(["python3", f"tools/content-schema/quest-authoring/{script}.py"])
     refresh_quest_donor_capture()
     run(["python3", "tools/contracts/refresh_npc_service_counts.py"])
     if not args.skip_checks:

@@ -70,6 +70,7 @@ fn coin_market_session_loop_applies_only_the_confirmed_server_receipt()->Result<
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while !link.market_panel().selected{tokio::task::yield_now().await;}}).await?;
    let fields=["30".into(),"100".into(),String::new()];link.coin_market_control(2,fields.clone());assert!(link.market_panel().coins.view.is_none());
    link.coin_market_control(6,fields);assert!(link.market_panel().coins.view.is_none());
+   assert!(link.market_panel().coins.pending.is_some());
    // Release the authoritative receipt only after checking the pending view.
    receipt_tx.send(()).map_err(|_|"coin receipt gate")?;
    tokio::time::timeout(std::time::Duration::from_secs(3),async{while link.market_panel().coins.pending.is_some() || link.market_panel().coins.view.is_none(){tokio::task::yield_now().await;}}).await?;

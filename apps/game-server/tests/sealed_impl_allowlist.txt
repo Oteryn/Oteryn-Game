@@ -11,6 +11,9 @@ crates/gameplay/foundation/src/foundation/admission_authority_publication.rs | f
 # 60f2542a5 (Wheel): the due-combat compositor owns ChannelSpellStates in dispatch;
 # its delayed-execution fixture exercises the same spell-owned commit boundary.
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs | due_commit_seal::Sealed | ChannelSpellStates
+# #3183 (charm Global): DueCharmCommit wraps ChannelSpellStates with the turn's
+# charm catalogue borrow; same spell-owned due-commit boundary, dispatch-private.
+crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | due_commit_seal::Sealed | DueCharmCommit<'_>
 crates/gameplay/dispatch/src/gameplay_transport/actor_spell_commit.rs | player_proof_seal::Sealed | PlayerBatchPreflight
 crates/gameplay/dispatch/src/gameplay_transport/familiar_cast.rs | source_reservation_seal::Sealed | PreparedFamiliarLifecycle
 crates/gameplay/dispatch/src/gameplay_transport/mod.rs | recovery_source_sealed::Sealed | ChannelOwnedLossSource
