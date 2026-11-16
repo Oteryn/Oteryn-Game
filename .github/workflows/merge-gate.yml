@@ -383,6 +383,20 @@ jobs:
           python tools/repository/test_validate_pr_gate_pg_sim.py
           python tools/repository/test_job_result_key.py
 
+      # Every repository tool test runs here; test_repository_tests_run.py keeps it that way.
+      - name: Run every repository tool test
+        if: steps.jr_hit.outputs.hit != 'true'
+        run: |
+          set -euo pipefail
+          for test in tools/repository/test_*.py; do
+            case "$test" in
+              tools/repository/test_validate_pr_gate_pg_sim.py|tools/repository/test_job_result_key.py) continue ;;
+            esac
+            echo "::group::$test"
+            python "$test"
+            echo "::endgroup::"
+          done
+
       - name: Record job-result marker
         if: success() && steps.jr_key.outputs.key != '' && steps.jr_hit.outputs.hit != 'true'
         env:
