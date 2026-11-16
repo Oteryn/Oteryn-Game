@@ -12,6 +12,7 @@ mod hints;
 mod input;
 mod live_assets;
 mod login;
+pub(crate) mod maintenance;
 mod owner;
 mod scene;
 mod screenshots;
