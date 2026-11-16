@@ -142,6 +142,14 @@ impl PlayLink {
             if mailbox.inventory_shutdown {
                 return;
             }
+            // Manual Sort Mode (capability 510): a drop on a list row names that row's slot.
+            let manual_sort = mailbox.container_manual_sort;
+            let main_backpack = mailbox
+                .inventory
+                .inventory
+                .as_ref()
+                .and_then(|inventory| inventory.main_backpack)
+                .map(|backpack| backpack.handle);
             let native = &mut mailbox.item_drag_native;
             native
                 .surfaces
@@ -168,15 +176,29 @@ impl PlayLink {
                         .map(|(_, item)| *item)
                 })
                 .or_else(|| tile.and_then(|tile| view.item_drag_source(tile)));
-            let destination = surface.map(|s| s.destination).or_else(|| {
-                tile.map(|tile| {
-                    ItemMoveDestination::Ground(WorldTilePosition {
-                        x: tile.x,
-                        y: tile.y,
-                        floor: view.item_floor(),
-                    })
+            let destination = surface
+                .map(|s| {
+                    let row = s
+                        .rows
+                        .iter()
+                        .position(|(r, _)| contains(*r, point))
+                        .and_then(|row| u32::try_from(row).ok());
+                    oteryn_client_ui::container_manual_sort::row_destination(
+                        manual_sort,
+                        s.destination,
+                        main_backpack,
+                        row,
+                    )
                 })
-            });
+                .or_else(|| {
+                    tile.map(|tile| {
+                        ItemMoveDestination::Ground(WorldTilePosition {
+                            x: tile.x,
+                            y: tile.y,
+                            floor: view.item_floor(),
+                        })
+                    })
+                });
             let changed = native.down != down;
             native.down = down;
             let start = native.start;

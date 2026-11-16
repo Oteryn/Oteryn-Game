@@ -12,21 +12,29 @@ use oteryn_session::container_tree::{ContainerView, ContainerViews};
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 fn app() -> Result<(App, tokio::sync::mpsc::UnboundedReceiver<PlayCommand>)> {
+    app_with(
+        Default::default(),
+        vec![ContainerView {
+            view_id: 0,
+            container_handle: 10.try_into()?,
+            parent_handle: None,
+            capacity: 8,
+            entries: vec![tests::entry(11, 7)?, tests::entry(12, 3)?],
+            browse: None,
+        }],
+    )
+}
+
+fn app_with(
+    inventory: oteryn_session::CharacterInventory,
+    views: Vec<ContainerView>,
+) -> Result<(App, tokio::sync::mpsc::UnboundedReceiver<PlayCommand>)> {
     use bevy::asset::AssetPlugin;
     let (link, commands, outbox) = play_channel();
     PlayLink::bevy_items_fixture(
         &outbox,
-        Some(Default::default()),
-        Some(ContainerViews {
-            views: vec![ContainerView {
-                view_id: 0,
-                container_handle: 10.try_into()?,
-                parent_handle: None,
-                capacity: 8,
-                entries: vec![tests::entry(11, 7)?, tests::entry(12, 3)?],
-                browse: None,
-            }],
-        }),
+        Some(inventory),
+        Some(ContainerViews { views }),
         // Uncounted moves: a dropped stack moves whole, without the amount prompt.
         false,
         true,
@@ -142,6 +150,70 @@ fn shift_s_turns_titles_orange_and_a_slot_drop_sends_its_index() -> Result {
             shift_s(&mut app)?;
             assert_eq!(title_color(&mut app)?, oteryn_client_ui_bevy::TEXT_COLOR);
         }
+    }
+    Ok(())
+}
+
+/// The fallback "Backpack" panel (the main backpack before its container view is opened) sends
+/// the dropped-on slot of the main backpack in Manual Sort Mode, and the main backpack as before
+/// without it.
+#[test]
+fn the_fallback_backpack_panel_sends_its_slot_in_manual_sort_mode() -> Result {
+    let backpack = 10.try_into()?;
+    for manual in [false, true] {
+        let (mut app, mut commands) = app_with(
+            oteryn_session::CharacterInventory {
+                main_backpack: Some(tests::entry(10, 1)?),
+                entries: vec![
+                    tests::entry(11, 7)?,
+                    tests::entry(12, 3)?,
+                    tests::entry(13, 2)?,
+                ],
+                equipment: vec![],
+            },
+            Vec::new(),
+        )?;
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "Backpack"),
+            "fallback panel"
+        );
+        if manual {
+            shift_s(&mut app)?;
+        }
+        let slots: Vec<Slot> = app
+            .world_mut()
+            .query::<&Slot>()
+            .iter(app.world())
+            .filter(|slot| slot.location == Location::Inventory)
+            .copied()
+            .collect();
+        let source = slots
+            .iter()
+            .find(|slot| slot.item.is_some_and(|item| item.handle.get() == 11))
+            .ok_or("source")?;
+        let target = slots
+            .iter()
+            .find(|slot| slot.item.is_some_and(|item| item.handle.get() == 13))
+            .ok_or("target")?;
+        let owner = app.world().non_send::<HostOwner>();
+        let play = owner.play.as_ref().ok_or("play")?;
+        assert!(play.link.item_drag_begin(source.drag(owner).ok_or("drag")?));
+        play.link.item_drag_drop(target.destination);
+        let PlayCommand::MoveItem(request) = commands.try_recv()? else {
+            return Err("move".into());
+        };
+        assert_eq!(
+            request.destination,
+            if manual {
+                ItemMoveDestination::Container(backpack, Some(2))
+            } else {
+                ItemMoveDestination::MainBackpack
+            },
+            "manual sort: {manual}"
+        );
     }
     Ok(())
 }

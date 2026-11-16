@@ -47,6 +47,29 @@ pub fn drop_destination(mode: ManualSort, destination: ItemMoveDestination) -> I
     }
 }
 
+/// The destination of a drop on a list surface (the Windows-native container and inventory
+/// windows): while the mode is on, the dropped-on `row` is the slot of the surface's container, and
+/// a main backpack surface names the main backpack by its handle so that it can carry the slot.
+/// Without the mode, a row or a known backpack, the surface's own destination is kept.
+#[must_use]
+pub fn row_destination(
+    mode: ManualSort,
+    destination: ItemMoveDestination,
+    main_backpack: Option<oteryn_client_runtime::inventory::ItemHandle>,
+    row: Option<u32>,
+) -> ItemMoveDestination {
+    match (destination, row) {
+        (ItemMoveDestination::Container(handle, _), Some(row)) if mode.active() => {
+            ItemMoveDestination::Container(handle, Some(row))
+        }
+        (ItemMoveDestination::MainBackpack, Some(row)) if mode.active() => main_backpack
+            .map_or(destination, |backpack| {
+                ItemMoveDestination::Container(backpack, Some(row))
+            }),
+        _ => destination,
+    }
+}
+
 /// Tibia's orange container title while the mode is on (sRGB).
 pub const ACTIVE_TITLE_RGB: [u8; 3] = [0xF7, 0x9C, 0x1F];
 

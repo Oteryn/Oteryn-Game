@@ -154,6 +154,14 @@ pub(super) fn project(
         });
         if !open && !inventory.entries.is_empty() {
             let panel = panel(&mut commands, &skins, regions.containers, "Backpack");
+            // In Manual Sort Mode the main backpack is named by its handle, so a slot drop sends
+            // the slot (capability 510); otherwise it is the main backpack as before.
+            let destination = match inventory.main_backpack {
+                Some(backpack) if snapshot.manual_sort => {
+                    ItemMoveDestination::Container(backpack.handle, None)
+                }
+                _ => ItemMoveDestination::MainBackpack,
+            };
             grid(
                 &mut commands,
                 &skins,
@@ -162,7 +170,7 @@ pub(super) fn project(
                 Location::Inventory,
                 &inventory.entries,
                 inventory.entries.len(),
-                Some(ItemMoveDestination::MainBackpack),
+                Some(destination),
                 snapshot.selection,
             );
         }

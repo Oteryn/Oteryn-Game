@@ -197,7 +197,8 @@ With no text field focused, the existing gameplay shortcuts open:
   It works in Named-House containers too. In the depot, a carried item's deposit button holds
   the item and a box row then places it at that row's slot; clicking the held item again
   deposits it at the first slot. The container sort menu (a container's Sort button) has the
-  same mode as its "Use Manual Sort Mode" checkbox.
+  same mode as its "Use Manual Sort Mode" checkbox. The "Backpack" panel shown before the main
+  backpack's container view is opened sends the dropped-on slot too.
 - **Ctrl+S:** Supply Stash, with search/category/trader filters, name/stock sort,
   and a bounded withdrawal dialog. Stash rows show definition names because the
   protocol supplies no verified artwork binding.
