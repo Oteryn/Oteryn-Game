@@ -17,6 +17,9 @@ pub enum FullIntent {
     Unwanted(u8, String),
     UnlockList,
     BuyShop(u16),
+    BuyTalisman,
+    /// Damage, life leech, loot, Bestiary (zero-based, task_board_v1.md).
+    UpgradeTalisman(u8),
 }
 
 pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<FeatureCommand> {
@@ -38,6 +41,8 @@ pub fn full_request(panel: &mut TaskBoardPanel, intent: FullIntent) -> Option<Fe
         FullIntent::Unwanted(v, race) => (14, u16::from(v), race),
         FullIntent::UnlockList => (15, 0, String::new()),
         FullIntent::BuyShop(v) => (16, v, String::new()),
+        FullIntent::BuyTalisman => (17, 0, String::new()),
+        FullIntent::UpgradeTalisman(v) => (18, u16::from(v), String::new()),
     };
     let mut result = command(
         panel,

@@ -55,4 +55,10 @@ impl Outbox {
     pub(crate) fn bevy_task_board_fixture(&self, panel: oteryn_client_ui::task_board::TaskBoardPanel) {
         lock(&self.0).task_board = panel;
     }
+    pub(crate) fn bevy_task_board_full_result(
+        &self,
+        result: &oteryn_client_runtime::raw_feature::GatedCommandResult,
+    ) {
+        self.task_board_full_result(result);
+    }
 }
