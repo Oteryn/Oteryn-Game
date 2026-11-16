@@ -69,7 +69,7 @@ fn activate(
     let path = fields
         .iter()
         .next()
-        .map(|field| field.value().trim().to_string())
+        .map(|field| field.value().to_string().trim().to_owned())
         .unwrap_or_default();
     let settings = &mut owner.settings;
     let result = match action {

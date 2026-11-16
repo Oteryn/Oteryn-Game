@@ -141,7 +141,7 @@ pub(super) fn activate(
     let chord = fields
         .iter()
         .next()
-        .map(|field| field.value().trim().to_ascii_uppercase())
+        .map(|field| field.value().to_string().trim().to_ascii_uppercase())
         .unwrap_or_default();
     section::try_edit(
         &mut owner,
