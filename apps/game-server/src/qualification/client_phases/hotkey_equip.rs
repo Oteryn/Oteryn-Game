@@ -52,8 +52,19 @@ pub(super) async fn hotkey_equip(
     if panel.outcome == Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::SlotMismatch) {
         // The starter's carried items are not equipment: the server found no equipment
         // policy for this definition (gameplay_transport/hotkey_equip.rs, SlotMismatch).
+        // The skip holds only while the character wears nothing in the nine equipment slots.
+        let worn = client
+            .inventory()
+            .map(|inventory| inventory.equipment.clone())
+            .unwrap_or_default();
+        if !worn.is_empty() {
+            return Err(format!(
+                "hotkey equip refused SlotMismatch for definition {definition} while equipment is worn: {worn:?}"
+            )
+            .into());
+        }
         evidence(&format!(
-            "mechanic=hotkey_equip skipped=production_starter_has_no_carried_equipment server_outcome=SlotMismatch definition={definition}"
+            "mechanic=hotkey_equip skipped=production_starter_has_no_carried_equipment server_outcome=SlotMismatch worn_equipment=0 definition={definition}"
         ));
         return Ok(());
     }
