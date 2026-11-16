@@ -3,7 +3,7 @@ impl Outbox {
     pub(in crate::play) fn channel_list_events(&self, events: &[oteryn_session::SessionEvent]) {
         for event in events {
             if let oteryn_session::SessionEvent::GatedSnapshotReplaced(delta) = event
-                && delta.value.domain_id == 48
+                && delta.value.domain_id == oteryn_session::channel_list::STATE_DOMAIN_CHANNEL_LIST
             {
                 self.channel_list_initialize(Some(delta.value.payload.clone()));
             }
