@@ -48,13 +48,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn guildhall_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.guildhall.open = true;
-        }
+        lock(&self.mailbox).properties.guildhall.open = true;
     }
     pub fn guildhall_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::guildhall::open_key(events) {

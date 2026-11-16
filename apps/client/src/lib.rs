@@ -25,7 +25,6 @@ pub mod device_login;
 pub mod hud_error;
 pub mod input;
 pub mod map;
-pub mod miniwindow;
 #[path = "features/local-native-login/mod.rs"]
 pub mod native_login;
 pub mod package_integrity;
@@ -42,7 +41,6 @@ pub mod updater;
 pub mod web_links;
 #[cfg(windows)]
 pub mod win_mutex;
-pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 

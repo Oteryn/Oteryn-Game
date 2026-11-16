@@ -95,32 +95,3 @@ impl PlayLink {
         enqueue(&mut lock(&self.mailbox), &self.commands, true)
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn poll(
-    weak: std::sync::Weak<std::sync::Mutex<Mailbox>>,
-    commands: UnboundedSender<PlayCommand>,
-) {
-    let failed = weak.clone();
-    if std::thread::Builder::new()
-        .name("equipped-imbuement-refresh".into())
-        .spawn(move || {
-            loop {
-                let Some(shared) = weak.upgrade() else { break };
-                {
-                    let mut m = lock(&shared);
-                    if !m.imbue.tracker_open || m.imbue_shutdown || commands.is_closed() {
-                        m.imbue.tracker_open = false;
-                        break;
-                    }
-                    enqueue(&mut m, &commands, false);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(200));
-            }
-        })
-        .is_err()
-        && let Some(shared) = failed.upgrade()
-    {
-        lock(&shared).imbue.equipment.feedback =
-            Some("Automatic refresh unavailable; use Refresh equipment");
-    }
-}

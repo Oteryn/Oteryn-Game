@@ -74,11 +74,9 @@ fn browse_field_selects_the_first_visible_server_window() {
     assert_eq!(link.browse_field_panel().view_id, 3);
 }
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native;
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_controls_and_results() {
     use oteryn_client_runtime::cui3::browse_field::{
@@ -130,7 +128,6 @@ fn browse_field_native_controls_and_results() {
     assert!(!native::enabled(&p));
 }
 
-#[cfg(not(windows))]
 #[test]
 fn browse_field_native_item_controls_preserve_move_and_up_routes()
 -> Result<(), Box<dyn std::error::Error>> {

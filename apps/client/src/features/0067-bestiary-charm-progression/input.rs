@@ -53,13 +53,7 @@ impl PlayLink {
         lock(&self.mailbox).properties.charm_progression.open = false;
     }
     pub fn charm_progression_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.charm_progression.open = true;
-        }
+        lock(&self.mailbox).properties.charm_progression.open = true;
     }
     pub fn charm_progression_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::charm_progression::open_key(events) {

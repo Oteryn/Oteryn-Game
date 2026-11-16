@@ -25,15 +25,7 @@ impl PlayLink {
             return false;
         }
         self.party_effects_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Party effects — Ctrl+Alt+Shift+P"),
-            |mailbox| &mut mailbox.party_effects,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).party_effects.open = true;
-        }
+        lock(&self.mailbox).party_effects.open = true;
         true
     }
     pub fn party_effects_panel(&self) -> oteryn_client_ui::party_effects::PartyEffectsPanel {

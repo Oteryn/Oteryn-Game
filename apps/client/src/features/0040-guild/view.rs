@@ -4,11 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).guild.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// Guild controls for the shared frontend: the native list selection is a row number here.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

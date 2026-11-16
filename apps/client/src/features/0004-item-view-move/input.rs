@@ -11,15 +11,9 @@ impl PlayLink {
         if !oteryn_client_ui::inventory::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            let mut mailbox = lock(&self.mailbox);
-            if !mailbox.inventory_shutdown {
-                mailbox.inventory.open = true;
-            }
+        let mut mailbox = lock(&self.mailbox);
+        if !mailbox.inventory_shutdown {
+            mailbox.inventory.open = true;
         }
         true
     }

@@ -138,41 +138,9 @@ mod augment_input;
 mod target;
 use target::parse_target;
 
-#[cfg(windows)]
-pub(in crate::play) use window::open_window;
-#[cfg(windows)]
-#[path = "view/character_window.rs"]
-mod window;
 
-#[cfg(windows)]
-#[path = "view/controls.rs"]
-mod controls;
 
-#[cfg(windows)]
-#[path = "view/misc_layout.rs"]
-mod misc_layout;
 
-#[cfg(windows)]
-#[path = "view/gallery_window.rs"]
-mod gallery_window;
 
-#[cfg(windows)]
-#[path = "view/browsers.rs"]
-mod browsers;
-#[cfg(windows)]
-#[path = "view/items_window.rs"]
-mod items_window;
 
-#[cfg(windows)]
-#[path = "view/profile_table.rs"]
-mod profile_table;
-#[cfg(windows)]
-#[path = "view/protection_window.rs"]
-mod protection_window;
 
-#[cfg(windows)]
-#[path = "view/character_paint.rs"]
-mod character_paint;
-#[cfg(windows)]
-#[path = "view/offence_table.rs"]
-mod offence_table;

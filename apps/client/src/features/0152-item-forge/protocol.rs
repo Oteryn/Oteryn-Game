@@ -50,12 +50,12 @@ impl Outbox {
     }
 }
 
-#[cfg_attr(not(windows), allow(dead_code, reason = "Native combo state is exercised in play tests"))]
+#[allow(dead_code, reason = "Native combo state is exercised in play tests")]
 pub(in crate::play) fn retained_bag(selected: u64, entries: &[(u64, String)]) -> u64 {
     entries.iter().find(|entry| entry.0 == selected).map_or(0, |entry| entry.0)
 }
 
-#[cfg_attr(not(windows), allow(dead_code, reason = "Native dialog keys are exercised in play tests"))]
+#[allow(dead_code, reason = "Native dialog keys are exercised in play tests")]
 pub(in crate::play) fn resource_cancel_key(key: usize) -> bool {
     key == 27
 }

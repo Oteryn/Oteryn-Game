@@ -76,10 +76,6 @@ impl PlayLink {
                 return true;
             }
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
         true
     }
 }

@@ -147,10 +147,6 @@ impl PlayLink {
             if slot >= oteryn_client_runtime::spell::ACTION_BAR_SLOTS {
                 return false;
             }
-            #[cfg(windows)]
-            if !self.uses_shared_frontend() {
-                super::open_multi(self, slot);
-            }
             return true;
         }
         let mut mailbox = lock(&self.mailbox);

@@ -12,8 +12,6 @@ impl PlayLink {
 }
 #[path = "native.rs"]
 pub(in crate::play) mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// Item hotkeys for the shared frontend; the native key and item lists are row numbers here.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

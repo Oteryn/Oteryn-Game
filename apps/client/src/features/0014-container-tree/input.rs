@@ -131,18 +131,12 @@ impl PlayLink {
             }
             true
         };
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).containers.open = true;
-        }
+        lock(&self.mailbox).containers.open = true;
         sent
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn inventory_native_open(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<PlayCommand>,

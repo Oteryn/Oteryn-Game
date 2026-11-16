@@ -6,11 +6,6 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// Animus Mastery pages for the shared frontend.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

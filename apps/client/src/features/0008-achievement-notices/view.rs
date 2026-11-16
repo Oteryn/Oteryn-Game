@@ -13,11 +13,6 @@ impl PlayLink {
         lock(&self.mailbox).achievement_notices.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// The shared frontend's read-only notice list; the window closes like the native one.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

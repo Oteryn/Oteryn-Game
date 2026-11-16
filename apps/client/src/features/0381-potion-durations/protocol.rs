@@ -26,15 +26,7 @@ impl PlayLink {
             return false;
         }
         self.potion_durations_request();
-        #[cfg(windows)]
-        crate::play::status_window::open_window(
-            self,
-            tr!("Potion durations — Ctrl+Alt+Shift+T"),
-            |mailbox| &mut mailbox.potion_durations,
-        );
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).potion_durations.open = true;
-        }
+        lock(&self.mailbox).potion_durations.open = true;
         true
     }
     #[cfg(test)]

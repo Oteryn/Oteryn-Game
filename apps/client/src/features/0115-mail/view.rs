@@ -4,13 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).properties.mail.clone()
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    crate::play::feature_0115_mail::view::native::open(link, form_window(link));
-}
 
 pub(in crate::play) fn form_window(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;
@@ -57,10 +50,7 @@ pub(in crate::play) fn form_window(_link: &PlayLink) -> crate::play::feature_011
 #[path = "form.rs"]
 pub(in crate::play) mod form;
 
-#[cfg(windows)]
-#[path = "native.rs"]
-pub(in crate::play) mod native;
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "view/dialog_preferences.rs"]
 pub(in crate::play) mod dialog_preferences;

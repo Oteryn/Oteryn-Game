@@ -10,13 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 impl PlayLink {
     pub fn account_friends_open(&self) {
         submit(&mut lock(&self.mailbox), &self.commands, 0);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            open(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).vip.account_open = true;
-        }
+        lock(&self.mailbox).vip.account_open = true;
     }
     pub fn account_friends_control(&self, action: usize, fields: [String; 2]) {
         let mut mailbox = lock(&self.mailbox);
@@ -86,10 +80,6 @@ fn text(mailbox: &Mailbox) -> String {
         text.push_str(feedback);
     }
     text
-}
-#[cfg(windows)]
-fn open(link: &PlayLink) {
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
 }
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

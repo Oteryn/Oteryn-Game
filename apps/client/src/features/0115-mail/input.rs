@@ -48,13 +48,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn mail_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.mail.open = true;
-        }
+        lock(&self.mailbox).properties.mail.open = true;
     }
     pub fn mail_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if self.staff_input(events) {
@@ -76,9 +70,6 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "context.rs"]
-mod context;
 
 pub(in crate::play) fn edit(
     panel: &mut oteryn_client_ui::mail::Panel,

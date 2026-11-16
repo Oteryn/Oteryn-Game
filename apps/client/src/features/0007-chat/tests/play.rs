@@ -255,6 +255,5 @@ impl crate::play::Outbox {
     }
 }
 
-#[cfg(not(windows))]
 #[path = "../chat_dialog.rs"]
 mod native_composer;

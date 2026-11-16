@@ -6,11 +6,6 @@ impl PlayLink {
         lock(&self.mailbox).daily_boost.clone()
     }
 }
-#[cfg(all(windows, not(test)))]
-#[path = "native.rs"]
-mod native;
-#[cfg(all(windows, not(test)))]
-pub(in crate::play) use native::open_window;
 
 /// Daily boost and active XP boosts for the shared frontend; Refresh repeats both queries.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

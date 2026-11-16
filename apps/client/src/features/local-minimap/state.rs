@@ -29,7 +29,7 @@ impl Editor {
     }
 }
 // Only Windows opens this editor; tests exercise its thread ownership headlessly.
-#[cfg_attr(not(windows), allow(dead_code))]
+#[allow(dead_code)]
 pub(super) fn open_editor(
     shared: &SharedMinimap,
     run: impl FnOnce(std::sync::Arc<std::sync::atomic::AtomicBool>) + Send + 'static,
@@ -102,7 +102,7 @@ pub struct Minimap {
     pub zoom: i32,
     pub tracking: bool,
     // Read by the native Windows marker editor.
-    #[cfg_attr(not(windows), allow(dead_code))]
+    #[allow(dead_code)]
     pub editor_open: bool,
     editor: Option<Editor>,
     pub own: (i32, i32, i16),
@@ -267,7 +267,7 @@ impl Minimap {
         }
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
-    #[cfg_attr(not(windows), allow(dead_code))]
+    #[allow(dead_code)]
     pub fn pan(&mut self, dx: i32, dy: i32) {
         self.tracking = false;
         self.x = self
@@ -292,7 +292,7 @@ impl Minimap {
             .then_some(position)
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
-    #[cfg_attr(not(windows), allow(dead_code))]
+    #[allow(dead_code)]
     pub fn edit_marker(
         &mut self,
         x: i32,
@@ -352,7 +352,7 @@ impl Minimap {
         Ok(true)
     }
     // Invoked by native Windows controls; the headless tests exercise the same state.
-    #[cfg_attr(not(windows), allow(dead_code))]
+    #[allow(dead_code)]
     pub fn remove_marker(&mut self, x: i32, y: i32, floor: i16) -> io::Result<()> {
         self.markers
             .retain(|m| (m.x, m.y, m.floor) != (x, y, floor));
@@ -434,6 +434,6 @@ mod play_persistence;
 #[path = "tests/e2e_n07d.rs"]
 mod e2e_n07d;
 
-#[cfg(all(test, not(windows)))]
+#[cfg(test)]
 #[path = "native.rs"]
 mod native_action_tests;

@@ -33,13 +33,7 @@ impl crate::play::PlayLink {
         if !oteryn_client_ui::spell_action_bar::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox).spell_bar.open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox).spell_bar.open = true;
         true
     }
     pub fn spell_bar_bind(&self, fields: &[String]) -> bool {
@@ -81,7 +75,7 @@ pub(in crate::play) fn configure(
     true
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn submit(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,
@@ -111,7 +105,7 @@ pub(in crate::play) fn submit(
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn edit_slot(
     mailbox: &mut crate::play::mailbox::Mailbox,
     commands: &tokio::sync::mpsc::UnboundedSender<crate::combat_input::PlayCommand>,

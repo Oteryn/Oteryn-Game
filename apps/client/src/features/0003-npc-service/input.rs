@@ -23,10 +23,6 @@ impl PlayView {
 impl PlayLink {
     pub fn talk_to_npc(&self, npc: EntityRef, text: &str) {
         self.npc_dialogue_submit(npc, text);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
     }
     /// Returns whether the retained NPC owner enqueued this exact talk request.
     pub fn npc_dialogue_submit(&self, npc: EntityRef, text: &str) -> bool {
@@ -79,7 +75,7 @@ impl PlayLink {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 impl PlayLink {
     pub(in crate::play) fn npc_context_target(
         &self,
@@ -124,17 +120,3 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-impl PlayLink {
-    pub fn npc_context_input(
-        &self,
-        events: &[oteryn_input_actions::NormalizedInputEvent],
-        view: &PlayView,
-    ) -> bool {
-        let Some(npc) = self.npc_context_target(events, view) else {
-            return false;
-        };
-        super::view::context_menu(self, npc);
-        true
-    }
-}

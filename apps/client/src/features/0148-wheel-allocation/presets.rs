@@ -121,78 +121,10 @@ pub(in crate::play) fn open_shared(
             Err(message) => mailbox.wheel.preset_feedback = message,
         }
     }
-    #[cfg(windows)]
-    if !lock(shared).shared_frontend {
-        open_window(shared, commands);
-    }
-    if cfg!(not(windows)) || lock(shared).shared_frontend {
-        let _ = commands;
-        lock(shared).wheel.presets_open = true;
-    }
+    let _ = commands;
+    lock(shared).wheel.presets_open = true;
 }
 
-#[cfg(windows)]
-fn open_window(shared: &Arc<Mutex<Mailbox>>, commands: &UnboundedSender<PlayCommand>) {
-    use crate::play::feature_0115_mail::view::native::{self, Form};
-    {
-        let mut mailbox = lock(shared);
-        if mailbox.wheel.presets_open || mailbox.wheel_shutdown {
-            return;
-        }
-        mailbox.wheel.presets_open = true;
-    }
-    let form = Form {
-        title: "Wheel builds (points only)",
-        labels: &["Preset name", "Build code or URL (select and copy / paste)"],
-        buttons: &[
-            "Save named build",
-            "Load named build",
-            "Delete named build",
-            "Export code",
-            "Export URL",
-            "Import code / URL",
-        ],
-        snapshot: |mailbox| {
-            let p = &mailbox.wheel;
-            (
-                window_open(mailbox),
-                !p.ready(),
-                p.preset_fields.to_vec(),
-                lfmt!(
-                    "{}\r\nSaved builds:\r\n{}",
-                    p.preset_feedback,
-                    p.preset_book
-                        .0
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<_>>()
-                        .join("\r\n")
-                ),
-            )
-        },
-        set_open: |mailbox, value| mailbox.wheel.presets_open = value,
-        submit: |mailbox, _, action, values| {
-            for (slot, value) in mailbox.wheel.preset_fields.iter_mut().zip(values) {
-                *slot = value;
-            }
-            match path() {
-                Ok(path) => submit(mailbox, action, &path),
-                Err(message) => mailbox.wheel.preset_feedback = message,
-            }
-        },
-    };
-    let weak = Arc::downgrade(shared);
-    let rollback = weak.clone();
-    let commands = commands.clone();
-    if std::thread::Builder::new()
-        .name("wheel-builds-panel".into())
-        .spawn(move || native::run(weak, commands, form))
-        .is_err()
-        && let Some(shared) = rollback.upgrade()
-    {
-        lock(&shared).wheel.presets_open = false;
-    }
-}
 
 #[cfg(test)]
 #[path = "tests/e2e_n02.rs"]

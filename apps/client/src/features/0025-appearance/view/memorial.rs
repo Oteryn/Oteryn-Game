@@ -37,59 +37,6 @@ impl PlayLink {
         lock(&self.mailbox).properties.appearance.memorial.open = true;
     }
 }
-#[cfg(windows)]
-pub(super) fn watch(link: &PlayLink) {
-    use std::sync::Arc;
-    {
-        let mut mailbox = lock(&link.mailbox);
-        if mailbox.properties.appearance.memorial.watching {
-            return;
-        }
-        mailbox.properties.appearance.memorial.watching = true;
-    }
-    let weak = Arc::downgrade(&link.mailbox);
-    let rollback = weak.clone();
-    let commands = link.commands.clone();
-    if std::thread::Builder::new()
-        .name("outfit-memorial-launcher".into())
-        .spawn(move || {
-            loop {
-                let Some(shared) = weak.upgrade() else {
-                    return;
-                };
-                let mut mailbox = lock(&shared);
-                if (!mailbox.properties.appearance.open
-                    && !mailbox.properties.appearance.memorial.open)
-                    || commands.is_closed()
-                {
-                    mailbox.properties.appearance.memorial.watching = false;
-                    return;
-                }
-                if std::mem::take(&mut mailbox.properties.appearance.memorial.requested) {
-                    drop(mailbox);
-                    let link = PlayLink {
-                        owns_session: false,
-                        mailbox: shared,
-                        commands: commands.clone(),
-                    };
-                    open(&link);
-                } else {
-                    drop(mailbox);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-        })
-        .is_err()
-        && let Some(shared) = rollback.upgrade()
-    {
-        lock(&shared).properties.appearance.memorial.watching = false;
-    }
-}
-#[cfg(windows)]
-fn open(link: &PlayLink) {
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-    super::preview_window::open(link);
-}
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;

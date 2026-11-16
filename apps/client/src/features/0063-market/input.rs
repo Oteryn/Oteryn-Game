@@ -147,13 +147,7 @@ pub(in crate::play) fn open_from_depot(
         }
         enqueue(&mut m, commands, Intent::Refresh);
     }
-    #[cfg(windows)]
-    if !lock(mailbox).shared_frontend {
-        super::view::open_window(mailbox, commands);
-    }
-    if cfg!(not(windows)) || lock(mailbox).shared_frontend {
-        lock(mailbox).market.open = true;
-    }
+    lock(mailbox).market.open = true;
 }
 
 pub(in crate::play) fn stashback(

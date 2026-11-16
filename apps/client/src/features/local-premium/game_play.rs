@@ -31,13 +31,7 @@ impl PlayLink {
     }
     pub fn premium_overview_open(&self) {
         self.premium_overview_refresh();
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::premium_native::open(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).premium_game.open = true;
-        }
+        lock(&self.mailbox).premium_game.open = true;
     }
     pub fn premium_overview_input(
         &self,

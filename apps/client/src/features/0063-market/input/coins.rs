@@ -14,13 +14,7 @@ impl PlayLink {
     pub fn open_coin_market(&self) {
         let fields = lock(&self.mailbox).market.coins.fields.clone();
         self.coin_market_control(0, fields);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            open(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).market.coins.open = true;
-        }
+        lock(&self.mailbox).market.coins.open = true;
     }
 }
 fn operation() -> Option<[u8; 16]> {
@@ -71,10 +65,6 @@ fn submit(
         return false;
     }
     true
-}
-#[cfg(windows)]
-fn open(link: &PlayLink) {
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
 }
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

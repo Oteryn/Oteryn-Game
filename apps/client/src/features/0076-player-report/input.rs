@@ -44,13 +44,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn player_report_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.player_report.open = true;
-        }
+        lock(&self.mailbox).properties.player_report.open = true;
     }
     pub fn player_report_input(&self, events: &[NormalizedInputEvent]) -> bool {
         use oteryn_input_actions::{ButtonState, Modifier, Modifiers};

@@ -161,8 +161,6 @@ pub(super) struct Mailbox {
     /// Tibia Global's Manual Sort Mode of this session (capability 510).
     pub(super) container_manual_sort: oteryn_client_ui::container_manual_sort::ManualSort,
     pub(super) equipment_selected: bool,
-    #[cfg(windows)]
-    pub(super) item_drag_native: super::feature_0004_item_view_move::view::DragNative,
     pub(super) battle: oteryn_client_ui::battle::BattlePanel,
     pub(super) death: super::feature_local_death_respawn::protocol::DeathState,
     pub(super) death_reset_commands: bool,
@@ -237,15 +235,11 @@ pub(super) struct Mailbox {
     ended: Option<PlayEvent>,
     pub(super) task_board: oteryn_client_ui::task_board::TaskBoardPanel,
     pub(super) dialogue: oteryn_client_ui::npc_dialogue::DialoguePanel,
-    #[cfg(any(windows, test))]
+    #[cfg(test)]
     pub(super) dialogue_pointer: Option<(f64, f64)>,
-    #[cfg(windows)]
-    pub(super) dialogue_window: bool,
     pub(super) dialogue_shutdown: bool,
     /// Session-local shared NPC presentation dismissal; server reducers do not reopen it.
     pub(super) npc_dialog_dismissed: bool,
-    #[cfg(windows)]
-    pub(super) npc_shop_window: bool,
     pub(super) npc_shop: oteryn_client_ui::npc_shop::NpcShopPanel,
     pub(super) prey: oteryn_client_ui::prey::PreyPanel,
     pub(super) prey_shutdown: bool,

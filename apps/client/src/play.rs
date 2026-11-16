@@ -111,8 +111,6 @@ mod resource_hud;
 pub use hud_layout::{HudAction, HudDock, HudLayout, HudPane, HudPanel};
 mod session_loop;
 mod session_stepper;
-#[cfg(windows)]
-mod status_window;
 mod stepper;
 mod tick;
 pub use feature_0233_touch_controls::promoted::is_touch_promoted;
@@ -123,8 +121,6 @@ pub use window_controls::window_icon;
 
 include!(concat!(env!("OUT_DIR"), "/play_features.rs"));
 
-#[cfg(windows)]
-pub use feature_0011_world_interaction::view::{open_context_menu, open_world_context_menu};
 mod preferences;
 pub use preferences::*;
 

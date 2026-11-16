@@ -1,13 +1,11 @@
 //! Native account services run outside an admitted character session.
 mod controller;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 mod native;
 #[cfg(test)]
 pub(crate) mod test_server;
 #[cfg(test)]
 mod tests;
-#[cfg(windows)]
-pub(crate) mod window;
 
 use oteryn_foundation::CancellationToken;
 use oteryn_platform_client::native_login::bazaar::*;
@@ -167,11 +165,6 @@ impl View {
 }
 pub type Presenter = Arc<dyn Fn(&View, CancellationToken) -> Action + Send + Sync>;
 pub fn present(view: &View, cancel: CancellationToken) -> Action {
-    #[cfg(windows)]
-    {
-        native::present(view, cancel)
-    }
-    #[cfg(not(windows))]
     {
         let _ = (view, cancel);
         Action::Back

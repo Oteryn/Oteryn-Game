@@ -27,14 +27,6 @@ impl PlayLink {
         lock(&self.mailbox).sanctions.open = true;
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.sanctions_panel().open {
-        return;
-    }
-    link.sanctions_request();
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-}
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;

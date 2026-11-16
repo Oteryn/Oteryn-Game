@@ -16,15 +16,9 @@ impl PlayLink {
         assign(&mut crate::play::mailbox::lock(&self.mailbox), slot)
     }
     pub fn magical_archive_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_archive(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox)
-                .spell_catalog
-                .archive_open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox)
+            .spell_catalog
+            .archive_open = true;
     }
     /// ToggleSpellListWidget: closes the spell list (catalogue or spellbook) when shown, else opens it.
     pub fn spell_list_toggle(&self) {
@@ -43,13 +37,7 @@ impl PlayLink {
         if self.spellbook_open() {
             return;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            crate::play::mailbox::lock(&self.mailbox).spell_catalog.open = true;
-        }
+        crate::play::mailbox::lock(&self.mailbox).spell_catalog.open = true;
     }
 }
 

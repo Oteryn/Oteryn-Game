@@ -136,66 +136,11 @@ impl PlayLink {
         lock(&self.mailbox).properties.player_report.bug.open = false;
     }
     pub fn bug_report_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.player_report.bug.open = true;
-        }
+        lock(&self.mailbox).properties.player_report.bug.open = true;
     }
     pub fn bug_report_action(&self, action: usize) {
         activate(&mut lock(&self.mailbox), &self.commands, action);
     }
-}
-#[cfg(windows)]
-fn open_window(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Bug report",
-            labels: &[
-                "Map location: x,y,floor (map reports only)",
-                "Steps, observed behavior and expected behavior",
-                "Optional build details: enter YES to include build, OS and architecture",
-            ],
-            buttons: &[
-                "Map location",
-                "Text / spelling",
-                "Client behavior",
-                "Other issue",
-                "Review report",
-                "Send reviewed report",
-            ],
-            snapshot: |mailbox| {
-                let p = &mailbox.properties.player_report;
-                (
-                    p.bug.open,
-                    p.pending || !p.selected,
-                    p.bug.fields.to_vec(),
-                    format!("{}\r\n{}\r\n{}", p.bug.preview, p.summary, p.feedback),
-                )
-            },
-            set_open: |mailbox, value| mailbox.properties.player_report.bug.open = value,
-            submit: |mailbox, commands, action, fields| {
-                if mailbox.properties.player_report.pending {
-                    return;
-                }
-                for (slot, value) in mailbox
-                    .properties
-                    .player_report
-                    .bug
-                    .fields
-                    .iter_mut()
-                    .zip(fields)
-                {
-                    *slot = value;
-                }
-                activate(mailbox, commands, action);
-            },
-        },
-    );
 }
 
 #[cfg(test)]

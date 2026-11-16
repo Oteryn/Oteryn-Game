@@ -17,13 +17,7 @@ impl PlayLink {
             return false;
         }
         self.arena_request(Intent::Catalogue);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).arena.open = true;
-        }
+        lock(&self.mailbox).arena.open = true;
         true
     }
 }

@@ -13,11 +13,7 @@ impl PlayLink {
             return true;
         }
         self.hireling_request(Intent::Refresh);
-        #[cfg(windows)]
-        self.open_hireling_panel();
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).hireling.open = true;
-        }
+        lock(&self.mailbox).hireling.open = true;
         true
     }
 

@@ -87,20 +87,6 @@ pub fn name(row: &WorldSpatialEntity) -> &str {
         .unwrap_or("")
 }
 
-#[cfg(windows)]
-pub(crate) fn row_label(row: &WorldSpatialEntity) -> String {
-    let title = if name(row).is_empty() {
-        format!("{:?}", row.kind)
-    } else {
-        name(row).to_owned()
-    };
-    format!(
-        "{title} — {}% ({}, {})",
-        health(row),
-        row.position.x,
-        row.position.y
-    )
-}
 
 impl BattleListPreferences {
     pub fn rows(&self, entities: &[WorldSpatialEntity]) -> Vec<WorldSpatialEntity> {

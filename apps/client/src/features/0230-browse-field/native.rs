@@ -165,11 +165,4 @@ pub(super) fn item_command(
     Some(command)
 }
 
-#[cfg(windows)]
-pub(in crate::play) use platform::open_window;
 
-#[cfg(windows)]
-// Win32 controls are owned and accessed exclusively by the panel thread.
-#[allow(unsafe_code)]
-#[path = "native_platform.rs"]
-mod platform;

@@ -17,8 +17,6 @@ impl PlayView {
     /// failure.
     pub fn tick(&mut self, link: &PlayLink) -> Result<(), PlayEnd> {
         self.poll_ui_sounds(link);
-        #[cfg(windows)]
-        link.player_trade_present();
         const UNAVAILABLE: PlayEnd = PlayEnd::Ended(PublicClass::SessionUnavailable);
         self.sync_outfit_palette(link)
             .map_err(|_error| UNAVAILABLE)?;

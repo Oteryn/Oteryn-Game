@@ -1,25 +1,11 @@
-#[cfg(windows)]
-#[path = "graphic_window.rs"]
-mod graphic_window;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "preview.rs"]
 mod preview;
-#[cfg(windows)]
-#[path = "preview_assets.rs"]
-mod preview_assets;
 use crate::play::{PlayLink, mailbox::lock};
 impl PlayLink {
     pub fn house_podium_panel(&self) -> oteryn_client_ui::house_podium::Panel {
         lock(&self.mailbox).properties.house_podium.clone()
     }
-}
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-    graphic_window::start(link);
 }
 
 pub(in crate::play) fn form(link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

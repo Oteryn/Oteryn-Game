@@ -6,11 +6,6 @@ impl PlayLink {
         lock(&self.mailbox).boss_rewards.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// A death id typed as 32 hexadecimal digits.
 pub(super) fn parse_death_id(text: &str) -> Option<[u8; 16]> {

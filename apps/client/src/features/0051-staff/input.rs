@@ -42,13 +42,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, receipt);
     }
     pub fn staff_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.staff.open = true;
-        }
+        lock(&self.mailbox).properties.staff.open = true;
     }
     pub fn staff_input(&self, events: &[oteryn_input_actions::NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::staff_tools::open_key(events) {

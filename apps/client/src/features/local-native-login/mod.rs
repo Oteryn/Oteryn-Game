@@ -5,11 +5,6 @@ use oteryn_platform_client::native_login::{PublicClass, parse_uuid_v7};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[cfg(windows)]
-mod native;
-#[cfg(windows)]
-pub use native::LoginWindow;
-
 pub const FIELDS: [(&str, &str); 6] = [
     ("Platform URL", "OTERYN_PLATFORM_URL"),
     ("Gateway URL", "OTERYN_GATEWAY_URL"),

@@ -146,10 +146,6 @@ impl PlayLink {
             mailbox.spellbook_details.filter.clone()
         };
         self.spellbook_request(filter, 0);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::book_native::open_window(self);
-        }
         true
     }
     pub fn sync_spellbook_filter(&self, filter: &mut SpellbookFilter, edit: u64) -> Option<u64> {

@@ -27,21 +27,15 @@ impl PlayLink {
             return false;
         }
         self.wheel_request(Intent::Refresh);
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
+        {
+            let mut mailbox = lock(&self.mailbox);
+            mailbox.wheel.open = true;
+            if mailbox.shared_frontend {
+                mailbox.wheel.diagram.last = None;
+            }
         }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            {
-                let mut mailbox = lock(&self.mailbox);
-                mailbox.wheel.open = true;
-                if mailbox.shared_frontend {
-                    mailbox.wheel.diagram.last = None;
-                }
-            }
-            if self.uses_shared_frontend() {
-                self.wheel_presets_open();
-            }
+        if self.uses_shared_frontend() {
+            self.wheel_presets_open();
         }
         true
     }

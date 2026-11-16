@@ -6,16 +6,8 @@ impl PlayLink {
         lock(&self.mailbox).boss_encounter.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::{cooldown_window, open_window};
 
-#[cfg(windows)]
-#[path = "view/gallery.rs"]
-mod gallery;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 #[path = "view/portraits.rs"]
 mod portraits;
 

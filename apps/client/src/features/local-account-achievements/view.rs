@@ -6,11 +6,6 @@ impl PlayLink {
         lock(&self.mailbox).achievements.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::{open_character, open_window};
 
 /// Rows on one page of the account achievement list.
 const PAGE_ROWS: usize = 64;

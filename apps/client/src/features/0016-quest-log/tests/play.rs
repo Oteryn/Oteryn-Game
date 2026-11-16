@@ -176,7 +176,6 @@ fn tracker_read_only_reply_preserves_the_current_quest_and_revision() -> Result<
     Ok(())
 }
 
-#[cfg(not(windows))]
 #[test]
 fn standalone_tracker_chord_keeps_quest_log_closed_and_uses_session_query() -> Result<(), String> {
     use oteryn_input_actions::{ButtonState, KeyCode, Modifier, Modifiers, NormalizedInputEvent};
@@ -208,6 +207,5 @@ fn standalone_tracker_chord_keeps_quest_log_closed_and_uses_session_query() -> R
 #[path = "tracker_filters.rs"]
 mod tracker_filters;
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native_projection;

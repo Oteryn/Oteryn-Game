@@ -4,13 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).properties.character_info.clone()
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-}
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;
@@ -54,11 +47,6 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
     }
 }
 
-#[cfg(windows)]
-#[path = "view/titles.rs"]
-mod titles;
-#[cfg(windows)]
-pub(in crate::play) use titles::open_titles;
 
 /// The character titles window: search, filter and row fields over the server's own titles.
 pub(in crate::play) fn titles_form(

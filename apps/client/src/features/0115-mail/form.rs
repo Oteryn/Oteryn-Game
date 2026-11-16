@@ -60,6 +60,7 @@ const FORMS: &[FeatureForm] = &[
     entry(crate::play::feature_0039_timed_item::view::form, None),
     entry(crate::play::feature_0040_guild::view::form, None),
     entry(crate::play::feature_0043_vip::input::account::form, None),
+    entry(crate::play::feature_0051_staff::view::form, None),
     entry(crate::play::feature_0053_world_event::view::form, None),
     entry(crate::play::feature_0054_training::view::form, None),
     entry(crate::play::feature_0055_guild_bank::view::form, None),
@@ -92,6 +93,8 @@ const FORMS: &[FeatureForm] = &[
     entry(crate::play::feature_0250_hireling_management::view::form, None),
     entry(crate::play::feature_0259_chat_public_channels::view::form, None),
     entry(crate::play::feature_0280_party_effects::protocol::form, None),
+    entry(crate::play::feature_0290_cast_control::view::form, None),
+    entry(crate::play::feature_0291_cast_chat::view::form, None),
     entry(crate::play::feature_0381_potion_durations::protocol::form, None),
     entry(crate::play::feature_0445_house_furniture_rotation::view::form, None),
     entry(

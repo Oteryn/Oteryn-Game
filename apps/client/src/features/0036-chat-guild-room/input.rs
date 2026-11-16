@@ -21,12 +21,6 @@ pub(in crate::play) fn open(
         }
         mailbox.chat.guild_open = true;
     }
-    #[cfg(windows)]
-    if !lock(mailbox).shared_frontend {
-        crate::play::feature_0007_chat::view::open_shared(mailbox, _commands);
-    }
-    if cfg!(not(windows)) || lock(mailbox).shared_frontend {
-        lock(mailbox).chat.open = true;
-    }
+    lock(mailbox).chat.open = true;
     true
 }

@@ -6,11 +6,6 @@ impl PlayLink {
         lock(&self.mailbox).chat_private.clone()
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::Controls;
 
 impl PlayLink {
     /// Opens the private-channel window of the shared frontend and refreshes its list.

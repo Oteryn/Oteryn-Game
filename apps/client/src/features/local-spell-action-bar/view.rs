@@ -3,12 +3,12 @@ mod hotkeys;
 #[path = "item_actions.rs"]
 mod item_actions;
 pub use hotkeys::ActionKeys;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) use hotkeys::bind as bind_custom_key;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) use hotkeys::native_key;
 pub use item_actions::ItemUseMode;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) use item_actions::editor_items;
 pub(in crate::play) use item_actions::{item_source, item_target, visible_items};
 #[path = "amount.rs"]
@@ -24,10 +24,10 @@ use crate::play::PlayView;
 use crate::spell::SPELL_SLOTS;
 pub(crate) use assignments::BarActionsState;
 pub(in crate::play) use assignments::ItemCooldownRead;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) use assignments::activate_shared as activate_extra_shared;
 pub(in crate::play) use assignments::label as action_label;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) use assignments::set_action as set_extra;
 pub use assignments::{BarAction, BarActions, PassiveAbility, SpellAim};
 pub(in crate::play) use assignments::{activate as activate_extra, clear_extra};
@@ -96,77 +96,6 @@ impl PlayView {
     }
 }
 
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &crate::play::PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Spell action bar",
-            labels: &[
-                "Slot number (1–450; 50 per bar)",
-                "Server cast index (see live catalogue)",
-                "Carried item definition (equip)",
-                "Text to say",
-                "Keyboard chord (empty clears)",
-                "Spell aim: facing / cursor / target",
-                "Equip upgrade tier (0–10)",
-                "Send text automatically: yes / no (no inserts it into the chat input)",
-                "Item subtype (blank: any)",
-            ],
-            buttons: &[
-                "Spell",
-                "Clear",
-                "Use",
-                "Equip",
-                "Text",
-                "Instinct",
-                "Harmony",
-                "Serene",
-                "Bind key",
-                "Use self",
-                "Use target",
-                "Use cursor",
-                "Use at cursor position",
-                "Use item",
-            ],
-            snapshot: |mailbox| {
-                let panel = &mailbox.spell_bar;
-                (
-                    panel.open,
-                    false,
-                    vec![
-                        "1".into(),
-                        String::new(),
-                        String::new(),
-                        String::new(),
-                        String::new(),
-                        "facing".into(),
-                        "0".into(),
-                        "yes".into(),
-                        String::new(),
-                    ],
-                    format!(
-                        "{}\r\n{}\r\n{}",
-                        oteryn_client_ui::spell_action_bar::panel_text(
-                            panel,
-                            &mailbox.spell_catalog.catalog
-                        ),
-                        oteryn_client_ui::spell_action_bar::vitals_text(mailbox.vitals.as_ref()),
-                        oteryn_client_ui::spell_catalog::panel_text(&mailbox.spell_catalog)
-                    ),
-                )
-            },
-            set_open: |mailbox, open| mailbox.spell_bar.open = open,
-            submit: |mailbox, commands, action, fields| {
-                super::input::edit_slot(mailbox, commands, action, &fields)
-            },
-        },
-    );
-}
 
 impl crate::play::PlayLink {
     pub fn assign_spell_slot(&self, slot: usize, cast_index: Option<u32>) -> bool {
@@ -362,16 +291,6 @@ impl PlayView {
     }
 }
 
-#[cfg(windows)]
-#[path = "multiaction_native.rs"]
-mod multiaction_native;
-#[cfg(windows)]
-pub(in crate::play) fn open_multi(link: &crate::play::PlayLink, slot: usize) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    multiaction_native::open(link, slot);
-}
 
 impl PlayView {
     pub fn clear_bar_pointer(&mut self, link: &crate::play::PlayLink) {
@@ -381,7 +300,7 @@ impl PlayView {
 }
 
 // Kept outside Win32 so the editor transactions can be exercised on every test host.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn choose_editor_assignment(
     target: &mut Option<BarAction>,
     selected: Option<BarAction>,
@@ -391,7 +310,7 @@ pub(in crate::play) fn choose_editor_assignment(
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn editor_active(mailbox: &crate::play::mailbox::Mailbox, scope: u64) -> bool {
     mailbox.bar_actions.scope == scope
         && !mailbox.world_input_blocked()

@@ -70,8 +70,6 @@ use crate::play::feature_0179_hotkey_equip::view::native;
 
 #[test]
 fn native_hotkey_configuration_and_visible_refusal() -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(windows)]
-    let _open: fn(&crate::play::PlayLink) = native::open_window;
     let mut p = oteryn_client_ui::hotkey_equip::HotkeyEquipPanel {
         selected: true,
         ..Default::default()

@@ -8,11 +8,6 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 /// The public channels window: room number, message, room and movement-spell buttons.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

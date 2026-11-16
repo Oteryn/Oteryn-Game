@@ -8,13 +8,6 @@ impl PlayLink {
     }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
-#[cfg(windows)]
-pub(in crate::play) use native::context_menu;
-#[cfg(windows)]
-pub(in crate::play) use native::open_window;
 
 #[cfg(bevy_shell)]
 #[derive(Clone, Copy)]

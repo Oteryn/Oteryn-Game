@@ -42,13 +42,7 @@ impl PlayLink {
         if let Err(message) = self.console_display(display) {
             lock(&self.mailbox).chat.feedback = Some(message.into());
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).chat.open = true;
-        }
+        lock(&self.mailbox).chat.open = true;
     }
 }
 pub(in crate::play) fn enqueue(
@@ -75,7 +69,7 @@ pub(in crate::play) fn enqueue(
 }
 
 /// The native composer uses the same destination precedence as `enqueue`.
-#[cfg(any(windows, test))]
+#[cfg(test)]
 pub(in crate::play) fn composer_enabled(
     panel: &oteryn_client_ui::chat::ChatPanel,
     mode: Mode,

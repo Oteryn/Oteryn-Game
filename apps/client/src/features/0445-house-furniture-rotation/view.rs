@@ -7,13 +7,6 @@ impl PlayLink {
             .clone()
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-}
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use oteryn_client_ui::house_furniture_rotation::Intent;

@@ -42,13 +42,7 @@ impl PlayLink {
             let weapon = p.weapon;
             p.advancements.retain(|definition| *definition != weapon);
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).weapon_proficiency.open = true;
-        }
+        lock(&self.mailbox).weapon_proficiency.open = true;
         self.weapon_proficiency_request(Intent::State);
     }
     pub fn weapon_proficiency_select_weapon(&self, row: usize) {
@@ -74,18 +68,12 @@ impl PlayLink {
         if !oteryn_client_ui::weapon_proficiency::open_key(events) {
             return false;
         }
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            let mut mailbox = lock(&self.mailbox);
-            let panel = &mut mailbox.weapon_proficiency;
-            panel.open = true;
-            // Restart the catalogue walk without invalidating an in-flight page reply.
-            if !panel.pending {
-                panel.catalogue_offset = 0;
-            }
+        let mut mailbox = lock(&self.mailbox);
+        let panel = &mut mailbox.weapon_proficiency;
+        panel.open = true;
+        // Restart the catalogue walk without invalidating an in-flight page reply.
+        if !panel.pending {
+            panel.catalogue_offset = 0;
         }
         self.weapon_proficiency_request(Intent::Catalogue);
         true

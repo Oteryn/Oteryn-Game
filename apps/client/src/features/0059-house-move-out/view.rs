@@ -4,13 +4,6 @@ impl PlayLink {
         lock(&self.mailbox).properties.house_move_out.clone()
     }
 }
-#[cfg(windows)]
-pub(in crate::play) fn open_window(link: &PlayLink) {
-    if link.uses_shared_frontend() {
-        return;
-    }
-    crate::play::feature_0115_mail::view::native::open(link, form(link));
-}
 
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::play::feature_0115_mail::view::form::Form;

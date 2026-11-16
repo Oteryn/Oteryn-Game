@@ -209,6 +209,8 @@ impl HostOwner {
         // (game_ui::feature_forms), in the order the native shell routed them.
         if play.link.achievement_notices_input(&routed)
             || play.link.achievements_input(&routed)
+            || play.link.cast_control_input(&routed)
+            || play.link.cast_chat_input(&routed)
             || (oteryn_client_ui::boss_encounter::cooldowns_key(&routed)
                 && play.link.boss_encounter_input(&routed))
             || play.link.animus_input(&routed)

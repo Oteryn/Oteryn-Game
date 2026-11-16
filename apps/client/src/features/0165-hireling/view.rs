@@ -7,15 +7,8 @@ impl PlayLink {
         lock(&self.mailbox).hireling.clone()
     }
 
-    #[cfg(windows)]
-    pub fn open_hireling_panel(&self) {
-        native::open_window(self);
-    }
 }
 
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
 
 /// Banker hireling controls for the shared frontend.
 pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {

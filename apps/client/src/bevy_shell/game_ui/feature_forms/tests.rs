@@ -155,3 +155,60 @@ fn party_effects_key_requests_status_and_disables_buttons_while_pending() -> Tes
     assert!(commands.try_recv().is_err());
     Ok(())
 }
+
+#[test]
+fn staff_and_cast_keys_open_their_forms_through_the_router() -> TestResult {
+    let (mut app, _commands, _outbox) = fixture()?;
+    let chord = Modifiers::one(Modifier::Control)
+        .with(Modifier::Alt)
+        .with(Modifier::Shift);
+    for (code, modifiers, title) in [
+        (
+            39,
+            Modifiers::one(Modifier::Control).with(Modifier::Alt),
+            "Staff authorized actions",
+        ),
+        (22, chord, "Cast settings"),
+        (11, chord, "Live cast chat"),
+    ] {
+        press(&mut app, code, modifiers)?;
+        assert!(form_open(&app, title)?, "{title} did not open");
+        assert!(has_text(&mut app, title), "{title} is not shown");
+        click(&mut app, None)?;
+        assert!(!form_open(&app, title)?, "{title} did not close");
+        app.update();
+    }
+    Ok(())
+}
+
+#[test]
+fn cast_settings_reject_invalid_values_without_reaching_the_session() -> TestResult {
+    let (mut app, mut commands, _outbox) = fixture()?;
+    press(
+        &mut app,
+        22,
+        Modifiers::one(Modifier::Control)
+            .with(Modifier::Alt)
+            .with(Modifier::Shift),
+    )?;
+    assert!(form_open(&app, "Cast settings")?);
+    for (field, mut text) in app
+        .world_mut()
+        .query::<(&Field, &mut EditableText)>()
+        .iter_mut(app.world_mut())
+    {
+        if field.0 == 2 {
+            *text = EditableText::new("maybe");
+        }
+    }
+    while commands.try_recv().is_ok() {}
+    click(&mut app, Some(0))?;
+    assert!(commands.try_recv().is_err());
+    let owner = app.world().non_send::<HostOwner>();
+    let link = &owner.play.as_ref().ok_or("play")?.link;
+    assert_eq!(
+        link.cast_control_panel().feedback,
+        tr!("Enter valid saved cast settings")
+    );
+    Ok(())
+}

@@ -59,13 +59,7 @@ impl PlayLink {
         submit(&mut lock(&self.mailbox), &self.commands, intent);
     }
     pub fn cyclopedia_map_open(&self) {
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            super::view::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).properties.cyclopedia_map.open = true;
-        }
+        lock(&self.mailbox).properties.cyclopedia_map.open = true;
     }
     pub fn cyclopedia_map_input(&self, events: &[NormalizedInputEvent]) -> bool {
         if !oteryn_client_ui::cyclopedia_map::open_key(events) {

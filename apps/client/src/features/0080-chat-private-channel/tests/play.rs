@@ -334,6 +334,5 @@ fn successful_private_send_clears_only_the_submitted_draft() -> Result<(), Error
     Ok(())
 }
 
-#[cfg(not(windows))]
 #[path = "../native.rs"]
 mod native_controls;

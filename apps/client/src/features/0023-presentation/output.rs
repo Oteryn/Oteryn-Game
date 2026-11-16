@@ -70,10 +70,6 @@ impl AudioOutput {
         })
     }
 
-    #[cfg(windows)]
-    pub(crate) fn ambient_id(&self) -> Option<u32> {
-        self.ambient.as_ref().map(|(id, _)| *id)
-    }
 
     /// Confirmed local UI tones share the bounded voices and stop with the session.
     pub(crate) fn play_ui(&mut self, settings: AudioSettings, cues: Vec<UiSound>) {

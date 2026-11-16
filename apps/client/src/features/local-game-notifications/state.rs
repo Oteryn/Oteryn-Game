@@ -11,8 +11,6 @@ pub(in crate::play) struct Owned {
     pub origin: Instant,
     pub screen_dismissals: std::sync::atomic::AtomicU64,
     shared_frontend: std::sync::atomic::AtomicBool,
-    #[cfg(all(windows, not(test)))]
-    started: std::sync::atomic::AtomicBool,
 }
 #[derive(Debug, Clone)]
 pub(in crate::play) struct State(pub Arc<Owned>);
@@ -23,8 +21,6 @@ impl Default for State {
             origin: Instant::now(),
             screen_dismissals: std::sync::atomic::AtomicU64::new(0),
             shared_frontend: std::sync::atomic::AtomicBool::new(false),
-            #[cfg(all(windows, not(test)))]
-            started: std::sync::atomic::AtomicBool::new(false),
         }))
     }
 }
@@ -50,21 +46,7 @@ impl State {
     pub(in crate::play) fn show(&self, id: &str, text: &str, popup: bool) {
         let now_ms = self.elapsed(Instant::now());
         let inserted = lock(&self.0).show(id, text, popup, now_ms, 8000);
-        #[cfg(any(not(windows), test))]
         let _ = inserted;
-        #[cfg(all(windows, not(test)))]
-        if inserted
-            && !self.0.shared_frontend.load(std::sync::atomic::Ordering::Relaxed)
-            && !self
-                .0
-                .started
-                .swap(true, std::sync::atomic::Ordering::Relaxed)
-            && !super::view::native::open(Arc::downgrade(&self.0))
-        {
-            self.0
-                .started
-                .store(false, std::sync::atomic::Ordering::Relaxed);
-        }
     }
     pub fn elapsed(&self, now: Instant) -> u64 {
         u64::try_from(now.saturating_duration_since(self.0.origin).as_millis()).unwrap_or(u64::MAX)

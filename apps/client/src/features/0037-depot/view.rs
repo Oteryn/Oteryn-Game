@@ -9,18 +9,9 @@ impl PlayLink {
             box_number: 1,
             page: 0,
         });
-        #[cfg(windows)]
-        if !self.uses_shared_frontend() {
-            native::open_window(self);
-        }
-        if cfg!(not(windows)) || self.uses_shared_frontend() {
-            lock(&self.mailbox).depot.open = true;
-        }
+        lock(&self.mailbox).depot.open = true;
     }
 }
-#[cfg(windows)]
-#[path = "native.rs"]
-mod native;
 
 /// Shared frontend actions are bound to the exact displayed inventory and depot page.
 #[cfg(bevy_shell)]
