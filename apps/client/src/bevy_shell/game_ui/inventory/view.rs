@@ -114,6 +114,7 @@ pub(super) fn project(
     if previous.0.as_ref().is_some_and(|old| {
         old.generation == snapshot.generation
             && old.inventory.inventory == snapshot.inventory.inventory
+            && old.inventory.capacity == snapshot.inventory.capacity
             && old.containers.views == snapshot.containers.views
             && old.containers.feedback == snapshot.containers.feedback
             && old.slots == snapshot.slots
@@ -237,7 +238,8 @@ fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapsh
         .id();
     commands.entity(parent).add_child(grid);
     // Necklace / head / backpack, right hand / body / left hand, ring / legs / ammunition, feet.
-    for index in [
+    let cap = oteryn_client_ui::inventory_capacity::cap_text(&snapshot.inventory);
+    for (position, index) in [
         Some(1),
         Some(0),
         Some(2),
@@ -250,7 +252,10 @@ fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapsh
         None,
         Some(7),
         None,
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         if let Some(slot) = index.and_then(|index| snapshot.slots.get(index)) {
             let location = match slot.destination {
                 ItemMoveDestination::Equipment(slot) => Location::Equipment(slot),
@@ -281,6 +286,12 @@ fn equipment_grid(commands: &mut Commands, skins: &Skins, parent: Entity, snapsh
                 ))
                 .id();
             commands.entity(grid).add_child(spacer);
+            // Tibia shows Cap in the cell beside the feet slot.
+            if position == 11
+                && let Some(cap) = &cap
+            {
+                label(commands, skins, spacer, cap);
+            }
         }
     }
 }

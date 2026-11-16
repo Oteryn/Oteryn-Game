@@ -499,6 +499,7 @@ async fn live<A: FreshAdmissionAuthority>(
         achievement_notices,
         party_view,
         party_icons: Vec::new(),
+        inventory_capacity: None,
         team_finder_view: Default::default(),
         market_revision: 1,
         cyclopedia_tracker_revision: 1,

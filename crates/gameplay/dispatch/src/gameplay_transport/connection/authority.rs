@@ -1069,6 +1069,16 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(None)
     }
 
+    /// INVCAP-1: the own character's capacity under capability 508. Unavailable reads produce
+    /// no update.
+    fn observe_inventory_capacity(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity>>
+    {
+        std::future::ready(None)
+    }
+
     /// Own current-placement PvP observation; this never observes another character's totals.
     fn observe_pvp_status(
         &self,

@@ -214,6 +214,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.observe_party_skull(admitted).await
     }
 
+    async fn observe_inventory_capacity(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<oteryn_protocol_oteryn::inventory_capacity::InventoryCapacity> {
+        self.observe_own_capacity(admitted).await
+    }
+
     async fn observe_pvp_status(
         &self,
         admitted: connection::AdmittedSession,

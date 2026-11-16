@@ -194,5 +194,6 @@
  "\nPersonal highest: {personal_highest}\nUnlocked difficulty: {unlocked_max} / {maximum_difficulty}\n",
  "Weapon proficiency XP: {}% chance to gain double XP\n",
  "Bounty: state {}, difficulty {}, Reroll Tokens {} — each reroll costs 1 token",
- "{:?} {} × {} — {} gold / offer — carried {} — limit {}"
+ "{:?} {} × {} — {} gold / offer — carried {} — limit {}",
+ "Cap: {}"
 ]

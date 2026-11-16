@@ -661,6 +661,7 @@ where
             session.revision = to_revision;
             session.admitted.continuity.spatial_revision = session.revision;
             party_skull::refresh(stream, authority, session).await?;
+            inventory_capacity::refresh(stream, authority, session).await?;
             // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
             if let (Some(view), Some(items)) =
                 (session.world_map.as_mut(), session.item_view.as_mut())

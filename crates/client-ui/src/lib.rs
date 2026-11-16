@@ -408,5 +408,8 @@ pub mod highscores_catalogue;
 #[path = "features/0506-holdings-search/protocol.rs"]
 pub mod holdings_search;
 
+#[path = "features/0508-inventory-capacity/protocol.rs"]
+pub mod inventory_capacity;
+
 #[path = "features/0500-server-info/mod.rs"]
 pub mod server_info;
