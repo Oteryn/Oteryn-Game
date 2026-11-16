@@ -517,17 +517,17 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
         .query_filtered::<&mut Node, With<super::super::GameRoot>>()
         .single_mut(app.world_mut())?
         .display = Display::Flex;
-    let row = app
-        .world_mut()
-        .query::<(Entity, &EditableText, &TextReadWriteMode)>()
-        .iter(app.world())
-        .find_map(|(entity, text, mode)| {
-            (text.value().to_string().contains("select this message")
-                && *mode == TextReadWriteMode::ReadOnly)
-                .then_some(entity)
-        })
-        .ok_or("selectable message row missing")?;
     let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let row = app
+            .world_mut()
+            .query::<(Entity, &EditableText, &TextReadWriteMode)>()
+            .iter(app.world())
+            .find_map(|(entity, text, mode)| {
+                (text.value().to_string().contains("select this message")
+                    && *mode == TextReadWriteMode::ReadOnly)
+                    .then_some(entity)
+            })
+            .ok_or("selectable message row missing")?;
         app.world_mut().trigger(PointerClick {
             entity: row,
             pointer: Pointer::new(
@@ -556,6 +556,7 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
         app.update();
         Ok(())
     };
+    action(&mut app, "Communication lists")?;
     action(&mut app, "Message Sender")?;
     assert_eq!(
         app.world()
@@ -571,7 +572,6 @@ fn transcript_rows_are_selectable_and_offer_sender_actions()
             "Sender".into()
         ))
     );
-    action(&mut app, "Communication lists")?;
     let owner = app.world().non_send::<HostOwner>();
     let link = &owner.play.as_ref().ok_or("play")?.link;
     let lists = crate::play::FeatureForm::all()
