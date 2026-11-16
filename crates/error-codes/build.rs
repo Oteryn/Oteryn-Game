@@ -4,9 +4,13 @@
 mod build_source;
 
 fn main() {
-    println!("cargo:rerun-if-env-changed=OTERYN_BUILD_SHA");
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=src/build_source.rs");
+    for directive in [
+        "rerun-if-env-changed=OTERYN_BUILD_SHA",
+        "rerun-if-changed=build.rs",
+        "rerun-if-changed=src/build_source.rs",
+    ] {
+        println!("cargo:{directive}");
+    }
     let sha = match std::env::var("OTERYN_BUILD_SHA") {
         Ok(value) => Some(value),
         Err(std::env::VarError::NotPresent) => None,
