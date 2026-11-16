@@ -406,6 +406,16 @@ pub(in crate::gameplay_transport) fn incoming_conditions(
                 else {
                     continue;
                 };
+                let amount = if states.elite_bounty(
+                    runtime,
+                    target,
+                    session,
+                    &creature.state.policy.definition_key,
+                ) {
+                    amount / 2
+                } else {
+                    amount
+                };
                 let Ok(lease) = runtime.bound_attacker_lease(target, session) else {
                     continue;
                 };
@@ -605,5 +615,170 @@ mod tests {
         ));
         assert_eq!(states.charm_states.len(), 1);
         assert!(states.charm_state(&runtime, replacement, session).is_none());
+    }
+}
+
+#[cfg(test)]
+mod source_parry_tests {
+    use super::*;
+    use crate::domain::charm::BestiaryRaceKey;
+    use crate::domain::charm::{CharmKey, CharmStage};
+    use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+    use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+    #[test]
+    fn source_spell_parry_obeys_target_qualified_elite_bounty_and_replays_once()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::creature_policy::{
+            CompiledCreaturePolicies, CompiledCreaturePolicy, CreatureFlags,
+        };
+        for bounty in [
+            None,
+            Some("oteryn:creature.rat"),
+            Some("oteryn:creature.wolf"),
+        ] {
+            let (mut runtime, actor, session) = runtime_with_player(221);
+            let at = MovementLocalPosition {
+                x: 10,
+                y: 10,
+                floor: 7,
+            };
+            runtime.initialize_pinned_test_position(actor, at)?;
+            let character = crate::foundation::CharacterId::decode(session.as_bytes())?;
+            runtime.bind_attacker_lease(
+                actor,
+                session,
+                crate::foundation::CharacterLease::new(character, 1)?,
+            )?;
+            runtime.install_companion_policies(
+                CompiledCreaturePolicies::from_active_artifact(
+                    runtime.content_pin().server_artifact_digest(),
+                    vec![CompiledCreaturePolicy {
+                        definition_key: "oteryn:creature.rat".into(),
+                        definition_revision: "definition-r1".into(),
+                        display_name: "Rat".into(),
+                        maximum_health: 500,
+                        forge_difficulty: None,
+                        base_speed: 110,
+                        outfit_look_type: 21,
+                        object_look_type: None,
+                        summonable: false,
+                        convinceable: false,
+                        mana_cost: None,
+                        is_familiar: false,
+                        condition_immunities: vec![],
+                        defense: Some(0),
+                        armor: Some(0),
+                        mitigation: None,
+                        resistances: vec![],
+                        damage_immunities: vec![],
+                        healing_from_damage: vec![],
+                        preferred_distance: Some(1),
+                        reward_boss: Some(false),
+                        blocked_by_nearby_players: false,
+                        flags: CreatureFlags {
+                            attackable: true,
+                            illusionable: false,
+                            health_hidden: false,
+                        },
+                    }],
+                )
+                .map_err(|e| format!("{e:?}"))?,
+            )?;
+            let source =
+                runtime.admit_pinned_monster_lab_creature(at, "oteryn:creature.rat", 500)?;
+            runtime.install_creature_policy(source, "oteryn:creature.rat")?;
+            let mut states = ChannelSpellStates::default();
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    FACTS,
+                    (0, 0),
+                    SemanticTimeMicros::from_micros(1),
+                )
+                .ok_or("spell state")?;
+            let key = CharmKey::new("oteryn:charm.parry").map_err(|e| format!("{e:?}"))?;
+            assert!(
+                states.install_charm_state(
+                    &runtime,
+                    actor,
+                    session,
+                    CombatCharmState::new(
+                        crate::domain::CharacterId::from_bytes(*character.as_bytes())
+                            .map_err(|e| format!("{e:?}"))?,
+                        CharacterCharmState {
+                            unlocks: [(key.clone(), CharmStage::FIRST)].into(),
+                            assignments: [(
+                                key,
+                                BestiaryRaceKey::new("oteryn:creature.rat")
+                                    .map_err(|e| format!("{e:?}"))?
+                            )]
+                            .into(),
+                        },
+                    )
+                )
+            );
+            if let Some(race) = bounty {
+                states.elite_bounties.push((actor, session, race.into()));
+            }
+            let catalogue = crate::content::charm_source::CanonicalCharmCatalogue::embedded()
+                .map_err(|e| format!("{e:?}"))?;
+            let digest = Sha256::new()
+                .chain_update(b"oteryn.charm.source.v1")
+                .chain_update(b"source-parry-regression")
+                .finalize();
+            let mut identity = [0; 16];
+            identity.copy_from_slice(&digest[..16]);
+            let occurrence = DecisionOccurrenceId::from_bytes(identity);
+            let root = (0..=255_u8)
+                .map(|seed| GameplayDecisionRoot::from_bytes([seed; 32]))
+                .find(|root| {
+                    evaluate(
+                        &states,
+                        &runtime,
+                        &catalogue,
+                        actor,
+                        session,
+                        "oteryn:creature.rat",
+                        root,
+                        occurrence,
+                        CharmHookEvent::IncomingCreatureHit { base_damage: 100 },
+                    )
+                    .iter()
+                    .any(|outcome| {
+                        matches!(
+                            effect(outcome),
+                            Some(CharmEffectOutcome::ReflectDamage { .. })
+                        )
+                    })
+                })
+                .ok_or("deterministic Parry proc")?;
+            for _ in 0..2 {
+                incoming_conditions(
+                    &mut states,
+                    &mut runtime,
+                    &catalogue,
+                    &root,
+                    source,
+                    actor,
+                    session,
+                    100,
+                    1,
+                    "source-parry-regression",
+                    1,
+                    false,
+                );
+                assert_eq!(
+                    runtime.companion_snapshot(source)?.health,
+                    if bounty == Some("oteryn:creature.rat") {
+                        450
+                    } else {
+                        400
+                    }
+                );
+            }
+        }
+        Ok(())
     }
 }

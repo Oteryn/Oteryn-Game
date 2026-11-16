@@ -49,11 +49,13 @@ fn p12c_offence_rates_preserve_combat_saturation_and_unknown_sources() -> Result
         state: &state,
         now_micros: 1,
         mode: FightMode::Balanced,
+        intrinsic_elemental: None,
         weapon: SwingWeapon::Fists,
         ranged: None,
         equipment_only: &equipment,
         offence: &offence,
         wheel: Some(&wheel),
+        adjacent_monsters: Some(0),
         battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0; 8],
         mantra: 0,
@@ -128,6 +130,7 @@ fn p12c_melee_attack_total_follows_live_skill_and_fight_mode() -> Result<(), Str
         state: &state,
         now_micros: 1,
         mode: FightMode::Offensive,
+        intrinsic_elemental: None,
         weapon: SwingWeapon::Melee {
             attack: 30,
             skill: MeleeSkill::Sword,
@@ -136,6 +139,7 @@ fn p12c_melee_attack_total_follows_live_skill_and_fight_mode() -> Result<(), Str
         equipment_only: &offence,
         offence: &offence,
         wheel: None,
+        adjacent_monsters: Some(0),
         battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0; 8],
         mantra: 0,
@@ -172,11 +176,13 @@ fn p12c_fist_attack_total_reports_the_fight_mode_delta() -> Result<(), String> {
             state: &state,
             now_micros: 1,
             mode,
+            intrinsic_elemental: None,
             weapon: SwingWeapon::Fists,
             ranged: None,
             equipment_only: &offence,
             offence: &offence,
             wheel: None,
+            adjacent_monsters: Some(0),
             battle_instinct: BattleInstinctBonuses::default(),
             skill_bonuses: [0; 8],
             mantra: 0,
@@ -232,11 +238,13 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
         state: &state,
         now_micros: 1,
         mode: FightMode::Balanced,
+        intrinsic_elemental: None,
         weapon: SwingWeapon::Fists,
         ranged: None,
         equipment_only: &offence,
         offence: &offence,
         wheel: Some(&wheel),
+        adjacent_monsters: Some(0),
         battle_instinct: BattleInstinctBonuses::default(),
         skill_bonuses: [0, 0, 0, 0, 0, 3, 0, 0],
         mantra: 9,
@@ -295,5 +303,131 @@ fn p12c_defence_observes_loaded_live_skills_and_owned_equipment() -> Result<(), 
         value.get(Stat::DefenceTotal),
         Some(i64::from(boosted_defence))
     );
+    Ok(())
+}
+
+#[test]
+fn offence_statistics_include_conditional_wheel_critical_and_attack_skills() -> Result<(), String> {
+    use crate::spell::cast::{WheelEquipment, WheelHand};
+    let mut state = state()?;
+    let build =
+        crate::durability::character_build::DurableBuildState::new("knight", (0, 0), [(50, 0); 7])
+            .map_err(|e| format!("{e:?}"))?;
+    state
+        .load_owned_build(&build)
+        .map_err(|e| format!("{e:?}"))?;
+    state.install_wheel_equipment(Some(WheelEquipment {
+        weapon_hand: Some(WheelHand {
+            ammunition: Some(crate::content::ReferenceAmmoType::Bolt),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }));
+    let offence = EquippedOffence::from_sums(1000, 2000, 0, 0);
+    let wheel = WheelRuntimeEffects {
+        active_unique_perks: ["ballistic_mastery".into(), "positional_tactics".into()].into(),
+        sockets: oteryn_gameplay_progression::wheel_effects::WheelSocketSeam {
+            gem_values_milli: [(
+                (
+                    "critical_extra_damage".into(),
+                    "Critical Extra Damage".into(),
+                ),
+                1000,
+            )]
+            .into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let mut observation = Observation {
+        state: &state,
+        now_micros: 1,
+        mode: FightMode::Balanced,
+        intrinsic_elemental: None,
+        weapon: SwingWeapon::Fists,
+        ranged: None,
+        equipment_only: &offence,
+        offence: &offence,
+        wheel: Some(&wheel),
+        adjacent_monsters: Some(0),
+        battle_instinct: BattleInstinctBonuses {
+            melee: 3,
+            shielding: 6,
+        },
+        skill_bonuses: [0; 8],
+        mantra: 0,
+    };
+    let mut out = CombatStats::new(CharacterTab::Offence, 1, 1, 1).map_err(|e| format!("{e:?}"))?;
+    observation
+        .offence(&mut out)
+        .map_err(|e| format!("{e:?}"))?;
+    assert_eq!(out.get(Stat::CriticalDamage), Some(410_000));
+    assert_eq!(observation.skill(2), Some(53));
+    assert_eq!(observation.skill(4), Some(56));
+    assert_eq!(observation.skill(0), Some(53));
+    observation.adjacent_monsters = Some(1);
+    assert_eq!(observation.skill(4), Some(53));
+    Ok(())
+}
+
+#[test]
+fn offence_melee_damage_composition_projects_elemental_imbuement() -> Result<(), String> {
+    let state = state()?;
+    for attack in [1, 30, 35] {
+        for percent in [10, 30, 50, 100] {
+            let offence = EquippedOffence {
+                elemental_conversion: Some((crate::content::ProjectV2RangedElement::Fire, percent)),
+                ..Default::default()
+            };
+            let observation = Observation {
+                state: &state,
+                now_micros: 1,
+                mode: FightMode::Balanced,
+                weapon: SwingWeapon::Melee {
+                    attack,
+                    skill: oteryn_gameplay_combat_rules::resolution::MeleeSkill::Sword,
+                },
+                intrinsic_elemental: None,
+                ranged: None,
+                equipment_only: &EquippedOffence::default(),
+                offence: &offence,
+                wheel: None,
+                adjacent_monsters: Some(0),
+                battle_instinct: BattleInstinctBonuses::default(),
+                skill_bonuses: [0; 8],
+                mantra: 0,
+            };
+            let mut out =
+                CombatStats::new(CharacterTab::Offence, 1, 1, 1).map_err(|e| format!("{e:?}"))?;
+            observation
+                .offence(&mut out)
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                out.get(Stat::ConvertedElement),
+                Some(element_id(crate::content::ProjectV2RangedElement::Fire))
+            );
+            assert_eq!(
+                out.get(Stat::ConvertedDamage),
+                Some(i64::from(percent) * 10_000)
+            );
+            // The ranged projection uses this same owner with the ammunition's original secondary.
+            observation
+                .damage_composition(
+                    &mut out,
+                    attack,
+                    11,
+                    crate::content::ProjectV2RangedElement::Earth,
+                )
+                .map_err(|e| format!("{e:?}"))?;
+            assert_eq!(
+                out.get(Stat::ConvertedElement),
+                Some(element_id(crate::content::ProjectV2RangedElement::Fire))
+            );
+            assert_eq!(
+                out.get(Stat::ConvertedDamage),
+                Some(i64::from(percent) * 10_000)
+            );
+        }
+    }
     Ok(())
 }

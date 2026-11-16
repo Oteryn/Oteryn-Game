@@ -437,6 +437,7 @@ fn scenario(case: Case) -> TestResult {
                 9,
                 wire::CAPABILITY_BOSS_ENCOUNTER_V1,
                 oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
+                oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_PITY_V1,
             ]
         } else if case == Case::CapabilityMismatch || with_death {
             vec![
@@ -910,6 +911,9 @@ fn scenario(case: Case) -> TestResult {
         {
             let runtime = destination.runtime.lock().await;
             assert_eq!(runtime.binding().runtime_scope(), instance);
+            assert!(crate::gameplay_transport::battle_instinct_status::actor_is_current(
+                &runtime, admitted,
+            ), "the exact current activity session remains a valid battle/Atelier actor");
             assert_eq!(
                 runtime
                     .read_actor_position(next_actor)

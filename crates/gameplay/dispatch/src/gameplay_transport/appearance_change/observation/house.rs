@@ -45,6 +45,9 @@ pub(super) async fn read_state(
             ),
         ) => Err(super::ReadFailure::Durable(error)),
         Err(AppearanceWriteError::Fence(
+            crate::durability::character_progression::CharacterProgressionError::CharacterRevisionMismatch,
+        )) => Err(super::ReadFailure::SnapshotConflict),
+        Err(AppearanceWriteError::Fence(
             crate::durability::character_progression::CharacterProgressionError::RespawnPending,
         )) => Err(super::ReadFailure::RespawnPending),
         Err(_) => Ok(None),

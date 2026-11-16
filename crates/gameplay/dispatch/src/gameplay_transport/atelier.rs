@@ -132,6 +132,34 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    // Serialize a cache refill with the same Character owner as Atelier/Wheel writes.
+    async fn reload_atelier_session(
+        &self,
+        expected: crate::durability::item_transfer::CurrentCharacterItemFence,
+    ) -> Result<Option<AtelierState>, ()> {
+        let _slot = self.revision_sequencer.acquire(expected.character_id).await;
+        let current = self
+            .current_quest_fence(expected.game_session_id)
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        if current.item_fence() != expected {
+            return Err(());
+        }
+        // The durable reader checks the recovery fence and locks the Character row.
+        let state = self
+            .root
+            .read_character_atelier(self.character, expected.character_id)
+            .await
+            .map_err(|_| ())?;
+        self.states
+            .atelier_sessions
+            .lock()
+            .map_err(|_| ())?
+            .insert(expected.game_session_id, state.clone());
+        Ok(state)
+    }
+
     /// Mod Reshaping reads the Supply Stash through a hireling only where the stash owner
     /// already grants it: the current Steward hireling serving this session's open stash.
     pub(super) async fn reshape_hireling_stash(
@@ -204,6 +232,26 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                         Some(expected),
                     )
                     .await;
+            let cached = self
+                .states
+                .atelier_sessions
+                .lock()
+                .ok()
+                .is_some_and(|sessions| {
+                    sessions
+                        .get(&admitted.game_session_id)
+                        .is_some_and(Option::is_some)
+                });
+            if !replay_only
+                && !cached
+                && matches!(
+                    request.mutation,
+                    crate::durability::character_atelier::AtelierMutation::Dismantle { .. }
+                )
+                && self.reload_atelier_session(expected).await.is_err()
+            {
+                return AtelierWireReply::Unavailable;
+            }
             let backpack = match self
                 .root
                 .read_character_backpack(self.character, expected.character_id)
@@ -223,7 +271,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let mut runtime = self.runtime.lock().await;
                 let binding = runtime.binding();
                 if admitted.world_id != binding.world_id()
-                    || binding.channel_id() != Some(admitted.channel_id)
+                    || binding
+                        .channel_id()
+                        .is_some_and(|channel| channel != admitted.channel_id)
                     || expected.runtime_scope != binding.runtime_scope()
                     || expected.scope_ownership_generation != binding.scope_generation()
                     || runtime.owner_fence().is_err()
@@ -341,11 +391,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         });
         let state = match state {
             Some(state) => state,
-            None => match self
-                .root
-                .read_character_atelier(self.character, expected.character_id)
-                .await
-            {
+            None => match self.reload_atelier_session(expected).await {
                 Ok(Some(state)) => state,
                 // Admission intentionally creates no Atelier row below eligibility. A
                 // selected client may still query the panel; this is a rule refusal,
@@ -688,8 +734,7 @@ fn atelier_wire_resources<'a>(
                     .and_then(Option::as_ref)
                     .and_then(|state| state.gems.get(&u128::from_be_bytes(gem)))
                     .map(|gem| gem.quality == GemQuality::Greater)
-            })
-            .unwrap_or(false),
+            })?,
         _ => false,
     };
     let key = if supreme {

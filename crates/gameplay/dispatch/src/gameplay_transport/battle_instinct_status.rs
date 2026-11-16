@@ -69,7 +69,9 @@ pub(in crate::gameplay_transport) fn actor_is_current(
     fence.game_session_id == admitted.game_session_id
         && fence.connection_generation.get() == admitted.continuity.connection_generation
         && binding.world_id() == admitted.world_id
-        && binding.channel_id() == Some(admitted.channel_id)
+        && binding
+            .channel_id()
+            .is_none_or(|channel| channel == admitted.channel_id)
         && binding.runtime_scope() == fence.runtime_scope
         && binding.scope_generation() == fence.scope_ownership_generation
         && runtime.owner_fence().is_ok()

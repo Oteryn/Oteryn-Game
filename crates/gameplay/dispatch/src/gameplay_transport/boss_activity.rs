@@ -172,7 +172,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .ok()?;
             let reply = self
                 .root
-                .boss_difficulty_command(self.character, self.holder, fence, id, &request)
+                .boss_difficulty_command_with_pity(
+                    self.character,
+                    self.holder,
+                    fence,
+                    id,
+                    &request,
+                    admitted
+                        .continuity
+                        .selected_capabilities
+                        .contains(difficulty::CAPABILITY_BOSS_DIFFICULTY_PITY_V1),
+                )
                 .await
                 .ok()??;
             return Some((CommandStatus::Accepted, reply));

@@ -4,6 +4,20 @@ use oteryn_gameplay_foundation::foundation::condition::TemporaryDisplayedAppeara
 #[path = "observation/house.rs"]
 mod house;
 
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn revision_conflict_for_test(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    fence: CurrentCharacterGameplayFence,
+) -> bool {
+    let Some((_, content)) = admission.appearance_context() else {
+        return false;
+    };
+    matches!(
+        house::read_state(admission, fence, content.earned_grant_keys()).await,
+        Err(ReadFailure::SnapshotConflict)
+    )
+}
+
 #[derive(Debug, Clone)]
 pub struct Observation {
     pub catalogue: wire::Catalogue,
@@ -12,7 +26,7 @@ pub struct Observation {
     pub skipped: Vec<wire::EntityRef>,
 }
 
-/// Only a proven exhausted holder retry may defer an established observer's refresh.
+/// Only exhausted holder or snapshot-conflict retries may defer an observer refresh.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ObservationError {
     HolderBusy,
@@ -24,6 +38,7 @@ pub enum ObservationError {
 
 /// Why one attempt's durable read produced no value.
 pub(super) enum ReadFailure {
+    SnapshotConflict,
     Durable(crate::durability::DurabilityError),
     RespawnPending,
 }
@@ -70,23 +85,35 @@ pub(in crate::gameplay_transport) async fn observe_result(
     let retry = AdmissionRetryBudget::for_command(admission.root);
     retry
         .retry_durability("appearance_observation", async || {
-            let mut failure = None;
-            let observation = observe_once(
-                admission,
-                observer,
-                session,
-                empty_outfit,
-                &entities,
-                &mut failure,
-            )
-            .await;
-            // All runtime/spell guards belong to observe_once and have dropped
-            // before retry_durability can wait for the holder. Its durable reads
-            // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
-            match failure {
-                Some(ReadFailure::Durable(error)) => Err(error),
-                Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
-                None => Ok(observation.ok_or(ObservationError::Unavailable)),
+            loop {
+                let mut failure = None;
+                let observation = observe_once(
+                    admission,
+                    observer,
+                    session,
+                    empty_outfit,
+                    &entities,
+                    &mut failure,
+                )
+                .await;
+                // All runtime/spell guards belong to observe_once and have dropped
+                // before retry_durability can wait for the holder. Its durable reads
+                // acquire with try_issue_root/try_issue_semantic_pass, never a wait.
+                if matches!(failure, Some(ReadFailure::SnapshotConflict)) {
+                    if retry
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        continue;
+                    }
+                    return Ok(Err(ObservationError::HolderBusy));
+                }
+                return match failure {
+                    Some(ReadFailure::Durable(error)) => Err(error),
+                    Some(ReadFailure::RespawnPending) => Ok(Err(ObservationError::RespawnPending)),
+                    Some(ReadFailure::SnapshotConflict) => Ok(Err(ObservationError::HolderBusy)),
+                    None => Ok(observation.ok_or(ObservationError::Unavailable)),
+                };
             }
         })
         .await
@@ -261,7 +288,8 @@ async fn observe_once(
             "fence",
         )?;
         if target_session == session && fence != own_fence {
-            return note_none(None, "revision");
+            *failure = Some(ReadFailure::SnapshotConflict);
+            return None;
         }
         if fence.runtime_scope != own_fence.runtime_scope
             || fence.scope_ownership_generation != own_fence.scope_ownership_generation
@@ -378,7 +406,8 @@ async fn observe_once(
             result => read_state_result(result, failure)?,
         };
         if reread != current {
-            return note_none(None, "revision");
+            *failure = Some(ReadFailure::SnapshotConflict);
+            return None;
         }
         bindings.push(wire::Binding {
             context,

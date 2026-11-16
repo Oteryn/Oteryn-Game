@@ -193,7 +193,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .is_some_and(|effects| effects.active_unique_perks.contains("battle_instinct"))
                 && let Some(bonuses) = battle_instinct_for_actor(&runtime, entry.actor)
             {
-                selected.skills.attack = selected.skills.attack.saturating_add(bonuses.melee);
+                selected.skills.attack =
+                    selected
+                        .skills
+                        .attack
+                        .saturating_add(wheel_attack_skill_bonus(
+                            match selected.weapon.weapon {
+                                SwingWeapon::Melee { skill, .. } => skill.index(),
+                                SwingWeapon::Fists => 0,
+                            },
+                            None,
+                            None,
+                            bonuses,
+                        ));
                 selected.skills.shielding =
                     selected.skills.shielding.saturating_add(bonuses.shielding);
             }
@@ -262,18 +274,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && let Some(effects) = state.wheel_effects_at(now.get())
             {
                 apply_wheel_leech(&mut offence, effects);
-                let global_critical =
-                    effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage") / 10;
-                let Ok(global_critical) = u16::try_from(global_critical) else {
+                let Some(critical) = wheel_critical_damage(
+                    effects,
+                    state.wheel_equipment().and_then(|hands| hands.ammunition()),
+                ) else {
                     continue;
                 };
-                offence.critical_damage = offence.critical_damage.saturating_add(global_critical);
-                if effects.active_unique_perks.contains("ballistic_mastery")
-                    && state.wheel_equipment().and_then(|hands| hands.ammunition())
-                        == Some(crate::content::ReferenceAmmoType::Bolt)
-                {
-                    offence.critical_damage = offence.critical_damage.saturating_add(1_000);
-                }
+                offence.critical_damage = offence.critical_damage.saturating_add(critical);
             }
             let cleaves = if offence.cleave > 0 {
                 equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
@@ -537,6 +544,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
                 if selected.weapon.ranged.is_none()
                     && offence.elemental_conversion.is_none()
+                    && selected.weapon.elemental_attack.is_none()
                     && creature_physically_immune(&snapshot.state.policy)
                 {
                     continue;
@@ -602,10 +610,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 let blocked = selected.weapon.ranged.is_none()
                     && blocks[index].1.try_block(&constants.block, swing.at);
-                if selected.weapon.ranged.is_none() && offence.elemental_conversion.is_some() {
+                if selected.weapon.ranged.is_none()
+                    && (offence.elemental_conversion.is_some()
+                        || selected.weapon.elemental_attack.is_some())
+                {
                     ranged_magnitude = {
                         use crate::content::ProjectV2RangedElement as E;
-                        offence.convert_physical(damage, 0, E::Physical).and_then(|(physical, elemental, element)| {
+                        selected.weapon.melee_components(damage, &offence).and_then(|(physical, elemental, element)| {
                         let physical = creature_mitigated(&root, constants, entry.actor, swing.lineage, ordinal, physical, blocked, defense, armor)?;
                         let physical = creature_physical_response(&snapshot.state.policy, physical)?;
                         let key = match element {E::Fire=>"fire",E::Earth=>"earth",E::Ice=>"ice",E::Energy=>"energy",E::Death=>"death",E::Physical=>"physical"};
@@ -617,6 +628,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let Some(magnitude) = (if selected.weapon.ranged.is_some()
                     || offence.elemental_conversion.is_some()
+                    || selected.weapon.elemental_attack.is_some()
                 {
                     ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
                 } else {
@@ -637,19 +649,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
                 // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
                 // Training already counted the swing by its block, so it trains by `magnitude`.
-                let landed =
-                    if selected.weapon.ranged.is_some() || offence.elemental_conversion.is_some() {
-                        magnitude
-                    } else if magnitude > 0 {
-                        let Some(landed) =
-                            creature_physical_response(&snapshot.state.policy, magnitude)
-                        else {
-                            continue;
-                        };
-                        landed
-                    } else {
-                        magnitude
+                let landed = if selected.weapon.ranged.is_some()
+                    || offence.elemental_conversion.is_some()
+                    || selected.weapon.elemental_attack.is_some()
+                {
+                    magnitude
+                } else if magnitude > 0 {
+                    let Some(landed) =
+                        creature_physical_response(&snapshot.state.policy, magnitude)
+                    else {
+                        continue;
                     };
+                    landed
+                } else {
+                    magnitude
+                };
                 let landed = if selected.weapon.ranged.is_none() {
                     if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
                         let Some(parts) = finish_melee_components(
@@ -1185,6 +1199,45 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+pub(super) fn wheel_critical_damage(
+    effects: &oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
+    ammunition: Option<crate::content::ReferenceAmmoType>,
+) -> Option<u16> {
+    let global = u16::try_from(
+        effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage") / 10,
+    )
+    .ok()?;
+    Some(global.saturating_add(
+        if effects.active_unique_perks.contains("ballistic_mastery")
+            && ammunition == Some(crate::content::ReferenceAmmoType::Bolt)
+        {
+            1000
+        } else {
+            0
+        },
+    ))
+}
+
+pub(super) fn wheel_attack_skill_bonus(
+    index: usize,
+    effects: Option<&oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects>,
+    adjacent: Option<u32>,
+    battle: oteryn_gameplay_progression::wheel_effects::BattleInstinctBonuses,
+) -> u32 {
+    let battle = if index <= 4 { battle.melee } else { 0 };
+    battle.saturating_add(
+        if index == 4
+            && adjacent == Some(0)
+            && effects
+                .is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
+        {
+            3
+        } else {
+            0
+        },
+    )
+}
+
 fn apply_wheel_leech(
     offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
     wheel: &oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
@@ -1306,11 +1359,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let armor = vitals.target_armor(runtime, hit.target, target_session);
         let protection = vitals.target_physical_protection(runtime, hit.target, target_session);
-        let Some((physical_raw, secondary_raw, converted_element)) = offence.convert_physical(
-            hit.magnitude,
-            0,
-            crate::content::ProjectV2RangedElement::Physical,
-        ) else {
+        let Some((physical_raw, secondary_raw, converted_element)) =
+            hit.weapon.melee_components(hit.magnitude, &offence)
+        else {
             return;
         };
         let Some(mitigated) = (if hit.weapon.ranged.is_some() {
@@ -1683,15 +1734,23 @@ pub(super) fn select_swing(
             attack: constants.starting_skill,
             shielding: constants.starting_skill,
         });
-    if attack_index == 4
-        && player
-            .wheel_effects_at(now.get())
-            .is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
-        && crate::spell::cast::wheel_adjacent_monsters(runtime, entry.actor)? == 0
+    let effects = player.wheel_effects_at(now.get());
+    let adjacent = if attack_index == 4
+        && effects.is_some_and(|effects| effects.active_unique_perks.contains("positional_tactics"))
     {
-        // Crystal player_wheel.cpp:3009-3017: the no-adjacent-monster branch adds 3 distance.
-        skills.attack = skills.attack.checked_add(3)?;
-    }
+        Some(crate::spell::cast::wheel_adjacent_monsters(
+            runtime,
+            entry.actor,
+        )?)
+    } else {
+        None
+    };
+    skills.attack = skills.attack.checked_add(wheel_attack_skill_bonus(
+        attack_index,
+        effects,
+        adjacent,
+        Default::default(),
+    ))?;
     let mut facts = target_facts(runtime, room, entry.actor, entry.session, target, now)?;
     // Vanished/dead/nonattackable targets still reach the original clearing rules, even
     // when ammunition is missing. Cost/range gates may only stall a valid held target.
@@ -2109,6 +2168,40 @@ fn reported_primary(parts: [i64; 2], committed: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn intrinsic_melee_split_preserves_both_components_and_conversion() {
+        use super::super::{SwingWeapon, WeaponFacts};
+        use crate::content::ProjectV2RangedElement as E;
+        use oteryn_gameplay_combat_rules::resolution::{
+            MeleeSkill, equipped_offence::EquippedOffence,
+        };
+        let facts = WeaponFacts {
+            weapon: SwingWeapon::Melee {
+                attack: 35,
+                skill: MeleeSkill::Sword,
+            },
+            elemental_attack: Some((11, E::Fire)),
+            item_key: None,
+            ranged: None,
+            content_digest: [0; 32],
+            read_at: oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        };
+        for (raw, physical, elemental) in [(350, 240, 110), (175, 120, 55), (700, 480, 220)] {
+            assert_eq!(
+                facts.melee_components(raw, &EquippedOffence::default()),
+                Some((physical, elemental, E::Fire))
+            );
+        }
+        let converted = EquippedOffence {
+            elemental_conversion: Some((E::Ice, 50)),
+            ..Default::default()
+        };
+        assert_eq!(
+            facts.melee_components(350, &converted),
+            Some((120, 120, E::Ice))
+        );
+    }
 
     #[test]
     fn t174_converted_melee_wheel_preserves_both_mitigated_components()

@@ -18,6 +18,13 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
 };
 const PASS: Duration = Duration::from_secs(3);
 #[test]
+fn intrinsic_elemental_melee_postgres_fire_sword_damages_physical_immunity() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("intrinsic-melee", || {
+        scenario(3280, 1, false, 100, false, false)
+    })
+}
+
+#[test]
 fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("ranged-bow", || {
         scenario(3350, 4, true, 100, false, false)
@@ -259,7 +266,7 @@ fn scenario_with_quiver(
             channel_pin.clone(),
         )
         .map_err(debug)?;
-        if matches!(weapon, 25760 | 3287) {
+        if matches!(weapon, 25760 | 3287 | 3280) {
             // An elemental wand must pass physical immunity. This distinguishes its element
             // from a fist/physical hit through the real dispatch.
             let mut rat = native
@@ -659,6 +666,12 @@ fn scenario_with_quiver(
                 let shield:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(76).as_slice()).fetch_one(&harness.pool).await?;
                 assert_eq!(shield, 100, "Extra precedes Shield");
             }
+        } else if weapon == 3280 {
+            assert!(
+                killed,
+                "the Fire Sword's intrinsic fire component reaches physical immunity"
+            );
+            assert_eq!(shots, 0, "melee takes no projectile cost");
         } else if weapon == 3287 {
             assert!(!killed, "physical immunity blocks the throwing damage");
             let remaining: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(70).as_slice()).fetch_one(&harness.pool).await?;

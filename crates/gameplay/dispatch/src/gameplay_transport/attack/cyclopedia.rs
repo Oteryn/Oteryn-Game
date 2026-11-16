@@ -64,7 +64,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Vec::new()
         };
         let ranged = ranged::loadout(content, &equipment, &quiver).ok_or(())?;
-        let weapon = swing_weapon(content, &equipment.items).ok_or(())?;
+        let (weapon, intrinsic_elemental) =
+            melee_weapon_components(content, &equipment.items).ok_or(())?;
         let equipment_only = equipment_owner::equipped_offence(&equipment, content).ok_or(())?;
         let mantra = equipment_owner::equipped_mantra(&equipment, content).ok_or(())?;
         let now = self.owner_now();
@@ -152,10 +153,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now_micros: now.get(),
                 mode,
                 weapon,
+                intrinsic_elemental,
                 ranged: ranged.as_deref(),
                 equipment_only: &equipment_only,
                 offence: &offence,
                 wheel: wheel.as_ref(),
+                adjacent_monsters: crate::spell::cast::wheel_adjacent_monsters(&runtime, actor),
                 battle_instinct: state
                     .wheel_battle_instinct(&runtime, actor, now.get())
                     .ok_or(())?,
@@ -234,10 +237,12 @@ struct Observation<'a> {
     now_micros: u64,
     mode: FightMode,
     weapon: SwingWeapon,
+    intrinsic_elemental: Option<(u32, crate::content::ProjectV2RangedElement)>,
     ranged: Option<&'a ranged::RangedLoadout>,
     equipment_only: &'a EquippedOffence,
     offence: &'a EquippedOffence,
     wheel: Option<&'a WheelRuntimeEffects>,
+    adjacent_monsters: Option<u32>,
     battle_instinct: BattleInstinctBonuses,
     skill_bonuses: [u32; 8],
     mantra: u32,
@@ -245,17 +250,33 @@ struct Observation<'a> {
 
 impl Observation<'_> {
     fn skill(&self, index: usize) -> Option<u32> {
-        self.state
-            .live_skill(index, self.now_micros)
-            .map(|value| value.saturating_add(self.skill_bonuses[index]))
+        self.state.live_skill(index, self.now_micros).map(|value| {
+            value
+                .saturating_add(self.skill_bonuses[index])
+                .saturating_add(super::drain::wheel_attack_skill_bonus(
+                    index,
+                    self.wheel,
+                    self.adjacent_monsters,
+                    self.battle_instinct,
+                ))
+        })
     }
 
     fn offence(&self, out: &mut CombatStats) -> Result<(), TabWireError> {
-        let (chance, damage) = self.offence.player_critical();
+        let (chance, mut damage) = self.offence.player_critical();
         let (base_chance, base_damage) = EquippedOffence::default().player_critical();
         let mut life = self.offence.life_leech;
         let mut mana = self.offence.mana_leech;
         if let Some(wheel) = self.wheel {
+            let critical = super::drain::wheel_critical_damage(
+                wheel,
+                self.state
+                    .wheel_equipment()
+                    .and_then(|hands| hands.ammunition()),
+            )
+            .ok_or(TabWireError)?;
+            damage = damage.saturating_add(critical);
+            out.set(Stat::CriticalDamageWheel, i64::from(critical) * 100)?;
             life = life.saturating_add(
                 u16::try_from(wheel.life_leech_hundredths_percent).unwrap_or(u16::MAX),
             );
@@ -368,15 +389,7 @@ impl Observation<'_> {
                     out.set(Stat::AttackEquipment, i64::from(total))?;
                     out.set(Stat::AttackSkillId, 7)?;
                     out.set(Stat::AttackElement, 0)?;
-                    out.set(Stat::ConvertedElement, element_id(element))?;
-                    out.set(
-                        Stat::ConvertedDamage,
-                        if total == 0 {
-                            0
-                        } else {
-                            i64::from(elemental_attack) * 1_000_000 / i64::from(total)
-                        },
-                    )?;
+                    self.damage_composition(out, attack, elemental_attack, element)?;
                     if let Some(skill) = self.skill(4) {
                         // Crystal protocolgame.cpp:5076-5085 reports the donor display formula.
                         let (total_attack, raw_attack) =
@@ -427,6 +440,15 @@ impl Observation<'_> {
             out.set(Stat::AttackEquipment, i64::from(attack))?;
             out.set(Stat::AttackSkillId, id)?;
             out.set(Stat::AttackElement, 0)?;
+            let (secondary, element) = self
+                .intrinsic_elemental
+                .unwrap_or((0, crate::content::ProjectV2RangedElement::Physical));
+            self.damage_composition(
+                out,
+                attack.checked_sub(secondary).ok_or(TabWireError)?,
+                secondary,
+                element,
+            )?;
             if let Some(skill) = self.skill(skill_index) {
                 // Crystal protocolgame.cpp:5114-5126,5142-5154 reports these display values.
                 let (total_attack, raw_attack) = attack_totals(flat, attack, skill, self.mode);
@@ -436,6 +458,36 @@ impl Observation<'_> {
             }
         }
         Ok(())
+    }
+
+    fn damage_composition(
+        &self,
+        out: &mut CombatStats,
+        physical: u32,
+        secondary: u32,
+        element: crate::content::ProjectV2RangedElement,
+    ) -> Result<(), TabWireError> {
+        let (physical, secondary, element) = self
+            .offence
+            .convert_physical(
+                i64::from(physical) * 100,
+                i64::from(secondary) * 100,
+                element,
+            )
+            .ok_or(TabWireError)?;
+        let total = physical.checked_add(secondary).ok_or(TabWireError)?;
+        out.set(Stat::ConvertedElement, element_id(element))?;
+        out.set(
+            Stat::ConvertedDamage,
+            if total == 0 {
+                0
+            } else {
+                secondary
+                    .checked_mul(1_000_000)
+                    .and_then(|value| value.checked_div(total))
+                    .ok_or(TabWireError)?
+            },
+        )
     }
 
     fn defence(&self, out: &mut CombatStats) -> Result<(), TabWireError> {

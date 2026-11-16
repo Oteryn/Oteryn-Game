@@ -1172,6 +1172,62 @@ fn scenario(case: Case) -> TestResult {
         );
         assert_eq!(footprint(&h).await?, unchanged);
         assert_eq!(scope_footprint(&h).await?, unchanged_custody);
+        if matches!(case, Case::Dismantle) {
+            let before = query(&restarted, &mut admitted).await?;
+            advance_ex_action(&mut restarted)?;
+            let revealed = wire::decode_reply(
+                &send_atelier(
+                    &restarted,
+                    &mut admitted,
+                    wire::COMMAND_TYPE_ATELIER_MUTATE,
+                    &wire::encode_mutate(&wire::MutateRequest {
+                        occurrence: id(245),
+                        expected_revision: before.revision,
+                        mutation: wire::Mutation::Reveal { quality: 2 },
+                    })
+                    .map_err(debug)?,
+                )
+                .await?,
+            )
+            .map_err(debug)?;
+            assert!(!revealed.refused, "greater gem reveal");
+            let greater = revealed
+                .gems
+                .iter()
+                .find(|gem| gem.id == id(245))
+                .ok_or("greater gem")?;
+            restarted
+                .states
+                .atelier_sessions
+                .lock()
+                .map_err(debug)?
+                .remove(&admitted.game_session_id);
+            let reloaded = query(&restarted, &mut admitted).await?;
+            advance_ex_action(&mut restarted)?;
+            let dismantled = wire::decode_reply(
+                &send_atelier(
+                    &restarted,
+                    &mut admitted,
+                    wire::COMMAND_TYPE_ATELIER_MUTATE,
+                    &wire::encode_mutate(&wire::MutateRequest {
+                        occurrence: id(246),
+                        expected_revision: reloaded.revision,
+                        mutation: wire::Mutation::Dismantle { gem: greater.id },
+                    })
+                    .map_err(debug)?,
+                )
+                .await?,
+            )
+            .map_err(debug)?;
+            assert!(
+                !dismantled.refused,
+                "a cold cache must not turn Greater output into basic fragments"
+            );
+            assert!(!dismantled.gems.iter().any(|gem| gem.id == greater.id));
+            let supreme: bool = sqlx::query_scalar("SELECT bool_and((l->>'key') IS NOT DISTINCT FROM 'oteryn:item.tibia.i46626') FROM game_atelier_item_records r CROSS JOIN LATERAL jsonb_array_elements(r.outputs) l WHERE r.occurrence=encode($1,'hex')::uuid")
+                .bind(id(246).as_slice()).fetch_one(&h.pool).await?;
+            assert!(supreme);
+        }
         drop(restarted);
         drop(owner);
         drop(authority);

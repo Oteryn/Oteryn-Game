@@ -12,7 +12,9 @@ async fn action(
     let (status, bytes) =
         super::super::boss_difficulty::exchange(owner, admitted, id, &payload).await?;
     assert_eq!(status, CommandStatus::Accepted);
-    difficulty::decode_reply(&bytes).map_err(debug)
+    difficulty::decode_reply_with_pity(&bytes)
+        .map(|(reply, _)| reply)
+        .map_err(debug)
 }
 
 pub(super) async fn exercise(
@@ -33,6 +35,11 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(status, CommandStatus::Accepted);
+    let (_, pity) = difficulty::decode_reply_with_pity(&bytes).map_err(debug)?;
+    assert!(
+        pity.is_some(),
+        "a capability-492 lever open includes its pity tracker"
+    );
     let Reply::Window {
         context,
         personal_highest,
@@ -40,7 +47,9 @@ pub(super) async fn exercise(
         maximum_difficulty,
         selected_difficulty,
         ..
-    } = difficulty::decode_reply(&bytes).map_err(debug)?
+    } = difficulty::decode_reply_with_pity(&bytes)
+        .map(|(reply, _)| reply)
+        .map_err(debug)?
     else {
         return Err("lever must open difficulty window".into());
     };

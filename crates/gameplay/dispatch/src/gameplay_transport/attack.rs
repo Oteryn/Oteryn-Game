@@ -176,6 +176,7 @@ pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct WeaponFacts {
     weapon: SwingWeapon,
+    elemental_attack: Option<(u32, crate::content::ProjectV2RangedElement)>,
     item_key: Option<String>,
     ranged: Option<Arc<ranged::RangedLoadout>>,
     content_digest: [u8; 32],
@@ -192,6 +193,109 @@ pub fn swing_weapon(content: &NativeGameplayState, items: &[EquippedItem]) -> Op
             )
         })
     })
+}
+
+// Preserve the intrinsic secondary attack in the swing owner's private facts. The
+// public Combat Rules weapon remains the physical attack selection.
+fn melee_weapon_components(
+    content: &NativeGameplayState,
+    items: &[EquippedItem],
+) -> Option<(
+    SwingWeapon,
+    Option<(u32, crate::content::ProjectV2RangedElement)>,
+)> {
+    use crate::content::{
+        ProjectV2RangedElement as E, ReferenceItemField as F, ReferenceWeaponElement as W,
+        ReferenceWeaponType,
+    };
+    let weapon = swing_weapon(content, items)?;
+    let SwingWeapon::Melee { attack, skill } = weapon else {
+        return Some((weapon, None));
+    };
+    for slot in [6, 5] {
+        let Some(item) = items.iter().find(|item| item.slot == slot) else {
+            continue;
+        };
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        let F::Known(profile) = &policy.record().semantics.weapon else {
+            continue;
+        };
+        if matches!(
+            profile.weapon_type,
+            F::Known(
+                ReferenceWeaponType::Shield
+                    | ReferenceWeaponType::Ammunition
+                    | ReferenceWeaponType::Spellbook
+            )
+        ) {
+            continue;
+        }
+        let values = match &profile.elemental {
+            F::NotApplicable => return Some((weapon, None)),
+            F::Known(values) => values,
+            F::Unknown | F::Conflict => return None,
+        };
+        let mut elemental = None;
+        for value in values {
+            let F::Known(points) = value.points else {
+                return None;
+            };
+            let points = u32::try_from(points.0).ok()?;
+            if points == 0 {
+                continue;
+            }
+            let element = match value.element {
+                W::Death => E::Death,
+                W::Earth => E::Earth,
+                W::Energy => E::Energy,
+                W::Fire => E::Fire,
+                W::Ice => E::Ice,
+            };
+            match &mut elemental {
+                None => elemental = Some((points, element)),
+                Some((total, held)) if *held == element => {
+                    *total = u32::checked_add(*total, points)?
+                }
+                Some(_) => return None,
+            }
+        }
+        return Some((
+            SwingWeapon::Melee {
+                attack: attack.checked_add(elemental.map_or(0, |(points, _)| points))?,
+                skill,
+            },
+            elemental,
+        ));
+    }
+    None
+}
+
+impl WeaponFacts {
+    fn melee_components(
+        &self,
+        damage: i64,
+        offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    ) -> Option<(i64, i64, crate::content::ProjectV2RangedElement)> {
+        let (secondary, element) = match self.elemental_attack {
+            Some((points, element)) => {
+                let SwingWeapon::Melee { attack, .. } = self.weapon else {
+                    return None;
+                };
+                let secondary = i64::try_from(
+                    i128::from(damage)
+                        .checked_mul(i128::from(points))?
+                        .checked_div(i128::from(attack))?,
+                )
+                .ok()?;
+                (secondary, element)
+            }
+            None => (0, crate::content::ProjectV2RangedElement::Physical),
+        };
+        offence.convert_physical(damage.checked_sub(secondary)?, secondary, element)
+    }
 }
 
 use oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity;
@@ -1369,7 +1473,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(ranged) = ranged::loadout(content, &equipment, &quiver_entries) else {
             return;
         };
-        let Some(weapon) = swing_weapon(content, &equipment.items) else {
+        let Some((weapon, elemental_attack)) = melee_weapon_components(content, &equipment.items)
+        else {
             return;
         };
         let item_key = self.proficiency_catalogue.as_ref().and_then(|catalogue| {
@@ -1422,6 +1527,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             epoch,
             WeaponFacts {
                 weapon,
+                elemental_attack,
                 item_key,
                 ranged,
                 content_digest: digest,

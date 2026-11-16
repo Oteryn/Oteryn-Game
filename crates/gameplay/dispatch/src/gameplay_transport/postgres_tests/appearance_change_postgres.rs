@@ -151,6 +151,13 @@ fn appearance_change_real_dispatch_commits_reloads_and_rejects_stale_root_on_pos
         )
         .await;
         assert_eq!(result, Some(appearance::ChangeResult::Committed(2)));
+        assert!(
+            crate::gameplay_transport::appearance_change::observation::revision_conflict_for_test(
+                &owner, current,
+            )
+            .await,
+            "a committed appearance race must remain a snapshot conflict"
+        );
         temporary_appearance_tests::qualify(
             &mut owner,
             dependencies.actor,
