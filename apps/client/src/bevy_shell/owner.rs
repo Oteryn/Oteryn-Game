@@ -288,24 +288,52 @@ impl HostOwner {
             entry.cancel_entry();
         }
     }
-    /// The login window's explicit sign-out: turns the remembered-login choices off, cancels
-    /// any entry and forgets the remembered device. A normal game logout keeps the device.
+    /// The login window's explicit sign-out, as the Win32 options offered it: turns
+    /// remember-device off, cancels any entry and forgets the remembered device on the
+    /// Platform the connection settings name. A normal game logout keeps the device.
     pub fn sign_out_device(&mut self) {
         if self.play.is_some() {
             return;
         }
         let mut preferences = self.settings.preferences.clone();
-        preferences.miscellaneous.stay_logged_in = false;
         preferences.miscellaneous.remember_device = false;
-        preferences.miscellaneous.quick_login = false;
         self.settings.apply(preferences);
         self.cancel_login();
+        // Before the first sign-in of this process the entry has no Platform yet.
+        let configured = self.login.form.settings.config().is_ok_and(|config| {
+            self.entry
+                .as_mut()
+                .is_some_and(|entry| entry.configure(config))
+        });
         if let Some(entry) = &mut self.entry {
             entry.native_sign_out();
         }
-        self.login
-            .form
-            .feedback("Signed out; this device is no longer remembered.".into());
+        self.login.form.feedback(if configured {
+            "Signed out; this device is no longer remembered.".into()
+        } else {
+            "Remember-device is off. Correct the connection settings to also forget this device \
+             on the Platform."
+                .into()
+        });
+    }
+    /// Opens a Platform page (support tickets, cookie policy) from the login window with the
+    /// Platform the connection settings name.
+    pub fn open_web_link(&mut self, link: crate::web_links::WebLink) {
+        if self.phase == Phase::Offline
+            && let Ok(config) = self.login.form.settings.config()
+            && let Some(entry) = &mut self.entry
+        {
+            entry.configure(config);
+        }
+        if !self
+            .entry
+            .as_ref()
+            .is_some_and(|entry| entry.open_web_link(link))
+        {
+            self.login.form.feedback(
+                "Correct the connection settings to open Platform pages in the browser.".into(),
+            );
+        }
     }
     pub fn poll(&mut self, viewport: [u32; 2]) {
         if self.phase == Phase::Closed {

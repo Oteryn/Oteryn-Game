@@ -283,6 +283,9 @@ impl HostOwner {
             play.link.store_set_open(!play.link.store_panel().open);
             return;
         }
+        if oteryn_client_ui::minimap::create_mark_key(&routed) && play.view.minimap_input(&routed) {
+            return;
+        }
         play.view.cursor_spell_input(&routed);
         if !play.view.diagonal_movement_input(&play.link, &routed)
             && let Some(direction) = crate::input::arrow_step(&routed)

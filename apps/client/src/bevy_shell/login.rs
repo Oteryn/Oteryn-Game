@@ -102,6 +102,8 @@ pub(super) enum LoginControl {
     ForgetDevice,
     About,
     Survey,
+    Support,
+    Cookies,
 }
 impl LoginControl {
     pub fn id(self) -> &'static str {
@@ -110,6 +112,8 @@ impl LoginControl {
             Self::ForgetDevice => "login.forget_device",
             Self::About => "login.about",
             Self::Survey => "login.survey",
+            Self::Support => "login.support",
+            Self::Cookies => "login.cookies",
             Self::Submit => "login.submit",
             Self::Cancel => "login.cancel",
         }
@@ -231,7 +235,9 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
     let footer = commands
         .spawn(Node {
             justify_content: JustifyContent::End,
+            flex_wrap: FlexWrap::Wrap,
             column_gap: px(5.),
+            row_gap: px(5.),
             ..default()
         })
         .id();
@@ -240,6 +246,8 @@ pub(super) fn setup(mut commands: Commands, skins: Res<Skins>) {
         (LoginControl::ForgetDevice, "Sign out device", 130.),
         (LoginControl::About, "About", 60.),
         (LoginControl::Survey, "Survey", 60.),
+        (LoginControl::Support, "Support", 70.),
+        (LoginControl::Cookies, "Cookie policy", 110.),
         (LoginControl::Submit, "Save and sign in", 130.),
         (LoginControl::Cancel, "Cancel", 60.),
     ] {
@@ -279,7 +287,11 @@ fn activate(
     if let Ok(control) = controls.get(event.entity) {
         match control {
             LoginControl::News => owner.login.bulletin.visible = true,
-            LoginControl::ForgetDevice => owner.sign_out_device(),
+            LoginControl::ForgetDevice => {
+                owner.login.pending_submit = None;
+                read_fields(&mut owner, &fields);
+                owner.sign_out_device();
+            }
             LoginControl::About => owner
                 .login
                 .form
@@ -292,6 +304,14 @@ fn activate(
                 .login
                 .form
                 .feedback("The optional survey is offered by the Windows client.".into()),
+            LoginControl::Support | LoginControl::Cookies => {
+                read_fields(&mut owner, &fields);
+                owner.open_web_link(if matches!(control, LoginControl::Support) {
+                    crate::web_links::WebLink::SupportTickets
+                } else {
+                    crate::web_links::WebLink::CookiePolicy
+                });
+            }
             LoginControl::Submit => {
                 submission::request(&mut owner, &fields);
             }
