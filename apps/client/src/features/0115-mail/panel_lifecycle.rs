@@ -63,6 +63,8 @@ impl Panels {
             feedback: tr!("The session has ended").into(),
             ..Default::default()
         };
+        self.mail_deferred = None;
+        self.timed_item_deferred = None;
         for (open, pending, feedback) in [
             (
                 &mut self.house_podium.open,

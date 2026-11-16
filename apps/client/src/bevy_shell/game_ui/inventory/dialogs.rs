@@ -44,6 +44,12 @@ fn modal(commands: &mut Commands, skins: &Skins, width: f32) -> Entity {
         ))
         .id()
 }
+/// Logical height of the item context menu: six fixed rows plus the admitted `extra` rows,
+/// each a 20-pixel button with 2-pixel gaps inside 5-pixel padding.
+pub(super) fn menu_height(extra: (bool, bool)) -> f32 {
+    let rows = 6. + f32::from(u8::from(extra.0) + u8::from(extra.1));
+    rows * 20. + (rows - 1.) * 2. + 10.
+}
 /// `extra` admits the writing and timed item windows (capabilities 115 and 39).
 pub(super) fn context(
     commands: &mut Commands,
