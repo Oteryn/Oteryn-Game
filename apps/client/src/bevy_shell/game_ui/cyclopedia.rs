@@ -46,7 +46,7 @@ impl Tab {
             Self::Character(CharacterTab::Inspection) => Intent::ProfileInspection,
             Self::Character(tab) => Intent::SelectTab(tab),
             Self::Items => Intent::Items,
-            Self::Badges => Intent::ProfileBadges,
+            Self::Badges => Intent::Badges,
         }
     }
     fn label(self) -> &'static str {
@@ -125,6 +125,8 @@ pub(super) struct Control {
 }
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Kind {
+    /// Toggles the public visibility of one of the player's own earned badges.
+    BadgeVisibility(u8),
     Encyclopedia,
     HoldingsFilter,
     HoldingsLocation(Option<oteryn_client_runtime::cyclopedia_character::items::Location>),
@@ -285,6 +287,15 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
     if play.view.gameplay_input_blocked(&play.link) || panel.pending || !panel.selected {
         return;
     }
+    if let Kind::BadgeVisibility(badge) = control.kind {
+        play.link
+            .cyclopedia_character_request(Intent::SetBadgeVisibility {
+                badge,
+                public: panel.server_hidden_badges.contains(&badge),
+            });
+        state.snapshot = None;
+        return;
+    }
     let intent = match control.kind {
         Kind::Tab(tab) => {
             state.tab = tab;
@@ -303,7 +314,11 @@ fn perform(owner: &HostOwner, state: &mut State, control: Control) {
             };
             intent
         }
-        Kind::Close | Kind::Encyclopedia | Kind::HoldingsFilter | Kind::HoldingsLocation(_) => {
+        Kind::BadgeVisibility(_)
+        | Kind::Close
+        | Kind::Encyclopedia
+        | Kind::HoldingsFilter
+        | Kind::HoldingsLocation(_) => {
             return;
         }
     };

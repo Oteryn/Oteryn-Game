@@ -77,16 +77,31 @@ pub(super) fn project(tab: Tab, panel: &CyclopediaCharacterPanel) -> Vec<String>
             }
             rows
         }
-        Tab::Character(CharacterTab::Inspection) | Tab::Badges => {
+        Tab::Badges => model::badge_rows(panel)
+            .into_iter()
+            .map(|row| {
+                format!(
+                    "{} — {}{}",
+                    row.name,
+                    if row.earned { "Earned" } else { "Locked" },
+                    if !row.earned || !panel.badge_visibility_known {
+                        ""
+                    } else if panel.server_hidden_badges.contains(&row.id) {
+                        "; hidden publicly"
+                    } else {
+                        "; public"
+                    }
+                )
+            })
+            .collect(),
+        Tab::Character(CharacterTab::Inspection) => {
             let mut rows = vec![model::profile_heading(panel)];
             rows.extend(
                 model::profile_rows(panel)
                     .into_iter()
                     .map(|r| format!("{}\n{}", r.label, r.detail)),
             );
-            if tab == Tab::Character(CharacterTab::Inspection)
-                && let Some(profile) = &panel.profile
-            {
+            if let Some(profile) = &panel.profile {
                 if profile.equipment.is_empty() {
                     rows.push("No equipment shared in this profile".into());
                 }

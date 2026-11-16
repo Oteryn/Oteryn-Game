@@ -305,6 +305,36 @@ pub(super) fn render(
         };
         text(commands, skin, parent, row);
     }
+    if tab == Tab::Badges && panel.target.is_none() && panel.badge_visibility_known {
+        let toggles = commands
+            .spawn(Node {
+                flex_wrap: FlexWrap::Wrap,
+                column_gap: px(4.),
+                row_gap: px(4.),
+                flex_shrink: 0.,
+                ..default()
+            })
+            .id();
+        commands.entity(rows).add_child(toggles);
+        for row in model_badges(panel) {
+            let label = if panel.server_hidden_badges.contains(&row.id) {
+                format!("Show {} publicly", row.name)
+            } else {
+                format!("Hide {} publicly", row.name)
+            };
+            button(
+                commands,
+                skin,
+                toggles,
+                Control {
+                    kind: Kind::BadgeVisibility(row.id),
+                    ..control
+                },
+                &label,
+                panel.pending || !panel.selected,
+            );
+        }
+    }
     let footer = commands
         .spawn(Node {
             column_gap: px(6.),
@@ -368,4 +398,13 @@ fn button(
     commands.entity(button).add_child(caption);
     commands.entity(parent).add_child(button);
     button
+}
+/// The player's own earned badges, the ones whose public visibility can change.
+fn model_badges(
+    panel: &CyclopediaCharacterPanel,
+) -> Vec<oteryn_client_ui::cyclopedia_character::BadgeRow> {
+    oteryn_client_ui::cyclopedia_character::badge_rows(panel)
+        .into_iter()
+        .filter(|row| row.earned)
+        .collect()
 }

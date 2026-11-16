@@ -98,14 +98,14 @@ fn cyclopedia_tab_requests_data() -> TestResult {
         (Tab::Familiars, &[129, 0, 0]),
         (Tab::Character(CharacterTab::StoreSummary), &[6, 0, 0, 20]),
         (Tab::Character(CharacterTab::Inspection), &[132]),
-        (Tab::Badges, &[132]),
+        (Tab::Badges, &[0xf0, 0]),
     ];
     for (tab, expected) in expected_tabs {
         response(&outbox, vec![]); // Refusal/invalid response releases the existing pending owner.
         app.update();
         click(&mut app, Kind::Tab(tab))?;
         let actual = command(&mut commands)?;
-        assert_eq!(actual.kind, 388);
+        assert_eq!(actual.kind, if tab == Tab::Badges { 387 } else { 388 });
         assert_eq!(actual.payload, expected);
         assert!(commands.try_recv().is_err());
     }
@@ -491,6 +491,68 @@ fn cyclopedia_profile_shows_confirmed_identity_equipment_and_badges_together() -
     assert!(
         rows.iter()
             .any(|row| row == &format!("Earned badge: {}", Badge::FledgelingHero.name()))
+    );
+    Ok(())
+}
+
+#[test]
+fn cyclopedia_badges_tab_queries_visibility_and_toggles_an_earned_badge() -> TestResult {
+    use oteryn_client_runtime::cyclopedia_character::{Badge, badge_visibility};
+    let (mut app, mut commands, outbox) = fixture()?;
+    command(&mut commands)?;
+    response(&outbox, vec![]);
+    app.update();
+    click(&mut app, Kind::Tab(Tab::Badges))?;
+    let query = command(&mut commands)?;
+    assert_eq!(query.kind, 387);
+    assert_eq!(
+        query.payload,
+        badge_visibility::Request::Query(None).encode()
+    );
+    let reply = |hidden: Vec<Badge>| {
+        badge_visibility::Reply {
+            earned: vec![Badge::FledgelingHero],
+            hidden,
+        }
+        .encode()
+        .map_err(|_| "badge reply encode")
+    };
+    response(&outbox, reply(vec![])?);
+    app.update();
+    let name = Badge::FledgelingHero.name();
+    let rows = texts(&mut app);
+    assert!(
+        rows.iter()
+            .any(|row| row == &format!("{name} — Earned; public")),
+        "{rows:?}"
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row == &format!("Hide {name} publicly"))
+    );
+    click(&mut app, Kind::BadgeVisibility(Badge::FledgelingHero.id()))?;
+    let toggle = command(&mut commands)?;
+    assert_eq!(toggle.kind, 387);
+    assert_eq!(
+        toggle.payload,
+        badge_visibility::Request::Set {
+            badge: Badge::FledgelingHero,
+            public: false,
+        }
+        .encode()
+    );
+    assert!(commands.try_recv().is_err());
+    response(&outbox, reply(vec![Badge::FledgelingHero])?);
+    app.update();
+    let rows = texts(&mut app);
+    assert!(
+        rows.iter()
+            .any(|row| row == &format!("{name} — Earned; hidden publicly")),
+        "{rows:?}"
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row == &format!("Show {name} publicly"))
     );
     Ok(())
 }
