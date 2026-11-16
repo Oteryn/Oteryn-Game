@@ -106,19 +106,14 @@ impl PlayLink {
     pub fn chat_console_drop(&self, tab: ConsoleTab, x: i32, width: i32) -> bool {
         drop_tab(&mut lock(&self.mailbox), tab, x, width)
     }
-    /// Mirrors the selected tab read-only beside the console; a channel tab mirrors Private,
-    /// whose filter shows it. Refused while the console is closed.
+    /// Mirrors the selected tab, a channel tab with its own identity, read-only beside the
+    /// console. Refused while the console is closed.
     pub fn chat_console_mirror(&self) -> bool {
         let mut mailbox = lock(&self.mailbox);
         if !mailbox.chat.open {
             return false;
         }
-        let console = &mut mailbox.chat.console;
-        console.mirror = Some(if console.current.is_some() {
-            ConsoleTab::Private
-        } else {
-            console.tab
-        });
+        mailbox.chat.console.mirror_current();
         true
     }
     /// Closes the read-only mirror; the original console stays.

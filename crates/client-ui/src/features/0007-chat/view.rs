@@ -12,7 +12,10 @@ pub fn mirror_text(panel: &ChatPanel) -> Option<String> {
     if !panel.open {
         return None;
     }
-    panel.console.mirror.map(|tab| tab_text(panel, tab, None))
+    panel
+        .console
+        .mirror
+        .map(|tab| tab_text(panel, tab, panel.console.mirror_channel.as_ref()))
 }
 
 fn tab_text(
