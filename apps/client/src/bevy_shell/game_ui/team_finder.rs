@@ -35,6 +35,10 @@ struct State {
     snapshot: Option<(u64, Panel, Leader)>,
     root: Option<Entity>,
     key: Key,
+    /// The listing values the editors were last built with.
+    shown: [String; widgets::LISTING_FIELDS],
+    /// The leader's unpublished listing edits, kept across rebuilds until a reply confirms them.
+    draft: Option<[String; widgets::LISTING_FIELDS]>,
 }
 pub(super) fn install(app: &mut App) {
     app.init_resource::<State>()
@@ -48,6 +52,7 @@ fn project(
     mut state: ResMut<State>,
     mut focus: ResMut<InputFocus>,
     parents: Query<&ChildOf>,
+    fields: Query<(&Field, &EditableText)>,
 ) {
     let panel = owner
         .play
@@ -66,6 +71,35 @@ fn project(
         generation: owner.generation(),
         revision,
     };
+    if state.root.is_some() {
+        let mut typed = state.shown.clone();
+        let mut editing = false;
+        for (field, text) in &fields {
+            if let Field::Listing(index) = field
+                && let Some(value) = typed.get_mut(*index)
+            {
+                *value = text.value().to_string();
+                editing = true;
+            }
+        }
+        if editing && typed != state.shown {
+            state.draft = Some(typed);
+        }
+    }
+    let confirmed = match (&state.snapshot, &snapshot) {
+        (Some((generation, _, before)), Some((current, _, after))) => {
+            generation != current
+                || (before.pending
+                    && !after.pending
+                    && before
+                        .submitted
+                        .is_some_and(|submitted| submitted == after.confirmed))
+        }
+        _ => true,
+    };
+    if confirmed {
+        state.draft = None;
+    }
     if let Some(root) = state.root.take() {
         let mut focused = focus.get();
         while let Some(entity) = focused {
@@ -78,12 +112,17 @@ fn project(
         commands.entity(root).despawn();
     }
     if let Some((_, panel, leader)) = &snapshot {
+        state.shown = state
+            .draft
+            .clone()
+            .unwrap_or_else(|| widgets::listing_values(leader.confirmed));
         state.root = Some(widgets::build(
             &mut commands,
             &skins,
             state.key,
             panel,
             leader,
+            &state.shown,
         ));
     }
     state.snapshot = snapshot;
@@ -139,7 +178,7 @@ fn activate(
             }
         }
         if let Kind::Publish(ref mut values) = control.kind {
-            *values = vec![String::new(); widgets::LISTING_FIELDS.len()];
+            *values = vec![String::new(); widgets::LISTING_FIELDS];
             for (field, text) in &fields {
                 if let Field::Listing(index) = field
                     && let Some(value) = values.get_mut(*index)

@@ -68,9 +68,10 @@ pub fn leader(panel: &mut Panel, action: u8) -> Option<ServerMechanicCommand> {
     };
     request(panel, 446, encode_leader_action(action).ok()?)
 }
-pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
+/// Applies a Team Finder reply; `true` when it stored a fresh page from the server.
+pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) -> bool {
     let Some(kind) = panel.pending.take() else {
-        return;
+        return false;
     };
     if matches!(
         response.status,
@@ -83,13 +84,14 @@ pub fn apply_result(panel: &mut Panel, response: &ServerMechanicResponse) {
                 panel.result = Some(result);
                 panel.selected_row = 0;
                 panel.feedback = tr!("Page received").into();
-                return;
+                return true;
             }
         } else if response.payload.is_empty() {
             panel.result = None;
             panel.feedback = tr!("Decision confirmed; refresh to see current membership").into();
-            return;
+            return false;
         }
     }
     panel.feedback = tr!("Team Finder request refused or invalid reply; refresh").into();
+    false
 }
