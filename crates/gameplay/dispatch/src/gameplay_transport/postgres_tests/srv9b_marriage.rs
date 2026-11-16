@@ -20,7 +20,7 @@ fn srv9b_marriage_postgres_native_lynda_service() -> TestResult {
     let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(None, false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "marriage PG thread panicked")??;
     assert!(started.elapsed() > std::time::Duration::from_secs(1));
@@ -30,7 +30,43 @@ fn srv9b_marriage_postgres_native_lynda_service() -> TestResult {
     );
     Ok(())
 }
-fn scenario() -> TestResult {
+#[test]
+fn marriage_refund_enforces_recursive_tree_ceiling() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            for size in [498, 499, 500] {
+                scenario(Some(size), false).map_err(|error| error.to_string())?;
+            }
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "marriage tree PG panic")??;
+    Ok(())
+}
+
+#[test]
+fn fee_change_enforces_recursive_tree_ceiling() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            for size in [499, 500] {
+                scenario(Some(size), true).map_err(|error| error.to_string())?;
+            }
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "fee tree PG panic")??;
+    Ok(())
+}
+
+fn scenario(tree_size: Option<usize>, fee: bool) -> TestResult {
     run(async move |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "srv9b_marriage", true, false).await?;
@@ -323,6 +359,94 @@ fn scenario() -> TestResult {
         drop(slot);
         assert_eq!(count(&h, "game_character_marriage_receipts").await?, 1);
         assert!(sqlx::query("UPDATE game_character_marriages SET version=version+1 WHERE character_id=encode($1,'hex')::uuid").bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await.is_err(),"no unreceipted relation successor");
+        if let Some(size) = tree_size {
+            seed_carried_tree(&h, size, fee).await?;
+            assert_eq!(tree_count(&h).await?, i64::try_from(size)?);
+            if fee {
+                use crate::durability::item_fee_burn::{FeeBurnError, burn_fee_in_transaction};
+                let mut request = crate::durability::item_fee_burn::test_support::request(10, 1)?;
+                request.change.item_instance_ids = [id(230), id(231)];
+                for definition in [
+                    &mut request.change.gold,
+                    &mut request.change.platinum,
+                    &mut request.change.crystal,
+                    &mut request.change.backpack.definition,
+                ] {
+                    definition.revision_ref = "definition-r1".into();
+                }
+                let current = owner
+                    .current_quest_fence(session)
+                    .await
+                    .map_err(|_| "current fee fence")?
+                    .ok_or("fee fence")?;
+                let mut tx = crate::durability::item_mint_audit::Type2Transaction::open(
+                    h.pool.begin().await?,
+                )
+                .await?;
+                let result = burn_fee_in_transaction(&mut tx, &current, &request).await;
+                let resulting_tree: Option<i64> = if result.is_ok() {
+                    Some(
+                        sqlx::query_scalar(
+                            "SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)",
+                        )
+                        .bind(id(41).as_slice())
+                        .fetch_one(&mut **tx)
+                        .await?,
+                    )
+                } else {
+                    None
+                };
+                tx.into_inner().rollback().await?;
+                if size == 499 {
+                    assert!(
+                        matches!(
+                            result,
+                            Ok(crate::durability::item_fee_burn::FeeBurnOutcome::Burned(_))
+                        ),
+                        "{result:?}"
+                    );
+                    assert_eq!(resulting_tree, Some(500));
+                } else {
+                    assert!(
+                        matches!(result, Err(FeeBurnError::ChangeDoesNotFit)),
+                        "{result:?}"
+                    );
+                }
+                assert_eq!(tree_count(&h).await?, i64::try_from(size)?);
+                assert_eq!(
+                    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_fee_burns")
+                        .fetch_one(&h.pool)
+                        .await?,
+                    0
+                );
+                assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i3043'").fetch_one(&h.pool).await?, 1);
+            } else {
+                for (id, text) in [(8, "remove"), (9, "yes")] {
+                    speak(&mut owner, deps.actor, command(id), npc, text).await?;
+                }
+                let fits = size + 2 <= 500;
+                assert_eq!(
+                    relation_status(&h, fence.character_id).await?,
+                    Some(if fits { 0 } else { 1 })
+                );
+                assert_eq!(
+                    tree_count(&h).await?,
+                    i64::try_from(size + if fits { 2 } else { 0 })?
+                );
+                assert_eq!(
+                    count(&h, "game_item_marriage_records").await?,
+                    if fits { 2 } else { 1 }
+                );
+                assert_eq!(
+                    count(&h, "game_character_marriage_receipts").await?,
+                    if fits { 2 } else { 1 }
+                );
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         for (id, text) in [(8, "remove"), (9, "yes")] {
             speak(&mut owner, deps.actor, command(id), npc, text).await?;
         }
@@ -615,6 +739,60 @@ async fn seed_partner_items(h: &Harness, character: crate::domain::CharacterId) 
     sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(character.as_bytes().as_slice()).bind(id(160).as_slice()).bind(id(42).as_slice()).bind(id(164).as_slice()).execute(&mut *tx).await?;
     for (seed, ordinal) in [(161, 1_i64), (162, 2)] {
         sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid)").bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(character.as_bytes().as_slice()).bind(id(160).as_slice()).bind(ordinal).bind(id(164).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn tree_count(h: &Harness) -> TestResult<i64> {
+    Ok(
+        sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+            .bind(id(41).as_slice())
+            .fetch_one(&h.pool)
+            .await?,
+    )
+}
+
+// Fixture-only custody: 26 lightweight native bags and coin leaves, depth at most four.
+// The owner runs with every guard enabled after this seed transaction commits.
+async fn seed_carried_tree(h: &Harness, size: usize, crystal: bool) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let main: String = sqlx::query_scalar("SELECT item_instance_id::text FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(id(41).as_slice()).fetch_one(&mut *tx).await?;
+    let mut containers = Vec::<String>::new();
+    for n in 0..size {
+        let direct_coin = crystal && n + 1 == size;
+        let key = if direct_coin {
+            "oteryn:item.tibia.i3043"
+        } else if n < 26 {
+            "oteryn:item.tibia.i23721"
+        } else {
+            "oteryn:item.tibia.i3031"
+        };
+        let item: String = sqlx::query_scalar("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,'definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id::text")
+            .bind(id(42).as_slice()).bind(key).fetch_one(&mut *tx).await?;
+        let parent = if n == 0 || direct_coin {
+            &main
+        } else if n <= 20 {
+            &containers[0]
+        } else if n < 26 {
+            &containers[1]
+        } else {
+            &containers[2 + (n - 26) / 20]
+        };
+        if n == 0 || direct_coin {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::uuid,$5,game_character_uuid_v7())")
+                .bind(&item).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(parent).bind(i64::try_from(n + 100)?).execute(&mut *tx).await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES($1::uuid,encode($2,'hex')::uuid,$3::uuid,$4,game_character_uuid_v7())")
+                .bind(&item).bind(id(42).as_slice()).bind(parent).bind(i64::try_from(n + 100)?).execute(&mut *tx).await?;
+        }
+        if n < 26 {
+            containers.push(item);
+        }
     }
     tx.commit().await?;
     Ok(())

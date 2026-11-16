@@ -102,6 +102,16 @@ pub(crate) async fn prepare<C: ItemLoopContent>(
         return Ok(Err("Make room in your main backpack before continuing."));
     }
     if !output_definitions.is_empty() {
+        let tree: i64 =
+            sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+                .bind(fence.character_id.as_bytes().as_slice())
+                .fetch_one(&mut ***tx)
+                .await?;
+        let added = i64::try_from(output_definitions.len())
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        if tree + added > super::super::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX {
+            return Ok(Err("Make room in your main backpack before continuing."));
+        }
         let carried = match carried_weight(tx, fence.character_id, world, content).await {
             Ok(weight) => weight,
             Err(super::super::item_loop_move::LoopError::Durability(error)) => return Err(error),

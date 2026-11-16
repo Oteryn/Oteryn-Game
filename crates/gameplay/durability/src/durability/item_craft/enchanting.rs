@@ -47,6 +47,17 @@ pub(super) async fn write<C: ItemLoopContent>(
     if rows.len() != inputs.len() {
         return Ok(UseDisposition::StaleState);
     }
+    // Replacement instances cannot carry a Forge tier through this craft proof.
+    let enhanced: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_item_tiers WHERE item_instance_id IN (encode($1,'hex')::uuid,encode($2,'hex')::uuid))",
+    )
+    .bind(request.source.as_slice())
+    .bind(enchanting.target.as_ref().map(|target| target.as_slice()))
+    .fetch_one(&mut ***tx)
+    .await?;
+    if enhanced {
+        return Ok(UseDisposition::NotPossible);
+    }
     let source = rows
         .iter()
         .find(|r| r.get::<Vec<u8>, _>("bytes") == request.source)

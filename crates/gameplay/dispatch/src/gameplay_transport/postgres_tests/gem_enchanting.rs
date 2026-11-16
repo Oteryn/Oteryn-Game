@@ -20,7 +20,7 @@ fn gemx_shrine_stack_wire_atomic_replay_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "craft e2e panic")??;
     Ok(())
@@ -33,13 +33,26 @@ fn gemx_weapon_and_ammunition_wire_atomic_replay() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "enchanting e2e panic")??;
     Ok(())
 }
 
-fn scenario(weapon: bool) -> TestResult {
+#[test]
+fn enchanting_rejects_forge_tier_without_consuming_operands() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "enhanced enchanting e2e panic")??;
+    Ok(())
+}
+
+fn scenario(weapon: bool, enhanced: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "gemx", true, false).await?;
         super::reset();
@@ -213,6 +226,45 @@ fn scenario(weapon: bool) -> TestResult {
                 .map(|s| s.vitals())
                 .ok_or("live")
         };
+        if enhanced {
+            let mut seed = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *seed)
+                .await?;
+            sqlx::query("INSERT INTO game_item_tiers(item_instance_id,tier) SELECT item_instance_id,1 FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3271'")
+                .execute(&mut *seed).await?;
+            seed.commit().await?;
+            let intent = UseIntent {
+                use_with_map_item: Some(MapUseTarget::Item(
+                    std::num::NonZeroU64::new(1).ok_or("target")?,
+                )),
+                ..intent.clone()
+            };
+            let (_, result, _) = exchange(
+                &owner,
+                admitted,
+                1,
+                &encode_item_use_intent(&intent).map_err(debug)?,
+                reference("oteryn:item.tibia.i676"),
+                reference("oteryn:item.tibia.i3271"),
+            )
+            .await?;
+            assert_eq!(result, UseDisposition::NotPossible);
+            let tiered: (i64, i16, i16) = sqlx::query_as("SELECT i.quantity,i.lifecycle,t.tier FROM game_item_instances i JOIN game_item_tiers t USING(item_instance_id) WHERE i.definition_production_key='oteryn:item.tibia.i3271'")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(tiered, (1, 1, 1));
+            assert_eq!(sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i676'").fetch_one(&harness.pool).await?, 3);
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                0
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if weapon {
             for (command, target, result_key, count, charges) in [
                 (

@@ -861,6 +861,19 @@ async fn burn_fee_at_channel(
             .await?;
     }
 
+    if !change.is_empty() {
+        // Count after the burns: a consumed carried stack has already freed its tree node.
+        let tree: i64 =
+            sqlx::query_scalar("SELECT game_item_loop_tree_size(encode($1,'hex')::uuid)")
+                .bind(fence.character_id.as_bytes().as_slice())
+                .fetch_one(&mut *connection)
+                .await?;
+        let added = i64::try_from(change.len()).map_err(|_| DurabilityError::InvalidStoredState)?;
+        if tree + added > super::item_loop_move::ITEM_LOOP_TREE_ITEMS_MAX {
+            return Err(FeeBurnError::ChangeDoesNotFit);
+        }
+    }
+
     for output in &change {
         let facts = request.change.facts().ok_or(FeeBurnError::InvalidInput)?;
         let definition = match output.coin {
