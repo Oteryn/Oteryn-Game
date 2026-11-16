@@ -72,26 +72,23 @@ impl<S: SessionStream> Session<S> {
             stash::DOMAIN_STASH => {
                 // The server mirrors every stash reply into domain 27 after its CommandResult;
                 // there is no join snapshot, so the first delta is based on revision 0.
-                if !self.is_selected(stash::CAPABILITY_STASH_V1) {
-                    return Err(SessionError::UnselectedDomain { domain_id });
-                }
-                let revision = self
-                    .gated_revisions
-                    .iter()
-                    .find(|(id, _)| *id == domain_id)
-                    .map_or(0, |(_, revision)| *revision);
-                check_delta(&delta, 1, revision)?;
-                let value = stash::decode_stash_reply(delta.payload)
-                    .map_err(|_| SessionError::SessionUnusable)?;
-                match self
-                    .gated_revisions
-                    .iter_mut()
-                    .find(|(id, _)| *id == domain_id)
-                {
-                    Some((_, revision)) => *revision = new_revision,
-                    None => self.gated_revisions.push((domain_id, new_revision)),
-                }
+                let value = self.mirrored_reply(&delta, stash::CAPABILITY_STASH_V1, |bytes| {
+                    stash::decode_stash_reply(bytes).ok()
+                })?;
                 Ok(SessionEvent::Stash(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    value,
+                )))
+            }
+            market::STATE_DOMAIN_MARKET => {
+                // The server mirrors every market reply into domain 28 after its CommandResult,
+                // based on the join snapshot's revision.
+                let value = self.mirrored_reply(&delta, market::CAPABILITY_MARKET_V1, |bytes| {
+                    market::decode_reply(bytes).ok()
+                })?;
+                Ok(SessionEvent::Market(applied(
                     server_sequence,
                     base_revision,
                     new_revision,
@@ -397,5 +394,35 @@ impl<S: SessionStream> Session<S> {
                 _ => SessionError::UnsupportedPushedDomain { domain_id },
             }),
         }
+    }
+
+    /// One reply the server mirrors into a gated domain after its CommandResult: delta type 1,
+    /// based on the stored revision (0 without a join snapshot), stored only after a clean decode.
+    fn mirrored_reply<T>(
+        &mut self,
+        delta: &oteryn_protocol_oteryn::StateDeltaView<'_>,
+        capability: u32,
+        decode: impl FnOnce(&[u8]) -> Option<T>,
+    ) -> Result<T, SessionError> {
+        let domain_id = delta.domain_id;
+        if !self.is_selected(capability) {
+            return Err(SessionError::UnselectedDomain { domain_id });
+        }
+        let revision = self
+            .gated_revisions
+            .iter()
+            .find(|(id, _)| *id == domain_id)
+            .map_or(0, |(_, revision)| *revision);
+        check_delta(delta, 1, revision)?;
+        let value = decode(delta.payload).ok_or(SessionError::SessionUnusable)?;
+        match self
+            .gated_revisions
+            .iter_mut()
+            .find(|(id, _)| *id == domain_id)
+        {
+            Some((_, revision)) => *revision = delta.new_revision,
+            None => self.gated_revisions.push((domain_id, delta.new_revision)),
+        }
+        Ok(value)
     }
 }

@@ -459,6 +459,106 @@ fn highscores_query_uses_selected_session_and_preserves_live_result() -> Result<
 }
 
 #[test]
+fn market_reply_mirrored_into_domain_28_is_applied_not_rejected() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let reply = |action, code| market::MarketReply {
+                    action,
+                    code,
+                    offer: [0; 16],
+                    rows: Vec::new(),
+                };
+                // The join snapshot the dispatch sends for domain 28, at revision 1.
+                let joined = market::encode_reply(&reply(0, 11))
+                    .map_err(|e| format!("market snapshot: {e:?}"))?;
+                let wares = reply(1, 1);
+                let mirrored = wares.clone();
+                let (client, mut server) = tokio::io::duplex(64 * 1024);
+                let peer = tokio::spawn(async move {
+                    join_peer_with(
+                        &mut server,
+                        &[63],
+                        &[63],
+                        &[],
+                        (1, spatial(0)),
+                        &[(market::STATE_DOMAIN_MARKET, 1, 1, joined)],
+                    )
+                    .await?;
+                    // Like the dispatch outbound path: CommandResult, then the domain 28 mirror.
+                    let frame = read_frame(&mut server).await?;
+                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                    assert_eq!(command.command_type, market::COMMAND_TYPE_MARKET);
+                    let payload = market::encode_reply(&mirrored)
+                        .map_err(|e| format!("market reply: {e:?}"))?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            41,
+                            command.command_id,
+                            CommandStatus::Accepted,
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    write_frame(
+                        &mut server,
+                        &encode_state_delta(1, 42, market::STATE_DOMAIN_MARKET, 1, 2, 1, &payload)?,
+                    )
+                    .await?;
+                    let frame = read_frame(&mut server).await?;
+                    let command = decode_wire_envelope(&frame)?.client_command(1)?;
+                    write_frame(
+                        &mut server,
+                        &encode_command_result(
+                            1,
+                            43,
+                            command.command_id,
+                            CommandStatus::Accepted,
+                            &payload,
+                        )?,
+                    )
+                    .await?;
+                    Ok::<(), BoxError>(())
+                });
+                let mut session = Session::admit(client, admission_with(&[63])?).await?;
+                let request = market::encode_request(market::MarketRequest {
+                    action: 1,
+                    definition: 0,
+                    offer: [0; 16],
+                    amount: 0,
+                    price: 0,
+                    anonymous: false,
+                    page: 0,
+                })
+                .map_err(|e| format!("market request: {e:?}"))?;
+                // The second command reads past the mirrored delta the first one left queued.
+                for _ in 0..2 {
+                    let result = session
+                        .gated_command(market::CAPABILITY_MARKET_V1, market::COMMAND_TYPE_MARKET, &request)
+                        .await?;
+                    assert_eq!(
+                        market::decode_reply(&result.payload)
+                            .map_err(|e| format!("market decode: {e:?}"))?,
+                        wares
+                    );
+                }
+                assert!(session.take_events().iter().any(|event| matches!(
+                    event,
+                    SessionEvent::Market(delta)
+                        if delta.base_revision == 1 && delta.new_revision == 2 && delta.value == wares
+                )));
+                peer.await??;
+                Ok(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "market session test thread panicked")?
+}
+
+#[test]
 fn stash_reply_mirrored_into_domain_27_is_applied_not_rejected() -> Result<(), BoxError> {
     std::thread::Builder::new()
         .stack_size(64 << 20)
