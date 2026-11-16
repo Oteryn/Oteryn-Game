@@ -306,6 +306,9 @@ pub(super) fn page(
             .id();
         commands.entity(parent).add_child(status);
     }
+    if page == Page::Sound {
+        super::audio_device::build(commands, parent, skins, draft);
+    }
     if page == Page::Screenshots {
         super::screenshots::build(commands, parent, skins, draft);
     }

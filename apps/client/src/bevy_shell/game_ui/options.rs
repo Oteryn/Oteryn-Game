@@ -11,6 +11,7 @@ use bevy::{
 use metadata::{Editor, Page, Row, Value};
 use oteryn_client_ui_bevy as source;
 
+mod audio_device;
 mod audio_feedback;
 mod commands;
 #[cfg(test)]
@@ -20,6 +21,7 @@ mod metadata;
 mod navigation_tests;
 mod projection;
 mod screenshots;
+mod section;
 #[cfg(test)]
 mod tests;
 mod widgets;
@@ -33,6 +35,8 @@ struct OptionsState {
     advanced: bool,
     choice: Option<&'static str>,
     generation: Option<u64>,
+    /// Bumped by a page section's edit so the page is rebuilt from the edited draft.
+    revision: u64,
 }
 #[derive(Resource)]
 struct CheckSkins {
