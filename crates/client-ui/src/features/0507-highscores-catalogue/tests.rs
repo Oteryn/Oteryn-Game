@@ -5,11 +5,9 @@ fn catalogue_continuation_runs_once_and_does_not_retry_a_refused_query()
         Action, HighscoresPanel, apply_result, catalogue_continuation, request,
     };
     use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
-    let mut panel = HighscoresPanel {
-        selected: true,
-        catalogue_selected: true,
-        ..Default::default()
-    };
+    let mut panel = HighscoresPanel::default();
+    panel.selected = true;
+    panel.catalogue_selected = true;
     assert_eq!(
         request(&mut panel, Action::Refresh)
             .ok_or("catalogue")?
