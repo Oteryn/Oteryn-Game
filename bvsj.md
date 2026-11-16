@@ -1,0 +1,19 @@
+Single agent work in this cloud session. Use the repository checkout you are in; build with CARGO_BUILD_JOBS=4. Load the repo skills oteryn-dev, oteryn-coding and oteryn-verify. Do not open a PR, do not label, do not merge. Final report at most 20 lines.
+
+Repository Oteryn/Oteryn-Game. Start from `origin/claude/happy-davinci-ijz3wy-bvint` at exact commit `b97bf3aa2c2ee9bfef6a047817f898c087b230e2` (git checkout -b claude/happy-davinci-ijz3wy-bvsj b97bf3aa2c2ee9bfef6a047817f898c087b230e2). Server side of capability 508 inventory-capacity-v1 (Cap in the inventory).
+
+A review found the two findings below. Fix both. Migration 2857 is NOT merged to main yet (it lives only on this branch), so you may edit apps/game-server/migrations/2857_inventory_capacity_observation.sql in place; check with scripts that no other migration uses 2857 (`.claude/skills/oteryn-dev/scripts/dup-migrations.sh HEAD`). Keep the observation one REPEATABLE READ READ ONLY transaction, keep the fence as strong as it is (no weakening of session-generation fencing or node/scope proofs), keep grants as they are. Add tests for each fix: finding 1 through the real dispatch refresh path (a PostgreSQL case in crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/ that returns Ok(()) when OTERYN_TEST_POSTGRES_ADMIN_URL is absent, plus a route-less unit test of the gate if possible); finding 2 with a test that the bounded validation still rejects a stale/ended registration and a superseded assignment. No stubs, no #[ignore], no test loosened. Do not touch .github/**, tools/repository/**, docs/agents/**. Update docs/contracts/protocol-oteryn/v1/inventory-capacity-v1.md if the refresh rule changes.
+
+Checks (iterate until green):
+1. cargo fmt --all --check
+2. cargo clippy --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --all-targets -- -D warnings
+3. cargo test --locked -p oteryn-gameplay-dispatch -p oteryn-gameplay-durability --lib
+4. if OTERYN_TEST_POSTGRES_ADMIN_URL is set: the filtered PostgreSQL cases `inventory_capacity` (dispatch lib tests with that filter); otherwise say they were not run.
+5. cargo run --locked -q -p oteryn-architecture-check -- workspace .
+
+Commit on `claude/happy-davinci-ijz3wy-bvsj` with author `blakinio <75369544+blakinio@users.noreply.github.com>`, then `git push origin claude/happy-davinci-ijz3wy-bvsj`. No PR, no force. Never end a turn with only a status: end only after a push or a verbatim hard blocker.
+Final reply: branch, pushed SHA, per finding fixed (file:line, test name) or declined (reason), per check its result line.
+
+FINDINGS:
+1. P2 crates/gameplay/dispatch/src/gameplay_transport/connection/serve/inventory_capacity.rs:22-31 (contract docs/contracts/protocol-oteryn/v1/inventory-capacity-v1.md:21-25): the 5 s time-only refresh gate (serve/refresh.rs:664 inventory_capacity::refresh, inventory_capacity_refresh_at) also suppresses the connection's own item commits (pickup, move into backpack, drop) and level-ups, so Cap stays stale up to 5 s after the player's own action; Tibia Global updates Cap at once. Reset the gate when this connection commits an item move or its progression changes, so the next tick rereads; test through the real refresh path.
+2. P2 apps/game-server/migrations/2857_inventory_capacity_observation.sql:16-27 and 67-95: each advisory capacity observation (character_progression.rs:555 check_runtime_scope_fence lock=false; game_node_prove_observed_incarnation from runtime_scope_assignment.rs:431) runs game_runtime_scope_assignment_observation_valid() and game_node_registration_observation_valid(), which scan the full registration history and the receipts table (count/min/max/UNION, per-assignment LATERAL latest receipt) every ~5 s per connection: load grows with connections x history. Bound these validations (latest-row lookups by index, or reuse the session's already-proven fence) without weakening the fence.
