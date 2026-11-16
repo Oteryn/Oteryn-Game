@@ -154,7 +154,7 @@ fn own(client: &DevClientSession) -> TestResult<EntityRef> {
 
 async fn approach_peer(
     client: &mut DevClientSession,
-    peer: &DevClientSession,
+    peer: &mut DevClientSession,
     world: &BundleWorld,
 ) -> TestResult {
     let other = tile(peer.world_spatial().actor_position)?;
@@ -164,7 +164,32 @@ async fn approach_peer(
             && at.x.abs_diff(other.x).max(at.y.abs_diff(other.y)) <= 1
     })
     .ok_or("real-peer approach route unavailable")?;
-    walk(client, world, &path).await
+    with_idle_peer(peer, walk(client, world, &path)).await
+}
+
+// Finish the current idle read before returning: cancelling it mid-frame loses framing.
+async fn with_idle_peer<T>(
+    peer: &mut DevClientSession,
+    operation: impl std::future::Future<Output = TestResult<T>>,
+) -> TestResult<T> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let finished = AtomicBool::new(false);
+    let (result, liveness) = tokio::join!(
+        async {
+            let result = operation.await;
+            finished.store(true, Ordering::Relaxed);
+            result
+        },
+        async {
+            while !finished.load(Ordering::Relaxed) {
+                peer.service_liveness(Duration::from_millis(20)).await?;
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
+        }
+    );
+    let result = result?;
+    liveness?;
+    Ok(result)
 }
 
 fn inventory_units(client: &DevClientSession) -> TestResult<BTreeMap<u32, u64>> {
@@ -381,9 +406,9 @@ async fn trade(
         .and_then(|i| i.entries.first())
         .copied()
         .ok_or("no direct-backpack leaf for real trade;starter backpack itself is not a leaf")?;
-    let mut peer = connect_character(clients, 0x81, 0).await?;
+    let mut peer = with_idle_peer(client, connect_character(clients, 0x81, 0)).await?;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
+        approach_peer(client, &mut peer, world).await?;
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
             partner: own(&peer)?,
             item: item.handle.get(),
@@ -395,7 +420,28 @@ async fn trade(
         }
         row.pass("request", "real-peer-offer-opened");
         peer.session_mut().read_gated_delta(26, 1).await?;
-        let id = reply.state.trade_id.ok_or("offer has no trade id")?;
+        // The server issues the pair ID only after the second real leaf is offered.
+        let counter = peer
+            .inventory()
+            .and_then(|i| i.entries.first())
+            .copied()
+            .ok_or("peer has no direct-backpack leaf for counter-offer")?;
+        let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Offer {
+            partner: own(client)?,
+            item: counter.handle.get(),
+        })
+        .ok_or("trade counter-offer encoding")?;
+        let reply = runtime::send(peer.session_mut(), &command).await?;
+        if reply.result != runtime::player_trade::ResultCode::Offered {
+            return Err(format!("trade counter-offer: {:?}", reply.result).into());
+        }
+        let delta = client.session_mut().read_gated_delta(26, 1).await?;
+        let state = runtime::player_trade::decode_state(&delta.payload)
+            .map_err(|e| format!("trade pair state: {e:?}"))?;
+        let id = state.trade_id.ok_or("paired offer has no trade id")?;
+        if reply.state.trade_id != Some(id) || state.own.is_none() || state.counter.is_none() {
+            return Err("trade pair ID or offered leaves differ between peers".into());
+        }
         let command = runtime::PlayerTradeCommand::new(runtime::player_trade::Intent::Look {
             trade_id: id,
             counter_offer: false,
@@ -427,8 +473,14 @@ async fn trade(
 async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorld) -> TestResult {
     use oteryn_dev_client::{client_runtime::market as runtime, client_ui::market as ui};
     locker(client, world).await?;
+    let item = client
+        .inventory()
+        .and_then(|i| i.entries.first().or(i.main_backpack.as_ref()))
+        .copied()
+        .ok_or("no native item definition for market offer")?;
     let mut panel = ui::MarketPanel {
         selected: true,
+        definition: item.item_definition_ref.get(),
         ..Default::default()
     };
     for (intent, action) in [
@@ -445,11 +497,6 @@ async fn market(row: &mut Row, client: &mut DevClientSession, world: &BundleWorl
             row.pass("browse", "native-market-browse-decoded");
         }
     }
-    let item = client
-        .inventory()
-        .and_then(|i| i.entries.first().or(i.main_backpack.as_ref()))
-        .copied()
-        .ok_or("no native item definition for market offer")?;
     panel.definition = item.item_definition_ref.get();
     panel.sell = false;
     let command = ui::request(&mut panel, ui::Intent::CreateOffer).ok_or("market create input")?;
@@ -644,6 +691,7 @@ async fn party(
     use runtime::party::{PartyDisposition, PartyIntent};
     async fn send(
         client: &mut DevClientSession,
+        idle: &mut DevClientSession,
         intent: Option<PartyIntent>,
     ) -> TestResult<runtime::party::PartyResult> {
         let command = match intent {
@@ -652,7 +700,10 @@ async fn party(
             }
             None => runtime::PartyCommand::query(),
         };
-        let reply = runtime::send(client.session_mut(), &command).await?;
+        let reply = with_idle_peer(idle, async {
+            Ok(runtime::send(client.session_mut(), &command).await?)
+        })
+        .await?;
         let operation = runtime::party::decode_party_result(&reply.operation)
             .map_err(|e| format!("party operation: {e:?}"))?;
         if operation.disposition != PartyDisposition::Ok {
@@ -663,30 +714,34 @@ async fn party(
         )
         .map_err(|e| format!("party view: {e:?}").into())
     }
-    let mut peer = connect_character(clients, 0x82, 0).await?;
+    let mut peer = with_idle_peer(client, connect_character(clients, 0x82, 0)).await?;
     let result: TestResult = async {
-        approach_peer(client, &peer, world).await?;
-        send(client, Some(PartyIntent::Invite(own(&peer)?))).await?;
-        let invitations = send(&mut peer, None).await?;
+        approach_peer(client, &mut peer, world).await?;
+        let target = own(&peer)?;
+        send(client, &mut peer, Some(PartyIntent::Invite(target))).await?;
+        let invitations = send(&mut peer, client, None).await?;
         let handle = invitations
             .invitations
             .first()
             .ok_or("party invitation not visible to peer")?
             .handle;
         row.pass("invite", "peer-current-query-has-invitation");
-        let state = send(&mut peer, Some(PartyIntent::Accept(handle))).await?;
+        let state = send(&mut peer, client, Some(PartyIntent::Accept(handle))).await?;
         if state.members.len() != 2 {
             return Err("party join did not produce two members".into());
         }
         row.pass("join", "two-current-members");
-        let result = client
-            .chat(&oteryn_dev_client::ChatIntent::Say {
-                mode: oteryn_dev_client::ChatSpeechMode::Say,
-                text: "/sharedxp on".into(),
-            })
-            .await?;
+        let result = with_idle_peer(&mut peer, async {
+            Ok(client
+                .chat(&oteryn_dev_client::ChatIntent::Say {
+                    mode: oteryn_dev_client::ChatSpeechMode::Say,
+                    text: "/sharedxp on".into(),
+                })
+                .await?)
+        })
+        .await?;
         if result.disposition != oteryn_dev_client::ChatDisposition::Ok
-            || !send(client, None).await?.shared_xp_enabled
+            || !send(client, &mut peer, None).await?.shared_xp_enabled
         {
             return Err("shared XP toggle not reflected by party owner".into());
         }
@@ -694,14 +749,19 @@ async fn party(
             "shared-xp-toggle",
             "leader-chat-toggle-current-state-enabled",
         );
-        let state = send(client, None).await?;
+        let state = send(client, &mut peer, None).await?;
         let member = state
             .members
             .iter()
             .find(|m| !m.leader)
             .ok_or("no nonleader member")?;
         let target_name = member.name.clone();
-        let state = send(client, Some(PartyIntent::PassLeadership(member.handle))).await?;
+        let state = send(
+            client,
+            &mut peer,
+            Some(PartyIntent::PassLeadership(member.handle)),
+        )
+        .await?;
         if !state
             .members
             .iter()
@@ -710,17 +770,18 @@ async fn party(
             return Err("leadership did not pass to selected member".into());
         }
         row.pass("leadership", "current-query-selected-member-is-leader");
-        send(client, Some(PartyIntent::Leave)).await?;
-        if !send(client, None).await?.members.is_empty() {
+        send(client, &mut peer, Some(PartyIntent::Leave)).await?;
+        if !send(client, &mut peer, None).await?.members.is_empty() {
             return Err("party leave retained membership".into());
         }
         row.pass("leave", "leaver-current-query-empty");
         Err("shared-XP-eligible-kill-and-split assertion unfinished".into())
     }
     .await;
-    let _ = send(client, Some(PartyIntent::Leave)).await;
-    let (cleanup_result, cleanup, attempts, busy_timed_out) =
-        super::logout_retrying_busy(&mut peer).await?;
+    let _ = send(client, &mut peer, Some(PartyIntent::Leave)).await;
+    let cleanup = with_idle_peer(client, super::logout_retrying_busy(&mut peer)).await;
+    let (cleanup_result, cleanup, attempts, busy_timed_out) = cleanup
+        .map_err(|error| format!("party journey={result:?}; peer cleanup failed: {error}"))?;
     if cleanup_result != Some(oteryn_protocol_oteryn::logout::LogoutResult::Accepted) {
         return Err(format!("party peer cleanup logout refused: {cleanup}; attempts={attempts}; busy_timed_out={busy_timed_out}; journey={result:?}").into());
     }
@@ -729,18 +790,90 @@ async fn party(
 
 async fn guild(row: &mut Row, client: &mut DevClientSession) -> TestResult {
     use oteryn_dev_client::client_runtime::guild as runtime;
-    row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
+    use runtime::{GuildCommand, GuildReply, guild::*};
+    let reply = runtime::send(client.session_mut(), &GuildCommand::Query(GuildQuery::Own)).await?;
+    if !matches!(
+        reply,
+        GuildReply::Query {
+            status: runtime::CommandStatus::Accepted,
+            result: Some(GuildQueryResult::Own(None))
+        }
+    ) {
+        return Err(format!("guild founding requires an unaffiliated character: {reply:?}").into());
+    }
+    // Found has no level gate. The native writer requires current Premium, no Junior
+    // status, no membership and no Account leadership position, plus an unused name.
+    let suffix: String = client
+        .join_snapshot()
+        .game_session_id
+        .as_bytes()
+        .iter()
+        .rev()
+        .take(8)
+        .flat_map(|byte| {
+            [
+                char::from(b'a' + (byte >> 4)),
+                char::from(b'a' + (byte & 15)),
+            ]
+        })
+        .collect();
+    let name = format!("Guard {suffix}");
     let reply = runtime::send(
         client.session_mut(),
-        &runtime::GuildCommand::Query(runtime::guild::GuildQuery::Own),
+        &GuildCommand::Intent(GuildIntent::Found { name: name.clone() }),
     )
     .await?;
-    // Native GuildIntent has membership/rank writers but no MOTD writer. Reading
-    // GuildSummary.message cannot prove an update. Keep every other gap visible too.
+    let found = match reply {
+        GuildReply::Intent {
+            status: runtime::CommandStatus::Accepted,
+            result: Some(result),
+        } => result,
+        reply => return Err(format!("guild founding has no accepted receipt: {reply:?}").into()),
+    };
+    if found.code != 1 {
+        let prerequisite = match found.code {
+            3 => "character must have no guild membership",
+            9 => "guild name must be unused in this World",
+            10 => "Account must hold no guild leadership position",
+            11 => "current Premium is required (level 1 itself is not a gate)",
+            12 => "character must not be Junior",
+            14 => "guild name must pass native validation",
+            _ => "native founding refusal",
+        };
+        return Err(format!("guild-found code={} missing-prerequisite={prerequisite};source:crates/gameplay/durability/src/durability/guild/found.rs:201;guild/ranks/motd/chat/bank/wars/relog-unproven", found.code).into());
+    }
+    if found.revision != Some(1) {
+        return Err("new guild revision is not one".into());
+    }
+    let reply = runtime::send(client.session_mut(), &GuildCommand::Query(GuildQuery::Own)).await?;
+    let summary = match reply {
+        GuildReply::Query {
+            status: runtime::CommandStatus::Accepted,
+            result: Some(GuildQueryResult::Own(Some(summary))),
+        } => summary,
+        reply => return Err(format!("founded guild own query: {reply:?}").into()),
+    };
+    if summary.guild != found.guild
+        || summary.name != name
+        || summary.revision != 1
+        || summary.state != 1
+        || summary.own_rank != 1
+    {
+        return Err(format!("founded guild summary differs: {summary:?}").into());
+    }
+    row.pass("guild", "native-found-receipt-and-own-summary-agree");
+    if summary.ranks != ["Leader", "Vice Leader", "Member"] {
+        return Err(format!("native default guild ranks differ: {:?}", summary.ranks).into());
+    }
+    // Reading the initial ranks does not prove the row's rank mutation assertion.
+    evidence(
+        "E2EF4_OBSERVATION S03 native-default-ranks=Leader,Vice-Leader,Member;rank-write-unproven",
+    );
+    row.missing_server = Some("source:crates/protocol-oteryn/src/guild.rs:17");
     evidence(
         "E2EF4_MISSING S03 motd source:crates/protocol-oteryn/src/guild.rs:17 native-GuildIntent-has-no-MOTD-write",
     );
-    Err(format!("guild-query={reply:?};guild/ranks/chat/bank/wars/relog assertions unfinished;MOTD-write-unavailable").into())
+    Err("ranks/chat/bank/wars/relog assertions unfinished;MOTD-write-unavailable".into())
 }
 
 async fn logout(
