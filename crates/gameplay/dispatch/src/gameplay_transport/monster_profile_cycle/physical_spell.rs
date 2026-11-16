@@ -837,6 +837,7 @@ async fn prepare_source_reader_checked<'native>(
         return Err(PreparationError::Refused);
     };
     let area = source.has_area();
+    let mut tiles = BTreeMap::new();
     if chain_candidates {
         let chain = source
             .spell()
@@ -864,10 +865,16 @@ async fn prepare_source_reader_checked<'native>(
         // named/side filter, top creature and combat admission before any hit.
         let composed = matches!(&source, SourceShape::Composed(_));
         cast_tiles.retain(|&(x, y, floor)| {
-            census.iter().any(|(_, position, session)| {
+            let occupied = census.iter().any(|(_, position, session)| {
                 let at = position.position();
                 (session.is_some() || composed) && (at.x, at.y, at.floor) == (x, y, floor)
-            })
+            });
+            // The spell owner checks every authored cell. An empty cell has no
+            // recipient; record that refusal instead of omitting its facts.
+            if !occupied {
+                tiles.insert((x, y, floor), Some(false));
+            }
+            occupied
         });
     }
     // Crystal combat.cpp:2337-2375 casts area sight from the cell next to
@@ -878,7 +885,6 @@ async fn prepare_source_reader_checked<'native>(
         Some(chain_origin.unwrap_or(from))
     })
     .ok_or(PreparationError::Refused)?;
-    let mut tiles = BTreeMap::new();
     for (x, y, floor) in cast_tiles {
         let at = MovementLocalPosition { x, y, floor };
         // An immutable source blocker is already a refusal. Do not require sight
