@@ -251,7 +251,7 @@
     },
     {
       "path": "content/items/definitions/items-17500-17999.json",
-      "sha256": "bc199b7be2469309852642c7d6e25679879a60270ae27283652d6d4c5bd872e1"
+      "sha256": "fc1cb80bfe7964e1760f711c1774d02c9923454877c0f028c0ee72929945e797"
     },
     {
       "path": "content/items/definitions/items-18000-18499.json",
@@ -335,7 +335,7 @@
     },
     {
       "path": "content/items/definitions/items-33000-33499.json",
-      "sha256": "95702ac27bed55243a6aff884d9e4d320fda084cf64cc7eb48fb98d7483fef98"
+      "sha256": "88ac1699a81fa419afbbd234e5c348da1ee07550c82f9141b1e452b1479f938c"
     }
   ],
   "binding_input": {
@@ -345,7 +345,7 @@
   "accepted_inputs": [
     {
       "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "25c76ad9f91c4fdfd13851f12020fcd99383b16fc1a29d208d3f6b5894b89494"
+      "sha256": "95fbd5f853216ae1cb7c88789ff42c5c91995a7838b32b380b57c136d5ad41b3"
     },
     {
       "path": "docs/agents/evidence/OTV2-20261001-quest-reward-item-admission.json",

@@ -159,6 +159,7 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
             std::time::Duration::from_secs(1),
         );
         service_cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        let mut next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
         loop {
             let event = {
                 let mut sequence = admitted.continuity.server_sequence;
@@ -184,6 +185,16 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     None => continue,
                 }
             };
+            // Refresh before ingress/probes, not immediately after a reply: stash and
+            // receipt readers need the same holder while we wait for the next command.
+            if !matches!(&event, house_hireling::step::Event::Services)
+                && tokio::time::Instant::now() >= next_staff_refresh
+            {
+                if !authority.staff_refresh(admitted).await {
+                    return Err(ServeEnd::Disconnected);
+                }
+                next_staff_refresh = tokio::time::Instant::now() + VISIBILITY_REFRESH;
+            }
             let inbound::Input {
                 frame,
                 arrived_while_buffered,
@@ -196,6 +207,15 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
                     continue;
                 }
                 house_hireling::step::Event::Probe => {
+                    if tokio::time::timeout(
+                        crate::durability::DB_PASS_DEADLINE,
+                        authority.account_closure_check(admitted),
+                    )
+                    .await
+                    .map_err(|_| ServeEnd::Disconnected)?
+                    {
+                        return Err(ServeEnd::Disconnected);
+                    }
                     let probe = liveness
                         .tick()
                         .map_err(|_| ServeEnd::ControlLost("house_transfer"))?;
@@ -426,6 +446,10 @@ pub(super) async fn serve<'a, S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissi
     .await;
     run.map_err(|end| Box::new(end.finish(admitted)))
 }
+
+#[cfg(test)]
+#[path = "house_transfer_authority_tests.rs"]
+mod authority_tests;
 
 #[cfg(test)]
 #[path = "house_transfer_raid_tests.rs"]

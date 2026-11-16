@@ -36,6 +36,14 @@ impl FreshAdmissionAuthority for IntegrityAuthority {
         Some(at(0))
     }
 
+    async fn observe_character_inventory(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+    ) -> Option<crate::gameplay_transport::item_view::InventoryItems> {
+        Some(Default::default())
+    }
+
     async fn paced_step(
         &self,
         actor: ExactActorRef,
@@ -149,7 +157,7 @@ fn sec1_flood_preserves_use_and_cast_refusal_payloads() -> Result<(), Box<dyn Er
             );
             let envelope = decode_wire_envelope(frames.last().ok_or("last result")?)?;
             let last = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-            assert_eq!(last.status, CommandStatus::Rejected);
+            assert_eq!(last.status, CommandStatus::Accepted);
             assert_eq!(last.payload, payload);
         }
         Ok(())
@@ -165,6 +173,75 @@ fn run_detector_test<F: std::future::Future<Output = Result<(), Box<dyn Error>>>
         .join()
         .map_err(|_| "detector test thread panicked")?
         .map_err(Into::into)
+}
+
+#[test]
+fn throttled_use_and_cast_keep_session_status_pairing() -> Result<(), Box<dyn Error>> {
+    run_detector_test(|| async {
+        tokio::time::pause();
+        for command_type in [2, 3] {
+            let authority = IntegrityAuthority::new();
+            let mut commands: Vec<_> = (1..=100)
+                .map(|id| command(1, id, 0x7fff, StepDirection::East))
+                .collect();
+            commands.push(command(1, 101, command_type, StepDirection::East));
+            let (_, frames) = drive_admitted(&authority, &commands).await?;
+            let envelope = decode_wire_envelope(frames.last().ok_or("missing refusal")?)?;
+            let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+            assert_eq!(
+                result.status,
+                CommandStatus::Accepted,
+                "typed non-Rejected disposition must keep the session usable: command_type={command_type}"
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn throttled_item_move_returns_a_typed_refusal() -> Result<(), Box<dyn Error>> {
+    run_detector_test(|| async {
+        tokio::time::pause();
+        let authority = IntegrityAuthority::new();
+        let mut admitted = positioned()?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            &[OfferedCapability {
+                id: 4,
+                requires: &[],
+            }],
+            &[4],
+        )
+        .ok_or("item capabilities")?;
+        assert!(admitted.continuity.selected_capabilities.contains(4));
+        let mut commands: Vec<_> = (1..=100)
+            .map(|id| command(1, id, 0x7fff, StepDirection::East))
+            .collect();
+        let payload = oteryn_protocol_oteryn::item_view::encode_item_move_intent(
+            &oteryn_protocol_oteryn::item_view::ItemMoveIntent {
+                source: oteryn_protocol_oteryn::item_view::ItemHandle::MIN,
+                destination: oteryn_protocol_oteryn::item_view::ItemMoveDestination::MainBackpack,
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        commands.push(oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: 101,
+                command_type: 9,
+                payload: &payload,
+            },
+        )?);
+        let (_, frames) = drive_session(&authority, admitted, &commands).await?;
+        let envelope = decode_wire_envelope(frames.last().ok_or("missing refusal")?)?;
+        let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+        assert_eq!(
+            oteryn_protocol_oteryn::item_view::decode_item_move_result(result.payload)
+                .map_err(|e| format!("{e:?}"))?,
+            oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected
+        );
+        assert_eq!(result.status, CommandStatus::Accepted);
+        Ok(())
+    })
 }
 
 #[test]
