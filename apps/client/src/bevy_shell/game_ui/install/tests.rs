@@ -231,3 +231,80 @@ fn use_manual_sort_mode_checkbox_in_the_sort_menu_toggles_the_session_mode()
     }
     Ok(())
 }
+
+/// Tibia Global's depot search looks up a chosen item; the listed holdings offer that lookup
+/// per item, and the server's located stacks replace the shown results.
+#[test]
+fn depot_search_find_item_sends_the_search_and_shows_where_it_is_stored()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::bevy_shell::owner::{ActivePlay, Phase};
+    use oteryn_client_runtime::cui3::depot_search::{
+        Outcome, Reply, Request, SearchResult, TierCount, decode_request, encode_reply,
+    };
+    use oteryn_client_runtime::server_mechanic::{CommandStatus, ServerMechanicResponse};
+    let response = |depot: u32| -> Result<ServerMechanicResponse, Box<dyn std::error::Error>> {
+        Ok(ServerMechanicResponse {
+            command_id: 1,
+            status: CommandStatus::Accepted,
+            server_sequence: 1,
+            payload: encode_reply(&Reply {
+                outcome: Outcome::Found,
+                retrieved: 0,
+                results: vec![SearchResult {
+                    client_id: 321,
+                    depot,
+                    stash: 0,
+                    inbox: 0,
+                    tiers: vec![TierCount {
+                        tier: 0,
+                        count: depot,
+                    }],
+                }],
+            })
+            .map_err(|error| format!("{error:?}"))?,
+        })
+    };
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut requests, outbox) = crate::play::play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_depot_search_initialize();
+    outbox.bevy_depot_search_result(&response(3)?);
+    let mut view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    assert!(owner.request_container_tool(ContainerTool::Search, None, None));
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, bevy::asset::AssetPlugin::default()))
+        .init_asset::<Font>()
+        .init_asset::<Image>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    install_container_tools(&mut app);
+    app.update();
+    let find = app
+        .world_mut()
+        .query::<(&Text, &ChildOf)>()
+        .iter(app.world())
+        .find_map(|(text, parent)| (text.0 == "Find item 321").then_some(parent.parent()))
+        .ok_or("find item control")?;
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: find });
+    let crate::combat_input::PlayCommand::ServerMechanic(command) = requests.try_recv()? else {
+        return Err("depot search request".into());
+    };
+    assert_eq!(
+        decode_request(&command.payload).map_err(|error| format!("{error:?}"))?,
+        Request::Search { client_id: 321 }
+    );
+    outbox.bevy_depot_search_result(&response(7)?);
+    app.update();
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("depot 7")),
+        "the located stacks are shown"
+    );
+    Ok(())
+}

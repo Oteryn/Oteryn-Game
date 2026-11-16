@@ -198,6 +198,14 @@ pub(super) fn project_tools(
                     );
                 }
                 for row in &reply.results {
+                    // Tibia Global's depot search: choosing an item looks up where it is stored.
+                    button(
+                        &format!("Find item {}", row.client_id),
+                        ToolAction::Search(Request::Search {
+                            client_id: row.client_id,
+                        }),
+                        ready,
+                    );
                     for all in [false, true] {
                         button(
                             &format!(
