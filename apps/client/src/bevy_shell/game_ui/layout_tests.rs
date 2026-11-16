@@ -5,7 +5,11 @@ use bevy::picking::{backend::HitData, pointer::Location};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn app() -> App {
+    app_with(LayoutStore::default())
+}
+fn app_with(store: LayoutStore) -> App {
     let mut app = App::new();
+    app.insert_resource(store);
     app.insert_resource(UiScale(2.));
     app.insert_resource(Skins {
         buttons: oteryn_client_ui_bevy::ButtonImages {
@@ -234,5 +238,78 @@ fn game_shell_exposes_three_resize_handles() -> Result<(), Box<dyn std::error::E
             .count(),
         3
     );
+    Ok(())
+}
+
+#[test]
+fn window_geometry_survives_restart_and_rejects_bad_bounds() -> TestResult {
+    let path = std::env::temp_dir().join(format!("cg-gamewin-layout-{}.json", std::process::id()));
+    let mut layout = WindowLayout::load(&path)?;
+    layout.record("Spell catalogue", [40, 80, 680, 760])?;
+    assert!(layout.record("bad", [0, 0, 0, 760]).is_err());
+    layout.save(&path)?;
+    let restored = WindowLayout::load(&path)?;
+    assert_eq!(restored.bounds("Spell catalogue"), Some([40, 80, 680, 760]));
+    assert_eq!(restored.bounds("bad"), None);
+    std::fs::remove_file(path)?;
+    Ok(())
+}
+
+#[test]
+fn resized_regions_and_main_window_geometry_survive_a_restart() -> TestResult {
+    let path = std::env::temp_dir().join(format!("o033-bevy-layout-{}.json", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    let mut app = app_with(LayoutStore::load(Some(path.clone())));
+    for (entity, splitter) in handles(&mut app) {
+        geometry(&mut app, splitter);
+        start_drag(&mut app, entity, PointerButton::Primary)?;
+        move_drag(&mut app, entity, Vec2::splat(-120.))?;
+        app.update();
+        let dragged = if splitter.vertical {
+            [0, 0, 1, 210]
+        } else {
+            [0, 0, 236, 1]
+        };
+        assert_ne!(
+            LayoutStore::load(Some(path.clone()))
+                .layout
+                .bounds(splitter.id),
+            Some(dragged),
+            "a drag in progress is not written before it ends"
+        );
+        let pointer = pointer(&mut app)?;
+        app.world_mut().trigger(PointerDragEnd {
+            entity,
+            pointer,
+            button: PointerButton::Primary,
+            distance: Vec2::ZERO,
+        });
+    }
+    let mut windows = app
+        .world_mut()
+        .query_filtered::<&mut Window, With<PrimaryWindow>>();
+    let mut window = windows.single_mut(app.world_mut())?;
+    window.position = WindowPosition::At(IVec2::new(40, 80));
+    window.resolution = (1280, 900).into();
+    app.update();
+    let mut restarted = app_with(LayoutStore::load(Some(path.clone())));
+    let mut sizes = handles(&mut restarted)
+        .into_iter()
+        .map(|(_, splitter)| Ok((splitter.id, size(&restarted, splitter)?)))
+        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
+    sizes.sort_by_key(|(id, _)| *id);
+    assert_eq!(
+        sizes,
+        vec![
+            ("console", px(210.)),
+            ("sidebar.inventory", px(236.)),
+            ("sidebar.panels", px(236.)),
+        ]
+    );
+    assert_eq!(
+        LayoutStore::load(Some(path.clone())).window(),
+        Some([40, 80, 1280, 900])
+    );
+    std::fs::remove_file(path)?;
     Ok(())
 }

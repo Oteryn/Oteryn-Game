@@ -1,8 +1,10 @@
-//! Native splitters for the main regions; geometry remains transient for this batch.
+//! Native splitters for the main regions; their sizes and the main window geometry are kept
+//! in the local layout file across sessions.
 //! Behaviour: Tibia manual §3.1 (docs/reference/tibia-manual/interface.md).
 //! Structural reference: edubart/otclient gameinterface.otui:70-77,
 //! revision dab86e610991092fe8b2471f7de55a7c986b3cd2; implemented with Bevy picking.
 use super::modal::ModalGuard;
+use crate::window_layout::WindowLayout;
 use bevy::{
     camera::NormalizedRenderTarget,
     picking::{
@@ -10,11 +12,36 @@ use bevy::{
         pointer::{PointerButton, PointerId},
     },
     prelude::*,
-    window::{PrimaryWindow, WindowFocused, WindowRef},
+    window::{PrimaryWindow, WindowFocused, WindowMode, WindowPosition, WindowRef},
 };
+use std::path::PathBuf;
+
+/// Layout entry of the main window: position and physical size.
+const WINDOW: &str = "window";
+/// The local layout file and what it holds; without a path the layout stays transient.
+#[derive(Resource, Default)]
+pub(in crate::bevy_shell) struct LayoutStore {
+    path: Option<PathBuf>,
+    layout: WindowLayout,
+}
+impl LayoutStore {
+    /// Reads the layout file; a missing or invalid file starts from the default layout.
+    pub(in crate::bevy_shell) fn load(path: Option<PathBuf>) -> Self {
+        let layout = path
+            .as_deref()
+            .and_then(|path| WindowLayout::load(path).ok())
+            .unwrap_or_default();
+        Self { path, layout }
+    }
+    /// The remembered main window position and physical size.
+    pub(in crate::bevy_shell) fn window(&self) -> Option<[i32; 4]> {
+        self.layout.bounds(WINDOW)
+    }
+}
 
 #[derive(Component, Clone, Copy)]
 pub(super) struct Splitter {
+    id: &'static str,
     target: Entity,
     vertical: bool,
     gesture: Option<Gesture>,
@@ -30,8 +57,86 @@ struct Gesture {
 
 pub(super) fn install(app: &mut App) {
     app.add_message::<WindowFocused>()
+        .init_resource::<LayoutStore>()
         .add_observer(cancel)
-        .add_systems(Update, maintain);
+        .add_systems(Startup, restore.after(super::setup))
+        .add_systems(Update, (maintain, remember).chain());
+}
+/// Applies the remembered region sizes within the same bounds a drag allows.
+fn restore(store: Res<LayoutStore>, splitters: Query<&Splitter>, mut nodes: Query<&mut Node>) {
+    for splitter in &splitters {
+        let Some([_, _, width, height]) = store.layout.bounds(splitter.id) else {
+            continue;
+        };
+        let Ok(mut node) = nodes.get_mut(splitter.target) else {
+            continue;
+        };
+        if splitter.vertical {
+            node.height = px((height as f32).clamp(90., 600.));
+        } else {
+            node.width = px((width as f32).clamp(176., 480.));
+        }
+    }
+}
+/// Writes the region sizes and the windowed main window geometry when they change; a drag
+/// in progress is written once it ends.
+fn remember(
+    mut store: ResMut<LayoutStore>,
+    splitters: Query<&Splitter>,
+    nodes: Query<&Node>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+) {
+    if store.path.is_none() || splitters.iter().any(|splitter| splitter.gesture.is_some()) {
+        return;
+    }
+    let mut entries = Vec::new();
+    for splitter in &splitters {
+        let Ok(node) = nodes.get(splitter.target) else {
+            continue;
+        };
+        let Val::Px(size) = (if splitter.vertical {
+            node.height
+        } else {
+            node.width
+        }) else {
+            continue;
+        };
+        let size = size.round() as i32;
+        entries.push((
+            splitter.id,
+            if splitter.vertical {
+                [0, 0, 1, size]
+            } else {
+                [0, 0, size, 1]
+            },
+        ));
+    }
+    if let Ok(window) = windows.single()
+        && window.mode == WindowMode::Windowed
+        && let WindowPosition::At(position) = window.position
+    {
+        entries.push((
+            WINDOW,
+            [
+                position.x,
+                position.y,
+                window.resolution.physical_width() as i32,
+                window.resolution.physical_height() as i32,
+            ],
+        ));
+    }
+    let mut changed = false;
+    for (id, bounds) in entries {
+        if store.layout.bounds(id) != Some(bounds) {
+            changed |= store.layout.record(id, bounds).is_ok();
+        }
+    }
+    if changed
+        && let Some(path) = &store.path
+        && let Err(error) = store.layout.save(path)
+    {
+        leprintln!("Could not save window layout: {error}", error = error);
+    }
 }
 fn maintain(
     mut focus: MessageReader<WindowFocused>,
@@ -60,7 +165,12 @@ fn maintain(
         }
     }
 }
-pub(super) fn spawn(commands: &mut Commands, target: Entity, vertical: bool) -> Entity {
+pub(super) fn spawn(
+    commands: &mut Commands,
+    target: Entity,
+    vertical: bool,
+    id: &'static str,
+) -> Entity {
     commands
         .spawn((
             Name::new(if vertical {
@@ -69,6 +179,7 @@ pub(super) fn spawn(commands: &mut Commands, target: Entity, vertical: bool) -> 
                 "Resize sidebar"
             }),
             Splitter {
+                id,
                 target,
                 vertical,
                 gesture: None,

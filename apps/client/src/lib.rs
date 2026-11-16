@@ -41,6 +41,7 @@ pub mod updater;
 pub mod web_links;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod window_layout;
 #[deprecated(note = "use map")]
 pub mod world;
 
