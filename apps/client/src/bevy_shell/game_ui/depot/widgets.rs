@@ -125,11 +125,17 @@ impl Widgets<'_, '_, '_> {
             {
                 self.label(list, "This depot box is empty");
             }
+            // Manual Sort Mode: with a deposit held, a row is the box slot it takes.
+            let action = if panel.held.is_some() {
+                "place here"
+            } else {
+                "withdraw stack"
+            };
             for (index, item) in reply.entries.iter().enumerate() {
                 self.button(
                     list,
                     Kind::Request(Intent::Withdraw(index)),
-                    &format!("Item {} ×{} — withdraw stack", item.definition, item.count),
+                    &format!("Item {} ×{} — {action}", item.definition, item.count),
                     enabled && reply.town.is_some(),
                 );
             }
@@ -140,8 +146,14 @@ impl Widgets<'_, '_, '_> {
                     carried,
                     Kind::Request(Intent::Deposit(item.handle)),
                     &format!(
-                        "Item {} ×{} — deposit",
-                        item.item_definition_ref, item.count
+                        "Item {} ×{} — {}",
+                        item.item_definition_ref,
+                        item.count,
+                        if panel.held == Some(item.handle) {
+                            "deposit at the first slot"
+                        } else {
+                            "deposit"
+                        }
                     ),
                     enabled && reply.town.is_some(),
                 );

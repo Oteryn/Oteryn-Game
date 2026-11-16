@@ -341,6 +341,77 @@ pub(super) async fn place_at_slot(
     .await
 }
 
+/// CONTAINER-MANUAL-SORT-1 for a depot deposit: the entry this move transaction placed in the
+/// depot box (`town`, `box_number`) of the Character takes `slot` of the box's view order (newest
+/// first), as [`place_at_slot`] does in a container. Migration 2856 admits the depot permutation
+/// only with this command's own depot move receipt of the same transaction. A slot past the
+/// receipt bound (500 entries) is clamped to it.
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn place_at_depot_slot(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    content_digest: [u8; 32],
+    town: u16,
+    box_number: u8,
+    transaction: [u8; 16],
+    slot: u32,
+) -> LoopResult<()> {
+    let wanted = i64::from(slot).min(ITEM_LOOP_TREE_ITEMS_MAX - 1) + 1;
+    let rows = sqlx::query(
+        "SELECT d.item_instance_id::text, d.ordinal::text, \
+                (i.last_transaction_id=encode($4,'hex')::uuid OR i.minted_transaction_id=encode($4,'hex')::uuid) AS placed \
+           FROM game_item_character_depot_locations d JOIN game_item_instances i USING(item_instance_id,world_id) \
+          WHERE d.character_id=encode($1,'hex')::uuid AND d.town_id=$2 AND d.box_number=$3 \
+          ORDER BY d.ordinal DESC LIMIT $5",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(i32::from(town))
+    .bind(i16::from(box_number))
+    .bind(transaction.as_slice())
+    .bind(wanted)
+    .fetch_all(&mut **tx)
+    .await?;
+    let Some(first) = rows.first() else {
+        return Ok(());
+    };
+    if !first.try_get::<Option<bool>, _>("placed")?.unwrap_or(false) || rows.len() < 2 {
+        return Ok(());
+    }
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in &rows {
+        entries.push((
+            uuid_text(row.try_get("item_instance_id")?)?,
+            stored_u64(row.try_get("ordinal")?)?,
+        ));
+    }
+    let mut placed = entries.clone();
+    placed.rotate_left(1);
+    let depot = json!({"town": town, "box": box_number});
+    let permutation: Vec<_> = placed
+        .iter()
+        .zip(&entries)
+        .map(|((item, before), (_, after))| {
+            json!({
+                "item": uuid_string(*item), "depot": depot,
+                "before": before.to_string(), "after": after.to_string(),
+            })
+        })
+        .collect();
+    let mut intent = entries[0].0.to_vec();
+    intent.extend(slot.to_be_bytes());
+    commit_permutation(
+        tx,
+        fence,
+        command,
+        content_digest,
+        fence.runtime_scope.world_id(),
+        &intent,
+        &json!(permutation),
+    )
+    .await
+}
+
 fn request_intent(target: [u8; 16], request: Request) -> Vec<u8> {
     let mut intent = target.to_vec();
     intent.extend(request.encode());

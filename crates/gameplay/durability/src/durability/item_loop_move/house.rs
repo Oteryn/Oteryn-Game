@@ -188,6 +188,35 @@ impl DurabilityRoot {
         request: LoopMoveRequest,
         house_capacity_v2: bool,
     ) -> Result<Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError> {
+        self.commit_house_item_loop_move_at(
+            permit,
+            recovery,
+            node,
+            context,
+            command,
+            content,
+            request,
+            house_capacity_v2,
+            None,
+        )
+        .await
+    }
+    /// CONTAINER-MANUAL-SORT-1 (capability 510): with a `slot`, the entry the move placed takes
+    /// that slot of its destination's view order in the same transaction, as for a carried
+    /// container (`container_sort::place_at_slot`); the slot is part of the receipt intent.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_house_item_loop_move_at<C: ItemLoopContent>(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        context: &HouseActionContext,
+        command: CommandRef,
+        content: &C,
+        request: LoopMoveRequest,
+        house_capacity_v2: bool,
+        slot: Option<u32>,
+    ) -> Result<Result<LoopMoveReceipt, LoopMoveRefusal>, DurabilityError> {
         self.commit_loop_with_depot(
             permit,
             recovery,
@@ -198,7 +227,7 @@ impl DurabilityRoot {
             request,
             None,
             Some(HouseLoopContext::new(context.clone(), house_capacity_v2)),
-            None,
+            slot,
         )
         .await
     }

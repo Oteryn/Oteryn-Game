@@ -271,6 +271,48 @@ pub(super) async fn scenario(
     };
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].key, gold);
+    // CONTAINER-MANUAL-SORT-1 (capability 510): a slotted move into the House cupboard places
+    // the bag at slot 2 under a container sort receipt that migration 2856 admits for the current
+    // House; the same command replays without a second rotation.
+    let cupboard_order = || {
+        sqlx::query_scalar::<_, Vec<u8>>("SELECT uuid_send(item_instance_id) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal DESC")
+            .bind(id(71).to_vec())
+            .fetch_all(&h.pool)
+    };
+    let branches: Vec<Vec<u8>> = (80_u8..85).rev().map(|n| id(n).to_vec()).collect();
+    assert_eq!(cupboard_order().await?, branches);
+    let slotted = |command_id| {
+        owner.move_loop_item(
+            actor,
+            UseCommand {
+                game_session_id: admitted.game_session_id,
+                command_id,
+                item_fence: Some(fence),
+            },
+            LoopMove {
+                item: bag,
+                count: None,
+                target: LoopTarget::Container(cupboard),
+                slot: Some(2),
+            },
+        )
+    };
+    assert_eq!(slotted(130).await, LoopMoveResult::Committed);
+    let mut placed = branches.clone();
+    placed.insert(2, id(72).to_vec());
+    assert_eq!(cupboard_order().await?, placed);
+    assert_eq!(slotted(130).await, LoopMoveResult::Committed);
+    assert_eq!(cupboard_order().await?, placed);
+    let sort_receipts: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_item_container_sort_receipts")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(sort_receipts, 1, "one House ordinal receipt for the slotted move");
+    assert_eq!(
+        move_item(131, bag, LoopTarget::MainBackpack).await,
+        LoopMoveResult::Committed
+    );
+    assert_eq!(cupboard_order().await?, branches);
     let mut stale = fence;
     stale.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(
         fence.scope_ownership_generation.get() + 1,

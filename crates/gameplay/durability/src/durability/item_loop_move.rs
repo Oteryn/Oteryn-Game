@@ -1765,12 +1765,21 @@ impl DurabilityRoot {
                                     if context.capacity_limit()>GAMEITEM01_CONTAINER_ENTRIES_MAX {
                                         intent["capacity_limit"]=json!(context.capacity_limit());
                                     }
+                                    // Capability 510; absent keeps the earlier receipt bytes.
+                                    if let Some(slot) = slot {
+                                        intent["slot"]=json!(slot);
+                                    }
                                     serde_json::to_vec(&intent)
                                 }
                                     .map_err(|_| DurabilityError::InvalidStoredState)?
                             } else { match depot {
-                                Some(access) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access}))
-                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                Some(access) => {
+                                    let mut intent=json!({"character": fence.character_id.as_bytes(), "request": request, "depot": access});
+                                    if let Some(slot) = slot {
+                                        intent["slot"]=json!(slot);
+                                    }
+                                    serde_json::to_vec(&intent).map_err(|_| DurabilityError::InvalidStoredState)?
+                                }
                                 None => match slot {
                                     Some(slot) => serde_json::to_vec(&json!({"character": fence.character_id.as_bytes(), "request": request, "slot": slot}))
                                         .map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -1789,7 +1798,15 @@ impl DurabilityRoot {
                                 &request, &intent, depot, None, None, house.as_ref(),
                             )
                             .await?;
-                            if let Some(slot) = slot.filter(|_| house.is_none() && depot.is_none()) {
+                            if let Some((slot, access)) = slot.zip(depot) {
+                                if access.deposit {
+                                    container_sort::place_at_depot_slot(
+                                        &mut tx, &fence, command, content.loop_content_digest(),
+                                        access.town, access.box_number, receipt.transaction_id, slot,
+                                    )
+                                    .await?;
+                                }
+                            } else if let Some(slot) = slot {
                                 let parent = match request.destination {
                                     LoopDestination::Container(parent) => Some(parent),
                                     LoopDestination::MainBackpack => load_slot(&mut tx, fence.character_id)

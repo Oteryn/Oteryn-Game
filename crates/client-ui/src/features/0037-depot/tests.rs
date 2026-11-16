@@ -168,3 +168,63 @@ fn container_source_requires_live_handle_capability_and_one_pending_request() {
         assert!(!p.feedback.is_empty());
     }
 }
+
+/// Tibia Global's Manual Sort Mode in a depot box: a deposit is held until the player picks the
+/// box slot (a displayed entry row); the request then names that slot. Clicking the held item
+/// again deposits it at the first slot, and without the mode nothing is held.
+#[test]
+fn manual_sort_deposit_holds_the_item_until_a_box_slot_is_chosen() {
+    let mut p = DepotPanel {
+        selected: true,
+        ..Default::default()
+    };
+    let mut page = reply(DepotOutcome::Opened);
+    page.page = 1;
+    page.total = 33;
+    apply_result(&mut p, Some(page));
+    let item = ItemEntry {
+        appearance_id: 0,
+        handle: NonZeroU64::MIN,
+        item_definition_ref: NonZeroU32::MIN,
+        count: NonZeroU32::MIN,
+        sub_type: 0,
+    };
+    p.items.inventory.main_backpack = Some(item);
+    let deposit = DepotIntent {
+        town: Some(2),
+        box_number: 17,
+        page: 1,
+        action: DepotAction::Deposit(item.handle),
+    };
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Deposit(item.handle), true),
+        None
+    );
+    assert_eq!(p.held, Some(item.handle));
+    assert!(!p.pending);
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Withdraw(0), true),
+        Some((deposit, Some(32)))
+    );
+    assert_eq!(p.held, None);
+    p.pending = false;
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Deposit(item.handle), true),
+        None
+    );
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Deposit(item.handle), true),
+        Some((deposit, None))
+    );
+    p.pending = false;
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Deposit(item.handle), true),
+        None
+    );
+    // Turning the mode off drops the held item; a deposit goes out at once.
+    assert_eq!(
+        request_in_mode(&mut p, Intent::Deposit(item.handle), false),
+        Some((deposit, None))
+    );
+    assert_eq!(p.held, None);
+}

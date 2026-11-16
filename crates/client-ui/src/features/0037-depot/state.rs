@@ -7,6 +7,9 @@ pub struct DepotPanel {
     pub reply: Option<DepotReply>,
     pub items: Items,
     pub feedback: &'static str,
+    /// Manual Sort Mode (capability 510): the carried item picked for a deposit, placed when
+    /// the player chooses its box slot.
+    pub held: Option<ItemHandle>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

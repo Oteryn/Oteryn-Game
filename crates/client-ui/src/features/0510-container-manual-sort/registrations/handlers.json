@@ -13,7 +13,8 @@
   "reducer": "input.rs::admitted",
   "test": "tests.rs::a_slot_is_sent_only_while_the_negotiated_mode_is_on",
   "shared_commands": [
-    9
+    9,
+    36
   ],
   "not_applicable": {
     "state": "The per-session mode is a flag of the play mailbox, off at session start; the reordered entries arrive in the existing open container view.",

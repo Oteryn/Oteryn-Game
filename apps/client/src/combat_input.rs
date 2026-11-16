@@ -7,7 +7,8 @@ pub use oteryn_client_runtime::combat::{CombatCommand, CombatReport, run_combat}
 pub enum PlayCommand {
     HudStamina,
     BrowseFieldMove(oteryn_session::ItemMoveIntent),
-    Depot(oteryn_session::DepotIntent),
+    /// A depot request and, for a deposit in Manual Sort Mode, its box slot.
+    Depot(oteryn_session::DepotIntent, Option<u32>),
     DepotContainer(oteryn_session::ItemHandle),
     AccountAchievements(u32),
     Animus(Vec<u8>),
