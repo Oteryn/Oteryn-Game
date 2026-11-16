@@ -1,6 +1,9 @@
 //! Served Game Channel, distinct from chat rooms.
 //! Accepted difference: GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md:588-596,615-618.
 use crate::{GatedSnapshot, SessionError};
+pub use oteryn_protocol_oteryn::channel_list::{
+    CAPABILITY_CHANNEL_LIST_V1, STATE_DOMAIN_CHANNEL_LIST,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ServedChannel {
@@ -65,9 +68,6 @@ pub(crate) fn validate_join(
     selected: &[u32],
     snapshots: &[GatedSnapshot],
 ) -> Result<(), SessionError> {
-    use oteryn_protocol_oteryn::channel_list::{
-        CAPABILITY_CHANNEL_LIST_V1, STATE_DOMAIN_CHANNEL_LIST,
-    };
     if selected.contains(&CAPABILITY_CHANNEL_LIST_V1) {
         let row = snapshots
             .iter()
