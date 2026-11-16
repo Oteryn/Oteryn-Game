@@ -197,10 +197,47 @@ impl HostOwner {
             || (routed.iter().any(|event| {
                 matches!(
                     event,
-                    NormalizedInputEvent::Key { code, .. } if code.get() == 25
+                    NormalizedInputEvent::Key { code, .. }
+                        if code.get() == 25 || *code == oteryn_input_actions::KeyCode::KEY_F
                 )
             }) && play.link.vip_input(&routed))
             || play.link.wheel_input(&routed)
+        {
+            return;
+        }
+        // Windows the shared frontend presents with the generic form window
+        // (game_ui::feature_forms), in the order the native shell routed them.
+        if play.link.achievement_notices_input(&routed)
+            || play.link.achievements_input(&routed)
+            || (oteryn_client_ui::boss_encounter::cooldowns_key(&routed)
+                && play.link.boss_encounter_input(&routed))
+            || play.link.animus_input(&routed)
+            || play.link.arena_input(&routed)
+            || play.link.exiva_input(&routed)
+            || play.link.party_effects_input(&routed)
+            || play.link.guild_input(&routed)
+            || play.link.boss_difficulty_input(&routed)
+            || play.link.chat_party_room_input(&routed)
+            || play.link.cyclopedia_tracker_input(&routed)
+            || play.link.world_event_input(&routed)
+            || play.link.daily_boost_input(&routed)
+            || play.link.mail_input(&routed)
+            || play.link.house_podium_input(&routed)
+            || play.link.house_rotation_input(&routed)
+            || play.link.house_furniture_input(&routed)
+            || play.link.training_input(&routed)
+            || play.link.guild_bank_input(&routed)
+            || play.link.timed_item_input(&routed)
+            || play.link.premium_overview_input(&routed)
+            || play.link.character_info_input(&routed)
+            || play.link.raid_schedule_input(&routed)
+            || play.link.guild_war_input(&routed)
+            || play.link.guildhall_input(&routed)
+            || play.link.house_move_out_input(&routed)
+            || play.link.house_transfer_input(&routed)
+            || play.link.hireling_input(&routed)
+            || play.link.hotkey_equip_input(&routed)
+            || play.link.potion_durations_input(&routed)
         {
             return;
         }
@@ -214,6 +251,10 @@ impl HostOwner {
             return;
         }
         if play.link.imbue_input(&routed) {
+            return;
+        }
+        if oteryn_client_ui::market::coin_open_key(&routed) {
+            play.link.open_coin_market();
             return;
         }
         if oteryn_client_ui::market::open_key(&routed) {

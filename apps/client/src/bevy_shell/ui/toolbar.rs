@@ -33,11 +33,15 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("NPC Trade", Control::Shortcut("npc")),
     ("Options", Control::Options),
     ("Outfit", Control::Shortcut("outfit")),
+    ("Outfit Memorial", Control::Shortcut("memorial")),
     ("Party", Control::Party),
+    ("Premium", Control::Shortcut("premium")),
     ("Prey", Control::Shortcut("prey")),
+    ("Private Channels", Control::Shortcut("private")),
     ("Quest Log", Control::Quests),
     ("Report Bug", Control::Shortcut("bug")),
     ("Report Player", Control::Shortcut("report")),
+    ("Rule Violation Record", Control::Shortcut("sanctions")),
     ("Skills", Control::Skills),
     ("Social", Control::Social),
     ("Spellbook", Control::Spells),
@@ -48,6 +52,7 @@ pub(super) const TOOLBAR: &[(&str, Control)] = &[
     ("Unjustified Points", Control::UnjustifiedPoints),
     ("VIP", Control::Panel("vip")),
     ("Weapon Proficiency", Control::Shortcut("proficiency")),
+    ("Welcome Back", Control::Shortcut("returner")),
     ("Wheel", Control::Shortcut("wheel")),
 ];
 pub(in crate::bevy_shell) fn open_toolbar(owner: &mut HostOwner, control: Control) -> bool {

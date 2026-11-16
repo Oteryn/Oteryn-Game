@@ -144,6 +144,7 @@ use feature_0013_paced_movement::protocol::step_direction;
 pub use feature_0021_logout::protocol::logout_refusal_text;
 pub use feature_0031_tutorial_notices::protocol::run_session;
 pub use feature_0092_zones_nologout::state::ServerMessageInbox;
+pub use feature_0115_mail::view::form::{FeatureForm, FormView};
 #[cfg(feature = "bevy-shell")]
 pub(crate) use feature_0148_wheel_allocation::input::gem_presentation::Action as GemControl;
 #[cfg(feature = "bevy-shell")]

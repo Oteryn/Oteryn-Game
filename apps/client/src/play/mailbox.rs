@@ -257,6 +257,9 @@ pub(super) struct Mailbox {
     pub(super) hireling: oteryn_client_ui::hireling::HirelingPanel,
     pub(super) hireling_shutdown: bool,
     pub(super) hireling_management: oteryn_client_ui::hireling_management::Panel,
+    /// The shared frontend's reviewed hireling configuration purchase, awaiting its Confirm press.
+    pub(super) hireling_review:
+        Option<crate::play::feature_0250_hireling_management::input::configuration::Review>,
     pub(super) market: oteryn_client_ui::market::MarketPanel,
     pub(super) market_shutdown: bool,
     pub(super) lens: oteryn_client_ui::lens_help::LensHelp,
@@ -264,6 +267,8 @@ pub(super) struct Mailbox {
     pub(super) chat: oteryn_client_ui::chat::ChatPanel,
     pub(super) chat_public: oteryn_client_ui::chat_public_channels::ChatPanel,
     pub(super) chat_private: oteryn_client_ui::chat_private_channel::ChatPanel,
+    /// The shared frontend's private-channel window; the native chat embeds these controls.
+    pub(super) chat_private_open: bool,
     pub(super) chat_public_shutdown: bool,
     pub(super) motion_selected: bool,
     pub(super) mount_pending: bool,

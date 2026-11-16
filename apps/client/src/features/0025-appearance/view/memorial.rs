@@ -32,6 +32,10 @@ impl PlayLink {
     pub fn memorial_action(&self, action: MemorialAction) {
         submit(&mut lock(&self.mailbox), &self.commands, action);
     }
+    /// Opens the Outfit Memorial for the shared frontend, from the outfit window's button.
+    pub fn memorial_open(&self) {
+        lock(&self.mailbox).properties.appearance.memorial.open = true;
+    }
 }
 #[cfg(windows)]
 pub(super) fn watch(link: &PlayLink) {
@@ -83,58 +87,59 @@ pub(super) fn watch(link: &PlayLink) {
 }
 #[cfg(windows)]
 fn open(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Outfit Memorial",
-            labels: &[],
-            buttons: &[
-                "Golden outfits",
-                "Token exchange",
-                "Previous",
-                "Next",
-                "Female / male",
-                "Preview addons",
-                "Ask selected NPC",
-                "Yes (current quote)",
-                "No",
-                "Armour",
-                "Boots",
-                "Helmet",
-            ],
-            snapshot: |mailbox| {
-                let panel = &mailbox.properties.appearance.memorial;
-                let text = format!(
-                    "{}\r\n\r\nCurrent server conversation:\r\n{}",
-                    panel.text(),
-                    mailbox.dialogue.text()
-                );
-                (panel.open, mailbox.dialogue.pending, Vec::new(), text)
-            },
-            set_open: |mailbox, value| mailbox.properties.appearance.memorial.open = value,
-            submit: |mailbox, commands, index, _| {
-                let actions = [
-                    MemorialAction::Golden,
-                    MemorialAction::Tokens,
-                    MemorialAction::Previous,
-                    MemorialAction::Next,
-                    MemorialAction::Gender,
-                    MemorialAction::Addons,
-                    MemorialAction::Ask,
-                    MemorialAction::Yes,
-                    MemorialAction::No,
-                    MemorialAction::Armour,
-                    MemorialAction::Boots,
-                    MemorialAction::Helmet,
-                ];
-                if let Some(action) = actions.get(index) {
-                    submit(mailbox, commands, *action);
-                }
-            },
-        },
-    );
+    crate::play::feature_0115_mail::view::native::open(link, form(link));
     super::preview_window::open(link);
+}
+
+pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::play::feature_0115_mail::view::form::Form;
+    Form {
+        title: "Outfit Memorial",
+        labels: &[],
+        buttons: &[
+            "Golden outfits",
+            "Token exchange",
+            "Previous",
+            "Next",
+            "Female / male",
+            "Preview addons",
+            "Ask selected NPC",
+            "Yes (current quote)",
+            "No",
+            "Armour",
+            "Boots",
+            "Helmet",
+        ],
+        snapshot: |mailbox| {
+            let panel = &mailbox.properties.appearance.memorial;
+            let text = format!(
+                "{}\r\n\r\nCurrent server conversation:\r\n{}",
+                panel.text(),
+                mailbox.dialogue.text()
+            );
+            (panel.open, mailbox.dialogue.pending, Vec::new(), text)
+        },
+        set_open: |mailbox, value| mailbox.properties.appearance.memorial.open = value,
+        submit: |mailbox, commands, index, _| {
+            let actions = [
+                MemorialAction::Golden,
+                MemorialAction::Tokens,
+                MemorialAction::Previous,
+                MemorialAction::Next,
+                MemorialAction::Gender,
+                MemorialAction::Addons,
+                MemorialAction::Ask,
+                MemorialAction::Yes,
+                MemorialAction::No,
+                MemorialAction::Armour,
+                MemorialAction::Boots,
+                MemorialAction::Helmet,
+            ];
+            if let Some(action) = actions.get(index) {
+                submit(mailbox, commands, *action);
+            }
+        },
+    }
 }
 #[cfg(test)]
 #[path = "../tests/memorial.rs"]

@@ -1,5 +1,5 @@
 #[path = "account.rs"]
-mod account;
+pub(in crate::play) mod account;
 use crate::combat_input::PlayCommand;
 use crate::play::{PlayLink, mailbox::lock};
 use oteryn_client_ui::vip::{Intent, request};

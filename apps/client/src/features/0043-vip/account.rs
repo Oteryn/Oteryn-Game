@@ -90,41 +90,42 @@ fn text(mailbox: &Mailbox) -> String {
 }
 #[cfg(windows)]
 fn open(link: &PlayLink) {
-    use crate::play::feature_0115_mail::view::native::{Form, open};
-    open(
-        link,
-        Form {
-            title: "Account Friends — Ctrl+Alt+F",
-            labels: &["Character name to invite", "Session friend handle"],
-            buttons: &[
-                "Refresh",
-                "Use this character as main",
-                "Invite account",
-                "Accept account friendship",
-                "Withdraw / revoke",
-                "Reject account invitation",
-                "Next page",
-            ],
-            snapshot: |mailbox| {
-                (
-                    mailbox.vip.account_open,
-                    mailbox.vip.pending,
-                    mailbox.vip.account_fields.to_vec(),
-                    text(mailbox),
-                )
-            },
-            set_open: |mailbox, value| mailbox.vip.account_open = value,
-            submit: |mailbox, commands, action, values| {
-                if mailbox.vip.pending {
-                    return;
-                }
-                for (slot, value) in mailbox.vip.account_fields.iter_mut().zip(values) {
-                    *slot = value;
-                }
-                submit(mailbox, commands, action);
-            },
+    crate::play::feature_0115_mail::view::native::open(link, form(link));
+}
+
+pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::play::feature_0115_mail::view::form::Form;
+    Form {
+        title: "Account Friends — Ctrl+Alt+F",
+        labels: &["Character name to invite", "Session friend handle"],
+        buttons: &[
+            "Refresh",
+            "Use this character as main",
+            "Invite account",
+            "Accept account friendship",
+            "Withdraw / revoke",
+            "Reject account invitation",
+            "Next page",
+        ],
+        snapshot: |mailbox| {
+            (
+                mailbox.vip.account_open,
+                mailbox.vip.pending,
+                mailbox.vip.account_fields.to_vec(),
+                text(mailbox),
+            )
         },
-    );
+        set_open: |mailbox, value| mailbox.vip.account_open = value,
+        submit: |mailbox, commands, action, values| {
+            if mailbox.vip.pending {
+                return;
+            }
+            for (slot, value) in mailbox.vip.account_fields.iter_mut().zip(values) {
+                *slot = value;
+            }
+            submit(mailbox, commands, action);
+        },
+    }
 }
 #[cfg(test)]
 mod tests {

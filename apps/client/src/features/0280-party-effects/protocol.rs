@@ -58,3 +58,36 @@ impl Outbox {
             .finish(accepted, &result.payload);
     }
 }
+
+/// The status window of the shared frontend: the server's text and one Refresh.
+pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    crate::play::feature_0115_mail::view::form::Form {
+        title: tr!("Party effects — Ctrl+Alt+Shift+P"),
+        labels: &[],
+        buttons: &["Refresh"],
+        snapshot: |mailbox| {
+            let panel = &mailbox.party_effects;
+            (
+                panel.open && !mailbox.quest_shutdown,
+                panel.pending,
+                Vec::new(),
+                oteryn_client_ui::party_effects::panel_text(panel),
+            )
+        },
+        set_open: |mailbox, value| mailbox.party_effects.open = value,
+        submit: |mailbox, commands, _, _| {
+            if let Some(payload) = oteryn_client_ui::party_effects::request(&mut mailbox.party_effects)
+                && commands
+                    .send(PlayCommand::Feature(FeatureCommand {
+                        capability: 280,
+                        kind: 496,
+                        payload,
+                    }))
+                    .is_err()
+            {
+                mailbox.party_effects.pending = false;
+                mailbox.party_effects.error = Some(tr!("Session ended"));
+            }
+        },
+    }
+}

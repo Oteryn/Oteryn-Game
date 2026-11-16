@@ -50,3 +50,26 @@ impl PlayLink {
         if events.iter().any(|event|matches!(event,NormalizedInputEvent::Key {code,state:ButtonState::Pressed,modifiers,repeat:false} if code.get()==19&&*modifiers==chord)) {self.premium_overview_open();true}else{false}
     }
 }
+
+pub(in crate::play) fn premium_form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::play::feature_0115_mail::view::form::Form;
+    Form {
+        title: "Oteryn Premium overview",
+        labels: &[],
+        buttons: &["Refresh Premium status"],
+        snapshot: |mailbox| {
+            let p = &mailbox.premium_game;
+            (p.open, p.pending, Vec::new(), p.view.status_text())
+        },
+        set_open: |mailbox, open| mailbox.premium_game.open = open,
+        submit: |mailbox, commands, _, _| {
+            if let Some(command) = mailbox.premium_game.request()
+                && commands
+                    .send(crate::combat_input::PlayCommand::Feature(command))
+                    .is_err()
+            {
+                mailbox.premium_game.fail("The session has ended.");
+            }
+        },
+    }
+}

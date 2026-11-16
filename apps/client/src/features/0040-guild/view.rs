@@ -9,3 +9,87 @@ impl PlayLink {
 mod native;
 #[cfg(windows)]
 pub(in crate::play) use native::open_window;
+
+/// Guild controls for the shared frontend: the native list selection is a row number here.
+pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_ui::guild::{Intent, panel_text, request};
+    crate::play::feature_0115_mail::view::form::Form {
+        title: tr!("Guild"),
+        labels: &[
+            "Guild or character name",
+            "Rank level",
+            "Row number (members, then invitations)",
+        ],
+        buttons: &[
+            "Refresh",
+            "Invitations",
+            "Roster",
+            "More",
+            "Join selected",
+            "Leave",
+            "Kick selected",
+            "Revoke selected",
+            "Found",
+            "Invite",
+            "Set rank",
+        ],
+        snapshot: |mailbox| {
+            let panel = &mailbox.guild;
+            let mut text = String::new();
+            let rows = panel
+                .roster
+                .iter()
+                .map(|member| &member.name)
+                .chain(panel.invitations.iter().map(|invitation| &invitation.name));
+            for (index, name) in rows.enumerate() {
+                text.push_str(&format!("{}. {name}\n", index + 1));
+            }
+            text.push_str(&panel_text(panel));
+            (panel.open, panel.pending, vec![String::new(); 3], text)
+        },
+        set_open: |mailbox, value| mailbox.guild.open = value,
+        submit: |mailbox, commands, action, values| {
+            use crate::play::feature_0115_mail::view::form::field;
+            let row = field(&values, 2)
+                .parse::<usize>()
+                .ok()
+                .and_then(|row| row.checked_sub(1));
+            let guild = &mailbox.guild;
+            let intent = match action {
+                0 => Some(Intent::RefreshOwn),
+                1 => Some(Intent::RefreshInvitations),
+                2 => Some(Intent::RefreshRoster),
+                3 => Some(Intent::MoreRoster),
+                4 => row
+                    .and_then(|row| row.checked_sub(guild.roster.len()))
+                    .and_then(|row| guild.invitations.get(row))
+                    .map(|invitation| Intent::Join(invitation.guild)),
+                5 => Some(Intent::Leave),
+                6 => row
+                    .and_then(|row| guild.roster.get(row))
+                    .map(|member| Intent::Kick(member.character)),
+                7 => row
+                    .and_then(|row| guild.roster.get(row))
+                    .map(|member| Intent::RevokeInvite(member.character)),
+                8 => Some(Intent::Found(field(&values, 0).to_owned())),
+                9 => Some(Intent::Invite(field(&values, 0).to_owned())),
+                10 => row
+                    .and_then(|row| guild.roster.get(row))
+                    .and_then(|member| field(&values, 1).parse().ok().map(|level| (member, level)))
+                    .map(|(member, level)| Intent::SetRank {
+                        character: member.character,
+                        level,
+                    }),
+                _ => None,
+            };
+            if let Some(intent) = intent
+                && let Some(command) = request(&mut mailbox.guild, intent)
+                && commands.send(PlayCommand::Guild(command)).is_err()
+            {
+                mailbox.guild.pending = false;
+                mailbox.guild.feedback = Some(tr!("The session has ended").into());
+            }
+        },
+    }
+}

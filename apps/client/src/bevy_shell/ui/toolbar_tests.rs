@@ -208,6 +208,17 @@ fn toolbar_shortcuts_activate_existing_window_owners() -> Result<(), Box<dyn std
             "tasks" => link.task_board_panel().open,
             "bug" => link.player_report_panel().bug.open,
             "report" => link.player_report_panel().open,
+            "memorial" => link.appearance_panel().memorial.open,
+            "premium" => {
+                link.feature_form_view(form_by_title(link, "Oteryn Premium overview")?)
+                    .open
+            }
+            "private" => {
+                link.feature_form_view(form_by_title(link, "Private channels")?)
+                    .open
+            }
+            "returner" => link.daily_reward_panel().returner_open,
+            "sanctions" => link.sanctions_panel().open,
             // Without a selected NPC the keyboard owner must not invent one.
             "npc" => !link.npc_dialogue_is_visible(),
             _ => false,
@@ -247,4 +258,15 @@ fn social_toolbar_opens_join_team() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn store_inbox_has_remote_toolbar_entry() {
     assert!(TOOLBAR.iter().any(|entry| entry.0 == "Store Inbox"));
+}
+
+fn form_by_title(
+    link: &crate::play::PlayLink,
+    title: &str,
+) -> Result<crate::play::FeatureForm, Box<dyn std::error::Error>> {
+    crate::play::FeatureForm::all()
+        .iter()
+        .copied()
+        .find(|form| form.title(link) == title)
+        .ok_or_else(|| format!("missing form {title}").into())
 }

@@ -13,6 +13,7 @@ mod cyclopedia_map;
 mod cyclopedia_tests;
 mod depot;
 mod feature_dialogs;
+mod feature_forms;
 mod forge;
 pub(super) mod highscores;
 mod hotkeys;

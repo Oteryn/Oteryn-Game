@@ -173,4 +173,4 @@ pub(in crate::play) fn stashback(
 }
 
 #[path="input/coins.rs"]
-mod coins;
+pub(in crate::play) mod coins;
