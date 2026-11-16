@@ -59,6 +59,7 @@ where
         return Err(ServeEnd::Disconnected);
     }
     session.admitted.continuity.vitals_revision = to;
+    inventory_capacity::reread_after_vitals(session, &value);
     Ok(())
 }
 

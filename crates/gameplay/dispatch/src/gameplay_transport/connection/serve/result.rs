@@ -21,6 +21,7 @@ pub(super) fn encode(
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
     session.integrity.observe(dispatch);
+    inventory_capacity::reread_after_command(session, dispatch);
     let (status, result_payload) = match dispatch {
         Dispatch::ServerModal(
             crate::gameplay_transport::server_modal::ServerModalOutcome::Reply(payload)

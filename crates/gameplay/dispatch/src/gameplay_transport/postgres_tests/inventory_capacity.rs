@@ -147,6 +147,72 @@ fn inventory_capacity_real_connection_postgres() -> TestResult {
         stale.continuity.connection_generation += 1;
         assert_eq!(owner.observe_inventory_capacity(stale).await, None);
         real_connection(&owner, admitted, expected).await?;
+        // The index-bounded observation still rejects a scope whose row a newer receipt
+        // supersedes (a successor's row lost, or a rolled-back row).
+        let fact = h.node.fact();
+        let node_id = *fact.node_id().as_bytes();
+        let scope_key: Vec<u8> = sqlx::query_scalar(
+            "SELECT scope_key FROM game_runtime_scope_assignments \
+             WHERE holder_node_id = encode($1,'hex')::uuid AND state = 1 ORDER BY scope_key LIMIT 1",
+        )
+        .bind(node_id.as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let observation_valid = "SELECT game_runtime_scope_assignment_observation_valid($1)";
+        let mut tx = h.pool.begin().await?;
+        assert!(
+            sqlx::query_scalar::<_, bool>(observation_valid)
+                .bind(&scope_key)
+                .fetch_one(&mut *tx)
+                .await?,
+            "the current scope observes as valid"
+        );
+        sqlx::query(
+            "UPDATE game_runtime_scope_assignment_writer \
+             SET source_revision_high_water = source_revision_high_water + 1 WHERE writer_id = 1",
+        )
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_runtime_scope_assignment_receipts (operation_key, command, scope_key, \
+             ownership_generation, state, holder_node_id, holder_registration_revision, \
+             source_revision, decision_identity, decided_at) \
+             SELECT sha256(a.operation_key), '\\x01'::bytea, a.scope_key, a.ownership_generation + 1, \
+             a.state, a.holder_node_id, a.holder_registration_revision, \
+             w.source_revision_high_water, 'invcap-superseded-assignment', a.decided_at \
+             FROM game_runtime_scope_assignments a, game_runtime_scope_assignment_writer w \
+             WHERE a.scope_key = $1 AND w.writer_id = 1",
+        )
+        .bind(&scope_key)
+        .execute(&mut *tx)
+        .await?;
+        assert!(
+            !sqlx::query_scalar::<_, bool>(observation_valid)
+                .bind(&scope_key)
+                .fetch_one(&mut *tx)
+                .await?,
+            "a superseded assignment row must not observe as valid"
+        );
+        tx.rollback().await?;
+        // An ended (revoked) registration of the proven node reads nothing.
+        assert!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT game_node_end_registration(encode($1,'hex')::uuid, \
+                 $2::text::numeric(20,0), 2::smallint, NULL)",
+            )
+            .bind(node_id.as_slice())
+            .bind(fact.registration_revision().to_string())
+            .fetch_one(&h.pool)
+            .await?
+        );
+        assert_eq!(
+            h.root
+                .read_inventory_capacity(&authority, &h.node, fence, &weights)
+                .await
+                .map_err(debug)?,
+            None,
+            "an ended registration must not observe as current"
+        );
         drop(owner);
         drop(authority);
         drop(seal);

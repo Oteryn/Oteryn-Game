@@ -17,6 +17,9 @@ mod idle_kick;
 #[path = "tests/integrity.rs"]
 mod integrity;
 
+#[path = "tests/inventory_capacity_reread.rs"]
+mod inventory_capacity_reread;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }

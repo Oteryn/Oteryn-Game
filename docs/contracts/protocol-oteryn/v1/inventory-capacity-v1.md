@@ -20,9 +20,15 @@ sends a new value only when either changed since the last one it sent on this
 connection; a new connection sends the current value again. An unavailable
 read (busy holder, unknown weight, stale fence) sends nothing. Observations
 use a single read-only repeatable-read snapshot, including the recovery,
-session, scope and node checks, without mutation locks. Each connection
-observes at most once per five seconds, including unavailable reads; visibility
-ticks do not issue additional capacity reads during that interval.
+session, scope and node checks, without mutation locks; the scope and node
+history checks are index-bounded lookups of the observed scope and node, so an
+observation does not grow with the retained history. Each connection observes
+changes made elsewhere at most once per five seconds, including unavailable
+reads; visibility ticks do not issue additional capacity reads during that
+interval. A command of this connection that commits an item change (an item
+move, pickup or drop, a committed use, an NPC trade) and a change of the own
+maximum health or mana (a level gained or lost) end that interval, so the next
+visibility tick rereads the capacity, as Tibia Global updates `Cap` at once.
 
 The client shows `Cap: <free / 100>` (whole ounces). Without the capability
 the field is refused and nothing is sent; unselected payloads are unchanged.

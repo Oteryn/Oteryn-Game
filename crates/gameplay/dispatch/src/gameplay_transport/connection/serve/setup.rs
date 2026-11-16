@@ -308,6 +308,9 @@ async fn live<A: FreshAdmissionAuthority>(
         ..
     } = initial;
     let has_vitals = vitals.is_some();
+    let vitals_max = vitals
+        .as_ref()
+        .map(|(_, value)| (value.max_health, value.max_mana));
     let snapshot::ItemSnapshot {
         party_view,
         item_view,
@@ -502,6 +505,7 @@ async fn live<A: FreshAdmissionAuthority>(
         guild_emblems: Vec::new(),
         inventory_capacity: None,
         inventory_capacity_refresh_at: None,
+        inventory_capacity_vitals_max: vitals_max,
         team_finder_view: Default::default(),
         market_revision: 1,
         cyclopedia_tracker_revision: 1,
