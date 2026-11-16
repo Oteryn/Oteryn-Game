@@ -219,6 +219,7 @@ impl HostOwner {
             || play.link.party_effects_input(&routed)
             || play.link.guild_input(&routed)
             || play.link.boss_difficulty_input(&routed)
+            || play.link.boss_rewards_input(&routed)
             || play.link.chat_party_room_input(&routed)
             || play.link.cyclopedia_tracker_input(&routed)
             || play.link.world_event_input(&routed)

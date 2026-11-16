@@ -1,4 +1,4 @@
-//! Server-confirmed Bosstiary catalogue and progress, independent of slots and trackers.
+//! Server-confirmed Bosstiary catalogue, progress and hazard level, independent of slots and trackers.
 use super::super::{
     owner::{HostOwner, Phase},
     ui::Skins,
@@ -74,6 +74,9 @@ fn project(
     if let Some(page) = &panel.catalogue {
         text.push_str(&format!("Boss points: {}\n", page.points));
     }
+    if let Some((unlocked, selected)) = panel.hazard {
+        text.push_str(&format!("Hazard level: {selected} (unlocked {unlocked})\n"));
+    }
     for entry in catalogue_cards(&panel) {
         text.push_str(&format!(
             "{} — {} — {} kills\n",
@@ -127,6 +130,9 @@ fn project(
     for (label, kind) in [
         ("Refresh", Kind::Request(Intent::CatalogueRefresh)),
         ("Next page", Kind::Request(Intent::CatalogueNext)),
+        ("Hazard", Kind::Request(Intent::HazardQuery)),
+        ("Lower hazard", Kind::Request(Intent::HazardLower)),
+        ("Raise hazard", Kind::Request(Intent::HazardRaise)),
         ("Previous boss", Kind::Boss(true)),
         ("Next boss", Kind::Boss(false)),
         ("Enter boss room", Kind::Request(Intent::Enter)),
@@ -303,6 +309,82 @@ mod tests {
         assert!(texts.iter().any(|text| text.contains("Confirmed boss")
             && text.contains("Prowess: 5/5")
             && text.contains("Mastery: 5/20")));
+        Ok(())
+    }
+    #[test]
+    fn bosstiary_hazard_buttons_query_and_raise_the_server_hazard_level()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::combat_input::PlayCommand;
+        use oteryn_client_runtime::raw_feature::GatedCommandResult;
+        let mut owner = HostOwner::new(None)?;
+        let (link, mut commands, outbox) = crate::play::play_channel();
+        link.use_shared_frontend();
+        outbox.bevy_bosstiary_initialize();
+        let view = crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+        owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+        owner.phase = Phase::Playing;
+        crate::bevy_shell::ui::toolbar::open_toolbar(
+            &mut owner,
+            crate::bevy_shell::ui::Control::Panel("bosstiary"),
+        );
+        assert!(matches!(commands.try_recv()?, PlayCommand::Feature(c) if c.kind == 133));
+        let page = oteryn_client_runtime::boss_encounter::catalogue::Page {
+            next: None,
+            points: 0,
+            entries: vec![],
+        };
+        outbox.bevy_bosstiary_result(&GatedCommandResult {
+            command_id: 1,
+            server_sequence: 1,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: page.encode().ok_or("catalogue")?,
+        });
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            bevy::asset::AssetPlugin::default(),
+            oteryn_client_ui_bevy::GlobalUiPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+        install(&mut app);
+        app.update();
+        let press = |app: &mut App, intent: Intent| -> Result<(), Box<dyn std::error::Error>> {
+            let entity = app
+                .world_mut()
+                .query::<(Entity, &Action)>()
+                .iter(app.world())
+                .find_map(|(entity, action)| (action.kind == Kind::Request(intent)).then_some(entity))
+                .ok_or("hazard button missing")?;
+            app.world_mut().trigger(Activate { entity });
+            Ok(())
+        };
+        press(&mut app, Intent::HazardQuery)?;
+        let PlayCommand::Feature(query) = commands.try_recv()? else {
+            return Err("hazard query missing".into());
+        };
+        assert_eq!((query.capability, query.kind), (117, 169));
+        assert!(query.payload.is_empty());
+        outbox.bevy_bosstiary_result(&GatedCommandResult {
+            command_id: 2,
+            server_sequence: 2,
+            status: oteryn_session::CommandStatus::Accepted,
+            payload: vec![5, 3],
+        });
+        app.update();
+        let shown = app
+            .world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0.contains("Hazard level: 3 (unlocked 5)"));
+        assert!(shown, "the server hazard level is not shown");
+        press(&mut app, Intent::HazardRaise)?;
+        let PlayCommand::Feature(raise) = commands.try_recv()? else {
+            return Err("hazard raise missing".into());
+        };
+        assert_eq!((raise.kind, raise.payload), (169, vec![4]));
         Ok(())
     }
     fn click(app: &mut App, kind: Kind) -> Result<(), Box<dyn std::error::Error>> {

@@ -172,6 +172,7 @@ impl crate::play::Outbox {
     /// Admits the capabilities the generic form window tests drive; no server reply is made up.
     pub(crate) fn bevy_feature_forms_selected(&self) {
         let mut mailbox = lock(&self.0);
+        mailbox.boss_rewards.selected = true;
         mailbox.chat_party_room.selected = true;
         mailbox.party_effects.selected = true;
     }

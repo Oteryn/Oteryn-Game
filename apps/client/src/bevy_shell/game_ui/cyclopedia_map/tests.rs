@@ -216,3 +216,139 @@ fn cyclopedia_map_bevy_browses_subareas_and_submits_poi_exploration()
     );
     Ok(())
 }
+
+#[test]
+fn cyclopedia_map_bevy_resets_pois_donates_and_pages_the_region_atlas()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::combat_input::PlayCommand;
+    use oteryn_client_runtime::{
+        cyclopedia_map::{self as map, region_atlas},
+        raw_feature::{CommandStatus, FeatureCommand, GatedCommandResult},
+    };
+    let (link, mut rx, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_cyclopedia_map_selected();
+    link.cyclopedia_atlas_open();
+    let mut app = fixture(link)?;
+    let receive = |rx: &mut tokio::sync::mpsc::UnboundedReceiver<PlayCommand>|
+     -> Result<FeatureCommand, Box<dyn std::error::Error>> {
+        let PlayCommand::Feature(command) = rx.try_recv()? else {
+            return Err("feature command".into());
+        };
+        assert_eq!(command.capability, 57);
+        Ok(command)
+    };
+    let reply = |command: &FeatureCommand, payload: Vec<u8>| {
+        outbox.bevy_cyclopedia_map_reply(
+            command,
+            &GatedCommandResult {
+                command_id: 1,
+                server_sequence: 1,
+                status: CommandStatus::Accepted,
+                payload,
+            },
+        );
+    };
+    let click = |app: &mut App, kind: Kind| -> Result<(), Box<dyn std::error::Error>> {
+        let entity = app
+            .world_mut()
+            .query::<(Entity, &Action)>()
+            .iter(app.world())
+            .find_map(|(e, a)| (a.kind == kind).then_some(e))
+            .ok_or("missing control")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    let regions = receive(&mut rx)?;
+    reply(
+        &regions,
+        map::geometry::encode_reply(&map::geometry::Reply::Areas(map::geometry::AreaPage {
+            parent: 0,
+            after: 0,
+            next: None,
+            areas: vec![map::geometry::Area {
+                id: 1,
+                parent: 0,
+                name: "Harbour".into(),
+            }],
+        }))
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    let result = map::encode_result(&map::MapResult {
+        code: 0,
+        revision: 2,
+        discovered: false,
+        found: 0,
+        area_percent: 20,
+        pool: 0,
+        epoch: 2,
+        improved: false,
+        visible: vec![],
+    })
+    .map_err(|e| format!("{e:?}"))?;
+    click(&mut app, Kind::Explore(Intent::Shuffle))?;
+    let shuffle = receive(&mut rx)?;
+    assert_eq!(
+        (shuffle.kind, &shuffle.payload),
+        (73, &map::request(2, 0).map_err(|e| format!("{e:?}"))?.1)
+    );
+    let speed = receive(&mut rx)?;
+    assert_eq!(speed.kind, 6178);
+    reply(&speed, 0u16.to_le_bytes().to_vec());
+    reply(&shuffle, result.clone());
+    app.update();
+    assert!(has_text(&mut app, "Found 0/7"));
+    for mut gold in app
+        .world_mut()
+        .query_filtered::<&mut EditableText, With<Donation>>()
+        .iter_mut(app.world_mut())
+    {
+        *gold = EditableText::new("500");
+    }
+    click(&mut app, Kind::Explore(Intent::Donate))?;
+    let donate = receive(&mut rx)?;
+    assert_eq!(
+        (donate.kind, &donate.payload),
+        (73, &map::request(4, 500).map_err(|e| format!("{e:?}"))?.1)
+    );
+    reply(&donate, result);
+    app.update();
+    click(&mut app, Kind::Explore(Intent::RegionAtlas))?;
+    let atlas = receive(&mut rx)?;
+    assert_eq!(
+        (atlas.kind, &atlas.payload),
+        (73, &map::request(5, 0).map_err(|e| format!("{e:?}"))?.1)
+    );
+    reply(
+        &atlas,
+        region_atlas::encode(&region_atlas::Page {
+            next: None,
+            areas: vec![
+                region_atlas::Area {
+                    id: 1,
+                    parent: 0,
+                    name: "Harbour".into(),
+                },
+                region_atlas::Area {
+                    id: 2,
+                    parent: 1,
+                    name: "Quays".into(),
+                },
+            ],
+            runs: vec![region_atlas::Run {
+                area: 2,
+                x: 100,
+                end: 103,
+                y: 100,
+                floor: 7,
+            }],
+        })
+        .map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    assert!(has_text(&mut app, "Harbour > Quays [#2]"));
+    assert!(has_text(&mut app, "(complete)"));
+    Ok(())
+}
