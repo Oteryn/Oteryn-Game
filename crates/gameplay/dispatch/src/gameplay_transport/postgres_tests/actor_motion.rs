@@ -13,18 +13,27 @@ use oteryn_protocol_oteryn::{actor_motion, appearance, world_spatial_entities as
 
 #[test]
 fn actor_motion_riding_dispatch_postgres() -> TestResult {
+    run_scenario(true)
+}
+
+#[test]
+fn actor_motion_riding_committed_appearance_without_position_is_settled_postgres() -> TestResult {
+    run_scenario(false)
+}
+
+fn run_scenario(position_before_change: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(position_before_change).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "actor motion test thread")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(position_before_change: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_appearance(admin, "actor_motion_riding").await?;
         prepare_current_session(&harness).await?;
@@ -74,9 +83,11 @@ fn scenario() -> TestResult {
         );
         {
             let mut runtime = dependencies.runtime.lock().await;
-            runtime
-                .initialize_first_entry_position(dependencies.actor)
-                .map_err(debug)?;
+            if position_before_change {
+                runtime
+                    .initialize_first_entry_position(dependencies.actor)
+                    .map_err(debug)?;
+            }
             runtime
                 .bind_attacker_lease(
                     dependencies.actor,
@@ -98,7 +109,7 @@ fn scenario() -> TestResult {
             .appearance_observation(
                 dependencies.actor,
                 dependencies.admitted.game_session_id,
-                vec![entity],
+                if position_before_change { vec![entity] } else { Vec::new() },
             )
             .await
             .ok_or("appearance")?;
@@ -143,6 +154,9 @@ fn scenario() -> TestResult {
             },
             content_revision: "content-1".into(),
         };
+        if !position_before_change {
+            assert!(owner.runtime.lock().await.actor_motion(dependencies.actor).is_none());
+        }
         assert_eq!(
             crate::gameplay_transport::connection::appearance_change::dispatch(
                 &owner,
@@ -153,6 +167,13 @@ fn scenario() -> TestResult {
             .await,
             Some(appearance::ChangeResult::Committed(2))
         );
+        if !position_before_change {
+            let mut runtime = owner.runtime.lock().await;
+            assert!(runtime.actor_motion(dependencies.actor).is_none());
+            runtime
+                .initialize_first_entry_position(dependencies.actor)
+                .map_err(debug)?;
+        }
         assert_eq!(
             owner
                 .current_mount(dependencies.actor, command.game_session_id)

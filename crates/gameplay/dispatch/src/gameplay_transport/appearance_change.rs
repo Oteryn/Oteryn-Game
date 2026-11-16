@@ -155,7 +155,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn refresh_riding_once(&self, actor: ExactActorRef, command: UseCommand) -> Option<()> {
-        let riding = self.runtime.lock().await.actor_motion(actor)?.2 != 0;
+        let riding = self.runtime.lock().await.actor_motion(actor).is_some_and(|motion| motion.2 != 0);
         if !riding {
             return Some(());
         }
