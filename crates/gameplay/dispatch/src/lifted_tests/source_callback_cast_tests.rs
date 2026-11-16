@@ -1250,3 +1250,214 @@ fn srx3_source_large_callback_areas_keep_literal_lua_matrix_edges() {
         assert!(!cells.contains(&excluded), "{slug}");
     }
 }
+#[test]
+fn gaz_completion_at_hp0_does_not_abort_death_and_doom() -> Result<(), String> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| -> Result<(), String> {
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            let error = |e: &dyn std::fmt::Debug| format!("{e:?}");
+            let id = |tag: u8| {
+                let mut value = [tag; 16];
+                value[6] = 0x70;
+                value[8] = 0x80;
+                value
+            };
+            let world = crate::content::native_gameplay_test_world_id().map_err(|e| error(&e))?;
+            let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../../content/spells.manifest.json");
+            let native = crate::content::native_gameplay::retained_callback_native_fixture_at(
+                world, &manifest,
+            );
+            let key = "oteryn:creature.gaz_haragoth";
+            let record = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|record| record.profile.target.key == key)
+                .ok_or("actual native Gaz'haragoth profile")?;
+            let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) = &record
+                .behavior
+                .as_ref()
+                .ok_or("actual native Gaz'haragoth behavior")?
+                .data
+            else {
+                return Err("actual native Gaz'haragoth behavior kind".into());
+            };
+            let index = behavior
+                .attacks
+                .iter()
+                .position(|attack| attack.ability.key == "oteryn:ability.spell.gaz_haragoth_death")
+                .ok_or("actual native DEATH AND DOOM schedule")?;
+            let source = SourceCallbackCast::qualify_native(
+                &native,
+                &record.profile.target,
+                index,
+                ScheduleList::Attack,
+            )
+            .map_err(|e| error(&e))?
+            .ok_or("actual native DEATH AND DOOM callback")?;
+            let pin = crate::foundation::ChannelContentPin::from_activation(
+                world,
+                1,
+                native.source_digest(),
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            );
+            let mut runtime = ChannelRuntimeV1::from_committed_scope_assignment(
+                crate::foundation::RuntimeScopeRefV1::channel(
+                    world,
+                    crate::foundation::ChannelId::decode(&id(0x94)).map_err(|e| error(&e))?,
+                ),
+                crate::foundation::NodeId::decode(&id(0x95)).map_err(|e| error(&e))?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                pin,
+            )
+            .map_err(|e| error(&e))?;
+            // Native logical death keeps HP0 Gaz registered until its queued onDeath.
+            assert!(!runtime.uses_classic_creature_deaths());
+            native
+                .install_companion_policies(&mut runtime)
+                .map_err(|e| error(&e))?;
+            let maximum = runtime
+                .companion_policy(key)
+                .map_err(|e| error(&e))?
+                .maximum_health;
+            let actor = runtime
+                .admit_source_pinned_lab_creature(
+                    MovementLocalPosition {
+                        x: 100,
+                        y: 100,
+                        floor: 7,
+                    },
+                    key,
+                    maximum,
+                )
+                .map_err(|e| error(&e))?;
+            runtime
+                .install_creature_policy(actor, key)
+                .map_err(|e| error(&e))?;
+            let session = GameSessionId::decode(&id(0x96)).map_err(|e| error(&e))?;
+            let reservation = runtime
+                .reserve_fresh_session(session)
+                .map_err(|e| error(&e))?;
+            let player = runtime
+                .commit_fresh_session(reservation)
+                .map_err(|e| error(&e))?;
+            runtime
+                .initialize_pinned_test_position(
+                    player,
+                    MovementLocalPosition {
+                        x: 101,
+                        y: 100,
+                        floor: 7,
+                    },
+                )
+                .map_err(|e| error(&e))?;
+            let mut states = ChannelSpellStates::default();
+            states
+                .initialize(
+                    &runtime,
+                    player,
+                    session,
+                    crate::spell::cast::CharacterCastFacts {
+                        max_health: 100000,
+                        ..FACTS
+                    },
+                    (0, 0),
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+                )
+                .map_err(|e| error(&e))?;
+            let stamp = runtime.issue_owner_work().map_err(|e| error(&e))?;
+            let mut owner = CallbackCastOwner::new_current(&runtime).map_err(|e| error(&e))?;
+            let mut cast = proposal(actor, &source, 0);
+            cast.target = player;
+            cast.intent = crate::ability::AiAbilityAdapter::normalize(
+                &format!("actor:{}", hex(&actor.placement_identity())),
+                &[&format!("actor:{}", hex(&player.placement_identity()))],
+            )
+            .map_err(|e| error(&e))?;
+            assert!(
+                owner
+                    .schedule_current(
+                        &runtime,
+                        stamp,
+                        &source,
+                        &cast,
+                        SemanticTimeMicros::from_micros(1_000_000),
+                    )
+                    .map_err(|e| error(&e))?
+            );
+            assert_eq!(
+                owner.take_source_speech().len(),
+                1,
+                "the live caster announces the channel"
+            );
+            runtime
+                .borrow_exact_actor_commit_at_us(2_000_000)
+                .commit_damage(
+                    actor,
+                    oteryn_gameplay_entities::OwnerDamageCommand {
+                        target: key.as_bytes(),
+                        occurrence: b"gaz-death-and-doom:lethal",
+                        binding: b"gaz-death-and-doom:lethal\0source",
+                        damage: maximum,
+                    },
+                )
+                .map_err(|e| error(&e))?;
+            let receipt = runtime
+                .borrow_combat_death()
+                .committed_lethal_receipt(actor)
+                .map_err(|e| error(&e))?;
+            runtime
+                .borrow_combat_death()
+                .project_committed_lethal(receipt)
+                .map_err(|e| error(&e))?;
+            assert!(
+                runtime
+                    .source_creature_is_registered(actor)
+                    .map_err(|e| error(&e))?,
+                "HP0 Gaz stays registered until its queued onDeath"
+            );
+            assert!(!runtime.matches_live_creature_identity(actor, key.as_bytes()));
+            let mut reader = Reader {
+                player,
+                session,
+                facts: true,
+                pz: false,
+            };
+            let results = owner
+                .drain_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &DamageSpellOwner::default(),
+                    &mut reader,
+                    &VirtualOwnerClock::new(SemanticTimeMicros::from_micros(7_000_000)),
+                )
+                .map_err(|e| format!("completion speech aborted the damage stage: {e:?}"))?;
+            assert_eq!(
+                results
+                    .iter()
+                    .filter(|(issuer, _, stage, _)| *issuer == actor && *stage == 0)
+                    .count(),
+                1,
+                "the DEATH AND DOOM stage reached its damage owner"
+            );
+            assert!(
+                owner.take_source_speech().is_empty(),
+                "an HP0 caster cannot speak its completion line"
+            );
+            assert_eq!(owner.source_stage_done_for_test(actor), Some(vec![true]));
+            Ok(())
+        })
+        .map_err(|e| format!("{e:?}"))?
+        .join()
+        .map_err(|_| "Gaz DEATH AND DOOM test thread panicked".to_owned())?
+}

@@ -13,7 +13,9 @@ pub struct DreamerRingTarget {
 
 impl DurabilityRoot {
     /// None delegates unrelated inputs to the ordinary move. The bool authorizes
-    /// source presentation only for a fresh committed offering, never replay.
+    /// source presentation only for a fresh committed offering, never replay; a lost
+    /// acknowledgement is published by the dispatch replay through
+    /// [`DurabilityRoot::read_dreamer_ring_offering`].
     #[allow(clippy::too_many_arguments, reason = "the existing drop owner retains its full fence and source map proof")]
     pub async fn commit_item_loop_dreamer_ring<C: ItemLoopContent>(
         &self,
@@ -90,5 +92,60 @@ impl DurabilityRoot {
                 Ok(other)=>Ok(other),Err(error)=>loop_error(error).map(|refusal|Some(Err(refusal))),
             }
         })).await
+    }
+
+    /// The durable target of the offering committed by one command, if any. Dispatch
+    /// republishes it after a lost acknowledgement; a published source no longer matches it.
+    pub async fn read_dreamer_ring_offering(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+        command: CommandRef,
+    ) -> Result<Option<DreamerRingTarget>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        crate::durability::db::begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &record).await?;
+                    let row = sqlx::query(
+                        "SELECT placement,reset_epoch,object_revision,trees_before,map_revision,content_digest \
+                           FROM game_dreamer_ring_offerings WHERE game_session_id = encode($1,'hex')::uuid \
+                            AND command_id = $2::text::numeric(20,0) AND character_id = encode($3,'hex')::uuid",
+                    )
+                    .bind(command.game_session_id().as_bytes().as_slice())
+                    .bind(command.command_id().get().to_string())
+                    .bind(character_id.as_bytes().as_slice())
+                    .fetch_optional(&mut *tx)
+                    .await?;
+                    let target = match row {
+                        None => None,
+                        Some(row) => {
+                            let trees: Vec<i32> = row.try_get("trees_before")?;
+                            let content: Vec<u8> = row.try_get("content_digest")?;
+                            Some(DreamerRingTarget {
+                                scope: TerrainScope {
+                                    map_revision: row.try_get("map_revision")?,
+                                    content_generation: content
+                                        .try_into()
+                                        .map_err(|_| DurabilityError::InvalidStoredState)?,
+                                    reset_epoch: row.try_get("reset_epoch")?,
+                                },
+                                placement: row.try_get("placement")?,
+                                expected_revision: row.try_get("object_revision")?,
+                                trees_before: trees
+                                    .try_into()
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        }
+                    };
+                    crate::durability::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(target)
+                })
+            })
+            .await
     }
 }

@@ -143,12 +143,41 @@ BEGIN
     AND ready.ready AND ready.ownership_generation=a.ownership_generation
     AND ((g.scope_kind=1 AND a.scope_kind=1 AND a.channel_id=g.channel_id AND a.activity_instance_id IS NULL)
       OR (g.scope_kind=2 AND a.scope_kind=3 AND a.channel_id IS NULL AND a.activity_instance_id=g.instance_id)))
-  AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=i.world_id
+  -- A Channel step binds the latest Channel activation and accepts either the
+  -- entry frame or the bundle frame of the active reset map (2733 pattern).
+  AND ((g.scope_kind=1 AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=i.world_id
    AND c.activation_sequence=(p->>'activation')::numeric AND c.server_artifact_digest=decode(p->>'server','hex')
-   AND c.client_artifact_digest=decode(p->>'client','hex')
-   AND (g.scope_kind=2 OR (c.channel_id=g.channel_id AND c.frame_binding_digest=decode(p->>'frame','hex')))
+   AND c.client_artifact_digest=decode(p->>'client','hex') AND c.channel_id=g.channel_id
+   AND (c.frame_binding_digest=decode(p->>'frame','hex') OR EXISTS(
+    SELECT 1 FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id,reset_epoch)
+    WHERE active.world_id=i.world_id AND active.reset_epoch=(p->>'reset_epoch')::numeric
+     AND epoch.server_digest=c.server_artifact_digest AND epoch.client_digest=c.client_artifact_digest
+     AND decode(p->>'map','hex')=sha256(convert_to(epoch.map_revision,'UTF8'))
+     AND game_elemental_placement_frame_matches(i.world_id,epoch.map_revision,decode(p->>'frame','hex'),c.frame_binding_digest)))
    AND NOT EXISTS(SELECT 1 FROM game_content_activations later WHERE later.world_id=c.world_id
-    AND later.channel_id=c.channel_id AND later.activation_sequence>c.activation_sequence)),false);
+    AND later.channel_id=c.channel_id AND later.activation_sequence>c.activation_sequence)))
+  -- An accepted Instance retains its entry pins after the source Channel
+  -- activates new content: the exact live runtime entry and its initiating
+  -- participant's historical source Channel activation are the authority.
+  OR (g.scope_kind=2 AND EXISTS(
+   SELECT 1 FROM game_activity_handoff_groups h
+   JOIN game_activity_runtime_entries e USING(handoff_id)
+   JOIN game_activity_handoff_participants origin ON origin.handoff_id=h.handoff_id
+    AND origin.character_id=e.initiating_character_id
+   JOIN game_content_activations c ON c.world_id=h.world_id AND c.channel_id=origin.origin_channel_id
+   WHERE h.world_id=i.world_id AND h.instance_id=g.instance_id
+    AND h.ownership_generation=g.runtime_scope_ownership_generation AND h.state=2
+    AND e.holder_node_id=(p->>'node')::uuid AND e.holder_registration_revision=(p->>'node_registration')::numeric
+    AND e.destination_server_artifact_digest=decode(p->>'server','hex')
+    AND e.destination_map_revision_digest=decode(p->>'map','hex')
+    AND e.destination_coordinate_frame_digest=decode(p->>'frame','hex')
+    AND origin.server_artifact_digest=decode(p->>'server','hex')
+    AND c.activation_sequence=(p->>'activation')::numeric
+    AND c.server_artifact_digest=decode(p->>'server','hex') AND c.client_artifact_digest=decode(p->>'client','hex')
+    AND EXISTS(SELECT 1 FROM game_activity_handoff_participants participant WHERE participant.handoff_id=h.handoff_id
+     AND participant.character_id=r.character_id AND participant.destination_game_session_id=session_row.game_session_id
+     AND NOT EXISTS(SELECT 1 FROM game_activity_runtime_returns returned
+      WHERE returned.handoff_id=participant.handoff_id AND returned.character_id=participant.character_id))))),false);
 END $$;
 
 -- Extend only the Ground admit predicate. All prior carried/transform/altar

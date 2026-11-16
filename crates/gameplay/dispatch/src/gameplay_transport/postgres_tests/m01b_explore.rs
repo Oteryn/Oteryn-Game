@@ -340,6 +340,9 @@ fn m01b_lions_rock_native_entry_requires_current_premium() -> TestResult {
 }
 
 pub(super) fn start(name: &str, trigger: Position) -> Position {
+    if name == super::m01c_stampede_entry::NAME {
+        return super::m01c_stampede_entry::start();
+    }
     if let Some(start) = followup_entries::start(name) {
         return start;
     }
@@ -393,6 +396,9 @@ pub(super) fn world(
     name: &str,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use super::l6_world_pickups::{ExpectedTile, NativeCrop, native_crop};
+    if name == super::m01c_stampede_entry::NAME {
+        return super::m01c_stampede_entry::world(native);
+    }
     if matches!(
         name,
         "m01b/iron-helmet/s1/ironhelmet" | "m01b/goblin-temple/s1/goblintemple"
@@ -654,6 +660,9 @@ pub(super) async fn exercise(
     callback: &Callback,
 ) -> TestResult {
     use oteryn_protocol_oteryn::world_spatial::{StepDirection, StepDisposition};
+    if callback.key.ends_with(super::m01c_stampede_entry::CALLBACK) {
+        return super::m01c_stampede_entry::exercise(owner, admitted, h).await;
+    }
     if callback.key.ends_with("m01b/dragon-corpse/s3/dragoncorpse")
         || callback.key.ends_with("m01b/dragon-tower/s3/backpack1")
         || callback.key.ends_with("m01b/edron-goblin/s3/edrongoblin1")

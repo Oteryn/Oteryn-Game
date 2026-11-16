@@ -618,6 +618,19 @@ impl PlayerBatchPreflight {
             }
             replacement.next = next;
         }
+        // Each staged hit advances the revision; a paid batch still publishes its
+        // single caster successor, anchor.next_revision == before + 1.
+        if self.batch.anchor.is_some()
+            && replacement.next.revision() != replacement.before.revision()
+        {
+            replacement.next.source_set_batch_revision(
+                replacement
+                    .before
+                    .revision()
+                    .checked_add(1)
+                    .ok_or(SpellCastDisposition::Rejected)?,
+            );
+        }
         self.validate_current(runtime, states)
     }
 }

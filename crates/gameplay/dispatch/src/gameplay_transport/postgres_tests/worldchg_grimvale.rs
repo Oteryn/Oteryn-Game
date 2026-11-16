@@ -595,6 +595,19 @@ fn qn5_feroxa_map_phase_retires_actual_ground_once_with_world_event_audit() -> T
     run_producer(false, true, false, true, false, false, false)
 }
 
+// Crystal final() teleports every player in the area, including one whose
+// client connection dropped; the portal still opens.
+#[test]
+fn grimvale_final_opens_portal_with_control_lost_spectator_in_square() -> TestResult {
+    run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: false, prove_spectators: false, prove_clear: false, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: false, control_lost: true })
+}
+
+// The saved spectator return is a forced source teleport too.
+#[test]
+fn feroxa_return_applies_for_control_lost_actor() -> TestResult {
+    run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: true, prove_clear: false, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: false, control_lost: true })
+}
+
 // Crystal201189f8 data-global/lib/quests/grimvale.lua:25-38 retains the same
 // actual 22761 ingress and 33419,31539,10 landing as the pinned9f5a72c donor.
 // The personal entry stage is the explicit chosen Oteryn recipe, not source completion.
@@ -614,12 +627,12 @@ fn qn5_feroxa_new_owner_clears_previous_owner_corpse_custody() -> TestResult {
 }
 
 fn run_producer(block_spawn: bool, prove_phases: bool, prove_spectators: bool, prove_clear: bool, prove_stage: bool, prove_batches: bool, prove_handoff: bool) -> TestResult {
-    run_producer_proofs(ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree: false })
+    run_producer_proofs(ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree: false, control_lost: false })
 }
 
 #[test]
 fn qn5_feroxa_oversized_tree_keeps_root_live_until_bounded_leaves_commit() -> TestResult {
-    run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: false, prove_clear: true, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: true })
+    run_producer_proofs(ProducerProofs { block_spawn: false, prove_phases: true, prove_spectators: false, prove_clear: true, prove_stage: false, prove_batches: false, prove_handoff: false, large_tree: true, control_lost: false })
 }
 
 fn run_producer_proofs(proofs: ProducerProofs) -> TestResult {
@@ -680,10 +693,11 @@ struct ProducerProofs {
     prove_batches: bool,
     prove_handoff: bool,
     large_tree: bool,
+    control_lost: bool,
 }
 
 async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestResult {
-    let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree } = proofs;
+    let ProducerProofs { block_spawn, prove_phases, prove_spectators, prove_clear, prove_stage, prove_batches, prove_handoff, large_tree, control_lost } = proofs;
     use crate::foundation::{NodeId, ScopeOwnershipGeneration};
     use crate::map::boot::BundleCollisionIndexExt;
     use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
@@ -1067,6 +1081,16 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
                 let original = deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position();
                 owner.apply_feroxa_spectators(firing, now, &mut timers).await.map_err(|_| "first spectator capture")?;
                 move_spectator(&owner, actor, session, super::quest_world_callbacks::local(DESTINATION)).await?;
+                if control_lost {
+                    deps.runtime.lock().await
+                        .record_control_loss(actor, session, crate::foundation::ControlLossMark { epoch: 1, grace_deadline: 100 })
+                        .map_err(debug)?;
+                    owner.apply_feroxa_spectators(firing, now + 60_000, &mut timers).await.map_err(|_| "control-lost spectator return")?;
+                    assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(), original,
+                        "the source return also moves a control-lost spectator");
+                    eprintln!("QN5_FEROXA_CONTROL_LOST_RETURN_PG_EXECUTED elapsed={:?}", start.elapsed());
+                    return Ok(());
+                }
                 owner.apply_feroxa_spectators(firing, now + 59_999, &mut timers).await.map_err(|_| "before spectator deadline")?;
                 assert_eq!(deps.runtime.lock().await.read_actor_position(actor).map_err(debug)?.position(),
                     super::quest_world_callbacks::local(DESTINATION));
@@ -1184,6 +1208,23 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
         )
         .await?
         .ok_or("committed wave")?;
+    if control_lost {
+        let (spectator, _) = extra_players[0];
+        let session = crate::foundation::GameSessionId::decode(&id(81)).map_err(debug)?;
+        let mut runtime = deps.runtime.lock().await;
+        runtime
+            .record_control_loss(spectator, session, crate::foundation::ControlLossMark { epoch: 1, grace_deadline: 100 })
+            .map_err(debug)?;
+        // Ordinary player-initiated movement still refuses a control-lost actor
+        // at origin qualification (occupancy would be `Blocked`, not this).
+        let before = runtime.read_actor_position(spectator).map_err(debug)?;
+        let closed = crate::map::floor::BundleDoors(owner.bundle_map().ok_or("map")?.facts.doors());
+        assert!(matches!(crate::map::floor::prepare_quest_callback_teleport(
+            &runtime, &cells, spectator, session, before,
+            super::quest_world_callbacks::local(Position { x: TRIGGER.x - 1, ..TRIGGER }),
+            false, &closed,
+        ), Err(crate::movement::MovementError::NotQualified)), "a control-lost player cannot walk through the callback");
+    }
     let outcomes = owner
         .apply_raid_wave(&wave, &selected, bundle_digest)
         .await
@@ -1226,6 +1267,10 @@ async fn producer_scenario(harness: &Harness, proofs: ProducerProofs) -> TestRes
             assert_eq!(runtime.read_actor_position(*actor).map_err(debug)?.position(),
                 super::quest_world_callbacks::local(expected),
                 "only current in-range players move; existing landing occupants remain");
+        }
+        if control_lost {
+            eprintln!("QN5_GRIMVALE_CONTROL_LOST_EJECTION_PG_EXECUTED elapsed={:?}", start.elapsed());
+            return Ok(());
         }
         // A later arrival must not be ejected by replay of the same final wave.
         let before = runtime.read_actor_position(deps.actor).map_err(debug)?;

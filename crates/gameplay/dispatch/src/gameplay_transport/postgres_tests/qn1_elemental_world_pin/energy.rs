@@ -213,3 +213,143 @@ pub(super) async fn exercise(
     eprintln!("QN1_ELEMENTAL_ENERGY_SOIL_PG_EXECUTED");
     Ok(())
 }
+
+/// Source soils1.lua adds one field per USE; the durable owner admits at most
+/// 64 live Ground roots per tile. A full altar tile is a NotPossible refusal
+/// before any soil, field or terrain mutation, not a dropped SQL error.
+pub(super) async fn tile_cap(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    actor: ExactActorRef,
+    fence: CurrentCharacterItemFence,
+) -> TestResult {
+    eprintln!("QN1_ELEMENTAL_ENERGY_TILE_CAP_PG_READY");
+    super::super::quest_world_callbacks::input_item(
+        owner,
+        fence,
+        &Offering {
+            position: Position {
+                x: 33093,
+                y: 32189,
+                floor: -13,
+            },
+            item: "oteryn:item.tibia.i945".into(),
+            count: 2,
+        },
+        88,
+        true,
+    )
+    .await?;
+    let source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_instance_id) FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i945' AND lifecycle=1 LIMIT 1").fetch_one(&h.pool).await?;
+    let source: [u8; 16] = source.try_into().map_err(|_| "energy soil identity")?;
+    let native = owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?;
+    let index = native.item_index().ok_or("index")?;
+    let reference = index
+        .definition_ref("Item", "oteryn:item.tibia.i945", "definition-r1")
+        .ok_or("energy soil reference")?;
+    let map = owner.bundle_map().ok_or("energy map")?;
+    let pos = crate::map::overlay::TilePos {
+        x: 33094,
+        y: 32189,
+        floor: -13,
+    };
+    let altar = crate::map::view::compose_tile(&map.overlay, &map.facts, pos)
+        .map_err(super::super::fixture::debug)?
+        .ok_or("native altar tile")?
+        .entries
+        .into_iter()
+        .find(|entry| {
+            let oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference) =
+                entry.facts.definition
+            else {
+                return false;
+            };
+            crate::gameplay_transport::item_look::typed_definition(index, reference)
+                .is_some_and(|definition| definition.production_key == "oteryn:item.tibia.i7737")
+        })
+        .ok_or("retained native energy altar")?;
+    let crate::map::view::MapEntryKey::Base(key) = altar.source.key() else {
+        return Err("native base altar".into());
+    };
+    let mut placement = map.overlay.base().digest().to_vec();
+    placement.extend_from_slice(&key.to_be_bytes());
+    // Trusted baseline: 64 current live Ground roots on the altar tile, with
+    // the same tile derivation, pins and scope as the field admission trigger.
+    let (map_digest, server_digest, frame) = {
+        let runtime = owner.runtime.lock().await;
+        let pin = runtime.content_pin();
+        (
+            pin.map_revision_digest(),
+            pin.server_artifact_digest(),
+            pin.frame_binding_digest(),
+        )
+    };
+    let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    let seeded = sqlx::query("WITH seeded AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) \
+        SELECT u,encode($1,'hex')::uuid,'Item','oteryn:item.tibia.i3031','definition-r1',1,1,u \
+        FROM (SELECT (lpad(to_hex(n),8,'0')||'-0000-7000-8000-0000000c0de0')::uuid AS u FROM generate_series(1,64) AS n) ids \
+        RETURNING item_instance_id) \
+        INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context,stack_ordinal) \
+        SELECT item_instance_id,encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,\
+        int4send(get_byte($4,34)*256+get_byte($4,35))||int4send(get_byte($4,36)*256+get_byte($4,37))||int2send(get_byte($4,38)::smallint),\
+        convert_to('qn1-energy-tile-cap','UTF8'),$5,$6,$7,nextval('game_item_ground_stack_ordinal_seq') FROM seeded")
+        .bind(owner.world_id.as_bytes().as_slice())
+        .bind(owner.channel_id.as_bytes().as_slice())
+        .bind(fence.scope_ownership_generation.get().to_string())
+        .bind(placement.as_slice())
+        .bind(format!("sha256:{}", hex(map_digest)))
+        .bind(format!("sha256:{}", hex(server_digest)))
+        .bind(frame.as_slice())
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(seeded.rows_affected(), 64);
+    tx.commit().await?;
+    let intent = UseIntent {
+        target: UseTarget::ItemByDefinition(reference),
+        use_with: None,
+        use_with_map_item: Some(MapUseTarget::Object(WorldObjectTarget {
+            placement,
+            expected_revision: 0,
+        })),
+        use_with_position: None,
+    };
+    let result = owner
+        .use_cooking_conversion(
+            actor,
+            UseCommand {
+                game_session_id: fence.game_session_id,
+                command_id: 65001,
+                item_fence: Some(fence),
+            },
+            intent,
+            Some(ItemKey::Instance(source)),
+            None,
+        )
+        .await
+        .ok_or("energy soil route must answer a full tile")?;
+    assert_eq!(
+        result.disposition,
+        UseDisposition::NotPossible,
+        "a full altar tile refuses the soil instead of failing the transaction"
+    );
+    let quantity: i64 = sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(source.as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(quantity, 2, "a refused USE consumes no soil");
+    let fields: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE lifecycle=1 AND definition_production_key='oteryn:item.tibia.i2126'")
+        .fetch_one(&h.pool)
+        .await?;
+    assert_eq!(fields, 0, "a full tile creates no field");
+    eprintln!("QN1_ELEMENTAL_ENERGY_TILE_CAP_PG_EXECUTED");
+    Ok(())
+}

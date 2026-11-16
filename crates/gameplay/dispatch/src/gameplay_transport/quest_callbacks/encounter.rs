@@ -88,11 +88,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(encounter) = &callback.effects.encounter else {
             return UseDisposition::Rejected;
         };
-        if preflight
-            && callback.has_personal_state()
-            && (!callback.requires_world_admission || encounter.timing.is_some())
-        {
-            return UseDisposition::Rejected;
+        if preflight && callback.has_personal_state() {
+            if !callback.requires_world_admission {
+                return UseDisposition::Rejected;
+            }
+            if encounter.timing.is_some() {
+                // A timed personal trial schedules only after its durable receipt.
+                // Preflight checks the same guards without reserving a timer.
+                let ready = oteryn_gameplay_quests::quest::world_callbacks::personal_trial::admitted(
+                    callback,
+                ) && encounter.players.is_empty()
+                    && states.get(runtime, actor, session).is_some_and(|state| {
+                        state.character_facts().level >= encounter.minimum_level
+                    })
+                    && self.personal_trial_ready(runtime, callback, key);
+                return if ready {
+                    UseDisposition::Committed
+                } else {
+                    UseDisposition::Rejected
+                };
+            }
         }
         if callback.has_personal_state() && !preflight && reservation.is_none() {
             return UseDisposition::Rejected;

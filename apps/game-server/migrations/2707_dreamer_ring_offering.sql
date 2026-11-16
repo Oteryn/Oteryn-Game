@@ -50,7 +50,14 @@ BEGIN
     AND game_world_reset_map_epoch_current(NEW.world_id,NEW.reset_epoch::numeric)
     AND EXISTS(SELECT 1 FROM game_content_activations c WHERE c.world_id=NEW.world_id AND c.channel_id=NEW.channel_id
      AND c.activation_sequence=(SELECT a.activation_sequence FROM game_content_activations a WHERE a.world_id=c.world_id AND a.channel_id=c.channel_id ORDER BY a.activation_sequence DESC LIMIT 1)
-     AND c.server_artifact_digest=NEW.content_digest AND c.frame_binding_digest=g.native_room_placement_context)
+     AND c.server_artifact_digest=NEW.content_digest AND (c.frame_binding_digest=g.native_room_placement_context OR EXISTS(
+      -- A bundle Channel's Ground row carries the bundle frame of the active
+      -- reset map, while the activation retains the entry frame (2733 pattern).
+      SELECT 1 FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id,reset_epoch)
+      WHERE active.world_id=NEW.world_id AND active.reset_epoch=NEW.reset_epoch
+       AND epoch.server_digest=c.server_artifact_digest AND epoch.client_digest=c.client_artifact_digest
+       AND g.map_revision='sha256:'||encode(sha256(convert_to(epoch.map_revision,'UTF8')),'hex')
+       AND game_elemental_placement_frame_matches(NEW.world_id,epoch.map_revision,g.native_room_placement_context,c.frame_binding_digest))))
     AND i.last_transaction_id=r.transaction_id AND i.state_revision=l.state_revision_before+1)
   OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=NEW.item_instance_id)
   OR EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=NEW.item_instance_id)

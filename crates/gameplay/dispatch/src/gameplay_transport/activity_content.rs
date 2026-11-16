@@ -59,6 +59,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             revision: "crystal-201189f".into(),
         };
         let owner = ActivityHandoffOwner::new(self.root.clone());
+        let helper = super::soul_war_callbacks::initial_helper_key(source);
         let mut after = None;
         loop {
             let allocations = owner
@@ -89,7 +90,25 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                                 && runtime.positioned_actor_census().is_ok_and(|census| {
                                     match initial_boss {
                                         Some((key, at)) => {
-                                            census.len() == 1
+                                            // The boss alone, or with its lever-created
+                                            // helper that a refused lever leaves behind.
+                                            (census.len() == 1
+                                                || helper.is_some_and(|helper| {
+                                                    census.len() == 2
+                                                        && census.iter().any(
+                                                            |(actor, _, session)| {
+                                                                session.is_none()
+                                                                    && runtime
+                                                                        .companion_snapshot(*actor)
+                                                                        .is_ok_and(|view| {
+                                                                            view.state
+                                                                                .policy
+                                                                                .definition_key
+                                                                                == helper
+                                                                        })
+                                                            },
+                                                        )
+                                                }))
                                                 && census.iter().any(
                                                     |(actor, position, session)| {
                                                         session.is_none()

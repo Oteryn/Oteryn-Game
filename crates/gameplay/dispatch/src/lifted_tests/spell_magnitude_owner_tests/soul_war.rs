@@ -144,6 +144,133 @@ fn srx3_soul_war_reflection_uses_post_resistance_damage_before_overkill_clamp_an
     );
 }
 
+#[test]
+fn buffed_greed_reflection_training_rebind_accepts_single_revision() {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        ChannelSpellStates, commit_owner_batch, stage_player_batch_with_magnitude,
+    };
+    use crate::spell::combat_batch::{OwnerCombatBatch, SpellOccurrenceBinding};
+    use oteryn_gameplay_entities::carrier::soul_war::SoulWarCreatureChange;
+
+    let mut f = fixture_with_source_kind(0, true, true, Some("oteryn:creature.goshnar_s_greed"));
+    f.attributes.policy = MagnitudePolicy::BaselineTest;
+    f.attributes.owner_revisions = Some((1, 1, Some(1)));
+    f.attributes.base_critical_chance_permyriad = Some(0);
+    f.attributes.equipment_critical_chance_permyriad = Some(0);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.wheel_flat_damage = Some(0);
+    let target = f.bindings[1].actor;
+    let current = f
+        .runtime
+        .companion_snapshot(target)
+        .expect("current source actor");
+    f.runtime
+        .change_soul_war_creature(
+            &current,
+            SoulWarCreatureChange::Buff {
+                defense: 10,
+                reflection: 20,
+                maximum_health: 0,
+                health: 0,
+            },
+        )
+        .expect("source reflection modifier");
+    let mut plan = plan();
+    let NativeCombatPlan::Combat(combat) = &mut plan else {
+        panic!("Combat plan")
+    };
+    combat.hits.truncate(1);
+    combat.hits[0].magnitude = 2_000;
+    combat.hits[0].side_percent = None;
+    combat.block_armor = true;
+    let mut magnitude = qualify(&f, &plan).expect("real source magnitude owner");
+    // The paid caster successor is the one revision check_rebind_staged_training
+    // later requires (anchor.next_revision); this payment is free but still paid.
+    let mut paid = f.state.clone();
+    paid.advance_batch_revision()
+        .expect("paid successor revision");
+    let anchor = paid
+        .payment_anchor_from(&f.state)
+        .expect("paid successor anchor");
+    let batch = OwnerCombatBatch {
+        caster: f.caster,
+        attacker: f.attributes.binding.character,
+        current_lease_generation: 1,
+        command: CommandRef::new(f.session, CommandId::new(82).expect("command")),
+        occurrence: SpellOccurrenceBinding {
+            id: "srx3:reflection:paid-single-revision".into(),
+            revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"].map(str::to_owned),
+        },
+        binding: b"srx3:reflection:paid-single-revision".to_vec(),
+        anchor: Some(anchor.clone()),
+        now_us: Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(100_123)),
+        now_ms: 100,
+        effects: Vec::new(),
+        deferred: None,
+    };
+    let lowered = crate::spell::combat_batch::lower_native(
+        &f.runtime,
+        batch,
+        1,
+        &plan,
+        &f.bindings,
+        0,
+        &mut |plan, hit, base| {
+            magnitude.finish_with_damage_healing(plan, hit, base, &mut |low, _| low)
+        },
+    )
+    .expect("final post-block and resistance source damage");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &f.runtime,
+            f.caster,
+            f.session,
+            FACTS,
+            (0, 0),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+        )
+        .expect("caster owner");
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        f.caster,
+        f.session,
+        f.state.clone()
+    ));
+    let before = f.state.vitals();
+    let preflight = stage_player_batch_with_magnitude(
+        &f.runtime,
+        &states,
+        &lowered.batch,
+        Some(paid),
+        Some(&magnitude),
+    )
+    .expect("reflection joins the paid caster successor");
+    let staged = f
+        .runtime
+        .stage_spell_batch(&lowered.batch)
+        .expect("actual creature damage staging");
+    let receipt = commit_owner_batch(&mut f.runtime, &mut states, staged, Some(preflight))
+        .expect("one physical and caster commit");
+    assert!(receipt.applied);
+    let committed = states
+        .read_owned_player_state_test_snapshot(&f.runtime, f.caster, f.session)
+        .expect("current caster");
+    assert!(
+        before.health > committed.vitals().health,
+        "the buffed Greed reflection reached the caster"
+    );
+    assert_eq!(
+        committed.revision(),
+        anchor.next_revision,
+        "reflection composes into the single paid successor the training rebind checks"
+    );
+}
+
 fn native_lua_reflection_case(key: &str, element: Element, percent: u32) {
     use crate::foundation::{CommandId, CommandRef};
     use crate::gameplay_transport::actor_spell::{

@@ -444,7 +444,18 @@ async fn write_with_skinning<C: ItemLoopContent>(
         return Ok(UseDisposition::NothingToUse);
     };
     if conversion.recipe == "oteryn:elemental_energy_soil.crystal"
-        && !elemental_energy::has_room(tx, permit, fence).await?
+        && !elemental_energy::has_room(
+            tx,
+            permit,
+            fence,
+            &request
+                .gathering
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .mutation
+                .placement,
+        )
+        .await?
     {
         return Ok(UseDisposition::NotPossible);
     }

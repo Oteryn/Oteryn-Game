@@ -8,6 +8,7 @@ pub(in crate::gameplay_transport) mod phases;
 pub(in crate::gameplay_transport) mod sanity;
 pub(in crate::gameplay_transport) mod splinter;
 const PURPLE: &str = "oteryn:creature.goshnar_s_megalomania_purple";
+pub(super) const ASPECT: &str = "oteryn:creature.aspect_of_power";
 const FORMS: [&str; 3] = [
     PURPLE,
     "oteryn:creature.goshnar_s_megalomania_green",
@@ -56,7 +57,7 @@ impl MegalomaniaCallbacks {
         runtime
             .spawn_soul_war_child(
                 boss,
-                "oteryn:creature.aspect_of_power",
+                ASPECT,
                 MovementLocalPosition {
                     x: 33710,
                     y: 31635,

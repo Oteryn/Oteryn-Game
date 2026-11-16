@@ -369,10 +369,18 @@ fn scenario(chest: &Chest, cohort: &[Chest]) -> TestResult {
             let expected = if cold {
                 vec![(CommandStatus::Accepted, UseDisposition::Committed)]
             } else {
+                // Crystal answers a repeated use of a claimed World-owned
+                // chest with its "it is empty" refusal (Rejected, as M39
+                // asserts); a RewardClaim chest owner reports NothingToUse.
+                let repeated = if world_owned {
+                    UseDisposition::Rejected
+                } else {
+                    UseDisposition::NothingToUse
+                };
                 vec![
                     (CommandStatus::Accepted, UseDisposition::Committed),
                     (CommandStatus::DuplicateReplay, UseDisposition::Committed),
-                    (CommandStatus::Accepted, UseDisposition::NothingToUse),
+                    (CommandStatus::Accepted, repeated),
                 ]
             };
             let commands = if cold {

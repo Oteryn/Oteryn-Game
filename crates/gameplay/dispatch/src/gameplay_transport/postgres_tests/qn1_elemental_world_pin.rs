@@ -39,6 +39,11 @@ fn qn1_elemental_energy_field_retires_once_through_world_reset() -> TestResult {
     run("qn1-elemental-energy-reset")
 }
 
+#[test]
+fn elemental_energy_soil_tile_cap_returns_not_possible() -> TestResult {
+    run("qn1-elemental-energy-cap")
+}
+
 fn run(name: &'static str) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
@@ -225,6 +230,10 @@ pub(super) async fn exercise(
     native
         .install_companion_policies(&mut runtime)
         .map_err(super::fixture::debug)?;
+    if name == "qn1-elemental-energy-cap" {
+        drop(runtime);
+        return energy::tile_cap(owner, harness, actor, fence).await;
+    }
     if name.starts_with("qn1-elemental-energy-") {
         drop(runtime);
         return energy::exercise(

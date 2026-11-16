@@ -20,7 +20,7 @@ fn callback(name: &str) -> TestResult<Callback> {
             .find(|callback| callback.key.ends_with(name))
             .ok_or_else(|| "authored Asura callback".into());
     }
-    if name == "engitem-native-seal-paint" {
+    if name == "engitem-native-seal-paint" || name == super::engitem_seal_paint_lost_ack::NAME {
         return oteryn_gameplay_quests::quest::ice_islands_seals::callbacks::definition(
             super::engitem_seal_paint::SEALS[0],
         )

@@ -131,3 +131,96 @@ pub(super) fn publish(map: &BundleMap, prepared: &Prepared) -> bool {
     }
     true
 }
+
+/// Publishes a committed offering whose acknowledgement was lost. Only the exact durable
+/// target composed again from the unchanged source publishes; a published source hides its
+/// trees and composes none, so a later replay presents nothing. False is an unknown result.
+pub(super) async fn reconcile(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    character: crate::domain::CharacterId,
+    command: CommandRef,
+) -> bool {
+    let Ok(offering) = admission
+        .root
+        .read_dreamer_ring_offering(admission.character, character, command)
+        .await
+    else {
+        return false;
+    };
+    let Some(offering) = offering else {
+        return true;
+    };
+    let content = admission
+        .runtime
+        .lock()
+        .await
+        .content_pin()
+        .server_artifact_digest();
+    let Some(map) = admission.bundle_map() else {
+        return false;
+    };
+    let Some((pos, _)) = offering
+        .placement
+        .get(32..)
+        .and_then(|key| <[u8; 8]>::try_from(key).ok())
+        .and_then(|key| view::placement_of(u64::from_be_bytes(key)))
+    else {
+        return false;
+    };
+    let to = WorldTilePosition {
+        x: i32::from(pos.x),
+        y: i32::from(pos.y),
+        floor: i16::from(pos.floor),
+    };
+    let Some(prepared) = target(map, to, content, admission.reset_epoch) else {
+        return true;
+    };
+    let current = &prepared.target;
+    if current.placement != offering.placement
+        || current.expected_revision != offering.expected_revision
+        || current.trees_before != offering.trees_before
+        || current.scope.reset_epoch != offering.scope.reset_epoch
+        || current.scope.map_revision != offering.scope.map_revision
+        || current.scope.content_generation != offering.scope.content_generation
+    {
+        return true;
+    }
+    publish(map, &prepared)
+}
+
+#[cfg(test)]
+static INTERRUPT_AFTER_COMMIT: std::sync::Mutex<Option<(crate::foundation::GameSessionId, u64)>> =
+    std::sync::Mutex::new(None);
+
+#[cfg(test)]
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Drop only the acknowledgement of this test's exact committed offering, before
+    /// publication. Production reaches the same state on an actual unavailable result.
+    pub(in crate::gameplay_transport) fn fixture_interrupt_dreamer_ring_commit(
+        &self,
+        session: crate::foundation::GameSessionId,
+        command: u64,
+    ) -> Result<(), String> {
+        let mut expected = INTERRUPT_AFTER_COMMIT.lock().map_err(|_| "fault lock")?;
+        if command == 0 || expected.is_some() {
+            return Err("fault already armed or invalid command".into());
+        }
+        *expected = Some((session, command));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+pub(super) fn interrupted_after_commit(
+    session: crate::foundation::GameSessionId,
+    command: u64,
+) -> bool {
+    let Ok(mut expected) = INTERRUPT_AFTER_COMMIT.lock() else {
+        return false;
+    };
+    if *expected != Some((session, command)) {
+        return false;
+    }
+    *expected = None;
+    true
+}

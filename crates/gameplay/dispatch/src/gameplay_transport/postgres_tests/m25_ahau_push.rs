@@ -379,7 +379,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn walk(
+pub(super) async fn walk(
     view: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     destination: MovementLocalPosition,

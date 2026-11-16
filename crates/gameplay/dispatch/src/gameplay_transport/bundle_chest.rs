@@ -5,7 +5,7 @@ use super::ComposedFreshAdmission;
 use super::connection::{EarnedNotice, UseCommand, UseOutcome};
 use super::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
 use super::world_map::{MapViewSource, resolve_map_target};
-use crate::content::world_reward_claims::{REWARD_CLAIM_SHARDS, bind_reward_claims};
+use crate::content::world_reward_claims::{bind_embedded_reward_claims, bind_reward_claims};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::reward_claim_mint::{
     RewardClaimAchievement, RewardClaimMintContent, RewardClaimMintError, RewardClaimMintRequest,
@@ -74,12 +74,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
         }
-        self.use_bundle_chest_from_shards(actor, command, map, target, &REWARD_CLAIM_SHARDS)
+        self.use_bundle_chest_bound(actor, command, map, target, None)
             .await
     }
 
     /// Server-authored claim documents enter the same binding and durable USE
     /// path as the embedded catalogue. Shards are server content, never wire input.
+    #[cfg(test)]
     pub(super) async fn use_bundle_chest_from_shards(
         &self,
         actor: ExactActorRef,
@@ -87,6 +88,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &WorldObjectTarget,
         shards: &[&str],
+    ) -> Option<UseOutcome> {
+        self.use_bundle_chest_bound(actor, command, map, target, Some(shards))
+            .await
+    }
+
+    /// `None` binds the embedded catalogue with its native placement aliases.
+    async fn use_bundle_chest_bound(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        map: &crate::map::boot::BundleMap,
+        target: &WorldObjectTarget,
+        shards: Option<&[&str]>,
     ) -> Option<UseOutcome> {
         let native = self.active_generation?.native_gameplay()?;
         // This is a bounded, immutable Content pass over the embedded claim catalogue.
@@ -100,7 +114,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
             })
         };
-        let report = bind_reward_claims(map.overlay.base().as_ref(), shards, &admitted).ok()?;
+        let base = map.overlay.base().as_ref();
+        let report = match shards {
+            Some(shards) => bind_reward_claims(base, shards, &admitted),
+            None => bind_embedded_reward_claims(base, &admitted),
+        }
+        .ok()?;
         let source = MapViewSource {
             overlay: &map.overlay,
             facts: &map.facts,
