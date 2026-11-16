@@ -4,6 +4,7 @@ use super::{
     GameModal,
     modal::ModalGuard,
 };
+pub(super) use crate::appearance_preview as preview;
 use bevy::{prelude::*, ui_widgets::Activate};
 use oteryn_client_ui::appearance::{Intent, Panel};
 use oteryn_client_ui_bevy as source;
@@ -487,7 +488,5 @@ fn project(
     state.playback.invalidate();
     state.rendered = Some((generation, panel));
 }
-#[path = "../../features/0025-appearance/preview.rs"]
-pub(super) mod preview;
 #[cfg(test)]
 mod tests;

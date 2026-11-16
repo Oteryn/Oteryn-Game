@@ -8,6 +8,9 @@ pub mod account_services;
 #[cfg(any(windows, test, feature = "bevy-shell"))]
 #[path = "features/0025-appearance/mount_binding.rs"]
 mod appearance_mount_binding;
+#[cfg(any(windows, test, feature = "bevy-shell"))]
+#[path = "features/0025-appearance/preview.rs"]
+pub(crate) mod appearance_preview;
 #[cfg(feature = "bevy-shell")]
 pub mod bevy_shell;
 pub mod bulletin;
@@ -19,6 +22,9 @@ pub mod coin_shop;
 pub mod combat_input;
 pub mod crash_report;
 pub mod cyclopedia;
+#[cfg(any(windows, feature = "bevy-shell"))]
+#[path = "features/0199-cyclopedia-character/view/gallery_pixels.rs"]
+mod cyclopedia_gallery_pixels;
 pub mod device_login;
 pub mod hud_error;
 pub mod input;

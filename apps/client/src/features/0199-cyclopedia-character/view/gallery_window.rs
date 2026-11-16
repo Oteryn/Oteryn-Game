@@ -15,8 +15,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use windows_sys::Win32::System::SystemServices::SS_BITMAP;
 use windows_sys::Win32::UI::Controls::EM_SETLIMITTEXT;
 use windows_sys::Win32::{Foundation::*, Graphics::Gdi::*, UI::WindowsAndMessaging::*};
-#[path = "gallery_pixels.rs"]
-mod pixels;
+use crate::cyclopedia_gallery_pixels as pixels;
 type Shared = Weak<Mutex<Mailbox>>;
 #[derive(Default)]
 struct Actions(Vec<usize>);

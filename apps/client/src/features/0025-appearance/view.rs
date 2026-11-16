@@ -100,9 +100,8 @@ pub(in crate::play) mod memorial;
 #[cfg(windows)]
 #[path = "native.rs"]
 mod native;
-#[cfg(any(windows, all(test, not(feature = "bevy-shell"))))]
-#[path = "preview.rs"]
-pub(in crate::play) mod preview;
+#[cfg(windows)]
+pub(in crate::play) use crate::appearance_preview as preview;
 
 #[cfg(all(test, feature = "bevy-shell"))]
 impl crate::play::Outbox {

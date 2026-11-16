@@ -1,7 +1,6 @@
 //! Gallery portraits use the existing pinned appearance loader and server look IDs.
+use crate::cyclopedia_gallery_pixels as pixels;
 use bevy::prelude::*;
-#[path = "../../../features/0199-cyclopedia-character/view/gallery_pixels.rs"]
-mod pixels;
 #[derive(Component)]
 pub(in crate::bevy_shell::game_ui) struct Portrait(pub u32);
 #[derive(Resource, Default)]
