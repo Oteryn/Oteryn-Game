@@ -10,6 +10,9 @@ name: codex-review-gate
 # `codex-review-receipt:v1` or "Didn't find any major issues", a Codex connector
 # thumbs-up on the PR, or a comment by a repository member that starts with
 # `Codex review <sha>` (a local `codex exec` review) where <sha> is a commit of the PR.
+# Membership is read from the commenter's repository permission (write or above),
+# because `author_association` shows CONTRIBUTOR for private org members when read
+# with the workflow token.
 # Reviews arrive after CI, so review and comment events re-evaluate it; resolving a
 # thread fires no workflow event, so a schedule re-evaluates every open PR.
 on:
@@ -87,6 +90,18 @@ jobs:
                       return items
                   page += 1
 
+          permission_cache = {}
+
+          def can_write(login):
+              if login not in permission_cache:
+                  try:
+                      level = call(f'https://api.github.com/repos/{repo}/collaborators/{login}/permission').get('permission')
+                  except Exception as error:
+                      print(f'permission lookup for {login} failed: {error}')
+                      level = None
+                  permission_cache[login] = level in ('admin', 'maintain', 'write')
+              return permission_cache[login]
+
           def evaluate(number):
               pr = call(f'https://api.github.com/repos/{repo}/pulls/{number}')
               head = pr['head']['sha']
@@ -110,11 +125,13 @@ jobs:
                   if comment['user']['login'] == bot and any(m in body for m in receipt_markers):
                       receipts.append('connector receipt comment')
                       continue
-                  match = re.match(r'\s*Codex review `?([0-9a-f]{7,40})`?', body)
-                  if match and comment.get('author_association') in members:
+                  match = re.match(r'\s*Codex review\s*`?([0-9a-f]{7,40})`?', body)
+                  if match and (comment.get('author_association') in members or can_write(comment['user']['login'])):
                       prefix = match.group(1)
                       if any(sha.startswith(prefix) for sha in commits):
                           receipts.append(f'local review of {prefix[:12]}')
+                  elif match:
+                      print(f'PR #{number}: ignored "Codex review" comment by {comment["user"]["login"]} ({comment.get("author_association")}, no write permission)')
 
               query = '''
               query($owner: String!, $name: String!, $number: Int!, $after: String) {
