@@ -312,6 +312,9 @@ pub(super) fn page(
     if page == Page::Hud {
         super::conditions::build(commands, parent, skins, draft);
     }
+    if page == Page::Misc {
+        super::transfer::build(commands, parent, skins);
+    }
     if page == Page::Screenshots {
         super::screenshots::build(commands, parent, skins, draft);
     }

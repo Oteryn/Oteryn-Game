@@ -27,6 +27,7 @@ mod screenshots;
 mod section;
 #[cfg(test)]
 mod tests;
+mod transfer;
 mod widgets;
 
 #[derive(Resource)]
