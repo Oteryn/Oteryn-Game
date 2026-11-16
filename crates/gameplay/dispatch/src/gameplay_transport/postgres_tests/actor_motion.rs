@@ -153,6 +153,13 @@ fn scenario() -> TestResult {
             .await,
             Some(appearance::ChangeResult::Committed(2))
         );
+        assert_eq!(
+            owner
+                .current_mount(dependencies.actor, command.game_session_id)
+                .await,
+            Some(139),
+            "legacy mount voices use the validated selected mount before riding"
+        );
         let fence = crate::gameplay_transport::character_gameplay_fence::current(
             &owner,
             command.game_session_id,
@@ -214,6 +221,34 @@ fn scenario() -> TestResult {
                 Some(mount_key.as_str())
             );
         }
+        // A committed selection must retain its riding reconciliation while the
+        // durable holder is busy; no runtime guard may be held across the wait.
+        {
+            use std::{future::Future, task::Poll};
+            dependencies
+                .runtime
+                .lock()
+                .await
+                .set_riding(dependencies.actor, command.game_session_id, 139, 10)
+                .map_err(debug)?;
+            let held = harness.root.try_issue_semantic_pass()?;
+            let mut refresh = std::pin::pin!(owner.refresh_riding(dependencies.actor, command));
+            let first = std::future::poll_fn(|cx| Poll::Ready(refresh.as_mut().poll(cx))).await;
+            let runtime_free = owner.runtime.try_lock().is_ok();
+            held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+            assert!(
+                first.is_pending(),
+                "riding reconciliation must wait for the busy holder"
+            );
+            assert!(runtime_free, "riding retry releases the runtime guard");
+            refresh
+                .await
+                .ok_or("riding reconciled after holder return")?;
+        }
+        assert_eq!(
+            owner.set_mount(dependencies.actor, command, false).await,
+            Some(true)
+        );
         let invalid = UseCommand {
             item_fence: None,
             ..command

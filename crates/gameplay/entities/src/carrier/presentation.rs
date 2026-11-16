@@ -18,7 +18,12 @@ impl ChannelRuntimeV1 {
         snapshot: MovementPositionSnapshot,
         duration: std::time::Duration,
     ) {
-        if self.read_actor_position(actor).ok() != Some(snapshot) {
+        if self
+            .carrier
+            .read_movement_position(&self.continuity, actor.0)
+            .ok()
+            != Some(snapshot)
+        {
             return;
         }
         let Ok(ms) = u32::try_from(duration.as_millis()) else {
@@ -73,7 +78,10 @@ impl ChannelRuntimeV1 {
     }
 
     pub fn actor_motion(&self, actor: ExactActorRef) -> Option<(u64, u32, u32, u16)> {
-        let snapshot = self.read_actor_position(actor).ok()?;
+        let snapshot = self
+            .carrier
+            .read_movement_position(&self.continuity, actor.0)
+            .ok()?;
         let entry = self
             .presentations
             .get(&actor.actor_local_id())

@@ -240,7 +240,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                                 .is_ok()
                     }) == Some(true);
                     if moved {
-                        if let Ok(snapshot) = runtime.read_actor_position(actor) {
+                        if let Ok(snapshot) = runtime.borrow_movement_position().read(actor) {
                             runtime.record_walk(actor, snapshot, prepared.step.duration);
                         }
                         return Ok(Some(

@@ -84,9 +84,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         let (base, _) = catalogue::base(&content, &state);
-        if runtime.actor_motion(actor)?.2 == 0 {
-            return Some(0);
-        }
         Some(
             base.mount_key
                 .as_deref()
@@ -141,34 +138,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
     }
 
-    async fn refresh_riding(&self, actor: ExactActorRef, command: UseCommand) {
-        let riding = self
-            .runtime
-            .lock()
-            .await
-            .actor_motion(actor)
-            .is_some_and(|motion| motion.2 != 0);
-        if !riding {
-            return;
+    pub(super) async fn refresh_riding(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+    ) -> Option<()> {
+        let retry = AdmissionRetryBudget::for_command(self.root);
+        loop {
+            if self.refresh_riding_once(actor, command).await.is_some() {
+                return Some(());
+            }
+            if !retry.retries_unavailable(AdmissionRefusal::Unavailable).await {
+                return None;
+            }
         }
-        let Some(mount) = self.current_mount(actor, command.game_session_id).await else {
-            return;
-        };
-        let Some(fence) =
-            super::character_gameplay_fence::current(self, command.game_session_id, false).await
-        else {
-            return;
-        };
-        let _ = self
-            .set_mount(
-                actor,
-                UseCommand {
-                    item_fence: Some(fence.item_fence()),
-                    ..command
-                },
-                mount != 0,
-            )
-            .await;
+    }
+
+    async fn refresh_riding_once(&self, actor: ExactActorRef, command: UseCommand) -> Option<()> {
+        let riding = self.runtime.lock().await.actor_motion(actor)?.2 != 0;
+        if !riding {
+            return Some(());
+        }
+        let mount = self.current_mount(actor, command.game_session_id).await?;
+        let fence = super::character_gameplay_fence::current(self, command.game_session_id, false).await?;
+        self.set_mount(
+            actor,
+            UseCommand { item_fence: Some(fence.item_fence()), ..command },
+            mount != 0,
+        ).await?.then_some(())
     }
 
     pub(super) fn appearance_context(&self) -> Option<(wire::Context, NativeCosmeticsView)> {
@@ -204,8 +201,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request,
         ).await {
             Ok(Some(receipt)) => {
+                self.refresh_riding(actor, command).await?;
                 self.states.appearance_commands.settle(command.game_session_id, command.command_id);
-                self.refresh_riding(actor, command).await;
                 return Some(wire::ChangeResult::Committed(receipt.committed_character_revision.get()));
             },
             Ok(None) => {},
@@ -306,13 +303,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let outcome = receipt.matches_request(&fence, &request, sex).then_some(
                     wire::ChangeResult::Committed(receipt.committed_character_revision.get()),
                 );
-                if outcome.is_some() {
-                    self.states
-                        .appearance_commands
-                        .settle(command.game_session_id, command.command_id);
-                }
                 if matches!(outcome, Some(wire::ChangeResult::Committed(_))) {
-                    self.refresh_riding(actor, command).await;
+                    self.refresh_riding(actor, command).await?;
+                }
+                if outcome.is_some() {
+                    self.states.appearance_commands.settle(command.game_session_id, command.command_id);
                 }
                 return outcome;
             }
@@ -357,13 +352,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )) => None,
             Err(_) => Some(wire::ChangeResult::Rejected),
         };
-        if result.is_some() {
-            self.states
-                .appearance_commands
-                .settle(command.game_session_id, command.command_id);
-        }
         if matches!(result, Some(wire::ChangeResult::Committed(_))) {
-            self.refresh_riding(actor, command).await;
+            self.refresh_riding(actor, command).await?;
+        }
+        if result.is_some() {
+            self.states.appearance_commands.settle(command.game_session_id, command.command_id);
         }
         result
     }
