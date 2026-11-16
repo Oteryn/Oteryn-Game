@@ -27,7 +27,8 @@ fn scenario_case(
     let name = name.strip_prefix("sidec-").unwrap_or(name);
     let engenc_asura = name.starts_with("engenc-asura-native-");
     let carrot = name.starts_with("m07-carrot-");
-    let ring_offering = name == "m07-ring-offering";
+    let ring_offering =
+        name == "m07-ring-offering" || name == super::super::m07_dreamer_ring_lost_ack::NAME;
     let m07_too_hot = name.starts_with("m07/too-hot-column-");
     let m07_repair = name.starts_with("m07/machinery-repair-");
     let m07_machinery = name.starts_with("m07/machinery-");
@@ -207,7 +208,9 @@ fn scenario_case(
             y: if m44 { trigger.y + 1 } else { trigger.y - 1 },
             ..trigger
         }
-    } else if name == "engitem-native-seal-paint" {
+    } else if name == "engitem-native-seal-paint"
+        || name == super::super::engitem_seal_paint_lost_ack::NAME
+    {
         super::super::engitem_seal_paint::START
     } else if m01b_explore {
         super::super::m01b_explore::start(name, trigger)
@@ -401,6 +404,8 @@ fn scenario_case(
         callback("monk-guidance")?
     } else if target_swap {
         callback("fish-napping-key")?
+    } else if name == super::super::m01c_stampede_entry::NAME {
+        callback(super::super::m01c_stampede_entry::CALLBACK)?
     } else {
         callback(if ring_offering {
             "dreamers-challenge-death-ring-reset"
@@ -930,6 +935,7 @@ fn scenario_case(
             || name.starts_with("engoutfit-")
             || name == "engitem-targuna-selected-tool"
             || name == "engitem-native-seal-paint"
+            || name == super::super::engitem_seal_paint_lost_ack::NAME
         {
             Harness::create_quest_reward(
                 admin,
@@ -1547,6 +1553,8 @@ fn scenario_case(
             || engenc_asura
             || m03_pits
             || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            // The Stampede binding carries its Premium admission on the quest.
+            || name == super::super::m01c_stampede_entry::NAME
             || matches!(
                 name,
                 "npc-item-exchanges" | "m42-hot-typed" | "m42-hot-final"
@@ -1833,6 +1841,8 @@ fn scenario_case(
             || m07_too_hot
             || mead
             || (m01b_explore && callback.admission.as_ref().is_some_and(|a| a.premium))
+            // The Stampede binding carries its Premium admission on the quest.
+            || name == super::super::m01c_stampede_entry::NAME
             || m07_lion
             || lion_trial
             || m44_lions
@@ -2512,6 +2522,14 @@ fn scenario_case(
                 trigger,
             ))
             .await?;
+        } else if name == super::super::engitem_seal_paint_lost_ack::NAME {
+            Box::pin(super::super::engitem_seal_paint_lost_ack::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &callback,
+            ))
+            .await?;
         } else if name == "engitem-targuna-selected-tool" {
             Box::pin(super::super::srv7_reliable_ram::exercise_selected(
                 &mut owner,
@@ -2644,6 +2662,14 @@ fn scenario_case(
                 &h,
                 &authority,
                 name,
+            ))
+            .await?;
+        } else if name == super::super::m07_dreamer_ring_lost_ack::NAME {
+            Box::pin(super::super::m07_dreamer_ring_lost_ack::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                fence,
             ))
             .await?;
         } else if ring_offering {

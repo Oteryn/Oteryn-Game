@@ -11,16 +11,21 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use std::collections::BTreeMap;
 
 fn callback(name: &str) -> TestResult<Callback> {
-    if name == "m01b/asura-palace/s1/entry" {
-        let loaded =
-            oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("asura-dispatch")
-                .map_err(debug)?;
+    // The Stampede entry is an authored binding of the content catalogue.
+    if name == "m01b/asura-palace/s1/entry" || name == super::m01c_stampede_entry::CALLBACK {
+        let label = if name == super::m01c_stampede_entry::CALLBACK {
+            "content-1"
+        } else {
+            "asura-dispatch"
+        };
+        let loaded = oteryn_gameplay_quests::quest::loader::load_embedded_quest_state(label)
+            .map_err(debug)?;
         return oteryn_gameplay_quests::quest::world_callbacks::load_for(loaded.catalogue())?
             .into_iter()
             .find(|callback| callback.key.ends_with(name))
             .ok_or_else(|| "authored Asura callback".into());
     }
-    if name == "engitem-native-seal-paint" {
+    if name == "engitem-native-seal-paint" || name == super::engitem_seal_paint_lost_ack::NAME {
         return oteryn_gameplay_quests::quest::ice_islands_seals::callbacks::definition(
             super::engitem_seal_paint::SEALS[0],
         )

@@ -745,15 +745,19 @@ pub(super) async fn committed_loop_move(
         return Some(LoopMoveReplay::Absent);
     };
     let command_id = CommandId::new(command.command_id).ok()?;
-    admission
+    let command = CommandRef::new(command.game_session_id, command_id);
+    let replay = admission
         .root
-        .read_item_loop_move_receipt(
-            admission.character,
-            fence.character_id,
-            CommandRef::new(command.game_session_id, command_id),
-        )
+        .read_item_loop_move_receipt(admission.character, fence.character_id, command)
         .await
-        .ok()
+        .ok()?;
+    // A committed Dreamer offering whose acknowledgement was lost publishes before the replay.
+    if replay == LoopMoveReplay::Moved
+        && !dreamer_ring::reconcile(admission, fence.character_id, command).await
+    {
+        return None;
+    }
+    Some(replay)
 }
 
 /// The 10-byte Ground cell codec of the item owner (x i32 BE, y i32 BE, floor i16 BE).
@@ -1091,6 +1095,12 @@ pub(super) async fn move_loop_item_with_house_capacity(
         }
         Err(error) => Err(error),
     };
+    #[cfg(test)]
+    if ring_opened
+        && dreamer_ring::interrupted_after_commit(command.game_session_id, command.command_id)
+    {
+        return LoopMoveResult::Unknown;
+    }
     if ring_opened
         && let Some(prepared) = ring_target.as_ref()
         && !admission

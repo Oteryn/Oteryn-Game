@@ -16,6 +16,22 @@ fn m07_dreamer_fire_bug_retains_input_and_resets_shared_entrance() -> TestResult
     })
 }
 
+/// The admitted ignition scenario also proves the bundle Channel frame arm
+/// (`bundle_channel_frame_admission`) against the real retained proof.
+#[test]
+fn dreamer_ignition_accepts_bundle_channel_frame() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    super::kill_reward_e2e::scenario_thread::run("m07-dreamer-bundle-frame", || {
+        super::quest_world_callbacks::scenario(
+            "dreamers-challenge-fire-bug-ignite",
+            dreamer_fire_bug::SOURCE,
+            false,
+        )
+    })
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "the common admitted wire scenario supplies the fenced owners"
@@ -275,6 +291,7 @@ pub(super) async fn exercise(
         );
         tx.rollback().await?;
     }
+    bundle_channel_frame_admission(owner, h).await?;
     let after = owner
         .root
         .read_character_quest_state(authority, fence.character_id)
@@ -284,5 +301,91 @@ pub(super) async fn exercise(
     eprintln!(
         "M07 POSTGRES_CASE_COMPLETED shared_fire_bug real_USE real_STEP retained_item no_progress five_minute_reset replay_no_extension"
     );
+    Ok(())
+}
+
+/// Production bundle Channels pin the bundle frame of the published map, while
+/// the content activation retains the entry frame (channel_boot bundle_channel_pin).
+/// Ignition admits that bundle frame only when the active reset map proves it.
+async fn bundle_channel_frame_admission(
+    owner: &super::ComposedFreshAdmission<'_, '_, '_>,
+    h: &super::fixture::Harness,
+) -> TestResult {
+    const PROOF: &str =
+        "(SELECT * FROM game_quest_shared_input_proofs ORDER BY cause_id LIMIT 1) p";
+    let copy = format!(
+        "INSERT INTO game_quest_shared_input_proofs(character_id,cause_id,cause_ordinal,transition_key,world_id,channel_id,item_instance_id,before_item,location,kind,proof,proof_sha256) \
+         SELECT character_id,cause_id,1001,transition_key,world_id,channel_id,item_instance_id,before_item,location,kind,changed,sha256(changed) \
+         FROM (SELECT p.*,convert_to(jsonb_set(convert_from(p.proof,'UTF8')::jsonb,'{{context,placement_context}}',\
+          (SELECT jsonb_agg(get_byte($1,b.n) ORDER BY b.n) FROM generate_series(0,octet_length($1)-1) AS b(n)))::text,'UTF8') AS changed \
+          FROM {PROOF}) framed"
+    );
+    // The retained context carries the raw published bundle revision: the input
+    // of the bundle frame (qn1-elemental-world-pin proves SQL equals the Rust pin).
+    let revision: String = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+        "SELECT convert_from(p.proof,'UTF8')::jsonb->'context'->>'map_revision' FROM {PROOF}"
+    )))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        revision,
+        crate::map::overlay::map_revision(owner.bundle_map().ok_or("map")?.overlay.base())
+    );
+    let (entry, bundle): (Vec<u8>, Vec<u8>) = sqlx::query_as(sqlx::AssertSqlSafe(format!(
+        "SELECT a.frame_binding_digest,game_elemental_bundle_frame(p.world_id,convert_from(p.proof,'UTF8')::jsonb->'context'->>'map_revision') \
+         FROM {PROOF} JOIN game_content_activations a ON a.world_id=p.world_id AND a.channel_id=p.channel_id \
+         ORDER BY a.activation_sequence DESC LIMIT 1"
+    )))
+    .fetch_one(&h.pool)
+    .await?;
+    assert_ne!(
+        entry, bundle,
+        "the bundle frame differs from the activation entry frame"
+    );
+    // Control: the retained entry-frame proof is admitted unchanged.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query(sqlx::AssertSqlSafe(copy.clone()))
+        .bind(entry.as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.rollback().await?;
+    // Without an active reset map the bundle frame proves nothing.
+    let mut tx = h.pool.begin().await?;
+    let error = sqlx::query(sqlx::AssertSqlSafe(copy.clone()))
+        .bind(bundle.as_slice())
+        .execute(&mut *tx)
+        .await
+        .err()
+        .ok_or("unproven bundle frame admitted")?;
+    assert_eq!(
+        error
+            .as_database_error()
+            .and_then(|error| error.code())
+            .as_deref(),
+        Some("23514")
+    );
+    tx.rollback().await?;
+    // The active reset map with this content and map revision proves the bundle frame.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) \
+         SELECT p.world_id,0,a.server_artifact_digest,convert_from(p.proof,'UTF8')::jsonb->'context'->>'map_revision',\
+          a.server_artifact_digest,a.client_artifact_digest,a.frame_binding_digest,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-11' \
+         FROM {PROOF} JOIN game_content_activations a ON a.world_id=p.world_id AND a.channel_id=p.channel_id \
+         ORDER BY a.activation_sequence DESC LIMIT 1"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO game_world_reset_active SELECT p.world_id,0 FROM {PROOF}"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(sqlx::AssertSqlSafe(copy))
+        .bind(bundle.as_slice())
+        .execute(&mut *tx)
+        .await?;
+    tx.rollback().await?;
+    eprintln!("M07 POSTGRES_CASE_COMPLETED dreamer_ignition_accepts_bundle_channel_frame");
     Ok(())
 }

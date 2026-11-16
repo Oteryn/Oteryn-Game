@@ -695,6 +695,7 @@ fn ordinary_channel_uses_classic_deaths_without_source_room_registration() {
         ChannelContentPin::test(world),
     )
     .unwrap();
+    channel.use_classic_creature_deaths().unwrap();
     assert!(channel.uses_classic_creature_deaths());
     channel
         .install_companion_policies(crate::carrier::soul_war_mirror_runtime::tests::policies())

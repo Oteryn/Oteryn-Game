@@ -1360,7 +1360,9 @@ impl CallbackCastOwner {
                 continue;
             }
             c.done[stage] = true;
-            if c.source.current_retained(r, c.proposal.issuer)
+            // Speech needs the live caster (CallbackSpeech::capture rejects HP0), so a
+            // retained HP0 caster skips its line while the damage stage below still runs.
+            if c.source.current(r, c.proposal.issuer)
                 && let Some(line) =
                     CallbackSpeech::cast(r, c.proposal.issuer, &c.source.creature, true)?
             {

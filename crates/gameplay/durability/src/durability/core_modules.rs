@@ -379,6 +379,7 @@ impl DurabilityError {
     }
 
     pub fn from_commit_error(error: sqlx::Error) -> Self {
+        eprintln!("QMR4_TEMP_COMMIT_ERROR {error:?}");
         let class = SqlxFailureClass::classify(&error);
         drop(error);
         if matches!(

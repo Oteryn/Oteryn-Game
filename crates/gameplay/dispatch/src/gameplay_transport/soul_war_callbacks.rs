@@ -345,6 +345,22 @@ impl SoulWarCallbacks {
     }
 }
 
+/// boss_lever.lua:228-229 children that `initialize_*` creates with a room's boss.
+/// An unentered reusable room holds exactly its boss plus this one helper.
+pub(super) fn initial_helper_key(
+    source: crate::content::bosses::activity_template::PinnedActivitySourceRoom,
+) -> Option<&'static str> {
+    use crate::content::bosses::activity_template::PinnedActivitySourceRoom as Role;
+    match source {
+        Role::GoshnarsHatred => {
+            Some(oteryn_gameplay_encounters::bosses::goshnars_hatred::BurningForm::Ashes.key())
+        }
+        Role::GoshnarsCruelty => Some(cruelty::EYE),
+        Role::GoshnarsMegalomania => Some(megalomania::ASPECT),
+        _ => None,
+    }
+}
+
 fn at(position: RoomPosition) -> MovementLocalPosition {
     MovementLocalPosition {
         x: position.x,

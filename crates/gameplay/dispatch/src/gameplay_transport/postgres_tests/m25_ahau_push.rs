@@ -271,7 +271,9 @@ pub(super) async fn exercise(
         .ok_or("actual native PUSH destination projection")?
         .actor_position
     };
-    assert_eq!(destination.floor, -10);
+    // The Ahau template is qualified from a generic bundle_view room without a
+    // pinned activity source role, so wire_position keeps the legacy +z floor.
+    assert_eq!(destination.floor, 10);
     let intent = oteryn_protocol_oteryn::creature_push::CreaturePushIntent {
         target: entity,
         destination,
@@ -379,7 +381,7 @@ pub(super) async fn exercise(
     Ok(())
 }
 
-async fn walk(
+pub(super) async fn walk(
     view: &mut ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     destination: MovementLocalPosition,

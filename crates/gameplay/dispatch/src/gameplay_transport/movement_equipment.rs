@@ -146,7 +146,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map_err(|_| Unavailable)?
                     .0;
-                if after.session_state() != GameSessionState::Active
+                if (after.session_state() != GameSessionState::Active
+                    && !(forced && after.session_state() == GameSessionState::Reconnectable))
                     || after.commit().character_id() != current.commit().character_id()
                     || after.current_connection_generation() != fence.connection_generation
                     || after.current_character_lease().generation()

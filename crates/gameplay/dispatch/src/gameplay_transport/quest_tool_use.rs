@@ -171,6 +171,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
             });
             let Some(callback) = selected.next() else {
+                // The same tool's fresh-corpse callback keeps its target owner.
+                if corpse.is_some()
+                    && callbacks.iter().any(|c| {
+                        c.fresh_corpse
+                            && c.carried_item.as_deref() == Some(&item.definition.production_key)
+                    })
+                {
+                    return Ok(None);
+                }
                 return Ok(Some(outcome(UseDisposition::Rejected)));
             };
             if selected.next().is_some() {

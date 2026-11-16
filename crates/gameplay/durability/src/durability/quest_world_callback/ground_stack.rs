@@ -56,7 +56,8 @@ pub(super) async fn require(
     // Lock the readset's Item identities before the existing Ground owner.
     // The scope authority below also takes key 33, so issuing it first would
     // reverse the move owner's Item -> Ground order and permit a deadlock.
-    if !matches_requirements(tx, permit, fence, context, requirements).await? {
+    // Key 33 is only tried here: a busy Ground owner refuses without waiting.
+    if !read_requirements(tx, permit, fence, context, requirements, false).await? {
         return Ok(false);
     }
     // The scope issuer also takes namespace 33 with a blocking lock. Acquire
@@ -190,6 +191,17 @@ pub(crate) async fn matches_requirements(
     context: &QuestWorldContext,
     requirements: &[WorldRequirement],
 ) -> Result<bool, DurabilityError> {
+    read_requirements(tx, permit, fence, context, requirements, true).await
+}
+
+async fn read_requirements(
+    tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
+    fence: CurrentCharacterGameplayFence,
+    context: &QuestWorldContext,
+    requirements: &[WorldRequirement],
+    wait: bool,
+) -> Result<bool, DurabilityError> {
     if requirements.iter().all(|r| r.ground_stack.is_none()) {
         return Ok(true);
     }
@@ -213,17 +225,28 @@ pub(crate) async fn matches_requirements(
         .iter()
         .map(|r| spatial(r.position))
         .collect::<Vec<_>>();
-    let protected: Vec<String> = sqlx::query_scalar(
-        "SELECT i.item_instance_id::text FROM game_item_ground_locations g \
-         JOIN game_item_instances i USING(item_instance_id,world_id) \
-         WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
-         AND g.instance_id IS NULL AND g.spatial_position=ANY($3::bytea[]) \
-         AND g.map_revision=$4 AND g.content_revision=$5 \
-         AND g.native_room_placement_context=$6 \
-         AND g.runtime_scope_ownership_generation=$7::text::numeric \
-         AND i.lifecycle=1 AND i.definition_family='Item' \
-         ORDER BY i.item_instance_id LIMIT 65 FOR SHARE OF i",
-    )
+    macro_rules! protected_items {
+        ($lock:literal) => {
+            concat!(
+                "SELECT i.item_instance_id::text FROM game_item_ground_locations g \
+                 JOIN game_item_instances i USING(item_instance_id,world_id) \
+                 WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid \
+                 AND g.instance_id IS NULL AND g.spatial_position=ANY($3::bytea[]) \
+                 AND g.map_revision=$4 AND g.content_revision=$5 \
+                 AND g.native_room_placement_context=$6 \
+                 AND g.runtime_scope_ownership_generation=$7::text::numeric \
+                 AND i.lifecycle=1 AND i.definition_family='Item' \
+                 ORDER BY i.item_instance_id LIMIT 65 FOR SHARE OF i",
+                $lock
+            )
+        };
+    }
+    // A non-waiting caller refuses a busy Item instead of waiting out its pass.
+    let protected: Vec<String> = sqlx::query_scalar(if wait {
+        protected_items!("")
+    } else {
+        protected_items!(" NOWAIT")
+    })
     .bind(world_id.as_bytes().as_slice())
     .bind(channel_id.as_bytes().as_slice())
     .bind(positions)
@@ -238,13 +261,25 @@ pub(crate) async fn matches_requirements(
     }
     // Lane-derived exact scope proof precedes key 33, the existing Ground
     // owner lock used by every location mutation. It prevents new phantoms.
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
+    // A non-waiting caller refuses instead of queueing behind a Ground owner.
+    if wait {
+        sqlx::query(
+            "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
+        )
+        .bind(world_id.as_bytes().as_slice())
+        .bind(channel_id.as_bytes().as_slice())
+        .execute(&mut **tx)
+        .await?;
+    } else if !sqlx::query_scalar::<_, bool>(
+        "SELECT pg_try_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
     )
     .bind(world_id.as_bytes().as_slice())
     .bind(channel_id.as_bytes().as_slice())
-    .execute(&mut **tx)
-    .await?;
+    .fetch_one(&mut **tx)
+    .await?
+    {
+        return Ok(false);
+    }
     for requirement in required {
         let stack = requirement
             .ground_stack

@@ -3,7 +3,7 @@
 use super::*;
 pub(in crate::gameplay_transport) mod maw;
 const BOSS: &str = "oteryn:creature.goshnar_s_cruelty";
-const EYE: &str = "oteryn:creature.a_greedy_eye";
+pub(super) const EYE: &str = "oteryn:creature.a_greedy_eye";
 #[derive(Debug)]
 pub(super) struct CrueltyCallbacks {
     boss: ExactActorRef,

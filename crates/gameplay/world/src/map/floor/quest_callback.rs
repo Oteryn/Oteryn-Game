@@ -95,13 +95,15 @@ pub fn prepare_quest_encounter_ejection<'a>(
 
 impl CallbackTeleport<'_> {
     fn check(&self, runtime: &ChannelRuntimeV1) -> Result<(), MovementError> {
-        qualify_origin(
+        // Only a forced encounter ejection (`player_stack`) moves a control-lost player.
+        qualify_origin_control(
             runtime,
             self.cells,
             self.actor,
             self.session,
             self.expected,
             None,
+            self.player_stack,
         )?;
         let to = self.destination;
         let cell = (to.x, to.y, i32::from(to.floor));

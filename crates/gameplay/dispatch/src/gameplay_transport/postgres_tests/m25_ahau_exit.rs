@@ -15,6 +15,13 @@ fn m25_ahau_player_push_exit_returns_only_pushed_participant_postgres() -> TestR
     scenario(true)
 }
 fn scenario(push: bool) -> TestResult {
+    scenario_case(push, false)
+}
+/// The pushed grace participant's own source-ground equipment read.
+pub(super) fn push_equipment_scenario() -> TestResult {
+    scenario_case(true, true)
+}
+fn scenario_case(push: bool, equipment_read: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -176,7 +183,12 @@ fn scenario(push: bool) -> TestResult {
             let mut view = owner.runtime_view(&registered);
             let actor = admitted.runtime_actor.ok_or("current Instance actor")?;
             if let Some(peer) = peer {
-                super::m25_ahau_push::exercise(&h, &owner, &mut view, admitted, peer).await?;
+                if equipment_read {
+                    super::m25_forced_equipment_read::exercise(&owner, &mut view, admitted, peer)
+                        .await?;
+                } else {
+                    super::m25_ahau_push::exercise(&h, &owner, &mut view, admitted, peer).await?;
+                }
                 drop(view);
                 drop(registered);
                 drop(owner);

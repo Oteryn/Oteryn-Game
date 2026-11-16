@@ -3,11 +3,16 @@ use super::*;
 
 /// Resource admission only. The craft owner has already checked the actual
 /// recovery, Node, scope and current equipment fence in this transaction.
+/// `placement` is the altar's map placement; its tile takes the new Ground root.
 pub(super) async fn has_room(
     tx: &mut super::super::item_mint_audit::Type2Transaction<'_>,
     permit: &super::super::spell_owner_commit::SpellLanePermit,
     fence: CurrentCharacterItemFence,
+    placement: &[u8],
 ) -> Result<bool, DurabilityError> {
+    if placement.len() < 39 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     permit.check_scope(fence.runtime_scope)?;
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Use the same channel Item lock as spell fields and the receipt's final guard.
@@ -22,7 +27,24 @@ pub(super) async fn has_room(
     let active: i64 = sqlx::query_scalar("SELECT game_live_channel_field_count(encode($1,'hex')::uuid,encode($2,'hex')::uuid,ARRAY[]::bytea[])")
         .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
         .fetch_one(&mut ***tx).await?;
-    Ok(active < super::super::field_removal::CHANNEL_FIELDS_MAX)
+    if active >= super::super::field_removal::CHANNEL_FIELDS_MAX {
+        return Ok(false);
+    }
+    // The field admission trigger refuses a 65th live Ground root on the altar tile;
+    // count them under the same lock and with its tile derivation, so a full tile is
+    // a NotPossible refusal instead of a SQL error.
+    let roots: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM (SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) \
+         WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.scope_kind=1 AND g.instance_id IS NULL \
+         AND g.spatial_position=int4send(get_byte($3,34)*256+get_byte($3,35))||int4send(get_byte($3,36)*256+get_byte($3,37))||int2send(get_byte($3,38)::smallint) \
+         AND i.lifecycle=1 LIMIT 64) bounded",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .bind(placement)
+    .fetch_one(&mut ***tx)
+    .await?;
+    Ok(roots < 64)
 }
 
 pub(super) async fn create(

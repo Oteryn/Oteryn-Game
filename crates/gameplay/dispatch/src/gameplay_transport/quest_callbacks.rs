@@ -72,6 +72,8 @@ struct Pending {
     participants: Vec<GameSessionId>,
     projection_target: Option<u64>,
     flame_effect_sent: bool,
+    /// The exact carried tool bound into the durable World context, if any.
+    selected_tool: Option<([u8; 16], Vec<u8>)>,
 }
 
 struct ReadOnlyGate {
@@ -504,6 +506,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return false;
             };
+            // Replay the exact durable binding, including a bound carried tool.
+            let context = match pending.selected_tool {
+                Some((source, intent)) => match context.with_selected_tool(source, intent) {
+                    Some(context) => context,
+                    None => return false,
+                },
+                None => context.into(),
+            };
             let Ok(Some(fence)) = self.current_quest_fence(pending.session).await else {
                 return false;
             };
@@ -544,7 +554,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
             } else {
-                slot.commit_world_callback_with_requirements(
+                slot.commit_world_callback_with_items_selected(
                     self.root,
                     self.character,
                     self.holder,
@@ -828,7 +838,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         observation.as_ref(),
                         optional_pvp,
                         None,
-                        None,
+                        pending.selected_tool.as_ref(),
                     ))
                     .await
                 }
@@ -1585,6 +1595,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         participants: Vec::new(),
                         projection_target: None,
                         flame_effect_sent: false,
+                        selected_tool: None,
                     });
                     pending.origin = Some(origin);
                 }

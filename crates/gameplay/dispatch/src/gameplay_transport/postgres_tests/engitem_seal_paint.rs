@@ -18,12 +18,12 @@ pub(super) const START: Position = Position {
     floor: -7,
 };
 
-fn position(seal: u16) -> TestResult<Position> {
+pub(super) fn position(seal: u16) -> TestResult<Position> {
     let (x, y, floor) = source::targets::target(seal).ok_or("native seal")?.position;
     Ok(Position { x, y, floor })
 }
 
-fn source_appearances(
+pub(super) fn source_appearances(
     map: &crate::map::boot::BundleMap,
     position: Position,
 ) -> TestResult<Vec<u16>> {
@@ -529,7 +529,7 @@ async fn legacy_fresh_refused(
     Ok(())
 }
 
-async fn predecessor(
+pub(super) async fn predecessor(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &AdmittedSession,
     h: &Harness,

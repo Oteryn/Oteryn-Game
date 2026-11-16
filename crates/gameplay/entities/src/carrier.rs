@@ -1283,7 +1283,7 @@ impl ChannelRuntimeV1 {
         explicit_capacity: usize,
         content: ChannelContentPin,
     ) -> Result<Self, CarrierError> {
-        let mut runtime = Self::from_committed_scope_assignment(
+        Self::from_committed_scope_assignment(
             RuntimeScopeRefV1::channel(world_id, channel_id),
             node_id,
             node_registration_revision,
@@ -1292,11 +1292,7 @@ impl ChannelRuntimeV1 {
             decision_identity,
             explicit_capacity,
             content,
-        )?;
-        // Ordinary Channels are not qualified source rooms. Source activities
-        // construct their independently assigned runtime through the scope API.
-        runtime.use_classic_creature_deaths()?;
-        Ok(runtime)
+        )
     }
 
     /// Construct the same physical runtime for one independently committed assignment.

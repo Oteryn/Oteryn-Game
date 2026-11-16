@@ -38,8 +38,16 @@ BEGIN
   OR NOT EXISTS(SELECT 1 FROM game_content_activations a
     WHERE a.world_id=NEW.world_id AND a.channel_id=NEW.channel_id
       AND 'sha256:'||encode(a.server_artifact_digest,'hex')=p->'context'->>'content_revision'
-      AND p->'context'->'placement_context'=(SELECT jsonb_agg(get_byte(a.frame_binding_digest,b.n) ORDER BY b.n)
+      AND (p->'context'->'placement_context'=(SELECT jsonb_agg(get_byte(a.frame_binding_digest,b.n) ORDER BY b.n)
         FROM generate_series(0,octet_length(a.frame_binding_digest)-1) AS b(n))
+       -- A bundle Channel retains the bundle frame of the active reset map,
+       -- while the activation retains the entry frame (2733 pattern).
+       OR EXISTS(SELECT 1 FROM game_world_reset_active active JOIN game_world_reset_epochs epoch USING(world_id,reset_epoch)
+        WHERE active.world_id=NEW.world_id AND active.reset_epoch::text=p->'context'->>'reset_epoch'
+         AND epoch.server_digest=a.server_artifact_digest AND epoch.client_digest=a.client_artifact_digest
+         AND epoch.map_revision=p->'context'->>'map_revision' AND epoch.map_revision ~ '^sha256:[0-9a-f]{64}$'
+         AND p->'context'->'placement_context'=(SELECT jsonb_agg(get_byte(game_elemental_bundle_frame(NEW.world_id,epoch.map_revision),b.n) ORDER BY b.n)
+          FROM generate_series(0,31) AS b(n))))
       AND a.activation_sequence=(SELECT max(b.activation_sequence) FROM game_content_activations b
         WHERE b.world_id=NEW.world_id AND b.channel_id=NEW.channel_id))
   OR coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=NEW.world_id),0)::text

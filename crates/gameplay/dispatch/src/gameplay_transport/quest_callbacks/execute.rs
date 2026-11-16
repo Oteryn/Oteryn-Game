@@ -596,6 +596,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -744,6 +745,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: Vec::new(),
                     flame_effect_sent: false,
                     projection_target: None,
+                    selected_tool: None,
                 });
                 pending.context.get_or_insert(context).clone()
             } else {
@@ -1041,14 +1043,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     participants: party.as_ref().map_or_else(Vec::new, |plan| plan.sessions()),
                     flame_effect_sent: false,
                     projection_target: None,
+                    selected_tool: None,
                 });
                 record.projection_target = projection_target;
-                record.context.get_or_insert(context).clone()
+                // The tool is bound with the first durable context. A replay keeps
+                // that exact binding instead of the replaying caller's tool.
+                if record.context.is_none() {
+                    record.selected_tool = selected_tool.cloned();
+                }
+                (
+                    record.context.get_or_insert(context).clone(),
+                    record.selected_tool.clone(),
+                )
             } else {
                 return UseDisposition::Rejected;
             };
+            let (context, selected_tool) = context;
             let context = if let Some((source, intent)) = selected_tool {
-                let Some(context) = context.with_selected_tool(*source, intent.clone()) else {
+                let Some(context) = context.with_selected_tool(source, intent) else {
                     return UseDisposition::Rejected;
                 };
                 context
@@ -1254,16 +1266,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     if let Ok(mut pending)=self.states.quest_callbacks.records.lock(){pending.remove(&session);}
                     return UseDisposition::Committed;
-                }
-                // A retained legacy World claim keeps main's RewardClaim
-                // chest owner: an already claimed chest is empty
-                // (chest_use_disposition AlreadyClaimed -> NothingToUse).
-                Ok(QuestTransitionOutcome::Refused(oteryn_gameplay_quests::quest::QuestRefusal::StageMismatch))
-                    if matches!(oteryn_gameplay_quests::quest::world_callbacks::legacy_world_claim(callback), Ok(Some(_))) => {
-                    if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
-                        pending.remove(&session);
-                    }
-                    return UseDisposition::NothingToUse;
                 }
                 Ok(_) | Err(_) => {
                     if oteryn_gameplay_quests::quest::death_objectives::load().is_ok_and(|objectives|

@@ -677,6 +677,21 @@ fn qualify_origin(
     expected: MovementPositionSnapshot,
     direction: Option<CardinalStep>,
 ) -> Result<(), MovementError> {
+    qualify_origin_control(runtime, cells, actor, session, expected, direction, false)
+}
+
+/// `forced` is a source encounter ejection (Crystal teleports every player in the area): it
+/// also moves a positioned player whose control was lost. The actor/session binding, scope,
+/// snapshot and spell reservation checks stay.
+fn qualify_origin_control(
+    runtime: &ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    expected: MovementPositionSnapshot,
+    direction: Option<CardinalStep>,
+    forced: bool,
+) -> Result<(), MovementError> {
     if runtime.actor_spell_reserved(actor)
         || cells.scope().world_id != runtime.binding().world_id()
         || cells.scope().generation_digest != runtime.content_pin().server_artifact_digest()
@@ -689,7 +704,7 @@ fn qualify_origin(
             || {
                 runtime
                     .player_control_facts(actor, session)
-                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    .is_ok_and(|facts| forced || facts.control_loss.is_none())
             },
             |direction| runtime.player_step_allowed(actor, session, direction.delta()),
         )
