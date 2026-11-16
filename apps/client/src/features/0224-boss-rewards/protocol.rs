@@ -9,3 +9,11 @@ impl Outbox {
         self.analyser_boss_rewards_result(response);
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// Applies one server reply through the production reducer for the Bevy form tests.
+    pub(crate) fn bevy_boss_rewards_result(&self, response: &BossRewardsResponse) {
+        self.boss_rewards_result(response);
+    }
+}
