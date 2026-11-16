@@ -274,6 +274,7 @@ fn project(
     mut fills: Query<(&VitalFill, &mut Node, &mut BackgroundColor)>,
     mut actions: Query<(Entity, &mut HudAction, Has<InteractionDisabled>)>,
     mut entered: Local<Option<u64>>,
+    playback: Option<NonSend<crate::bevy_shell::audio::Playback>>,
 ) {
     let Some(play) = &owner.play else {
         *entered = None;
@@ -326,7 +327,7 @@ fn project(
                 if owner.settings.preferences.compact_status {
                     oteryn_client_ui::spell_action_bar::vitals_text(vitals.as_ref())
                 } else {
-                    play.view.hud_status()
+                    status_line(play, playback.as_ref().and_then(|audio| audio.status()))
                 }
             }
             InfoText::Analyser => play.link.analyser_text().replace("\r\n", "\n"),
@@ -358,6 +359,25 @@ fn project(
             }
         }
     }
+}
+/// The combined status line: custom hotkeys, item movement, the HUD status, audio, the
+/// movement keys and movement feedback.
+fn status_line(play: &crate::bevy_shell::owner::ActivePlay, audio: Option<&str>) -> String {
+    let settings = play.view.preferences().audio;
+    let audio = format!(
+        "Audio {}%{} ({})",
+        settings.master_volume,
+        if settings.muted { " muted" } else { "" },
+        audio.unwrap_or("ready")
+    );
+    let status = lfmt!(
+        "{movement} — {} — {audio} — Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop — {}",
+        play.view.hud_status(),
+        play.link.movement_feedback().unwrap_or(""),
+        movement = play.link.item_movement_status(),
+        audio = audio
+    );
+    format!("{} — {status}", play.link.custom_hotkey_status())
 }
 #[cfg(test)]
 #[path = "hud/tests.rs"]

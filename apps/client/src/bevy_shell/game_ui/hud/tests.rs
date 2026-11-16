@@ -426,7 +426,23 @@ fn compact_status_projects_the_settings_owner() -> TestResult {
         let expected = if compact {
             oteryn_client_ui::spell_action_bar::vitals_text(play.link.actor_vitals().as_ref())
         } else {
-            play.view.hud_status()
+            let combined = status_line(play, None);
+            for part in [
+                play.view.hud_status(),
+                play.link.item_movement_status().to_owned(),
+                play.link.custom_hotkey_status(),
+                format!(
+                    "Audio {}% (ready)",
+                    play.view.preferences().audio.master_volume
+                ),
+                "Ctrl+arrows: Turn; Ctrl+F: Follow; Esc: Stop".to_owned(),
+            ] {
+                assert!(
+                    combined.contains(&part),
+                    "combined status line misses {part}"
+                );
+            }
+            combined
         };
         assert!(
             app.world_mut()
