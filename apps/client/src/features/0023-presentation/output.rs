@@ -196,10 +196,10 @@ impl AudioOutput {
 /// thread (a Bevy task, a test) asks first.
 #[cfg(windows)]
 fn pin_audio_host() {
-    static PINNED: std::sync::OnceLock<()> = std::sync::OnceLock::new();
-    PINNED.get_or_init(|| {
+    static PINNED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
+    pin_once(&PINNED, || {
         let (ready, wait) = std::sync::mpsc::channel();
-        let spawned = std::thread::Builder::new()
+        std::thread::Builder::new()
             .name("oteryn-audio-host".into())
             .spawn(move || {
                 let _ = rodio::cpal::default_host().output_devices();
@@ -207,11 +207,22 @@ fn pin_audio_host() {
                 loop {
                     std::thread::park();
                 }
-            });
-        if spawned.is_ok() {
-            let _ = wait.recv();
-        }
+            })
+            .is_ok()
+            && wait.recv().is_ok()
     });
+}
+
+/// Runs `pin` until it succeeds once; a failed pin (the host thread could not be spawned)
+/// leaves `pinned` unset, so a later call tries again.
+#[cfg(any(windows, test))]
+fn pin_once(pinned: &std::sync::Mutex<bool>, pin: impl FnOnce() -> bool) {
+    let mut pinned = pinned
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if !*pinned {
+        *pinned = pin();
+    }
 }
 
 #[cfg(not(windows))]

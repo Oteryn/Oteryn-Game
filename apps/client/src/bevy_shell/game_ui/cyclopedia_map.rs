@@ -100,8 +100,8 @@ fn donate(
     {
         return;
     }
-    state.donate = None;
     let Some(play) = &owner.play else {
+        state.donate = None;
         return;
     };
     let panel = play.link.cyclopedia_map_panel();
@@ -110,10 +110,15 @@ fn donate(
         || owner.modal_active()
         || !guard.allows(field)
         || !panel.geometry.open
-        || state.snapshot.as_ref() != Some(&panel)
     {
+        state.donate = None;
         return;
     }
+    // A map update since the press redraws the window first; the press waits for that redraw.
+    if state.snapshot.as_ref() != Some(&panel) {
+        return;
+    }
+    state.donate = None;
     play.link
         .cyclopedia_map_edit(0, gold.value().to_string().trim().to_owned());
     play.link.cyclopedia_map_request(Intent::Donate);
@@ -165,6 +170,7 @@ fn project(
     if state.generation != owner.generation() || panel.is_none() {
         remove_root(&mut state, &mut commands, &mut focus, &parents);
         state.snapshot = None;
+        state.donate = None;
         state.generation = owner.generation();
     }
     let Some(panel) = panel else {
@@ -179,7 +185,10 @@ fn project(
         .and_then(|_| donation.single().ok())
         .map(|gold| gold.value().to_string());
     remove_root(&mut state, &mut commands, &mut focus, &parents);
+    let pressed = state.donate == Some(state.serial);
     state.serial = state.serial.wrapping_add(1);
+    // A Donate pressed in the replaced window stays armed for the redrawn one.
+    state.donate = pressed.then_some(state.serial);
     let root = commands
         .spawn((
             Node {

@@ -13,7 +13,7 @@ pub(super) fn build(
     help: Option<&(Topic, String)>,
 ) {
     let selected = help.map(|(topic, _)| *topic);
-    section::label(commands, parent, skins, "Help");
+    section::label(commands, parent, skins, tr!("Help"));
     let bar = section::bar(commands, parent);
     for topic in Topic::ALL {
         let button = section::action(

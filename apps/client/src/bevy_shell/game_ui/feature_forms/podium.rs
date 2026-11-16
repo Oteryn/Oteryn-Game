@@ -54,7 +54,7 @@ pub(super) fn project(
         .get_or_insert_with(|| {
             std::env::var_os(crate::map::ASSET_DIR_ENV)
                 .ok_or_else(|| {
-                    "Set OTERYN_ASSET_DIR to the existing pinned artwork root".to_owned()
+                    tr!("Set OTERYN_ASSET_DIR to the existing pinned artwork root").to_owned()
                 })
                 .and_then(|root| Artwork::load(std::path::Path::new(&root)))
         })

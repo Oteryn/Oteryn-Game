@@ -24,6 +24,28 @@ fn dialog_links_preserve_session_state_and_owner_drop_still_closes_open_dialogs(
 }
 
 #[test]
+fn owner_drop_disarms_the_hireling_summon_pick() {
+    let (owner, _commands, _outbox) = play_channel();
+    {
+        let mut mailbox = lock(&owner.mailbox);
+        mailbox.hireling_picking = true;
+        mailbox.hireling.feedback = Some("Select an adjacent summon location");
+        mailbox.hireling.target = Some((7, 9, 7));
+    }
+    let window = PlayLink {
+        owns_session: false,
+        mailbox: std::sync::Arc::clone(&owner.mailbox),
+        commands: owner.commands.clone(),
+    };
+    drop(owner);
+    assert!(!window.hireling_pick_cancel());
+    let panel = window.hireling_panel();
+    assert_eq!(panel.feedback, None);
+    assert_eq!(panel.target, None);
+    drop(window);
+}
+
+#[test]
 fn shared_frontend_is_session_owned_and_keeps_chat_state_live() {
     let (owner, _commands, _outbox) = play_channel();
     assert!(!owner.uses_shared_frontend());

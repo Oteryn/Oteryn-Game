@@ -417,6 +417,45 @@ fn taskboard_soulseal_panel_reviews_cost_then_enters_exact_authorized_fight()
     Ok(())
 }
 #[test]
+fn taskboard_talisman_confirmation_survives_a_pending_board()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (mut app, mut commands, outbox) = extra_fixture(panel())?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::Tab(Tab::Talisman)))?;
+    extra_click(&mut app, |kind| matches!(kind, Kind::BuyTalisman))?;
+    let prompt = |app: &mut App| {
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|t| t.0 == "Buy a Bounty Talisman for 5000 gold?")
+    };
+    assert!(prompt(&mut app));
+    let mut pending = panel();
+    pending.open = true;
+    pending.pending = true;
+    outbox.bevy_task_board_fixture(pending);
+    app.update();
+    assert!(prompt(&mut app), "a board update closed the confirmation");
+    extra_click(&mut app, |kind| matches!(kind, Kind::ConfirmTalisman))?;
+    assert!(
+        commands.try_recv().is_err(),
+        "nothing is sent while the board waits"
+    );
+    assert!(
+        prompt(&mut app),
+        "the pending board dropped the confirmation"
+    );
+    let mut settled = panel();
+    settled.open = true;
+    outbox.bevy_task_board_fixture(settled);
+    app.update();
+    extra_click(&mut app, |kind| matches!(kind, Kind::ConfirmTalisman))?;
+    assert!(
+        commands.try_recv().is_ok(),
+        "the confirmed purchase is sent once settled"
+    );
+    Ok(())
+}
+#[test]
 fn taskboard_talisman_tab_buys_and_upgrades_through_owner_and_shows_reply()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::combat_input::PlayCommand;

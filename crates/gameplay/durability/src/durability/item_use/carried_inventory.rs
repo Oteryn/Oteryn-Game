@@ -165,9 +165,12 @@ impl DurabilityRoot {
     }
 
     /// The stored text of one item in the carried tree or equipment, read in the same fenced
-    /// snapshot that proves its custody (the custody `read_item_use_inventory` gives the MAIL
+    /// transaction that proves its custody (the custody `read_item_use_inventory` gives the MAIL
     /// text writer). `Ok(None)`: the item is not carried by this character. An item without a
-    /// text row reads as empty text. Read only: no revision, receipt or rate token is touched.
+    /// text row reads as empty text. It takes the session item fence the MAIL text writer
+    /// takes (the Character root lock) and may reconcile the carried death tree, as every
+    /// fenced carried read does; it never writes the item text, a revision, receipt or rate
+    /// token.
     pub async fn read_carried_item_text(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,

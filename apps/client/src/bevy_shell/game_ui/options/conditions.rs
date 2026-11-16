@@ -34,7 +34,9 @@ pub(super) fn build(
         commands,
         parent,
         skins,
-        "Conditions: choose which conditions show on the HUD and in the status bar, and their order.",
+        tr!(
+            "Conditions: choose which conditions show on the HUD and in the status bar, and their order."
+        ),
     );
     let list = commands
         .spawn((

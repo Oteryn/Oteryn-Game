@@ -467,6 +467,42 @@ fn cyclopedia_map_donate_waits_for_the_pending_paste_and_sends_the_pasted_gold()
 }
 
 #[test]
+fn cyclopedia_map_donate_pressed_before_a_map_update_is_sent_after_the_redraw()
+-> Result<(), Box<dyn std::error::Error>> {
+    use oteryn_client_runtime::cyclopedia_map as map;
+    let (mut app, mut rx, _outbox) = ready()?;
+    for mut text in app
+        .world_mut()
+        .query_filtered::<&mut EditableText, With<Donation>>()
+        .iter_mut(app.world_mut())
+    {
+        *text = EditableText::new("500");
+    }
+    let entity = app
+        .world_mut()
+        .query::<(Entity, &Action)>()
+        .iter(app.world())
+        .find_map(|(e, a)| (a.kind == Kind::Explore(Intent::Donate)).then_some(e))
+        .ok_or("missing control")?;
+    app.world_mut().trigger(Activate { entity });
+    app.world()
+        .non_send::<HostOwner>()
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .cyclopedia_map_edit(0, "1".into());
+    app.update();
+    let donate = feature(&mut rx)?;
+    assert_eq!(
+        (donate.kind, &donate.payload),
+        (73, &map::request(4, 500).map_err(|e| format!("{e:?}"))?.1)
+    );
+    assert!(rx.try_recv().is_err());
+    Ok(())
+}
+
+#[test]
 fn cyclopedia_map_keeps_the_typed_donation_across_a_window_redraw()
 -> Result<(), Box<dyn std::error::Error>> {
     let (mut app, mut rx, _outbox) = ready()?;

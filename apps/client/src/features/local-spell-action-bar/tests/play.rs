@@ -245,6 +245,34 @@ fn full_spell_row_dispatches_last_slot_and_projects_server_cooldown()
 }
 
 #[test]
+fn multiaction_equip_members_need_a_carried_object() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::play::feature_local_spell_action_bar::view::BarAction;
+    use std::num::NonZeroU32;
+    let (link, _commands, outbox) = play_channel();
+    outbox.hotkey_equip_initialize(true);
+    outbox.hotkey_equip_items(vec![256]);
+    let equip = |definition: u32| -> Result<BarAction, Box<dyn std::error::Error>> {
+        Ok(BarAction::Equip {
+            definition: NonZeroU32::new(definition).ok_or("item")?,
+            upgrade_tier: 0,
+        })
+    };
+    assert!(!link.assign_bar_action(
+        10,
+        BarAction::Multi {
+            actions: vec![equip(256)?, equip(999)?]
+        }
+    ));
+    assert!(link.assign_bar_action(
+        10,
+        BarAction::Multi {
+            actions: vec![equip(256)?]
+        }
+    ));
+    Ok(())
+}
+
+#[test]
 fn mixed_bar_actions_use_real_commands_and_persist_separately_from_spell_indices()
 -> Result<(), Box<dyn std::error::Error>> {
     use crate::play::feature_local_spell_action_bar::view::{BarAction, PassiveAbility};

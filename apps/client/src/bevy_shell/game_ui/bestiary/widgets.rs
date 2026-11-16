@@ -297,12 +297,12 @@ fn charms(
         ),
         (
             Intent::Remove,
-            "Remove from creature",
+            tr!("Remove from creature"),
             chosen.is_some_and(|charm| charm.assigned_race.is_some()),
         ),
         (
             Intent::ResetAll,
-            "Reset all charms",
+            tr!("Reset all charms"),
             // The reset refunds unlocked stages too, assigned or not.
             view.charms.iter().any(|charm| charm.unlocked_stage > 0),
         ),
@@ -323,10 +323,10 @@ fn charms(
         return;
     };
     let action = if intent == Intent::ResetAll {
-        "Reset all charms".to_string()
+        tr!("Reset all charms").to_string()
     } else {
         chosen.map_or_else(
-            || "Remove the charm".into(),
+            || tr!("Remove the charm").into(),
             |charm| {
                 let name = u16::try_from(charm.charm.get())
                     .ok()
@@ -335,7 +335,7 @@ fn charms(
                         || format!("Charm {}", charm.charm),
                         |card| card.name.clone(),
                     );
-                format!("Remove {name} from its creature")
+                lfmt!("Remove {name} from its creature", name = name)
             },
         )
     };
@@ -344,8 +344,13 @@ fn charms(
         skin,
         parent,
         fee.map_or_else(
-            || format!("{action}? The gold fee depends on your level, which is not reported yet."),
-            |fee| format!("{action} for {fee} gold?"),
+            || {
+                lfmt!(
+                    "{action}? The gold fee depends on your level, which is not reported yet.",
+                    action = action
+                )
+            },
+            |fee| lfmt!("{action} for {fee} gold?", action = action, fee = fee),
         ),
     );
     let answer = commands
@@ -364,7 +369,10 @@ fn charms(
             kind: Kind::Confirm(intent),
             ..control
         },
-        &fee.map_or_else(|| "Confirm".into(), |fee| format!("Confirm ({fee} gold)")),
+        &fee.map_or_else(
+            || tr!("Confirm").into(),
+            |fee| lfmt!("Confirm ({fee} gold)", fee = fee),
+        ),
         busy || fee.is_none(),
     );
     button(
@@ -375,7 +383,7 @@ fn charms(
             kind: Kind::Cancel,
             ..control
         },
-        "Cancel",
+        tr!("Cancel"),
         false,
     );
 }

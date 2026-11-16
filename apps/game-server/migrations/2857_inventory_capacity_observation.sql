@@ -1,17 +1,20 @@
--- INVCAP-1: advisory HUD observations prove the retained node and assignment history
--- that the observed fence depends on, in one READ ONLY, REPEATABLE READ transaction.
--- These snapshot predicates never authorize a durable mutation; the locking writer
--- predicates (full history scans) remain unchanged. Every lookup here is bounded by a
--- unique or scope index, so an observation costs the same whatever the history length.
+-- INVCAP-1: advisory HUD observation checks of the node and assignment history the observed
+-- fence depends on, in one READ ONLY, REPEATABLE READ transaction. They are an advisory
+-- observation only: they never authorize a durable mutation, and they check less than the
+-- locking writer predicates (full history scans), which remain unchanged and authoritative.
+-- Every lookup here is bounded by a unique or scope index, so an observation costs the same
+-- whatever the history length.
 -- Definer privileges keep private node-history tables inaccessible to runtime callers.
 
 -- Latest-receipt lookup of one scope (`ORDER BY source_revision DESC LIMIT 1`).
 CREATE INDEX game_runtime_scope_assignment_receipts_scope_revision
     ON game_runtime_scope_assignment_receipts (scope_key, source_revision);
 
--- The registration revision namespace is retained at its base and its tip and holds
--- nothing beyond the writer high-water. A restore that loses the newest registration or
--- ending (a revoke or supersede of the proven node included) fails here.
+-- Checks the registration revision namespace only at its base and its tip: revision 1
+-- exists, a registration or ending exists at the writer high-water, and nothing lies beyond
+-- it. A restore that loses the newest registration or ending (a revoke or supersede of the
+-- proven node included) fails here. It does not check the count, distinctness or gaps of
+-- the revisions in between; only the writer predicates do.
 CREATE FUNCTION game_node_registration_observation_valid() RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 DECLARE
@@ -53,9 +56,11 @@ BEGIN
     RETURN FOUND;
 END; $$;
 
--- The assignment revision namespace is retained at its base and its tip and holds nothing
--- beyond the writer high-water; the observed scope's row exactly reproduces its latest
--- receipt. A superseded or rolled-back row (a newer receipt for the scope) fails here.
+-- Checks the assignment revision namespace only at its base and its tip (receipt 1 and the
+-- writer high-water exist, nothing lies beyond it) and that the observed scope's row exactly
+-- reproduces that scope's latest receipt. A superseded or rolled-back row of the observed
+-- scope (a newer receipt for it) fails here. The guarantee covers the observed scope only:
+-- other scopes and the receipts between base and tip are not checked.
 CREATE FUNCTION game_runtime_scope_assignment_observation_valid(p_scope_key BYTEA)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$

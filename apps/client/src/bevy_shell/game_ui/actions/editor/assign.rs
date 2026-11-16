@@ -29,18 +29,22 @@ fn multi_message(actions: &[BarAction]) -> String {
 fn action_label(action: &BarAction) -> String {
     match action {
         BarAction::Spell { name, .. } => name.clone(),
-        BarAction::Use { definition, .. } => format!("Use object {definition}"),
-        BarAction::Equip { definition, .. } => format!("Equip object {definition}"),
+        BarAction::Use { definition, .. } => {
+            lfmt!("Use object {definition}", definition = definition)
+        }
+        BarAction::Equip { definition, .. } => {
+            lfmt!("Equip object {definition}", definition = definition)
+        }
         BarAction::Text { text, .. } => text.clone(),
-        BarAction::Passive { .. } => "Passive ability".into(),
-        BarAction::Multi { actions } => format!("Multiaction ({} actions)", actions.len()),
+        BarAction::Passive { .. } => tr!("Passive ability").into(),
+        BarAction::Multi { actions } => lfmt!("Multiaction ({} actions)", actions.len()),
     }
 }
 
 /// Adds one spell or object to the draft, at most three.
 pub(super) fn add_to_multi(draft: &mut Vec<BarAction>, action: BarAction) -> String {
     if draft.len() >= 3 {
-        return "A multiaction holds at most three actions.".into();
+        return tr!("A multiaction holds at most three actions.").into();
     }
     draft.push(action);
     multi_message(draft)
@@ -70,9 +74,9 @@ pub(super) fn toggle_multi(
             },
         )
     {
-        return "Multiaction saved".into();
+        return tr!("Multiaction saved").into();
     }
-    let message = format!(
+    let message = lfmt!(
         "Assign at least one live spell or carried object.\n{}",
         multi_message(&actions)
     );

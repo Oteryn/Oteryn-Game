@@ -343,7 +343,7 @@ pub(super) fn page(
                 commands,
                 skins,
                 checks,
-                (row.label, row.id),
+                (oteryn_client_ui::localization::tr(row.label), row.id),
                 Control::Check(row.id),
                 true,
                 read(draft),

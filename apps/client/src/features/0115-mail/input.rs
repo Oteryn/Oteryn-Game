@@ -8,6 +8,9 @@ use oteryn_client_ui::mail::Intent;
 use oteryn_input_actions::NormalizedInputEvent;
 use tokio::sync::mpsc::UnboundedSender;
 
+/// The writing window's per-field UTF-8 byte limit.
+const FIELD_BYTES: usize = 7996;
+
 pub(in crate::play) fn submit(
     mailbox: &mut Mailbox,
     commands: &UnboundedSender<PlayCommand>,
@@ -26,7 +29,7 @@ pub(in crate::play) fn submit(
     if panel
         .fields
         .iter()
-        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, 7996)) {
+        .any(|value| !oteryn_client_ui::modal_dialogs::TextEditor::accepts(value, FIELD_BYTES)) {
         panel.feedback = "A form field exceeds its UTF-8 byte limit or contains invalid text".into();
         return;
     }
@@ -105,6 +108,11 @@ impl PlayLink {
 /// Asks for the current text of the writing window's item. The window waits for the reply,
 /// which fills the text field, so a Write never replaces a text the player has not seen.
 fn read(properties: &mut super::protocol::Panels, commands: &UnboundedSender<PlayCommand>) {
+    // Without the mail capability nothing is sent, so the item must stay unread.
+    if !properties.mail.selected {
+        properties.mail.feedback = tr!("Unavailable in this session").into();
+        return;
+    }
     let Ok(handle) = super::protocol::handle(&properties.mail.fields[0]) else {
         return;
     };
@@ -124,7 +132,10 @@ fn read(properties: &mut super::protocol::Panels, commands: &UnboundedSender<Pla
 /// while another request was pending.
 pub(in crate::play) fn tick(mailbox: &mut Mailbox, commands: &UnboundedSender<PlayCommand>) {
     let properties = &mut mailbox.properties;
-    if properties.mail.pending || !properties.mail_inscription.selected {
+    if properties.mail.pending
+        || !properties.mail.selected
+        || !properties.mail_inscription.selected
+    {
         return;
     }
     let Ok(handle) = super::protocol::handle(&properties.mail.fields[0]) else {
@@ -140,7 +151,9 @@ pub(in crate::play) fn tick(mailbox: &mut Mailbox, commands: &UnboundedSender<Pl
     }
 }
 
-/// The read's reply: the server's text fills the editor; a refusal leaves it blocked.
+/// The read's reply: the server's text fills the editor; a refusal leaves it blocked. A text
+/// the player typed before the read is kept, and the Write that started the read is pressed
+/// again; a text beyond the window's byte limit blocks Write, as it cannot be shown.
 pub(in crate::play) fn inscription_result(
     properties: &mut super::protocol::Panels,
     command: &oteryn_client_runtime::raw_feature::FeatureCommand,
@@ -153,14 +166,23 @@ pub(in crate::play) fn inscription_result(
     panel.pending = false;
     let reply = inscription::apply_result(&mut properties.mail_inscription, command, result);
     panel.feedback = match reply {
-        Some(reply) => {
-            panel.fields[2] = reply.text;
-            if reply.writable {
-                String::new()
-            } else {
-                tr!("This item cannot be written on").into()
+        Some(reply)
+            if !oteryn_client_ui::modal_dialogs::TextEditor::accepts(&reply.text, FIELD_BYTES) =>
+        {
+            if let Known::Read { handle, .. } = properties.mail_inscription.known {
+                properties.mail_inscription.known = Known::Refused(handle);
             }
+            tr!("The letter text is too long").into()
         }
+        Some(reply) if !reply.writable => {
+            panel.fields[2] = reply.text;
+            tr!("This item cannot be written on").into()
+        }
+        Some(reply) if panel.fields[2].is_empty() => {
+            panel.fields[2] = reply.text;
+            String::new()
+        }
+        Some(_) => tr!("The item's text was read; press Write again to replace it").into(),
         None => tr!("The server refused to read the item's text").into(),
     };
 }

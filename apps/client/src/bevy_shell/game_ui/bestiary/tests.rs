@@ -546,3 +546,90 @@ fn bestiary_charms_unlock_assign_remove_and_reset_through_the_progression_owner(
     );
     Ok(())
 }
+
+/// A charm catalogue whose `next` cursor returns to an earlier page (0, 1, 2, 1) stops: the
+/// progression reducer refuses a page whose `next` is not beyond its own cursor.
+#[test]
+fn bestiary_charm_paging_stops_on_a_cyclic_cursor() -> Result {
+    use progression::CharmProgressionOutcome as Outcome;
+    let mut owner = HostOwner::new(None)?;
+    let (link, mut receiver, outbox) = play_channel();
+    link.use_shared_frontend();
+    outbox.bevy_bestiary_initialize();
+    let mut view = PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?;
+    view.use_shared_frontend();
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay { view, link });
+    owner.phase = Phase::Playing;
+    owner
+        .play
+        .as_ref()
+        .ok_or("play")?
+        .link
+        .charm_progression_open();
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        oteryn_client_ui_bevy::GlobalUiPlugin,
+    ))
+    .init_asset::<Image>()
+    .init_asset::<Font>()
+    .init_resource::<bevy::input_focus::InputFocus>()
+    .insert_non_send(owner)
+    .add_systems(Startup, crate::bevy_shell::ui::setup);
+    super::super::modal::install(&mut app);
+    install(&mut app);
+    app.update();
+    let mut sequence = 0;
+    let mut publish = |command: &FeatureCommand, payload: Vec<u8>| {
+        sequence += 1;
+        outbox.bevy_bestiary_result(
+            command,
+            &GatedCommandResult {
+                command_id: sequence,
+                server_sequence: sequence,
+                status: oteryn_session::CommandStatus::Accepted,
+                payload,
+            },
+        );
+    };
+    let query = command(&mut receiver)?;
+    publish(
+        &query,
+        charm_reply(Outcome::Query, 0, (0, None, 100), None)?,
+    );
+    app.update();
+    let catalogue = command(&mut receiver)?;
+    let empty = wire::Page {
+        next: None,
+        categories: vec![],
+        cards: vec![],
+    };
+    publish(
+        &catalogue,
+        wire::encode_page(&empty).map_err(|e| format!("{e:?}"))?,
+    );
+    app.update();
+    for (after, next) in [(0, Some(1)), (1, Some(2)), (2, Some(1))] {
+        let charms = command(&mut receiver)?;
+        assert_eq!(
+            wire::decode_charm_request(&charms.payload).map_err(|e| format!("{e:?}"))?,
+            after
+        );
+        let mut page = charm_page(after);
+        page.next = next;
+        publish(
+            &charms,
+            wire::encode_page(&page).map_err(|e| format!("{e:?}"))?,
+        );
+        app.update();
+    }
+    for _ in 0..3 {
+        app.update();
+        assert!(
+            receiver.try_recv().is_err(),
+            "a visited charm page was requested again"
+        );
+    }
+    Ok(())
+}

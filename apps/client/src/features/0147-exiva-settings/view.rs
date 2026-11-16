@@ -6,7 +6,9 @@ impl PlayLink {
 }
 
 /// Exiva permissions for the shared frontend; a mode button toggles that one permission.
-pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
+/// Until the list is read only Refresh is offered; it keeps the first place, so a press
+/// made before the list arrived never lands on another button.
+pub(in crate::play) fn form(link: &PlayLink) -> crate::play::feature_0115_mail::view::form::Form {
     use crate::combat_input::PlayCommand;
     use oteryn_client_ui::exiva_settings::{panel_text, request};
     const MODES: [&str; 5] = [
@@ -19,16 +21,20 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
     crate::play::feature_0115_mail::view::form::Form {
         title: tr!("Exiva permissions"),
         labels: &["Player name to add", "Player row to remove (from 1)"],
-        buttons: &[
-            "Add name",
-            "Remove selected",
-            "Refresh",
-            "Allow everyone",
-            "Allow player list",
-            "Allow own guild",
-            "Allow own party",
-            "Allow VIP list",
-        ],
+        buttons: if lock(&link.mailbox).exiva.list.is_some() {
+            &[
+                "Refresh",
+                "Add name",
+                "Remove selected",
+                "Allow everyone",
+                "Allow player list",
+                "Allow own guild",
+                "Allow own party",
+                "Allow VIP list",
+            ]
+        } else {
+            &["Refresh"]
+        },
         snapshot: |mailbox| {
             let panel = &mailbox.exiva;
             let mut text = String::new();
@@ -53,18 +59,19 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
         set_open: |mailbox, value| mailbox.exiva.open = value,
         submit: |mailbox, commands, action, values| {
             use crate::play::feature_0115_mail::view::form::field;
-            if action != 2 && mailbox.exiva.list.is_none() {
+            if action != 0 && mailbox.exiva.list.is_none() {
                 mailbox.exiva.error = Some(tr!("Exiva request refused; refresh the list"));
                 return;
             }
             let payload = match action {
-                0 => {
+                0 => Some(vec![5]),
+                1 => {
                     let mut payload = vec![6];
                     let name: String = field(&values, 0).chars().take(29).collect();
                     payload.extend(name.as_bytes());
                     Some(payload)
                 }
-                1 => {
+                2 => {
                     let payload = field(&values, 1)
                         .parse::<usize>()
                         .ok()
@@ -80,7 +87,6 @@ pub(in crate::play) fn form(_link: &PlayLink) -> crate::play::feature_0115_mail:
                     }
                     payload
                 }
-                2 => Some(vec![5]),
                 3..=7 => mailbox
                     .exiva
                     .list

@@ -272,9 +272,9 @@ fn track_toggles(
         let caption = commands
             .spawn((
                 Text::new(if tracked {
-                    "Stop tracking kills"
+                    tr!("Stop tracking kills")
                 } else {
-                    "Track kills"
+                    tr!("Track kills")
                 }),
                 TextFont {
                     font: skins.font.clone().into(),

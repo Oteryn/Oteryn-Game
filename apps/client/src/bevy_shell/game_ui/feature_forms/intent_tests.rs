@@ -162,7 +162,7 @@ fn public_channels_map_the_room_row_and_refuse_an_unknown_room() -> TestResult {
     Ok(())
 }
 
-/// A refused Exiva read leaves Refresh usable; the other buttons say why they do nothing.
+/// A refused Exiva read leaves Refresh usable; the buttons that need the list are not offered.
 #[test]
 fn exiva_refresh_stays_enabled_after_a_refused_read() -> TestResult {
     let (mut app, mut commands, outbox) = capable()?;
@@ -173,16 +173,20 @@ fn exiva_refresh_stays_enabled_after_a_refused_read() -> TestResult {
     refused.status = CommandStatus::Rejected;
     outbox.bevy_exiva_result(&refused);
     app.update();
-    let disabled = app
+    let actions: Vec<_> = app
         .world_mut()
         .query::<(&Control, Has<InteractionDisabled>)>()
         .iter(app.world())
-        .any(|(control, disabled)| control.action == Some(2) && disabled);
-    assert!(!disabled, "Refresh is disabled after a refused read");
+        .filter_map(|(control, disabled)| control.action.map(|action| (action, disabled)))
+        .collect();
+    assert_eq!(
+        actions,
+        vec![(0, false)],
+        "only an enabled Refresh is offered"
+    );
+    assert!(!has_text(&mut app, "Add name"));
+    assert!(!has_text(&mut app, "Remove selected"));
     click(&mut app, Some(0))?;
-    assert!(commands.try_recv().is_err());
-    assert!(summary(&mut app).contains("Exiva request refused; refresh the list"));
-    click(&mut app, Some(2))?;
     assert_eq!(commands.try_recv()?, PlayCommand::Exiva(vec![5]));
     Ok(())
 }
@@ -205,7 +209,7 @@ fn exiva_buttons_map_to_their_requests() -> TestResult {
     outbox.bevy_exiva_result(&list);
     app.update();
     set(&mut app, 0, "Bob");
-    click(&mut app, Some(0))?;
+    click(&mut app, Some(1))?;
     assert_eq!(
         commands.try_recv()?,
         PlayCommand::Exiva(b"\x06Bob".to_vec())
@@ -213,7 +217,7 @@ fn exiva_buttons_map_to_their_requests() -> TestResult {
     outbox.bevy_exiva_result(&list);
     app.update();
     set(&mut app, 1, "1");
-    click(&mut app, Some(1))?;
+    click(&mut app, Some(2))?;
     let mut remove = vec![2];
     remove.extend([3; 16]);
     assert_eq!(commands.try_recv()?, PlayCommand::Exiva(remove));
@@ -221,7 +225,7 @@ fn exiva_buttons_map_to_their_requests() -> TestResult {
     app.update();
     for row in ["5", "0", "x"] {
         set(&mut app, 1, row);
-        click(&mut app, Some(1))?;
+        click(&mut app, Some(2))?;
         assert!(commands.try_recv().is_err(), "row {row:?} was removed");
         assert!(summary(&mut app).contains("Enter a player row from the list"));
     }

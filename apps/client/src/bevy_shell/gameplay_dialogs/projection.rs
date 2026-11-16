@@ -53,8 +53,8 @@ pub(super) fn project(
     commands.entity(overlay).add_child(window);
     *panel = Some(window);
     let title = match request.content {
-        Content::Logout => "Logout",
-        Content::Context { .. } => "Actions",
+        Content::Logout => tr!("Logout"),
+        Content::Context { .. } => tr!("Actions"),
     };
     source::dialog_caption(&mut commands, window, title, skin.font.clone());
     match &request.content {
@@ -71,7 +71,7 @@ pub(super) fn project(
                 &skin,
                 window,
                 request.id,
-                "Ok",
+                tr!("Ok"),
                 Choice::Logout,
             );
         }
@@ -85,7 +85,10 @@ pub(super) fn project(
             npc,
         } => {
             if npc.is_some() {
-                for (caption, choice) in [("Talk", Choice::Talk), ("Trade", Choice::NpcTrade)] {
+                for (caption, choice) in [
+                    (tr!("Talk"), Choice::Talk),
+                    (tr!("Trade"), Choice::NpcTrade),
+                ] {
                     button(&mut commands, &skin, window, request.id, caption, choice);
                 }
             }
@@ -95,7 +98,7 @@ pub(super) fn project(
                     &skin,
                     window,
                     request.id,
-                    "Browse Field",
+                    tr!("Browse Field"),
                     Choice::Browse,
                 );
             }
@@ -168,7 +171,7 @@ pub(super) fn project(
                     &skin,
                     window,
                     request.id,
-                    "Invite to Party",
+                    tr!("Invite to Party"),
                     Choice::Invite,
                 );
                 if !target.invite_enabled() {
@@ -192,7 +195,7 @@ pub(super) fn project(
         &skin,
         window,
         request.id,
-        "Cancel",
+        tr!("Cancel"),
         Choice::Cancel,
     );
     focus.set(cancel, FocusCause::Navigated);

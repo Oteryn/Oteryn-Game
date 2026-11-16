@@ -16,7 +16,7 @@ pub(super) fn build(
         commands,
         parent,
         skins,
-        "Client Language (used after the client restarts)",
+        tr!("Client Language (used after the client restarts)"),
     );
     let bar = section::bar(commands, parent);
     for language in Language::ALL {

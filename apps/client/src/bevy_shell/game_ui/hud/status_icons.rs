@@ -108,14 +108,14 @@ pub(super) fn project(
             if taints.soul_war > 0 {
                 next.push(Icon::new(
                     "Soul War",
-                    &format!("Soul War {}", taints.soul_war),
+                    &lfmt!("Soul War {}", taints.soul_war),
                     1,
                 ));
             }
             if taints.rotten_blood > 0 || taints.rotten_blood_final {
                 next.push(Icon::new(
                     "Rotten Blood",
-                    &format!("Rotten Blood {}", taints.rotten_blood),
+                    &lfmt!("Rotten Blood {}", taints.rotten_blood),
                     1,
                 ));
             }

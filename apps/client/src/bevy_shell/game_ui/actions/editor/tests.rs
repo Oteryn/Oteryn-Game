@@ -535,6 +535,8 @@ fn empty_slot_multiaction_takes_objects_from_the_visible_object_picker() -> Test
         true,
         true,
     );
+    // The server reports the carried object as equippable, as for a single Equip action.
+    outbox.bevy_hotkey_equip_items(vec![3031]);
     app.world_mut()
         .non_send_mut::<HostOwner>()
         .play

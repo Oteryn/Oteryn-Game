@@ -393,15 +393,24 @@ fn cancel(event: On<PointerCancel>, mut bars: Query<&mut TitleBar>) {
     }
 }
 
-/// Ends a drag whose window, scale, header or modal state changed since it started; the
+/// Ends a drag whose window, scale, header or modal state changed since it started, or whose
+/// pointer no longer holds its primary button (a release whose drag end never arrived); the
 /// projection then puts the pane back where the layout keeps it.
-fn cancel_stale(mut bars: Query<(Entity, &mut TitleBar)>, guard: ModalGuard, space: Space) {
+fn cancel_stale(
+    mut bars: Query<(Entity, &mut TitleBar)>,
+    pointers: Query<(&PointerId, &bevy::picking::pointer::PointerPressState)>,
+    guard: ModalGuard,
+    space: Space,
+) {
     let context = space.context();
     for (entity, mut bar) in &mut bars {
-        if bar
-            .gesture
-            .is_some_and(|gesture| context != Some(gesture.context) || !guard.allows(entity))
-        {
+        if bar.gesture.is_some_and(|gesture| {
+            context != Some(gesture.context)
+                || !guard.allows(entity)
+                || pointers
+                    .iter()
+                    .any(|(id, press)| *id == gesture.pointer && !press.is_primary_pressed())
+        }) {
             bar.gesture = None;
         }
     }

@@ -366,9 +366,9 @@ fn fill(
         TrackerSort::Remaining => TrackerSort::Name,
     };
     let sort_label = match view.sort {
-        TrackerSort::Name => "Sort: name",
-        TrackerSort::Kills => "Sort: kills",
-        TrackerSort::Remaining => "Sort: remaining",
+        TrackerSort::Name => tr!("Sort: name"),
+        TrackerSort::Kills => tr!("Sort: kills"),
+        TrackerSort::Remaining => tr!("Sort: remaining"),
     };
     let mut actions = Vec::new();
     if !boss {
@@ -380,9 +380,9 @@ fn fill(
         (
             Action::HideCompleted(!view.hide_completed),
             if view.hide_completed {
-                "Show completed"
+                tr!("Show completed")
             } else {
-                "Hide completed"
+                tr!("Hide completed")
             },
             false,
         ),

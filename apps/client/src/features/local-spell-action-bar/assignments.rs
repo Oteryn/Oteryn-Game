@@ -229,9 +229,18 @@ impl PlayLink {
     }
 }
 pub(in crate::play) fn set_action(mailbox: &mut Mailbox, slot: usize, action: BarAction) -> bool {
-    if let BarAction::Equip { definition, .. } = &action
-        && !mailbox.hotkey_equip.items.contains(&definition.get())
-    {
+    // An Equip action, alone or inside a multiaction, names a carried object.
+    let carried = |action: &BarAction| match action {
+        BarAction::Equip { definition, .. } => {
+            mailbox.hotkey_equip.items.contains(&definition.get())
+        }
+        _ => true,
+    };
+    let carried = match &action {
+        BarAction::Multi { actions } => actions.iter().all(carried),
+        other => carried(other),
+    };
+    if !carried {
         return false;
     }
     let mut next = mailbox.bar_actions.saved.clone();

@@ -1,5 +1,6 @@
 //! ITEM_INSCRIPTION_READ_V1: the stored text of one carried item for the writing window.
-//! Read only; custody is the MAIL text writer's, proven under the session's item fence.
+//! Custody is the MAIL text writer's, proven under the same session item fence; the read may
+//! reconcile the carried death tree but never writes the item text.
 use super::{ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey};
 use crate::content::ReferenceItemField::Known;
 use crate::content::native_gameplay::NativeGameplayState;

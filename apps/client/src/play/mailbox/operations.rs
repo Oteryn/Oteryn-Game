@@ -383,6 +383,11 @@ impl Drop for PlayLink {
         mailbox.imbue_shutdown = true;
         mailbox.market_shutdown = true;
         mailbox.hireling_shutdown = true;
+        // An armed summon-location pick and its target end with the session, so the next
+        // map click is not taken as a summon location.
+        mailbox.hireling_picking = false;
+        mailbox.hireling.feedback = None;
+        mailbox.hireling.target = None;
         mailbox.cyclopedia_character_shutdown = true;
         // CL26s1
         mailbox.chat_public_shutdown = true;

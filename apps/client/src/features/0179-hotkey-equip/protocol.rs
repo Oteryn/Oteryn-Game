@@ -21,3 +21,11 @@ impl Outbox {
         oteryn_client_ui::hotkey_equip::apply_result(&mut lock(&self.0).hotkey_equip, response);
     }
 }
+
+#[cfg(all(test, bevy_shell))]
+impl Outbox {
+    /// The equippable carried definitions the server reports, for the Bevy action editor.
+    pub(crate) fn bevy_hotkey_equip_items(&self, items: Vec<u32>) {
+        self.hotkey_equip_items(items);
+    }
+}

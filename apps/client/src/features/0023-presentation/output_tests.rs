@@ -40,8 +40,26 @@ fn device_names_stay_valid_after_the_first_asking_thread_exits() {
     assert!(first.is_ok());
     let second = std::thread::spawn(audio_device_names).join();
     assert!(second.is_ok());
-    assert_eq!(
-        audio_device_names().len(),
-        second.map_or(0, |names| names.len())
-    );
+    let current = audio_device_names();
+    assert_eq!(first.ok(), Some(current.clone()));
+    assert_eq!(second.ok(), Some(current));
+}
+
+#[test]
+fn a_failed_audio_host_pin_is_retried_and_a_successful_one_is_kept() {
+    let pinned = std::sync::Mutex::new(false);
+    let mut attempts = 0;
+    pin_once(&pinned, || {
+        attempts += 1;
+        false
+    });
+    pin_once(&pinned, || {
+        attempts += 1;
+        true
+    });
+    pin_once(&pinned, || {
+        attempts += 1;
+        true
+    });
+    assert_eq!(attempts, 2, "a failed pin was not retried, or a kept pin ran again");
 }

@@ -116,7 +116,7 @@ fn choose(
         return;
     };
     if !objects(&play.link).contains(&(choice.definition, choice.sub_type)) {
-        state.message = "That object is no longer carried; choose it again.".into();
+        state.message = tr!("That object is no longer carried; choose it again.").into();
         return;
     }
     for (field, mut text) in &mut fields {

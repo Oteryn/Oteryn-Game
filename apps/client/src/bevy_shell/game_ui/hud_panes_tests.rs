@@ -391,3 +391,26 @@ fn cancelled_or_stale_title_bar_drags_end_without_freezing_the_pane() -> TestRes
     let _ = std::fs::remove_file(&path);
     Ok(())
 }
+
+#[test]
+fn a_title_bar_drag_ends_when_its_pointer_is_released_without_a_drag_end() -> TestResult {
+    let path = temp_preferences("hud-panes-release")?;
+    let mut app = playing_app(path.clone())?;
+    click(&mut app, PaneCommand::Toggle(HudPanel::Combat))?;
+    app.init_resource::<bevy::picking::pointer::PointerMap>();
+    let held = app
+        .world_mut()
+        .spawn((
+            PointerId::Mouse,
+            bevy::picking::pointer::PointerPressState::default(),
+        ))
+        .id();
+    start_drag(&mut app, HudPanel::Combat)?;
+    drag_bar(&mut app, HudPanel::Combat, Vec2::new(400., 100.), false)?;
+    let restored = pane_node(&mut app, HudPanel::Combat)?;
+    assert_eq!((restored.left, restored.top), (px(8.), px(112.)));
+    assert_eq!(layout_pane(&app, HudPanel::Combat)?.dock, HudDock::Left);
+    app.world_mut().despawn(held);
+    let _ = std::fs::remove_file(&path);
+    Ok(())
+}

@@ -43,7 +43,7 @@ impl Assets {
                 }
                 .map_err(|e| e.to_string())?;
                 if entry.cells.len() > 64 {
-                    return Err("Artwork exceeds the preview bound".into());
+                    return Err(tr!("Artwork exceeds the preview bound").into());
                 }
                 let cells = entry
                     .cells

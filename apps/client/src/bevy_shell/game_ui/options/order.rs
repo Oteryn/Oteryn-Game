@@ -28,12 +28,12 @@ pub(super) fn build(
     skins: &Skins,
     draft: &crate::play::ReferencePreferences,
 ) {
-    section::label(commands, parent, skins, "Skill Order");
+    section::label(commands, parent, skins, tr!("Skill Order"));
     for (index, family) in families(draft).into_iter().enumerate() {
         let bar = section::bar(commands, parent);
         let name = SKILL_LABELS.get(family).copied().unwrap_or_default();
         section::label(commands, bar, skins, name);
-        for (caption, down) in [("Up", false), ("Down", true)] {
+        for (caption, down) in [(tr!("Up"), false), (tr!("Down"), true)] {
             let button = section::action(
                 commands,
                 bar,

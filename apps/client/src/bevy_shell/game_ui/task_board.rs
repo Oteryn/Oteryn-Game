@@ -177,6 +177,12 @@ fn project(
     }
     if state.seen != panel {
         state.extra = None;
+    }
+    // A talisman confirmation survives a board update; it closes once no purchase is possible.
+    if !panel
+        .as_ref()
+        .is_some_and(|panel| panel.selected && panel.weekly.is_some())
+    {
         state.buy_talisman = false;
     }
     state.generation = owner.generation();
@@ -434,10 +440,11 @@ fn activate(
             state.dirty = true;
         }
         Kind::ConfirmTalisman => {
+            // While the board waits for the server the confirmation stays open for a retry.
             if state.buy_talisman && panel.selected && !panel.pending && panel.weekly.is_some() {
                 play.link.task_board_full_request(FullIntent::BuyTalisman);
+                state.buy_talisman = false;
             }
-            state.buy_talisman = false;
             state.dirty = true;
         }
         _ => {
