@@ -165,6 +165,11 @@ struct Transcript;
 struct TranscriptRoot;
 #[derive(Component)]
 struct HistoryScroll;
+/// The read-only copy of one console tab beside the transcript.
+#[derive(Component)]
+struct MirrorPane;
+#[derive(Component)]
+struct MirrorText;
 #[derive(Component)]
 struct ModeButton;
 #[derive(Component)]
@@ -196,7 +201,7 @@ pub(super) fn install(app: &mut App) {
     app.init_resource::<ChatState>()
         .init_resource::<bevy::clipboard::Clipboard>()
         .add_systems(Startup, widgets::setup.after(super::setup))
-        .add_systems(Update, (keyboard, project).chain())
+        .add_systems(Update, (keyboard, project, mirror).chain())
         .add_systems(
             PostUpdate,
             submission::finish.after(bevy::text::EditableTextSystems),
@@ -295,6 +300,34 @@ fn keyboard(
                 }
             }
             _ => {}
+        }
+    }
+}
+
+/// Shows the mirrored tab's live transcript, or hides the pane when nothing is mirrored.
+fn mirror(
+    owner: NonSend<HostOwner>,
+    mut panes: Query<&mut Node, With<MirrorPane>>,
+    mut texts: Query<&mut Text, With<MirrorText>>,
+) {
+    let value = owner
+        .play
+        .as_ref()
+        .and_then(|play| oteryn_client_ui::chat::mirror_text(&play.link.chat_panel()));
+    let display = if value.is_some() {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    for mut node in &mut panes {
+        if node.display != display {
+            node.display = display;
+        }
+    }
+    let value = value.unwrap_or_default();
+    for mut text in &mut texts {
+        if text.0 != value {
+            text.0.clone_from(&value);
         }
     }
 }

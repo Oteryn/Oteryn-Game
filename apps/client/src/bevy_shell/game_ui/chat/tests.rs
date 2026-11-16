@@ -473,6 +473,123 @@ fn chat_input_sends_typing() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn message_menu_mirrors_the_selected_tab_read_only_and_closes_it()
+-> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::{
+        asset::AssetPlugin,
+        picking::{
+            backend::HitData,
+            events::Pointer,
+            pointer::{Location, PointerButton, PointerId},
+        },
+        text::TextReadWriteMode,
+        ui_widgets::Activate,
+    };
+    let (link, _, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        vec![oteryn_session::ChatLine::Private {
+            speaker_name: "Sender".into(),
+            text: "select this message".into(),
+        }],
+    );
+    let mut owner = HostOwner::new(None)?;
+    owner.play = Some(crate::bevy_shell::owner::ActivePlay {
+        view: crate::play::PlayView::new(oteryn_renderer::TileCoord::new(100, 100), 7, &[])?,
+        link,
+    });
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .insert_non_send(owner)
+        .init_resource::<InputFocus>()
+        .add_systems(
+            Startup,
+            (crate::bevy_shell::ui::setup, super::super::setup).chain(),
+        );
+    app.add_message::<bevy::input::keyboard::KeyboardInput>();
+    install(&mut app);
+    app.update();
+    app.world_mut()
+        .query_filtered::<&mut Node, With<super::super::GameRoot>>()
+        .single_mut(app.world_mut())?
+        .display = Display::Flex;
+    let action = |app: &mut App, label: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let row = app
+            .world_mut()
+            .query::<(Entity, &EditableText, &TextReadWriteMode)>()
+            .iter(app.world())
+            .find_map(|(entity, text, mode)| {
+                (text.value().to_string().contains("select this message")
+                    && *mode == TextReadWriteMode::ReadOnly)
+                    .then_some(entity)
+            })
+            .ok_or("selectable message row missing")?;
+        app.world_mut().trigger(PointerClick {
+            entity: row,
+            pointer: Pointer::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::None {
+                        width: 100,
+                        height: 100,
+                    },
+                    position: Vec2::ZERO,
+                },
+            ),
+            button: PointerButton::Secondary,
+            hit: HitData::new(Entity::PLACEHOLDER, 0., None, None),
+            duration: std::time::Duration::ZERO,
+            count: 1,
+        });
+        app.update();
+        let entity = app
+            .world_mut()
+            .query::<(&Text, &ChildOf)>()
+            .iter(app.world())
+            .find_map(|(text, parent)| (text.0 == label).then_some(parent.parent()))
+            .ok_or("message menu action missing")?;
+        app.world_mut().trigger(Activate { entity });
+        app.update();
+        Ok(())
+    };
+    let pane = |app: &mut App| -> Result<(Display, String), Box<dyn std::error::Error>> {
+        let display = app
+            .world_mut()
+            .query_filtered::<&Node, With<MirrorPane>>()
+            .single(app.world())?
+            .display;
+        let text = app
+            .world_mut()
+            .query_filtered::<&Text, With<MirrorText>>()
+            .single(app.world())?
+            .0
+            .clone();
+        Ok((display, text))
+    };
+    assert_eq!(pane(&mut app)?.0, Display::None);
+    action(&mut app, "Mirror this tab")?;
+    let (display, text) = pane(&mut app)?;
+    assert_eq!(display, Display::Flex);
+    assert!(text.contains("select this message"));
+    {
+        let owner = app.world().non_send::<HostOwner>();
+        let panel = owner.play.as_ref().ok_or("play")?.link.chat_panel();
+        assert_eq!(panel.console.mirror, Some(panel.console.tab));
+        assert_eq!(
+            oteryn_client_ui::chat::mirror_text(&panel).as_deref(),
+            Some(text.as_str())
+        );
+    }
+    action(&mut app, "Close mirrored tab")?;
+    assert_eq!(pane(&mut app)?, (Display::None, String::new()));
+    Ok(())
+}
+
+#[test]
 fn transcript_rows_are_selectable_and_offer_sender_actions()
 -> Result<(), Box<dyn std::error::Error>> {
     use super::*;
@@ -629,5 +746,51 @@ fn speech_colors_survive_message_projection() -> Result<(), Box<dyn std::error::
     let private = color(&mut app, "private-color")?;
     let room = color(&mut app, "room-color")?;
     assert_ne!(private, room);
+    Ok(())
+}
+
+#[test]
+fn console_font_size_option_sizes_the_transcript_rows() -> Result<(), Box<dyn std::error::Error>> {
+    use super::*;
+    use bevy::asset::AssetPlugin;
+    let (link, _commands, outbox) = play_channel();
+    crate::play::feature_0007_chat::protocol::bevy_chat_fixture(
+        &outbox,
+        ChatRoomSet::default(),
+        Vec::new(),
+    );
+    let mut settings = crate::play::SettingsState::new(None);
+    let mut preferences = settings.preferences.clone();
+    preferences.console_font_px = 20;
+    settings.apply(preferences);
+    settings.sync_local_preferences(&link);
+    let panel = link.chat_panel();
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        .init_asset::<Image>()
+        .init_asset::<Font>()
+        .add_systems(Startup, crate::bevy_shell::ui::setup);
+    app.add_systems(
+        Startup,
+        (move |mut commands: Commands, skins: Res<Skins>| {
+            for row in widgets::transcript_rows(&panel) {
+                widgets::message_row(&mut commands, &skins, 1, &row);
+            }
+        })
+        .after(crate::bevy_shell::ui::setup),
+    );
+    app.update();
+    let sizes = app
+        .world_mut()
+        .query_filtered::<&bevy::text::TextFont, With<Transcript>>()
+        .iter(app.world())
+        .map(|font| font.font_size)
+        .collect::<Vec<_>>();
+    assert!(!sizes.is_empty());
+    assert!(
+        sizes
+            .iter()
+            .all(|size| *size == bevy::text::FontSize::Px(20.))
+    );
     Ok(())
 }

@@ -120,6 +120,7 @@ const IDS: &[&str] = &[
     "battle_sound.own_volume",
     "console.dropped",
     "console.feedback",
+    "console.font_size",
     "console.guild",
     "console.lines",
     "console.local",
